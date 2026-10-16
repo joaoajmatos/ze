@@ -8,6 +8,8 @@ Design specs (what comes next) live in [`specs/`](../specs/), not here. The cons
 
 | Doc | What it covers |
 |-----|----------------|
+| [features.md](features.md) | What Ze does today: agents, plugin hooks, monorepo layout |
+| [engineering/](engineering/README.md) | Notes on real design decisions: calibration, the conductor, open loops |
 | [cognitive-architecture.md](cognitive-architecture.md) | Seven cognitive functions mapped onto packages |
 | [architecture.md](architecture.md) | System overview, LangGraph flow, modules at a glance |
 | [package-architecture.md](package-architecture.md) | Monorepo split, `ZePlugin`, where new code belongs |

@@ -1,7 +1,7 @@
 """Drop capability_overrides: the intent-based capability gate is gone (Phase 181).
 
-Revision ID: zc032
-Revises: zc031
+Revision ID: zc034
+Revises: zc033
 """
 
 from __future__ import annotations
@@ -10,8 +10,8 @@ from typing import Sequence, Union
 
 from alembic import op
 
-revision: str = "zc032"
-down_revision: Union[str, Sequence[str], None] = "zc031"
+revision: str = "zc034"
+down_revision: Union[str, Sequence[str], None] = "zc033"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

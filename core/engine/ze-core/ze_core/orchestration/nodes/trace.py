@@ -22,6 +22,7 @@ from ze_core.conversation.messages.types import (
     ToolCallTrace,
     WorkspaceUsageTrace,
 )
+from ze_core.orchestration.loop_offer import with_loop_offer_line
 from ze_core.orchestration.promote import ledger_with_promote_offer
 from ze_core.orchestration.state import AgentState
 
@@ -100,6 +101,22 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
     )
     update: dict[str, Any] = {"message_trace": trace}
     update.update(_with_declined_lines(state, agent_result))
+    offer_ids = list(state.get("loop_offer_ids") or [])
+    if agent_result is not None and not state.get("error"):
+        reply = (
+            update.get("final_response")
+            or state.get("final_response")
+            or getattr(agent_result, "response", "")
+            or ""
+        )
+        with_offer = with_loop_offer_line(
+            reply,
+            state.get("prompt") or "",
+            offer_ids,
+            history=list(state.get("messages") or []),
+        )
+        if with_offer != reply:
+            update["final_response"] = with_offer
     return update
 
 
@@ -353,7 +370,7 @@ def _extract_tool_calls(
     registry = registered_tools()
     result = []
     top_level = [c for r in results for c in (getattr(r, "tool_calls", None) or [])]
-    for tc in flatten_tool_calls(top_level):
+    for call_index, tc in enumerate(flatten_tool_calls(top_level)):
         name = getattr(tc, "tool_name", "unknown")
         raw_result = getattr(tc, "result", "") or ""
         snippet = str(raw_result)[:200] if raw_result else ""
@@ -382,6 +399,10 @@ def _extract_tool_calls(
                 undo_tool=spec.undo_tool if spec is not None else None,
                 gate=gate,
                 effect_phrase=spec.effect_phrase if spec is not None else None,
+                agent=getattr(tc, "agent", None),
+                undo_args=getattr(tc, "undo", None),
+                undo_note=spec.undo_note if spec is not None else None,
+                call_index=call_index,
             )
         )
     return result

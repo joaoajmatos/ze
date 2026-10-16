@@ -31,7 +31,7 @@
 
 **Primary Dependencies**: existing only — LangGraph (`interrupt`, `Command`, `AsyncPostgresSaver`), asyncpg, FastAPI. No new packages.
 
-**Storage**: migrations `zc032_drop_capability_overrides` (ze-core) and `zc033_write_confirmation` (ze-automation: `goal_milestones` drops `intent` and adds `approved_writes`; `workflow_executions` status check gains `held`; new `held_writes`). `pending_confirmations` unchanged (its `actions` JSONB stores the items). `workflows.steps` JSONB gains `approved_writes` per step, no DDL.
+**Storage**: migrations `zc034_drop_capability_overrides` (ze-core) and `zc033_write_confirmation` (ze-automation: `goal_milestones` drops `intent` and adds `approved_writes`; `workflow_executions` status check gains `held`; new `held_writes`). `pending_confirmations` unchanged (its `actions` JSONB stores the items). `workflows.steps` JSONB gains `approved_writes` per step, no DDL.
 
 **Testing**: pytest with a mocked LLM (`complete_with_tools` scripted per iteration) and `AsyncMock` pools; the real checkpoint serde in the restart test; `@pytest.mark.pg` for `held_writes` and `zc033`; vitest for the confirmation card and trace section; eval scenarios against `make dev-eval`.
 
@@ -143,7 +143,7 @@ The deletions land in this phase. They are sequenced so each task leaves the sui
 - **III. Layered Architecture**: the rule and park types live in ze-agents (contracts); the graph in ze-core; the veto stays in ze-memory and plugs in through the hook interface (no ze-agents → ze-memory edge); holds live in ze-automation; plugins only change `@tool` declarations through `ze_sdk`. PASS.
 - **IV. Typed Python**: dataclasses in `ze_agents/park.py`; `LoopParked` is a `ZeError` subclass; Pydantic only in `ze_api/api/schemas.py`. PASS.
 - **V. Tests**: per-package tests (quickstart); pg tests for the new table. PASS.
-- **VI. Persistence**: raw-SQL Alembic `zc032` (ze-core owns `capability_overrides`), `zc033` (ze-automation owns the goal/workflow stores and the new table). PASS.
+- **VI. Persistence**: raw-SQL Alembic `zc034` (ze-core owns `capability_overrides`; renumbered after Phase 180's zc032), `zc033` (ze-automation owns the goal/workflow stores and the new table). PASS.
 - **VII. One gateway**: no new model calls. PASS.
 - **VIII. Hard cuts**: every replaced surface is deleted in this phase (D8); no shim and no dual frame shape. PASS.
 
@@ -185,7 +185,7 @@ core/engine/ze-core/ze_core/
 ├── capability/              # DELETED (budget checker already lives in telemetry/budget.py)
 ├── conversation/turn.py
 ├── container.py, bootstrap.py
-└── migrations/versions/zc032_drop_capability_overrides.py   # NEW
+└── migrations/versions/zc034_drop_capability_overrides.py   # NEW
 core/cognition/ze-memory/ze_memory/constraint_veto.py
 core/ops/ze-workspace/ze_workspace/{tools.py,gate.py}
 core/automation/ze-automation/ze_automation/

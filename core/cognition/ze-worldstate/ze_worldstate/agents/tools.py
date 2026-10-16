@@ -4,7 +4,7 @@ from uuid import UUID
 
 from ze_agents.errors import ZeError
 from ze_logging import get_logger
-from ze_agents.tool import ToolAccess, tool
+from ze_agents.tool import ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.review import close_loop as review_close
@@ -12,7 +12,7 @@ from ze_worldstate.review import confirm_loop as review_confirm
 from ze_worldstate.review import drop_loop as review_drop
 from ze_worldstate.store import LoopStore
 from ze_worldstate.tracking import LoopTracker
-from ze_worldstate.types import LoopState
+from ze_worldstate.types import LoopState, TrackOutcome
 
 log = get_logger(__name__)
 
@@ -68,13 +68,16 @@ async def track_loop(
         return {"ok": False, "error": str(exc) or "could not track the loop"}
     if not result.ok or result.loop is None:
         return {"ok": False, "error": result.error or "could not track the loop"}
-    return {
+    out = {
         "ok": True,
         "outcome": result.outcome,
         "id": str(result.loop.id),
         "title": result.loop.title,
         "state": result.loop.state.value,
     }
+    if result.outcome == TrackOutcome.CREATED:
+        out["undo"] = undo_payload(loop_id=str(result.loop.id))
+    return out
 
 
 @tool(
@@ -107,6 +110,7 @@ async def confirm_loop(loop_store: LoopStore, loop_id: str) -> dict:
         "id": str(loop.id),
         "title": loop.title,
         "state": loop.state.value,
+        "undo": undo_payload(loop_id=str(loop.id)),
     }
 
 

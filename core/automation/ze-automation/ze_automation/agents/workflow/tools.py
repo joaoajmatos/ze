@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timezone
 from uuid import UUID
 
-from ze_agents.tool import AskDecision, ToolAccess, tool
+from ze_agents.tool import AskDecision, ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.errors import WorkflowPlanError
 from ze_automation.holds.planned import (
@@ -230,6 +230,7 @@ async def create_workflow(
         "name": workflow_name,
         "steps": [s.task for s in steps],
         "schedule": schedule,
+        "undo": undo_payload(workflow_name=workflow_name),
     }
 
 
@@ -290,9 +291,13 @@ async def enable_workflow(
     wf = await store.get_by_name(workflow_name)
     if wf is None:
         return {"error": f"No workflow named '{workflow_name}' found."}
+    changed = not wf.enabled
     await store.set_enabled(wf.id, True)
     await scheduler.add_workflow(wf)
-    return {"name": workflow_name, "enabled": True}
+    result: dict = {"name": workflow_name, "enabled": True}
+    if changed:
+        result["undo"] = undo_payload(workflow_name=workflow_name)
+    return result
 
 
 @tool(
@@ -309,9 +314,13 @@ async def disable_workflow(
     wf = await store.get_by_name(workflow_name)
     if wf is None:
         return {"error": f"No workflow named '{workflow_name}' found."}
+    changed = wf.enabled
     await store.set_enabled(wf.id, False)
     await scheduler.remove_workflow(wf.id)
-    return {"name": workflow_name, "enabled": False}
+    result: dict = {"name": workflow_name, "enabled": False}
+    if changed:
+        result["undo"] = undo_payload(workflow_name=workflow_name)
+    return result
 
 
 @tool(

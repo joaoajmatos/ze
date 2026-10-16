@@ -4,12 +4,18 @@ import asyncio
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from uuid import UUID
 
 from fastapi import WebSocket
 
 from ze_agents.tasks import fire_and_forget
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.api.websocket.context import bound_turn_context
+from ze_api.api.websocket.rollback_state import (
+    deliver_retry_reply,
+    move_rollback,
+    retry_replaces_of,
+)
 from ze_api.push_kinds import CONFIRMATION_REQUEST
 from ze_api.api.websocket.serializers import extract_thread_id
 from ze_api.api.websocket.session_titles import schedule_session_title_from_thread
@@ -20,6 +26,80 @@ from ze_core.conversation.turn import NO_PENDING_CONFIRMATION
 from ze_api.api.websocket.held import handle_held_confirm
 
 log = get_logger(__name__)
+
+
+def _without_retry_identity(outcome: Any) -> None:
+    """The reply was delivered and superseded the original: a later gate in the same
+    turn must not supersede again. `retry_mode` stays, so the rest of the turn still
+    refuses irreversible writes."""
+    configurable = (getattr(outcome, "config", None) or {}).get("configurable")
+    if isinstance(configurable, dict):
+        outcome.config = {
+            **outcome.config,
+            "configurable": {
+                k: v for k, v in configurable.items() if k != "retry_replaces"
+            },
+        }
+
+
+async def _retry_without_reply(
+    container: Any,
+    msg_store: Any | None,
+    conn_mgr: ConnectionManager,
+    thread_id: str,
+    old_id: UUID | None,
+) -> None:
+    """A paused retry ended with no reply: the undo stands, the old reply stays."""
+    if old_id is None:
+        return
+    store = msg_store or getattr(container, "message_store", None)
+    if store is None:
+        return
+    try:
+        await move_rollback(
+            store, conn_mgr, thread_id, old_id, "rolled_back_retry_failed"
+        )
+    except Exception as exc:
+        log.warning("ws_retry_rollback_state_failed", error=str(exc))
+
+
+async def _deliver_resumed_reply(
+    container: Any,
+    msg_store: Any | None,
+    conn_mgr: ConnectionManager,
+    thread_id: str,
+    outcome: Any,
+    old_id: UUID | None,
+    *,
+    with_trace: bool,
+) -> None:
+    """Send the reply a resumed turn produced; a paused retry's reply supersedes."""
+    components = outcome.final_state.get("components", [])
+    trace = outcome.final_state.get("message_trace") if with_trace else None
+    store = msg_store or getattr(container, "message_store", None)
+    if old_id is not None and store is not None:
+        message = await store.get_message(old_id)
+        delivered = await deliver_retry_reply(
+            container,
+            store,
+            conn_mgr,
+            thread_id=thread_id,
+            old_id=old_id,
+            outcome=outcome,
+            record=message.rollback if message is not None else None,
+            components=components or None,
+        )
+        if not delivered:
+            await conn_mgr.send_frame(
+                {"type": "error", "detail": "Resume failed."}, thread_id
+            )
+        return
+    await container.interface.send_with_thread(
+        outcome.response,
+        thread_id=thread_id,
+        components=components or None,
+        trace=trace,
+    )
 
 
 async def handle_confirm(
@@ -88,6 +168,9 @@ async def handle_confirm(
         )
         return request_id, pending_config
 
+    # A paused retry: its resolution supersedes the retried reply (Phase 180).
+    old_id = retry_replaces_of(pending_config)
+
     if not conn_mgr.try_set_busy(thread_id):
         await conn_mgr.send_frame({"type": "error", "detail": "busy"}, thread_id)
         return request_id, pending_config
@@ -114,6 +197,7 @@ async def handle_confirm(
         await conn_mgr.send_frame(
             {"type": "error", "detail": "Resume failed."}, thread_id
         )
+        await _retry_without_reply(container, msg_store, conn_mgr, thread_id, old_id)
         return None
     finally:
         conn_mgr.clear_busy(thread_id)
@@ -129,6 +213,7 @@ async def handle_confirm(
         confirmation_store=confirmation_store,
         session_store=session_store,
         msg_store=msg_store,
+        old_id=old_id,
     )
 
 
@@ -160,8 +245,13 @@ async def _deliver_outcome(
     confirmation_store: Any | None,
     session_store: Any | None = None,
     msg_store: Any | None = None,
+    old_id: UUID | None = None,
 ) -> tuple[str, dict] | None:
-    """Send the reply of a resumed turn, or open the next confirmation."""
+    """Send the reply of a resumed turn, or open the next confirmation.
+
+    `old_id` is the reply a paused retry replaces: the resumed reply supersedes it,
+    and a resume with no reply leaves it (the undo stands).
+    """
     if outcome.response:
         if session_store is not None and thread_id:
             preview = outcome.response[:120].strip()
@@ -179,14 +269,17 @@ async def _deliver_outcome(
                     outcome.response,
                 )
 
-        components = outcome.final_state.get("components", [])
-        trace = outcome.final_state.get("message_trace")
-        await container.interface.send_with_thread(
-            outcome.response,
-            thread_id=thread_id,
-            components=components or None,
-            trace=trace,
+        await _deliver_resumed_reply(
+            container,
+            msg_store,
+            conn_mgr,
+            thread_id,
+            outcome,
+            old_id,
+            with_trace=True,
         )
+        if old_id is not None:
+            _without_retry_identity(outcome)
     if outcome.interrupted:
         return await send_confirmation_request(
             conn_mgr,
@@ -195,6 +288,8 @@ async def _deliver_outcome(
             thread_id,
             confirmation_store=confirmation_store,
         )
+    if not outcome.response:
+        await _retry_without_reply(container, msg_store, conn_mgr, thread_id, old_id)
     return None
 
 
@@ -242,6 +337,7 @@ async def confirmation_timeout(
         # A turn is running on this thread; it supersedes the paused checkpoint.
         log.info("confirmation_timeout_thread_busy", thread_id=thread_id)
         return
+    old_id = retry_replaces_of(graph_config)
     try:
         with bound_turn_context(thread_id):
             outcome = await container.resume_turn(
@@ -249,6 +345,7 @@ async def confirmation_timeout(
             )
     except Exception as exc:
         log.exception("ws_timeout_resume_error", error=str(exc))
+        await _retry_without_reply(container, None, conn_mgr, thread_id, old_id)
         return
     finally:
         conn_mgr.clear_busy(thread_id)
@@ -260,6 +357,7 @@ async def confirmation_timeout(
         conn_mgr,
         thread_id,
         confirmation_store=confirmation_store,
+        old_id=old_id,
     )
 
 

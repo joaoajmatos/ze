@@ -3,12 +3,16 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-from ze_agents.types import AgentResult
+import pytest
+from ze_agents.base_agent import BaseAgent
+from ze_agents.registry import agent, clear_registry
+from ze_agents.types import AgentContext, AgentResult
 from ze_automation.workflow.types import Workflow, WorkflowExecution
 from ze_memory.types import Entity, MemoryContext, SessionSummary
 
 from ze_core.orchestration.nodes.context import fetch_context
 from ze_core.orchestration.nodes.loop_surfacing import surface_loops
+from ze_core.routing.types import RoutingEnvelope, SubTask
 
 
 def _make_store(memory_context=None) -> MagicMock:
@@ -70,8 +74,10 @@ def _surfacer(
     s = AsyncMock()
     if error is not None:
         s.recap_mentions = AsyncMock(side_effect=error)
+        s.open_query_mentions = AsyncMock(side_effect=error)
     else:
         s.recap_mentions = AsyncMock(return_value=mentions or [])
+        s.open_query_mentions = AsyncMock(return_value=mentions or [])
     s.inline_mentions = AsyncMock(return_value=mentions or [])
     s.resume_loop_offers = AsyncMock(return_value=[])
     s.is_global_open_query = MagicMock(return_value=global_query)
@@ -232,7 +238,8 @@ class TestFetchContextWhatsOpen:
         assert note is not None
         assert note.index("Ship v2") < note.index("Renew passport")
         assert result["agent_context"].resume_recap is None
-        surfacer.recap_mentions.assert_awaited_once()
+        surfacer.open_query_mentions.assert_awaited_once()
+        surfacer.recap_mentions.assert_not_awaited()
 
     async def test_non_open_prompt_does_not_set_note(self):
         surfacer = _surfacer(_ranked_mentions(), global_query=False)
@@ -240,7 +247,7 @@ class TestFetchContextWhatsOpen:
             _state(prompt="how's the weather"), _config(turn_surfacer=surfacer)
         )
         assert result["agent_context"].open_priorities_note is None
-        surfacer.recap_mentions.assert_not_awaited()
+        surfacer.open_query_mentions.assert_not_awaited()
 
     async def test_whats_open_does_not_also_append_inline_mentions(self):
         mentions = _ranked_mentions()
@@ -360,7 +367,7 @@ class TestFetchContextCaps:
             _state(prompt="what's open right now"), _config(turn_surfacer=surfacer)
         )
 
-        surfacer.recap_mentions.assert_awaited_once_with(limit=10)
+        surfacer.open_query_mentions.assert_awaited_once_with(limit=10)
 
 
 class TestFetchContextOpenQueryFlag:
@@ -397,3 +404,109 @@ class TestFetchContextOpenQueryFlag:
 
         assert result["open_items_query"] is False
         assert result["agent_context"].open_priorities_note is None
+
+
+def _register_agent(name: str) -> None:
+    class _A(BaseAgent):
+        async def run(self, ctx: AgentContext) -> AgentResult:
+            return AgentResult(agent=name, response="ok")
+
+    _A.name = name
+    _A.description = f"The {name} agent"
+    _A.enabled = True
+    agent(_A)
+
+
+def _envelope(agent_name: str, intent: str, *, compound: bool = False):
+    return RoutingEnvelope(
+        primary_agent=agent_name,
+        confidence=0.9,
+        score_gap=0.3,
+        routing_method="embedding",
+        is_compound=compound,
+        subtasks=[SubTask(agent=agent_name, prompt="p", model="m-goals")],
+        requires_synthesis=False,
+        complexity="complex",
+    )
+
+
+class TestOpenQueryAnsweredByCompanion:
+    @pytest.fixture(autouse=True)
+    def registry(self):
+        clear_registry()
+        _register_agent("goals")
+        _register_agent("companion")
+        yield
+        clear_registry()
+
+    def _config(self, *, global_query: bool, forced: str | None = None):
+        config = _config(
+            turn_surfacer=_surfacer(_ranked_mentions(), global_query=global_query)
+        )
+        router = MagicMock()
+        router._resolve_model = MagicMock(return_value="m-companion")
+        config["configurable"]["router"] = router
+        config["configurable"]["forced_agent"] = forced
+        return config
+
+    async def test_open_query_reroutes_goals_envelope_to_companion(self):
+        state = _state(prompt="what's still on my plate?")
+        state["envelope"] = _envelope("goals", "create")
+        result = await fetch_context(state, self._config(global_query=True))
+
+        env = result["envelope"]
+        assert env.primary_agent == "companion"
+        assert [(s.agent, s.model) for s in env.subtasks] == [
+            ("companion", "m-companion")
+        ]
+        assert result["agent_context"].open_priorities_note is not None
+
+    async def test_non_open_prompt_keeps_envelope(self):
+        state = _state(prompt="what goals do I have?")
+        state["envelope"] = _envelope("goals", "create")
+        result = await fetch_context(state, self._config(global_query=False))
+        assert "envelope" not in result
+
+    async def test_companion_envelope_is_left_alone(self):
+        state = _state(prompt="what's open")
+        state["envelope"] = _envelope("companion", "reason")
+        result = await fetch_context(state, self._config(global_query=True))
+        assert "envelope" not in result
+
+    async def test_compound_envelope_is_left_alone(self):
+        state = _state(prompt="what's open and email Ana")
+        state["envelope"] = _envelope("goals", "create", compound=True)
+        result = await fetch_context(state, self._config(global_query=True))
+        assert "envelope" not in result
+
+    async def test_forced_agent_is_respected(self):
+        state = _state(prompt="what's open")
+        state["envelope"] = _envelope("goals", "create")
+        result = await fetch_context(
+            state, self._config(global_query=True, forced="goals")
+        )
+        assert "envelope" not in result
+
+    async def test_missing_companion_keeps_envelope(self):
+        clear_registry()
+        _register_agent("goals")
+        state = _state(prompt="what's open")
+        state["envelope"] = _envelope("goals", "create")
+        result = await fetch_context(state, self._config(global_query=True))
+        assert "envelope" not in result
+
+
+class TestOpenQueryRerouteTrace:
+    async def test_rerouted_envelope_drops_the_old_route_scores(self):
+        _register_agent("goals")
+        _register_agent("companion")
+        state = _state(prompt="what's open")
+        state["envelope"] = _envelope("goals", "create")
+        config = _config(turn_surfacer=_surfacer(_ranked_mentions(), global_query=True))
+        result = await fetch_context(state, config)
+        env = result["envelope"]
+        assert env.routing_method == "open_query"
+        assert (env.confidence, env.score_gap) == (1.0, 0.0)
+        assert env.raw_scores == {"companion": 1.0}
+        assert env.judgment is None
+        clear_registry()

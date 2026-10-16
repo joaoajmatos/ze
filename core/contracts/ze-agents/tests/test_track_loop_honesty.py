@@ -14,14 +14,18 @@ from ze_agents.nested_tools import (
 )
 from ze_agents.types import ToolCall
 
-_OK = {"ok": True, "outcome": "created", "id": "loop-1", "title": "Porto", "state": "active"}
+_OK = {
+    "ok": True,
+    "outcome": "created",
+    "id": "loop-1",
+    "title": "Porto",
+    "state": "active",
+}
 _FAIL = {"ok": False, "error": "db down"}
 
 
 def _call(name: str, result) -> ToolCall:
-    return ToolCall(
-        tool_name=name, args={}, result=result, duration_ms=1, success=True
-    )
+    return ToolCall(tool_name=name, args={}, result=result, duration_ms=1, success=True)
 
 
 def _nested(calls: list) -> ToolCall:
@@ -115,9 +119,7 @@ _KEEP = [
 @pytest.mark.parametrize("sentence", _STRIP)
 def test_unearned_track_claim_is_stripped(sentence):
     assert (
-        enforce_domain_cancel_confirmations(
-            sentence, [], strip_track_claims=True
-        )
+        enforce_domain_cancel_confirmations(sentence, [], strip_track_claims=True)
         == COULD_NOT_TRACK
     )
 

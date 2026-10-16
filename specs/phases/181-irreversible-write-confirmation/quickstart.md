@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-`make install`, `make db-up`, `make migrate` (applies `zc032`, `zc033`), `make web-install`.
+`make install`, `make db-up`, `make migrate` (applies `zc033`, `zc034`), `make web-install`.
 
 ## Automated gates
 

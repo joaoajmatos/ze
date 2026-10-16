@@ -64,6 +64,13 @@ class RemindersAgent(BaseAgent):
         self._scheduler = workflow_scheduler
         self._notifier = notifier
 
+    def tool_deps(self) -> dict:
+        return {
+            "store": self._store,
+            "scheduler": self._scheduler,
+            "notifier": self._notifier,
+        }
+
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "reminders.thinking")
         now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -77,11 +84,7 @@ class RemindersAgent(BaseAgent):
                 client=self._client,
                 messages=list(ctx.messages),
                 system=system,
-                deps={
-                    "store": self._store,
-                    "scheduler": self._scheduler,
-                    "notifier": self._notifier,
-                },
+                deps=self.tool_deps(),
             )
         finally:
             ctx.token_sink = original_sink

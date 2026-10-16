@@ -56,7 +56,8 @@ def _transaction_conn() -> AsyncMock:
 async def test_create_persists_and_returns_override():
     conn = _transaction_conn()
     row = _row()
-    conn.fetchrow.return_value = row
+    superseded = uuid4()
+    conn.fetchrow.side_effect = [{"id": superseded}, row]
     store = PostgresPriorityOverrideStore(pool=_pool_with(conn))
 
     override = PriorityOverride(
@@ -71,11 +72,33 @@ async def test_create_persists_and_returns_override():
         superseded_at=None,
         contribution_domain_id=row["contribution_domain_id"],
     )
-    result = await store.create(override)
+    result, superseded_id = await store.create(override)
 
     assert result.id == row["id"]
-    conn.execute.assert_awaited_once()  # supersede UPDATE ran first
-    conn.fetchrow.assert_awaited_once()
+    assert superseded_id == superseded
+    assert "RETURNING id" in conn.fetchrow.await_args_list[0].args[0]
+    assert conn.fetchrow.await_count == 2
+
+
+async def test_create_reports_no_superseded_row():
+    conn = _transaction_conn()
+    row = _row()
+    conn.fetchrow.side_effect = [None, row]
+    store = PostgresPriorityOverrideStore(pool=_pool_with(conn))
+    override = PriorityOverride(
+        id=row["id"],
+        source_kind="loop",
+        source_id=row["source_id"],
+        anchor_source_kind="goal",
+        anchor_source_id=row["anchor_source_id"],
+        relation="above",
+        pinned=False,
+        submitted_at=row["submitted_at"],
+        superseded_at=None,
+        contribution_domain_id=row["contribution_domain_id"],
+    )
+    _result, superseded_id = await store.create(override)
+    assert superseded_id is None
 
 
 async def test_get_active_excludes_superseded():

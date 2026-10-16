@@ -88,6 +88,13 @@ class WorkflowManagerAgent(BaseAgent):
         self._planner = workflow_planner
         self._scheduler = workflow_scheduler
 
+    def tool_deps(self) -> dict:
+        return {
+            "store": self._store,
+            "planner": self._planner,
+            "scheduler": self._scheduler,
+        }
+
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "workflow.managing")
         system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
@@ -97,9 +104,7 @@ class WorkflowManagerAgent(BaseAgent):
             messages=list(ctx.messages),
             system=system,
             deps={
-                "store": self._store,
-                "planner": self._planner,
-                "scheduler": self._scheduler,
+                **self.tool_deps(),
                 "session_id": ctx.session_id,
                 "user_message_id": ctx.extensions.get("user_message_id"),
             },

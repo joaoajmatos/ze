@@ -95,9 +95,9 @@ Add `write_confirmations: list[dict]` (= `write_outcomes`). `record_trace` stops
 
 ## Tables
 
-**Migration `zc032_drop_capability_overrides`** (ze-core, `core/engine/ze-core/ze_core/migrations/versions/`): `DROP TABLE capability_overrides`. Downgrade recreates it as in `004`.
+**Migration `zc034_drop_capability_overrides`** (renumbered from zc032 when main's Phase 180 took zc032 for `messages.rollback`; chain zc031 → zc032 (180) → zc033 → zc034) (ze-core, `core/engine/ze-core/ze_core/migrations/versions/`): `DROP TABLE capability_overrides`. Downgrade recreates it as in `004`.
 
-**Migration `zc033_write_confirmation`** (ze-automation, `depends` linear on zc032):
+**Migration `zc033_write_confirmation`** (ze-automation, linear after zc032):
 - `ALTER TABLE goal_milestones DROP COLUMN intent, ADD COLUMN approved_writes TEXT[] NOT NULL DEFAULT '{}'`
 - `ALTER TABLE workflow_executions DROP CONSTRAINT workflow_executions_status_check, ADD CONSTRAINT workflow_executions_status_check CHECK (status IN ('pending','running','completed','failed','cancelled','held'))`
 - `CREATE TABLE held_writes (request_id TEXT PRIMARY KEY, source TEXT NOT NULL /* workflow | goal */, owner_ref TEXT NOT NULL /* workflow execution id | milestone id */, items JSONB NOT NULL, payload JSONB NOT NULL /* graph config for workflows; ParkedLoop for goals */, status TEXT NOT NULL DEFAULT 'open', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), expires_at TIMESTAMPTZ NOT NULL, decided_at TIMESTAMPTZ)`, index on `(status, expires_at)`.

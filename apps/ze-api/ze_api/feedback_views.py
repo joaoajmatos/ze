@@ -15,6 +15,8 @@ from ze_api.api.schemas import (
     FeedbackHistoryItem,
     FeedbackView,
     RetryEligibilityResponse,
+    RollbackRecordResponse,
+    UndoPlanEntryResponse,
 )
 from ze_core.conversation.messages.types import Message, MessageTrace
 from ze_core.conversation.retry import RetryEligibility, retry_eligibility
@@ -65,7 +67,27 @@ def evaluate_retry(
         latest_assistant_id=state.latest_assistant_id,
         thread_busy=state.busy,
         pending=state.pending,
+        rollback=message.rollback,
     )
+
+
+def public_plan(eligibility: RetryEligibility) -> list[UndoPlanEntryResponse]:
+    """The plan as the client sees it: no agent, no undo arguments."""
+    return [
+        UndoPlanEntryResponse(
+            entry_id=e.entry_id,
+            tool=e.tool,
+            effect_phrase=e.effect_phrase,
+            undo_note=e.undo_note or None,
+        )
+        for e in eligibility.plan
+    ]
+
+
+def public_rollback(message: Message) -> RollbackRecordResponse | None:
+    if message.rollback is None:
+        return None
+    return RollbackRecordResponse.model_validate(message.rollback)
 
 
 def build_view(
@@ -88,7 +110,9 @@ def build_view(
             if eligibility.reason_code
             else None,
             reason_text=eligibility.reason_text,
+            plan=public_plan(eligibility),
         ),
+        rollback=public_rollback(message),
         replaces=message.replaces,
         replaced_by=message.replaced_by,
         trace_present=trace is not None,

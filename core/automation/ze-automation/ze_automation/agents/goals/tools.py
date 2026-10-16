@@ -4,7 +4,7 @@ import asyncio
 import html as _html
 from uuid import UUID
 
-from ze_agents.tool import AskDecision, ToolAccess, tool
+from ze_agents.tool import AskDecision, ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.errors import GoalPlanError
 from ze_automation.goals.executor import GoalExecutor
@@ -228,7 +228,10 @@ async def create_goal_check(args: dict, ctx) -> AskDecision:
     description="Create a new goal and propose a milestone plan for user approval.",
     reversibility=ToolReversibility.REVERSIBLE,
     undo_tool="abandon_goal",
-    undo_note="Abandoning the goal does not undo work already started",
+    undo_note=(
+        "Abandoning the goal does not undo work already started. "
+        "A notification already sent stays"
+    ),
     effect_phrase="created a goal",
     ask_check=create_goal_check,
 )
@@ -299,6 +302,7 @@ async def create_goal(
         "title": goal_title,
         "milestones": len(milestones),
         "gates": len(gates),
+        "undo": undo_payload(goal_id=str(goal.id)),
     }
 
 
@@ -320,7 +324,11 @@ async def pause_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) -> 
         return {"error": f"Goal not found: {goal_id}"}
     await store.update_status(uid, GoalStatus.PAUSED)
     await executor.close_holds(uid)
-    return {"title": goal.title, "status": "paused"}
+    return {
+        "title": goal.title,
+        "status": "paused",
+        "undo": undo_payload(goal_id=str(uid)),
+    }
 
 
 @tool(
@@ -345,7 +353,11 @@ async def resume_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) ->
         }
     await store.update_status(uid, GoalStatus.ACTIVE)
     asyncio.create_task(executor.advance(uid))
-    return {"title": goal.title, "status": "active"}
+    return {
+        "title": goal.title,
+        "status": "active",
+        "undo": undo_payload(goal_id=str(uid)),
+    }
 
 
 @tool(

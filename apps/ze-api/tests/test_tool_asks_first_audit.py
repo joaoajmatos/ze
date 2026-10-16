@@ -30,7 +30,7 @@ _OPT_OUT = {
     "cancel_workflow_run": "Stops a run the user asked to stop; the workflow itself is kept.",
     "close_loop": "Bookkeeping the user asked for; `track_loop` re-opens the concern.",
     "drop_loop": "Bookkeeping the user asked for; `track_loop` re-opens the concern.",
-    "reprioritize_item": "A decaying override; the user can reorder again.",
+    "restore_priority_override": "Restores the priority order the user had before their own change.",
     "confirm_recurring": "The user's own classification of an expense.",
     "dismiss_recurring": "The user's own classification of an expense.",
     "ingest_url": "Saves content the user asked to save; nothing leaves Ze.",

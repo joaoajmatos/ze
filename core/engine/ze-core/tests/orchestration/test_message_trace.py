@@ -440,6 +440,61 @@ def test_sources_round_trip_through_stored_trace_and_old_traces_default_empty():
     assert _parse_trace(legacy).sources == []
 
 
+async def test_record_trace_copies_agent_undo_note_and_call_index(effect_tools) -> None:
+    result = AgentResult(
+        agent="companion",
+        response="ok",
+        tool_calls=[
+            _call("lookup", agent="companion"),
+            _call(
+                "set_reminder", agent="reminders", undo={"reminder_id": "r1"}
+            ),
+        ],
+    )
+    trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
+    by_name = {t.name: t for t in trace.tool_calls}
+    assert by_name["set_reminder"].agent == "reminders"
+    assert by_name["set_reminder"].undo_args == {"reminder_id": "r1"}
+    assert by_name["set_reminder"].undo_note == "n"
+    assert by_name["lookup"].undo_args is None
+    assert by_name["lookup"].undo_note is None
+    assert [t.call_index for t in trace.tool_calls] == [0, 1]
+
+
+async def test_nested_delegate_call_keeps_the_delegate_agent(effect_tools) -> None:
+    from ze_agents.delegate import DELEGATE_TOOL_NAME
+
+    delegate = ToolCall(
+        tool_name=DELEGATE_TOOL_NAME,
+        args={},
+        result={
+            "response": "done",
+            "tool_calls": [
+                {
+                    "tool_name": "set_reminder",
+                    "args": {},
+                    "result": {"ok": True},
+                    "duration_ms": 1,
+                    "success": True,
+                    "gate": "none",
+                    "agent": "reminders",
+                    "undo": {"reminder_id": "r9"},
+                }
+            ],
+        },
+        duration_ms=2,
+        success=True,
+        agent="companion",
+    )
+    result = AgentResult(agent="companion", response="ok", tool_calls=[delegate])
+    trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
+    assert [t.name for t in trace.tool_calls] == [DELEGATE_TOOL_NAME, "set_reminder"]
+    nested = trace.tool_calls[1]
+    assert nested.agent == "reminders"
+    assert nested.undo_args == {"reminder_id": "r9"}
+    assert nested.call_index == 1
+
+
 # ── Phase 171: loop offers on the trace ──────────────────────────────────────
 
 

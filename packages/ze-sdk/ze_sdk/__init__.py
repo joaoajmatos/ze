@@ -4,7 +4,7 @@ from ze_plugin.webhook import WebhookHandler
 from ze_agents.nli import NLIClient
 from ze_agents.system_one import SystemOneClient
 from ze_agents.registry import agent
-from ze_agents.tool import tool, ToolAccess, AskDecision
+from ze_agents.tool import tool, ToolAccess, AskDecision, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.base_agent import BaseAgent
 from ze_logging import get_logger
@@ -21,6 +21,7 @@ __all__ = [
     "ToolAccess",
     "AskDecision",
     "ToolReversibility",
+    "undo_payload",
     "BaseAgent",
     "get_logger",
     "Settings",

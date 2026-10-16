@@ -43,6 +43,8 @@ from ze_agents.park import (
 from ze_agents.interrupt import (
     workspace_thread_id,
 )
+from ze_agents.reversibility import ToolReversibility
+from ze_agents.rollback import is_error_result
 from ze_logging import get_logger
 from ze_agents.types import (
     AgentContext,
@@ -319,6 +321,29 @@ class BaseAgent(ABC):
             blocks.append(block)
         return "\n\n".join(blocks)
 
+    def tool_deps(self) -> dict[str, Any]:
+        """Internal dependencies injected into tool calls for params the model cannot set.
+
+        The loop and `run_undo` both use it, so an undo runs with the same stores.
+        """
+        return {}
+
+    async def run_undo(
+        self, tool: str, args: dict[str, Any], *, session_id: str
+    ) -> ToolCall:
+        """Run one undo tool outside the model loop, through `call_tool`.
+
+        The undo is the action the person consented to, so it runs as a normal
+        approved call: not a retry run, hooks and the constraint veto still apply.
+        """
+        ctx = AgentContext(session_id=session_id, prompt="", retry_mode=False)
+        merged = _merge_deps(tool, args, {**self.tool_deps(), "ctx": ctx})
+        # The person asked for this undo, so an asks-first undo tool runs as an
+        # approved call; a hard constraint veto still applies.
+        return await self.call_tool(
+            tool, ctx, _lm_args=args, _approval=ApprovedCall("undo"), **merged
+        )
+
     # ── Tool execution ────────────────────────────────────────────────────────
 
     async def call_tool(
@@ -346,9 +371,14 @@ class BaseAgent(ABC):
         stored_args = _lm_args if _lm_args is not None else kwargs
         workspace_thread_id.set(ctx.session_id)
 
-        if spec.access.value == "write" and ctx.retry_mode:
+        if (
+            spec.access.value == "write"
+            and ctx.retry_mode
+            and spec.reversibility is ToolReversibility.IRREVERSIBLE
+        ):
             log.info("tool_blocked_retry", tool=name, agent=self.name)
             return ToolCall(
+                agent=self.name,
                 tool_name=name,
                 args=stored_args,
                 result=RETRY_WRITE_REFUSAL,
@@ -442,6 +472,7 @@ class BaseAgent(ABC):
                     "tool_skipped_by_hook", tool=name, agent=self.name, reason=e.reason
                 )
                 return ToolCall(
+                    agent=self.name,
                     tool_name=name,
                     args=stored_args,
                     result=e.result,
@@ -469,6 +500,7 @@ class BaseAgent(ABC):
             duration_ms = int((time.monotonic() - start) * 1000)
             log.warning("tool_error", tool=name, agent=self.name, error=str(exc))
             tool_call = ToolCall(
+                agent=self.name,
                 tool_name=name,
                 args=stored_args,
                 result=None,
@@ -485,7 +517,9 @@ class BaseAgent(ABC):
 
         duration_ms = int((time.monotonic() - start) * 1000)
         log.info("tool_complete", tool=name, agent=self.name, duration_ms=duration_ms)
+        result, undo = _split_undo(spec, result)
         tool_call = ToolCall(
+            agent=self.name,
             tool_name=name,
             args=stored_args,
             result=result,
@@ -493,6 +527,7 @@ class BaseAgent(ABC):
             success=True,
             gate=confirmation_gate,
             approval=approval,
+            undo=undo,
         )
 
         # ── Hook: after ───────────────────────────────────────────────────────
@@ -1037,6 +1072,28 @@ def _model_args(tool_name: str, llm_args: dict) -> dict:
     if reserved:
         log.warning("tool_reserved_args_dropped", tool=tool_name, keys=reserved)
     return {k: v for k, v in llm_args.items() if not k.startswith("_")}
+
+
+def _split_undo(spec: Any, result: Any) -> tuple[Any, dict[str, Any] | None]:
+    """Take the `"undo"` key out of a dict result.
+
+    Only a clean REVERSIBLE result keeps it as the call's undo payload; anything
+    else drops it so a payload never outlives the case that justified it.
+    """
+    if not isinstance(result, dict) or "undo" not in result:
+        return result, None
+    from ze_agents.tool import is_valid_undo_payload
+
+    payload = result["undo"]
+    stripped = {k: v for k, v in result.items() if k != "undo"}
+    if (
+        spec.reversibility is ToolReversibility.REVERSIBLE
+        and not is_error_result(result)
+        and is_valid_undo_payload(payload)
+    ):
+        return stripped, payload
+    log.warning("undo_payload_dropped", tool=spec.name)
+    return stripped, None
 
 
 def _merge_deps(tool_name: str, llm_args: dict, deps: dict[str, Any]) -> dict:

@@ -50,6 +50,15 @@ system_one:
       loop_hold: 0.75
       explicit_hold: 0.85
       resolves_hold: 0.8
+    corroboration:
+      # Phase 172: same-concern Noul for suspected-loop corroboration. Off with null bars until make calibrate-corroboration gives ENABLE on the held-out set.
+      # Calibrated 2026-10-15 (make calibrate-corroboration; 84 tuned + 47 held-out rows, EN+PT). Held-out verdict KEEP OFF with
+      # bars 0.6 / 0.8: EN ENABLE (P 1.00, R 14/14, zero false promotions), PT failed one clause: recall 12/13 = 0.923 < E5 1.000 - 0.05.
+      # The E5 title-cosine baseline matches every row at 0.75 (P 0.57, R 1.00), so its recall is a ceiling, not a rival.
+      # Candidate bars once a new held-out file exists: corroborate_hold 0.6, promote_hold 0.8.
+      enabled: false
+      corroborate_hold: null
+      promote_hold: null
 
 # Opt-in spend ceiling, token-estimated in real time inside preflight.
 # Absent/null limits = current (telemetry-only) behavior, zero change.

@@ -48,4 +48,26 @@ describe("toTraceFrame", () => {
     ) as unknown as { write_confirmations: unknown[] };
     expect(frame.write_confirmations).toEqual([outcome]);
   });
+
+  it("carries the rollback record onto the frame", () => {
+    const rollback = {
+      replaces: "m0",
+      entries: [
+        { entry_id: "e1", tool: "set_reminder", effect_phrase: "set a reminder", outcome: "undone" as const },
+      ],
+    };
+    const trace = {
+      agent: "companion",
+      routing_method: "embedding",
+      confidence: 1,
+      score_gap: 0,
+      is_compound: false,
+      subtasks: [],
+      memory_chunks: [],
+      tool_calls: [],
+      total_duration_ms: 0,
+      rollback,
+    } as MessageTraceResponse;
+    expect(toTraceFrame("msg-2", trace, "t").rollback).toEqual(rollback);
+  });
 });

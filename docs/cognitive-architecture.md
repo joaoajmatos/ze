@@ -72,10 +72,19 @@ Maturity: 🟢 substantial — `ze-automation`: goals (heavyweight, explicit, mu
 (multi-step plans), scheduler. `core/cognition/ze-worldstate` (Phases 109–110): open loops — the
 lightweight, implicitly-opened active concerns (`suspected → active → drifting →
 closed|dropped`), extracted from all four inflows through a System One gate (Phase 168) with a Haiku title writer behind it (the earlier all-Haiku gate could not parse Haiku's fenced JSON, so before 168 no loops were extracted in production; its parse now tolerates the fence), with drift detection and hedged,
-push-bar-gated surfacing. Before Phase 170 the drift predicate never matched a real row, so no loop drifted by absence; the sweep now fires once the deadline passes, and new evidence moves the deadline (`record_corroboration`). The push grounding gate checks the loop title. You can also ask Ze to track a concern (Phase 169, `track_loop`). That loop starts `active`. An explicit ask can bring a `drifting` loop back to `active`, the only `drifting → active` path. Suspected loops reach the user through the Open loops page and a resume question (Phase 171). A confirm, from the page or the `confirm_loop` tool, stamps the loop like a declaration: confidence 0.9 and a 7-day deadline. `core/arbitration/ze-priority` (Phase 123, 127): `PriorityView` ranks loops,
+push-bar-gated surfacing. Before Phase 170 the drift predicate never matched a real row, so no loop drifted by absence; the sweep now fires once the deadline passes, and new evidence moves the deadline (`record_corroboration`). The push grounding gate checks the loop title. You can also ask Ze to track a concern (Phase 169, `track_loop`). That loop starts `active`. An explicit ask can bring a `drifting` loop back to `active`, the only `drifting → active` path. Suspected loops reach the user through the Open loops page and a resume question (Phase 171). A confirm, from the page or the `confirm_loop` tool, stamps the loop like a declaration: confidence 0.9 and a 7-day deadline. A second, independent source that matches a suspected loop is judged by one System One Noul, `same_concern`; at or above a calibrated bar its confidence rises, and at or above a stricter bar the loop is promoted to `active` at confidence 0.7 (Phase 172). Independence is code: the source key is new to the loop, the evidence is not already linked, and the key was never recorded on a matching dropped loop. `core/arbitration/ze-priority` (Phase 123, 127): `PriorityView` ranks loops,
 goals, and correlation hypotheses together, plus user-directed priority override.
 One shared attention budget (Phase 177) now covers every discretionary push, and a single interruption
 governor holds accountability and discretionary pushes during quiet hours.
+
+A loop records where it came from. The `open_loop_sources` table (Phase 172) holds the origin and every counted corroboration. The source key per inflow is:
+
+| Inflow | Source key |
+|---|---|
+| Conversation | The turn's thread id |
+| Email | The Gmail thread id, or the message id when there is none |
+| Calendar | The event's `external_ref` |
+| Ingestion | The ingestion id |
 
 **State: the drift and ranking machinery runs; the confirmation path and duplicate intake remain open (see below).** Phase 170 repaired the
 executive layer: a loop drifts when its deadline passes, gate-created loops carry evidence, stuck goals

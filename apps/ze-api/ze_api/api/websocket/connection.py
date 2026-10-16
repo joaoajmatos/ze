@@ -75,7 +75,8 @@ class ConnectionManager:
                     log.warning("ws_replay_unserializable", error=str(exc))
                 except Exception:
                     # Transport failure: the socket is gone.
-                    self._ws = None
+                    if self._ws is ws:
+                        self._ws = None
                     break
 
         # Replay all pending confirmations, each tagged with their thread_id.
@@ -106,8 +107,12 @@ class ConnectionManager:
             except Exception as exc:
                 log.warning("ws_held_replay_error", error=str(exc))
 
-    async def disconnect(self) -> None:
+    async def disconnect(self, ws: WebSocket) -> None:
         async with self._lock:
+            if self._ws is not ws:
+                # A newer socket has displaced this one; the late handler
+                # finishing must leave the live socket and its state alone.
+                return
             self._ws = None
             for slot in self._slots.values():
                 slot.pending_gate_redirect = None

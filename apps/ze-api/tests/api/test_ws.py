@@ -100,9 +100,55 @@ async def test_connection_manager_disconnect_clears_connection():
     store.list_unread = AsyncMock(return_value=[])
     await mgr.connect(ws, store)
 
-    await mgr.disconnect()
+    await mgr.disconnect(ws)
 
     assert not mgr.connected
+
+
+async def test_displaced_socket_disconnect_keeps_new_socket_live():
+    """A displaced socket's handler finishing late must not clear the live socket.
+
+    Connect A, connect B (A displaced with close code 4000), then run A's
+    disconnect.  B must remain live and still receive frames.
+    """
+    mgr = ConnectionManager()
+    ws_a = _make_ws()
+    ws_b = _make_ws()
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[])
+
+    await mgr.connect(ws_a, store)
+    await mgr.connect(ws_b, store)
+
+    # A's handler finally block runs after B has taken over.
+    await mgr.disconnect(ws_a)
+
+    assert mgr.connected
+
+    ws_b.send_json.reset_mock()
+    await mgr.push(_make_message(text="still here"))
+
+    ws_b.send_json.assert_called_once()
+    assert ws_b.send_json.call_args[0][0]["message"]["text"] == "still here"
+
+
+async def test_displaced_socket_disconnect_keeps_new_socket_slots():
+    """A late disconnect from a stale socket must not reset the live session's state."""
+    mgr = ConnectionManager()
+    ws_a = _make_ws()
+    ws_b = _make_ws()
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[])
+
+    await mgr.connect(ws_a, store)
+    await mgr.connect(ws_b, store)
+
+    gate_id = uuid4()
+    mgr.set_pending_gate_redirect(gate_id, "thread-1")
+
+    await mgr.disconnect(ws_a)
+
+    assert mgr.take_pending_gate_redirect("thread-1") == gate_id
 
 
 async def test_connection_manager_busy_flag_per_thread():

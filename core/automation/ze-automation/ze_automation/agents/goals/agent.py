@@ -104,6 +104,14 @@ class GoalAgent(BaseAgent):
         self._executor = goal_executor
         self._notifier = notifier
 
+    def tool_deps(self) -> dict:
+        return {
+            "store": self._store,
+            "planner": self._planner,
+            "executor": self._executor,
+            "notifier": self._notifier,
+        }
+
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "goals.managing")
         system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
@@ -120,12 +128,7 @@ class GoalAgent(BaseAgent):
                 client=self._client,
                 messages=list(ctx.messages),
                 system=system,
-                deps={
-                    "store": self._store,
-                    "planner": self._planner,
-                    "executor": self._executor,
-                    "notifier": self._notifier,
-                },
+                deps=self.tool_deps(),
             )
         finally:
             ctx.token_sink = original_sink

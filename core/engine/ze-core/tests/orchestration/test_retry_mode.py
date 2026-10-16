@@ -1,4 +1,5 @@
-"""Retry runs regenerate text only: writes refused, admission skipped (Phase 165 US3/SC-004)."""
+"""Retry runs: irreversible writes refused, reversible writes run under normal gates,
+admission skipped (Phase 165 US3/SC-004, Phase 180 one retry policy)."""
 
 from __future__ import annotations
 

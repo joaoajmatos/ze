@@ -67,22 +67,23 @@ class InsightEngine:
 
         async with self._pool.acquire() as conn:
             fact_rows = await conn.fetch(
-                "SELECT key, value, updated_at FROM user_facts "
+                "SELECT predicate AS key, value, updated_at FROM memory_facts "
                 "WHERE contradicted = false "
                 "AND updated_at > NOW() - ($1 * INTERVAL '1 day') "
                 "ORDER BY updated_at DESC",
                 lookback_days,
             )
+            # Legacy is_archive=true marked the consolidator's rollup rows; in the
+            # new model those are memory_episodes rows with agent='consolidator'.
             episode_rows = await conn.fetch(
-                "SELECT summary, response, created_at FROM episodes "
+                "SELECT summary, response, created_at FROM memory_episodes "
                 "WHERE created_at > NOW() - ($1 * INTERVAL '1 day') "
-                "AND is_archive = false "
+                "AND agent <> 'consolidator' "
                 "ORDER BY created_at DESC",
                 lookback_days,
             )
-            profile_row = await conn.fetchrow(
-                "SELECT preferences, habits, topics, relationships, goals "
-                "FROM user_profile WHERE id = 1"
+            profile_rows = await conn.fetch(
+                "SELECT key, value FROM memory_profile_facets ORDER BY confidence DESC"
             )
             recent_insight_rows = await conn.fetch(
                 "SELECT text, category FROM insights ORDER BY created_at DESC LIMIT 20"
@@ -104,7 +105,7 @@ class InsightEngine:
 
         recently_pushed_categories = {r["category"] for r in pushed_category_rows}
 
-        profile_block = _render_profile(profile_row)
+        profile_block = _render_profile(profile_rows)
         facts_block = _render_facts(fact_rows)
         episodes_block = _render_episodes(episode_rows)
         recent_insights_block = _render_recent_insights(recent_insight_rows)
@@ -182,14 +183,14 @@ class InsightEngine:
                 await asyncio.sleep(1)
 
 
-def _render_profile(row) -> str:
-    if row is None:
+def _render_profile(rows) -> str:
+    if not rows:
         return "(no profile yet)"
-    parts = []
-    for field in ("preferences", "habits", "topics", "relationships", "goals"):
-        val = row[field] or ""
-        if val.strip():
-            parts.append(f"**{field.capitalize()}:** {val}")
+    parts = [
+        f"**{r['key'].replace('_', ' ').title()}:** {r['value']}"
+        for r in rows
+        if r["value"]
+    ]
     return "\n".join(parts) if parts else "(no profile yet)"
 
 

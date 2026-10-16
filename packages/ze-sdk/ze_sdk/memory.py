@@ -9,6 +9,7 @@ from ze_memory.types import (
     RetrievalRequest,
     Signal,
 )
+from ze_memory.errors import FactRestoreConflictError
 from ze_memory.store import MemoryStore
 from ze_memory.retriever import PostgresMemoryStore
 from ze_memory.contribution import (
@@ -55,6 +56,7 @@ from ze_memory.policies import (
 from ze_plugin.signals import SignalSource
 
 __all__ = [
+    "FactRestoreConflictError",
     "MemoryContext",
     "Fact",
     "Episode",

@@ -31,6 +31,32 @@ _HTML_TAG_RE = re.compile(r"<[^>]+>")
 _DANGER_LABELS = frozenset({"stop", "cancel", "abandon", "dismiss"})
 
 
+_ROLLBACK_ENTRY_FIELDS = (
+    "entry_id",
+    "tool",
+    "effect_phrase",
+    "outcome",
+    "at",
+    "failure_code",
+)
+
+
+def _public_trace(data: dict) -> dict:
+    """Drop what must stay on the server: owning agent and undo arguments."""
+    for call in data.get("tool_calls") or []:
+        if isinstance(call, dict):
+            call.pop("agent", None)
+            call.pop("undo_args", None)
+    rollback = data.get("rollback")
+    if isinstance(rollback, dict):
+        rollback["entries"] = [
+            {k: e.get(k) for k in _ROLLBACK_ENTRY_FIELDS}
+            for e in rollback.get("entries") or []
+            if isinstance(e, dict)
+        ]
+    return data
+
+
 def _json_safe(value: Any) -> Any:
     """Coerce a trace payload to strict-JSON types so a frame send cannot raise."""
     if value is None or isinstance(value, (bool, int, str)):
@@ -186,7 +212,7 @@ class NativeAppInterface:
                     {
                         "type": "trace_update",
                         "message_id": str(msg.id),
-                        **_json_safe(asdict(trace)),
+                        **_public_trace(_json_safe(asdict(trace))),
                     },
                     thread_id,
                 )

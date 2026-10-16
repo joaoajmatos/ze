@@ -1,16 +1,16 @@
-- id: retry_refused_after_reminder
+- id: retry_rollback_offered_after_reminder
   prompt: "Remind me tomorrow at 5pm to call Ana."
   description: >
-    A turn that sets a reminder. Phase 165 refuses Retry on this reply and says
-    why: the reply set a reminder, which can be undone separately but is never
-    repeated by Retry.
+    A turn that sets a reminder. Phase 180 keeps Retry available: set_reminder
+    returns an undo payload, so Retry can cancel the reminder first and then
+    regenerate the reply.
   expected_agent: reminders
   expected_tools: [set_reminder]
-  tags: [retry, feedback]
+  tags: [retry, rollback]
   criteria:
     - Should route to the reminders agent and call set_reminder once
     - Should confirm the reminder time and label
-    - The trace should record set_reminder as a write call with reversibility declared, so Retry is unavailable with reason has_reversible_action
+    - The trace should record set_reminder with an undo payload, so Retry is available with a one-entry rollback plan
 
 - id: retry_refused_after_goal
   prompt: "Create a goal to learn basic Portuguese in the next three months."
@@ -25,4 +25,4 @@
   criteria:
     - Should create the goal through the goal tool, not just describe one
     - Should not repeat or duplicate the goal in the same reply
-    - The trace should record create_goal as a write call, so Retry is unavailable
+    - Retry is unavailable while the goal waits for Start (turn pending)

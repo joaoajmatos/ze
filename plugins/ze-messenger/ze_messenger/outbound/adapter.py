@@ -8,15 +8,9 @@ from ze_sdk.contribution import (
     ActionLifecycle,
     ActionOutcome,
     ActionRecord,
-    ActionRecordDraft,
     ActionRecorder,
     ActionRecordStore,
-    AuthoritativeRef,
-    Contribution,
-    SourceFunction,
-    TargetFace,
 )
-from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 
 from ze_messenger.outbound.store import OutboundSendStore
 from ze_messenger.outbound.types import OutboundSend, OutboundSendOutcome
@@ -49,36 +43,6 @@ def configure_outbound_ledger(
     global _outbound_store, _action_store
     _outbound_store = outbound_store
     _action_store = action_record_store
-
-
-def contribution_from_outbound(send: OutboundSend) -> Contribution:
-    lifecycle, outcome, failure_code = _OUTCOME_MAP[send.outcome]
-    if send.failure_code:
-        failure_code = send.failure_code
-    return Contribution(
-        claim_kind=ClaimKind.ACTION_RECORD,
-        provenance=Provenance.PROMPT_SUPPLIED,
-        confidence=Confidence(value=1.0, decay_profile=DecayProfile.TIME_LINEAR),
-        target_face=TargetFace.WORLD,
-        source_function=SourceFunction.ACTION,
-        action_record=ActionRecordDraft(
-            idempotency_key=(
-                f"messenger:outbound:{send.id}:send_email:{lifecycle.value}"
-            ),
-            action_type="messenger.send_email",
-            actor="messenger",
-            producer_plugin="ze-messenger",
-            lifecycle=lifecycle,
-            outcome=outcome,
-            occurred_at=send.sent_at,
-            summary=f"outbound email {send.outcome.value}",
-            authoritative_ref=AuthoritativeRef(
-                domain="messenger.outbound",
-                record_id=str(send.id),
-            ),
-            failure_code=failure_code,
-        ),
-    )
 
 
 async def persist_outbound_send(

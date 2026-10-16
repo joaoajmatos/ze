@@ -26,7 +26,7 @@ Every user message flows through the LangGraph built by `ze-core`. The graph han
 | `routing/` | `EmbeddingRouter`, `ComplexityEstimator`, `PostgresRoutingStore`, fallback |
 | `openrouter/` | `OpenRouterClient`, streaming, transcription |
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context var |
-| `conversation/` | Message/session/confirmation stores + graph turn helpers. `retry.py` decides Retry eligibility from the trace, `rewind.py` rewinds thread history for a retry, and messages carry `replaces`/`replaced_by` |
+| `conversation/` | Message/session/confirmation stores + graph turn helpers. `retry.py` decides Retry eligibility from the trace, `rewind.py` rewinds thread history for a retry, `rollback.py` (`run_rollback`) undoes the actions of a reply before a retry and records each undo on `messages.rollback`, and messages carry `replaces`/`replaced_by`/`rollback` |
 | `container.py` | Base `Container` with DI wiring |
 | `embeddings.py` | Shared `paraphrase-multilingual-MiniLM-L12-v2` singleton |
 | `checkpoint_serde.py` | LangGraph checkpoint serialisation for plugin types |

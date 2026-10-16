@@ -39,6 +39,14 @@ def _conductor_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
     }
 
 
+def _prompt_note_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
+    return {
+        "screen_context_note": base_ctx.screen_context_note,
+        "resume_recap": base_ctx.resume_recap,
+        "open_priorities_note": base_ctx.open_priorities_note,
+    }
+
+
 def _procedure_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
     return {
         "procedure_guidance": getattr(base_ctx, "procedure_guidance", None),
@@ -392,6 +400,7 @@ async def _execute_single(
         skill_tool_names=base_ctx.skill_tool_names,
         pre_approved_writes=_pre_approved(base_ctx, config, state),
         **_resume_kwargs(state, 0),
+        **_prompt_note_kwargs(base_ctx),
         **_procedure_kwargs(base_ctx),
         **_conductor_kwargs(base_ctx),
     )
@@ -493,6 +502,7 @@ async def _execute_compound(
             skill_tool_names=base_ctx.skill_tool_names,
             pre_approved_writes=_pre_approved(base_ctx, config, state),
             **_resume_kwargs(state, index),
+            **_prompt_note_kwargs(base_ctx),
             **_procedure_kwargs(base_ctx),
             **_conductor_kwargs(base_ctx),
         )
@@ -547,6 +557,13 @@ async def _run_agent(
     ctx: AgentContext,
     token_queue: asyncio.Queue | None = None,
 ) -> AgentResult:
+    """Run one agent.
+
+    `tool_interrupts=False` is for subtasks that run inside `asyncio.gather`: a
+    tool-level confirmation must not interrupt from a child task, because the node
+    would replay its non-completed siblings on resume. The graph-level per-subtask
+    gate asks first; `confirmed=True` says that gate already got the user's yes.
+    """
     from ze_core.telemetry.context import set_agent_context
 
     set_agent_context(agent_name)

@@ -58,6 +58,50 @@ class CreateSessionRequest(BaseModel):
     title: str | None = None
 
 
+# ── REST: retry rollback (Phase 180) ──────────────────────────────────────────
+
+RollbackOutcomeLiteral = Literal["undone", "failed", "not_attempted"]
+RollbackStateLiteral = Literal[
+    "partial",
+    "rolled_back_awaiting_confirmation",
+    "rolled_back_retry_failed",
+    "superseded",
+]
+
+
+class UndoPlanEntryResponse(BaseModel):
+    entry_id: str
+    tool: str
+    effect_phrase: str
+    undo_note: str | None = None
+
+
+class RollbackEntryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    entry_id: str
+    tool: str
+    effect_phrase: str
+    outcome: RollbackOutcomeLiteral
+    at: str | None = None
+    failure_code: str | None = None
+
+
+class RollbackRecordResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    state: RollbackStateLiteral
+    entries: list[RollbackEntryResponse] = []
+    replaced_by: str | None = None
+
+
+class RollbackTraceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    replaces: str
+    entries: list[RollbackEntryResponse] = []
+
+
 # ── REST: messages ────────────────────────────────────────────────────────────
 
 
@@ -73,6 +117,7 @@ class MessageSchema(BaseModel):
     created_at: datetime
     replaces: UUIDType | None = None
     replaced_by: UUIDType | None = None
+    rollback: RollbackRecordResponse | None = None
 
 
 # ── REST: message trace ───────────────────────────────────────────────────────
@@ -210,6 +255,7 @@ class MessageTraceResponse(BaseModel):
     effects_known: bool = False
     compaction: CompactionTraceResponse | None = None
     resume_recap_applied: bool = False
+    rollback: RollbackTraceResponse | None = None
     loop_offer_ids: list[str] = []
     write_confirmations: list[WriteConfirmationOutcomeResponse] = []
 
@@ -243,6 +289,7 @@ class RetryEligibilityResponse(BaseModel):
     available: bool
     reason_code: str | None = None
     reason_text: str | None = None
+    plan: list[UndoPlanEntryResponse] = []
 
 
 class FeedbackView(BaseModel):
@@ -253,6 +300,7 @@ class FeedbackView(BaseModel):
     replaces: UUIDType | None = None
     replaced_by: UUIDType | None = None
     trace_present: bool
+    rollback: RollbackRecordResponse | None = None
 
 
 class MessageFeedbackResponse(BaseModel):
@@ -303,14 +351,17 @@ class MemoryDigestResponse(BaseModel):
     expiring_facts: list[ExpiringFactDigestItem]
 
 
-class UserProfileResponse(BaseModel):
-    preferences: str
-    habits: str
-    topics: str
-    relationships: str
-    goals: str
+class ProfileFacetItem(BaseModel):
+    key: str
+    value: str
+    stability: str
+    confidence: float
     updated_at: datetime
-    version: int
+
+
+class UserProfileResponse(BaseModel):
+    facets: list[ProfileFacetItem]
+    updated_at: datetime | None = None
 
 
 class ConsolidationReportResponse(BaseModel):
@@ -843,10 +894,15 @@ class WsErrorFrame(BaseModel):
     type: Literal["error"]
     thread_id: str | None = None
     detail: str
-    code: Literal["busy", "retry_unavailable", "retry_failed"] | None = None
+    code: (
+        Literal["busy", "retry_unavailable", "retry_failed", "retry_partial"] | None
+    ) = None
     message_id: str | None = None
     reason_code: str | None = None
     reason_text: str | None = None
+    rolled_back: bool | None = None
+    rollback: RollbackRecordResponse | None = None
+    plan: list[UndoPlanEntryResponse] | None = None
 
 
 class WsMessageSupersededFrame(BaseModel):
@@ -854,6 +910,13 @@ class WsMessageSupersededFrame(BaseModel):
     thread_id: str | None = None
     message_id: str
     replaced_by: str
+
+
+class WsMessageRollbackFrame(BaseModel):
+    type: Literal["message_rollback"]
+    thread_id: str | None = None
+    message_id: str
+    rollback: RollbackRecordResponse
 
 
 class WsRefreshFrame(BaseModel):
@@ -889,6 +952,7 @@ class WsTraceUpdateFrame(BaseModel):
     sources: list[SourceTraceResponse] = []
     effects_known: bool = False
     write_confirmations: list[WriteConfirmationOutcomeResponse] = []
+    rollback: RollbackTraceResponse | None = None
 
 
 class WsNotificationFrame(BaseModel):
@@ -916,6 +980,7 @@ WsInboundFrame = Annotated[
         WsTokenFrame,
         WsErrorFrame,
         WsMessageSupersededFrame,
+        WsMessageRollbackFrame,
         WsRefreshFrame,
         WsPongFrame,
         WsTraceUpdateFrame,
@@ -992,6 +1057,7 @@ class WsRetryFrame(BaseModel):
     type: Literal["retry"]
     message_id: str
     thread_id: str
+    confirmed_plan: list[str] | None = None
 
 
 class WsPingFrame(BaseModel):
@@ -1332,6 +1398,8 @@ class LoopListItem(BaseModel):
     drift_rationale: str | None
     created_at: str | None
     updated_at: str | None
+    promoted: bool
+    source_inflows: list[str]
 
 
 class LoopEvidenceItem(BaseModel):
@@ -1346,10 +1414,20 @@ class LoopEntityItem(BaseModel):
     entity_type: str
 
 
+class LoopSourceItem(BaseModel):
+    role: str
+    inflow: str
+    evidence_kind: str | None
+    same_concern: float | None
+    promoted: bool
+    created_at: str | None
+
+
 class LoopDetail(LoopListItem):
     goal_id: UUIDType | None
     evidence: list[LoopEvidenceItem]
     entities: list[LoopEntityItem]
+    sources: list[LoopSourceItem]
 
 
 class LoopTransitionResponse(BaseModel):

@@ -110,7 +110,7 @@ describe("useRetryReply", () => {
         thread_id: "t1",
         detail: "x",
         code: "retry_unavailable",
-        reason_code: "has_write_action",
+        reason_code: "not_undoable",
         reason_text: "This reply set a reminder.",
       }),
     );
@@ -139,5 +139,128 @@ describe("useRetryReply", () => {
       }),
     );
     expect(onSuperseded).toHaveBeenCalledWith("m1", "m2");
+  });
+
+  it("sends confirmed_plan when given and omits it otherwise", () => {
+    send.mockReturnValue(true);
+    const { result } = setup();
+    act(() => void result.current.retry("m1", ["e1", "e2"]));
+    expect(send).toHaveBeenCalledWith({
+      type: "retry",
+      message_id: "m1",
+      thread_id: "t1",
+      confirmed_plan: ["e1", "e2"],
+    });
+  });
+
+  it("refreshes feedback and traces on message_rollback and keeps retrying", () => {
+    send.mockReturnValue(true);
+    const { result, spy } = setup();
+    act(() => void result.current.retry("m1", ["e1"]));
+    spy.mockClear();
+    act(() =>
+      handlers.get("message_rollback")!({
+        type: "message_rollback",
+        message_id: "m1",
+        thread_id: "t1",
+        rollback: { state: "partial", entries: [] },
+      }),
+    );
+    expect(spy).toHaveBeenCalled();
+    expect(result.current.retrying).toBe(true);
+  });
+
+  it("uses the server text on retry_partial and refreshes", () => {
+    send.mockReturnValue(true);
+    const { result, onNotice, spy } = setup();
+    act(() => void result.current.retry("m1", ["e1"]));
+    spy.mockClear();
+    act(() =>
+      handlers.get("error")!({
+        type: "error",
+        thread_id: "t1",
+        code: "retry_partial",
+        detail: "Ze undid set a reminder, but could not undo create a goal.",
+        rolled_back: true,
+      }),
+    );
+    expect(onNotice).toHaveBeenCalledWith(
+      "Ze undid set a reminder, but could not undo create a goal.",
+    );
+    expect(spy).toHaveBeenCalled();
+    expect(result.current.retrying).toBe(false);
+  });
+
+  it("says what was undone on retry_failed with rolled_back", () => {
+    send.mockReturnValue(true);
+    const { result, onNotice } = setup();
+    act(() => void result.current.retry("m1", ["e1"]));
+    act(() =>
+      handlers.get("error")!({
+        type: "error",
+        thread_id: "t1",
+        code: "retry_failed",
+        detail: "Ze undid set a reminder but could not write a new reply.",
+        rolled_back: true,
+      }),
+    );
+    expect(onNotice).toHaveBeenCalledWith(
+      "Ze undid set a reminder but could not write a new reply.",
+    );
+    expect(onNotice).not.toHaveBeenCalledWith(expect.stringMatching(/unchanged/i));
+  });
+
+  it("refreshes the plan on retry_unavailable with plan_changed", () => {
+    send.mockReturnValue(true);
+    const { result, spy } = setup();
+    act(() => void result.current.retry("m1", ["e1"]));
+    spy.mockClear();
+    act(() =>
+      handlers.get("error")!({
+        type: "error",
+        thread_id: "t1",
+        detail: "x",
+        code: "retry_unavailable",
+        reason_code: "plan_changed",
+        reason_text: "What this reply did changed. Review and try again.",
+        plan: [],
+      }),
+    );
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it("stops retrying when a paused retry ends as rolled_back_retry_failed with no error frame", () => {
+    send.mockReturnValue(true);
+    const { result } = setup();
+    act(() => void result.current.retry("m1", ["e1"]));
+    act(() =>
+      handlers.get("message_rollback")!({
+        type: "message_rollback",
+        message_id: "m1",
+        thread_id: "t1",
+        rollback: { state: "rolled_back_retry_failed", entries: [] },
+      }),
+    );
+    expect(result.current.retrying).toBe(false);
+    expect(result.current.retryingId).toBeNull();
+    expect(
+      (useWsStore as unknown as { getState: () => { thinkingThreads: Record<string, boolean> } })
+        .getState().thinkingThreads.t1,
+    ).toBe(false);
+  });
+
+  it("keeps retrying while the retry waits on a confirmation", () => {
+    send.mockReturnValue(true);
+    const { result } = setup();
+    act(() => void result.current.retry("m1", ["e1"]));
+    act(() =>
+      handlers.get("message_rollback")!({
+        type: "message_rollback",
+        message_id: "m1",
+        thread_id: "t1",
+        rollback: { state: "rolled_back_awaiting_confirmation", entries: [] },
+      }),
+    );
+    expect(result.current.retrying).toBe(true);
   });
 });

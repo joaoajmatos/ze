@@ -4,7 +4,7 @@ route (US2) and the `reprioritize_item` conversational tool (US3), per FR-004.""
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from ze_agents.nli import NLIClient
 from ze_collision.detect import submit_and_detect_collisions
@@ -29,7 +29,7 @@ async def submit_reprioritization(
     override_store: PriorityOverrideStore,
     collision_store: CollisionLogStore | None = None,
     nli_client: NLIClient | None = None,
-) -> PriorityOverride:
+) -> tuple[PriorityOverride, UUID | None]:
     ranking = await priority_view.rank()
     items_by_id = {item.source_id: item for item in ranking.items}
 
@@ -44,7 +44,7 @@ async def submit_reprioritization(
     override_id = uuid4()
     submitted_at = datetime.now(UTC)
 
-    async def _write_override() -> PriorityOverride:
+    async def _write_override() -> tuple[PriorityOverride, UUID | None]:
         return await override_store.create(
             PriorityOverride(
                 id=override_id,
@@ -60,10 +60,10 @@ async def submit_reprioritization(
             )
         )
 
-    persisted = await submit_and_detect_collisions(
+    persisted, superseded_id = await submit_and_detect_collisions(
         override_to_contribution(item, anchor, request.relation, request.pinned),
         _write_override,
-        result_id=lambda override: override.id,
+        result_id=lambda written: written[0].id,
         producer_kind="priority_override",
         collision_store=collision_store,
         nli_client=nli_client,
@@ -81,4 +81,4 @@ async def submit_reprioritization(
         nli_client=nli_client,
     )
 
-    return persisted
+    return persisted, superseded_id

@@ -1140,6 +1140,7 @@ export type FeedbackView = {
      * Trace Present
      */
     trace_present: boolean;
+    rollback?: RollbackRecordResponse | null;
 };
 
 /**
@@ -1756,6 +1757,14 @@ export type LoopDetail = {
      */
     updated_at: string | null;
     /**
+     * Promoted
+     */
+    promoted: boolean;
+    /**
+     * Source Inflows
+     */
+    source_inflows: Array<string>;
+    /**
      * Goal Id
      */
     goal_id: string | null;
@@ -1767,6 +1776,10 @@ export type LoopDetail = {
      * Entities
      */
     entities: Array<LoopEntityItem>;
+    /**
+     * Sources
+     */
+    sources: Array<LoopSourceItem>;
 };
 
 /**
@@ -1845,6 +1858,44 @@ export type LoopListItem = {
      * Updated At
      */
     updated_at: string | null;
+    /**
+     * Promoted
+     */
+    promoted: boolean;
+    /**
+     * Source Inflows
+     */
+    source_inflows: Array<string>;
+};
+
+/**
+ * LoopSourceItem
+ */
+export type LoopSourceItem = {
+    /**
+     * Role
+     */
+    role: string;
+    /**
+     * Inflow
+     */
+    inflow: string;
+    /**
+     * Evidence Kind
+     */
+    evidence_kind: string | null;
+    /**
+     * Same Concern
+     */
+    same_concern: number | null;
+    /**
+     * Promoted
+     */
+    promoted: boolean;
+    /**
+     * Created At
+     */
+    created_at: string | null;
 };
 
 /**
@@ -2137,6 +2188,7 @@ export type MessageSchema = {
      * Replaced By
      */
     replaced_by?: string | null;
+    rollback?: RollbackRecordResponse | null;
 };
 
 /**
@@ -2223,6 +2275,7 @@ export type MessageTraceResponse = {
      * Resume Recap Applied
      */
     resume_recap_applied?: boolean;
+    rollback?: RollbackTraceResponse | null;
     /**
      * Loop Offer Ids
      */
@@ -2797,6 +2850,32 @@ export type ProcedureVersionResponse = {
 };
 
 /**
+ * ProfileFacetItem
+ */
+export type ProfileFacetItem = {
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Value
+     */
+    value: string;
+    /**
+     * Stability
+     */
+    stability: string;
+    /**
+     * Confidence
+     */
+    confidence: number;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+};
+
+/**
  * QuietHoursResponse
  */
 export type QuietHoursResponse = {
@@ -2890,6 +2969,72 @@ export type RetryEligibilityResponse = {
      * Reason Text
      */
     reason_text?: string | null;
+    /**
+     * Plan
+     */
+    plan?: Array<UndoPlanEntryResponse>;
+};
+
+/**
+ * RollbackEntryResponse
+ */
+export type RollbackEntryResponse = {
+    /**
+     * Entry Id
+     */
+    entry_id: string;
+    /**
+     * Tool
+     */
+    tool: string;
+    /**
+     * Effect Phrase
+     */
+    effect_phrase: string;
+    /**
+     * Outcome
+     */
+    outcome: 'undone' | 'failed' | 'not_attempted';
+    /**
+     * At
+     */
+    at?: string | null;
+    /**
+     * Failure Code
+     */
+    failure_code?: string | null;
+};
+
+/**
+ * RollbackRecordResponse
+ */
+export type RollbackRecordResponse = {
+    /**
+     * State
+     */
+    state: 'partial' | 'rolled_back_awaiting_confirmation' | 'rolled_back_retry_failed' | 'superseded';
+    /**
+     * Entries
+     */
+    entries?: Array<RollbackEntryResponse>;
+    /**
+     * Replaced By
+     */
+    replaced_by?: string | null;
+};
+
+/**
+ * RollbackTraceResponse
+ */
+export type RollbackTraceResponse = {
+    /**
+     * Replaces
+     */
+    replaces: string;
+    /**
+     * Entries
+     */
+    entries?: Array<RollbackEntryResponse>;
 };
 
 /**
@@ -3499,6 +3644,28 @@ export type UiManifestResponse = {
 };
 
 /**
+ * UndoPlanEntryResponse
+ */
+export type UndoPlanEntryResponse = {
+    /**
+     * Entry Id
+     */
+    entry_id: string;
+    /**
+     * Tool
+     */
+    tool: string;
+    /**
+     * Effect Phrase
+     */
+    effect_phrase: string;
+    /**
+     * Undo Note
+     */
+    undo_note?: string | null;
+};
+
+/**
  * UnreadCountResponse
  */
 export type UnreadCountResponse = {
@@ -3611,33 +3778,13 @@ export type UserFactResponse = {
  */
 export type UserProfileResponse = {
     /**
-     * Preferences
+     * Facets
      */
-    preferences: string;
-    /**
-     * Habits
-     */
-    habits: string;
-    /**
-     * Topics
-     */
-    topics: string;
-    /**
-     * Relationships
-     */
-    relationships: string;
-    /**
-     * Goals
-     */
-    goals: string;
+    facets: Array<ProfileFacetItem>;
     /**
      * Updated At
      */
-    updated_at: string;
-    /**
-     * Version
-     */
-    version: number;
+    updated_at?: string | null;
 };
 
 /**

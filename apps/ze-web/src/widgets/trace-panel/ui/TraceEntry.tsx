@@ -8,6 +8,7 @@ import { FeedbackSection } from "./FeedbackSection";
 import { JudgmentsSection } from "./JudgmentsSection";
 import { MemorySection } from "./MemorySection";
 import { RoutingSection } from "./RoutingSection";
+import { RollbackSection } from "./RollbackSection";
 import { SkillsSection } from "./SkillsSection";
 import { ToolsSection } from "./ToolsSection";
 import { WorkspaceSection } from "./WorkspaceSection";
@@ -61,6 +62,7 @@ export function TraceEntry({ trace, index, defaultOpen = false, live, feedback }
           <ConductorSection trace={trace} live={live} />
           <JudgmentsSection trace={trace} live={live} />
           <FeedbackSection feedback={feedback} live={live} />
+          <RollbackSection rollback={trace.rollback} record={feedback?.rollback} live={live} />
           <MemorySection chunks={trace.memory_chunks} live={live} />
           <ToolsSection toolCalls={trace.tool_calls} live={live} />
           <ConfirmationsSection outcomes={confirmations} />

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
@@ -69,6 +70,15 @@ class _Env:
         self.container = MagicMock()
         self.container.is_thread_locked = MagicMock(return_value=False)
         self.container.translations = None
+        self.container.retry_rewindable = AsyncMock(return_value=True)
+        self.held = []
+
+        @asynccontextmanager
+        async def _hold(thread_id):
+            self.held.append(thread_id)
+            yield
+
+        self.container.hold_thread = _hold
 
         async def _send(*args, after_save=None, **kw):
             if after_save is not None and not await after_save():
@@ -79,6 +89,7 @@ class _Env:
         self.container.invoke_retry_turn = AsyncMock(
             return_value=SimpleNamespace(
                 response="fresh",
+                interrupted=False,
                 message_id=str(self.new_id),
                 config={"configurable": {"thread_id": "t1"}},
                 final_state={"components": [], "message_trace": _trace()},
@@ -112,6 +123,9 @@ async def test_text_only_retry_replaces_reply():
 
     env.container.invoke_retry_turn.assert_awaited_once()
     assert env.container.invoke_retry_turn.await_args.args[:2] == ("t1", "question")
+    assert (
+        env.container.invoke_retry_turn.await_args.kwargs["replaces"] == env.message.id
+    )
     send = env.container.interface.send_with_thread
     assert send.await_args.kwargs["replaces"] == env.message.id
     assert send.await_args.kwargs["message_id"] == str(env.new_id)
@@ -171,7 +185,7 @@ async def test_supersede_failure_is_reported_not_swallowed():
 
 _REFUSALS = [
     (
-        "has_reversible_action",
+        "not_undoable",
         _trace(
             _call(
                 "set_reminder",
@@ -192,7 +206,7 @@ _REFUSALS = [
             )
         ),
     ),
-    ("has_write_action", _trace(_call("legacy", access="write"))),
+    ("has_irreversible_action", _trace(_call("legacy", access="write"))),
     (
         "confirmed_action",
         _trace(
@@ -303,9 +317,9 @@ async def test_two_concurrent_gates_one_approved_blocks():
                 success=False,
             ),
             _call(
-                "set_reminder",
+                "send_email",
                 access="write",
-                reversibility="reversible",
+                reversibility="irreversible",
                 gate="approved",
             ),
         )
@@ -335,3 +349,68 @@ async def test_user_message_or_wrong_thread_is_rejected():
     await env2.run()
     assert env2.errors()[0]["code"] == "retry_unavailable"
     env2.container.invoke_retry_turn.assert_not_awaited()
+
+
+# ── thread lock and rewind pre-flight (review L1, L2) ────────────────────────
+
+
+async def test_retry_holds_the_thread_lock_through_regeneration():
+    env = _Env(_trace())
+    order = []
+
+    @asynccontextmanager
+    async def _hold(thread_id):
+        order.append("acquire")
+        yield
+        order.append("release")
+
+    env.container.hold_thread = _hold
+    result = SimpleNamespace(
+        response="fresh",
+        interrupted=False,
+        message_id=str(env.new_id),
+        config={"configurable": {"thread_id": "t1"}},
+        final_state={"components": [], "message_trace": _trace()},
+    )
+    env.container.invoke_retry_turn = AsyncMock(
+        side_effect=lambda *a, **k: (order.append("invoke"), result)[1]
+    )
+    await env.run()
+    assert order == ["acquire", "invoke", "release"]
+
+
+async def test_eligibility_is_rechecked_with_the_lock_held():
+    env = _Env(_trace())
+    calls = []
+
+    async def _latest(thread_id):
+        calls.append(len(env.held))
+        return env.message.id
+
+    env.msgs.latest_assistant_id = _latest
+    await env.run()
+    assert calls == [0, 1]  # once before the lock, once with it held
+
+
+async def test_a_follow_up_taking_the_thread_between_checks_refuses_the_retry():
+    env = _Env(_trace())
+    seq = iter([env.message.id, uuid4()])
+
+    async def _latest(thread_id):
+        return next(seq)
+
+    env.msgs.latest_assistant_id = _latest
+    await env.run()
+    assert env.errors()[0]["reason_code"] == "not_latest"
+    env.container.invoke_retry_turn.assert_not_awaited()
+    env.feedback.append.assert_not_awaited()
+
+
+async def test_unrewindable_history_is_refused_before_anything_is_undone():
+    env = _Env(_trace())
+    env.container.retry_rewindable = AsyncMock(return_value=False)
+    await env.run()
+    [err] = env.errors()
+    assert err["reason_code"] == "history_unavailable"
+    env.container.invoke_retry_turn.assert_not_awaited()
+    env.feedback.append.assert_not_awaited()

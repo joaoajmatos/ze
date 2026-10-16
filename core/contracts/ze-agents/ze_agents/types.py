@@ -78,12 +78,14 @@ class ToolCall:
     duration_ms: int
     success: bool
     error: str | None = None
-    # "none" | "approved" | "pre_approved" | "parked" | "denied" | "refused" | "refused_over_cap" | "expired"
+    # "none" | "approved" | "pre_approved" | "parked" | "denied" | "refused" | "refused_over_cap" | "expired" | "duplicate"
     gate: str = "none"
     parked: ParkedWrite | None = None
     child_loop: ParkedLoop | None = None
     # {request_id, outcome} for approved/edited calls; {outcome: "pre_approved"} for unattended
     approval: dict[str, Any] | None = None
+    agent: str | None = None
+    undo: dict[str, Any] | None = None
 
 
 @dataclass

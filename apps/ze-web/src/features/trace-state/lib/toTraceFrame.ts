@@ -25,5 +25,6 @@ export function toTraceFrame(
     judgments: trace.judgments ?? [],
     sources: trace.sources ?? [],
     write_confirmations: trace.write_confirmations,
+    rollback: trace.rollback,
   } as WsTraceUpdateFrame;
 }

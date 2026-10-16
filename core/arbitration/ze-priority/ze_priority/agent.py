@@ -11,7 +11,7 @@ from ze_agents.registry import agent
 from ze_agents.types import AgentContext, AgentResult
 from ze_collision.store import CollisionLogStore
 
-import ze_priority.tools  # noqa: F401 — registers reprioritize_item
+import ze_priority.tools  # noqa: F401 — registers reprioritize_item, restore_priority_override
 from ze_priority.store import PriorityOverrideStore
 from ze_priority.view import PriorityView
 
@@ -47,7 +47,7 @@ class PriorityAgent(BaseAgent):
     """
     model = "anthropic/claude-haiku-4-5"
     timeout = 30
-    tools = ["reprioritize_item"]
+    tools = ["reprioritize_item", "restore_priority_override"]
 
     def __init__(
         self,
@@ -65,6 +65,15 @@ class PriorityAgent(BaseAgent):
         self._nli_client = nli_client
         self._embedder = embedder
 
+    def tool_deps(self) -> dict:
+        return {
+            "priority_view": self._priority_view,
+            "override_store": self._override_store,
+            "collision_store": self._collision_store,
+            "nli_client": self._nli_client,
+            "embedder": self._embedder,
+        }
+
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "priority.reprioritizing")
         system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
@@ -73,13 +82,7 @@ class PriorityAgent(BaseAgent):
             client=self._client,
             messages=list(ctx.messages),
             system=system,
-            deps={
-                "priority_view": self._priority_view,
-                "override_store": self._override_store,
-                "collision_store": self._collision_store,
-                "nli_client": self._nli_client,
-                "embedder": self._embedder,
-            },
+            deps=self.tool_deps(),
         )
         return AgentResult(
             agent=self.name, response=response, tool_calls=loop_tool_calls

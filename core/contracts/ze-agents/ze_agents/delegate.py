@@ -322,6 +322,8 @@ async def run_delegate(
             "success": call.success,
             "error": call.error,
             "gate": call.gate,
+            "agent": call.agent,
+            "undo": call.undo,
         }
         for call in result.tool_calls
     ]

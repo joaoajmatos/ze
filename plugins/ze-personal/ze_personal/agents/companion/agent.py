@@ -139,6 +139,9 @@ class CompanionAgent(BaseAgent):
         self._pool = pool
         self._memory_store = memory_store
 
+    def tool_deps(self) -> dict:
+        return {"memory_store": self._memory_store}
+
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "companion.thinking")
         original_sink = hold_token_sink(ctx)
@@ -148,7 +151,7 @@ class CompanionAgent(BaseAgent):
                 client=self._client,
                 messages=list(ctx.messages),
                 system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
-                deps={"memory_store": self._memory_store},
+                deps=self.tool_deps(),
             )
         finally:
             ctx.token_sink = original_sink

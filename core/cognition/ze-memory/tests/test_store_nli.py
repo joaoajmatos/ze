@@ -36,12 +36,15 @@ async def test_semantic_contradiction_marks_cross_predicate_fact():
     conn = AsyncMock()
     conn.execute = AsyncMock()
     conn.fetch = AsyncMock(
-        return_value=[
-            {
-                "id": existing_id,
-                "value": "User is vegetarian",
-                "embedding": [0.75, 0.66],
-            },
+        side_effect=[
+            [],
+            [
+                {
+                    "id": existing_id,
+                    "value": "User is vegetarian",
+                    "embedding": [0.75, 0.66],
+                },
+            ],
         ]
     )
     conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
@@ -65,14 +68,15 @@ async def test_semantic_contradiction_marks_cross_predicate_fact():
     update_calls = [
         c for c in conn.execute.await_args_list if "contradicted = true" in c[0][0]
     ]
-    assert len(update_calls) >= 2
+    assert len(update_calls) == 1
+    assert fact.displaced_ids == [existing_id]
     nli.scores.assert_awaited_once()
 
 
 async def test_write_time_nli_disabled_skips_semantic_check():
     conn = AsyncMock()
     conn.execute = AsyncMock()
-    conn.fetch = AsyncMock()
+    conn.fetch = AsyncMock(return_value=[])
     conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
     nli = AsyncMock()
     nli.scores = AsyncMock()
@@ -89,5 +93,6 @@ async def test_write_time_nli_disabled_skips_semantic_check():
     )
     await store._write_fact_with_contradiction_check(fact)
 
-    conn.fetch.assert_not_awaited()
+    conn.fetch.assert_awaited_once()
+    assert "RETURNING id" in conn.fetch.call_args[0][0]
     nli.scores.assert_not_awaited()

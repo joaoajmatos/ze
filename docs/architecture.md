@@ -176,7 +176,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `preprocess` | `nodes/preprocessing.py` | Normalize audio/image input before routing |
 | `embed_route` | `nodes/routing.py` | Embed prompt, score agents, choose path |
 | `decompose` | `nodes/routing.py` | Haiku decomposes compound tasks into subtasks |
-| `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes. It detects "what's open" questions by E5 similarity against English and Portuguese examples. After a session gap it adds the resume recap, capped at 5 loops, and a resume question about up to 3 suspected loops. A loop offered once stays quiet for 7 days (cooldown in `push_log`) |
+| `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes. It detects "what's open" questions by E5 similarity against English and Portuguese examples. When one fires on a single-agent turn, it swaps the route to `companion` before `capability_check`, so the turn answers from the ranked priority list, followed by suspected loops marked unconfirmed, and never pauses on a specialist's confirmation intent. After a session gap it adds the resume recap, capped at 5 loops, and a resume question about up to 3 suspected loops. A loop offered once stays quiet for 7 days (cooldown in `push_log`) |
 | `match_skills` | `nodes/skills.py` | Match active skills; inject instructions and narrow tools |
 | `preflight` | `nodes/execution.py` | Refuse a disabled agent. Pause for the spend budget (113) before the turn runs, unless the user already approved it |
 | `execute_tool` | `nodes/execution.py` | Call `agent.run()`, enforce timeout; fans independent subtasks out in parallel |
@@ -184,7 +184,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `correlate` | `nodes/correlation.py` | Surface inline relationship hypotheses when relevant |
 | `surface_loops` | `nodes/loop_surfacing.py` | Mention relevant open items inline. Skips when the turn asked what's open, because the answer already lists them (up to 10 items) |
 | `synthesize` | `nodes/memory.py` | Merge independent parallel subtask results into one response |
-| `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message, with effect metadata for each tool call |
+| `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message, with effect metadata for each tool call. After a resume that offered loops, it appends one short keep-tracking question in the user's language when the reply does not already end with a question |
 | `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction and the open-loop gate (judged beside the fact extractor, committed fire-and-forget; the System One rows join the trace); skips eval threads. A turn where the `loops` agent's `track_loop` or `confirm_loop` tool succeeded skips the loop gate, because the tool already wrote the user-asked loop. In a retry run it only extends session history |
 
 </details>
@@ -233,8 +233,11 @@ Interactive confirmations use the `confirm_request` and `confirm` frames. See
 
 `record_trace` resolves every tool call against the tool registry when it writes the
 trace. Each `ToolCallTrace` stores `access` (`read`, `write`, `delegate`, or `unknown`),
-`reversibility`, `undo_tool`, `gate` (`none`, `approved`, `denied`, or `expired`), and
-`effect_phrase`. Nested calls that a specialist made under `delegate_to_agent` appear in
+`reversibility`, `undo_tool`, `undo_note`, `gate` (`none`, `approved`, `denied`, or
+`expired`), `effect_phrase`, `agent`, `undo_args`, and `call_index`. `agent` names the
+agent that owns the tool. `undo_args` holds the identifiers the owning agent needs to
+undo the call. `call_index` is the position of the call in the turn. Ze never sends
+`agent` or `undo_args` to a client. Nested calls that a specialist made under `delegate_to_agent` appear in
 the same flat list. `delegate` marks the `delegate_to_agent` call itself. `unknown`
 marks a tool the registry did not know, and Retry treats it as unavailable.
 `MessageTrace.effects_known` is true only for traces built with this
@@ -259,23 +262,74 @@ them as a list under the reply, not as inline markers.
 A rating is an append-only `FeedbackRecord` that points at a message id. The trace stays
 in `messages.trace` and is not copied. No code in a turn reads feedback.
 
-Retry regenerates the latest assistant reply:
+Retry regenerates the latest assistant reply. When the reply did something that Ze can
+undo, Retry undoes it first.
 
 1. `retry_eligibility` (`ze_core/conversation/retry.py`) reads the stored trace. It is
    a pure function of the message, the trace, whether the reply is the latest, whether
    the thread is busy, and whether a confirmation is pending. The REST batch endpoint
-   and the WebSocket handler both call it, so both give the same answer.
-2. `invoke_retry_turn` (`ze_core/conversation/turn.py`) rewinds the checkpointed
-   `messages` of the thread to before the old reply (`conversation/rewind.py`). It
-   runs the graph with the original user text and `config["configurable"]["retry_mode"]`.
-3. In `retry_mode`, `BaseAgent.call_tool` and `delegate_to_agent` refuse every `WRITE`
-   tool and hand the model a message that says so. Nothing parks, so no confirmation
-   opens. `write_memory` skips fact admission, the episode write, and procedure
+   and the WebSocket handler both call it, so both give the same answer. When every
+   effect of the reply can be undone, the result carries a public undo `plan`.
+2. The plan lists one entry per reversible call, in reverse call order. An entry id is
+   `sha256(message_id:call_index:tool:canonical_undo_args)[:16]`. The plan shows the
+   `effect_phrase` and `undo_note` of each entry. It never shows `undo_args`.
+3. The client asks the person to confirm the plan, then sends the entry ids as
+   `confirmed_plan`. The server recomputes the plan under the thread lock. If the ids
+   differ, the server refuses with `plan_changed` and sends the new plan. If a plan
+   exists and the ids are missing, the server refuses with `undo_not_confirmed`. A
+   refusal changes nothing.
+4. `run_rollback` (`ze_core/conversation/rollback.py`) undoes the entries in plan order.
+   For each entry it calls `run_undo` on the owning agent (`BaseAgent.run_undo`). Hooks
+   and constraint gates still apply, and no model call happens. It stops at the first
+   failure and writes the record to `messages.rollback` after each entry.
+5. `invoke_retry_turn` (`ze_core/conversation/turn.py`) rewinds the checkpointed
+   `messages` of the thread to before the old reply (`conversation/rewind.py`). Before
+   any undo, the handler checks that the history can be rewound. If it cannot, the
+   request fails with `history_unavailable`. The turn runs the graph with the original
+   user text and `config["configurable"]["retry_mode"]`.
+6. One policy applies in `retry_mode`. `BaseAgent.call_tool` and `delegate_to_agent`
+   refuse every irreversible `WRITE` tool. They hand the model a message that says so.
+   Reversible `WRITE` tools run under the normal gates. A confirmation can pause the
+   retry. `write_memory` skips fact admission, the episode write, and procedure
    completion. It still extends session history.
-4. On success the new reply is saved with `replaces` set, and the old reply gets
+7. On success the new reply is saved with `replaces` set, and the old reply gets
    `replaced_by` (migration `zc031`). The old reply stays in `messages` with its trace
-   and feedback. `MessageStore` listings hide it unless asked.
-5. On failure `restore_messages` puts the old history back and the original reply stays.
+   and feedback. `MessageStore` listings hide it unless asked. The new reply's trace
+   carries a `RollbackTrace` with the undone entries, and the record state becomes
+   `superseded`.
+8. A retry can reach a confirmation. The pending confirmation then keeps `retry_mode`
+   and `retry_replaces`. The record state is `rolled_back_awaiting_confirmation`. The
+   person approves or denies. Ze saves the reply that results with `replaces` and marks
+   the old reply superseded. A delivered reply drops `retry_replaces`. A second gate in
+   the same turn then cannot supersede the reply twice. Sometimes no reply results. The
+   person may abort, or the confirmation may expire. The state then becomes
+   `rolled_back_retry_failed`.
+9. On failure `restore_messages` puts the old history back and the original reply stays.
+   If the undos already ran, the state is `rolled_back_retry_failed`, and the
+   notice names what Ze undid. If an undo failed, the state is `partial`, Ze does not
+   regenerate, and the original reply stays.
+
+A retry that has nothing to undo (a read-only reply) writes no rollback record.
+
+The stored record has the states `partial`, `rolled_back_awaiting_confirmation`,
+`rolled_back_retry_failed`, and `superseded`. It lives in the `messages.rollback` JSONB
+column (migration `zc032`). Ids and timestamps in the record are strings, because the
+JSONB codec is plain `json.dumps`. The handler holds the thread lock from the plan check
+through regeneration (`container.hold_thread`). The lock has no time bound, as for any
+other turn, so a stuck retry blocks the thread like a stuck turn does.
+
+Each tool that Ze can undo returns an `undo_payload` only in the clean case.
+`BaseAgent.call_tool` moves it to `ToolCall.undo` so the model never sees it. See
+[adding-an-agent.md](adding-an-agent.md) for the contract.
+
+Known limits:
+
+- When a retry ends without a reply after a rewind, the graph history stays rewound. The
+  stored reply remains, but the original request is no longer in the model's context.
+- A pending retry confirmation has no timeout task after a server restart. Ze replays it
+  on connect, the same as any ordinary confirmation.
+- Undoing `remember_fact` restores the facts the new fact displaced. It does not remove
+  graph relationships that the new fact linked, the same as `forget_fact`.
 
 See [native-interface.md](native-interface.md#reply-feedback-and-retry) for the frames
 and reason codes.
@@ -355,6 +409,25 @@ connections. It can run inline during chat turns and as a proactive background j
 See [specs/phases/057-correlation-engine/spec.md](../specs/phases/057-correlation-engine/spec.md)
 and [specs/phases/058-inline-correlation/spec.md](../specs/phases/058-inline-correlation/spec.md)
 for the deeper design notes.
+
+---
+
+## Open loops
+
+**Package:** `ze-worldstate`
+
+Open loops are the lightweight, ambient half of Ze's executive function. A promise in an email thread, a decision left pending, and a project stalling all belong here. The conversation, email, calendar, and ingestion inflows extract them through one System One gate (Phase 168), and Haiku writes only the title. A loop moves through `suspected → active → drifting → closed | dropped`. An explicit ask (`track_loop`, Phase 169) or a confirm (`confirm_loop`, Phase 171) sets a loop `active` at confidence 0.9. An independent second source that matches a suspected loop is judged by one System One Noul, `same_concern` (Phase 172); above a calibrated bar its confidence rises, and above a stricter bar it is promoted to `active` at confidence 0.7. A contradiction or a missed deadline moves an `active` loop to `drifting`, and `PriorityView` ranks it with goals and hypotheses.
+
+Each loop records its sources (`open_loop_sources`, migration `zw003`): its origin and every counted corroboration, with the `same_concern` score. The source key per inflow:
+
+| Inflow | Source key |
+|---|---|
+| Conversation | The turn's thread id |
+| Email | The Gmail thread id, or the message id when there is none |
+| Calendar | The event's `external_ref` |
+| Ingestion | The ingestion id |
+
+The `loops` agent, the `GET /api/v0/loops` surface, and the Open loops page expose review. See [cognitive-architecture.md](cognitive-architecture.md) and the [package README](../core/cognition/ze-worldstate/README.md).
 
 ---
 
@@ -890,7 +963,7 @@ it owns no tables and no revision files.
 | `goal_execution_traces` | Tool call trace per milestone (name, args, result, duration) |
 | `goal_suggestions` | Proactive goal proposals with accept/dismiss lifecycle |
 | `accountability_anomalies` | Cost outliers flagged by `CostAnomalyJob` |
-| `messages` | Conversation messages for unread-replay on WebSocket connect; `replaces` / `replaced_by` link a retried reply to its replacement |
+| `messages` | Conversation messages for unread-replay on WebSocket connect; `replaces` / `replaced_by` link a retried reply to its replacement; `rollback` stores what a retry undid |
 | `feedback_records` | Append-only ratings and retry requests on assistant replies |
 
 ---

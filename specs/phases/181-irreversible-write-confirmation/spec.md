@@ -104,7 +104,7 @@ All 35 WRITE tools declared IRREVERSIBLE on `main` @489f348e. "Ask" keeps the de
 | 19 | `cancel_workflow_run` | ze-automation | | Opt out | "Stops a run the user asked to stop; the workflow itself is kept." |
 | 20 | `close_loop` | ze-worldstate | | Opt out | "Bookkeeping the user asked for; `track_loop` re-opens the concern." |
 | 21 | `drop_loop` | ze-worldstate | | Opt out | "Bookkeeping the user asked for; `track_loop` re-opens the concern." |
-| 22 | `reprioritize_item` | ze-priority | | Opt out | "A decaying override; the user can reorder again." |
+| 22 | `restore_priority_override` | ze-priority | | Opt out | "Restores the priority order the user had before their own change." *(Merge with Phase 180: `reprioritize_item` became REVERSIBLE with this undo tool, so it no longer needs an opt-out.)* |
 | 23 | `confirm_recurring` | ze-finance | | Opt out | "The user's own classification of an expense." |
 | 24 | `dismiss_recurring` | ze-finance | | Opt out | "The user's own classification of an expense." |
 | 25 | `ingest_url` | ze-ingestion | | Opt out | "Saves content the user asked to save; nothing leaves Ze." |
