@@ -33,7 +33,7 @@ Copy `.env.example` to `.env` and fill in every value before starting the server
 use the default above, the shared dev database `ze`. To work on a throwaway database,
 export `DATABASE_URL_SYNC` first or pass `DB_SYNC_URL=...` to `make`. `make db-reset`
 drops and recreates the database named in that URL, inside the Compose Postgres.
-`make eval-clean` always acts on the `ze` database.
+`make eval-clean` deletes eval rows from that same database.
 
 ### ntfy push notifications
 
@@ -195,7 +195,7 @@ memory:
     contradicted_ttl_days: 30
     unreviewed_ttl_days: 90
     expiry_grace_days: 7
-    episode_recency_days: 14
+    episode_archive_days: 7
     episode_min_archive_batch: 10
     nightly_cron: "0 2 * * *"
 

@@ -29,7 +29,7 @@ help:
 	@echo "    db-down          Stop Postgres"
 	@echo "    db-reset         Drop + recreate the database named in DB_SYNC_URL (default ze) and apply all migrations"
 	@echo "    reset-personal-state  Delete learned personal state after CONFIRM=RESET"
-	@echo "    migrate          Apply all pending migrations (upgrade heads); honors DATABASE_URL_SYNC / DB_SYNC_URL, default is the shared dev DB `ze`"
+	@echo "    migrate          Apply all pending migrations (upgrade heads); honors DATABASE_URL_SYNC / DB_SYNC_URL, default is the shared dev DB ze"
 	@echo "    migrate-down     Roll back one migration step"
 	@echo "    migrate-status   Show current migration revision"
 	@echo "    migrate-history  List all migrations"
@@ -266,26 +266,26 @@ calibrate-open-query:
 
 eval-clean:
 	@echo "Removing eval-namespaced rows from routing_log, checkpoints, llm_cost_log..."
-	docker compose exec -T postgres psql -U ze -d ze -c \
+	docker compose exec -T postgres psql -U ze -d $(DB_NAME) -c \
 		"DELETE FROM routing_log WHERE session_id LIKE 'eval-%';"
-	docker compose exec -T postgres psql -U ze -d ze -c \
+	docker compose exec -T postgres psql -U ze -d $(DB_NAME) -c \
 		"DELETE FROM llm_cost_log WHERE session_id LIKE 'eval-%';"
-	docker compose exec -T postgres psql -U ze -d ze -c \
+	docker compose exec -T postgres psql -U ze -d $(DB_NAME) -c \
 		"DELETE FROM checkpoint_blobs WHERE thread_id LIKE 'eval-%';"
-	docker compose exec -T postgres psql -U ze -d ze -c \
+	docker compose exec -T postgres psql -U ze -d $(DB_NAME) -c \
 		"DELETE FROM checkpoint_writes WHERE thread_id LIKE 'eval-%';"
-	docker compose exec -T postgres psql -U ze -d ze -c \
+	docker compose exec -T postgres psql -U ze -d $(DB_NAME) -c \
 		"DELETE FROM checkpoints WHERE thread_id LIKE 'eval-%';"
 	@echo "Removing eval fixture rows (update these when eval fixtures change)..."
-	docker compose exec -T postgres psql -U ze -d ze -c \
+	docker compose exec -T postgres psql -U ze -d $(DB_NAME) -c \
 		"DELETE FROM user_reminders WHERE label ILIKE '%dentist%' OR label ILIKE '%build pipeline%' OR label ILIKE '%vitamins%';"
-	docker compose exec -T postgres psql -U ze -d ze -c \
+	docker compose exec -T postgres psql -U ze -d $(DB_NAME) -c \
 		"DELETE FROM workflows WHERE description ILIKE '%email%digest%' OR description ILIKE '%calendar%briefing%';"
-	docker compose exec -T postgres psql -U ze -d ze -c \
+	docker compose exec -T postgres psql -U ze -d $(DB_NAME) -c \
 		"DELETE FROM goals WHERE objective ILIKE '%books%' OR objective ILIKE '%rust%' OR objective ILIKE '%cli%';"
-	docker compose exec -T postgres psql -U ze -d ze -c \
+	docker compose exec -T postgres psql -U ze -d $(DB_NAME) -c \
 		"DELETE FROM memory_facts WHERE value ILIKE '%dark mode%' OR value ILIKE '%rust%';"
-	docker compose exec -T postgres psql -U ze -d ze -c \
+	docker compose exec -T postgres psql -U ze -d $(DB_NAME) -c \
 		"DELETE FROM contacts WHERE name ILIKE '%pedro%' OR name ILIKE '%maria%';"
 
 # ── Testing ───────────────────────────────────────────────────────────────────

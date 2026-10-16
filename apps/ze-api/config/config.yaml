@@ -100,7 +100,6 @@ memory:
     # unreviewed_ttl_days: 90
     # contradicted_ttl_days: 30
     # expiry_grace_days: 7
-    # episode_recency_days: 14
     # episode_min_archive_batch: 10
     # merge_silent_threshold: 0.95
     # merge_llm_threshold: 0.85
