@@ -217,6 +217,36 @@ async def test_trace_update_payload_is_json_safe():
     json.dumps(frame)
 
 
+async def test_trace_update_carries_tier_json_safe():
+    import json
+
+    from ze_core.conversation.messages.types import MessageTrace, TierTrace
+
+    iface, store, conn, _ = _make_interface(connected=True)
+    trace = MessageTrace(
+        agent="companion",
+        routing_method="embedding",
+        confidence=0.9,
+        score_gap=0.1,
+        is_compound=False,
+        subtasks=[],
+        tier=TierTrace(
+            agent="companion", tier="simple", decided_by="system_one", model="haiku"
+        ),
+    )
+
+    await iface.send_with_thread("hi", thread_id="t1", trace=trace)
+
+    frame = conn.send_frame.call_args[0][0]
+    assert frame["tier"] == {
+        "agent": "companion",
+        "tier": "simple",
+        "decided_by": "system_one",
+        "model": "haiku",
+    }
+    json.dumps(frame)
+
+
 async def test_trace_update_keeps_numbers_numeric():
     import json
     from datetime import datetime, timezone

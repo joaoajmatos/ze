@@ -31,7 +31,7 @@ def _embedder(vectors: list[list[float]]):
         return v
 
     e = MagicMock()
-    e.encode = MagicMock(side_effect=_encode)
+    e.encode_passage = e.encode_query = MagicMock(side_effect=_encode)
     return e
 
 

@@ -57,7 +57,9 @@ def _full_trace() -> MessageTrace:
         judgments=[
             JudgmentTrace(question_id="speech_act", kind="choice", latency_ms=5),
             JudgmentTrace(question_id="routing_choice", kind="choice", latency_ms=6),
-            JudgmentTrace(question_id="complexity", kind="score", latency_ms=7),
+            JudgmentTrace(
+                question_id="needs_deep_reasoning", kind="noul", latency_ms=7
+            ),
         ],
         compaction=CompactionTrace(span_start=0, span_end=4),
         resume_recap_applied=True,
@@ -92,7 +94,7 @@ async def test_feedback_message_id_reaches_the_whole_trace():
     assert [j.question_id for j in got.judgments] == [
         "speech_act",
         "routing_choice",
-        "complexity",
+        "needs_deep_reasoning",
     ]
     assert got.memory_chunks and got.tool_calls and got.skills_used
     assert got.conductor_ledger and got.compaction is not None
@@ -140,7 +142,7 @@ _ENGINE_DIRS = [
     "core/cognition/ze-memory/ze_memory/policies.py",
     "core/cognition/ze-memory/ze_memory/extractor.py",
     "core/cognition/ze-memory/ze_memory/admission.py",
-    "core/cognition/ze-memory/ze_memory/speech_act_judge.py",
+    "core/cognition/ze-memory/ze_memory/fact_judge.py",
     "core/cognition/ze-memory/ze_memory/composite.py",
     "core/arbitration/ze-priority/ze_priority",
     "core/contracts/ze-agents/ze_agents",

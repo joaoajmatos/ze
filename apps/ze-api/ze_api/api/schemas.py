@@ -211,6 +211,13 @@ class CompactionTraceResponse(BaseModel):
     span_end: int
 
 
+class TierTraceResponse(BaseModel):
+    agent: str
+    tier: Literal["simple", "full"]
+    decided_by: str
+    model: str
+
+
 class SourceTraceResponse(BaseModel):
     url: str
     title: str = ""
@@ -258,6 +265,7 @@ class MessageTraceResponse(BaseModel):
     rollback: RollbackTraceResponse | None = None
     loop_offer_ids: list[str] = []
     write_confirmations: list[WriteConfirmationOutcomeResponse] = []
+    tier: TierTraceResponse | None = None
 
 
 class MessageTraceEntry(BaseModel):
@@ -953,6 +961,7 @@ class WsTraceUpdateFrame(BaseModel):
     effects_known: bool = False
     write_confirmations: list[WriteConfirmationOutcomeResponse] = []
     rollback: RollbackTraceResponse | None = None
+    tier: TierTraceResponse | None = None
 
 
 class WsNotificationFrame(BaseModel):
@@ -1396,6 +1405,8 @@ class LoopListItem(BaseModel):
     provenance: str
     confidence: float
     drift_rationale: str | None
+    goal_id: UUIDType | None
+    reminder_id: UUIDType | None
     created_at: str | None
     updated_at: str | None
     promoted: bool
@@ -1424,7 +1435,6 @@ class LoopSourceItem(BaseModel):
 
 
 class LoopDetail(LoopListItem):
-    goal_id: UUIDType | None
     evidence: list[LoopEvidenceItem]
     entities: list[LoopEntityItem]
     sources: list[LoopSourceItem]

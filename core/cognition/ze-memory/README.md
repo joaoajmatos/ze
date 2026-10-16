@@ -27,7 +27,8 @@ Plugins emit candidate signals via `SignalSource` (defined in `ze-plugin`, type 
 |---|---|
 | `store.py` | `MemoryStore` and retrieval-policy protocols |
 | `retriever.py` | `PostgresMemoryStore` — fact and episode CRUD; semantic retrieval with embedding similarity; signal ingest and pinning; `retract_fact_and_restore` retracts a fact and restores the facts it displaced, and raises `FactRestoreConflictError` when a restore is not safe |
-| `extractor.py` | LLM-driven fact extraction from conversations |
+| `extractor.py` | Haiku fact extraction from conversations, the fallback when the commitment intake skips |
+| `fact_judge.py` | System One fact questions (family Choice, biography Noul), bars, and persist/hold rules the commitment intake reuses |
 | `consolidator.py` | Dedup, expiry, and episode summarisation |
 | `consolidation_store.py` | Consolidation run persistence |
 | `admission.py` | `AdmissionGate` — relevance-scored signal admit/watch/drop |

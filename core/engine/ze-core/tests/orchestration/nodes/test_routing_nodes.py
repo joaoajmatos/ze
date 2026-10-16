@@ -408,7 +408,6 @@ class TestEmbedRouteJudgment:
                     probabilities={"calendar": 0.93, "none": 0.07},
                 ),
                 "multi_specialist": SystemOneAnswer(type="noul", noul=0.1),
-                "complexity": SystemOneAnswer(type="score", score=0.2),
             },
         )
         return RoutingJudgment(
@@ -416,7 +415,6 @@ class TestEmbedRouteJudgment:
             question_kinds={
                 "agent": "choice",
                 "multi_specialist": "noul",
-                "complexity": "score",
             },
             consumed=frozenset({"agent", "multi_specialist"}),
         )
@@ -464,11 +462,9 @@ class TestEmbedRouteJudgment:
         router = self._router(self._envelope(self._judgment()))
         out = await embed_route(self._state(), {"configurable": {"router": router}})
         rows = {r.question_id: r for r in out["judgments"]}
-        assert set(rows) == {"agent", "multi_specialist", "complexity"}
+        assert set(rows) == {"agent", "multi_specialist"}
         assert rows["agent"].consumed and rows["multi_specialist"].consumed
-        assert not rows["complexity"].consumed
         assert rows["agent"].kind == "choice" and rows["agent"].peakedness == 0.93
-        assert rows["complexity"].kind == "score" and rows["complexity"].answer == 0.2
         assert out["envelope"].primary_agent == "calendar"
 
     async def test_no_judgment_means_no_rows(self):
@@ -493,14 +489,13 @@ class TestEmbedRouteJudgment:
         assert seen == ["router"]
 
 
-class TestDecomposeKeepsScoreComplexity:
-    """Phase 164: a Score tier chosen on the embedding path survives decompose."""
+class TestDecomposeAssignsFullModels:
+    """Phase 182: decompose never tiers; choose_tier owns the light model."""
 
-    def _router(self):
+    def _router(self, overrides=None):
         router = MagicMock()
         router._config = RouterConfig()
-        router._estimator.classify = MagicMock(return_value="complex")
-        router._resolve_model = MagicMock(side_effect=lambda agent, cx: f"{agent}:{cx}")
+        router._app_config = {"models": {"overrides": overrides or {}}}
         return router
 
     def _client(self, subtasks, sequential=False):
@@ -510,13 +505,17 @@ class TestDecomposeKeepsScoreComplexity:
         )
         return client
 
-    async def test_score_source_skips_classify_and_keeps_complexity(self):
-        _register("alpha")
-        _register("beta")
-        envelope = _envelope()
-        envelope.complexity = "simple"
-        envelope.complexity_source = "score"
-        router = self._router()
+    def _register_tiered(self, name, intent_map=None):
+        _register(name, intent_map)
+        from ze_agents.registry import get_enabled_agents
+
+        cls = get_enabled_agents()[name]
+        cls.model = f"{name}-big"
+        cls.model_simple = f"{name}-small"
+
+    async def test_decompose_assigns_every_subtask_its_full_model(self):
+        self._register_tiered("alpha")
+        self._register_tiered("beta")
         client = self._client(
             [
                 {"agent": "alpha", "changes": False, "prompt": "a"},
@@ -525,31 +524,27 @@ class TestDecomposeKeepsScoreComplexity:
         )
 
         result = await decompose(
-            _state(envelope=envelope), _config(client, router=router)
+            _state(prompt="thanks"), _config(client, router=self._router())
         )
 
-        router._estimator.classify.assert_not_called()
-        assert result["envelope"].complexity == "simple"
-        # subtask models are still resolved per agent with the kept tier
-        router._resolve_model.assert_any_call("alpha", "simple")
-        router._resolve_model.assert_any_call("beta", "simple")
+        assert [s.model for s in result["envelope"].subtasks] == [
+            "alpha-big",
+            "beta-big",
+        ]
 
-    async def test_regex_source_still_calls_classify(self):
-        _register("alpha")
-        router = self._router()
+    async def test_overrides_apply_to_the_full_model(self):
+        self._register_tiered("alpha")
         client = self._client([{"agent": "alpha", "changes": False, "prompt": "a"}])
+        router = self._router({"alpha": "pinned"})
 
         result = await decompose(_state(), _config(client, router=router))
 
-        router._estimator.classify.assert_called_once()
-        assert result["envelope"].complexity == "complex"
+        assert result["envelope"].subtasks[0].model == "pinned"
 
-    async def test_mixed_gather_act_still_rewrites_to_companion(self):
-        _register("alpha", {"read": "Read"})
-        _register("beta", {"create": "Create"})
-        envelope = _envelope()
-        envelope.complexity = "simple"
-        envelope.complexity_source = "score"
+    async def test_mixed_gather_act_rewrites_to_companion_on_its_full_model(self):
+        self._register_tiered("alpha", {"read": "Read"})
+        self._register_tiered("beta", {"create": "Create"})
+        self._register_tiered("companion", {"reason": "Reason"})
         client = self._client(
             [
                 {"agent": "alpha", "changes": False, "prompt": "look it up"},
@@ -557,13 +552,13 @@ class TestDecomposeKeepsScoreComplexity:
             ]
         )
 
-        result = await decompose(
-            _state(envelope=envelope), _config(client, router=self._router())
-        )
+        result = await decompose(_state(), _config(client, router=self._router()))
 
-        assert result["envelope"].primary_agent == "companion"
-        assert result["envelope"].complexity == "simple"
+        env = result["envelope"]
+        assert env.primary_agent == "companion"
+        assert [s.model for s in env.subtasks] == ["companion-big"]
         assert [h["agent"] for h in result["conductor_hint"]] == ["alpha", "beta"]
+        assert not hasattr(env, "complexity")
 
 
 class TestEmbedRouteForcedAgent:

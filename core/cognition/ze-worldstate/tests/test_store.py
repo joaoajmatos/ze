@@ -30,6 +30,7 @@ def _row(**overrides) -> dict:
         "provenance": "conversation",
         "confidence": 0.3,
         "goal_id": None,
+        "reminder_id": None,
         "dismissed_evidence_fingerprint": None,
         "drift_deadline": None,
         "drift_rationale": None,
@@ -283,7 +284,9 @@ async def test_add_source_returns_none_on_conflict():
 
 
 async def test_list_sources_orders_by_created_at():
-    pool, conn = make_pool(fetch=[_source_row(), _source_row(evidence_kind=None, evidence_id=None)])
+    pool, conn = make_pool(
+        fetch=[_source_row(), _source_row(evidence_kind=None, evidence_id=None)]
+    )
     sources = await PostgresLoopStore(pool=pool).list_sources(uuid4())
 
     assert "ORDER BY created_at" in conn.fetch.await_args.args[0]
@@ -330,7 +333,9 @@ async def test_promote_is_a_guarded_single_update():
 async def test_promote_returns_none_when_not_suspected():
     pool, _conn = make_pool(fetchrow=None)
     assert (
-        await PostgresLoopStore(pool=pool).promote(uuid4(), confidence=0.7, window_days=7)
+        await PostgresLoopStore(pool=pool).promote(
+            uuid4(), confidence=0.7, window_days=7
+        )
         is None
     )
 
@@ -343,3 +348,43 @@ async def test_mark_source_promoted_updates_the_row():
     sql, arg = conn.execute.await_args.args
     assert "SET promoted = true" in sql
     assert arg == source_id
+
+
+async def test_row_and_create_carry_reminder_id():
+    reminder_id = uuid4()
+    pool, conn = make_pool(fetchrow=_row(reminder_id=reminder_id))
+    store = PostgresLoopStore(pool=pool)
+    loop = OpenLoop(
+        title="Call Ana",
+        claim_kind=LoopClaimKind.SUSPICION,
+        provenance=LoopProvenance.CONVERSATION,
+        confidence=0.3,
+        reminder_id=reminder_id,
+    )
+    result = await store.create(loop)
+    assert result.reminder_id == reminder_id
+    assert reminder_id in conn.fetchrow.await_args.args
+
+
+async def test_link_sets_pointers_with_coalesce_on_live_loops_only():
+    reminder_id, loop_id = uuid4(), uuid4()
+    pool, conn = make_pool(fetchrow={"id": loop_id})
+    store = PostgresLoopStore(pool=pool)
+    assert await store.link(loop_id, reminder_id=reminder_id) is True
+    sql, *args = conn.fetchrow.await_args.args
+    assert "COALESCE(reminder_id, $2)" in sql and "COALESCE(goal_id, $3)" in sql
+    assert "'suspected', 'active', 'drifting'" in sql
+    assert args == [loop_id, reminder_id, None]
+
+
+async def test_link_reports_no_change():
+    pool, _ = make_pool(fetchrow=None)
+    store = PostgresLoopStore(pool=pool)
+    assert await store.link(uuid4(), goal_id=uuid4()) is False
+
+
+async def test_link_without_a_pointer_is_a_noop():
+    pool, conn = make_pool(fetchrow={"id": uuid4()})
+    store = PostgresLoopStore(pool=pool)
+    assert await store.link(uuid4()) is False
+    conn.fetchrow.assert_not_called()

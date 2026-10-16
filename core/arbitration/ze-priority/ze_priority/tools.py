@@ -39,9 +39,12 @@ def _disambiguate(
 ) -> PriorityItem | None:
     if not items:
         return None
-    query_vec = embedder.encode(item_description)
+    query_vec = embedder.encode_passage(item_description)
     scored = sorted(
-        ((_cosine(query_vec, embedder.encode(item.title)), item) for item in items),
+        (
+            (_cosine(query_vec, embedder.encode_passage(item.title)), item)
+            for item in items
+        ),
         key=lambda pair: pair[0],
         reverse=True,
     )

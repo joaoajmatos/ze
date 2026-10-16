@@ -4,7 +4,7 @@ from typing import Any
 
 
 def embedding_vector(embedder: Any, text: str) -> str:
-    vec = embedder.encode(text)
+    vec = embedder.encode_passage(text)
     vals = vec.tolist() if hasattr(vec, "tolist") else list(vec)
     return "[" + ",".join(str(v) for v in vals) + "]"
 

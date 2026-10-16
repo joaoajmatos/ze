@@ -18,3 +18,12 @@ export function promotedLine(
   const labels = item.source_inflows.map(sourceLabel);
   return labels.length > 0 ? `Promoted · seen in: ${labels.join(", ")}` : "Promoted";
 }
+
+export function linkChips(
+  item: Pick<LoopListItem, "reminder_id" | "goal_id">
+): string[] {
+  const chips: string[] = [];
+  if (item.reminder_id) chips.push("Has reminder");
+  if (item.goal_id) chips.push("Linked goal");
+  return chips;
+}

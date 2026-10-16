@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-12
 
-**Status**: Implemented
+**Status**: Implemented. Superseded in part by [Phase 173](../173-commitment-intake/spec.md) (2026-10-16): the conversation loop-gate path now runs inside the commitment intake. The rest of this spec still holds.
 
 **Input**: User description: "O4 from the System One roadmap: replace the Haiku relevance gate that decides whether a text implies an open loop with typed System One Nouls. Haiku only writes the title (and optional window) after a positive gate. Off by default with null bars, a live calibration with a Haiku baseline side by side, and a held-out set that is never tuned on."
 

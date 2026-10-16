@@ -87,7 +87,6 @@ def ok_result(
     choice: str | None = None,
     peakedness: float = 0.95,
     noul: float | None = 0.05,
-    score: float | None = None,
     model: str = "jev",
 ) -> SystemOneResult:
     answers: dict[str, SystemOneAnswer] = {}
@@ -95,8 +94,6 @@ def ok_result(
         answers["agent"] = choice_answer(choice, peakedness)
     if noul is not None:
         answers["multi_specialist"] = SystemOneAnswer(type="noul", noul=noul)
-    if score is not None:
-        answers["complexity"] = SystemOneAnswer(type="score", score=score)
     return SystemOneResult(
         outcome="ok", model=model, answers=answers, input_tokens=50, latency_ms=30
     )

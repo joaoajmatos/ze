@@ -140,7 +140,7 @@ def _select_forget_match_ids(rows: list[Any], query: str, embedder: Any) -> list
         return long_phrase
     if embedder is None:
         return []
-    query_emb = embedder.encode(query)
+    query_emb = embedder.encode_passage(query)
     scored: list[tuple[float, UUID]] = []
     for row in rows:
         if row["embedding"] is None:
@@ -446,7 +446,7 @@ class PostgresMemoryStore:
                 participants = list({*event.participants, *resolved})
 
                 emb_list = (
-                    to_vector_literal(self._embedder.encode(event.title))
+                    to_vector_literal(self._embedder.encode_passage(event.title))
                     if self._embedder is not None
                     else None
                 )
@@ -491,7 +491,7 @@ class PostgresMemoryStore:
             entity.attrs,
         )
         emb_list = (
-            to_vector_literal(self._embedder.encode(entity.canonical_name))
+            to_vector_literal(self._embedder.encode_passage(entity.canonical_name))
             if self._embedder is not None
             else None
         )
@@ -770,7 +770,7 @@ class PostgresMemoryStore:
     async def _write_fact_with_contradiction_check(self, fact: Fact) -> UUID | None:
         provenance = _persist_provenance(fact)
         claim_kind = _persist_claim_kind(fact, provenance)
-        value_emb = self._embedder.encode(fact.value)
+        value_emb = self._embedder.encode_passage(fact.value)
         emb_list = to_vector_literal(value_emb)
         nli_cfg = nli_config(self._settings)
 

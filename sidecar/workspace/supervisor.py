@@ -14,11 +14,13 @@ from uuid import UUID, uuid4
 
 WORKSPACE_ROOT = Path(os.environ.get("WORKSPACE_ROOT", "/workspace")).resolve()
 OUTPUT_PREVIEW_CHARS = int(os.environ.get("WORKSPACE_OUTPUT_PREVIEW_CHARS", "8000"))
-RUN_LOCK_WAIT_SECONDS = float(os.environ.get("WORKSPACE_RUN_LOCK_WAIT_SECONDS", "30"))
 DEFAULT_TIMEOUT = int(os.environ.get("WORKSPACE_RUN_TIMEOUT_SECONDS", "120"))
 STORAGE_CEILING = int(
     os.environ.get("WORKSPACE_STORAGE_CEILING_BYTES", str(1024 * 1024 * 1024))
 )
+# Upper bound on how long shutdown() waits for run tasks after cancelling the
+# running command, so a stuck task cannot hang the app's exit.
+SHUTDOWN_TASK_WAIT_SECONDS = 5.0
 # Retention (Phase 129 research.md Decision 3): the running entry (if any) plus
 # the last N terminal entries. Not scale-driven — this is a margin against a
 # restart/reconciliation/debugging window, not a growth bound.
@@ -189,6 +191,8 @@ class RunJournal:
 
 journal = RunJournal()
 
+_run_tasks: set[asyncio.Task] = set()
+
 _workspace_lock = asyncio.Lock()  # serializes create() calls only (race guard)
 
 
@@ -335,6 +339,14 @@ async def _pump(stream: asyncio.StreamReader, kind: str, run_id: UUID, sink: lis
         journal.append_event(run_id, kind, chunk.decode("utf-8", errors="replace"))
 
 
+def _kill_group(proc: asyncio.subprocess.Process) -> None:
+    """SIGKILL the command's whole process group (it runs in its own session)."""
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+
 async def _execute(
     entry: JournalEntry,
     *,
@@ -387,6 +399,7 @@ async def _execute(
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
         preexec_fn=_preexec if uid is not None else None,
+        start_new_session=True,
     )
     entry.proc = proc
 
@@ -424,9 +437,13 @@ async def _execute(
             sigterm_at = time.monotonic()
             proc.send_signal(signal.SIGTERM)
         elif sigterm_at is not None and time.monotonic() - sigterm_at >= 2:
-            proc.kill()
+            _kill_group(proc)
             sigterm_at = float("inf")  # avoid repeated kill signals
     cancelled = entry.cancel_requested
+    if cancelled or timed_out:
+        # A grandchild that outlived the command keeps the output pipes open
+        # and would block the pumps below indefinitely.
+        _kill_group(proc)
 
     await pump_out
     await pump_err
@@ -483,9 +500,13 @@ async def spawn_run(
     recorded — does not await process exit (FR-001). Raises RunBusyError if the
     one-slot invariant is already occupied."""
     entry = journal.create(command, run_id, cwd=cwd)
-    asyncio.create_task(
+    task = asyncio.create_task(
         _execute(entry, timeout_seconds=timeout_seconds, env=env, stdin_bytes=stdin_bytes)
     )
+    # The loop holds only a weak reference to a task; without this one a
+    # running command's task can be garbage-collected mid-run.
+    _run_tasks.add(task)
+    task.add_done_callback(_run_tasks.discard)
     return entry
 
 
@@ -504,6 +525,20 @@ async def cancel_handle(run_id: UUID) -> tuple[JournalEntry | None, str]:
     except TimeoutError:
         pass
     return journal.get(run_id), "cancelled"
+
+
+async def shutdown() -> None:
+    """Stops the running command and waits for every _execute task, so no child
+    process outlives the event loop that owns its transport."""
+    current = journal.running()
+    if current is not None:
+        await cancel_handle(current.id)
+        if current.proc is not None:
+            _kill_group(current.proc)
+    if _run_tasks:
+        _, pending = await asyncio.wait(_run_tasks, timeout=SHUTDOWN_TASK_WAIT_SECONDS)
+        for task in pending:
+            task.cancel()
 
 
 async def reset_workspace() -> None:

@@ -163,6 +163,14 @@ class JudgmentTrace:
 
 
 @dataclass
+class TierTrace:
+    agent: str
+    tier: str  # "simple" | "full"
+    decided_by: str
+    model: str
+
+
+@dataclass
 class SourceTrace:
     url: str
     title: str = ""
@@ -194,3 +202,4 @@ class MessageTrace:
     # agent, tool, effect, summary, outcome).
     write_confirmations: list[dict[str, Any]] = field(default_factory=list)
     rollback: RollbackTrace | None = None
+    tier: TierTrace | None = None

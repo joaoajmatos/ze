@@ -10,15 +10,9 @@ option order shuffled (eval only), then reports:
 - Choice accuracy against the gold agent and a peakedness reliability table;
 - `none` precision and recall;
 - Noul separation for gold-mixed versus single rows;
-- Score separation by complexity level;
 - a grid of `choice_trust` x `multi_specialist_hold` with the 160 false compounds
   each pair would remove and the harmful trusts it would add;
-- suggested values for `choice_trust`, `multi_specialist_hold` and
-  `complexity_lookup_max`.
-
-The wire Score is the expected level index (0 = lookup, 2 = multi_hop). The Score
-table and the suggested `complexity_lookup_max` use it normalised to [0, 1], the
-scale the bar is configured in.
+- suggested values for `choice_trust` and `multi_specialist_hold`.
 """
 
 from __future__ import annotations
@@ -51,7 +45,6 @@ from ze_core.routing.judge import (
     build_state,
     criterion_for,
     decide,
-    normalise_complexity_score,
     shortlist,
 )
 
@@ -63,7 +56,6 @@ AGENT_MODULES = (
 )
 GRID = [round(0.5 + 0.05 * i, 2) for i in range(10)]
 BINS = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0001]
-LEVELS = ["lookup", "single_tool", "multi_hop"]
 
 
 @dataclass
@@ -73,7 +65,6 @@ class Row:
     prompt: str
     gold_agent: str
     gold_multi: bool
-    gold_complexity: str
     history: str | None = None
 
 
@@ -107,7 +98,6 @@ def load_rows(path: Path) -> list[Row]:
             prompt=raw["prompt"],
             gold_agent=raw["gold_agent"],
             gold_multi=raw["gold_multi"],
-            gold_complexity=raw["gold_complexity"],
             history=raw.get("history"),
         )
         for raw in (
@@ -359,47 +349,6 @@ def report_noul(outcomes: list[Outcome]) -> None:
             )
 
 
-def score_values(outcomes: list[Outcome]) -> dict[str, list[float]]:
-    by_level: dict[str, list[float]] = {level: [] for level in LEVELS}
-    for o in outcomes:
-        answer = o.result.answers.get("complexity") if o.ok else None
-        if answer is not None and answer.score is not None:
-            score = normalise_complexity_score(answer.score)
-            if score is not None:
-                by_level[o.row.gold_complexity].append(score)
-    return by_level
-
-
-def suggest_lookup_max(by_level: dict[str, list[float]]) -> float | None:
-    """Highest lookup score below every harder row; None when the levels overlap.
-
-    A bar above any single_tool or multi_hop score would send that request to the
-    cheap tier, the same harm the grid counts for choice_trust, so it must be zero.
-    """
-    lookup = by_level["lookup"]
-    rest = by_level["single_tool"] + by_level["multi_hop"]
-    if not lookup or not rest:
-        return None
-    safe = [round(v, 2) for v in lookup if v < min(rest)]
-    return max(safe) if safe else None
-
-
-def report_score(outcomes: list[Outcome]) -> float | None:
-    by_level = score_values(outcomes)
-    print("\n== complexity Score by gold level (check it rises lookup -> multi_hop)")
-    for level in LEVELS:
-        values = by_level[level]
-        if values:
-            print(
-                f"{level:12s} n={len(values):3d} mean={statistics.mean(values):.2f}"
-                f" min={min(values):.2f} max={max(values):.2f}"
-            )
-    bar = suggest_lookup_max(by_level)
-    if bar is not None:
-        print(f"Suggested complexity_lookup_max: {bar}")
-    return bar
-
-
 def grid_metrics(outcomes: list[Outcome]) -> list[dict[str, float]]:
     scored = [o for o in outcomes if o.ok]
     out = []
@@ -543,12 +492,10 @@ def report(outcomes: list[Outcome], quiet: bool = False) -> dict[str, float | No
     report_reliability(outcomes)
     report_none(outcomes)
     report_noul(outcomes)
-    lookup_max = report_score(outcomes)
     pair = report_grid(grid_metrics(outcomes))
     suggestion = {
         "choice_trust": pair[0] if pair else None,
         "multi_specialist_hold": pair[1] if pair else None,
-        "complexity_lookup_max": lookup_max,
     }
     return suggestion
 

@@ -19,7 +19,7 @@ The sidecar is not a browsing session. Web pages stay in `ze-browser`. This pack
 
 ### Integration
 
-`ze-api` builds the stack, injects `WorkspaceClient` / `WorkspaceGate` / `WorkspaceStore`, and calls `workspace_tools.configure(...)`. `BaseAgent.agentic_loop` merges a fixed `WORKSPACE_TOOLS` set. Unattended goal/workflow runs use a duck-typed gate in `ze-automation` so that package never imports `ze_workspace`.
+`ze-api` builds the stack, injects `WorkspaceClient` / `WorkspaceGate` / `WorkspaceStore`, and calls `workspace_tools.configure(...)`. `BaseAgent.agentic_loop` merges the workspace tool names in its `_PLATFORM_TOOLS` tuple. Unattended goal/workflow runs use a duck-typed gate in `ze-automation` so that package never imports `ze_workspace`.
 
 ![ze-workspace package dependencies](../../docs/diagrams/core/ops/ze-workspace/dependencies.svg)
 
@@ -31,7 +31,7 @@ The sidecar is not a browsing session. Web pages stay in `ze-browser`. This pack
 |---|---|
 | `client.py` | `WorkspaceClient` — async HTTP client for the sidecar |
 | `gate.py` | `WorkspaceGate` — action × origin decisions |
-| `tools.py` | `workspace_*` `@tool`s; `WORKSPACE_TOOLS` name list |
+| `tools.py` | `workspace_*` `@tool`s |
 | `store.py` | `workspace_state` and `workspace_runs` |
 | `followthrough.py` | `RunWatcher` — watch detached runs, follow-up turn, push |
 | `turn_lock.py` | Per-thread lock for follow-up turns |

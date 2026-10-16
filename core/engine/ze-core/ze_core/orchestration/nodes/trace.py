@@ -12,9 +12,9 @@ from ze_agents.errors import UnknownToolError
 from ze_agents.park import generic_summary
 from ze_agents.tool import get_tool
 from ze_agents.types import Source, add_sources
+from ze_core.conversation.messages.memory_chunks import extract_memory_chunks
 from ze_core.conversation.messages.types import (
     CompactionTrace,
-    MemoryChunkTrace,
     MessageTrace,
     ProcedureUsageTrace,
     SkillUsageTrace,
@@ -29,7 +29,6 @@ from ze_core.orchestration.state import AgentState
 
 _STILL_RUNNING_ID_PATTERN = re.compile(r"^\[still running\] run ([^:]+):")
 
-_MAX_MEMORY_CHUNKS = 10
 _WORKSPACE_TOOL_NAMES = frozenset(
     {
         "workspace_list",
@@ -51,7 +50,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
     if envelope is None:
         return {}
 
-    memory_chunks = _extract_memory_chunks(state.get("memory_context"))
+    memory_chunks = extract_memory_chunks(state.get("memory_context"))
     tool_calls = _extract_tool_calls(
         agent_result,
         list(state.get("subtask_results") or []),
@@ -98,6 +97,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
             *(dict(row) for row in state.get("write_outcomes") or []),
             *_refused_over_cap_rows(state, agent_result),
         ],
+        tier=state.get("tier"),
     )
     update: dict[str, Any] = {"message_trace": trace}
     update.update(_with_declined_lines(state, agent_result))
@@ -310,40 +310,6 @@ async def _extract_workspace(
         unavailable=unavailable,
         planned=planned or None,
     )
-
-
-def _extract_memory_chunks(memory_context: Any) -> list[MemoryChunkTrace]:
-    if memory_context is None:
-        return []
-
-    chunks: list[MemoryChunkTrace] = []
-
-    facts = getattr(memory_context, "facts", []) or []
-    for fact in facts[:5]:
-        text = f"{fact.predicate}: {fact.value}"
-        chunks.append(
-            MemoryChunkTrace(
-                text=text[:300],
-                score=getattr(fact, "relevance_score", None) or 0.0,
-                source="fact",
-                extraction_confidence=getattr(fact, "confidence", None),
-            )
-        )
-
-    episodes = getattr(memory_context, "episodes", []) or []
-    for ep in episodes[:5]:
-        text = getattr(ep, "summary", None) or (
-            ep.response[:300] if hasattr(ep, "response") else ""
-        )
-        chunks.append(
-            MemoryChunkTrace(
-                text=text[:300],
-                score=getattr(ep, "relevance_score", None) or 0.0,
-                source="episode",
-            )
-        )
-
-    return chunks[:_MAX_MEMORY_CHUNKS]
 
 
 def _conductor_ledger(state: AgentState) -> list[dict[str, str]]:

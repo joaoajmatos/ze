@@ -16,7 +16,7 @@ def _ctx(prompt: str = "hello") -> AgentContext:
 
 def _config(store, fact_extractor) -> dict:
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=[0.1, 0.2])
+    embedder.encode_passage = embedder.encode_query = MagicMock(return_value=[0.1, 0.2])
     return {
         "configurable": {
             "memory_store": store,

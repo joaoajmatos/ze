@@ -55,10 +55,10 @@ DataDomain(
 
 ## Testing
 
-From the repo root:
+`ze-data` has no suite of its own. The `DataDomain` implementations that use it are tested where they live, and the `ze-api` domain tests cover the wiring. From the repo root:
 
 ```bash
-make test-data
+make test-api
 ```
 
 See [docs/testing.md](../../docs/testing.md).

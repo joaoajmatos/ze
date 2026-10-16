@@ -21,6 +21,7 @@ from ze_core.conversation.messages.types import (
     ProcedureUsageTrace,
     SkillUsageTrace,
     SourceTrace,
+    TierTrace,
     ToolCallTrace,
     WorkspaceUsageTrace,
 )
@@ -356,6 +357,7 @@ def _parse_trace(data: dict) -> MessageTrace:
             for row in data.get("write_confirmations") or []
             if isinstance(row, dict)
         ],
+        tier=TierTrace(**data["tier"]) if data.get("tier") else None,
     )
 
 

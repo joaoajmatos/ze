@@ -129,7 +129,7 @@ class ScoringGates:
             return True, 1.0
 
         threshold = threshold if threshold is not None else self._novelty_threshold
-        content_emb = self._embedder.encode(content)
+        content_emb = self._embedder.encode_passage(content)
 
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
@@ -168,7 +168,7 @@ class ScoringGates:
         if self._embedder is None or not source_episode_ids:
             return True
 
-        content_emb = self._embedder.encode(content)
+        content_emb = self._embedder.encode_query(content)
         top_k = 5 if support_count >= 5 else 3
 
         async with self._pool.acquire() as conn:

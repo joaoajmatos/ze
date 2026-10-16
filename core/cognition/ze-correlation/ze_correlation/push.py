@@ -47,9 +47,9 @@ async def passes_novelty(
     if embedder is None or not recent_summaries:
         return True
     try:
-        new_vec = embedder.encode(summary)
+        new_vec = embedder.encode_passage(summary)
         for other in recent_summaries:
-            existing_vec = embedder.encode(other)
+            existing_vec = embedder.encode_passage(other)
             similarity = float(
                 np.dot(new_vec, existing_vec)
                 / (np.linalg.norm(new_vec) * np.linalg.norm(existing_vec) + 1e-9)

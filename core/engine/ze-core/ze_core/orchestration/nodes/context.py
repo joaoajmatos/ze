@@ -11,6 +11,7 @@ from langchain_core.runnables import RunnableConfig
 from ze_logging import get_logger
 from ze_agents.types import AgentContext, RetrievalRequest
 from ze_core.orchestration.state import AgentState
+from ze_core.routing.tier import resolve_agent_model
 from ze_core.routing.types import RoutingEnvelope, SubTask
 
 log = get_logger(__name__)
@@ -170,10 +171,8 @@ def _open_query_envelope(
     if _OPEN_QUERY_AGENT not in get_enabled_agents():
         return None
     router = config["configurable"].get("router")
-    model = (
-        router._resolve_model(_OPEN_QUERY_AGENT, envelope.complexity)
-        if router is not None
-        else envelope.subtasks[0].model
+    model = resolve_agent_model(
+        _OPEN_QUERY_AGENT, "full", router._app_config if router is not None else {}
     )
     prompt = envelope.subtasks[0].prompt
     return RoutingEnvelope(
@@ -191,8 +190,6 @@ def _open_query_envelope(
         ],
         requires_synthesis=False,
         raw_scores={_OPEN_QUERY_AGENT: 1.0},
-        complexity=envelope.complexity,
-        complexity_source=envelope.complexity_source,
     )
 
 
@@ -214,8 +211,10 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
 
     envelope = state.get("envelope")
     embed_text = state.get("image_caption") or state["prompt"]
-    prompt_embedding = embedder.encode(embed_text)
-    open_items_query = _is_open_query(prompt_embedding, config)
+    prompt_embedding = embedder.encode_query(embed_text)
+    # The open-query detector is calibrated passage-vs-passage (eval/calibration/open_query.py);
+    # query-vs-query loses recall at the same false-positive rate.
+    open_items_query = _is_open_query(embedder.encode_passage(embed_text), config)
     rerouted: RoutingEnvelope | None = None
     if open_items_query:
         rerouted = _open_query_envelope(envelope, config)

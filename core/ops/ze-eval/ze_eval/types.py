@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -46,19 +46,3 @@ class SessionMetrics:
     llm_duration_ms: int
     llm_calls: int
     models: list[str]
-
-
-@dataclass
-class ScenarioResult:
-    scenario_id: str
-    scenario: dict
-    ze_result: dict
-    agent_used: str | None
-    routing_correct: bool | None
-    tools_correct: bool | None
-    outcome_correct: bool | None
-    verify_results: list[VerifyResult] = field(default_factory=list)
-    latency_ms: int | None = None
-    metrics: SessionMetrics | None = None
-    judge: JudgeScore | None = None
-    error: str | None = None

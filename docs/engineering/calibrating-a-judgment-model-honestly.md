@@ -2,9 +2,9 @@
 
 A gate is only as good as the data it never saw.
 
-Ze uses a small model, System One, for closed questions. It never writes text. It returns a choice among labels, a yes/no probability, or a score. Code reads the answer, compares it with a bar, and decides. Five parts of Ze use it: fact admission, routing, skill matching, the open-loop gate, and loop corroboration. See [System One](../system-one.md) for the design.
+Ze uses a small model, System One, for closed questions. It never writes text. It returns a choice among labels, a yes/no probability, or a score. Code reads the answer, compares it with a bar, and decides. Five parts of Ze use it: the commitment intake (facts and loops from conversation), routing, skill matching, the open-loop gate for email, calendar, and ingestion, and loop corroboration. See [System One](../system-one.md) for the design.
 
-This post is about the bars. A bar is the number that says "trust this answer." Picking a bar is easy. Picking one you can defend is the work. Ze's record has four lessons, and two of them are failures.
+This post is about the bars. A bar is the number that says "trust this answer." Picking a bar is easy. Picking one you can defend is the work. Ze's record has five lessons, and several of them are failures.
 
 ## The rules
 
@@ -86,13 +86,28 @@ The research note lists what could change the verdict: a larger held-out set, an
 
 Two details stand out. The English result alone would have justified shipping, and the rule still held. And one row out of 13 decided the Portuguese verdict, which is a fair reason to say the clause is brittle, in the note, without bending it.
 
+## Lesson 5: a spent set stays spent
+
+Phase 173 merged two judgments of the same message into one request. The calibration followed the same rules. It took three held-out sets.
+
+The first set (120 rows) returned `KEEP OFF`. In both languages one deadline task created a loop where the label said goal. English loop recall was 0.875, below the 0.888 floor. Portuguese Choice accuracy was 0.88, below 0.90. The team fixed the wording from the tuned set only, because the first set was now spent.
+
+A second set, written blind, gave English `ENABLE` and Portuguese `KEEP OFF`. Portuguese Choice accuracy was 0.892, nine wrong answers in 83 rows. Eight wrong would have passed. Three of the nine were "resolves" rows, where the correct label has no choice to match.
+
+The second set also showed a defect that no clause measured. In each language, "I sent my CV and I'm waiting for her reply" resolved an open loop. The model read the message as `waiting_on` at 1.00, and the resolves question still fired. No clause covered it. The team amended the rules in writing, with dates, and each amendment came before the run it governed. Before the second run, false resolves could not exceed the baseline's. Before the third, Choice accuracy left out resolves rows, and rows where the user is waiting on someone had to write nothing. They fixed the wording, then wrote a third set with a new author who saw only a written brief.
+
+The third set (147 rows) ran once at bars frozen on the tuned set. It returned `ENABLE` in both languages. Per language there were zero duplicate bookings against 5 and 3 for the old pipeline, zero false creates against 3 and 3, and loop precision 1.00 against 0.73 and 0.79. The shipped config turned on after that run, with the frozen bars.
+
+The record shows two failed verdicts and no re-scoring. Each time, the set that failed was retired, and only a set nobody had tuned against could change the answer.
+
 ## What to take from this
 
 - Ship every judgment surface off, with null bars, and make "uncalibrated" a state the code understands.
 - Keep a held-out set that nobody tunes against, and run it once per set of bars.
 - Report the failing line. When you change a rule, change it in writing, with a date and a reason.
+- Retire a held-out set after its verdict, pass or fail. A new verdict needs a new set.
 - Compare against a baseline that works. A broken baseline flatters the new model.
 - Give each language its own verdict. An average hides the language that failed.
 - Let code own the decision. A probability of 0.62 does not license Ze to state a suspicion as a fact.
 
-The calibration scripts and labeled sets live in [`eval/calibration/`](../../eval/calibration/). The full results are in the research notes of phases [164](../../specs/phases/164-routing-choice-after-e5/spec.md), [167](../../specs/phases/167-routing-choice-criteria/spec.md), [168](../../specs/phases/168-loop-extraction-gate/research.md), and [172](../../specs/phases/172-corroboration-promotion/research.md).
+The calibration scripts and labeled sets live in [`eval/calibration/`](../../eval/calibration/). The full results are in the research notes of phases [164](../../specs/phases/164-routing-choice-after-e5/spec.md), [167](../../specs/phases/167-routing-choice-criteria/spec.md), [168](../../specs/phases/168-loop-extraction-gate/research.md), [172](../../specs/phases/172-corroboration-promotion/research.md), and [173](../../specs/phases/173-commitment-intake/research.md).

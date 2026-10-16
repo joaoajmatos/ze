@@ -49,21 +49,25 @@ async def find_matching_loop(
     embedder: Any,
     states: list[str] | None = None,
     similarity_threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
+    verify_similarity: bool = False,
 ) -> OpenLoop | None:
     """Entity-overlap primary, embedding-similarity-on-title tiebreaker (research.md §5).
 
     Reused for both FR-010 (attach/strengthen an existing loop instead of
     duplicating) and FR-011 (recognise dismissed-then-re-implied evidence
     against `dropped` loops — pass states=["dropped"]).
+
+    A lone entity-overlap candidate is returned as is, unless `verify_similarity` asks it to
+    clear the same title-similarity floor as every other candidate (the 173 reminder/goal link).
     """
     candidates = await _loops_linked_to_entities(entity_ids, graph_store, loop_store)
     if states is not None:
         candidates = [c for c in candidates if c.state.value in states]
 
-    if len(candidates) == 1:
+    if len(candidates) == 1 and not verify_similarity:
         return candidates[0]
 
-    if len(candidates) > 1:
+    if candidates:
         pool = candidates
     else:
         pool = await loop_store.list(states)
@@ -71,11 +75,13 @@ async def find_matching_loop(
     if not pool or not candidate_title:
         return None
 
-    candidate_embedding = embedder.encode(candidate_title)
+    candidate_embedding = embedder.encode_passage(candidate_title)
     best_match: OpenLoop | None = None
     best_score = 0.0
     for loop in pool:
-        score = _cosine_similarity(candidate_embedding, embedder.encode(loop.title))
+        score = _cosine_similarity(
+            candidate_embedding, embedder.encode_passage(loop.title)
+        )
         if score > best_score:
             best_score = score
             best_match = loop

@@ -1,6 +1,6 @@
 import type { LoopListItem } from "@myguyze/ze-client";
 import { ListTodo } from "lucide-react";
-import { useLoopsQuery, useLoopTransitionMutation, promotedLine } from "@/entities/loop";
+import { useLoopsQuery, useLoopTransitionMutation, linkChips, promotedLine } from "@/entities/loop";
 import { Button, ListPage } from "@/shared/ui";
 
 const STATE_LABEL: Record<string, string> = {
@@ -30,6 +30,7 @@ function StateBadge({ state }: { state: string }) {
 function LoopRow({ loop }: { loop: LoopListItem }) {
   const transition = useLoopTransitionMutation();
   const promoted = promotedLine(loop);
+  const chips = linkChips(loop);
 
   return (
     <div className="flex items-center justify-between gap-4 rounded-lg border border-foreground/10 px-4 py-3">
@@ -42,6 +43,18 @@ function LoopRow({ loop }: { loop: LoopListItem }) {
           {loop.provenance} · confidence {(loop.confidence * 100).toFixed(0)}%
         </p>
         {promoted && <p className="mt-1 text-xs text-smoke">{promoted}</p>}
+        {chips.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {chips.map((chip) => (
+              <span
+                key={chip}
+                className="inline-flex items-center rounded-full bg-foreground/10 px-2 py-0.5 text-xs text-smoke"
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {loop.state === "suspected" && (

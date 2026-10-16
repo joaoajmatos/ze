@@ -209,19 +209,21 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 160 | [E5 Routing Confidence](phases/160-e5-routing-confidence/spec.md) | ✅ Implemented |
 | 161 | [Workspace Chat-First](phases/161-workspace-chat-first/spec.md) | ✅ Implemented |
 | 162 | [System One Client](phases/162-system-one-client/spec.md) | ✅ Implemented |
-| 163 | [Speech-Act System One](phases/163-speech-act-system-one/spec.md) | ✅ Implemented |
+| 163 | [Speech-Act System One](phases/163-speech-act-system-one/spec.md) | ✅ Implemented (conversation path superseded by 173) |
 | 164 | [Routing Choice After E5](phases/164-routing-choice-after-e5/spec.md) | ✅ Implemented |
 | 165 | [Assistant Response Feedback and Retry](phases/165-response-feedback-retry/spec.md) (split from [117](phases/117-web-hig-fixes/spec.md) US9) | ✅ Implemented |
 | 166 | [System One Skill Gating](phases/166-skill-suggestion-system-one/spec.md) | ✅ Implemented |
 | 167 | [Routing Choice Criteria](phases/167-routing-choice-criteria/spec.md) | ✅ Implemented (surface enabled) |
-| 168 | [Loop Extraction Gate](phases/168-loop-extraction-gate/spec.md) | ✅ Implemented (surface enabled) |
+| 168 | [Loop Extraction Gate](phases/168-loop-extraction-gate/spec.md) | ✅ Implemented (surface enabled; conversation path superseded by 173) |
 | 169 | [Loop Track Tool](phases/169-loop-track-tool/spec.md) | ✅ Implemented |
 | 170 | [Executive Repair](phases/170-executive-repair/spec.md) | ✅ Implemented |
 | 171 | [Loop Confirmation](phases/171-loop-confirmation/spec.md) | ✅ Implemented |
 | 172 | [Corroboration Promotion](phases/172-corroboration-promotion/spec.md) | ✅ Implemented |
+| 173 | [Commitment Intake](phases/173-commitment-intake/spec.md) | ✅ Implemented (surface enabled) |
 | 177 | [Interruption Governor](phases/177-interruption-governor/spec.md) | ✅ Implemented |
 | 180 | [Retry Rollback](phases/180-retry-rollback/spec.md) | ✅ Implemented |
 | 181 | [Irreversible Write Confirmation](phases/181-irreversible-write-confirmation/spec.md) | ✅ Implemented |
+| 182 | [Complexity Routing](phases/182-complexity-routing/spec.md) | ✅ Implemented |
 
 ## Ze Core specs (`core/`)
 

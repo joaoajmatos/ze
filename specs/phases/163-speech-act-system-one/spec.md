@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-30
 
-**Status**: Implemented
+**Status**: Implemented. Superseded in part by [Phase 173](../173-commitment-intake/spec.md) (2026-10-16): the conversation fact-admission path now runs inside the commitment intake. The rest of this spec still holds.
 
 **Input**: User description: "Replace the Haiku speech_act + keep/drop judge with System One Choice over the existing closed set, plus family Choice and biography Noul. Keep admit_* filters, trivial-turn regex, dual-write skip, contribution seam. Depends on 162. Do not start routing Choice (164)."
 

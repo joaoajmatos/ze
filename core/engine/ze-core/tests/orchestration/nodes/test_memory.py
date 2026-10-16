@@ -33,7 +33,9 @@ def _make_store() -> MagicMock:
 
 def _make_embedder(vec=None) -> MagicMock:
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=vec or [0.1, 0.2])
+    embedder.encode_passage = embedder.encode_query = MagicMock(
+        return_value=vec or [0.1, 0.2]
+    )
     return embedder
 
 

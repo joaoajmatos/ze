@@ -6,7 +6,6 @@ import ast
 from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
 
 from ze_core.routing.judge import (
     HISTORY_CAP,
@@ -69,12 +68,22 @@ class TestSurfaceConfig:
                 "enabled": True,
                 "choice_trust": "high",
                 "multi_specialist_hold": float("nan"),
-                "complexity_lookup_max": 1.5,
             }
         )
         assert cfg.choice_trust is None
         assert cfg.multi_specialist_hold is None
-        assert cfg.complexity_lookup_max is None
+
+    def test_surface_has_no_complexity_lookup_max(self):
+        assert not hasattr(RoutingSurfaceConfig(), "complexity_lookup_max")
+        cfg = _cfg(
+            {
+                "enabled": True,
+                "choice_trust": 0.8,
+                "multi_specialist_hold": 0.6,
+                "complexity_lookup_max": 0.3,
+            }
+        )
+        assert not hasattr(cfg, "complexity_lookup_max")
 
     def test_bool_is_not_a_bar(self):
         assert _cfg({"enabled": True, "choice_trust": True}).choice_trust is None
@@ -91,12 +100,11 @@ class TestSurfaceConfig:
 
 
 class TestQuestions:
-    def test_three_questions_with_expected_kinds(self):
+    def test_two_questions_with_expected_kinds(self):
         qs = build_questions({"calendar": " Calendar stuff ", "messenger": "Mail"})
-        assert list(qs) == ["agent", "multi_specialist", "complexity"]
+        assert list(qs) == ["agent", "multi_specialist"]
         assert qs["agent"].type == "choice"
         assert qs["multi_specialist"].type == "noul"
-        assert qs["complexity"].type == "score"
 
     def test_agent_criteria_is_shortlist_plus_none(self):
         qs = build_questions({"calendar": " Calendar stuff ", "messenger": "Mail"})
@@ -104,16 +112,6 @@ class TestQuestions:
         assert list(criteria) == ["calendar", "messenger", "none"]
         assert criteria["calendar"] == "Calendar stuff"
         assert criteria["none"]
-
-    def test_complexity_levels_are_ordered(self):
-        qs = build_questions({"a": "x", "b": "y"})
-        levels = qs["complexity"].criteria
-        assert isinstance(levels, list)
-        assert [lv.split(":")[0] for lv in levels] == [
-            "lookup",
-            "single_tool",
-            "multi_hop",
-        ]
 
     def test_instructions_say_user_words_judge(self):
         qs = build_questions({"a": "x", "b": "y"})
@@ -323,49 +321,6 @@ class TestDecideMultiSpecialistAndScore:
         )
         assert "multi_specialist" not in none.consumed
         assert "multi_specialist" not in unsure.consumed
-
-    @pytest.mark.parametrize(
-        ("score", "expected"),
-        [(0.0, "simple"), (0.8, "simple"), (0.82, "complex"), (2.0, "complex")],
-    )
-    def test_score_maps_to_tier_at_the_lookup_bar(self, score, expected):
-        cfg = RoutingSurfaceConfig(
-            enabled=True,
-            choice_trust=0.8,
-            multi_specialist_hold=0.6,
-            complexity_lookup_max=0.4,
-        )
-        d = decide(ok_result(choice="calendar", score=score), cfg, _SHORT)
-        assert d.complexity == expected
-        assert "complexity" in d.consumed
-
-    def test_null_bar_or_missing_or_invalid_score_is_not_consumed(self):
-        with_bar = RoutingSurfaceConfig(
-            enabled=True,
-            choice_trust=0.8,
-            multi_specialist_hold=0.6,
-            complexity_lookup_max=0.4,
-        )
-        no_bar = _CAL
-        assert (
-            decide(ok_result(choice="calendar", score=0.1), no_bar, _SHORT).complexity
-            is None
-        )
-        assert decide(ok_result(choice="calendar"), with_bar, _SHORT).complexity is None
-        for bad in (2.5, -0.1, float("nan")):
-            d = decide(ok_result(choice="calendar", score=bad), with_bar, _SHORT)
-            assert d.complexity is None and "complexity" not in d.consumed
-
-    def test_score_never_picks_the_agent(self):
-        cfg = RoutingSurfaceConfig(
-            enabled=True,
-            choice_trust=0.8,
-            multi_specialist_hold=0.6,
-            complexity_lookup_max=0.4,
-        )
-        a = decide(ok_result(choice="calendar", score=0.1), cfg, _SHORT)
-        b = decide(ok_result(choice="calendar", score=0.9), cfg, _SHORT)
-        assert a.agent == b.agent == "calendar"
 
 
 class TestShippedConfig:

@@ -262,13 +262,13 @@ async def run_system_one(
 
 
 def e5_similarity(embedder: Any, rows: list[Row]) -> dict[str, float]:
-    """`find_matching_loop`'s own measure: cosine over `embedder.encode` of both titles."""
+    """`find_matching_loop`'s own measure: cosine over `embedder.encode_passage` of both titles."""
     from ze_memory.consolidation_store import _cosine_similarity
 
     return {
         r.id: float(
             _cosine_similarity(
-                embedder.encode(r.new_title), embedder.encode(r.loop_title)
+                embedder.encode_passage(r.new_title), embedder.encode_passage(r.loop_title)
             )
         )
         for r in rows

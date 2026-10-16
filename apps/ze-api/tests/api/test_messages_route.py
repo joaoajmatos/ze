@@ -15,6 +15,7 @@ from ze_core.conversation.messages.types import (
     MemoryChunkTrace,
     MessageTrace,
     SkillUsageTrace,
+    TierTrace,
     ToolCallTrace,
 )
 
@@ -207,6 +208,75 @@ async def test_get_message_trace_exposes_below_floor():
         )
 
     assert resp.json()["skills_used"][0]["below_floor"] is True
+
+
+def _tiered_trace() -> MessageTrace:
+    trace = _trace()
+    trace.tier = TierTrace(
+        agent="companion", tier="simple", decided_by="system_one", model="haiku"
+    )
+    return trace
+
+
+@pytest.mark.asyncio
+async def test_get_message_trace_includes_tier():
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=_tiered_trace())
+
+    app = _make_app(store)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            f"/api/v0/messages/{uuid4()}/trace",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.json()["tier"] == {
+        "agent": "companion",
+        "tier": "simple",
+        "decided_by": "system_one",
+        "model": "haiku",
+    }
+
+
+@pytest.mark.asyncio
+async def test_get_message_trace_tier_is_null_when_absent():
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=_trace())
+
+    app = _make_app(store)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            f"/api/v0/messages/{uuid4()}/trace",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.json()["tier"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_message_traces_batch_carries_tier_on_the_trace_only():
+    message_id = uuid4()
+    store = AsyncMock()
+    store.get_traces = AsyncMock(return_value={message_id: _tiered_trace()})
+
+    app = _make_app(store)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            "/api/v0/messages/traces",
+            params={"ids": [str(message_id)]},
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    entry = resp.json()["traces"][0]
+    assert "tier" not in entry
+    assert entry["trace"]["tier"]["tier"] == "simple"
+    assert entry["trace"]["tier"]["decided_by"] == "system_one"
 
 
 async def test_a_trace_with_a_deduplicated_call_is_served() -> None:

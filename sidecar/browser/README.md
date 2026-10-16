@@ -1,6 +1,6 @@
 # ze-browser
 
-Headless browser sidecar for [Ze](../README.md). A small FastAPI service that loads web pages with Playwright and returns extracted text. Ze's prospecting agent calls it over the private network — not exposed to the public internet.
+Headless browser sidecar for [Ze](../../README.md). A small FastAPI service that loads web pages with Playwright and returns extracted text. Ze's prospecting agent calls it over the private network — not exposed to the public internet.
 
 ## Why a separate service
 
@@ -135,7 +135,7 @@ fly deploy
 
 `fly.toml` keeps `min_machines_running = 1` to avoid a 30–60 s cold start on the first browser call after idle. The VM is `shared-cpu-1x` with **1 GB** memory for Chromium headroom.
 
-Ze does **not** redeploy this app when the main backend deploys — version and release them independently. Breaking changes to `/extract` must be coordinated with `ze/browser/client.py`.
+Ze does **not** redeploy this app when the main backend deploys — version and release them independently. Breaking changes to `/extract` must be coordinated with `integrations/ze-browser/ze_browser/client.py`.
 
 ---
 
@@ -143,18 +143,17 @@ Ze does **not** redeploy this app when the main backend deploys — version and 
 
 | Ze module | Role |
 |---|---|
-| `ze/browser/client.py` | `BrowserClient` — HTTP client for `/extract` and `/health` |
-| `ze/tools/browser.py` | `browser_extract` tool (rate limit + text truncation) |
-| `ze/agents/prospecting/` | Primary consumer — team pages, registries, search result URLs |
+| `integrations/ze-browser/ze_browser/client.py` | `BrowserClient` — HTTP client for `/extract` and `/health` |
+| `integrations/ze-browser/ze_browser/tool.py` | `browser_extract` tool (rate limit + text truncation) |
+| `plugins/ze-prospecting/ze_prospecting/agents/` | Primary consumer — team pages, registries, search result URLs |
 
-Config in the main repo (`config/config.yaml`):
+`ze-api` reads these settings from the environment (see `apps/ze-api/.env.example`; the full list is in [integrations/ze-browser/README.md](../../integrations/ze-browser/README.md)):
 
-```yaml
-browser:
-  service_url: "http://ze-browser.internal:8080"
-  timeout_seconds: 20
-  max_text_chars: 8000
-  delay_ms: 2000
+```bash
+BROWSER_SERVICE_URL=http://ze-browser.internal:8080
+BROWSER_TIMEOUT_SECONDS=20
+BROWSER_MAX_TEXT_CHARS=8000
+BROWSER_DELAY_MS=2000
 ```
 
 If the sidecar is unreachable, Ze logs a warning and prospecting falls back to web-search-only research; individual `browser_extract` calls return an error string the agent can skip.
@@ -164,4 +163,4 @@ If the sidecar is unreachable, Ze logs a warning and prospecting falls back to w
 ## Further reading
 
 - [specs/phases/026-prospecting-agent/spec.md](../../specs/phases/026-prospecting-agent/spec.md) — full design for the prospecting agent and browser contract
-- [README.md](../README.md) — main Ze project setup and deployment
+- [README.md](../../README.md) — main Ze project setup and deployment
