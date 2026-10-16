@@ -18,7 +18,6 @@ from dataclasses import dataclass, replace
 
 from ze_agents.system_one import SystemOneQuestion, SystemOneResult
 from ze_memory.extractor import PredicateFamily, admit_family
-from ze_worldstate.commitment_judge import Q_EXPLICIT, COMMITMENT_QUESTIONS
 from ze_worldstate.loop_judge import (
     LOOP_QUESTIONS,
     Q_CONCERN,
@@ -27,6 +26,15 @@ from ze_worldstate.loop_judge import (
 )
 
 ASSISTANT_CAP = 1000
+
+Q_EXPLICIT = "explicit_declaration"
+_EXPLICIT_168 = SystemOneQuestion(
+    type="noul",
+    instructions=(
+        "Does the user say, in the first person, that they need to, have to or must do "
+        "something, or ask to be reminded of it?"
+    ),
+)
 
 BASELINE_CHOICE_HOLD = 0.9
 BASELINE_BIOGRAPHY_HOLD = 0.7
@@ -163,7 +171,7 @@ def state_168(prompt: str) -> dict[str, str]:
 
 
 def questions_168() -> dict[str, SystemOneQuestion]:
-    return {**LOOP_QUESTIONS, Q_EXPLICIT: COMMITMENT_QUESTIONS[Q_EXPLICIT]}
+    return {**LOOP_QUESTIONS, Q_EXPLICIT: _EXPLICIT_168}
 
 
 def decide_loop_168(result: SystemOneResult, cfg: BaselineLoopBars) -> str:
