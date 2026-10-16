@@ -185,7 +185,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `surface_loops` | `nodes/loop_surfacing.py` | Mention relevant open items inline. Skips when the turn asked what's open, because the answer already lists them (up to 10 items) |
 | `synthesize` | `nodes/memory.py` | Merge independent parallel subtask results into one response |
 | `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message, with effect metadata for each tool call. After a resume that offered loops, it appends one short keep-tracking question in the user's language when the reply does not already end with a question |
-| `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction and the open-loop gate (judged beside the fact extractor, committed fire-and-forget; the System One rows join the trace); skips eval threads. A turn where the `loops` agent's `track_loop` or `confirm_loop` tool succeeded skips the loop gate, because the tool already wrote the user-asked loop. In a retry run it only extends session history |
+| `write_memory` | `nodes/memory.py` | Episode write plus the commitment intake (Phase 173): one System One request per turn decides the fact admission and the loop outcome together; the loop commit is fire-and-forget and the System One rows join the trace; skips eval threads. A turn that already created a reminder or goal links a loop to it instead of creating one, and a turn where the `loops` agent's `track_loop` or `confirm_loop` tool succeeded creates no second loop, because the tool already wrote the user-asked loop. In a retry run it only extends session history |
 
 </details>
 
@@ -416,7 +416,7 @@ for the deeper design notes.
 
 **Package:** `ze-worldstate`
 
-Open loops are the lightweight, ambient half of Ze's executive function. A promise in an email thread, a decision left pending, and a project stalling all belong here. The conversation, email, calendar, and ingestion inflows extract them through one System One gate (Phase 168), and Haiku writes only the title. A loop moves through `suspected → active → drifting → closed | dropped`. An explicit ask (`track_loop`, Phase 169) or a confirm (`confirm_loop`, Phase 171) sets a loop `active` at confidence 0.9. An independent second source that matches a suspected loop is judged by one System One Noul, `same_concern` (Phase 172); above a calibrated bar its confidence rises, and above a stricter bar it is promoted to `active` at confidence 0.7. A contradiction or a missed deadline moves an `active` loop to `drifting`, and `PriorityView` ranks it with goals and hypotheses.
+Open loops are the lightweight, ambient half of Ze's executive function. A promise in an email thread, a decision left pending, and a project stalling all belong here. Conversation turns reach them through the commitment intake (Phase 173), one System One request that also decides facts and links a loop to a reminder or goal the turn created. Email, calendar, and ingestion use the loop gate (Phase 168). Haiku writes only the title. A loop moves through `suspected → active → drifting → closed | dropped`. An explicit ask (`track_loop`, Phase 169) or a confirm (`confirm_loop`, Phase 171) sets a loop `active` at confidence 0.9. An independent second source that matches a suspected loop is judged by one System One Noul, `same_concern` (Phase 172); above a calibrated bar its confidence rises, and above a stricter bar it is promoted to `active` at confidence 0.7. A contradiction or a missed deadline moves an `active` loop to `drifting`, and `PriorityView` ranks it with goals and hypotheses.
 
 Each loop records its sources (`open_loop_sources`, migration `zw003`): its origin and every counted corroboration, with the `same_concern` score. The source key per inflow:
 
@@ -502,7 +502,7 @@ Five memory layers, all backed by Postgres + pgvector:
 - **Facts** (`memory_facts`) — short declarative statements about the user. Companion
   `remember_fact` writes prompt-supplied, reviewed facts through the contribution
   seam. Post-turn extraction may add synthesized facts only after a keep/drop gate
-  (closed families; `speech_act` must be `fact`). Timed reminders, loops, and goals
+  (closed families; the commitment must be `fact`). Timed reminders, loops, and goals
   are not stored as facts. There is no `AgentResult.memory_proposals` persist path.
   The REST `POST /api/v0/memory/facts/review` endpoint exposes review for the native app.
 - **Episodes** (`memory_episodes`) — summaries of conversation turns. Written automatically

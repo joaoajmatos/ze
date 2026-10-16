@@ -25,7 +25,7 @@ richer:
 
 After each `execute_tool` node, `write_memory` fires
 (fire-and-forget). Explicit companion writes already landed via `remember_fact`.
-The extractor then runs a keep/drop + `speech_act` gate. It writes remaining facts
+The commitment intake then judges the turn (System One), and the Haiku extractor with its keep/drop + `speech_act` gate runs only as the fallback. Either path writes the remaining facts
 through `submit_perception_facts` as synthesized, `reviewed = false`. Eval threads
 skip extraction. `POST /api/v0/memory/facts/review` exposes review/edit/reject.
 

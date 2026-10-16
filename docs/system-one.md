@@ -67,15 +67,36 @@ Each surface follows the same pattern. Code builds the shortlist or the candidat
 
 | Surface | Runs in | Questions | Possible actions |
 |---|---|---|---|
-| **Speech act** (phase 163) | After the turn, in the memory extractor (`ze_memory/speech_act_judge.py`) | Choice: speech act. Choice: fact family. Noul: biography | persist, hold, skip |
+| **Commitment intake** (phase 173) | After the turn, in the `write_memory` node (`ze_worldstate/intake.py`, `ze_worldstate/commitment_judge.py`) | Choice: commitment. Choice: fact family. Noul: biography. Noul: open concern. Noul: explicit declaration. Noul: resolves an existing loop | persist fact, create declared loop, create suspected loop, resolve, link, hold, fallback |
 | **Routing** (phase 164) | The `embed_route` node (`ze_core/routing/judge.py`) | Choice: agent (shortlist plus `none`). Noul: needs more than one specialist. Score: complexity | trust, decompose, abstain, skip |
 | **Skills** (phase 166) | The `match_skills` node (`ze_skills/judge.py`) | Choice: skill (shortlist plus `none`). Noul: needs a skill | apply, drop, abstain, skip |
-| **Loop gate** (phase 168) | The `write_memory` node for conversation; the email, calendar, and ingestion extractors for the rest (`ze_worldstate/loop_judge.py`) | Noul: open concern. Noul: resolves an existing loop. Noul: explicit declaration (conversation only) | create declared, create suspected, resolve, hold, fallback |
+| **Loop gate** (phase 168) | The email, calendar, and ingestion extractors (`ze_worldstate/loop_judge.py`) | Noul: open concern. Noul: resolves an existing loop | create suspected, resolve, hold, fallback |
 | **Corroboration** (phase 172) | Both suspected match paths in `ze_worldstate/extraction.py` (`ze_worldstate/corroboration_judge.py`) | Noul: same concern | corroborate, promote, not same, fallback |
 
-### Speech act
+### Commitment intake
 
-The extractor decides whether a finished turn states a durable fact worth keeping. System One answers three questions: what kind of statement it is, which fact family it belongs to, and whether it is a biography fact. Code keeps the fact only when the statement is a fact, the family is one Ze admits, and each answer clears its bar (`choice_hold` and `biography_hold`). When the answers say persist, a Haiku call writes the fact text, because System One cannot write. When System One skips, Ze runs the older Haiku judge once. An unsure answer holds the fact. It does not fall back to Haiku.
+After each non-trivial conversation turn, one request asks what the user's message committed them to. Before phase 173, two separate requests judged the same message. The speech-act judge (phase 163) asked which kind of act it was. The loop gate (phase 168) asked whether it opened a loop. They never saw each other's answer, so "remind me at 5pm to call Ana" made a reminder and also a declared loop. The commitment intake replaces both for conversation.
+
+One request carries six questions, and the code reads only the ones the first answer makes relevant:
+
+- `commitment`, a Choice: `reminder`, `loop`, `goal`, `waiting_on`, `fact`, `forget`, `ingest`, `clarify`, or `none`.
+- `family` (Choice) and `biography` (Noul): the fact questions from phase 163. Code reads them when the commitment is `fact`.
+- `is_open_concern` and `explicit_declaration` (Noul): the loop questions from phase 168. Code reads them when the commitment is `loop`.
+- `resolves_existing` (Noul): whether the message reports an open commitment as done. Code reads it for every turn.
+
+A pure function, `decide()`, merges the answers with what the turn already did. Code reads the turn's tool calls. It decides in this order:
+
+1. A high `resolves_existing` closes a matching loop. A `waiting_on` commitment never resolves, because "waiting for her reply" says the matter is still open.
+2. If the turn already created a reminder or a goal, Ze creates no loop and persists no fact. It links an existing or would-be loop to the reminder or goal instead. One turn can create a reminder and a goal, and Ze links both.
+3. A `waiting_on` commitment is held. Ze only labels it. Tracking what the user awaits is a later phase.
+4. A confident `reminder` or `goal` with nothing created is held with the reason `reminder_not_created` or `goal_not_created`. An unsure one goes to the loop rules below.
+5. A confident `fact` follows the phase 163 rules: the `family` and `biography` answers must clear their bars, and a Haiku call then writes the fact text.
+6. `forget`, `ingest`, `clarify`, and `none` are held, each with its own reason.
+7. A `loop` needs `is_open_concern` at or above `loop_hold`, or Ze holds it. A turn where `track_loop` or `confirm_loop` succeeded is held too, because the user's own ask already wrote the loop. Otherwise `explicit_declaration` at or above `explicit_hold` creates an active, user-declared loop, and anything else creates a suspected loop. A Haiku call writes the title.
+
+A commitment answer below `choice_hold` is held as unsure and never goes to Haiku. The one exception is an unsure `reminder` or `goal`, which goes to the loop rules. A skip, an invalid answer, an unset bar, or a surface that is off runs the older paths: the Haiku fact extractor and the phase 109 Haiku loop gate. The extractor's Haiku fallback labels a message `fact`, `forget`, `ingest`, `clarify`, or `none`. The request makes one attempt, no retries.
+
+Ze records the judgment rows and an outcome row on the message trace, and runs the loop commit after the episode exists, without blocking the reply. A loop that links to a reminder stores the reminder id on the loop (`reminder_id`, migration `zw004`), beside the existing `goal_id`. The `/loops` page shows a chip for each link.
 
 ### Routing
 
@@ -87,15 +108,16 @@ E5 keeps the skills at or above `shortlist_floor`, up to `shortlist_k`. System O
 
 ### Loop gate
 
-Open-loop extraction decides whether a piece of text leaves something unfinished: a promise, a task, a lingering concern. Before phase 168, one Haiku call answered that question and wrote the title. Now System One asks three independent yes/no questions in one request:
+Open-loop extraction on email, calendar events, and ingested content decides whether a piece of text leaves something unfinished: a promise, a task, a lingering concern. Before phase 168, one Haiku call answered that question and wrote the title. Now System One asks two independent yes/no questions in one request:
 
 - `is_open_concern`: the text implies an unfinished commitment, task, or concern.
 - `resolves_existing`: the text reports a previously open commitment as done.
-- `explicit_declaration`: the user declares the commitment themselves. Ze asks this only for conversation text.
 
-Each question has its own bar (`loop_hold`, `resolves_hold`, `explicit_hold`). Code decides in this order: a high `resolves_existing` closes a matching loop; a low `is_open_concern` holds; a high `explicit_declaration` creates an active, user-declared loop; anything else creates a suspected loop. A positive answer then calls Haiku to write the title, and to suggest a window in days for a new loop. Haiku never decides whether a loop exists. Matching, dismissed-loop checks, confidence, and drift stay in code.
+Each question has its own bar (`loop_hold` and `resolves_hold`). Code decides in this order: a high `resolves_existing` closes a matching loop; a low `is_open_concern` holds; anything else creates a suspected loop. A positive answer then calls Haiku to write the title, and to suggest a window in days for a new loop. Haiku never decides whether a loop exists. Matching, dismissed-loop checks, confidence, and drift stay in code.
 
-Conversation runs the gate in the `write_memory` node, beside the fact extractor, and records its rows in the message trace. Trivial turns skip the request. A turn where `track_loop` or `confirm_loop` succeeded also skips the conversation gate, because the user's own ask already wrote the loop. Email, calendar, and ingestion run the same gate. They can create suspected loops and resolve existing ones, log their judgments, and write no message-trace rows. When the surface is off, uncalibrated, skipped, or returns an invalid answer, Ze runs the older Haiku gate. That gate now strips the code fence Haiku wraps around its JSON. Before phase 168 it did not, all 136 replies in the calibration runs failed to parse, and loop extraction created no loops in production.
+Email, calendar, and ingestion run the gate. They can create suspected loops and resolve existing ones, log their judgments, and write no message-trace rows. Only a user can declare a loop, so these inflows never ask `explicit_declaration`. When the surface is off, uncalibrated, skipped, or returns an invalid answer, Ze runs the older Haiku gate. That gate strips the code fence Haiku wraps around its JSON. Before phase 168 it did not, all 136 replies in the calibration runs failed to parse, and loop extraction created no loops in production.
+
+Conversation no longer uses this gate. Since phase 173 the commitment intake judges conversation turns, with its own loop bars.
 
 ### Corroboration
 
@@ -115,16 +137,16 @@ Ze stores each counted score on the loop's `open_loop_sources` row (score, model
 
 | Surface | Shipped config | Why |
 |---|---|---|
-| Speech act | On, with `choice_hold: 0.9` and `biography_hold: 0.7` | Calibrated on 60 English and Portuguese rows on 2026-10-09. Twelve question rows were added on 2026-10-12 after the judge labelled questions as facts; the criteria now say a question is never a fact, and the same bars give fact precision 1.00 and recall 0.93 |
+| Commitment intake | On, with `choice_hold: 0.7`, `family_hold: 0.7`, `biography_hold: 0.55`, `loop_hold: 0.6`, `explicit_hold: 0.95` and `resolves_hold: 0.8` | Calibrated 2026-10-16 on 160 tuned rows, then judged once on 147 blind held-out rows (73 English, 74 Portuguese) at these frozen bars. Verdict `ENABLE` in both languages. Duplicate bookings: 0 (the old pipeline made 5 and 3). False loop creates: 0 (old: 3 and 3). Fact precision 1.00 in both languages. Fact recall 0.81 and 0.76 (old: 0.71 and 0.57). Loop precision 1.00 (old: 0.73 and 0.79). Loop recall 22 of 22 in both. Choice accuracy 1.00. Rows where the user is waiting on someone wrote nothing in 7 of 7 rows per language. Two earlier held-out sets returned `KEEP OFF`. After each, the wording was fixed on the tuned set only and a new blind set was written. Those two sets are spent and never used for a verdict again |
 | Routing | On, with `choice_trust: 0.5`, `multi_specialist_hold: 0.5`, `shortlist_k: 9` and `complexity_lookup_max: null` | Phase 167 calibrated on 52 held-out English and Portuguese rows on 2026-10-12. After the loops criteria refinement, both held-out sets score 1.000 in each language, ECE 0.041 and 0.014, zero research-to-companion misses and zero harmful trusts. The complexity score overlaps across levels, so the bar stays unset and the word-count classifier picks the model tier |
 | Skills | On, with `choice_trust: 0.75`, `needs_skill_hold: 0.6` and `shortlist_k: 5` | Calibrated on 84 English and Portuguese rows on 2026-10-12: zero wrong applies |
-| Loop gate | On, with `loop_hold: 0.75`, `explicit_hold: 0.85` and `resolves_hold: 0.8` | Calibrated 2026-10-12 on 88 tuned and 48 held-out English and Portuguese rows. On the held-out set, 10 of 10 loops found in each language, precision 1.00, zero false creates. A fence-tolerant Haiku baseline found 9 of 10 (English) and 10 of 10 (Portuguese) with one false create each. The counts are small, so the comparison is coarse |
+| Loop gate | On, with `loop_hold: 0.75` and `resolves_hold: 0.8` | Calibrated 2026-10-12 on 88 tuned and 48 held-out English and Portuguese rows, for all four inflows. On the held-out set, 10 of 10 loops found in each language, precision 1.00, zero false creates. A fence-tolerant Haiku baseline found 9 of 10 (English) and 10 of 10 (Portuguese) with one false create each. The counts are small, so the comparison is coarse. Phase 173 moved conversation to the commitment intake, so this gate now serves email, calendar, and ingestion only |
 | Corroboration | Off, with `corroborate_hold: null` and `promote_hold: null` | Calibrated 2026-10-15 (`make calibrate-corroboration`; 84 tuned + 47 held-out English and Portuguese rows). Candidate bars 0.6 and 0.8: English passed on the held-out set (precision 1.00, recall 14 of 14, zero false promotions); Portuguese failed one clause (recall 12 of 13, below the E5 baseline recall minus 0.05). The E5 title-cosine baseline matches every row at 0.75, so its recall is a ceiling, not a rival. The surface stays off until both languages pass; the held-out set is spent for these bars |
 
 Calibration scripts live in `eval/calibration/`. Each one runs the labeled set against the live service and costs credits:
 
 ```bash
-make calibrate-speech-act
+make calibrate-commitment-intake   # tuned set by default; --set holdout3 --bars ... gave the 2026-10-16 verdict; a verdict set is never reused
 make calibrate-routing
 make calibrate-skills       # add --recall for the offline shortlist check
 make calibrate-loop-gate    # tuned set by default; --set holdout gives the verdict
@@ -135,7 +157,7 @@ make calibrate-corroboration   # tuned set by default; --set holdout --bars C,P 
 
 ## Trace
 
-Judgments appear in the message trace as `JudgmentTrace` rows: the question id, the kind, the latency, the answer, the probabilities, the peakedness, the model, the token count, whether code used the answer (`consumed`), and the skip reason. `embed_route` and `match_skills` add their rows to `state["judgments"]`. The speech-act and loop-gate rows are added after the turn. The trace panel in `ze-web` shows them. Use them to see why Ze routed a turn, applied a skill, or kept a fact. A corroboration judgment does not reach the trace: the conversation loop commit is fire-and-forget, so Ze stores the score on the loop's source row and logs `corroboration_judgment` instead.
+Judgments appear in the message trace as `JudgmentTrace` rows: the question id, the kind, the latency, the answer, the probabilities, the peakedness, the model, the token count, whether code used the answer (`consumed`), and the skip reason. `embed_route` and `match_skills` add their rows to `state["judgments"]`. The commitment-intake rows are added after the turn. The trace panel in `ze-web` shows them. Use them to see why Ze routed a turn, applied a skill, or kept a fact. A corroboration judgment does not reach the trace: the conversation loop commit is fire-and-forget, so Ze stores the score on the loop's source row and logs `corroboration_judgment` instead.
 
 ---
 
@@ -150,5 +172,5 @@ It never writes replies, drafts, or plans. It never replaces the write confirmat
 - [specs/arch/system-one-models.md](../specs/arch/system-one-models.md) — pinned decisions and the queue of later uses
 - [configuration.md](configuration.md#system_one) — keys, bars, and calibration steps
 - [skills.md](skills.md#automatic-matching-with-the-system-one-gate) — the skill gate in detail
-- [memory.md](memory.md) — fact admission and the speech-act gate
+- [memory.md](memory.md) — fact admission and the commitment intake
 - [cognitive-architecture.md](cognitive-architecture.md) — open loops and where the loop gate sits

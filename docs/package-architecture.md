@@ -249,7 +249,8 @@ depends on `ze-agents` for logging and settings abstractions.
 |--------|-----------------|
 | `retriever.py` | `PostgresMemoryStore` — the central memory store implementing the full MemoryStore protocol |
 | `consolidator.py` | `MemoryConsolidator` — nightly fact dedup, expiry, episode archival, profile synthesis |
-| `extractor.py` | `gather_fact_proposals` — keep/drop admission + `speech_act` gate |
+| `extractor.py` | `gather_fact_proposals` — Haiku keep/drop admission + `speech_act` gate, the fallback when the commitment intake skips |
+| `fact_judge.py` | System One fact questions (family Choice, biography Noul), bars, and the persist/hold rules the commitment intake reuses |
 | `policies.py` | `DefaultPolicyRegistry` — maps module names to retrieval policies |
 | `projection.py` | Budget-aware result projection — `budget_facts`, `budget_episodes`, `facets_from_rows` |
 | `types.py` | `Fact`, `Episode`, `Event`, `Procedure`, `TaskState`, `ProfileFacet`, `MemoryContext`, `RetrievalRequest` |
