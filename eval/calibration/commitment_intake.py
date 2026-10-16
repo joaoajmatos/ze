@@ -82,6 +82,8 @@ CHOICES = (
 CREATED = ("none", "reminder", "goal")
 MIN_TUNED_PER_LANG = 60
 MIN_HOLDOUT_PER_LANG = 30
+MIN_HOLDOUT_FACT_PER_LANG = 15
+MIN_HOLDOUT_LOOP_PER_LANG = 15
 HARD_NEGATIVE_KINDS = (
     "reminder_loop_wording",
     "goal_loop_wording",
@@ -201,8 +203,27 @@ def set_problems(name: str, rows: list[Row], minimum: int) -> list[str]:
     return problems
 
 
+def holdout_depth_problems(rows: list[Row]) -> list[str]:
+    """FR-019: enough fact rows and gold-loop rows per language for the FR-022 comparisons."""
+    problems: list[str] = []
+    for lang in LANGS:
+        scoped = [r for r in rows if r.lang == lang]
+        facts = sum(r.gold_fact for r in scoped)
+        loops = sum(r.gold_loop for r in scoped)
+        if facts < MIN_HOLDOUT_FACT_PER_LANG:
+            problems.append(
+                f"holdout/{lang}: {facts} fact rows, need >= {MIN_HOLDOUT_FACT_PER_LANG}"
+            )
+        if loops < MIN_HOLDOUT_LOOP_PER_LANG:
+            problems.append(
+                f"holdout/{lang}: {loops} gold-loop rows, need >= {MIN_HOLDOUT_LOOP_PER_LANG}"
+            )
+    return problems
+
+
 def shape_problems(tuned: list[Row] | None, holdout: list[Row]) -> list[str]:
     problems = set_problems("holdout", holdout, MIN_HOLDOUT_PER_LANG)
+    problems += holdout_depth_problems(holdout)
     if tuned is not None:
         problems += set_problems("tuned", tuned, MIN_TUNED_PER_LANG)
         ids = [r.id for r in tuned + holdout]
