@@ -53,7 +53,7 @@ Built by a new `build_tier_state(state)` in `ze_core/orchestration/judgment_stat
 | `memory` | top retrieved items from `memory_context` (the same chunks `_extract_memory_chunks` builds for the trace), text only | 5 items × 200 chars |
 | `focus` | `routing_hints` (the ze-automation pre-route node's active goals and their current step or pending gate); `agent_context.screen_context_note` (workflow in view); `procedure_matches` names; in-flight workflow lines from the recap | 600 |
 | `skill` | names and descriptions of `agent_context.active_skills` | 300 |
-| `agent` | routed agent name, `routing_criteria or description` (`criterion_for`), and its tool names | 600 |
+| `agent` | **removed** (FR-006 amended 2026-10-16, see R12): the routed agent's scope text describes what it covers, not how hard the task is, and added noise to the judgment on the tuned set | n/a |
 
 Why 8 × 400: a planning exchange that defines "that plan" is typically 4–10 messages with assistant replies far longer than 240 chars; the cap keeps the request under ~8 kB. **Verify at implement** on the tuned set's longest rows; caps are constants, not config.
 
@@ -108,3 +108,41 @@ Haiku 4.5 is about one third of Sonnet 4.5's price per token. A Jev request bill
 - `delegate_to_agent` ignores `models.overrides` (R0).
 - Per-subtask tiers (R1 option D).
 - A later re-calibration if `typesafe/jev-1.13` changes (ADR pin 10).
+
+
+## R12 — Tuning notes and freeze (T029, T030)
+
+Date: 2026-10-16. Tuned set `eval/calibration/complexity.jsonl` (cx-001 to cx-094, 47 EN and 47 PT), model `typesafe/jev-1.13`, `timeout_ms` 2000, concurrency 4, `max_attempts=1`, state from the production `build_tier_state`. The held-out file was never read: only `--check-sets` ran over it, which prints counts. Live runs used: 6 of the 8 the user approved. No run had a skipped or invalid row.
+
+### Runs
+
+"False downgrades" are `full` rows judged light at the bar used; "light recall" is light-judged over gold-`simple` rows.
+
+| Run | State variant | Bar used | EN false / recall | PT false / recall | Lowest `full` | Highest `simple` | Rule bar (highest step below lowest `full`) |
+|---|---|---|---|---|---|---|---|
+| 1 | A: `agent` = routing_criteria text, 600 cap | 0.30 | 0 / 22 of 23 | 0 / 23 of 23 | 0.30 to 0.35 (not printed) | typical below 0.30, outlier cx-007 0.34 | 0.30 |
+| 2 | A, repeat of run 1 | 0.30 | 0 / 22 of 23 | 0 / 23 of 23 | same band | typical below 0.30, outlier cx-007 0.36 | 0.30 |
+| 3 | B: tools first (250) then description (349) | 0.40 | 0 / 22 of 23 | 0 / 23 of 23 | 0.42 | typical 0.30, outlier cx-007 0.43 | 0.40 |
+| 4 | C: no `agent` field (`--without agent`) | 0.55 | 0 / 23 of 23 | 0 / 23 of 23 | 0.60 | cx-007 0.45, next cx-039 0.38 | 0.55 |
+| 5 | C on the final code (agent field removed) | 0.55 | 0 / 23 of 23 | 0 / 23 of 23 | 0.56 | cx-007 0.44, next cx-039 0.40 | 0.55 |
+| 6 | C on the final code, at the frozen bar | 0.40 | 0 / 22 of 23 | 0 / 23 of 23 | 0.56 | cx-007 0.47 (kept full), cx-039 0.400 (counted light) | 0.55 |
+
+Latency (provider time, run 6): EN p50 529 ms, p90 802 ms; PT p50 547 ms, p90 818 ms. Runs 1 to 5 stayed within p50 511 to 549 ms and p90 602 to 812 ms.
+
+**Noise.** Runs 4 and 5 sent the same state: the lowest `full` row moved from 0.60 to 0.56 and cx-007 from 0.45 to 0.44, then 0.47 in run 6. Runs 1 and 2 moved cx-007 from 0.34 to 0.36. A single row can move up to about 0.04 between runs; aggregate counts did not change between repeats.
+
+### Decisions
+
+- **Instruction text and caps**: unchanged from the R2 draft and the R3 caps. The classes separated on the first run, so no instruction iteration was needed.
+- **`agent` field dropped** (spec FR-006 amended, Clarifications 2026-10-16, Spec Architect approved). A (routing criteria) left a 0.30 to 0.35 floor under the `full` rows; B (the Spec Architect's ruling: description and tool names, tools first) was worse than A because its light outlier (0.43) sat above its lowest `full` row (0.42); C opened a clear gap (lowest `full` 0.56 to 0.60, highest `simple` 0.44 to 0.47). The field describes scope, not difficulty. The state builder no longer reads the agent registry.
+- **Bar rule** (spec FR-017 amended): no tuned `full` row judged light; at least 0.15 below the lowest tuned `full` Noul; tuned light recall of at least 0.8 per language; prefer the larger margin. The literal "highest step" rule gives 0.55, which is 0.01 under the lowest `full` row of run 5 and inside the 0.04 noise.
+
+### Freeze (T030), 2026-10-16
+
+- **`simple_max` = 0.40.** Against run 6 and run 5: zero tuned `full` rows judged light; margin to the lowest tuned `full` row 0.16 (0.56 − 0.40; 0.20 against run 4), about four times the measured single-row noise; tuned light recall EN 22 of 23 = 0.957 and PT 23 of 23 = 1.000, both at least 0.8. cx-039 sits at exactly 0.400 and counts as light (a value equal to the bar is light); if it flipped, EN recall would be 21 of 23 = 0.913, still above 0.8. The stop condition from the Spec Architect (lowest `full` row below 0.55) did not trigger: 0.56.
+- **State shape, in this order, empty fields omitted**: `task` (image caption or prompt, 2000 chars); `conversation` (last 8 prior messages, current message excluded, 400 chars per message, 2400 total, oldest dropped first); `recap` (800; the resume header, the in-flight workflow block and the unconfirmed-loop block removed); `memory` (top 5 chunks by score, 200 chars each); `focus` (600; routing hints, screen-context note, procedure names, in-flight workflow lines); `skill` (300). No `agent` field.
+- **`TIER_INSTRUCTIONS` (`ze_core/routing/tier.py`, verbatim)**:
+
+> Will doing this task well need a stronger model: careful reasoning, weighing options, synthesis across several sources, planning, nuanced personal or emotional judgment, or several dependent steps? Answer no for greetings, thanks, acknowledgments, a single fact or status lookup, a short confirmation, or one routine action. Judge the task the user is trying to get done, not only their last message: use the conversation, recap, memory, focus and skill to work out what 'it', 'that plan', 'go ahead' or 'the other one' refers to.
+
+- **Held-out run, once, after the Maestro's go and Soffit's written confirmation**: `make calibrate-complexity ARGS="--set holdout --simple-max 0.40"`. The runner refuses a second scoring unless `--rerun` is passed. Verdict (FR-016): per language zero false downgrades, light recall at least 0.5, skipped or invalid at most 10%.
