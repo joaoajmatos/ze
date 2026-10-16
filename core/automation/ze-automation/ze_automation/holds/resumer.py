@@ -9,6 +9,7 @@ claims the user's answer exactly once and continues the run.
 from __future__ import annotations
 
 import asyncio
+import json
 from collections.abc import Awaitable, Callable
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
@@ -63,25 +64,37 @@ ResumeRun = Callable[[HeldWrite, str, dict[str, str]], Awaitable[None]]
 
 def confirmation_from_loop(loop: ParkedLoop, round_: int = 1) -> WriteConfirmation:
     """The held-write confirmation for a loop that parked, items in model order."""
-    items = [
-        ConfirmItem(
-            item_id=pw.item_id,
-            agent=pw.agent,
-            tool=pw.tool,
-            effect_phrase=effect_imperative(pw.effect_phrase),
-            summary=pw.summary,
-            editable_field=pw.editable_field,
-            proposed_text=(
-                str(pw.args.get(pw.editable_field))
-                if pw.editable_field and pw.args.get(pw.editable_field) is not None
-                else None
-            ),
-            conflict=pw.conflict,
+    items: list[ConfirmItem] = []
+    aliases: dict[str, str] = {}
+    seen: dict[tuple[str, str], str] = {}
+    for pw in loop.all_parked():
+        key = (pw.tool, json.dumps(pw.args, sort_keys=True, default=str))
+        if key in seen:
+            aliases[pw.item_id] = seen[key]
+            continue
+        seen[key] = pw.item_id
+        items.append(
+            ConfirmItem(
+                item_id=pw.item_id,
+                agent=pw.agent,
+                tool=pw.tool,
+                effect_phrase=effect_imperative(pw.effect_phrase),
+                summary=pw.summary,
+                editable_field=pw.editable_field,
+                proposed_text=(
+                    str(pw.args.get(pw.editable_field))
+                    if pw.editable_field and pw.args.get(pw.editable_field) is not None
+                    else None
+                ),
+                conflict=pw.conflict,
+            )
         )
-        for pw in loop.all_parked()
-    ]
     return WriteConfirmation(
-        request_id=str(uuid4()), kind="held", round=round_, items=items
+        request_id=str(uuid4()),
+        kind="held",
+        round=round_,
+        items=items,
+        aliases=aliases,
     )
 
 
@@ -102,6 +115,12 @@ def decisions_for(
             decisions[item_id] = WriteDecision(item_id, "timed_out")
         else:
             decisions[item_id] = WriteDecision(item_id, "denied")
+    for alias, item_id in (hold.payload.get("aliases") or {}).items():
+        answer = decisions[item_id]
+        approved = answer.outcome in ("approved", "edited")
+        decisions[alias] = WriteDecision(
+            alias, "duplicate" if approved else answer.outcome
+        )
     return decisions
 
 

@@ -302,3 +302,40 @@ async def test_abandoning_a_goal_closes_its_open_holds() -> None:
     )
 
     assert rig.held.rows[request_id].status is HeldWriteStatus.DENIED
+
+
+def _twice_script():
+    return [
+        (
+            None,
+            [
+                _tc("c1", "goal_send_email", to="lead@x.io"),
+                _tc("c2", "goal_send_email", to="lead@x.io"),
+            ],
+        ),
+        ("Emailed once.", None),
+    ]
+
+
+async def test_an_identical_parked_call_is_one_item_and_runs_once() -> None:
+    rig = Rig(_twice_script())
+    await rig.advance()
+
+    hold = next(iter(rig.held.rows.values()))
+    assert len(hold.items) == 1
+    assert len(hold.payload["aliases"]) == 1
+
+    await rig.resumer.resume(hold.request_id, "approve")
+
+    assert calls == ["send_email"]
+    assert rig.milestone.status is MilestoneStatus.COMPLETED
+
+
+async def test_denying_a_deduplicated_call_declines_both() -> None:
+    rig = Rig(_twice_script())
+    await rig.advance()
+    request_id = next(iter(rig.held.rows))
+
+    await rig.resumer.resume(request_id, "deny")
+
+    assert calls == []

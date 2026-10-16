@@ -406,14 +406,16 @@ class GoalExecutor:
                 f"Milestone {milestone.sequence} needs approval but holds are not configured"
             )
         await self._store.update_milestone(milestone.id, MilestoneStatus.HELD)
+        confirmation = confirmation_from_loop(loop, round_)
         await open_hold(
             held_store=self._held_store,
             notify=self._notify,
             source="goal",
             owner_ref=str(milestone.id),
             source_name=goal.title,
-            confirmation=confirmation_from_loop(loop, round_),
+            confirmation=confirmation,
             payload={
+                "aliases": confirmation.aliases,
                 "goal_id": str(goal.id),
                 "milestone_id": str(milestone.id),
                 "round": round_,
