@@ -55,7 +55,7 @@ ze/                           # monorepo root
 │   │           ├── conversation/# invoke_raw_turn (turn.py) — streamed graph turn entry point; retry.py (Retry eligibility), rewind.py, rollback.py (run_rollback — undo a reply's actions before a retry)
 │   │           ├── openrouter/  # OpenRouterClient, System One client (engine internal — plugins use the Protocols)
 │   │           ├── orchestration/# graph_builder, graph nodes, AgentState, edges, judgment_state (shared System One state)
-│   │           ├── routing/     # EmbeddingRouter, ComplexityEstimator, fallback, store
+│   │           ├── routing/     # EmbeddingRouter, tier.py (System One model tier), fallback, store
 │   │           ├── telemetry/   # CostTracker, CostReconciler, PostgresCostStore, ContextVar
 │   │           ├── container.py # Base Container with DI wiring and invoke/resume entry points
 │   │           ├── embeddings.py # Shared intfloat/multilingual-e5-base singleton
@@ -279,6 +279,7 @@ make calibrate-skills      # LIVE System One run over eval/calibration/skills.js
 make calibrate-open-query # Local, free: open-query detector sweep over eval/calibration/open_query*.jsonl (--check-sets offline; one held-out verdict)
 make calibrate-loop-gate  # LIVE System One + Haiku baseline over eval/calibration/loop_gate.jsonl; costs credits (--set holdout = the one verdict run; --check-sets offline)
 make calibrate-corroboration  # LIVE System One + E5 baseline over eval/calibration/corroboration.jsonl; costs credits (--set holdout = the one verdict run; --check-sets offline)
+make calibrate-complexity  # LIVE System One over eval/calibration/complexity.jsonl; costs credits (--check-sets offline; --set holdout = the one verdict run)
 ```
 
 ## Stack decisions (do not relitigate without reading specs/)
@@ -484,7 +485,7 @@ and runs them against a single `alembic_version` table.
 
 ```
 preprocess (voice → transcript, image → caption) → [inject_routing_context, when a plugin adds a pre_route_node]
-  → embed_route → (compound?) → decompose → fetch_context → match_skills → capability_check
+  → embed_route → (compound?) → decompose → fetch_context → match_skills → choose_tier → capability_check
                 ↘ fetch_context ↗
 
 capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask gates)
@@ -641,6 +642,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 172 | Corroboration Promotion — an independent source that matches a `suspected` loop is judged by one System One Noul `same_concern` (state = loop title capped at 200 + inflow + capped text, one attempt); pure `decide()` in `ze_worldstate/corroboration_judge.py` against two bars (`corroborate_hold`, `promote_hold`); `corroboration.py` links the evidence and raises confidence (`min(0.6, 1-(1-c)(1-0.5·s))`, stays suspected) or also promotes to `active` at `GREATEST(confidence, 0.7)` with a 7-day drift deadline in one UPDATE guarded by `state='suspected'`; independence is a pure code rule (source key new to the loop, evidence not already linked, key not on a matching dropped loop) and a non-independent match makes no request; origin rows are written on every create with a key; new table `open_loop_sources` (`zw003`) records the origin and each counted corroboration; REST gains `promoted`/`source_inflows`/`sources` and the `/loops` row shows "Promoted · seen in: …"; `make calibrate-corroboration` (E5 cosine 0.75 baseline); surface `system_one.surfaces.corroboration` ships off with null bars until a held-out `ENABLE` | Implemented |
 | 177 | Interruption Governor (part 1) — one governor for every proactive push: `PushKind` (class requested/accountability/discretionary + urgency) registered process-wide, pure `decide()` in `ze_proactive/governor.py`; the shared daily budget (`proactive.budget.max_pushes_per_day` default 5) covers every discretionary push; quiet hours (`interruption_settings`, ship off) hold accountability and discretionary pushes, `QuietHoursReleaseJob` releases them with one summary buzz; `notify()` is the only send path (`push()`/`push_notification()` deleted); ntfy priority low 2/normal 3/high 5 and a `buzz` flag; REST `GET/PUT /api/v0/notifications/quiet-hours` + a Settings form; cron catch-up (`proactive_job_runs`, `catch_up_max_age_hours`), workflow catch-up, late calendar reminders; migration `zpro004` | Implemented |
 | 180 | Retry Rollback — Retry undoes the reversible actions of the latest reply, then regenerates it. Reversible tools return a per-call `undo_payload` (`ze_sdk`) that `call_tool` stores on `ToolCall.undo` and the trace; `retry_eligibility` builds a public plan (entry ids = hash of message, call index, tool, args), the client confirms it as `confirmed_plan`, and the server recomputes it under the thread lock (`undo_not_confirmed` / `plan_changed`); `run_rollback` (`ze_core/conversation/rollback.py`) runs each undo through the owning agent's `BaseAgent.run_undo` with no model call and records each entry on `messages.rollback` (`zc032`; states `partial`, `rolled_back_awaiting_confirmation`, `rolled_back_retry_failed`, `superseded`); one retry policy (irreversible writes refused, reversible writes run under the normal gates, a confirmation pauses the retry); `message_rollback` frame, `retry_partial`, `history_unavailable`; `remember_fact` and priority overrides restore what they displaced; web two-step consent, rollback notice, trace `RollbackSection` | Implemented |
+| 182 | Complexity Routing — routing always assigns the agent's full model; the `choose_tier` node runs after `match_skills` and asks one System One Noul (`needs_deep_reasoning`, `ze_core/routing/tier.py`) only for a single-agent turn whose agent declares a different `model_simple`; `model_simple` runs only when the answer is at or below `simple_max`; the complexity Score, `complexity_lookup_max`, the word-count classifier and `RoutingEnvelope.complexity` are removed; the surface is enabled at `simple_max` 0.40 (`system_one.surfaces.complexity`) after a held-out ENABLE in English and Portuguese on 2026-10-16; the code default without the config block is off | Implemented |
 
 ## graphify
 

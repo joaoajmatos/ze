@@ -60,7 +60,7 @@ Ze is pre-v1. One person uses it, self-hosted on their own machine, and it is in
 **What is off or unfinished**
 
 - The corroboration surface (System One promotes a suspected loop) ships off. Its held-out run passed in English and missed one clause in Portuguese.
-- Routing still picks the model tier with a word-count classifier, because the complexity score overlapped across levels.
+- The model tier step (phase 182) is on at `simple_max` 0.40 after a held-out ENABLE in English and Portuguese (2026-10-16). Light turns use the agent's lighter model. The margin on held-out Portuguese is thinner than on the tuning set.
 - Goals do not yet carry a full personal project across weeks without supervision.
 - Contacts are closer to a directory than a relationship model.
 - Ze serves one user. Do not run it as a shared service without hardening.

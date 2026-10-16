@@ -8,7 +8,7 @@ Every user message flows through the LangGraph built by `ze-core`. The graph han
 
 ### Key features
 
-- Embedding-based intent routing with complexity estimation and compound-query decomposition
+- Embedding-based intent routing, a System One model-tier step, and compound-query decomposition
 - LangGraph state machine with confirmation pauses, multimodal preprocessing, and checkpoint persistence
 - Capability gate — per-agent permission modes with Postgres-backed overrides
 - Cost telemetry — per-flow and per-agent token tracking with automatic reconciliation
@@ -23,7 +23,7 @@ Every user message flows through the LangGraph built by `ze-core`. The graph han
 | Module | What it provides |
 |---|---|
 | `orchestration/` | `graph_builder`, `AgentState`, graph nodes and edges |
-| `routing/` | `EmbeddingRouter`, `ComplexityEstimator`, `PostgresRoutingStore`, fallback |
+| `routing/` | `EmbeddingRouter`, `tier.py` (model tier), `PostgresRoutingStore`, fallback |
 | `capability/` | `CapabilityGate`, `PostgresCapabilityOverrideStore`, permission modes |
 | `openrouter/` | `OpenRouterClient`, streaming, transcription |
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context var |

@@ -191,7 +191,7 @@ class MyAgent(BaseAgent):
       Not for: <requests that belong to another agent>.
     """
     model = "anthropic/claude-sonnet-4-5"
-    model_simple = "anthropic/claude-haiku-4-5"  # optional — omit if agent already uses Haiku
+    model_simple = "anthropic/claude-haiku-4-5"  # optional — used only for a turn System One judges light (complexity surface, on in the shipped config); omit if the agent already uses Haiku
     vision_capable = False                         # set True if agent should receive image data
     timeout = 30
     tools = ["tool_one", "tool_two"]               # must match @tool-registered names
@@ -227,7 +227,7 @@ class MyAgent(BaseAgent):
 | `self._build_system_prompt(instructions, ctx)` | Assembles datetime, memory constitution, persona, your job instructions, then retrieved biography |
 | `self.agentic_loop(ctx, client=…)` | Runs the LLM-driven ReAct tool loop; returns `(response, tool_calls)` |
 | `self.call_tool(name, ctx, **kwargs)` | Executes a single tool with draft-mode suppression and structured logging |
-| `self._model(ctx)` | Returns the correct model string — primary or `model_simple` based on complexity |
+| `self._model(ctx)` | Returns the model for this turn: the model the engine set on the context, else the class `model`. The engine sets `model_simple` there only for a turn that the complexity surface judges light |
 | `self.emit(ctx, key)` | Sends a localized progress message to the client mid-turn (see [Progress messages](#progress-messages)) |
 
 ### NLI (entailment / grounding)

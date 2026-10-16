@@ -74,8 +74,7 @@ transcription or image captioning.
 
 **System One choice (optional).** E5 stays the shortlist. When `system_one.surfaces.routing`
 is enabled and calibrated (as in the shipped config), one System One request judges the top `shortlist_k` agents. It
-picks one agent (or `none`), says whether the request needs more than one specialist, and
-grades complexity. Code then decides: a confident choice routes directly, `none` or a
+picks one agent (or `none`), says whether the request needs more than one specialist. Code then decides: a confident choice routes directly, `none` or a
 multi-specialist answer goes to `decompose`, and an unsure choice or a skip falls back to
 the E5 rules above. The surface is on in the shipped config (calibrated 2026-10-12). See
 [system-one.md](system-one.md) and [configuration.md](configuration.md#system_one).
@@ -86,11 +85,11 @@ The decomposed subtasks stay as a hint. Companion then calls specialists through
 `delegate_to_agent`, one at a time, each with its own capability and confirmation check.
 Only independent compound requests keep the parallel fan-out and `synthesize`.
 
-**Cost-aware routing** (`ze_core.routing.complexity`): agents with a `model_simple`
-class attribute receive a cheaper model when the request scores as simple. By default the
-in-process classifier decides (word count, question marks, conjunctions — no extra LLM
-call). With the System One routing surface calibrated, its complexity score decides
-instead (`complexity_lookup_max`).
+**Model tier** (`ze_core.routing.tier`): routing always assigns the agent's full model.
+After `match_skills`, the `choose_tier` node asks one System One Noul whether the task
+needs a stronger model. An agent with a `model_simple` class attribute runs that model for
+the turn only when the answer is at or below the bar. Every other outcome keeps the full
+model. The surface is on in the shipped config at `simple_max` 0.40. See [configuration.md](configuration.md#surfacescomplexity).
 
 ---
 
@@ -178,6 +177,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `decompose` | `nodes/routing.py` | Haiku decomposes compound tasks into subtasks |
 | `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes. It detects "what's open" questions by E5 similarity against English and Portuguese examples. When one fires on a single-agent turn, it swaps the route to `companion` before `capability_check`, so the turn answers from the ranked priority list, followed by suspected loops marked unconfirmed, and never pauses on a specialist's confirmation intent. After a session gap it adds the resume recap, capped at 5 loops, and a resume question about up to 3 suspected loops. A loop offered once stays quiet for 7 days (cooldown in `push_log`) |
 | `match_skills` | `nodes/skills.py` | Match active skills; inject instructions and narrow tools |
+| `choose_tier` | `nodes/tier.py` | Single-agent turns only: System One Noul `needs_deep_reasoning` picks `model_simple` when light; every other outcome keeps the full model |
 | `capability_check` | `nodes/execution.py` | Evaluate permission mode for agent.intent, strictest-wins with the optional spend budget |
 | `execute_tool` | `nodes/execution.py` | Call `agent.run()`, enforce timeout; fans independent subtasks out in parallel |
 | `await_subtask_confirmation` | `nodes/execution.py` | Pause for a per-subtask confirmation gate, then resume `execute_tool` |
@@ -334,7 +334,9 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 
 ### Agent roster
 
-| Agent | Key tools | Package | Default model tier |
+Routing always assigns the model in the last column (the full model). The complexity surface can swap in the agent's `model_simple` for one turn. It is on in the shipped config.
+
+| Agent | Key tools | Package | Full model |
 |---|---|---|---|
 | `research` | OpenRouter web search, synthesis | `ze-personal` | Full |
 | `companion` | Pure reasoning + memory | `ze-personal` | Full |

@@ -132,8 +132,8 @@ Every general chat-completion call site — every `@agent`, plus the non-agent s
 
 1. **`models.overrides.<key>`** — if set, wins outright, regardless of the agent's own
    declared model.
-2. **The call site's own declared default** — an agent's `model` class attribute (or
-   `model_simple` for low-complexity prompts), or the `MODEL_*` constant in
+2. **The call site's own declared default** — an agent's `model` class attribute, or the
+   `MODEL_*` constant in
    `ze_agents/defaults.py` for a non-agent step.
 3. **`models.default`** — used only when neither of the above applies.
 
@@ -416,7 +416,6 @@ system_one:
       enabled: false              # the shipped config.yaml sets true (calibrated 2026-10-12)
       choice_trust: null          # shipped: 0.5 — set from make calibrate-routing
       multi_specialist_hold: null # shipped: 0.5 — set from make calibrate-routing
-      complexity_lookup_max: null # shipped: null — the regex classifier picks the tier
       shortlist_k: 5              # shipped: 9
     skills:                       # Skill gating after E5 (Phase 166)
       enabled: false              # the shipped config.yaml sets true
@@ -433,6 +432,9 @@ system_one:
       enabled: false              # ships false — make calibrate-corroboration returned KEEP OFF on 2026-10-15
       corroborate_hold: null      # candidate 0.6 — the ENG lead's choice on the 2026-10-15 run
       promote_hold: null          # candidate 0.8 — same run
+    complexity:                   # Light-model tier for one agent turn (Phase 182)
+      enabled: true               # shipped on — enabled 2026-10-16 after a held-out ENABLE in EN and PT
+      simple_max: 0.40            # shipped 0.40 — the frozen bar; set from make calibrate-complexity
 ```
 
 When `speech_act` is on and both bars are set, System One decides whether a turn holds a durable fact. It makes one attempt, with no retries. A Haiku call then writes the fact text. When System One skips, Ze runs the previous Haiku judge once.
@@ -446,27 +448,55 @@ If you enable the surface and leave a bar `null`, Ze logs `speech_act_system_one
 
 #### `surfaces.routing`
 
-E5 stays the shortlist. When `routing` is on, one System One request asks three questions about the message: which of the top agents should handle it (or `none`), whether it needs more than one specialist, and how much work it needs. Ze makes one attempt, with no retries. Code then decides:
+E5 stays the shortlist. When `routing` is on, one System One request asks two questions about the message: which of the top agents should handle it (or `none`), and whether it needs more than one specialist. Ze makes one attempt, with no retries. Code then decides:
 
 - A confident choice of one agent routes straight to that agent.
 - A `none` answer, or a high multi-specialist probability, sends the turn to the Haiku decompose step.
 - An unsure choice or a System One skip falls back to the E5 threshold and gap rules (`routing.threshold`, `routing.gap_threshold`).
 
-The three bars are separate numbers:
+The two bars are separate numbers:
 
 - `choice_trust` is the minimum peakedness of the agent choice for Ze to trust one agent.
 - `multi_specialist_hold` is the minimum probability that the message needs more than one specialist.
-- `complexity_lookup_max` is the highest complexity score that still counts as a simple turn, on a 0 to 1 scale. The model returns the expected level (0 for lookup, 2 for multi-hop), and Ze divides it by 2 before it compares. When it is `null`, the word-count classifier picks the model tier.
 
 `shortlist_k` sets how many E5-ranked agents the choice sees. The code default is 5. Values below 2 fall back to 5. The shipped `config.yaml` sets 9. E5 cosines on the agent roster are flat, so on a fresh held-out set the right agent fell outside the top 6 for 43% of rows (recall 0.571 at k=5 and k=6, 1.0 at k=9). Phase 167 picked the smallest k with recall of at least 0.95 on all three calibration sets. With 10 enabled agents, the choice sees nearly the whole roster. E5 then filters little for the choice; it still drives the cosine skip path. With fewer than two enabled agents, Ze makes no call.
 
 Each agent can declare an optional `routing_criteria` attribute: "use for" and "not for" text that the choice reads in place of the agent's `description`. When an agent omits it, the choice reads the `description`. E5 always embeds the `description`. The choice instructions tell the model to prefer an agent that can search the web or use tools over one that would answer from its own knowledge. They also define `none` as the answer when no listed agent can do the job alone, when Ze has no capability for it, or when the request needs more than one agent. See [Adding an agent](adding-an-agent.md).
 
-Shipped state: the routing surface is on with `choice_trust: 0.5`, `multi_specialist_hold: 0.5` and `shortlist_k: 9`. `complexity_lookup_max` stays `null`: the complexity score does not separate lookups from harder turns (a multi-hop row scored 0.02, below the highest lookup score of 0.33). The calibration script now suggests the highest lookup score that sits below every harder row, and `null` when the levels overlap. It prints 0.17 on the tuning set and `null` on the held-out sets, so the regex classifier keeps picking the model tier. Calibration on 2026-10-12 used 52 held-out EN and PT rows. It found zero research-to-companion misses, zero harmful trusts at this bar and an ECE of 0.080 and 0.013. After the loops and companion criteria were refined (an undecided matter the user asks Ze to keep on their radar is a loop), both held-out sets scored 1.000 in English and Portuguese on one run, with ECE of 0.041 and 0.014 and zero harmful trusts. Before that change, a loops question went to companion at confidence 0.29, and the bar kept Ze from trusting it. `make calibrate-routing` measures only the tuning set. To re-measure the held-out sets, run `OPENROUTER_API_KEY=... uv run python eval/calibration/routing.py --dataset eval/calibration/routing_holdout.jsonl --dataset eval/calibration/routing_holdout2.jsonl --k 9`. This run is live and costs credits. Both sets pass the acceptance rule.
+Shipped state: the routing surface is on with `choice_trust: 0.5`, `multi_specialist_hold: 0.5` and `shortlist_k: 9`. Calibration on 2026-10-12 used 52 held-out EN and PT rows. It found zero research-to-companion misses, zero harmful trusts at this bar and an ECE of 0.080 and 0.013. After the loops and companion criteria were refined (an undecided matter the user asks Ze to keep on their radar is a loop), both held-out sets scored 1.000 in English and Portuguese on one run, with ECE of 0.041 and 0.014 and zero harmful trusts. Before that change, a loops question went to companion at confidence 0.29, and the bar kept Ze from trusting it. `make calibrate-routing` measures only the tuning set. To re-measure the held-out sets, run `OPENROUTER_API_KEY=... uv run python eval/calibration/routing.py --dataset eval/calibration/routing_holdout.jsonl --dataset eval/calibration/routing_holdout2.jsonl --k 9`. This run is live and costs credits. Both sets pass the acceptance rule.
 
 The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `routing_surface_uncalibrated` and routes by E5 alone. The code ships no default bars; the shipped `config.yaml` sets the bars above. To re-measure them, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.routing.enabled` to `true`.
 
 When System One routes a turn, `routing_log.confidence` holds the peakedness of the agent choice instead of the E5 cosine score. Turns that fall back to E5 keep the cosine score.
+
+#### `surfaces.complexity`
+
+Routing always gives the agent its full model. This surface can swap in the agent's `model_simple` for one turn. It asks one System One Noul, `needs_deep_reasoning`, about the task. Ze makes one attempt, with no retries. The request holds six fields: the task, the recent conversation, the resume recap, memory, focus and the active skill. Each field has a length cap.
+
+Ze makes the request only when all of these hold:
+
+- The turn has exactly one subtask, and it is not a compound turn.
+- The turn has no conductor hint.
+- The agent declares a `model_simple` that differs from its `model`.
+
+Ze uses `model_simple` only when the Noul is at or below `simple_max`. Every other outcome keeps the full model. That covers the surface off, an uncalibrated surface, a skip, a timeout, a malformed answer and an error.
+
+- `enabled` turns the surface on. The shipped config sets `true`. The code default without a `complexity` block is off.
+- `simple_max` is the bar, from 0 to 1. The shipped config sets `0.40`. While it is `null`, the surface stays off. Ze logs a warning once per process and records `uncalibrated` on the trace.
+
+What off means: when `enabled` is `false` or `simple_max` is `null`, every agent runs its full model, and Ze makes no System One request. If you pin an agent's model in `models.overrides`, both tiers resolve to that model, so no tiering happens.
+
+The shipped bar of 0.40 passed the held-out verdict in English and Portuguese on 2026-10-16. In the held-out Portuguese set, the lowest `full` row sat between 0.40 and 0.50, so the margin there is thinner than on the tuning set (where the lowest `full` row was 0.56).
+
+The bar is chosen on the tuned set only. Three rules apply. No tuned row whose gold tier is `full` is judged light. The bar sits at least 0.15 below the lowest such Noul. Light-model recall on the tuned set is at least 0.8 in each language. Among the bars that meet all three, the larger margin wins. Freeze the bar before the held-out run.
+
+To re-measure the surface or choose a new bar:
+
+1. Run `make calibrate-complexity ARGS="--check-sets"`. This check is offline. It tests the file shape and the quotas.
+2. Run the held-out verdict once: `OPENROUTER_API_KEY=... make calibrate-complexity ARGS="--set holdout --simple-max X"`. Use your frozen bar for `X`. This run is live and costs credits.
+3. Keep `enabled: true` and `simple_max: X` only when the verdict is ENABLE in English and in Portuguese.
+
+Per language, the verdict needs zero false downgrades, light-model recall of at least 0.5, and at most 10% of rows skipped or invalid. The runner refuses a second held-out scoring unless you pass `--rerun`. Changing the bar or the wording after a verdict voids the held-out set.
 
 #### `surfaces.skills`
 

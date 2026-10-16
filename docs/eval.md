@@ -322,6 +322,10 @@ Ze saves results to `eval/results/<timestamp>.json`. The judge uses
 tuned set. One held-out run gives the verdict. `test_open_query_holdout.py` is
 a slow test, so it runs only with `SLOW=1`.
 
+## Complexity calibration
+
+`make calibrate-complexity` runs the model-tier judgment over `eval/calibration/complexity.jsonl`. It calls System One and costs credits. Use `ARGS="--check-sets"` to validate the tuned and held-out files offline. The default run prints the Noul histogram by gold tier and the bar that the tuned set suggests. One held-out run gives the verdict: `ARGS="--set holdout --simple-max X"`, with the frozen bar `X`. The runner refuses a second scoring of the held-out set unless you pass `--rerun`. See [Configuration](configuration.md#surfacescomplexity) for the bar rule and the acceptance rule.
+
 ## Latency and token tracking
 
 Every scenario run captures two latency signals automatically — no extra config needed:
