@@ -12,6 +12,8 @@ from ze_agents.park import WriteConfirmation
 if TYPE_CHECKING:
     from ze_core.container import Container
 
+NO_PENDING_CONFIRMATION = "No pending confirmation."
+
 
 def make_graph_input(
     raw: RawInput,
@@ -224,7 +226,7 @@ async def resume_turn(
             final_state={},
             config=config,
             interrupted=False,
-            error="No pending confirmation.",
+            error=NO_PENDING_CONFIRMATION,
         )
     value = resume if resume is not None else {"choice": "approve"}
     final_state = await container.graph.ainvoke(Command(resume=value), config)

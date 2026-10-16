@@ -840,6 +840,26 @@ export type EvalChatResponse = {
 };
 
 /**
+ * EvalConfirmRequest
+ */
+export type EvalConfirmRequest = {
+    /**
+     * Session Id
+     */
+    session_id?: string;
+    /**
+     * Choice
+     */
+    choice: 'approve' | 'deny';
+    /**
+     * Edits
+     */
+    edits?: {
+        [key: string]: string;
+    };
+};
+
+/**
  * EvalRoutingInfo
  */
 export type EvalRoutingInfo = {
@@ -901,6 +921,10 @@ export type EvalToolCall = {
      * Gate
      */
     gate?: string;
+    /**
+     * Parked
+     */
+    parked?: boolean;
 };
 
 /**
@@ -4167,6 +4191,37 @@ export type EvalChatEvalChatPostResponses = {
 };
 
 export type EvalChatEvalChatPostResponse = EvalChatEvalChatPostResponses[keyof EvalChatEvalChatPostResponses];
+
+export type EvalConfirmData = {
+    body: EvalConfirmRequest;
+    headers?: {
+        /**
+         * X-Ze-Api-Key
+         */
+        'x-ze-api-key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/eval/confirm';
+};
+
+export type EvalConfirmErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EvalConfirmError = EvalConfirmErrors[keyof EvalConfirmErrors];
+
+export type EvalConfirmResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalChatResponse;
+};
+
+export type EvalConfirmResponse = EvalConfirmResponses[keyof EvalConfirmResponses];
 
 export type GetActivityHeatmapData = {
     body?: never;

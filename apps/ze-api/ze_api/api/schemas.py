@@ -690,6 +690,13 @@ class EvalToolCall(BaseModel):
     success: bool
     error: str | None = None
     gate: str = "none"
+    parked: bool = False
+
+
+class EvalConfirmRequest(BaseModel):
+    session_id: str = "eval"
+    choice: Literal["approve", "deny"]
+    edits: dict[str, str] = {}
 
 
 class EvalChatResponse(BaseModel):
