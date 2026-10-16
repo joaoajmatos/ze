@@ -47,18 +47,19 @@ async def propose_goal(
 
     `claim` runs once the goal row exists and before the plan is stored or sent.
     When it returns False the goal is abandoned and nothing is proposed.
-    If storing or sending the plan then fails, the goal is abandoned, `release`
-    undoes the claim, and the original error is raised.
+    If the claim, storing the plan, or sending it fails (or the task is
+    cancelled), the goal is abandoned, `release` undoes the claim, and the
+    original error is raised.
     """
     goal = await store.create_goal(goal)
-    if claim is not None and not await claim(goal):
-        await store.update_status(goal.id, GoalStatus.ABANDONED)
-        return None
-
     try:
+        if claim is not None and not await claim(goal):
+            await store.update_status(goal.id, GoalStatus.ABANDONED)
+            return None
         await _store_and_send_plan(store, notifier, goal, milestones, gates)
-    except Exception:
-        await _undo_proposal(store, goal, release)
+    except BaseException:
+        # Shielded so a cancelled turn still abandons the goal and reopens the claim.
+        await asyncio.shield(_undo_proposal(store, goal, release))
         raise
 
     asyncio.create_task(

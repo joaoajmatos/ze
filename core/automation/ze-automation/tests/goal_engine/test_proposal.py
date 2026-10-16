@@ -262,3 +262,50 @@ async def test_a_failing_cleanup_does_not_mask_the_original_error() -> None:
         )
 
     release.assert_awaited_once()
+
+
+async def test_a_raising_claim_abandons_the_goal_and_releases_it() -> None:
+    store = _store()
+    milestones, gates = _plan()
+    release = AsyncMock()
+
+    with pytest.raises(RuntimeError, match="claim failed"):
+        await propose_goal(
+            store,
+            AsyncMock(),
+            AsyncMock(),
+            _goal(),
+            milestones,
+            gates,
+            active_goals=[],
+            claim=AsyncMock(side_effect=RuntimeError("claim failed")),
+            release=release,
+        )
+
+    created = store.create_goal.await_args.args[0]
+    store.update_status.assert_awaited_once_with(created.id, GoalStatus.ABANDONED)
+    release.assert_awaited_once_with(created)
+    store.create_milestone.assert_not_called()
+
+
+async def test_cancellation_while_storing_the_plan_still_cleans_up() -> None:
+    store = _store()
+    store.create_milestone = AsyncMock(side_effect=asyncio.CancelledError())
+    milestones, gates = _plan()
+    release = AsyncMock()
+
+    with pytest.raises(asyncio.CancelledError):
+        await propose_goal(
+            store,
+            AsyncMock(),
+            AsyncMock(),
+            _goal(),
+            milestones,
+            gates,
+            active_goals=[],
+            claim=AsyncMock(return_value=True),
+            release=release,
+        )
+
+    store.update_status.assert_awaited_once()
+    release.assert_awaited_once()
