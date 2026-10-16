@@ -305,3 +305,51 @@ async def test_a_custom_summary_is_capped_like_the_generic_one() -> None:
     )
     assert len(tc.parked.summary) == SUMMARY_MAX_CHARS
     assert tc.parked.summary.endswith("…")
+
+
+class _BodyVetoHook(_VetoHook):
+    """Refuses when the body the call will run with names the forbidden party."""
+
+    def __init__(self) -> None:
+        super().__init__(AskDecision.run())
+
+    async def check_call(self, event) -> AskDecision:
+        if "Bruno" in (event.args.get("body") or ""):
+            return AskDecision.refuse("Blocked by your rule: never email Bruno.")
+        return AskDecision.run()
+
+
+async def _approved_call(name: str, body: str):
+    return await _Agent().call_tool(
+        name,
+        _ctx(approval_request_id="req-1"),
+        _lm_args={"event_id": "e1", "body": body},
+        _approval=ApprovedCall("c1"),
+        event_id="e1",
+        body=body,
+    )
+
+
+async def test_an_approved_call_whose_edited_body_breaks_a_hard_veto_is_refused(
+    monkeypatch,
+) -> None:
+    import ze_agents.hooks as hooks_mod
+
+    monkeypatch.setattr(hooks_mod, "_hooks", [_BodyVetoHook()])
+    _irreversible("send_it", constraint_gate=True)
+
+    tc = await _approved_call("send_it", "Hi, cc Bruno on this.")
+
+    assert calls == []
+    assert tc.success is False and tc.gate == "refused"
+    assert "never email Bruno" in tc.result
+
+
+async def test_an_approved_call_with_a_constraint_that_wants_an_ok_runs(veto) -> None:
+    _irreversible("send_it", constraint_gate=True)
+    veto(AskDecision.ask("You said never email X"))
+
+    tc = await _approved_call("send_it", "hello")
+
+    assert calls == [("send_it", {"event_id": "e1", "body": "hello"})]
+    assert tc.gate == "approved"

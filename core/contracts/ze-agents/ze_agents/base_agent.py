@@ -363,6 +363,12 @@ class BaseAgent(ABC):
         approval: dict[str, Any] | None = None
         if spec.access.value == "write":
             if isinstance(_approval, ApprovedCall):
+                # The user approved this call, but a hard veto still applies to the
+                # arguments it runs with (an edited body included). A conflict that
+                # only wants an OK is what the user just gave.
+                veto = await self._constraint_check(spec, ctx, dict(kwargs), hooks)
+                if veto is not None and veto.kind == "refuse":
+                    return _refusal(name, stored_args, veto.message, result=veto.result)
                 confirmation_gate = "approved"
                 approval = {
                     "request_id": ctx.approval_request_id,
@@ -592,6 +598,21 @@ class BaseAgent(ABC):
             }
         )
 
+    async def _constraint_check(
+        self, spec: Any, ctx: AgentContext, args: dict[str, Any], hooks: list
+    ) -> Any:
+        """The first constraint hook decision that is not run (FR-020), else None."""
+        if not spec.constraint_gate:
+            return None
+        for hook in hooks:
+            check = getattr(hook, "check_call", None)
+            if check is None:
+                continue
+            decision = await check(ToolStartEvent(spec.name, args, ctx, -1))
+            if decision.kind in ("refuse", "ask"):
+                return decision
+        return None
+
     async def _resolve_ask(
         self,
         spec: Any,
@@ -609,18 +630,11 @@ class BaseAgent(ABC):
         """
         if spec.access.value != "write":
             return None
-        if spec.constraint_gate:
-            for hook in hooks:
-                check = getattr(hook, "check_call", None)
-                if check is None:
-                    continue
-                decision = await check(ToolStartEvent(spec.name, args, ctx, -1))
-                if decision.kind == "refuse":
-                    return _AskResolution(
-                        refuse=decision.message, result=decision.result
-                    )
-                if decision.kind == "ask":
-                    return _AskResolution(text=decision.reason, reason="constraint")
+        decision = await self._constraint_check(spec, ctx, args, hooks)
+        if decision is not None and decision.kind == "refuse":
+            return _AskResolution(refuse=decision.message, result=decision.result)
+        if decision is not None and decision.kind == "ask":
+            return _AskResolution(text=decision.reason, reason="constraint")
         if veto_only:
             return None
         if spec.ask_check is not None:
