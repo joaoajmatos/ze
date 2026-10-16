@@ -281,3 +281,31 @@ Queries ran through `docker exec ze-postgres-1 psql` with `default_transaction_r
 - Code: `ze_news/store.py:124-141`, `ze_news/jobs/fetch.py:84-94`, `ze_core/telemetry/context.py`,
   `ze_core/telemetry/postgres.py:fetch_pending`, `ze_core/orchestration/nodes/memory.py:216-237`,
   `ze_correlation/push.py:111`, `ze_proactive/scheduler.py:51-92,129-165`.
+
+## Addendum, 2026-10-16: what the follow-up work found
+
+The user chose all four fix groups. Building them turned up corrections to this report:
+
+- **The 6 "updated but still NULL" rows.** A `GET /generation` on one of them now answers
+  "not found" like the other 44, and a recent (Oct 15) gpt-4o-mini generation resolves to
+  `total_cost = 0.000235966`, which matches the audit's own estimate of $0.000238 per call
+  (585 prompt, 250 completion tokens). So the lookup path works and the old rows expired.
+  Why the log claimed `updated=6` for rows that stayed NULL is still unexplained. The
+  reconciler now counts a row only when `UPDATE` changed one, and logs
+  `cost_reconcile_update_changed_no_row` otherwise, so a repeat shows up.
+- **System One rows are priced by OpenRouter.** Their `gen-dec-...` ids resolve with real costs
+  (so section 3.2's "will fail the same way" was wrong for ids from the current client). One older
+  `gen-dec` id answers HTTP 400 "Invalid generation ID". The cost fits exactly: native prompt tokens
+  x $0.042 per million, completion free (four samples). `pricing.py` now carries that.
+- **The correlation scan is not log-only.** Section 1.2 said the scan runs its LLM only to log
+  would-be pushes. It also persists hypotheses, and `PriorityView` ranks them
+  (`list_recent`). Turning the LLM off in dry-run would remove a product surface in production, so
+  the shipped config keeps the scan. The `quiet` profile sets `push.dry_run: false`, which
+  makes the scan return before its LLM call (`push.py:111`).
+- **`goal_advance_sweep` makes no model call for an idle goal.** It lists only `ACTIVE` goals, and
+  `advance` returns before the model when a milestone is held or the goal is not active. Goals in
+  `AWAITING_GATE`, `PAUSED` and `PLANNING` are not swept. The model runs only for a pending
+  milestone, which is the work itself. Tests pin both early returns.
+- **A user-set session title was overwritten.** The title generator skipped only
+  `title_source == "generated"`, so a title the user set (`"user"`) was replaced on the next turn.
+  It now skips any session that has a title.
