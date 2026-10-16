@@ -209,9 +209,25 @@
       "kind": "complete",
       "by": "ENG-A",
       "at": "2026-10-16T16:17:41.110Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T042",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T16:31:42.249Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T043",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T16:31:42.485Z"
     }
   ],
-  "currentTask": "T028",
+  "currentTask": "T043",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -293,6 +309,14 @@
     "T028": {
       "status": "DONE",
       "did": "Row 7a in decide(), reminder/goal/loop criteria reworded (63e0b014)"
+    },
+    "T042": {
+      "status": "DONE",
+      "did": "Tuned runs 1 and 2, bars frozen (92dd67cc), notes in research.md"
+    },
+    "T043": {
+      "status": "DONE",
+      "did": "Held-out verdict KEEP OFF, failing clauses recorded (93b76e20)"
     }
   }
 }
