@@ -109,3 +109,34 @@ async def test_record_trace_includes_procedure_usage() -> None:
         procedure_id=str(procedure_id),
         version_id=str(version_id),
     )
+
+
+async def test_a_duplicate_call_is_allowed_but_not_executed_here() -> None:
+    activator = SimpleNamespace(record_action=AsyncMock(), complete=AsyncMock())
+    ctx = AgentContext(
+        session_id="s1",
+        prompt="cancel it",
+        procedure_invocation_id=str(uuid4()),
+        procedure_invoked_id=str(uuid4()),
+        procedure_invoked_version_id=str(uuid4()),
+    )
+    result = AgentResult(
+        agent="reminders",
+        response="done",
+        tool_calls=[
+            ToolCall(
+                tool_name="cancel_reminder",
+                args={},
+                result="approved once; not repeated",
+                duration_ms=0,
+                success=True,
+                gate="duplicate",
+            )
+        ],
+    )
+    await record_guided_actions(
+        ctx, result, {"configurable": {"procedure_activator": activator}}
+    )
+    kwargs = activator.record_action.await_args.kwargs
+    assert kwargs["capability_decision"] is CapabilityDecision.ALLOWED
+    assert kwargs["outcome"] is ProcedureActionOutcome.NOT_EXECUTED

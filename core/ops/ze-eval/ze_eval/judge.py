@@ -62,7 +62,9 @@ Return JSON with exactly these fields:
 """
 
 
-_UNRUN_GATES = frozenset({"parked", "denied", "refused", "expired", "refused_over_cap"})
+_UNRUN_GATES = frozenset(
+    {"parked", "denied", "refused", "expired", "refused_over_cap", "duplicate"}
+)
 _APPROVED_GATES = frozenset({"approved", "pre_approved"})
 
 

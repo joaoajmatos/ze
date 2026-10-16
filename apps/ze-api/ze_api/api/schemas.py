@@ -101,6 +101,7 @@ class ToolCallTraceResponse(BaseModel):
         "refused",
         "refused_over_cap",
         "expired",
+        "duplicate",
     ] = "none"
     effect_phrase: str | None = None
 

@@ -25,7 +25,9 @@ def test_parked_call_not_counted_by_default():
 
 
 def test_parked_call_not_counted_for_dict_entry_without_flag():
-    assert tools_correct({"expected_tools": [{"name": "create_goal"}]}, _PARKED) is False
+    assert (
+        tools_correct({"expected_tools": [{"name": "create_goal"}]}, _PARKED) is False
+    )
 
 
 def test_allow_parked_counts_parked():
@@ -56,7 +58,7 @@ def test_approved_call_counts_as_executed_by_default():
     assert tools_correct({"expected_tools": ["create_goal"]}, _APPROVED) is True
 
 
-@pytest.mark.parametrize("gate", ["denied", "expired", "refused_over_cap"])
+@pytest.mark.parametrize("gate", ["denied", "expired", "refused_over_cap", "duplicate"])
 def test_calls_that_did_not_run_are_not_counted(gate):
     result = {"tool_calls": [_call(gate)]}
     assert tools_correct({"expected_tools": ["create_goal"]}, result) is False
@@ -79,7 +81,9 @@ def test_gate_filter_ignores_success_so_a_failed_approved_call_still_proves_the_
 
 
 def test_gate_filter_accepts_a_list():
-    scenario = {"expected_tools": [{"name": "create_goal", "gate": ["none", "approved"]}]}
+    scenario = {
+        "expected_tools": [{"name": "create_goal", "gate": ["none", "approved"]}]
+    }
 
     assert tools_correct(scenario, _OK) is True
     assert tools_correct(scenario, _APPROVED) is True
@@ -89,7 +93,9 @@ def test_gate_filter_accepts_a_list():
 def test_count_requires_exactly_that_many_matches():
     result = {"tool_calls": [_call("approved"), _call("approved")]}
     once = {"expected_tools": [{"name": "create_goal", "gate": "approved", "count": 1}]}
-    twice = {"expected_tools": [{"name": "create_goal", "gate": "approved", "count": 2}]}
+    twice = {
+        "expected_tools": [{"name": "create_goal", "gate": "approved", "count": 2}]
+    }
 
     assert tools_correct(once, result) is False
     assert tools_correct(twice, result) is True
@@ -151,6 +157,8 @@ def test_turn_filter_limits_matches_to_one_turn():
 
 
 def test_turn_filter_on_a_single_turn_scenario_means_turn_one():
-    scenario = {"expected_tools": [{"name": "create_goal", "gate": "parked", "turn": 1}]}
+    scenario = {
+        "expected_tools": [{"name": "create_goal", "gate": "parked", "turn": 1}]
+    }
 
     assert tools_correct(scenario, _PARKED) is True

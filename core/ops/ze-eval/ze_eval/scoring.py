@@ -17,7 +17,9 @@ def routing_correct(scenario: dict, agent_used: str | None) -> bool | None:
     return agent_used == expected
 
 
-_DID_NOT_RUN = frozenset({"parked", "denied", "refused", "expired", "refused_over_cap"})
+_DID_NOT_RUN = frozenset(
+    {"parked", "denied", "refused", "expired", "refused_over_cap", "duplicate"}
+)
 
 
 def tools_correct(scenario: dict, ze_result: dict) -> bool | None:

@@ -104,7 +104,15 @@ export type Success = boolean;
 export type Access = "read" | "write" | "delegate" | "unknown";
 export type Reversibility = ("reversible" | "irreversible") | null;
 export type UndoTool = string | null;
-export type Gate = "none" | "approved" | "pre_approved" | "denied" | "refused" | "refused_over_cap" | "expired";
+export type Gate =
+  | "none"
+  | "approved"
+  | "pre_approved"
+  | "denied"
+  | "refused"
+  | "refused_over_cap"
+  | "expired"
+  | "duplicate";
 export type EffectPhrase1 = string | null;
 export type ToolCalls = ToolCallTraceResponse[];
 export type TotalDurationMs = number;

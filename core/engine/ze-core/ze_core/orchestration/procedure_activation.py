@@ -89,6 +89,10 @@ async def record_guided_actions(
         elif gate == "parked":
             decision = CapabilityDecision.AWAITING_CONFIRMATION
             outcome = ProcedureActionOutcome.NOT_EXECUTED
+        elif gate == "duplicate":
+            # Approved, but the one run is recorded on the call it repeats.
+            decision = CapabilityDecision.ALLOWED
+            outcome = ProcedureActionOutcome.NOT_EXECUTED
         elif success:
             decision = CapabilityDecision.ALLOWED
             outcome = ProcedureActionOutcome.SUCCEEDED

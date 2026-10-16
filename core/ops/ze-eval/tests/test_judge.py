@@ -18,7 +18,12 @@ _BODY = '{"quality": 4, "tone": 5, "tool_use": null, "pass": true, "reasoning": 
 )
 def test_parses_fenced_and_prose_wrapped_json(content):
     score = parse_judge_reply(content)
-    assert (score.quality, score.tone, score.tool_use, score.pass_) == (4, 5, None, True)
+    assert (score.quality, score.tone, score.tool_use, score.pass_) == (
+        4,
+        5,
+        None,
+        True,
+    )
 
 
 @pytest.mark.parametrize("content", [None, "", "   "])
@@ -96,3 +101,12 @@ def test_prompt_states_the_date_and_empty_tool_list():
 def test_prompt_labels_the_turn_a_tool_call_came_from():
     text = _prompt(tool_calls=[{"tool_name": "search", "turn": 1}])
     assert "- [turn 1] search (ok)" in text
+
+
+def test_a_duplicate_call_is_shown_as_not_run():
+    from ze_eval.judge import format_tool_calls
+
+    text = format_tool_calls(
+        [{"tool_name": "cancel_reminder", "success": True, "gate": "duplicate"}]
+    )
+    assert text == "- cancel_reminder (duplicate)"

@@ -270,7 +270,7 @@ Eval scenarios cover "delete my 3pm", "send Ana the notes", a compound read + se
 ### Edge Cases
 
 - **Several asks-first calls in one model response.** All are parked together; reads and reversible writes in the same response run; the loop stops after that response.
-- **The same call parked twice in one turn** (two subtasks propose the identical email). Each is a separate item; the user sees both. No silent de-duplication.
+- **The same call parked twice in one turn** (two subtasks propose the identical email). *(Amended 2026-10-16 after the e2e run, Maestro-directed: showing both let one approve run the write twice.)* The confirmation shows one item per identical `(tool, args)`; each repeat takes that item's answer. On approve the call runs once; the repeat's loop gets a "not repeated" result and its trace call shows gate `duplicate` (never ran). On deny every copy is declined.
 - **A parked loop's agent times out or errors on resume.** The approved call already ran; the error is reported as for any agent error; the trace keeps the executed call.
 - **The approved call raises.** The loop resumes with the error as the tool result; the reply reports it; no automatic retry.
 - **Nested parking deeper than one delegate level.** Delegation depth is capped today (`_DELEGATE_MAX_DEPTH`); the saved state holds one transcript per parked level, innermost first.
