@@ -58,6 +58,14 @@ def _conductor_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
     }
 
 
+def _prompt_note_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
+    return {
+        "screen_context_note": base_ctx.screen_context_note,
+        "resume_recap": base_ctx.resume_recap,
+        "open_priorities_note": base_ctx.open_priorities_note,
+    }
+
+
 def _procedure_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
     return {
         "procedure_guidance": getattr(base_ctx, "procedure_guidance", None),
@@ -230,6 +238,7 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
         embed_fn=_embed_fn(config),
         active_skills=base_ctx.active_skills,
         skill_tool_names=base_ctx.skill_tool_names,
+        **_prompt_note_kwargs(base_ctx),
         **_procedure_kwargs(base_ctx),
         **_conductor_kwargs(base_ctx),
     )
@@ -390,6 +399,7 @@ async def _execute_single(
         token_sink=token_sink,
         active_skills=base_ctx.active_skills,
         skill_tool_names=base_ctx.skill_tool_names,
+        **_prompt_note_kwargs(base_ctx),
         **_procedure_kwargs(base_ctx),
         **_conductor_kwargs(base_ctx),
     )
@@ -489,6 +499,7 @@ async def _execute_compound(
             embed_fn=embed_fn,
             active_skills=base_ctx.active_skills,
             skill_tool_names=base_ctx.skill_tool_names,
+            **_prompt_note_kwargs(base_ctx),
             **_procedure_kwargs(base_ctx),
             **_conductor_kwargs(base_ctx),
         )
