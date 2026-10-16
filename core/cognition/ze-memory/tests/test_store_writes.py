@@ -634,40 +634,6 @@ async def test_contradiction_null_subject_scoped_independently():
     assert subj_arg is None
 
 
-async def test_persist_facts_contradicts_per_subject():
-    """_persist_facts calls _write_fact_with_contradiction_check for each fact independently."""
-    store, conn = _make_contradiction_store()
-    subject_a = uuid4()
-    subject_b = uuid4()
-
-    from ze_memory.types import Fact
-
-    facts = [
-        Fact(
-            id=None,
-            subject_id=subject_a,
-            predicate="preferred_name",
-            value="Alice",
-            object_text="Alice",
-            confidence=0.9,
-        ),
-        Fact(
-            id=None,
-            subject_id=subject_b,
-            predicate="preferred_name",
-            value="Bob",
-            object_text="Bob",
-            confidence=0.9,
-        ),
-    ]
-    await store._persist_facts(facts)
-
-    # Two UPDATE calls, one per subject
-    assert conn.fetch.await_count == 2
-    subjects_seen = {conn.fetch.call_args_list[i][0][2] for i in range(2)}
-    assert subjects_seen == {subject_a, subject_b}
-
-
 async def test_write_fact_rejects_unknown_provenance():
     store, conn = _make_contradiction_store()
     conn.fetchrow = AsyncMock(return_value={"id": uuid4()})

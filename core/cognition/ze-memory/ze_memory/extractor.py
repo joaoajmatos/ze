@@ -31,9 +31,6 @@ class PredicateFamily(StrEnum):
 
 
 KEEP_FAMILIES: frozenset[str] = frozenset(f.value for f in PredicateFamily)
-DROP_FAMILIES: frozenset[str] = frozenset(
-    {"ephemeral", "commitment", "schedule", "mood", "other", "drop"}
-)
 
 _TRIVIAL_RE = re.compile(
     r"^(hi|hello|hey|thanks|thank you|ok|okay|yo|sup|good morning|good night)"
@@ -204,14 +201,6 @@ def raw_to_facts(raw: list[dict]) -> list[Fact]:
         for f in raw
         if isinstance(f, dict) and f.get("predicate") and f.get("value")
     ]
-
-
-def merge_fact_proposals(explicit: list[Fact], extracted: list[Fact]) -> list[Fact]:
-    """Agent-supplied proposals override extracted facts with the same predicate."""
-    by_predicate = {f.predicate: f for f in extracted}
-    for fact in explicit:
-        by_predicate[fact.predicate] = fact
-    return list(by_predicate.values())
 
 
 async def extract_facts(

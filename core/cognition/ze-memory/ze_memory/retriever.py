@@ -34,7 +34,6 @@ from ze_memory.retrieval_rerank import (
     fetch_facts_by_ids,
     fetch_summaries_by_ids,
     live_rerank,
-    rerank_rows,
     should_build_retrieval_cache,
 )
 from ze_memory.graph.predicates import (
@@ -342,17 +341,6 @@ class PostgresMemoryStore:
         except Exception as exc:
             log.warning("memory_write_episode_failed", error=str(exc))
             return None
-
-    async def _persist_facts(self, proposals: list[Fact]) -> None:
-        for fact in proposals:
-            try:
-                await self._write_fact_with_contradiction_check(fact)
-            except Exception as exc:
-                log.warning(
-                    "memory_propose_fact_failed",
-                    predicate=fact.predicate,
-                    error=str(exc),
-                )
 
     async def _retract_facts_matching(self, query: str) -> list[UUID]:
         needle = query.strip()
@@ -767,35 +755,6 @@ class PostgresMemoryStore:
             )
         return [row["id"] for row in rows]
 
-    async def upsert_session_summary(
-        self,
-        session_id: str,
-        summary: str,
-        episode_count: int,
-        last_turn_at: Any,
-        embedding: Any,
-    ) -> None:
-        emb_list = _to_list(embedding)
-        async with self._pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO memory_session_summaries
-                    (session_id, summary, episode_count, last_turn_at, summary_updated_at, embedding)
-                VALUES ($1, $2, $3, $4, now(), $5::vector)
-                ON CONFLICT (session_id) DO UPDATE SET
-                    summary            = EXCLUDED.summary,
-                    episode_count      = EXCLUDED.episode_count,
-                    last_turn_at       = EXCLUDED.last_turn_at,
-                    summary_updated_at = now(),
-                    embedding          = EXCLUDED.embedding
-                """,
-                session_id,
-                summary,
-                episode_count,
-                last_turn_at,
-                emb_list,
-            )
-
     async def get_session_summary(self, session_id: str) -> SessionSummary | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
@@ -809,67 +768,6 @@ class PostgresMemoryStore:
         from ze_memory.projection import _session_summary_from_row
 
         return _session_summary_from_row(row)
-
-    async def search_session_summaries(
-        self,
-        embedding: Any,
-        limit: int,
-        *,
-        query_text: str | None = None,
-    ) -> list[SessionSummary]:
-        cfg = nli_config(self._settings)
-        emb_list = _to_list(embedding)
-        fetch_limit = limit
-        if query_text and cfg.get("nli_retrieval_rerank"):
-            fetch_limit = limit * int(cfg.get("nli_rerank_candidate_multiplier", 2))
-
-        async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                """
-                SELECT id, session_id, summary, episode_count, last_turn_at,
-                       created_at, summary_updated_at
-                FROM memory_session_summaries
-                WHERE embedding IS NOT NULL
-                ORDER BY embedding <=> $1::vector
-                LIMIT $2
-                """,
-                emb_list,
-                fetch_limit,
-            )
-
-        row_list = list(rows)
-        if (
-            query_text
-            and cfg.get("nli_retrieval_rerank")
-            and len(row_list) >= int(cfg.get("nli_rerank_min_candidates", 5))
-        ):
-            row_list = await self._rerank_session_summary_rows(
-                row_list, query_text, limit
-            )
-
-        from ze_memory.projection import session_summaries_from_rows
-        from ze_memory.defaults import DEFAULT_SESSION_SUMMARY_BUDGET_TOKENS
-
-        return session_summaries_from_rows(
-            row_list, DEFAULT_SESSION_SUMMARY_BUDGET_TOKENS
-        )
-
-    async def _rerank_session_summary_rows(
-        self,
-        rows: list,
-        query_text: str,
-        limit: int,
-    ) -> list:
-        cfg = nli_config(self._settings)
-        min_candidates = int(cfg.get("nli_rerank_min_candidates", 5))
-        ranked = await rerank_rows(
-            rows,
-            "summary",
-            query_text,
-            min_candidates=min_candidates,
-            nli_client=getattr(self, "_nli", None),
-        )
-        return ranked[:limit]
 
     # ── internal ──────────────────────────────────────────────────────────────
 
@@ -1164,30 +1062,6 @@ class PostgresMemoryStore:
             log.warning(
                 "graph_link_event_participants_failed",
                 event_id=str(event_id),
-                error=str(exc),
-            )
-
-    async def _link_procedure_to_task(
-        self, procedure_id: UUID, task_id: UUID, task_type: str
-    ) -> None:
-        """Create USES_PROCEDURE edge from a stored procedure to the goal/workflow that produced it."""
-        try:
-            from ze_memory.graph.predicates import USES_PROCEDURE
-
-            await self._graph_store.upsert_relationship(
-                Relationship(
-                    source_id=procedure_id,
-                    source_type="procedure",
-                    predicate=USES_PROCEDURE,
-                    target_id=task_id,
-                    target_type=task_type,
-                    creation_method="explicit",
-                )
-            )
-        except Exception as exc:
-            log.warning(
-                "graph_link_procedure_failed",
-                procedure_id=str(procedure_id),
                 error=str(exc),
             )
 

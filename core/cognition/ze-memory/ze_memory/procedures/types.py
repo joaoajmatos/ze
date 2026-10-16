@@ -183,13 +183,6 @@ class ProcedureAdmissionResult:
     identity: ProcedureIdentity | None = None
 
 
-@dataclass
-class ProcedureRollbackResult:
-    identity: ProcedureIdentity
-    restored_version: ProcedureVersion | None
-    retired: bool
-
-
 class MatchState(StrEnum):
     READY = "ready"
     BLOCKED = "blocked"
@@ -205,7 +198,6 @@ class InvocationState(StrEnum):
 
 class ProcedureInvocationOrigin(StrEnum):
     AGENT = "agent"
-    PLANNER = "planner"
 
 
 class CapabilityDecision(StrEnum):
