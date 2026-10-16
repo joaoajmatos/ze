@@ -156,3 +156,21 @@ Not clause-failing, but real:
 - Explicit-vs-implied accuracy is 0.59 in both languages for the intake and the baseline (declared versus suspected only; not an FR-022 clause).
 
 Per FR-020 any change from here needs a fresh held-out set. The task rule is to stop here and ask the Maestro.
+
+### Run 4 and frozen bars for the holdout3 verdict (T058, 2026-10-16, tuned set only)
+
+Wording: Mortise's commits 108e02c9 (tie-break, clarify, resolves ignores save requests) and f35350de (waiting_on never resolves; a fact with a question reads as fact; "keep an eye on" is an open concern), tuned set 160 rows at c9e592d4 (T056). Same model (`typesafe/jev-1.13`) and seed 173. Raw results `eval/results/commitment_intake_tuned_run4.json` (gitignored).
+
+Result at the grid-suggested bars (0.5/0.5/0.5/0.6/0.95/0.7): both languages clean. Choice accuracy 51/52 = 0.981 per language (one `fact` read as `loop` each), link accuracy 24/24, duplicates 0, false creates 0, false resolves 0 (baseline 1), fact precision 1.00 and loop precision 1.00 (baseline loop precision 0.39 / 0.41), loop recall 16/16, waiting_on rows written 0/7 per language.
+
+Distributions on the tuned set:
+
+- `resolves_existing`: gold-true rows 0.94 to 0.97 (8 rows); gold-false maximum 0.53. Plateau (0.53, 0.94]; centre 0.74, biased high because a false resolve is the costlier error: **0.80**.
+- `is_open_concern`: the loop grid is flat (0 false creates, recall 1.00) from 0.50 to 0.70 and recall falls at 0.75 (0.97). Centre **0.60**.
+- `explicit_declaration`: gold-true minimum 0.69, but gold-false rows run up to 0.96, so no bar is clean. A false declaration is costlier than a missed one: **0.95**.
+- `biography`: gold-fact minimum 0.57; the fact grid is flat at 0.50 to 0.55 and falls at 0.60. Upper edge, biased high: **0.55**.
+- Choice / family: the fact grid is identical for 0.65, 0.70 and 0.75. The one wrong non-created Choice at low confidence sits at 0.63, and the lowest correct Choice above it at 0.74. Family confidence on fact rows starts at 0.78. Centre of the plateau: **0.70**. This moves the Choice and family bar from 0.65 (run 3) to 0.70 because the plateau is re-read on new wording; the tuned outcomes are the same at both.
+
+Frozen bars (one set, for the holdout3 verdict): `choice_hold=0.70 family_hold=0.70 biography_hold=0.55 loop_hold=0.60 explicit_hold=0.95 resolves_hold=0.80`.
+
+Offline replay of run 4 at the frozen bars: EN clean (fact 8/8, loop 16/16); PT fact recall 7/9 (`ci-t-pt-049` `fact`@0.57 held as `choice_unsure`; `ci-t-pt-073`, the mixed also-loop row, held as `loop_unsure`), above the baseline recall 0.50 minus 0.05; everything else clean. No Choice or bar is tuned further on any held-out set.
