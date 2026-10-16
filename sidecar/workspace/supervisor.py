@@ -18,6 +18,9 @@ DEFAULT_TIMEOUT = int(os.environ.get("WORKSPACE_RUN_TIMEOUT_SECONDS", "120"))
 STORAGE_CEILING = int(
     os.environ.get("WORKSPACE_STORAGE_CEILING_BYTES", str(1024 * 1024 * 1024))
 )
+# Upper bound on how long shutdown() waits for run tasks after cancelling the
+# running command, so a stuck task cannot hang the app's exit.
+SHUTDOWN_TASK_WAIT_SECONDS = 5.0
 # Retention (Phase 129 research.md Decision 3): the running entry (if any) plus
 # the last N terminal entries. Not scale-driven — this is a margin against a
 # restart/reconciliation/debugging window, not a growth bound.
@@ -336,6 +339,14 @@ async def _pump(stream: asyncio.StreamReader, kind: str, run_id: UUID, sink: lis
         journal.append_event(run_id, kind, chunk.decode("utf-8", errors="replace"))
 
 
+def _kill_group(proc: asyncio.subprocess.Process) -> None:
+    """SIGKILL the command's whole process group (it runs in its own session)."""
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+
 async def _execute(
     entry: JournalEntry,
     *,
@@ -388,6 +399,7 @@ async def _execute(
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
         preexec_fn=_preexec if uid is not None else None,
+        start_new_session=True,
     )
     entry.proc = proc
 
@@ -425,9 +437,13 @@ async def _execute(
             sigterm_at = time.monotonic()
             proc.send_signal(signal.SIGTERM)
         elif sigterm_at is not None and time.monotonic() - sigterm_at >= 2:
-            proc.kill()
+            _kill_group(proc)
             sigterm_at = float("inf")  # avoid repeated kill signals
     cancelled = entry.cancel_requested
+    if cancelled or timed_out:
+        # A grandchild that outlived the command keeps the output pipes open
+        # and would block the pumps below indefinitely.
+        _kill_group(proc)
 
     await pump_out
     await pump_err
@@ -517,8 +533,12 @@ async def shutdown() -> None:
     current = journal.running()
     if current is not None:
         await cancel_handle(current.id)
+        if current.proc is not None:
+            _kill_group(current.proc)
     if _run_tasks:
-        await asyncio.gather(*_run_tasks, return_exceptions=True)
+        _, pending = await asyncio.wait(_run_tasks, timeout=SHUTDOWN_TASK_WAIT_SECONDS)
+        for task in pending:
+            task.cancel()
 
 
 async def reset_workspace() -> None:

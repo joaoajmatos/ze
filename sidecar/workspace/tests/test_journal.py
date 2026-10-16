@@ -163,7 +163,8 @@ def test_retention_evicts_oldest_terminal_entry(sidecar):
 def test_spawn_run_holds_a_reference_to_the_running_task(sidecar):
     import supervisor
 
-    run_id = sidecar.post("/run", json={"command": ["sh", "-c", "sleep 5"]}).json()["id"]
+    resp = sidecar.post("/run", json={"command": ["sh", "-c", "sleep 5"]})
+    run_id = resp.json()["id"]
     assert len(supervisor._run_tasks) == 1
 
     sidecar.post(f"/runs/{run_id}/cancel")
@@ -183,3 +184,48 @@ def test_shutdown_cancels_the_running_run_and_awaits_its_task(sidecar, monkeypat
 
     assert entry.status == "cancelled"
     assert not supervisor._run_tasks
+
+
+def test_shutdown_kills_a_child_that_traps_sigterm_and_its_children(sidecar):
+    import main
+    import supervisor
+    from fastapi.testclient import TestClient
+
+    started = time.monotonic()
+    with TestClient(main.app) as other:
+        run_id = other.post(
+            "/run",
+            json={"command": ["sh", "-c", "trap '' TERM; echo ready; sleep 30; true"]},
+        ).json()["id"]
+        entry = supervisor.journal.get(UUID(run_id))
+        assert _wait_until(
+            lambda: any(ev.data.startswith("ready") for ev in entry.events)
+        )
+
+    assert time.monotonic() - started < 10
+    assert entry.status == "cancelled"
+    assert not supervisor._run_tasks
+
+
+def test_shutdown_gives_up_on_a_task_that_never_finishes(sidecar, monkeypatch):
+    import asyncio
+
+    import supervisor
+
+    monkeypatch.setattr(supervisor, "SHUTDOWN_TASK_WAIT_SECONDS", 0.2)
+
+    async def stuck():
+        await asyncio.Event().wait()
+
+    async def go():
+        task = asyncio.create_task(stuck())
+        supervisor._run_tasks.add(task)
+        try:
+            started = time.monotonic()
+            await supervisor.shutdown()
+            return time.monotonic() - started
+        finally:
+            task.cancel()
+            supervisor._run_tasks.discard(task)
+
+    assert sidecar.portal.call(go) < 2

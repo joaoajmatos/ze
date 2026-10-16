@@ -147,7 +147,7 @@ Ze does **not** redeploy this app when the main backend deploys — version and 
 | `integrations/ze-browser/ze_browser/tool.py` | `browser_extract` tool (rate limit + text truncation) |
 | `plugins/ze-prospecting/ze_prospecting/agents/` | Primary consumer — team pages, registries, search result URLs |
 
-`ze-api` reads these settings from the environment (see `apps/ze-api/.env.example`):
+`ze-api` reads these settings from the environment (see `apps/ze-api/.env.example`; the full list is in [integrations/ze-browser/README.md](../../integrations/ze-browser/README.md)):
 
 ```bash
 BROWSER_SERVICE_URL=http://ze-browser.internal:8080
