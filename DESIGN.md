@@ -311,6 +311,27 @@ A framed module at the top of the left rail: "● Online" and the dot-matrix ses
 ### The orb (`shared/ui/hud/presence/Orb.tsx`, signature)
 A dot-matrix sphere on a 29-dot grid drawn on canvas: denser and brighter toward a lit cream core, a drifting key light, a limb rim. Every dot keeps its grid home and springs (K=110, critically damped) toward where the current state wants it. A state change reaches the rim 320ms after the core (`stagger = (0.75·r + 0.25·seed) × 320ms`), so every transition is one continuous morph, never a cut or crossfade. Colours mix in oklab; coral drains back at a quarter of the normal rate.
 
+**The monad (the user's direction, 2026-10-17).** The white point at the orb's core is Ze's essence: "the monad, the singularity". In the user's words: "I wanted the white circle on the orb to behave like an eye and also be centered in the deformation caused by the orb focusing on the cursor", "every state action should morph from this single white point", "the same point that is looking around when idle". Rules:
+- **One point, always present.** Draw it as one crisp cream-white disc, separate from the dot field, in every state including error and reduced motion. It is never just the brightest dots.
+- **It is the eye.** In idle, the gaze moves the point itself, not only a parallax offset of the dense core. The point looks around inside the sphere, clamped so it never leaves it.
+- **The deformation is centered on the point.** When the orb leans toward the pointer or a focused element, the dots bulge, gather and compress around the point's current position, so the point always sits at the center of the deformation and never off to one side.
+- **Eye behaviors live in the point:**
+  - peering dilates it a little;
+  - a startle contracts it;
+  - a blink squashes it vertically, like a lid;
+  - dozing narrows and dims it, half-closed;
+  - waking opens it.
+- **Every state morphs out of the point.** The point is the origin of every state's motion. The stagger is measured from the point's position, not the sphere's geometric center:
+  - listening gathers dots toward it;
+  - thinking swirls around it;
+  - speaking emits ripples from it;
+  - assembling throws dots and components out of it;
+  - attention flares coral from it, and the attention line starts at it;
+  - acting orbits it;
+  - done blooms from it;
+  - error makes it flicker and dim.
+- **Transitions:** between states the point travels first and the dots follow from it outward, so every change reads as the singularity acting.
+
 States and their life:
 - **idle:** breath (±1.8% radius at 0.9 Hz), a ripple crossing the sphere, a limb wobble from simplex noise. The orb also acts like a curious pet (`gaze.ts`, tuned only by `GAZE_PERSONALITY`). Its dense core and lit centre shift toward the pointer or the keyboard-focused element as a parallax offset (at most 18% of the radius, the outline stays round) with a lean of at most 3%. It moves on one under-damped spring, the only spring in the HUD that overshoots. It glances rather than locks: after 2 to 4 seconds on one spot it loses interest and drifts back to centre. After about a second on a spot it peers (a little further, slightly brighter). A new notification or an opening overlay makes it glance there. A fast flick startles it (the sphere widens for 250ms). A jump to a far target makes it double-blink. After 60 seconds without input it dozes: slower breath, up to 20% dimmer, never coral, never jittering, and the phrase does not change, so dozing never reads as offline. Any input wakes it with a small perk-up. The gaze runs in the idle state only and never in another state. Reduced motion turns it off.
 - **listening:** gathers 7% and leans toward the Ask field; a cream ring runs inward; tones run Ultraviolet at the limb to Orchid at the core.
