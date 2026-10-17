@@ -36,7 +36,8 @@ export function Spend() {
   }
 
   const days = padDays(costs.data.by_day);
-  const { last7, last30 } = dailyAverages(days);
+  const firstDate = costs.data.by_day.map((d) => d.date).sort()[0];
+  const { last7, last30 } = dailyAverages(days, firstDate);
   const flows = Object.entries(costs.data.by_agent)
     .map(([key, b]) => ({ name: formatAgentName(key), usd: b.usd }))
     .sort((a, b) => b.usd - a.usd);
@@ -44,6 +45,7 @@ export function Spend() {
   const rest = flows.slice(TOP_FLOWS).reduce((sum, f) => sum + f.usd, 0);
   if (flows.length > TOP_FLOWS) top.push({ name: "Others", usd: rest });
   const items = anomalies.data?.anomalies ?? [];
+  const anomalyKnown = Boolean(anomalies.data);
 
   return (
     <Module label={label}>
@@ -55,10 +57,23 @@ export function Spend() {
           </p>
         </div>
         <div className="gov-figure">
-          <span data-testid="anomaly-count" className={`num md${items.length > 0 ? " hot" : ""}`}>
-            {items.length}
-          </span>
-          <span className="muted">{items.length === 1 ? "unusual run" : "unusual runs"} in 30 days</span>
+          {anomalyKnown ? (
+            <>
+              <span data-testid="anomaly-count" className={`num md${items.length > 0 ? " hot" : ""}`}>
+                {items.length}
+              </span>
+              <span className="muted">{items.length === 1 ? "unusual run" : "unusual runs"} in 30 days</span>
+            </>
+          ) : anomalies.isError ? (
+            <p className="gov-err">
+              Could not load unusual runs.{" "}
+              <button type="button" className="ctl-text" onClick={() => void anomalies.refetch()}>
+                Retry
+              </button>
+            </p>
+          ) : (
+            <span className="muted">Checking for unusual runs…</span>
+          )}
           <span className="ro">{formatTotal(costs.data.total_usd)} total</span>
         </div>
         <SeriesSpark values={days.map((d) => d.usd)} label="Spend per day, last 30 days" format={formatTotal} width={320} height={28} />

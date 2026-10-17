@@ -146,3 +146,15 @@
 .gov-file-row {
   grid-template-columns: 1fr auto;
 }
+
+/* 44 px targets for inline text controls (Retry, Open ntfy) */
+.gov .ctl-text,
+.gov-note a,
+.gov-err .ctl-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

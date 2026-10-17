@@ -28,6 +28,15 @@ describe("Files", () => {
     expect(screen.getByText("Workspace is off")).toBeInTheDocument();
   });
 
+  it("says the workspace is off even when the file listing errors", () => {
+    m.useWorkspaceQuery.mockReturnValue(ok({ available: false, bytes_used: 0, bytes_ceiling: 0, busy: false, last_reset_at: null, last_used_at: null }));
+    m.useWorkspaceFilesQuery.mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch: vi.fn() });
+    render(<MemoryRouter><Files /></MemoryRouter>);
+    expect(screen.getByText("Workspace is off")).toBeInTheDocument();
+    expect(screen.queryByText(/could not load/i)).toBeNull();
+    expect(m.useWorkspaceFilesQuery).toHaveBeenCalledWith("", false);
+  });
+
   it("says an available workspace is empty", () => {
     m.useWorkspaceQuery.mockReturnValue(ok({ available: true, bytes_used: 0, bytes_ceiling: 100, busy: false, last_reset_at: null, last_used_at: null }));
     m.useWorkspaceFilesQuery.mockReturnValue(ok([]));

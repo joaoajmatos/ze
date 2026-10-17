@@ -1,12 +1,18 @@
 import { useState } from "react";
 
-/** Asks the server for its version with the typed URL and key; returns the version or the reason it failed. */
+/**
+ * Checks the typed URL and key. `/version` is public, so it only proves the server answers;
+ * one authed route (`/notifications/unread-count`) proves the key. Returns the reason on failure.
+ */
 async function probe(serverUrl: string, apiKey: string): Promise<{ ok: true; version: string } | { ok: false; reason: string }> {
+  const base = serverUrl.replace(/\/$/, "");
   try {
-    const res = await fetch(`${serverUrl.replace(/\/$/, "")}/api/v0/version`, { headers: { Authorization: `Bearer ${apiKey}` } });
-    if (res.status === 401 || res.status === 403) return { ok: false, reason: "The server rejected the API key." };
+    const res = await fetch(`${base}/api/v0/version`);
     if (!res.ok) return { ok: false, reason: `The server answered ${res.status}.` };
     const body = (await res.json()) as { api_version?: string };
+    const authed = await fetch(`${base}/api/v0/notifications/unread-count`, { headers: { Authorization: `Bearer ${apiKey}` } });
+    if (authed.status === 401 || authed.status === 403) return { ok: false, reason: "The server is reachable, but it rejected the API key." };
+    if (!authed.ok) return { ok: false, reason: `The server answered ${authed.status}.` };
     return { ok: true, version: body.api_version ?? "unknown" };
   } catch {
     return { ok: false, reason: "Could not reach the server." };

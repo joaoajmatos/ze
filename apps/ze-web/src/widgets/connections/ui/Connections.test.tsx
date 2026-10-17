@@ -51,14 +51,16 @@ describe("Connections", () => {
     fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ api_version: "0.42.0", client_version: "0.42.0" }) });
     view();
     fireEvent.click(screen.getByRole("button", { name: /^test$/i }));
-    expect(await screen.findByText(/server 0\.42\.0/i)).toBeInTheDocument();
+    expect(await screen.findByText(/API 0\.42\.0/i)).toBeInTheDocument();
   });
 
   it("reports the failing reason when the test fails", async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 401, json: async () => ({}) });
+    fetchMock.mockImplementation(async (url: string) =>
+      url.endsWith("/version") ? { ok: true, status: 200, json: async () => ({ api_version: "v0" }) } : { ok: false, status: 401, json: async () => ({}) },
+    );
     view();
     fireEvent.click(screen.getByRole("button", { name: /^test$/i }));
-    expect(await screen.findByText(/rejected the api key/i)).toBeInTheDocument();
+    expect(await screen.findByText(/reachable, but it rejected the api key/i)).toBeInTheDocument();
     fetchMock.mockRejectedValue(new Error("down"));
     fireEvent.click(screen.getByRole("button", { name: /^test$/i }));
     expect(await screen.findByText(/could not reach the server/i)).toBeInTheDocument();

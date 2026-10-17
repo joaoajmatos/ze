@@ -86,6 +86,14 @@ describe("Data", () => {
     expect(m.createDeleteIntent).toHaveBeenCalledBefore(m.deleteData);
   });
 
+  it("offers an export first inside the delete dialog and closes on Escape", () => {
+    render(<MemoryRouter><Data /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /delete all data/i }));
+    expect(screen.getByRole("button", { name: /export your data first/i })).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("names a failed read", () => {
     m.useDataDomainsQuery.mockReturnValue({ isLoading: false, isError: true, refetch: vi.fn(), data: undefined });
     render(<MemoryRouter><Data /></MemoryRouter>);

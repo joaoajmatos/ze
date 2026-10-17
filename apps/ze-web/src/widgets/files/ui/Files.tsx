@@ -6,16 +6,18 @@ import { formatBytes, formatMtime } from "../lib/format";
 /** Governance › Files: a read-only map of Ze's workspace (status and tree; uploads stay in chat). */
 export function Files() {
   const status = useWorkspaceQuery();
-  const files = useWorkspaceFilesQuery();
+  const off = status.data?.available === false;
+  const files = useWorkspaceFilesQuery("", status.data?.available === true);
   const label = "What is in Ze's workspace?";
-  const failed = status.isError || files.isError;
-  const off = status.data && !status.data.available;
+  const failed = !off && (status.isError || files.isError);
 
   return (
     <RedirectHintTarget hintId="files">
       <Module label={label}>
         <div className="gov-stack">
-          {failed ? (
+          {off ? (
+            <p className="gov-note">Workspace is off</p>
+          ) : failed ? (
             <p className="gov-err">
               Could not load workspace files.{" "}
               <button
@@ -29,8 +31,6 @@ export function Files() {
                 Retry
               </button>
             </p>
-          ) : off ? (
-            <p className="gov-note">Workspace is off</p>
           ) : (
             <>
               {status.data && (

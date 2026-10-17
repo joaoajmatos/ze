@@ -60,7 +60,7 @@ describe("Spend", () => {
 
   it("compares the 7-day and 30-day daily averages over calendar days", () => {
     setup();
-    expect(document.querySelector(".sentence")).toHaveTextContent(/last 7 days \$1\.00\/day vs 30-day \$0\.70\/day/i);
+    expect(document.querySelector(".sentence")).toHaveTextContent(/last 7 days \$1\.00\/day vs 30-day \$0\.95\/day/i);
   });
 
   it("shows no alert state when there are no anomalies", () => {
@@ -91,6 +91,19 @@ describe("Spend", () => {
   it("draws one series over the padded 30 days", () => {
     setup();
     expect(screen.getByRole("img", { name: /spend per day/i })).toBeInTheDocument();
+  });
+
+  it("does not say zero unusual runs when the anomaly query fails or is loading", () => {
+    useCostsQuery.mockReturnValue({ isLoading: false, isError: false, refetch: vi.fn(), data: { total_usd: 1, total_tokens: 1, total_calls: 1, period: "30d", by_agent: {}, by_plugin: {}, by_day: [] } });
+    useCostAnomaliesQuery.mockReturnValue({ isLoading: false, isError: true, refetch: vi.fn(), data: undefined });
+    const { unmount } = render(<Spend />);
+    expect(screen.getByText(/could not load unusual runs/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("anomaly-count")).toBeNull();
+    unmount();
+    useCostAnomaliesQuery.mockReturnValue({ isLoading: true, isError: false, refetch: vi.fn(), data: undefined });
+    render(<Spend />);
+    expect(screen.getByText(/checking for unusual runs/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("anomaly-count")).toBeNull();
   });
 
   it("names a failed read in the module", () => {

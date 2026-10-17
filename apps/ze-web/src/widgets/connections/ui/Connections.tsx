@@ -6,7 +6,7 @@ import { reconnect } from "@/shared/api";
 import { clearConfig, getConfig, saveConfig } from "@/shared/config";
 import { resetClient } from "@/shared/lib";
 import { RedirectHintTarget } from "@/shared/ui";
-import { Control, Module } from "@/shared/ui/hud";
+import { Control, Dialog, Module } from "@/shared/ui/hud";
 import { PluginSettingsSection } from "./PluginSettingsSection";
 
 /** Governance › Connections: which server Ze talks to, plugin settings and the palette. */
@@ -75,7 +75,7 @@ export function Connections() {
               {saved ? "Saved" : "Save and reconnect"}
             </Control>
           </div>
-          {testResult === "ok" && <p className="gov-ok">Connected. Server {testDetail}.</p>}
+          {testResult === "ok" && <p className="gov-ok">Connected. API {testDetail}.</p>}
           {testResult === "error" && <p className="gov-err">{testDetail}</p>}
 
           {manifest?.settings_sections.map((entry) => (
@@ -93,20 +93,15 @@ export function Connections() {
       </Module>
 
       {forgetting && (
-        <div className="gov-dialog" role="dialog" aria-modal="true" aria-labelledby="gov-forget-title">
-          <div className="gov-dialog-box">
-            <h3 id="gov-forget-title" className="sentence" style={{ margin: 0 }}>
-              Forget this server?
-            </h3>
-            <p className="gov-note">This removes the saved server URL and API key from this browser. Ze shows the setup screen. Nothing on the server changes.</p>
-            <div className="gov-actions">
-              <Control onClick={() => setForgetting(false)}>Cancel</Control>
-              <Control className="hot" onClick={forget}>
-                Forget
-              </Control>
-            </div>
+        <Dialog title="Forget this server?" onClose={() => setForgetting(false)}>
+          <p className="gov-note">This removes the saved server URL and API key from this browser. Ze shows the setup screen. Nothing on the server changes.</p>
+          <div className="gov-actions">
+            <Control onClick={() => setForgetting(false)}>Cancel</Control>
+            <Control className="hot" onClick={forget}>
+              Forget
+            </Control>
           </div>
-        </div>
+        </Dialog>
       )}
     </RedirectHintTarget>
   );

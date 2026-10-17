@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 import type { WorkspaceFileItem } from "./types";
 
-export function useWorkspaceFilesQuery(path = "") {
+export function useWorkspaceFilesQuery(path = "", enabled = true) {
   return useQuery<WorkspaceFileItem[]>({
     queryKey: queryKeys.workspaceFiles(path),
     queryFn: async () => {
@@ -11,5 +11,6 @@ export function useWorkspaceFilesQuery(path = "") {
       if (error) throw error;
       return data?.files ?? [];
     },
+    enabled,
   });
 }

@@ -21,8 +21,20 @@ describe("padDays", () => {
 describe("dailyAverages", () => {
   it("divides by calendar days, not by buckets present", () => {
     const days = padDays([{ date: "2026-10-31", usd: 7, calls: 1 }, { date: "2026-10-05", usd: 30, calls: 1 }], NOW);
-    const { last7, last30 } = dailyAverages(days);
+    const { last7, last30 } = dailyAverages(days, "2026-10-05");
     expect(last7).toBeCloseTo(1);
-    expect(last30).toBeCloseTo(37 / 30);
+    expect(last30).toBeCloseTo(37 / 27);
+  });
+
+  it("divides by days since the first bucket on a young install", () => {
+    const days = padDays([{ date: "2026-10-29", usd: 3, calls: 1 }], NOW);
+    const { last7, last30 } = dailyAverages(days, "2026-10-29");
+    expect(last30).toBeCloseTo(3 / 3);
+    expect(last7).toBeCloseTo(3 / 3);
+  });
+
+  it("divides by the full window when the first bucket is older", () => {
+    const days = padDays([{ date: "2026-10-31", usd: 30, calls: 1 }], NOW);
+    expect(dailyAverages(days, "2026-08-01").last30).toBeCloseTo(1);
   });
 });

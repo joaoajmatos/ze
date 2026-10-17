@@ -5,7 +5,7 @@ import { useImportUserData } from "@/features/import-user-data";
 import { useDataDomainsQuery } from "@/entities/data-domain";
 import { settingsDataSectionId } from "@/shared/config";
 import { RedirectHintTarget } from "@/shared/ui";
-import { Control, Module } from "@/shared/ui/hud";
+import { Control, Dialog, Module } from "@/shared/ui/hud";
 import { domainLabel } from "../lib/domain-labels";
 
 const DELETE_LIST = ["Memories, facts and episodes", "Goals and milestones", "Contacts", "Messages and conversation history", "Reminders", "Usage history"];
@@ -77,36 +77,34 @@ export function Data() {
       </Module>
 
       {confirming && (
-        <div className="gov-dialog" role="dialog" aria-modal="true" aria-labelledby="gov-delete-title">
-          <div className="gov-dialog-box hot">
-            <div>
-              <h3 id="gov-delete-title" className="sentence" style={{ margin: 0 }}>
-                Delete all data?
-              </h3>
-              <p className="gov-err">This cannot be undone.</p>
-            </div>
-            <ul className="gov-note" style={{ margin: 0, paddingLeft: 18 }}>
-              {DELETE_LIST.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-            <div className="gov-field">
-              <label className="lbl" htmlFor="gov-delete-confirm">
-                Type DELETE to confirm
-              </label>
-              <input id="gov-delete-confirm" className="gov-in" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="DELETE" autoFocus />
-            </div>
-            {deleteError && <p className="gov-err">{deleteError}</p>}
-            <div className="gov-actions">
-              <Control onClick={() => setConfirming(false)} disabled={deleting}>
-                Cancel
-              </Control>
-              <Control className="hot" onClick={() => void deleteAllData()} disabled={typed !== "DELETE" || deleting}>
-                {deleting ? "Deleting" : "Delete everything"}
-              </Control>
-            </div>
+        <Dialog title="Delete all data?" hot onClose={() => !deleting && setConfirming(false)}>
+          <p className="gov-err">This cannot be undone.</p>
+          <ul className="gov-note" style={{ margin: 0, paddingLeft: 18 }}>
+            {DELETE_LIST.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <div className="gov-actions">
+            <Control onClick={() => void exportData()} disabled={exporting}>
+              {exporting ? "Preparing export" : "Export your data first"}
+            </Control>
           </div>
-        </div>
+          <div className="gov-field">
+            <label className="lbl" htmlFor="gov-delete-confirm">
+              Type DELETE to confirm
+            </label>
+            <input id="gov-delete-confirm" className="gov-in" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="DELETE" />
+          </div>
+          {deleteError && <p className="gov-err">{deleteError}</p>}
+          <div className="gov-actions">
+            <Control onClick={() => setConfirming(false)} disabled={deleting}>
+              Cancel
+            </Control>
+            <Control className="hot" onClick={() => void deleteAllData()} disabled={typed !== "DELETE" || deleting}>
+              {deleting ? "Deleting" : "Delete everything"}
+            </Control>
+          </div>
+        </Dialog>
       )}
     </RedirectHintTarget>
   );

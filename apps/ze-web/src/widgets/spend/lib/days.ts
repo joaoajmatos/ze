@@ -14,8 +14,16 @@ export function padDays(byDay: readonly DailyCostBucket[], now: Date = new Date(
   return out;
 }
 
-/** Daily averages over the last 7 and all padded days; absent days count as zero. */
-export function dailyAverages(padded: readonly DailyCostBucket[]): { last7: number; last30: number } {
+/**
+ * Daily averages over the last 7 days and the 30-day window; absent days count as zero.
+ * An install younger than the window divides by the days since its first bucket, so a new
+ * install does not read as a spike. Today's partial day counts as a whole day.
+ */
+export function dailyAverages(padded: readonly DailyCostBucket[], firstDate?: string): { last7: number; last30: number } {
   const sum = (days: readonly DailyCostBucket[]) => days.reduce((a, d) => a + d.usd, 0);
-  return { last7: sum(padded.slice(-7)) / 7, last30: sum(padded) / padded.length };
+  const today = padded[padded.length - 1]?.date;
+  const age = firstDate && today ? Math.round((Date.parse(today) - Date.parse(firstDate)) / DAY_MS) + 1 : padded.length;
+  const window = Math.max(1, Math.min(padded.length, age));
+  const week = Math.min(7, window);
+  return { last7: sum(padded.slice(-week)) / week, last30: sum(padded.slice(-window)) / window };
 }

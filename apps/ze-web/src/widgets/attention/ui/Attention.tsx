@@ -39,7 +39,8 @@ function Budget() {
 
 function Outcomes() {
   const outcomes = useNotificationOutcomesQuery();
-  if (outcomes.isError || !outcomes.data || outcomes.data.length === 0) return null;
+  if (outcomes.isError) return <p className="gov-err">Could not load recent push outcomes.</p>;
+  if (!outcomes.data || outcomes.data.length === 0) return null;
   return (
     <ul aria-label="Recent push outcomes" style={{ listStyle: "none", margin: 0, padding: 0 }}>
       {outcomes.data.map((n) => (
@@ -130,7 +131,7 @@ export function Attention() {
         {problem && <p className="gov-err">{problem}</p>}
         <div>
           <button type="button" className="ctl primary" onClick={save} disabled={mutation.isPending}>
-            {mutation.isPending ? "Saving" : "Save"}
+            {mutation.isPending ? "Saving" : mutation.isSuccess ? "Saved" : "Save"}
           </button>
         </div>
       </div>

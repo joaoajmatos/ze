@@ -38,7 +38,7 @@ export function notificationHref(n: NotificationTarget): string | null {
     case "workflow_execution":
       return parent ? workflowPath(parent, id) : workflowsPath();
     case "workspace_run":
-      return "/doing/workspace";
+      return "/governance#files";
     case "chat_thread":
       return askPath(id);
     case "person":

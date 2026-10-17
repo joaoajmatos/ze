@@ -100,6 +100,12 @@ describe("Attention", () => {
     expect(rows[1]).toHaveTextContent(/failed/i);
   });
 
+  it("says so when the push outcomes cannot load", () => {
+    m.useNotificationOutcomesQuery.mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch: vi.fn() });
+    render(<Attention />);
+    expect(screen.getByText(/could not load recent push outcomes/i)).toBeInTheDocument();
+  });
+
   it("shows an error line and no number when the budget route fails", () => {
     m.useAttentionBudgetQuery.mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch: vi.fn() });
     render(<Attention />);
