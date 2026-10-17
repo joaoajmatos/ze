@@ -20,6 +20,10 @@ function lazyPage(loader: () => Promise<{ default: ComponentType }>) {
 
 export const router = createBrowserRouter([
   {
+    path: "/jarvis/*",
+    element: lazyPage(() => import("@/pages/jarvis").then((m) => ({ default: m.JarvisApp }))),
+  },
+  {
     path: "/",
     element: <AppShell overlay={<ContextOverlay />} />,
     errorElement: <RouteErrorPage />,
