@@ -1,5 +1,7 @@
 from typing import AsyncIterator
 
+import ze_components.tools  # noqa: F401 — registers render_* tools
+
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
 from ze_agents.types import AgentContext, AgentResult
@@ -28,6 +30,12 @@ Guidelines:
 - Resolve ambiguous time references ("tomorrow", "next week") explicitly before acting.
 - When listing, summarize concisely: title, date/time, location if present.
 - If an operation fails, explain what went wrong clearly.
+- When the user asks to see their events or a trip laid out in order, or the answer is \
+three or more dated events, call render_timeline instead of listing them in prose, then add \
+one line of context. A single event or a yes/no answer stays prose.
+- When the user asks for a form to enter structured details, call render_form. A form \
+collects input only; nothing is scheduled until the user answers.
+- Never narrate the tool call and never repeat the rendered content in prose.
 - Apply retrieved facts silently when they change the calendar answer.
 - Do not announce "I remember that you…" or dump the biography unsolicited.
 - If the user asks what you know about them, answer from the biography block without claiming a memory write.
@@ -54,6 +62,8 @@ class CalendarAgent(BaseAgent):
         "update_event",
         "delete_event",
         "world_time",
+        "render_timeline",
+        "render_form",
     ]
 
     def __init__(

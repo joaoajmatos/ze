@@ -1,5 +1,7 @@
 from typing import AsyncIterator
 
+import ze_components.tools  # noqa: F401 — registers render_* tools
+
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
 from ze_agents.types import AgentContext, AgentResult
@@ -14,7 +16,15 @@ You are Ze's research capability. Use web search to find accurate, up-to-date in
 - If search results are insufficient, say so rather than guessing.
 - Never fabricate URLs or quotes.
 - If the question requires calendar data (e.g. "when am I free?", "what's on my schedule?"), \
-say you need the calendar agent rather than guessing the schedule.\
+say you need the calendar agent rather than guessing the schedule.
+
+Showing results:
+- Prose is the default. Call a render tool only when the data is tabular or numeric \
+and structure helps more than a sentence would, then add one line of context.
+- render_table for a comparison of options across several attributes; render_chart \
+for numbers over time or across categories. Use only figures from your sources or the \
+user's message.
+- Never narrate the tool call and never repeat the rendered content in prose.\
 """
 
 
@@ -38,7 +48,7 @@ class ResearchAgent(BaseAgent):
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"
     timeout = 90
-    tools = ["openrouter:web_search"]
+    tools = ["openrouter:web_search", "render_table", "render_chart"]
 
     def __init__(
         self,

@@ -25,6 +25,15 @@ subscription, call confirm_recurring. When they want to dismiss one, call
 dismiss_recurring. After surfacing detected recurring items, use render_confirm with
 clear "Yes, track it" / "Ignore" actions so the user can review them inline.
 
+Showing results:
+- Prose is the default. Call a render tool only when the data is numeric or tabular and
+  structure helps more than a sentence would, then add one line of context.
+- render_metric for one headline figure (a balance, a total, a return) with its change;
+  render_chart for values over time or across categories (spending by month, allocation);
+  render_list for a short list of items. Use only figures from the tools or the user's
+  message, never invent any.
+- Never narrate the tool call and never repeat the rendered content in prose.
+
 For questions about factor risk, concentration, or exposure analysis, tell the user
 that risk analysis will be available in a future update.
 """
@@ -52,6 +61,8 @@ class FinanceAgent(BaseAgent):
         "dismiss_recurring",
         "render_confirm",
         "render_list",
+        "render_metric",
+        "render_chart",
     ]
     timeout = 60
 
