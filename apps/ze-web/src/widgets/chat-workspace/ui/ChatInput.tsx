@@ -108,6 +108,7 @@ export function ChatInput({
         )}
         <textarea
           ref={textareaRef}
+          data-ask-input=""
           value={value}
           onChange={(e) => {
             onChange(e.target.value);

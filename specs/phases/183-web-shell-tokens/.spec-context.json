@@ -4,7 +4,7 @@
   "branch": "183-web-shell-tokens",
   "currentStep": "implement",
   "status": "implementing",
-  "currentTask": "T009b",
+  "currentTask": "T017",
   "history": [
     {
       "step": "implement",
@@ -93,6 +93,70 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-17T15:07:13.087Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T15:28:22.667Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T15:28:22.829Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T15:28:22.991Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T15:28:23.145Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T15:28:23.305Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T15:28:23.462Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T15:28:23.630Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T15:28:23.806Z"
     }
   ],
   "task_summaries": {
@@ -128,6 +192,30 @@
       "status": "DONE"
     },
     "T009b": {
+      "status": "DONE"
+    },
+    "T010": {
+      "status": "DONE"
+    },
+    "T011": {
+      "status": "DONE"
+    },
+    "T012": {
+      "status": "DONE"
+    },
+    "T013": {
+      "status": "DONE"
+    },
+    "T014": {
+      "status": "DONE"
+    },
+    "T015": {
+      "status": "DONE"
+    },
+    "T016": {
+      "status": "DONE"
+    },
+    "T017": {
       "status": "DONE"
     }
   }

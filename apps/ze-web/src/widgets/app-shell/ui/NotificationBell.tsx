@@ -13,7 +13,7 @@ import {
 import { useSession } from "@/entities/session";
 import { cn } from "@/shared/lib/cn";
 import { EmptyState } from "@/shared/ui";
-import { relativeTime, targetRoute } from "../lib/notification-format";
+import { notificationHref, relativeTime } from "../lib/notification-format";
 
 const HELD_ACTIONS = [
   { label: "Approve all", value: "approve", style: "primary" as const },
@@ -89,16 +89,11 @@ export function NotificationBell() {
       setConfirmParam(item.target_id);
       return;
     }
-    if (item.target_type === "chat_thread" && item.target_id) {
-      selectSession(item.target_id);
+    if (item.target_type === "chat_thread" && item.target_id) selectSession(item.target_id);
+    const href = notificationHref(item);
+    if (href) {
       setOpen(false);
-      navigate("/");
-      return;
-    }
-    const route = targetRoute(item.target_type, item.target_id);
-    if (route) {
-      setOpen(false);
-      navigate(route);
+      navigate(href);
     }
   }
 
@@ -106,12 +101,12 @@ export function NotificationBell() {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative flex items-center justify-center w-9 h-9 rounded-pill text-smoke hover:text-foreground hover:bg-foreground/5 transition-colors"
+        className="ctl bell"
         aria-label="Notifications"
       >
         <Bell className="w-[18px] h-[18px]" />
         {!!unreadCount && unreadCount > 0 && (
-          <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-plum-voltage text-[10px] leading-[16px] text-foreground text-center font-medium">
+          <span className="count">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

@@ -5,17 +5,17 @@ export {
   hasConfig,
 } from "./app-config";
 export {
-  type NavRouteMeta,
-  navRoutes,
-  automationNavRoutes,
-  knowledgeNavRoutes,
-  systemNavRoutes,
-  AutomationIcon,
-  KnowledgeIcon,
-  SystemIcon,
-  settingsNavRoute,
-  getRoute,
+  type Place,
+  type PlaceId,
+  places,
+  placeOf,
+  redirects,
+  goalPath,
+  goalsPath,
+  workflowsPath,
+  workflowPath,
+  askPath,
   settingsDataSectionId,
   settingsDataPath,
-} from "./nav-routes";
+} from "./places";
 export { AGENT_COLORS, AGENT_COLOR_FALLBACK } from "./agents";

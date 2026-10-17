@@ -31,11 +31,11 @@ export function ZeErrorFallback({ error, onReset }: ZeErrorFallbackProps) {
             Try again
           </button>
         )}
-        <Link
-          to="/"
-          className="rounded-pill px-4 py-2 text-sm text-smoke transition-colors hover:text-foreground"
-        >
-          Back to chat
+        <Link to="/" className="ctl cmd">
+          <span className="cmd-i" aria-hidden="true">
+            ←
+          </span>
+          <span className="cmd-q">Back to the world</span>
         </Link>
       </div>
 

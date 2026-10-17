@@ -12,3 +12,7 @@ export type { ControlProps } from "./Control";
 export { CommandChip } from "./CommandChip";
 export { Chip } from "./Chip";
 export * from "./presence";
+export { SectionTabs } from "./SectionTabs";
+export type { SectionTab } from "./SectionTabs";
+export { InterimSections } from "./InterimSections";
+export type { InterimSection, PageLoader } from "./InterimSections";

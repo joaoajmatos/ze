@@ -1438,6 +1438,178 @@ h2.lbl {
   30%, 100% { fill: var(--coral); }
 }
 
+/* ---------- app shell: places, bottom bar, ask overlay ---------- */
+.main.main-places {
+  grid-template-columns: 264px minmax(0, 1fr);
+  padding-bottom: 24px;
+}
+.place {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+.shell.on-ask .place {
+  min-height: calc(100dvh - 190px);
+}
+.ask-place {
+  min-height: 0;
+  height: calc(100dvh - 190px);
+  overflow: hidden;
+}
+.top .brand {
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  cursor: pointer;
+}
+.top-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.top-bell {
+  position: relative;
+}
+.bell {
+  position: relative;
+  padding: 0;
+}
+.bell .count {
+  position: absolute;
+  top: 5px;
+  right: 3px;
+  min-width: 16px;
+  padding: 0 3px;
+  background: var(--main);
+  color: var(--field);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  line-height: 16px;
+  text-align: center;
+}
+.conn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+.interim {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+.section-tabs {
+  flex-wrap: wrap;
+}
+.interim-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.interim-loading {
+  padding: 24px 0;
+}
+.palette-choice {
+  display: grid;
+  gap: 4px;
+}
+.palette-choice .seg {
+  margin-top: 4px;
+}
+.bottombar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--field);
+  border-top: 1px solid var(--hair);
+}
+.bottombar .ctl {
+  flex-direction: column;
+  gap: 4px;
+  min-height: 56px;
+  padding: 6px 2px;
+  border-width: 0;
+  letter-spacing: 0.1em;
+  font-size: 0.5625rem;
+}
+.bottombar .ctl[aria-current="page"] {
+  box-shadow: inset 0 -16px 26px -14px color-mix(in oklab, var(--main) 55%, transparent);
+}
+.ask-overlay {
+  position: fixed;
+  right: 28px;
+  bottom: 88px;
+  z-index: 5;
+  width: min(420px, calc(100vw - 32px));
+  max-height: 60vh;
+  display: flex;
+  background: var(--field);
+}
+.ask-overlay > .mod {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: 60vh;
+  min-height: 0;
+  background: var(--field);
+}
+.ask-overlay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 14px 8px;
+}
+.ask-overlay-list {
+  flex: 1;
+  min-height: 96px;
+  overflow-y: auto;
+  padding: 0 14px 10px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.ask-overlay > .mod > :last-child:not(.ask-overlay-list) {
+  margin: 0 14px 14px;
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --bottombar: calc(56px + env(safe-area-inset-bottom));
+  }
+  .shell {
+    padding-bottom: var(--bottombar);
+  }
+  .main.main-places {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bottom {
+    bottom: var(--bottombar);
+  }
+  .ask-overlay {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    bottom: calc(var(--bottombar) + 76px);
+    max-height: 65vh;
+  }
+  .shell.on-ask .place,
+  .ask-place {
+    min-height: 0;
+    height: calc(100dvh - var(--bottombar) - 150px);
+  }
+}
+
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   .rule,

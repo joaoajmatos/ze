@@ -77,7 +77,6 @@ export function LeaderLine({ from, to, reducedMotion }: Props) {
       <line ref={flow} className="leader-flow" />
       <circle ref={tip} className="leader-tip" />
     </svg>,
-    // Inside the .jarvis root so the palette tokens resolve; still fixed to the viewport.
-    document.querySelector(".jarvis") ?? document.body,
+    document.body,
   );
 }
