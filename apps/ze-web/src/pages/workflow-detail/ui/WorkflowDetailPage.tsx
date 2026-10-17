@@ -1,6 +1,6 @@
 import type { WorkflowExecutionResponse, WorkflowRevisionResponse, WorkflowStepResponse } from "@myguyze/ze-client";
 import { ArrowLeft, Workflow, Loader2, CheckCircle2, XCircle, MessageCircle, Ban, ChevronDown, ChevronRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { WorkflowExecutionsList } from "@/widgets/workflow-executions";
@@ -36,15 +36,14 @@ export function WorkflowDetailPage() {
 
   const [searchParams] = useSearchParams();
   const requestedExecution = searchParams.get("execution");
-  const appliedRequest = useRef<string | null>(null);
-  useEffect(() => {
-    if (!requestedExecution || appliedRequest.current === requestedExecution || !executions) return;
+  const [appliedRequest, setAppliedRequest] = useState<string | null>(null);
+  if (requestedExecution && appliedRequest !== requestedExecution && executions) {
     const match = executions.find((e) => e.id === requestedExecution);
     if (match) {
-      appliedRequest.current = requestedExecution;
+      setAppliedRequest(requestedExecution);
       setSelectedExecution(match);
     }
-  }, [requestedExecution, executions]);
+  }
 
   const trigger = useTriggerWorkflowMutation();
   const cancelExecution = useCancelExecutionMutation();
