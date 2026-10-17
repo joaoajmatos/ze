@@ -2,7 +2,7 @@
 
 **Input**: [spec.md](./spec.md), [plan.md](./plan.md), [contracts/screen-context.md](./contracts/screen-context.md).
 
-**Build gate**: 183 and 184 landed (184's `_compose_preset`/`_preset_envelope`, `failure_summary`, `list_progress`, `zpro005`, T037). The Maestro has reserved migration `zc039`. The user answers OQ-1 (routing hint calibration) and OQ-2 (store context for Retry); tasks follow the recommendations. Spec Architect (Lintel) on call.
+**Build gate**: 183 and 184 landed (184's `_compose_preset`/`_preset_envelope`, `failure_summary`, `list_progress`, `zpro005`, T037). The Maestro reserved migration `zc039`. The user answered on 2026-10-17: OQ-1 routing hint built off behind the flag, enabled only after a user-approved live calibration; OQ-2 store the context for Retry. Spec Architect (Lintel) on call.
 
 **Tests**: required (constitution V). **Fail-first**. Fakes and `AsyncMock` pools; `@pytest.mark.pg` for new SQL; no OpenRouter or System One call in default suites; **no live calibration run** in this phase.
 
@@ -70,12 +70,12 @@ Each task: tests first with a fake store (ok, missing, posture fields, summary p
 
 - [ ] T022 [ENG] [BACKEND] `ze-eval` runner: scenario `setup:` (rows created through the REST API where one exists, otherwise inserted through the verifier's DB connection only into tables the verifier already touches, with every NOT NULL and linked row filled; bound to names, deleted after the scenario; each kind's insert covered by a runner test against the real schema, `@pytest.mark.pg`), `{{name.field}}` substitution in `context:` and `turns`, the judge's turn description includes the context; tests in `core/ops/ze-eval/tests`; `docs/eval.md`.
 - [ ] T023 [JR] [BACKEND] `eval/scenarios/screen_context.yaml` per FR-020 and FR-025 using `setup:`; Governance case tagged skip until 190. Run on `make dev-eval`; record results in the Handoffs note.
-- [ ] T024 [ENG] [BACKEND] `eval/calibration/routing.py`: `--check-sets` (schema and per-language row counts; no network; mirrors the other calibration scripts) and a per-row `screen` column appended to the state's `context` exactly as `build_judgment_state` does with `screen_hint` on; `Makefile`: change the `calibrate-routing` recipe to `uv run python eval/calibration/routing.py $(ARGS)` (it ignores `ARGS` today, so the gate would run live) and add the help line; a test that parses the Makefile and asserts the recipe contains `$(ARGS)`; tests in `core/engine/ze-core/tests/routing/test_calibration_script.py`. Until this lands, run `uv run python eval/calibration/routing.py --check-sets` directly, never `make calibrate-routing`.
+- [ ] T024 [ENG] [BACKEND] `eval/calibration/routing.py`: `--check-sets` (schema and per-language row counts; no network; mirrors the other calibration scripts) and a per-row `screen` column appended to the state's `context` exactly as `build_judgment_state` does with `screen_hint` on; `Makefile`: change the `calibrate-routing` recipe to `uv run python eval/calibration/routing.py $(ARGS)` (it ignores `ARGS` today, so the gate would run live) and add the help line; a test that parses the Makefile and asserts the recipe contains `$(ARGS)`; tests in `core/engine/ze-core/tests/routing/test_calibration_script.py`. Never run `make calibrate-routing` (or the script without `--check-sets`) before this task lands.
 - [ ] T025 [JR] [BACKEND] `eval/calibration/routing_screen.jsonl` (EN + PT rows: prompt asked from a screen, `screen` subject line, gold agent); `make calibrate-routing ARGS=--check-sets` passes offline. No live run.
 
 ## Phase 8: Gates [ENG]
 
-- [ ] T026 [ENG] [PLATFORM] `make test-py`, `make test-pg`, `make lint`, `make test-web`, `make typecheck-web`, `make web-build`, `make calibrate-routing ARGS=--check-sets` (only after T024's recipe change; otherwise run the script directly); SC-004 greps; capture of "Chat about this" on the interim goal page at 1440 and 390 (hover, keyboard Tab, touch emulation). Record results and commit.
+- [ ] T026 [ENG] [PLATFORM] `make test-py`, `make test-pg`, `make lint`, `make test-web`, `make typecheck-web`, `make web-build`, `make calibrate-routing ARGS=--check-sets` (only after T024 lands); SC-004 greps; capture of "Chat about this" on the interim goal page at 1440 and 390 (hover, keyboard Tab, touch emulation). Record results and commit.
 
 ## Phase 9: Docs [DOCS]
 

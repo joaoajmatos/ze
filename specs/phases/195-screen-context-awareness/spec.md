@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Ready to implement (Floor Reviewer changes applied 2026-10-17; pending the user's answers to the open questions and the Maestro's reservation of migration `zc039`)
+**Status**: Ready to implement (approved by the Floor Reviewer Gauge, d066787f; user answers recorded 2026-10-17; `zc039` reserved)
 
 **Input**: Maestro brief 2026-10-17, relaying the user: "We also need to improve the capacity of context awareness within screens." Scope proposed by the Maestro (typed contract, resolver registry, deixis, trace, web hook, honesty, tests) and refined here. Absorbs the goal screen note that phase 188 carried and backend gap 13 (screen context on the trace) that phase 194 carried. Addition relayed the same day: "I think that components on the screen could have a chat about this action maybe" — a "Chat about this" action on every module and component (US8, FR-021 to FR-026).
 
@@ -50,7 +50,13 @@ With the Ask bar on every place and the contextual overlay (183), most questions
 - Bad or partial contexts never fail a turn. Record text is sanitised. Eval scenarios get a fixture setup step.
 - 184's preset summary gets its own `AgentContext.preset_note` field so it neither overwrites nor is overwritten by the screen note.
 
-### Open questions for the user (Spec Architect's recommendation in bold; tasks follow the recommendation)
+### Session 2026-10-17 (user answers, relayed by the Maestro)
+
+- Q (OQ-1): May the screen subject lean routing? → A: **(user)** build it off behind `system_one.surfaces.routing.screen_hint`, enable it only after the user approves one live `make calibrate-routing` run that passes (the recommendation).
+- Q (OQ-2): Store the screen context on each user message so Retry replays it? → A: **(user)** yes (the recommendation).
+- Migration `zc039` (`messages.screen_context`) reserved by the Maestro.
+
+### Open questions for the user (answered above; kept for the record) (Spec Architect's recommendation in bold; tasks follow the recommendation)
 
 - OQ-1: May the screen subject lean routing (a question asked on a goal page leans to the goals agent)? It changes the text the calibrated routing Choice sees, so it needs a live calibration run that costs credits. → **Recommended: build it behind `system_one.surfaces.routing.screen_hint: false`, add screen rows to the routing calibration set (validated offline), and enable it only after you approve one live `make calibrate-routing` run that passes the existing acceptance rule.** The tier judge never sees the screen either way. Alternative: never use the screen for routing (deixis still works once routed).
 - OQ-2: Store the screen context on each user message so Retry replays it? → **Recommended: yes (nullable JSONB; refs, labels and versions, no record contents).** Alternative: a retry answers without the screen (today's behaviour).
