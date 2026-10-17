@@ -69,7 +69,7 @@
 ## Phase 7: Screen context [US1, US2] (needs 195)
 
 - [x] T025 [ENG] [WEB] Tests first: `WorldPage` publishes `place: "world"` and `focused_module`; the field publishes `selection` and `subject`; each widget publishes its visible rows (`useScreenPublisher` mock assertions). Implement.
-- [x] T026 [JR] [WEB] Tests first, one per kind (195 FR-025): `ChatAboutChip` on field marks (`loop`, `goal`, `hypothesis`, `reminder`), loop rows, Needs-you rows (`held_write`, `goal_gate`, `loop`), Away rows (`notification`, `workflow_execution`) calls the passed `onChatAbout` with the right ref; each `Module` gets `onChatAbout`. Implement in the widgets (callbacks by props only).
+- [x] T026 [JR] [WEB] Tests first, one per kind (195 FR-025): `ChatAboutChip` in the selected mark's readout (`loop`, `goal`, `hypothesis`, `reminder`; a relationship has no resolver, so none), loop rows, Needs-you rows (`held_write`, `goal_gate`, `loop`), Away rows (`notification`, `workflow_execution`) calls the passed `onChatAbout` with the right ref; a module has no record of its own, so it carries no chip (decision 2026-10-17, review V-1). Implement in the widgets (callbacks by props only).
 
 ## Phase 8: Hard cuts [US1]
 
