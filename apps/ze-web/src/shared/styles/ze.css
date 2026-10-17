@@ -1826,3 +1826,37 @@ h2.lbl {
 .tabs .ctl:not([aria-current="page"]) {
   --c: color-mix(in oklab, var(--main) 45%, transparent);
 }
+
+/* ---------- Mind (phase 189) ---------- */
+.belief .s .chip {
+  margin-right: 6px;
+}
+.belief .struck {
+  text-decoration: line-through;
+  color: var(--dim);
+}
+.belief-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.text-field {
+  min-height: 44px;
+  min-width: 0;
+  flex: 1 1 12rem;
+  padding: 0 12px;
+  background: transparent;
+  border: 1px solid var(--hair-strong);
+  color: var(--cream);
+  font: inherit;
+}
+.text-field::placeholder {
+  color: var(--dim);
+}
+.text-field:focus-visible {
+  outline: 1px solid var(--cream);
+  outline-offset: 2px;
+}

@@ -23,6 +23,8 @@ export const queryKeys = {
   activityHeatmap: (start?: string, end?: string) => ["activity-heatmap", start ?? "", end ?? ""] as const,
   memoryGraph: (entityType?: string, seedId?: string) => ["memory-graph", entityType ?? "", seedId ?? ""] as const,
   entityDetail: (entityId: string) => ["entity-detail", entityId] as const,
+  entitySearch: (q: string, type?: string) => ["entity-search", q, type ?? ""] as const,
+  contactsPage: ["contacts-page"] as const,
   pluginPage: (path: string) => ["plugin-page", path] as const,
   pluginSettings: (id: string) => ["plugin-settings", id] as const,
   dataDomains: () => ["data-domains"] as const,
