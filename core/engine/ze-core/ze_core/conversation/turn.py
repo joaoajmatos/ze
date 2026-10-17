@@ -178,6 +178,13 @@ async def invoke_raw_turn(
                     thread_id,
                 )
 
+        elif kind == "on_chain_end" and name == "resolve_screen":
+            screen = (data.get("output") or {}).get("screen_trace")
+            if screen is not None and interface is not None:
+                await interface.send_trace_partial(
+                    pending_message_id, {"screen": screen}, thread_id
+                )
+
         elif kind == "on_chain_end" and name == "choose_tier":
             tier = (data.get("output") or {}).get("tier")
             if tier is not None and interface is not None:

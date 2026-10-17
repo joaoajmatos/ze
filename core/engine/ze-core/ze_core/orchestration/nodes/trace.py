@@ -17,6 +17,7 @@ from ze_core.conversation.messages.types import (
     CompactionTrace,
     MessageTrace,
     ProcedureUsageTrace,
+    ScreenTrace,
     SkillUsageTrace,
     SourceTrace,
     ToolCallTrace,
@@ -25,6 +26,9 @@ from ze_core.conversation.messages.types import (
 from ze_core.orchestration.loop_offer import with_loop_offer_line
 from ze_core.orchestration.promote import ledger_with_promote_offer
 from ze_core.orchestration.state import AgentState
+from ze_logging import get_logger
+
+log = get_logger(__name__)
 
 
 _STILL_RUNNING_ID_PATTERN = re.compile(r"^\[still running\] run ([^:]+):")
@@ -98,6 +102,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
             *_refused_over_cap_rows(state, agent_result),
         ],
         tier=state.get("tier"),
+        screen=_screen_trace(state.get("screen_trace")),
     )
     update: dict[str, Any] = {"message_trace": trace}
     update.update(_with_declined_lines(state, agent_result))
@@ -381,3 +386,13 @@ def _extract_procedure(agent_context: Any) -> ProcedureUsageTrace | None:
     if payload is None:
         return None
     return ProcedureUsageTrace(**payload)
+
+
+def _screen_trace(raw: Any) -> ScreenTrace | None:
+    if not isinstance(raw, dict):
+        return None
+    try:
+        return ScreenTrace.from_dict(raw)
+    except (TypeError, ValueError):
+        log.warning("screen_trace_unreadable")
+        return None

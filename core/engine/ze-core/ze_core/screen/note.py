@@ -102,6 +102,7 @@ class ResolverRow:
 class ScreenResolution:
     note: str | None = None
     subject_line: str | None = None
+    subject_labels: list[str] = field(default_factory=list)
     rows: list[ResolverRow] = field(default_factory=list)
 
     @property
@@ -488,4 +489,11 @@ async def build_screen_note(
         )
         kind = sanitize_text(subject_line.ref.kind, 30).replace("_", " ")
         subject_text = _clip(f'Screen subject: {kind} "{label}"', 120)
-    return ScreenResolution(note=note, subject_line=subject_text, rows=rows)
+    subject_labels = [
+        f"{kind_label(line.ref.kind)} · {sanitize_text(line.label or line.ref.label or line.ref.id, 80)}"
+        for item, line in entries
+        if item.slot == SLOT_SUBJECT
+    ]
+    return ScreenResolution(
+        note=note, subject_line=subject_text, rows=rows, subject_labels=subject_labels
+    )

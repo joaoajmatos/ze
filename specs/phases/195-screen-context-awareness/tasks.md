@@ -55,7 +55,7 @@ Each task: tests first with a fake store (ok, missing, posture fields, summary p
 
 ## Phase 5: Trace [US4]
 
-- [ ] T015 [ENG] [BACKEND] Tests first: `record_trace` writes `MessageTrace.screen` (contract shape incl. `origin`, `invalid`); REST `getMessageTrace` and the partial `trace_update` frame carry it. Implement `ScreenTrace` in `ze_core.conversation.messages.types` (serde allowlist), `nodes/trace.py`, `api/schemas.py`, `api/v0/messages/views.py`, the WS frame; `make codegen`.
+- [x] T015 [ENG] [BACKEND] Tests first: `record_trace` writes `MessageTrace.screen` (contract shape incl. `origin`, `invalid`); REST `getMessageTrace` and the partial `trace_update` frame carry it. Implement `ScreenTrace` in `ze_core.conversation.messages.types` (serde allowlist), `nodes/trace.py`, `api/schemas.py`, `api/v0/messages/views.py`, the WS frame; `make codegen`.
 
 ## Phase 6: Web — store, send path, chip [US5, US8]
 

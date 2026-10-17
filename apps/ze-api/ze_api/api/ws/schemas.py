@@ -18,6 +18,7 @@ from ze_api.api.v0.messages.schemas import (
     RollbackTraceResponse,
     SkillUsageTraceResponse,
     SourceTraceResponse,
+    ScreenTraceResponse,
     TierTraceResponse,
     ToolCallTraceResponse,
     UndoPlanEntryResponse,
@@ -164,6 +165,7 @@ class WsTraceUpdateFrame(BaseModel):
     write_confirmations: list[WriteConfirmationOutcomeResponse] = []
     rollback: RollbackTraceResponse | None = None
     tier: TierTraceResponse | None = None
+    screen: ScreenTraceResponse | None = None
 
 
 class WsNotificationFrame(BaseModel):

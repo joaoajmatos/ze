@@ -199,8 +199,24 @@ export type Agent4 = string;
 export type Tier = "simple" | "full";
 export type DecidedBy = string;
 export type Model1 = string;
-export type Type12 = "notification";
+export type Origin = "ask_bar" | "chat_about" | "preset";
+export type Place = string | null;
+export type Route = string | null;
+export type Subject = string[];
+export type SelectionCount = number;
+export type VisibleCount = number;
+export type CanvasCount = number;
+export type FocusedModule = string | null;
+export type CapturedAt = string | null;
+export type NoteChars = number;
+export type Invalid = string[];
+export type Kind3 = string;
 export type Id5 = string;
+export type Status2 = "ok" | "missing" | "changed" | "failed" | "timeout" | "cut";
+export type Ms = number;
+export type Resolvers = ScreenResolverTraceResponse[];
+export type Type12 = "notification";
+export type Id6 = string;
 export type EventType = string;
 export type Source2 = string;
 export type Title2 = string;
@@ -228,12 +244,12 @@ export type WsOutboundFrame =
 export type Type13 = "message";
 export type Text5 = string;
 export type ThreadId11 = string | null;
-export type Place = ("world" | "ask" | "doing" | "mind" | "governance" | "plugin") | null;
-export type Route = string | null;
-export type Origin = ("ask_bar" | "chat_about" | "preset") | null;
-export type Subject = [] | [WsScreenRef] | [WsScreenRef, WsScreenRef] | [WsScreenRef, WsScreenRef, WsScreenRef] | null;
-export type Kind3 = string;
-export type Id6 = string;
+export type Place1 = ("world" | "ask" | "doing" | "mind" | "governance" | "plugin") | null;
+export type Route1 = string | null;
+export type Origin1 = ("ask_bar" | "chat_about" | "preset") | null;
+export type Subject1 = [] | [WsScreenRef] | [WsScreenRef, WsScreenRef] | [WsScreenRef, WsScreenRef, WsScreenRef] | null;
+export type Kind4 = string;
+export type Id7 = string;
 export type Label1 = string | null;
 export type Component = string | null;
 export type ParentId = string | null;
@@ -448,7 +464,7 @@ export type Selection =
     ]
   | null;
 export type Visible = WsScreenRef[] | null;
-export type FocusedModule = string | null;
+export type FocusedModule1 = string | null;
 export type Canvas =
   | []
   | [WsCanvasRef]
@@ -512,7 +528,7 @@ export type Canvas =
   | null;
 export type Index = number;
 export type Type14 = string;
-export type CapturedAt = string | null;
+export type CapturedAt1 = string | null;
 export type WorkspacePlaced = WsWorkspacePlaced[] | null;
 export type Path1 = string;
 export type Size = number;
@@ -521,7 +537,7 @@ export type Topic = string | null;
 export type Type15 = "ack";
 export type Ids = string[];
 export type Type16 = "confirm";
-export type Id7 = string;
+export type Id8 = string;
 export type ThreadId12 = string;
 export type Choice = "approve" | "deny";
 export type Type17 = "action";
@@ -775,6 +791,7 @@ export interface WsTraceUpdateFrame {
   write_confirmations?: WriteConfirmations;
   rollback?: RollbackTraceResponse | null;
   tier?: TierTraceResponse | null;
+  screen?: ScreenTraceResponse | null;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -919,11 +936,39 @@ export interface TierTraceResponse {
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "ScreenTraceResponse".
+ */
+export interface ScreenTraceResponse {
+  origin?: Origin;
+  place?: Place;
+  route?: Route;
+  subject?: Subject;
+  selection_count?: SelectionCount;
+  visible_count?: VisibleCount;
+  canvas_count?: CanvasCount;
+  focused_module?: FocusedModule;
+  captured_at?: CapturedAt;
+  note_chars?: NoteChars;
+  invalid?: Invalid;
+  resolvers?: Resolvers;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "ScreenResolverTraceResponse".
+ */
+export interface ScreenResolverTraceResponse {
+  kind: Kind3;
+  id: Id5;
+  status: Status2;
+  ms?: Ms;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "WsNotificationFrame".
  */
 export interface WsNotificationFrame {
   type: Type12;
-  id: Id5;
+  id: Id6;
   event_type: EventType;
   source: Source2;
   title: Title2;
@@ -951,15 +996,15 @@ export interface WsSendMessageFrame {
  * via the `definition` "WsScreenContext".
  */
 export interface WsScreenContext {
-  place?: Place;
-  route?: Route;
-  origin?: Origin;
-  subject?: Subject;
+  place?: Place1;
+  route?: Route1;
+  origin?: Origin1;
+  subject?: Subject1;
   selection?: Selection;
   visible?: Visible;
-  focused_module?: FocusedModule;
+  focused_module?: FocusedModule1;
   canvas?: Canvas;
-  captured_at?: CapturedAt;
+  captured_at?: CapturedAt1;
   workspace_placed?: WorkspacePlaced;
   compose?: Compose;
   topic?: Topic;
@@ -969,8 +1014,8 @@ export interface WsScreenContext {
  * via the `definition` "WsScreenRef".
  */
 export interface WsScreenRef {
-  kind: Kind3;
-  id: Id6;
+  kind: Kind4;
+  id: Id7;
   label?: Label1;
   component?: Component;
   parent_id?: ParentId;
@@ -1007,7 +1052,7 @@ export interface WsAckFrame {
  */
 export interface WsConfirmFrame {
   type: Type16;
-  id: Id7;
+  id: Id8;
   thread_id: ThreadId12;
   choice: Choice;
   edits?: Edits;

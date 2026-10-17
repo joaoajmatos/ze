@@ -21,6 +21,7 @@ from ze_core.conversation.messages.types import (
     ProcedureUsageTrace,
     SkillUsageTrace,
     SourceTrace,
+    ScreenTrace,
     TierTrace,
     ToolCallTrace,
     WorkspaceUsageTrace,
@@ -366,6 +367,9 @@ def _parse_trace(data: dict) -> MessageTrace:
             if isinstance(row, dict)
         ],
         tier=TierTrace(**data["tier"]) if data.get("tier") else None,
+        screen=ScreenTrace.from_dict(data["screen"])
+        if isinstance(data.get("screen"), dict)
+        else None,
     )
 
 

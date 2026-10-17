@@ -1383,6 +1383,7 @@ export type MessageTraceResponse = {
      */
     write_confirmations?: Array<WriteConfirmationOutcomeResponse>;
     tier?: TierTraceResponse | null;
+    screen?: ScreenTraceResponse | null;
 };
 
 /**
@@ -2090,6 +2091,82 @@ export type RollbackTraceResponse = {
      * Entries
      */
     entries?: Array<RollbackEntryResponse>;
+};
+
+/**
+ * ScreenResolverTraceResponse
+ */
+export type ScreenResolverTraceResponse = {
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Status
+     */
+    status: 'ok' | 'missing' | 'changed' | 'failed' | 'timeout' | 'cut';
+    /**
+     * Ms
+     */
+    ms?: number;
+};
+
+/**
+ * ScreenTraceResponse
+ */
+export type ScreenTraceResponse = {
+    /**
+     * Origin
+     */
+    origin?: 'ask_bar' | 'chat_about' | 'preset';
+    /**
+     * Place
+     */
+    place?: string | null;
+    /**
+     * Route
+     */
+    route?: string | null;
+    /**
+     * Subject
+     */
+    subject?: Array<string>;
+    /**
+     * Selection Count
+     */
+    selection_count?: number;
+    /**
+     * Visible Count
+     */
+    visible_count?: number;
+    /**
+     * Canvas Count
+     */
+    canvas_count?: number;
+    /**
+     * Focused Module
+     */
+    focused_module?: string | null;
+    /**
+     * Captured At
+     */
+    captured_at?: string | null;
+    /**
+     * Note Chars
+     */
+    note_chars?: number;
+    /**
+     * Invalid
+     */
+    invalid?: Array<string>;
+    /**
+     * Resolvers
+     */
+    resolvers?: Array<ScreenResolverTraceResponse>;
 };
 
 /**

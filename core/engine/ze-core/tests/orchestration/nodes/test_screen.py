@@ -41,7 +41,8 @@ CTX = ScreenContext(place="doing", subject=(ScreenRef(kind="goal", id="g1"),))
 async def test_no_context_or_registry_gives_nothing():
     state = {"prompt": "hi", "session_id": "s"}
     assert await resolve_screen(state, _config()) == {}
-    assert await resolve_screen(state, _config(CTX, None)) == {}
+    no_registry = await resolve_screen(state, _config(CTX, None))
+    assert set(no_registry) == {"screen_trace"} and no_registry["screen_trace"]["resolvers"] == []
     assert (
         await resolve_screen(
             state, _config(ScreenContext(), ScreenResolverRegistry([Goals()]))
@@ -64,16 +65,22 @@ async def test_context_gives_note_trace_and_subject_line():
     ]
 
 
-async def test_a_raising_builder_gives_nothing(monkeypatch):
+async def test_a_raising_builder_gives_a_trace_but_no_note(monkeypatch):
     from ze_core.orchestration.nodes import screen as node
 
     async def boom(*a, **k):
         raise RuntimeError("x")
 
     monkeypatch.setattr(node, "build_screen_note", boom)
-    assert (
-        await resolve_screen({}, _config(CTX, ScreenResolverRegistry([Goals()]))) == {}
-    )
+    out = await resolve_screen({}, _config(CTX, ScreenResolverRegistry([Goals()])))
+    assert "screen_note" not in out and out["screen_trace"]["place"] == "doing"
+
+
+async def test_invalid_warnings_are_traced_even_without_a_usable_context():
+    config = {"configurable": {"screen_context_invalid": ["place: unknown value attic"]}}
+    out = await resolve_screen({}, config)
+    assert out["screen_trace"]["invalid"] == ["place: unknown value attic"]
+    assert "screen_note" not in out
 
 
 async def test_a_raising_resolver_still_gives_a_note():

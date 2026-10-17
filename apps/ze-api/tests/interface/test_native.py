@@ -470,3 +470,20 @@ def test_a_confirmation_request_push_is_not_a_chat_message():
     from ze_api.wiring.push_kinds import CONFIRMATION_REQUEST
 
     assert CONFIRMATION_REQUEST.in_chat is False
+
+
+async def test_trace_update_carries_screen_json_safe():
+    import json
+
+    from ze_core.conversation.messages.types import MessageTrace, ScreenTrace
+
+    iface, store, conn, _ = _make_interface(connected=True)
+    trace = MessageTrace(
+        agent="companion", routing_method="embedding", confidence=0.9, score_gap=0.1,
+        is_compound=False, subtasks=[],
+        screen=ScreenTrace.from_dict({"origin": "chat_about", "place": "mind", "subject": ["Loop · Reply"], "note_chars": 90}),
+    )
+    await iface.send_with_thread("hi", thread_id="t1", trace=trace)
+    frame = conn.send_frame.call_args[0][0]
+    assert frame["screen"]["origin"] == "chat_about" and frame["screen"]["subject"] == ["Loop · Reply"]
+    json.dumps(frame)
