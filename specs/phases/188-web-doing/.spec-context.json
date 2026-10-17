@@ -1,0 +1,84 @@
+{
+  "workflow": "speckit",
+  "specName": "Doing (W4)",
+  "branch": "188-web-doing",
+  "currentStep": "implement",
+  "status": "implementing",
+  "currentTask": "T006",
+  "history": [
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T23:51:43.995Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T23:51:50.045Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T23:51:50.332Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T23:51:50.595Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T23:51:50.788Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T23:51:50.964Z"
+    }
+  ],
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "gate report"
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "schedule+result libs"
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "goal row derivations and boardOrder"
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "workspace runs query, cancel, run-status"
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "reused useLatestExecutionsQuery"
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "stuck variant on answer-gate"
+    }
+  }
+}

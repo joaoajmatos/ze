@@ -155,3 +155,69 @@ describe("useAnswerGate", () => {
     expect(m.send).toHaveBeenCalledWith({ type: "action", payload: "goal_stuck:pause:g9", thread_id: "t-1" });
   });
 });
+
+describe("useAnswerGate — stuck goals", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    m.send.mockReset();
+    m.send.mockReturnValue(true);
+    m.connected = true;
+    useGateFlights.setState({ flights: {}, awaiting: {}, errors: {} });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("Pause stays in flight until the goals data no longer lists the goal as stuck", () => {
+    const { result, rerender } = renderHook(({ ids }) => useBoth(ids), { initialProps: { ids: ["g9"] as readonly string[] } });
+    act(() => void result.current.pause("g9"));
+    expect(m.send).toHaveBeenCalledWith({ type: "action", payload: "goal_stuck:pause:g9", thread_id: "t-1" });
+    expect(result.current.stateOf("g9")).toBe("in_flight");
+    rerender({ ids: [] });
+    expect(result.current.stateOf("g9")).toBe("idle");
+  });
+
+  it("Abandon asks once first, and sends only on the second call", () => {
+    const { result } = renderHook(() => useBoth(["g9"]));
+    act(() => void result.current.abandon("g9"));
+    expect(m.send).not.toHaveBeenCalled();
+    expect(result.current.abandonArmed("g9")).toBe(true);
+    act(() => void result.current.abandon("g9"));
+    expect(m.send).toHaveBeenCalledWith({ type: "action", payload: "goal_stuck:abandon:g9", thread_id: "t-1" });
+    expect(result.current.abandonArmed("g9")).toBe(false);
+  });
+
+  it("cancelling the abandon question disarms it", () => {
+    const { result } = renderHook(() => useBoth(["g9"]));
+    act(() => void result.current.abandon("g9"));
+    act(() => result.current.disarmAbandon("g9"));
+    expect(result.current.abandonArmed("g9")).toBe(false);
+  });
+
+  it("Redirect on a stuck goal is in flight like a gate redirect and then awaits instructions", () => {
+    const { result } = renderHook(() => useBoth(["g9"]));
+    act(() => void result.current.redirectStuck("g9"));
+    expect(m.send).toHaveBeenCalledWith({ type: "action", payload: "goal_stuck:redirect:g9", thread_id: "t-1" });
+    frame("message");
+    expect(result.current.stateOf("g9")).toBe("awaiting_instructions");
+  });
+
+  it("a flight with no refresh or error within 15 s ends with a timeout line", () => {
+    const { result } = renderHook(() => useBoth(["g9"]));
+    act(() => void result.current.pause("g9"));
+    act(() => void vi.advanceTimersByTime(15_100));
+    expect(result.current.stateOf("g9")).toBe("idle");
+    expect(result.current.errorOf("g9")).toMatch(/hasn't answered/i);
+  });
+
+  it("the in-flight signal is the backend's refresh frame for goals, which refetches the goals key", async () => {
+    const { refreshKeysForScreen, queryKeys } = await import("@/shared/lib");
+    expect(refreshKeysForScreen("goals")).toContainEqual(queryKeys.goals);
+  });
+
+  it("no path in the feature calls startGoal", async () => {
+    const { readFileSync, readdirSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const root = join(__dirname, "..");
+    const files = ["api/useAnswerGate.ts", "ui/AnswerGateFrameHandler.tsx", "model/gate-flights.ts", ...readdirSync(root).filter((f) => f === "index.ts")];
+    for (const f of files) expect(readFileSync(join(root, f), "utf8")).not.toMatch(/startGoal/);
+  });
+});

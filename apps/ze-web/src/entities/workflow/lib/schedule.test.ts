@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCronExpression } from "@/shared/lib/format-cron";
+import { formatCronExpression } from "./schedule";
 
 describe("formatCronExpression", () => {
   it("formats daily schedules with day context", () => {

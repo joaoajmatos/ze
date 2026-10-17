@@ -1,5 +1,5 @@
 import type { WorkflowExecutionResponse } from "@myguyze/ze-client";
-import { formatCronExpression } from "@/shared/lib/format-cron";
+import { formatCronExpression } from "./schedule";
 
 export function formatSchedule(schedule: string | null): string {
   if (!schedule) {

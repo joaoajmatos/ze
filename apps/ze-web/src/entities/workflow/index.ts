@@ -11,3 +11,5 @@ export { buildWorkflowGraph, type StepState, type WorkflowGraphNode } from "./li
 export { stepsDifferFromSnapshot } from "./lib/stepsSnapshot";
 export { useLatestExecutionsQuery } from "./api/useLatestExecutionsQuery";
 export type { LatestExecutions } from "./api/useLatestExecutionsQuery";
+export { lastResult, type LastResult } from "./lib/result";
+export { formatCronExpression } from "./lib/schedule";

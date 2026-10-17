@@ -4,6 +4,8 @@ export interface Flight {
   kind: "decide" | "redirect";
   threadId: string;
   sentAt: number;
+  /** Stuck-goal answers end with a timeout line when nothing settles them; gate answers wait for the goals data. */
+  timeout?: boolean;
 }
 
 interface GateFlightState {
