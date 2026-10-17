@@ -67,7 +67,7 @@ World becomes the real home at `/`. The page composes one `World` model from nin
 
 ### Posture → visual (one table, shared)
 
-The posture vocabulary lives in `entities/priority-item/lib/posture.ts` (World's concerns are priority items) and is exported, so every widget reads the same table. `postureOf(claim_kind, kind, state) → told | evidenced | inferred | suspected | goal | plain`, `glyphOf`, `chipLabelOf`, `stateWords` (no raw enum: `awaiting_gate` → "waiting on you", `user_declared` → "you told me"). One table test covers field marks, rows and cards.
+The posture vocabulary lives in `shared/lib/claim-posture.ts` (World, Mind and Ask all use it; moved out of `entities/priority-item` on 2026-10-17 so 189 Mind can build in parallel). Whichever of 186 and 189 lands first creates it from this plan; the other rebases onto it. `postureOf(claim_kind, kind, state) → told | evidenced | inferred | suspected | goal | plain`, `glyphOf`, `chipLabelOf`, `stateWords` (no raw enum: `awaiting_gate` → "waiting on you", `user_declared` → "you told me"). One table test covers field marks, rows and cards.
 
 ### Widgets (props only; each wraps a `Module`)
 
@@ -113,7 +113,7 @@ specs/phases/186-web-world/
 apps/ze-web/src/pages/world/{index.ts,ui/WorldPage.tsx,model/useWorld.ts,lib/{concerns,decisions,sentence,last-seen,focus}.ts}
 apps/ze-web/src/widgets/{world-field,needs-you,doing-now,loops-rail,touched,away}/
 apps/ze-web/src/features/answer-gate/
-apps/ze-web/src/entities/{reminder,hypothesis,proactive-job}/ ; entities/workflow/api/useLatestExecutionsQuery.ts ; entities/notification/api/useNotificationsSinceQuery.ts ; entities/priority-item/lib/posture.ts
+apps/ze-web/src/entities/{reminder,hypothesis,proactive-job}/ ; entities/workflow/api/useLatestExecutionsQuery.ts ; entities/notification/api/useNotificationsSinceQuery.ts ; shared/lib/claim-posture.ts
 apps/ze-web/src/shared/lib/{notification-href.ts,query-keys.ts} ; shared/config/places.ts
 apps/ze-web/src/features/invalidate-on-ws-refresh/ui/RefreshHandler.tsx
 apps/ze-web/src/widgets/app-shell/ui/NotificationBell.tsx
