@@ -30,6 +30,7 @@ def _row(**kw):
         body="B",
         target_type=None,
         target_id=None,
+        target_parent_id=None,
         created_at=NOON,
         read_at=None,
         push_class="accountability",
@@ -273,3 +274,58 @@ async def test_kinds_are_chat_messages_by_default():
     n, iface, _ = _make()
     await n.notify(ACC, "t", "b")
     assert iface.push.call_args.args[0].in_chat is True
+
+
+async def test_target_parent_id_is_persisted_and_sent_in_the_frame():
+    n, iface, store = _make()
+    outcome = await n.notify(
+        ACC,
+        "t",
+        "b",
+        target_type="workflow_execution",
+        target_id="ex-1",
+        target_parent_id="wf-1",
+    )
+    assert outcome == "delivered"
+    assert store.create.call_args.kwargs["target_parent_id"] == "wf-1"
+    assert iface.push.call_args.args[0].target_parent_id == "wf-1"
+
+
+async def test_target_parent_id_defaults_to_none():
+    n, iface, store = _make()
+    await n.notify(ACC, "t", "b")
+    assert store.create.call_args.kwargs["target_parent_id"] is None
+    assert iface.push.call_args.args[0].target_parent_id is None
+
+
+async def test_held_notification_keeps_its_parent_through_quiet_hours_release():
+    n, iface, store = _make(setting=QUIET, now=NIGHT)
+    await n.notify(
+        ACC, "t", "b", target_type="goal_gate", target_id="g1", target_parent_id="goal-1"
+    )
+    held_row = _row(
+        target_type="goal_gate", target_id="g1", target_parent_id="goal-1", delivery="held"
+    )
+
+    released, released_iface, _ = _make(store=_store(held=[held_row]), now=NOON)
+    released._store.mark_released = AsyncMock()
+    await released.deliver_held()
+
+    first = released_iface.push.call_args_list[0].args[0]
+    assert first.target_parent_id == "goal-1"
+    assert first.delivery == "released"
+
+
+async def test_dedup_key_ignores_the_parent():
+    n, _, store = _make()
+    await n.notify(
+        ACC,
+        "t",
+        "b",
+        target_type="workflow_execution",
+        target_id="ex-1",
+        target_parent_id="wf-1",
+        dedup_hours=1,
+    )
+    kwargs = store.exists_recent.call_args.kwargs
+    assert set(kwargs) == {"event_type", "target_type", "target_id", "hours"}

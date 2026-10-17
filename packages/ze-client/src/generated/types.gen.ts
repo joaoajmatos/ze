@@ -1470,6 +1470,10 @@ export type NotificationItem = {
      */
     target_id: string | null;
     /**
+     * Target Parent Id
+     */
+    target_parent_id: string | null;
+    /**
      * Created At
      */
     created_at: string;
@@ -2814,6 +2818,10 @@ export type WorkflowExecutionResponse = {
      * Error
      */
     error: string | null;
+    /**
+     * Failure Summary
+     */
+    failure_summary: string | null;
     /**
      * Summary
      */

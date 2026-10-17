@@ -75,6 +75,7 @@ class FakeStore:
             body=kw["body"],
             target_type=kw["target_type"],
             target_id=kw["target_id"],
+            target_parent_id=kw.get("target_parent_id"),
             created_at=self._clock(),
             read_at=None,
             push_class=kw["push_class"],

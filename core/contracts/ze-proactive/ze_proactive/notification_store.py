@@ -14,8 +14,8 @@ from ze_proactive.types import Notification, NotificationRow
 log = get_logger(__name__)
 
 _COLUMNS = (
-    "id, event_type, source, title, body, target_type, target_id, created_at, "
-    "read_at, push_class, urgency, format, actions, delivery, delivered_at"
+    "id, event_type, source, title, body, target_type, target_id, target_parent_id, "
+    "created_at, read_at, push_class, urgency, format, actions, delivery, delivered_at"
 )
 
 
@@ -52,6 +52,7 @@ def _row_to_dataclass(row: asyncpg.Record) -> NotificationRow:
         body=row["body"],
         target_type=row["target_type"],
         target_id=row["target_id"],
+        target_parent_id=row["target_parent_id"],
         created_at=row["created_at"],
         read_at=row["read_at"],
         push_class=row["push_class"],
@@ -74,6 +75,7 @@ def _row_to_notification(
         body=row.body,
         target_type=row.target_type,
         target_id=row.target_id,
+        target_parent_id=row.target_parent_id,
         created_at=row.created_at,
         read=read_override or row.read_at is not None,
         push_class=row.push_class,
@@ -95,6 +97,7 @@ class NotificationStore:
         body: str,
         target_type: str | None,
         target_id: str | None,
+        target_parent_id: str | None = None,
         push_class: str,
         urgency: str,
         format: str,
@@ -106,9 +109,10 @@ class NotificationStore:
                 f"""
                 INSERT INTO notifications
                     (event_type, source, title, body, target_type, target_id,
-                     push_class, urgency, format, actions, delivery, delivered_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11,
-                        CASE WHEN $11 = 'delivered' THEN NOW() END)
+                     target_parent_id, push_class, urgency, format, actions,
+                     delivery, delivered_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12,
+                        CASE WHEN $12 = 'delivered' THEN NOW() END)
                 RETURNING {_COLUMNS}
                 """,
                 event_type,
@@ -117,6 +121,7 @@ class NotificationStore:
                 body,
                 target_type,
                 target_id,
+                target_parent_id,
                 push_class,
                 urgency,
                 format,

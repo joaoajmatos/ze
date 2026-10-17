@@ -175,6 +175,7 @@ class WsNotificationFrame(BaseModel):
     body: str
     target_type: str | None
     target_id: str | None
+    target_parent_id: str | None
     created_at: datetime
     read: bool = False
     push_class: str

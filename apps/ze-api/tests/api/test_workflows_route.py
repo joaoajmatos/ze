@@ -205,6 +205,56 @@ async def test_get_workflow_execution_by_id():
 
 
 @pytest.mark.asyncio
+async def test_failed_execution_has_a_failure_summary_and_completed_has_none():
+    workflow = _workflow([WorkflowStep(task="Check status", id="s0")])
+    failed = WorkflowExecution(
+        id=uuid4(),
+        workflow_id=workflow.id,
+        status="failed",
+        step_results=[
+            StepResult(
+                step_index=0,
+                task="Check status",
+                output="",
+                success=False,
+                error="TimeoutError: boom",
+                duration_ms=5,
+            )
+        ],
+        steps_snapshot=workflow.steps,
+        error="TimeoutError: boom",
+        created_at=datetime.now(timezone.utc),
+    )
+    done = WorkflowExecution(
+        id=uuid4(),
+        workflow_id=workflow.id,
+        status="completed",
+        created_at=datetime.now(timezone.utc),
+    )
+    app = _make_app(workflow, executions=[failed, done])
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        listed = await client.get(
+            f"/api/v0/workflows/{workflow.id}/executions",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+        detail = await client.get(
+            f"/api/v0/workflows/{workflow.id}/executions/{failed.id}",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    rows = listed.json()
+    assert rows[0]["failure_summary"] == (
+        "Step 1 of 1, \u201cCheck status\u201d, failed: it ran out of time."
+    )
+    assert rows[0]["error"] == "TimeoutError: boom"
+    assert rows[1]["failure_summary"] is None
+    assert detail.json()["failure_summary"] == rows[0]["failure_summary"]
+
+
+@pytest.mark.asyncio
 async def test_list_workflow_revisions_returns_newest_first():
     workflow = _workflow([WorkflowStep(task="Check status", id="s0")])
     revisions = [

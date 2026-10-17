@@ -331,6 +331,7 @@ class NativeAppInterface:
                     "body": notification.content,
                     "target_type": notification.target_type,
                     "target_id": notification.target_id,
+                    "target_parent_id": notification.target_parent_id,
                     "created_at": notification.created_at.isoformat()
                     if notification.created_at
                     else None,

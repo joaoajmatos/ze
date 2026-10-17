@@ -67,6 +67,36 @@ async def test_list_notifications_returns_items_and_cursor():
 
 
 @pytest.mark.asyncio
+async def test_list_notifications_carries_target_parent_id():
+    store = AsyncMock()
+    store.list_page = AsyncMock(
+        return_value=(
+            [
+                _notification(
+                    target_type="workflow_execution",
+                    target_id="ex-1",
+                    target_parent_id="wf-1",
+                ),
+                _notification(id="notif-2"),
+            ],
+            None,
+        )
+    )
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            "/api/v0/notifications", headers={"Authorization": f"Bearer {API_KEY}"}
+        )
+
+    first, second = resp.json()["items"]
+    assert first["target_parent_id"] == "wf-1"
+    assert second["target_parent_id"] is None
+
+
+@pytest.mark.asyncio
 async def test_list_notifications_passes_query_params():
     store = AsyncMock()
     store.list_page = AsyncMock(return_value=([], None))

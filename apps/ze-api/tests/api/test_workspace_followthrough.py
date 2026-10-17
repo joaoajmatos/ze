@@ -285,6 +285,7 @@ class _FakeNotificationStore:
             body=kwargs["body"],
             target_type=kwargs.get("target_type"),
             target_id=kwargs.get("target_id"),
+            target_parent_id=kwargs.get("target_parent_id"),
             created_at=datetime.now(timezone.utc),
             read_at=None,
             push_class=kwargs["push_class"],

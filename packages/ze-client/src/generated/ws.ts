@@ -207,6 +207,7 @@ export type Title2 = string;
 export type Body = string;
 export type TargetType = string | null;
 export type TargetId = string | null;
+export type TargetParentId = string | null;
 export type CreatedAt1 = string;
 export type Read1 = boolean;
 export type PushClass = string;
@@ -648,6 +649,7 @@ export interface WsNotificationFrame {
   body: Body;
   target_type: TargetType;
   target_id: TargetId;
+  target_parent_id: TargetParentId;
   created_at: CreatedAt1;
   read?: Read1;
   push_class: PushClass;
