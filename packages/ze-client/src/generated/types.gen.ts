@@ -673,6 +673,38 @@ export type GoalListItem = {
      * Created At
      */
     created_at: string;
+    /**
+     * Milestones Done
+     */
+    milestones_done: number;
+    /**
+     * Milestones Total
+     */
+    milestones_total: number;
+    /**
+     * Next Milestone
+     */
+    next_milestone: string | null;
+    /**
+     * Gate Id
+     */
+    gate_id: string | null;
+    /**
+     * Gate Title
+     */
+    gate_title: string | null;
+    /**
+     * Gate Open Since
+     */
+    gate_open_since: string | null;
+    /**
+     * Last Progress At
+     */
+    last_progress_at: string | null;
+    /**
+     * Stuck Since
+     */
+    stuck_since: string | null;
 };
 
 /**

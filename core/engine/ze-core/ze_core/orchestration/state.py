@@ -61,6 +61,7 @@ class AgentState(TypedDict):
     final_response: str | None
     error: str | None
     components: list[dict]
+    preset_components: list[dict]  # composed answer a preset chip asked for; reset every turn
 
     # ── Conductor (Phase 153 — sequential rewrite; not a DAG) ──────────────
     conductor_hint: list | None  # list[{agent, prompt, changes}]

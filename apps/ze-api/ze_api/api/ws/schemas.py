@@ -207,6 +207,8 @@ class WsScreenContext(BaseModel):
     workflow_id: str | None = None
     execution_id: str | None = None
     workspace_placed: list["WsWorkspacePlaced"] | None = None
+    compose: Literal["slipping", "decisions", "topic"] | None = None
+    topic: str | None = Field(None, max_length=120)
 
 
 class WsWorkspacePlaced(BaseModel):

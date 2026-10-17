@@ -128,6 +128,10 @@ class AgentContext:
     # user explicitly asks what's open. Rendered into the system prompt, never
     # appended to messages. Never checkpoint.
     open_priorities_note: str | None = field(default=None, repr=False)
+    # preset is runtime-only; the key of the composed answer fetch_context already put
+    # at the head of this turn ("slipping", "decisions", "topic:<normalized>"). The show_*
+    # tools return only their summary when it matches their own key. Never checkpoint.
+    preset: str | None = field(default=None, repr=False)
     # active_skills / skill_tool_names are populated by the `match_skills` orchestration
     # node from the turn's `SkillMatch` list (core/automation/ze-skills). `active_skills` holds the
     # matched `Skill` objects (name/description/instructions injected into the system

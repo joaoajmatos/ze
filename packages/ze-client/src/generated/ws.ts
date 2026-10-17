@@ -234,6 +234,8 @@ export type ExecutionId = string | null;
 export type WorkspacePlaced = WsWorkspacePlaced[] | null;
 export type Path1 = string;
 export type Size = number;
+export type Compose = ("slipping" | "decisions" | "topic") | null;
+export type Topic = string | null;
 export type Type14 = "ack";
 export type Ids = string[];
 export type Type15 = "confirm";
@@ -671,6 +673,8 @@ export interface WsScreenContext {
   workflow_id?: WorkflowId;
   execution_id?: ExecutionId;
   workspace_placed?: WorkspacePlaced;
+  compose?: Compose;
+  topic?: Topic;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
