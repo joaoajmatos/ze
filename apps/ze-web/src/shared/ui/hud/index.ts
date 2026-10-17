@@ -1,5 +1,6 @@
 export { Glyph } from "./Glyph";
 export { Spark } from "./Spark";
+export { SeriesSpark } from "./SeriesSpark";
 export { Decode } from "./Decode";
 export { Corners } from "./Corners";
 export { Module } from "./Module";
