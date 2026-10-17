@@ -3,7 +3,7 @@
   "specName": "World (W2)",
   "branch": "186-web-world",
   "currentStep": "implement",
-  "currentTask": "T011",
+  "currentTask": "T015",
   "status": "implementing",
   "task_summaries": {
     "T002": {
@@ -45,6 +45,22 @@
     "T011": {
       "status": "DONE",
       "did": "page model libs and useWorld"
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"
     }
   },
   "history": [
@@ -127,6 +143,38 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-10-17T21:53:22.537Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:00:02.311Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:00:02.469Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:00:02.628Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:00:02.797Z"
     }
   ]
 }
