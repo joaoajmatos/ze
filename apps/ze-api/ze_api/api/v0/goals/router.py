@@ -51,17 +51,25 @@ async def list_goals(request: Request) -> list[GoalListItem]:
     if store is None:
         return []
 
-    goals = await store.list_for_display()
+    rows = await store.list_progress()
     return [
         GoalListItem(
-            id=goal.id,
-            title=goal.title,
-            objective=goal.objective,
-            status=goal.status.value,
-            created_at=goal.created_at,
+            id=row.goal.id,
+            title=row.goal.title,
+            objective=row.goal.objective,
+            status=row.goal.status.value,
+            created_at=row.goal.created_at,
+            milestones_done=row.milestones_done,
+            milestones_total=row.milestones_total,
+            next_milestone=row.next_milestone,
+            gate_id=row.gate_id,
+            gate_title=row.gate_title,
+            gate_open_since=row.gate_open_since,
+            last_progress_at=row.last_progress_at,
+            stuck_since=row.stuck_since,
         )
-        for goal in goals
-        if goal.id is not None and goal.created_at is not None
+        for row in rows
+        if row.goal.id is not None and row.goal.created_at is not None
     ]
 
 

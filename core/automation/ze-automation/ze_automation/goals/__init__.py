@@ -1,7 +1,9 @@
 from ze_automation.goals.types import (
+    STUCK_IDLE_DAYS,
     Goal,
     GoalConvergence,
     GoalLearning,
+    GoalProgress,
     GoalStatus,
     GoalSuggestion,
     GateStatus,
@@ -20,9 +22,11 @@ from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.executor import GoalExecutor
 
 __all__ = [
+    "STUCK_IDLE_DAYS",
     "Goal",
     "GoalConvergence",
     "GoalLearning",
+    "GoalProgress",
     "GoalStatus",
     "GoalSuggestion",
     "GoalSuggestionStore",

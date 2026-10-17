@@ -8,7 +8,7 @@ from ze_logging import get_logger
 from ze_proactive.job import proactive_job
 from ze_proactive.notifier import ProactiveNotifier
 from ze_automation.goals.store import GoalStore
-from ze_automation.goals.types import StuckGoal
+from ze_automation.goals.types import STUCK_IDLE_DAYS, StuckGoal
 from ze_automation.push_kinds import STUCK_GOAL
 
 log = get_logger(__name__)
@@ -28,7 +28,7 @@ class StuckGoalJob:
 
     async def run(self) -> None:
         stuck = await self._goal_store.list_stuck(
-            idle_days=7,
+            idle_days=STUCK_IDLE_DAYS,
             alert_cooldown_days=14,
         )
         if not stuck:
