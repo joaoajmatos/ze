@@ -43,11 +43,21 @@ def _memory_ctx(entity_ids: list[UUID] | None = None) -> MemoryContext:
     return MemoryContext(entities=entities)
 
 
+def _card(mention: _Mention) -> dict:
+    return {
+        "type": "claim_card",
+        "title": mention.title,
+        "claim": {"kind": "priority", "subject": mention.source_kind, "ref_id": str(mention.source_id), "slipped": False},
+        "tone": "default",
+    }
+
+
 def _surfacer(mentions: list | None = None) -> Any:
     s = AsyncMock()
     s.inline_mentions = AsyncMock(
         return_value=[_Mention()] if mentions is None else mentions
     )
+    s.mention_cards = AsyncMock(side_effect=lambda ms: [_card(m) for m in ms])
     return s
 
 
@@ -82,7 +92,7 @@ async def test_surfaces_mention_when_surfacer_present():
 
     assert result["open_item_mentions"]
     assert len(result["components"]) == 1
-    assert result["components"][0]["type"] == "open_items"
+    assert [c["type"] for c in result["components"]] == ["claim_card"]
     surfacer.inline_mentions.assert_awaited_once()
 
 
@@ -91,7 +101,8 @@ async def test_component_is_json_serializable_so_the_reply_can_be_stored_and_sen
     surfacer = _surfacer([mention])
     result = await surface_loops(_state(), _config(surfacer=surfacer))
     payload = json.loads(json.dumps(result["components"]))
-    assert payload[0]["items"][0]["id"] == str(mention.source_id)
+    assert payload[0]["claim"]["ref_id"] == str(mention.source_id)
+    assert all(c["type"] != "open_items" for c in payload)
 
 
 async def test_no_surfacer_configured_returns_empty():
@@ -148,7 +159,7 @@ async def test_existing_components_are_preserved():
         _state(components=existing), _config(surfacer=surfacer)
     )
     assert result["components"][0]["type"] == "card"
-    assert result["components"][1]["type"] == "open_items"
+    assert result["components"][1]["type"] == "claim_card"
 
 
 async def test_global_open_query_skips_unsolicited_append():
@@ -158,3 +169,11 @@ async def test_global_open_query_skips_unsolicited_append():
     result = await surface_loops(state, _config(surfacer=surfacer))
     assert result == {}
     surfacer.inline_mentions.assert_not_awaited()
+
+
+async def test_card_failure_keeps_the_text_section():
+    surfacer = _surfacer()
+    surfacer.mention_cards = AsyncMock(side_effect=RuntimeError("boom"))
+    result = await surface_loops(_state(), _config(surfacer=surfacer))
+    assert result["components"] == []
+    assert "It looks like" in result["final_response"]

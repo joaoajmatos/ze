@@ -488,3 +488,90 @@ async def test_open_query_mentions_list_suspected_when_ranking_fails():
     mentions = await surfacer.open_query_mentions(limit=10)
 
     assert [m.title for m in mentions] == ["Suspected"]
+
+
+# ── mention_cards (phase 184) ─────────────────────────────────────────────────
+
+
+async def _cards_for(item, *, loop=None, loop_error=None):
+    ranking = _ranking(item)
+    loop_store = AsyncMock()
+    if loop_error is not None:
+        loop_store.get = AsyncMock(side_effect=loop_error)
+    else:
+        loop_store.get = AsyncMock(return_value=loop)
+    surfacer = _surfacer(_view(ranking), loop_store=loop_store)
+    mentions = await surfacer.recap_mentions()
+    return await surfacer.mention_cards(mentions)
+
+
+async def test_drifting_loop_mention_is_a_hot_card_with_the_records_posture():
+    import json
+
+    loop = make_loop(title="Reply to Ana", provenance="email", confidence=0.62)
+    cards = await _cards_for(score_loop(loop), loop=loop)
+
+    [card] = cards
+    json.dumps(card)
+    assert card["type"] == "claim_card"
+    assert card["title"] == "Reply to Ana"
+    assert card["tone"] == "hot"
+    claim = card["claim"]
+    assert claim["subject"] == "loop" and claim["ref_id"] == str(loop.id)
+    assert claim["kind"] == "priority"
+    assert claim["confidence"] == 0.62
+    assert claim["source"] == "email"
+    assert claim["state"] == "drifting" and claim["slipped"] is True
+
+
+async def test_active_loop_mention_is_not_slipped():
+    loop = make_loop(state=LoopState.ACTIVE)
+    [card] = await _cards_for(score_loop(loop), loop=loop)
+    assert card["claim"]["slipped"] is False
+    assert card["tone"] == "default"
+
+
+async def test_loop_store_failure_falls_back_to_the_ranked_signal_without_a_source():
+    loop = make_loop()
+    [card] = await _cards_for(score_loop(loop), loop_error=RuntimeError("down"))
+    assert card["claim"]["state"] == "drifting"
+    assert "source" not in card["claim"]
+
+
+async def test_goal_mention_slips_only_past_the_stuck_window():
+    stale = make_stuck_goal(idle_days=9)
+    [card] = await _cards_for(score_goal(stale))
+    assert card["claim"]["subject"] == "goal"
+    assert card["claim"]["state"] == "stuck" and card["claim"]["slipped"] is True
+
+    fresh = make_stuck_goal(idle_days=2)
+    [card] = await _cards_for(score_goal(fresh))
+    assert card["claim"]["slipped"] is False and card["claim"]["state"] == "active"
+
+
+async def test_hypothesis_mention_is_a_dotted_card():
+    from ze_agents.claims import ClaimKind
+
+    hyp = make_hypothesis(claim_kind=ClaimKind.SUSPICION, confidence=0.4)
+    [card] = await _cards_for(score_hypothesis(hyp))
+    assert card["claim"]["subject"] == "hypothesis"
+    assert card["claim"]["kind"] == "suspicion"
+    assert card["tone"] == "dotted"
+
+
+async def test_unconfirmed_suspected_loop_mention_reads_the_record():
+    from ze_agents.claims import ClaimKind
+
+    suspected = make_loop(
+        title="Maybe call the bank", state=LoopState.SUSPECTED, claim_kind=ClaimKind.SUSPICION
+    )
+    loop_store = AsyncMock()
+    loop_store.list = AsyncMock(return_value=[suspected])
+    loop_store.get = AsyncMock(return_value=suspected)
+    surfacer = _surfacer(_view(_ranking()), loop_store=loop_store)
+
+    mentions = await surfacer.open_query_mentions(limit=5)
+    [card] = await surfacer.mention_cards(mentions)
+
+    assert card["tone"] == "dotted"
+    assert card["claim"]["state"] == "suspected"

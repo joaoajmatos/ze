@@ -11,7 +11,9 @@ from datetime import datetime, timezone
 from typing import Any, Sequence
 from uuid import UUID
 
+from ze_components.serialize import serialize_primitive
 from ze_logging import get_logger
+from ze_priority.compose.rules import mention_card
 from ze_priority.errors import ZePriorityError
 from ze_priority.merge import merge
 from ze_priority.open_query import OpenQueryDetector
@@ -177,6 +179,22 @@ class TurnSurfacing:
         await self._log_loop_inlines(selected)
         return selected
 
+    async def mention_cards(self, mentions: Sequence[OpenItemMention]) -> list[dict]:
+        """One serialized claim card per mention, posture read from its record."""
+        now = datetime.now(UTC)
+        cards: list[dict] = []
+        for mention in mentions:
+            loop = None
+            if mention.source_kind == "loop":
+                try:
+                    loop = await self._loop_store.get(mention.source_id)
+                except Exception as exc:
+                    log.warning("turn_surfacing_card_loop_failed", error=str(exc))
+            card = mention_card(mention.item, now, loop=loop)
+            if card is not None:
+                cards.append(serialize_primitive(card))
+        return cards
+
     async def _snapshot(
         self,
     ) -> tuple[list[MergedPriorityItem], dict[UUID, PriorityItem]] | None:
@@ -232,6 +250,7 @@ class TurnSurfacing:
             source_id=item.source_id,
             title=item.title,
             mention_text=format_hedged_mention(item.title, detail),
+            item=item,
         )
 
 

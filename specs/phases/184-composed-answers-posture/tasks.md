@@ -66,7 +66,7 @@
 
 ## Phase 7: Inline mentions as claim cards [US4]
 
-- [ ] T024 [ENG] [BACKEND] Tests first `core/arbitration/ze-priority/tests/test_turn.py`: `mention_cards(mentions)` returns one serialized `claim_card` per mention with posture from the loop/goal record (loop: kind, confidence, provenance as source, state, `slipped` when drifting). Then rewrite `core/engine/ze-core/tests/orchestration/nodes/test_loop_surfacing.py` for cards (JSON-serializable, existing components preserved, compound turn unchanged text behaviour). Implement `TurnSurfacing.mention_cards`; `surface_loops` extends components with it; delete `_build_component` and every `open_items` string (`rtk proxy grep -rn "open_items\"" core apps` → only the state flag `open_items_query`, which stays).
+- [x] T024 [ENG] [BACKEND] Tests first `core/arbitration/ze-priority/tests/test_turn.py`: `mention_cards(mentions)` returns one serialized `claim_card` per mention with posture from the loop/goal record (loop: kind, confidence, provenance as source, state, `slipped` when drifting). Then rewrite `core/engine/ze-core/tests/orchestration/nodes/test_loop_surfacing.py` for cards (JSON-serializable, existing components preserved, compound turn unchanged text behaviour). Implement `TurnSurfacing.mention_cards`; `surface_loops` extends components with it; delete `_build_component` and every `open_items` string (`rtk proxy grep -rn "open_items\"" core apps` → only the state flag `open_items_query`, which stays).
 
 ## Phase 8: Web (minimal) [WEB]
 

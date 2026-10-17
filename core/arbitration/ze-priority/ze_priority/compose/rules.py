@@ -6,7 +6,7 @@ import math
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, TypeVar
 
-from ze_automation.goals.types import GoalProgress
+from ze_automation.goals.types import STUCK_IDLE_DAYS, GoalProgress
 from ze_automation.holds.types import HeldWrite
 from ze_automation.workflow.failure import failure_summary
 from ze_automation.workflow.types import Workflow
@@ -26,7 +26,12 @@ from ze_worldstate.types import LoopState, OpenLoop
 
 from ze_priority.compose.types import Draft, SourceSnapshot, WorkflowDigest
 from ze_priority.matching import MATCH_FLOOR, cosine
-from ze_priority.types import PriorityItem, RelationshipSignal
+from ze_priority.types import (
+    GoalSignal,
+    LoopSignal,
+    PriorityItem,
+    RelationshipSignal,
+)
 
 WINDOW_DAYS = 7
 LIST_CAP = 6
@@ -556,3 +561,61 @@ def topic(snapshot: SourceSnapshot, topic: str, embedder: Any, now: datetime) ->
     return Draft(
         head.text, [head, *cards], _summary(lines, snapshot), _failed(snapshot)
     )
+
+
+def _loop_card_from_item(item: PriorityItem, now: datetime) -> ClaimCard:
+    signal = item.signal
+    assert isinstance(signal, LoopSignal)
+    drifting = signal.state == LoopState.DRIFTING
+    posture = ClaimPosture(
+        kind=item.claim_kind.value,
+        subject="loop",
+        ref_id=str(item.source_id),
+        confidence=signal.confidence,
+        as_of=_iso(item.activity_at),
+        state=signal.state.value,
+        slipped=drifting,
+    )
+    lines = [signal.drift_rationale] if drifting and signal.drift_rationale else []
+    return claim_card(item.title, posture, lines=lines)
+
+
+def _goal_card_from_item(item: PriorityItem) -> ClaimCard:
+    signal = item.signal
+    assert isinstance(signal, GoalSignal)
+    stuck = signal.idle_days >= STUCK_IDLE_DAYS
+    if stuck:
+        state = "stuck"
+    else:
+        state = "awaiting_gate" if signal.kind == "awaiting_gate" else "active"
+    posture = ClaimPosture(
+        kind=item.claim_kind.value,
+        subject="goal",
+        ref_id=str(item.source_id),
+        source="goal",
+        as_of=_iso(item.activity_at),
+        state=state,
+        slipped=stuck,
+    )
+    readouts = [Readout("Status", f"no progress for {signal.idle_days} d", "hot")] if stuck else []
+    return claim_card(item.title, posture, readouts=readouts)
+
+
+def mention_card(
+    item: PriorityItem | None, now: datetime, *, loop: OpenLoop | None = None
+) -> ClaimCard | None:
+    """A card for one inline mention. A loop record, when given, is the posture's source;
+    otherwise the ranked item's signal is. Returns None when there is nothing to read."""
+    if loop is not None:
+        return _loop_card(loop, now, lines=None)
+    if item is None:
+        return None
+    if item.source_kind == "loop" and isinstance(item.signal, LoopSignal):
+        return _loop_card_from_item(item, now)
+    if item.source_kind == "goal" and isinstance(item.signal, GoalSignal):
+        return _goal_card_from_item(item)
+    if item.source_kind == "hypothesis":
+        return _hypothesis_card(item)
+    if item.source_kind == "relationship" and isinstance(item.signal, RelationshipSignal):
+        return _person_card(item)
+    return None

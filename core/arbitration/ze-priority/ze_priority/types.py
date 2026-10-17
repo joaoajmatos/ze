@@ -163,3 +163,4 @@ class OpenItemMention:
     source_id: UUID
     title: str
     mention_text: str
+    item: PriorityItem | None = None
