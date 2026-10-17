@@ -43,7 +43,7 @@ async def review_facts(pool: Any, actions: list[Any]) -> list[dict]:
                 row = await conn.fetchrow(
                     "UPDATE memory_facts SET reviewed = true WHERE id = $1"
                     " RETURNING id, 'fact' AS type, predicate AS key, value, confidence, reviewed,"
-                    " contradicted, provenance, NULL::TEXT AS summary, NULL::TEXT AS prompt_snippet,"
+                    " contradicted, provenance, claim_kind, NULL::TEXT AS summary, NULL::TEXT AS prompt_snippet,"
                     " agent, created_at",
                     action.id,
                 )
@@ -53,7 +53,7 @@ async def review_facts(pool: Any, actions: list[Any]) -> list[dict]:
                 row = await conn.fetchrow(
                     "UPDATE memory_facts SET value = $1, reviewed = true WHERE id = $2"
                     " RETURNING id, 'fact' AS type, predicate AS key, value, confidence, reviewed,"
-                    " contradicted, provenance, NULL::TEXT AS summary, NULL::TEXT AS prompt_snippet,"
+                    " contradicted, provenance, claim_kind, NULL::TEXT AS summary, NULL::TEXT AS prompt_snippet,"
                     " agent, created_at",
                     action.value,
                     action.id,
@@ -104,7 +104,7 @@ async def get_memory_feed(
             """
             SELECT id, 'fact' AS type,
                    predicate AS key, value, confidence, reviewed, contradicted,
-                   provenance, NULL::TEXT AS summary, NULL::TEXT AS prompt_snippet,
+                   provenance, claim_kind, NULL::TEXT AS summary, NULL::TEXT AS prompt_snippet,
                    agent, created_at
             FROM memory_facts
             WHERE created_at < $1
@@ -119,7 +119,8 @@ async def get_memory_feed(
             SELECT id, 'episode' AS type,
                    NULL::TEXT AS key, NULL::TEXT AS value, NULL::FLOAT8 AS confidence,
                    NULL::BOOLEAN AS reviewed, NULL::BOOLEAN AS contradicted,
-                   NULL::TEXT AS provenance, summary, LEFT(prompt, 120) AS prompt_snippet,
+                   NULL::TEXT AS provenance, NULL::TEXT AS claim_kind,
+                   summary, LEFT(prompt, 120) AS prompt_snippet,
                    agent, created_at
             FROM memory_episodes
             WHERE created_at < $1
@@ -317,6 +318,49 @@ async def get_memory_graph(
     return {"nodes": nodes, "edges": edges}
 
 
+async def search_entities(
+    pool: Any, *, q: str, entity_type: str | None, limit: int
+) -> list[dict]:
+    pattern = (
+        "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    )
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT e.id, e.entity_type, e.canonical_name, e.aliases, e.attrs,
+                   COUNT(r.id) AS degree
+            FROM memory_entities e
+            LEFT JOIN memory_relationships r
+              ON r.source_id = e.id OR r.target_id = e.id
+            WHERE (
+                e.canonical_name ILIKE $1 ESCAPE '\\'
+                OR EXISTS (
+                    SELECT 1 FROM jsonb_array_elements_text(e.aliases) a
+                    WHERE a ILIKE $1 ESCAPE '\\'
+                )
+            )
+              AND ($2::TEXT IS NULL OR e.entity_type = $2)
+            GROUP BY e.id
+            ORDER BY degree DESC, e.canonical_name
+            LIMIT $3
+            """,
+            pattern,
+            entity_type,
+            limit,
+        )
+    return [
+        {
+            "id": r["id"],
+            "entity_type": r["entity_type"],
+            "canonical_name": r["canonical_name"],
+            "aliases": _aliases_from_row(r["aliases"]),
+            "attrs": _attrs_from_row(r["attrs"]),
+            "degree": r["degree"],
+        }
+        for r in rows
+    ]
+
+
 async def get_entity_detail(pool: Any, entity_id: Any) -> dict | None:
     async with pool.acquire() as conn:
         entity_row = await conn.fetchrow(
@@ -346,7 +390,7 @@ async def get_entity_detail(pool: Any, entity_id: Any) -> dict | None:
         fact_rows = await conn.fetch(
             """
             SELECT f.id, f.predicate AS key, f.value, COALESCE(me.agent, 'unknown') AS agent,
-                   f.created_at
+                   f.created_at, f.claim_kind, f.confidence, f.reviewed, f.contradicted, f.provenance
             FROM memory_facts f
             LEFT JOIN memory_episodes me ON me.id = f.source_episode_id
             WHERE f.subject_id = $1
@@ -362,6 +406,11 @@ async def get_entity_detail(pool: Any, entity_id: Any) -> dict | None:
                 "value": r["value"],
                 "agent": r["agent"],
                 "created_at": r["created_at"],
+                "claim_kind": r["claim_kind"],
+                "confidence": r["confidence"],
+                "reviewed": r["reviewed"],
+                "contradicted": r["contradicted"],
+                "provenance": r["provenance"],
             }
             for r in fact_rows
         ]
@@ -403,7 +452,20 @@ async def get_entity_detail(pool: Any, entity_id: Any) -> dict | None:
                 OR (r.target_id = $1 AND r.source_type = 'entity')
               )
             GROUP BY e.id
+            ORDER BY degree DESC, e.canonical_name
             LIMIT 20
+            """,
+            entity_id,
+        )
+        neighbour_total = await conn.fetchval(
+            """
+            SELECT COUNT(DISTINCT e.id)
+            FROM memory_relationships r
+            JOIN memory_entities e
+              ON (r.target_id = e.id AND r.source_id = $1)
+              OR (r.source_id = e.id AND r.target_id = $1)
+            WHERE (r.source_id = $1 AND r.target_type = 'entity')
+               OR (r.target_id = $1 AND r.source_type = 'entity')
             """,
             entity_id,
         )
@@ -452,5 +514,6 @@ async def get_entity_detail(pool: Any, entity_id: Any) -> dict | None:
         "facts": facts,
         "episodes": episodes,
         "neighbours": neighbours,
+        "neighbour_total": neighbour_total or 0,
         "neighbour_edges": neighbour_edges,
     }

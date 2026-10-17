@@ -374,6 +374,10 @@ export type EntityDetailResponse = {
      */
     neighbours: Array<GraphEntityNode>;
     /**
+     * Neighbour Total
+     */
+    neighbour_total: number;
+    /**
      * Neighbour Edges
      */
     neighbour_edges: Array<GraphEdge>;
@@ -489,6 +493,26 @@ export type FactDigestItem = {
      * Created At
      */
     created_at?: string | null;
+    /**
+     * Claim Kind
+     */
+    claim_kind?: string | null;
+    /**
+     * Confidence
+     */
+    confidence?: number | null;
+    /**
+     * Reviewed
+     */
+    reviewed?: boolean | null;
+    /**
+     * Contradicted
+     */
+    contradicted?: boolean | null;
+    /**
+     * Provenance
+     */
+    provenance?: string | null;
 };
 
 /**
@@ -1326,6 +1350,10 @@ export type MemoryFeedItem = {
      * Provenance
      */
     provenance: string | null;
+    /**
+     * Claim Kind
+     */
+    claim_kind?: string | null;
     /**
      * Summary
      */
@@ -3775,6 +3803,52 @@ export type GetMemoryGraphResponses = {
 };
 
 export type GetMemoryGraphResponse = GetMemoryGraphResponses[keyof GetMemoryGraphResponses];
+
+export type SearchEntitiesData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Q
+         *
+         * Name or alias text
+         */
+        q: string;
+        /**
+         * Entity Type
+         *
+         * Filter by entity type
+         */
+        entity_type?: string | null;
+        /**
+         * Limit
+         *
+         * Max entities to return
+         */
+        limit?: number;
+    };
+    url: '/api/v0/memory/entities';
+};
+
+export type SearchEntitiesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SearchEntitiesError = SearchEntitiesErrors[keyof SearchEntitiesErrors];
+
+export type SearchEntitiesResponses = {
+    /**
+     * Response Searchentities
+     *
+     * Successful Response
+     */
+    200: Array<GraphEntityNode>;
+};
+
+export type SearchEntitiesResponse = SearchEntitiesResponses[keyof SearchEntitiesResponses];
 
 export type GetEntityDetailData = {
     body?: never;
