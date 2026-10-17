@@ -353,6 +353,8 @@ def _binding(
         noun = "item" if n == 1 else "items"
         more = f" ({cut_selected} more not shown)" if cut_selected else ""
         lines.append(f'"these" / "those" = the {n} selected {noun} shown above{more}.')
+        if this is None and n > 1:
+            lines.append('If the user says "this" alone, ask which of the selected items.')
     return lines
 
 

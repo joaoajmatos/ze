@@ -494,7 +494,7 @@ Before routing, the `resolve_screen` node reads each ref from its store and writ
 
 Ze stores the context on the user message (`messages.screen_context`), so Retry replays exactly what the first attempt saw. The trace carries a `screen` section: one row per resolver with its status and time in milliseconds. It reaches `GET /api/v0/messages/{id}/trace` and the `trace_update` frames, including a partial frame as soon as the note is built.
 
-A turn with `origin: "chat_about"` and a subject skips scoring: the first subject's kind picks the agent (`loop` to `loops`, `goal` and `goal_gate` to `goals`, `workflow` and `workflow_execution` to `workflow`, `reminder` to `reminders`, `news_article` to `news`, everything else to `companion`). The routing log shows `routing_method: screen`. Typed asks route as usual.
+A turn with `origin: "chat_about"` and a subject skips scoring: the first subject's kind picks the agent (`loop` to `loops`, `goal` and `goal_gate` to `goals`, `workflow` and `workflow_execution` to `workflow`, `reminder` to `reminders`, `news_article` to `news`, everything else to `companion`). The routing log shows `routing_method: screen`. Only the first message of the chip click routes this way; follow-ups are ordinary Ask turns and route as usual.
 
 The routing judge reads the subject line only when `system_one.surfaces.routing.screen_hint` is true. It ships off.
 

@@ -117,7 +117,7 @@ async def test_two_selected_items_leave_this_unbound():
     ctx = ScreenContext(place="mind", selection=(ref("loop", "a"), ref("loop", "b")))
     res = await note(ctx, Fake({"loop"}))
     assert "Nothing on screen is singled out" not in res.note
-    assert '"this"' not in res.note
+    assert 'says "this" alone, ask which of the selected items' in res.note
     assert '"these" / "those" = the 2 selected items shown above' in res.note
 
 
