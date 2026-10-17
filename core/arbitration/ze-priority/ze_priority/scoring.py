@@ -56,6 +56,7 @@ def score_loop(loop: OpenLoop, *, now: datetime | None = None) -> PriorityItem:
             confidence=loop.confidence,
             drift_deadline=loop.drift_deadline,
             drift_rationale=loop.drift_rationale,
+            confidence_prior=loop.confidence_prior,
         ),
         priority=Confidence(value=value, decay_profile=DecayProfile.TIME_LINEAR),
         rank=0,

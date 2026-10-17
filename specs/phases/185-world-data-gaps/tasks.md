@@ -48,8 +48,8 @@
 
 ## Phase 4: Loop postures (184 code) [US3]
 
-- [ ] T013 [ENG] [BACKEND] Tests first in `core/arbitration/ze-priority/tests/test_scoring.py`: the loop `PriorityItem` signal carries `confidence_prior`. Add `LoopSignal.confidence_prior: float | None = None`; fill in `scoring.py`.
-- [ ] T014 [ENG] [BACKEND] Tests first in `core/arbitration/ze-priority/tests/compose/test_rules_slipping.py` (replace `assert claim.confidence_from is None` for loops) and `test_composer.py` (replace the `"confidence_from" not in card["claim"]` assertion for loops; keep it for hypotheses, goals, workflows): a loop with prior 0.7 yields `confidence_from == 0.7`; a loop with null prior omits it. Implement in `compose/rules.py::_loop_posture` and `_loop_card_from_item`, and in `TurnSurfacing.mention_cards` if T001(e) found its own constructor.
+- [x] T013 [ENG] [BACKEND] Tests first in `core/arbitration/ze-priority/tests/test_scoring.py`: the loop `PriorityItem` signal carries `confidence_prior`. Add `LoopSignal.confidence_prior: float | None = None`; fill in `scoring.py`.
+- [x] T014 [ENG] [BACKEND] Tests first in `core/arbitration/ze-priority/tests/compose/test_rules_slipping.py` (replace `assert claim.confidence_from is None` for loops) and `test_composer.py` (replace the `"confidence_from" not in card["claim"]` assertion for loops; keep it for hypotheses, goals, workflows): a loop with prior 0.7 yields `confidence_from == 0.7`; a loop with null prior omits it. Implement in `compose/rules.py::_loop_posture` and `_loop_card_from_item`, and in `TurnSurfacing.mention_cards` if T001(e) found its own constructor.
 
 ## Phase 5: Hypotheses [US4]
 

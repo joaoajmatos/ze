@@ -95,6 +95,19 @@ def test_us1_independent_example():
     assert all(c.claim.ref_id for c in cards)
 
 
+def test_loop_card_confidence_from_is_the_stored_prior():
+    loop = _loop(state=LoopState.DRIFTING, confidence=0.5, confidence_prior=0.7,
+                 drift_deadline=NOW - timedelta(days=2))
+    [card] = _cards(rules.slipping(_snapshot([loop]), NOW))
+    assert card.claim.confidence_from == 0.7
+
+
+def test_loop_card_without_a_prior_omits_confidence_from():
+    loop = _loop(state=LoopState.DRIFTING, drift_deadline=NOW - timedelta(days=2))
+    [card] = _cards(rules.slipping(_snapshot([loop]), NOW))
+    assert card.claim.confidence_from is None
+
+
 def test_loop_card_claim_comes_from_the_record():
     loop = _loop(
         state=LoopState.DRIFTING,

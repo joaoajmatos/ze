@@ -19,6 +19,7 @@ class LoopSignal:
     confidence: float
     drift_deadline: datetime | None
     drift_rationale: str | None = None
+    confidence_prior: float | None = None
 
 
 @dataclass(frozen=True)
