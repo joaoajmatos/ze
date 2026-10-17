@@ -15,3 +15,7 @@ def test_finance_lists_metric_and_chart_beside_confirm_and_list():
 def test_prompt_never_invents_figures():
     assert "render_metric" in _AGENT_INSTRUCTIONS
     assert "never invent" in _AGENT_INSTRUCTIONS
+
+
+def test_prompt_asks_for_a_takeaway_line_after_a_render():
+    assert "always write one short line of takeaway" in _AGENT_INSTRUCTIONS
