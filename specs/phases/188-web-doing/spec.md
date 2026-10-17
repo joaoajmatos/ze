@@ -10,7 +10,7 @@
 
 **Governed by**: `DESIGN.md`, `PRODUCT.md` principle 4 ("Unattended work is accountable"), phases 102–108 (workflows: branching, flowchart, failure policy, revisions), 23/91 (goal detail, traces), 114 (skills), 138–139 (procedures), 115/116/129/131 (workspace runs, live output), 181 (held writes).
 
-**Depends on**: 183 (shell), 184 (goal progress fields, `failure_summary`), 187 (the confirmation card component, reused for held writes and gates). Uses 194 (action ledger) when available.
+**Depends on**: 183 (shell), 195 (screen context, "Chat about this"), 184 (goal progress fields, `failure_summary`), 187 (the confirmation card component, reused for held writes and gates). Uses 194 (action ledger) when available.
 
 **Doctrine functions served**: action (what runs unattended and what it did), executive function (goals and gates), governance (held writes, skill and procedure review).
 
@@ -41,6 +41,7 @@ Doing answers what runs without the user, what it did, and what it waits for, at
 - **FR-002**: Goal row derivations from `listGoals` only (no per-row detail fetch); detail from `getGoalDetail` + `listGoalTraces`.
 - **FR-003**: Gate actions use the `action` frame (`goal:approve:<gate_id>` and the existing stop/redirect payloads); held writes use `decideHeldWrite`.
 - **FR-004**: Hard cuts: `pages/{goals,goal-detail,workflows,workflow-detail,skills}`, `pages/procedures` (candidates part; the library moves to 189), `pages/workspace` (runs part; files move to 190), `widgets/{goals-overview,workflows-overview,gate-status,goal-learnings,milestone-timeline,workflow-executions,skill-management,procedure-candidates}` as they are, `pages/doing/ui/DoingInterim.tsx`, the "Current definition" banner, `shared/lib/format-cron.ts` if replaced by a schedule-in-words helper in the workflow slice (keep `cronstrue` usage in one place).
+- **FR-004a**: Screen context (phase 195): the index publishes visible goals, workflows and runs; detail pages publish their subject (`goal`, `workflow`, `workflow_execution`); every module and row (goal, workflow, run, skill, procedure candidate, gate, held write) wires "Chat about this", with a test per kind.
 - **FR-005**: Acceptance: critique ≥ 29/40 on index and both details; detector 0; captures at 1440 and 390.
 
 ## Success Criteria *(mandatory)*
@@ -54,4 +55,4 @@ Doing answers what runs without the user, what it did, and what it waits for, at
 
 ## Owning packages
 
-ze-web; plus one small backend task: `fetch_context` builds a goal screen note from `screen_context.goal_id` (like the workflow note in `ze_core/orchestration/nodes/context.py`), so asking from a goal page lets Ze answer about "this goal" (raised in the 183 review: the Ask overlay already sends `goal_id`). No migration.
+ze-web only; no backend, no migration. (The goal screen note this phase carried moved to phase 195, which resolves every kind.)

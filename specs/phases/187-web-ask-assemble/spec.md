@@ -10,7 +10,7 @@
 
 **Governed by**: `DESIGN.md` (canvas, cascade from the orb, trace terminology), `PRODUCT.md` ("Every reply has a trace"), phase 117 (static AI disclosure, chat always resolves), 165/180 (feedback, retry, rollback), 181 (write confirmations, `kind` write/budget/held/prompt), 51 (onboarding).
 
-**Depends on**: 183 (shell), 184 (composed answers, claim descriptors), 186 (loop/goal/decision module visuals shared with World).
+**Depends on**: 183 (shell), 184 (composed answers, claim descriptors), 195 (screen context, "Chat about this", `MessageTrace.screen`), 186 (loop/goal/decision module visuals shared with World).
 
 **Doctrine functions served**: perception (the user's input), reflection (the trace), governance (confirmations, retry with undo).
 
@@ -47,6 +47,7 @@ Ask is where the user talks to Ze, at `/ask` and `/ask/:threadId`. Every reply a
 - **FR-002**: Keep and move: `features/respond-to-confirmation`, `features/retry-reply`, `features/reply-feedback`, `features/load-chat-history`, `features/trace-state`.
 - **FR-003**: The Ask bar from 183 is shown on `/ask` too (the old chat composer is deleted) and sends directly on the selected thread there; on every other place it keeps opening the overlay (183 FR-008a). The canvas, trace module and confirmation placement live in one slice, `widgets/assemble` (`Canvas`, `TraceModule`, `AskOverlay` moved from `widgets/chat-workspace`), used by `pages/ask` and passed to `AppShell`'s `overlay` prop from `app/router` (no widget-to-widget import).
 - **FR-004**: Hard cuts: `widgets/chat-workspace` (AskOverlay moves to `widgets/assemble`; ChatWorkspace, ChatSidePanel, ChatSidePanelQuickActions, MessageBubble, ChatMessageList, SessionList, TypingIndicator, trace-panel as they are), `features/chat-side-panel`, `pages/chat`, `pages/ask/ui/AskInterim.tsx`, `shared/effects/{background-beams,glowing-stars,spotlight}.tsx` (the starfield), `pages/jarvis/model/compose.ts` and `pages/jarvis/views/AssembleView.tsx`'s client composition, `shared/ui/layout/ChatShell.tsx`, any "Ze's Mind" wording.
+- **FR-004a**: Screen context (phase 195): Ask publishes the canvas modules (`canvas` refs with index and type) and the focused module; every canvas card and overlay reply module wires "Chat about this"; the Trace module's head shows "Asked from: …" or "Asked about: …" from `MessageTrace.screen`, and a Screen section lists the resolver rows (ok, missing, stale, cut).
 - **FR-005**: The static AI disclosure (phase 117) is kept, restyled, in the Ask rail.
 - **FR-006**: Acceptance: impeccable critique ≥ 29/40 on Ask; detector 0; captures; reduced motion cascades are opacity-only.
 

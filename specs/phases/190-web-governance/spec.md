@@ -10,7 +10,7 @@
 
 **Governed by**: `DESIGN.md` ("no chart without a question"), `PRODUCT.md` ("Interruption is a budget"), phases 17/120 (costs), 62 (data portability), 177 (quiet hours, budget), 115 (workspace files).
 
-**Depends on**: 183 (shell, palette control). Uses 185 (budget used today, push log) and 194 (default tier, collisions) when available.
+**Depends on**: 183 (shell, palette control), 195 (screen context, "Chat about this"). Uses 185 (budget used today, push log) and 194 (default tier, collisions) when available.
 
 **Doctrine function served**: governance (is Ze behaving: spend, attention, data, connections).
 
@@ -42,6 +42,7 @@ Governance answers "is Ze behaving?" at `/governance`: spend, attention budget a
 
 - **FR-001**: `pages/governance`; widgets `spend`, `attention-budget`, `data`, `connections`, `files`, `reset`.
 - **FR-002**: Hard cuts: `pages/{costs,data,settings}`, `pages/workspace` (files part; the page is gone once 188 took runs), `widgets/{costs-overview,data-overview,settings-workspace,workspace-management}`, the activity heatmap and every pie/heatmap chart in `@myguyze/ze-ui/charts` that no screen uses after this phase (`pie-chart`, `pie-slice`, `pie-context`, `heatmap-chart`, `heatmap-data` and their tests) plus `@uiw/react-heat-map` if present, `shared/lib/optional-charts.ts` and `ChartsToggle` if unused, `pages/governance/ui/GovernanceInterim.tsx`, and, if this is the last interim page standing, the Tailwind `@theme` remap from 183 FR-003.
+- **FR-002a**: Screen context (phase 195): Governance publishes the selected anomaly, data domain or file as `subject` and wires "Chat about this" on spend anomalies, data domains and file rows (and enables the Governance case in `eval/scenarios/screen_context.yaml`).
 - **FR-003**: Acceptance: critique ≥ 29/40; detector 0; captures.
 
 ## Success Criteria *(mandatory)*
