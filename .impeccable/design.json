@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-17T14:50:00Z",
+  "title": "Design System: Ze",
+  "extensions": {
+    "colorMeta": {
+      "orchid": { "role": "primary", "displayName": "Orchid", "canonical": "#b9a3ff", "tonalRamp": ["#1a1230", "#2c2050", "#43317a", "#5e49a8", "#7c66d0", "#9c86ec", "#b9a3ff", "#d6cbff"] },
+      "ultraviolet": { "role": "primary", "displayName": "Ultraviolet", "canonical": "#9e82ff", "tonalRamp": ["#150f2e", "#241a4f", "#38287c", "#503aac", "#6b50d6", "#8669f2", "#9e82ff", "#c3b3ff"] },
+      "amethyst": { "role": "primary", "displayName": "Amethyst", "canonical": "#c08cff", "tonalRamp": ["#1f1130", "#361e53", "#512f7e", "#6f42ab", "#8f5bd4", "#a973f0", "#c08cff", "#dab8ff"] },
+      "coral": { "role": "secondary", "displayName": "Coral (slipped)", "canonical": "#ff6f63", "tonalRamp": ["#3a120e", "#631f18", "#8f2d24", "#b83f33", "#dc5345", "#f06256", "#ff6f63", "#ffa49c"] },
+      "cream": { "role": "neutral", "displayName": "Cream", "canonical": "#efe5d7", "tonalRamp": ["#2b2620", "#4a4236", "#6b614f", "#8c8068", "#aea083", "#cfc0a3", "#efe5d7", "#f8f3ea"] },
+      "dim": { "role": "neutral", "displayName": "Dim lavender grey", "canonical": "#9a90ae", "tonalRamp": ["#1b1822", "#2f2a3a", "#453e55", "#5c5471", "#746b8c", "#8c82a3", "#9a90ae", "#c2bbd0"] },
+      "field": { "role": "neutral", "displayName": "Plum field", "canonical": "#120d14", "tonalRamp": ["#120d14", "#1b1420", "#261c2c", "#33253a", "#42304a", "#533d5c", "#664b70", "#7a5b86"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Dot-matrix display", "purpose": "Answer headlines and the session clock, drawn as real dots." },
+      "numeral": { "displayName": "Thin numeral", "purpose": "Counts and day deltas; ticks up on arrival." },
+      "sentence": { "displayName": "Sentence", "purpose": "The one plain sentence Ze speaks on a view; card titles at 1.0625rem." },
+      "body": { "displayName": "Body", "purpose": "Descriptions and row text at reduced brightness; key nouns in cream." },
+      "label": { "displayName": "Micro label", "purpose": "Module names, axis titles, chips; letter-spaced caps." },
+      "readout": { "displayName": "Readout", "purpose": "Tabular mono for times, ratios, ids and deltas only." }
+    },
+    "shadows": [
+      { "name": "module-top-edge", "value": "inset 0 1px 0 color-mix(in oklab, var(--main) 22%, transparent)", "purpose": "Light on the top edge of a module at rest; 40% on hover or focus-within." },
+      { "name": "control-bloom", "value": "inset 0 -16px 26px -14px color-mix(in oklab, var(--main) 55%, transparent)", "purpose": "Active, pressed or primary controls bloom from below instead of a flat fill." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Every transition and entrance." },
+      { "name": "control", "value": "150ms", "purpose": "Border and colour changes on controls." },
+      { "name": "frame-light", "value": "220ms", "purpose": "Module frame and bracket brightening." },
+      { "name": "cascade", "value": "620ms, 80ms stagger, exit 180ms", "purpose": "Answer modules flying in from the orb; dismiss snaps." },
+      { "name": "decode", "value": "520ms", "purpose": "Text decoding in left to right." },
+      { "name": "count-up", "value": "650ms", "purpose": "Numerals ticking to their value." },
+      { "name": "draw-on", "value": "700ms", "purpose": "Hairline rules scaling in from the left." },
+      { "name": "orb-spring", "value": "K=110, critically damped, 320ms core-to-rim stagger", "purpose": "Continuous morph between orb states." },
+      { "name": "heartbeat", "value": "2.2s two-beat", "purpose": "Attention pulse shared by orb, leader tip, mark and label." }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "1023px (max-width)" },
+      { "name": "desktop", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Module",
+      "kind": "card",
+      "refersTo": "module",
+      "description": "The framed panel with bracketed corners, a top light and an h2 label.",
+      "html": "<section class=\"ds-mod\"><i class=\"ds-c ds-tl\"></i><i class=\"ds-c ds-tr\"></i><i class=\"ds-c ds-bl\"></i><i class=\"ds-c ds-br\"></i><header class=\"ds-head\"><h2 class=\"ds-lbl\">Needs you</h2><span class=\"ds-idx\">A·02</span></header><div class=\"ds-row\"><span class=\"ds-t\">Review Portuguese progress</span><span class=\"ds-ro\">gate</span></div></section>",
+      "css": ".ds-mod{position:relative;padding:14px 14px 12px;border:1px solid color-mix(in oklab,#b9a3ff 28%,transparent);background:linear-gradient(180deg,color-mix(in oklab,#b9a3ff 7%,transparent),transparent 34%),color-mix(in oklab,#1b1420 70%,transparent);box-shadow:inset 0 1px 0 color-mix(in oklab,#b9a3ff 22%,transparent);color:#efe5d7;font-family:Saira,system-ui,sans-serif;font-weight:300;transition:border-color 220ms cubic-bezier(.16,1,.3,1),box-shadow 220ms cubic-bezier(.16,1,.3,1)}.ds-mod:hover{border-color:color-mix(in oklab,#b9a3ff 55%,transparent);box-shadow:inset 0 1px 0 color-mix(in oklab,#b9a3ff 40%,transparent)}.ds-c{position:absolute;width:9px;height:9px;border:0 solid #b9a3ff;pointer-events:none;transition:all 220ms}.ds-mod:hover .ds-c{border-color:#efe5d7;width:12px;height:12px}.ds-tl{top:-1px;left:-1px;border-top-width:1px;border-left-width:1px}.ds-tr{top:-1px;right:-1px;border-top-width:1px;border-right-width:1px}.ds-bl{bottom:-1px;left:-1px;border-bottom-width:1px;border-left-width:1px}.ds-br{bottom:-1px;right:-1px;border-bottom-width:1px;border-right-width:1px}.ds-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.ds-lbl{margin:0;font-family:Michroma,sans-serif;font-size:.625rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:#b9a3ff}.ds-idx{font-family:'JetBrains Mono',monospace;font-size:.6875rem;color:#9a90ae}.ds-row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:7px 0;border-bottom:1px solid color-mix(in oklab,#b9a3ff 14%,transparent);font-size:.9375rem}.ds-t{color:#efe5d7}.ds-ro{font-family:'JetBrains Mono',monospace;font-size:.75rem;letter-spacing:.04em;color:#efe5d7}"
+    },
+    {
+      "name": "Control",
+      "kind": "button",
+      "refersTo": "control",
+      "description": "The standard bracketed control; light sweep on hover, bloom when active.",
+      "html": "<button class=\"ds-ctl\">What's slipping?</button> <button class=\"ds-ctl ds-on\">Approve</button>",
+      "css": ".ds-ctl{--c:#b9a3ff;position:relative;isolation:isolate;overflow:hidden;min-height:44px;min-width:44px;padding:0 14px;border:1px solid color-mix(in oklab,#b9a3ff 28%,transparent);background:linear-gradient(var(--c),var(--c)) top left/7px 1px no-repeat,linear-gradient(var(--c),var(--c)) top left/1px 7px no-repeat,linear-gradient(var(--c),var(--c)) top right/7px 1px no-repeat,linear-gradient(var(--c),var(--c)) top right/1px 7px no-repeat,linear-gradient(var(--c),var(--c)) bottom left/7px 1px no-repeat,linear-gradient(var(--c),var(--c)) bottom left/1px 7px no-repeat,linear-gradient(var(--c),var(--c)) bottom right/7px 1px no-repeat,linear-gradient(var(--c),var(--c)) bottom right/1px 7px no-repeat;color:#efe5d7;font-family:Michroma,sans-serif;font-size:.625rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:border-color 150ms cubic-bezier(.16,1,.3,1),color 150ms,box-shadow 220ms}.ds-ctl::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(100deg,transparent 30%,color-mix(in oklab,#b9a3ff 22%,transparent) 50%,transparent 70%);transform:translateX(-110%)}.ds-ctl:hover::before{animation:ds-sweep 600ms cubic-bezier(.16,1,.3,1) both}@keyframes ds-sweep{to{transform:translateX(110%)}}.ds-ctl:hover{border-color:color-mix(in oklab,#b9a3ff 55%,transparent)}.ds-ctl:focus-visible{outline:1px solid #efe5d7;outline-offset:3px}.ds-ctl.ds-on{--c:#efe5d7;border-color:#b9a3ff;box-shadow:inset 0 -16px 26px -14px color-mix(in oklab,#b9a3ff 55%,transparent)}"
+    },
+    {
+      "name": "Command chip",
+      "kind": "button",
+      "refersTo": "command-chip",
+      "description": "A left-aligned question or navigation chip with an index and a key hint.",
+      "html": "<button class=\"ds-cmd ds-on\"><span class=\"ds-i\">01</span><span class=\"ds-q\">what's slipping?</span><span class=\"ds-k\">1</span></button>",
+      "css": ".ds-cmd{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:8px 12px 8px 10px;border:1px solid color-mix(in oklab,#b9a3ff 28%,transparent);background:transparent;color:#efe5d7;font-family:Saira,system-ui,sans-serif;font-weight:300;font-size:.9375rem;text-align:left;cursor:pointer}.ds-cmd .ds-i{font-family:'JetBrains Mono',monospace;font-size:.6875rem;letter-spacing:.08em;color:#b9a3ff}.ds-cmd .ds-q{flex:1}.ds-cmd .ds-k{font-family:'JetBrains Mono',monospace;font-size:.625rem;color:#9a90ae;border:1px solid color-mix(in oklab,#b9a3ff 28%,transparent);padding:1px 5px;min-width:18px;text-align:center}.ds-cmd:hover{border-color:color-mix(in oklab,#b9a3ff 55%,transparent)}.ds-cmd.ds-on{border-color:#b9a3ff;box-shadow:inset 0 -16px 26px -14px color-mix(in oklab,#b9a3ff 55%,transparent)}.ds-cmd.ds-on .ds-k{color:#efe5d7}.ds-cmd:focus-visible{outline:1px solid #efe5d7;outline-offset:3px}"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Provenance and posture chips; dashed for an inference.",
+      "html": "<span class=\"ds-chip ds-solid\">chat</span> <span class=\"ds-chip ds-dotted\">asked, not stated</span>",
+      "css": ".ds-chip{display:inline-block;font-family:Michroma,sans-serif;font-size:.5625rem;letter-spacing:.16em;text-transform:uppercase;color:#9a90ae;border:1px solid color-mix(in oklab,#b9a3ff 28%,transparent);padding:4px 7px;margin-right:6px}.ds-chip.ds-solid{color:#b9a3ff}.ds-chip.ds-dotted{border-style:dashed}"
+    },
+    {
+      "name": "Loop row",
+      "kind": "custom",
+      "refersTo": "module",
+      "description": "A concern row: state tick, claim glyph, title, confidence sparkline and mono readout with delta.",
+      "html": "<div class=\"ds-loop ds-hot\"><i class=\"ds-tick\"></i><span class=\"ds-t\"><i class=\"ds-g\"></i>Investor deck</span><span class=\"ds-ro\">0.66 <b>▾0.10</b></span><span class=\"ds-s\">Drifting · chat · 6d ago</span></div>",
+      "css": ".ds-loop{display:grid;grid-template-columns:2px 1fr auto;gap:4px 12px;padding:7px 0;border-bottom:1px solid color-mix(in oklab,#b9a3ff 14%,transparent);font-family:Saira,system-ui,sans-serif;font-weight:300;font-size:.9375rem;cursor:pointer}.ds-tick{grid-row:1/span 2;width:1px;background:#b9a3ff;margin-right:8px}.ds-loop.ds-hot .ds-tick{background:#ff6f63}.ds-loop .ds-t{color:#efe5d7}.ds-loop.ds-hot .ds-t{color:#ff6f63}.ds-g{display:inline-block;width:8px;height:8px;margin-right:6px;border:1px solid currentColor;background:currentColor}.ds-loop .ds-ro{font-family:'JetBrains Mono',monospace;font-size:.75rem;letter-spacing:.04em;color:#efe5d7}.ds-loop.ds-hot .ds-ro{color:#ff6f63}.ds-ro b{font-weight:400;font-size:.6875rem;color:#ff6f63;margin-left:6px}.ds-s{grid-column:2/-1;color:#9a90ae;font-size:.8125rem}.ds-loop:hover .ds-tick{width:2px}"
+    },
+    {
+      "name": "Ask input",
+      "kind": "input",
+      "refersTo": "ask-input",
+      "description": "The sticky Ask bar: hairline frame, cream text, themed caret.",
+      "html": "<form class=\"ds-ask\"><input class=\"ds-in\" placeholder=\"Ask Ze — try: what's slipping?\"><button class=\"ds-ctl\">Ask</button></form>",
+      "css": ".ds-ask{display:flex;border:1px solid color-mix(in oklab,#b9a3ff 55%,transparent);background:color-mix(in oklab,#120d14 97%,transparent)}.ds-in{flex:1;min-height:44px;padding:0 14px;border:0;background:transparent;color:#efe5d7;caret-color:#b9a3ff;font-family:Saira,system-ui,sans-serif;font-weight:300;font-size:.9375rem}.ds-in::placeholder{color:#9a90ae}.ds-in:focus-visible{outline:1px solid #efe5d7;outline-offset:-3px}.ds-ask .ds-ctl{min-height:44px;padding:0 18px;border:0;border-left:1px solid color-mix(in oklab,#b9a3ff 55%,transparent);background:transparent;color:#efe5d7;font-family:Michroma,sans-serif;font-size:.625rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer}"
+    },
+    {
+      "name": "Tabs",
+      "kind": "nav",
+      "refersTo": "control",
+      "description": "View tabs: transparent controls with a bottom hairline; the current tab carries a 2px orchid rule.",
+      "html": "<nav class=\"ds-tabs\"><a class=\"ds-tab ds-cur\" href=\"#\">World</a><a class=\"ds-tab\" href=\"#\">Ask</a><a class=\"ds-tab\" href=\"#\">Doing</a><a class=\"ds-tab\" href=\"#\">Mind</a><a class=\"ds-tab\" href=\"#\">Governance</a></nav>",
+      "css": ".ds-tabs{display:inline-flex;gap:2px}.ds-tab{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid transparent;border-bottom:1px solid color-mix(in oklab,#b9a3ff 55%,transparent);color:#9a90ae;font-family:Michroma,sans-serif;font-size:.625rem;letter-spacing:.18em;text-transform:uppercase;text-decoration:none}.ds-tab:hover{color:#efe5d7}.ds-tab.ds-cur{color:#efe5d7;border-bottom:2px solid #b9a3ff}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Instrument",
+    "overview": "Ze is one mind writing to one world-state, and the interface is the instrument panel that shows that state: hairline frames with bracketed corners on a plum field, a purple key light, letter-spaced labels beside thin numerals, dot-matrix display type, and a dotted sphere that breathes while Ze listens and flares coral when something slips. Light carries depth, never shadows. Motion is continuous. Every line, dot and tone encodes what Ze knows, how sure it is, and what it is doing about it.",
+    "keyCharacteristics": [
+      "Purple-led; Orchid default, Ultraviolet and Amethyst alternates",
+      "Coral means slipped, nothing else",
+      "Four brightness levels: cream, orchid, dim, faint",
+      "Hairline frames with bracketed corners; zero radius",
+      "Dot-matrix display, Michroma labels, Saira body, JetBrains Mono readouts",
+      "Honesty visuals on every claim: filled told, half inferred, dashed suspected, hollow goal, coral slipped, dotted decay trail",
+      "The orb is the presence: nine states, spring morphs, a shared heartbeat"
+    ],
+    "rules": [
+      { "name": "The One Alarm Rule", "body": "Coral means slipped. Gates, suspicions and confirmations are cream.", "section": "colors" },
+      { "name": "The Four Levels Rule", "body": "Every text element sits on cream, orchid, dim or faint. No fifth level.", "section": "colors" },
+      { "name": "The Light Rule", "body": "Depth is light on a surface, never a shadow under it.", "section": "elevation" },
+      { "name": "The Mono-Is-Data Rule", "body": "JetBrains Mono appears only on numbers, times, ids and deltas.", "section": "typography" },
+      { "name": "The Px-True Chart Type Rule", "body": "Chart text is sized by viewBox units per CSS pixel so it is the same size at every width.", "section": "typography" },
+      { "name": "The Flat-At-Rest Rule", "body": "Surfaces are flat at rest; light appears on hover, focus and activity.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep every claim's posture visible and consistent across chart, rows and cards.",
+      "Do make hover and focus visible as light on the frame.",
+      "Do render module labels as h2, keep 44px targets, and theme caret, selection, scrollbars and focus rings.",
+      "Do print numbers in tabular mono and show the value beside any meter."
+    ],
+    "donts": [
+      "Don't use coral for selection, emphasis, gates or confirmations.",
+      "Don't add drop shadows, backdrop blur, rounded corners or flat lavender fills.",
+      "Don't cut or crossfade the orb between states.",
+      "Don't show raw enums, tracebacks or prototype asides to the user.",
+      "Don't add a second accent, a kicker above a heading, or a cinematic register."
+    ]
+  }
+}
