@@ -117,10 +117,10 @@ class TestFields:
         assert "trip-planner" in text and "Plans trips" in text
         assert "budget" in text
 
-    def test_focus_gathers_goals_screen_procedures_and_workflows(self):
+    def test_focus_gathers_goals_procedures_and_workflows_but_never_the_screen_note(self):
         text = build_tier_state(_full_state())["focus"]
         assert "Active goals" in text
-        assert "workflow execution 42" in text
+        assert "workflow execution 42" not in text
         assert "Weekly review" in text
         assert "Weekly digest" in text
 

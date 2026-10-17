@@ -28,6 +28,8 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 
 `ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The commitment intake runs in the `write_memory` node and commits the loop fire-and-forget once the episode exists. A turn where `track_loop` or `confirm_loop` succeeded creates no second loop. The messenger, calendar, and ingestion inflows call a loop extractor (`ze_worldstate.inflow`) that runs the loop gate, can create suspected loops or resolve existing ones, logs its judgments, and writes no message-trace rows. When the intake or the gate is off, uncalibrated, or skips, the Haiku paths run: the Haiku fact extractor and the 109 Haiku loop gate (see the note above on its parse failure). `GET/POST /api/v0/loops` (`rest.py`) exposes review actions to `ze-web`'s `widgets/loop-review`.
 
+`screen_resolvers.py` registers the `loop` screen resolver: label, state, confidence and age of the loop the user is looking at.
+
 ## Corroboration
 
 A `suspected` loop gains support when a second, independent source mentions the same matter. Phase 172 turns that second mention into a promotion. The path runs when the 168 gate admits a text as a concern and `find_matching_loop` returns a `suspected` loop, on both the `_create_suspected_loop` matched branch and the declared-path match.

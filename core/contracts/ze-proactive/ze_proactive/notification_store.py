@@ -248,6 +248,18 @@ class NotificationStore:
 
         return items, next_cursor
 
+    async def get(self, id_: str) -> NotificationRow | None:
+        """One notification by id; None when it is gone or the id is not a UUID."""
+        try:
+            key = UUID(id_)
+        except (TypeError, ValueError):
+            return None
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                f"SELECT {_COLUMNS} FROM notifications WHERE id = $1", key
+            )
+        return _row_to_dataclass(row) if row is not None else None
+
     async def unread_count(self) -> int:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(

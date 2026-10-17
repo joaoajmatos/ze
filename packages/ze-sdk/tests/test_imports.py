@@ -60,3 +60,12 @@ def test_honesty_reexports_are_the_real_helpers():
     assert ze_sdk.hold_token_sink is ze_agents.honesty.hold_token_sink
     assert ze_sdk.publish_honest_reply is ze_agents.honesty.publish_honest_reply
     assert {"hold_token_sink", "publish_honest_reply"} <= set(ze_sdk.__all__)
+
+
+def test_screen_reexports_are_the_real_types() -> None:
+    import ze_agents.screen
+    from ze_sdk import screen
+
+    for name in screen.__all__:
+        assert getattr(screen, name) is getattr(ze_agents.screen, name)
+    assert {"ScreenContext", "ScreenResolver", "ScreenLine", "ScreenRef"} <= set(screen.__all__)

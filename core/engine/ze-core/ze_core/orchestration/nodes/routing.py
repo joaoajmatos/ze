@@ -5,6 +5,8 @@ from ze_logging import get_logger
 from ze_core.conversation.messages.judgments import judgments_from_result
 from ze_core.orchestration.state import AgentState
 from ze_core.orchestration.judgment_state import build_judgment_state, history_hint
+from ze_agents.registry import get_enabled_agents
+from ze_core.screen.owners import screen_owner
 from ze_core.routing.tier import resolve_agent_model
 from ze_core.routing.types import RoutingEnvelope, SubTask
 from ze_core.telemetry.context import get_cost_context, set_agent_context
@@ -29,14 +31,30 @@ async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
     if hints:
         routing_text = f"{routing_text}\n\n{hints}"
 
-    judgment_state = build_judgment_state(state)
+    screen_line = (
+        state.get("screen_subject_line")
+        if getattr(router, "screen_hint", False)
+        else None
+    )
+    judgment_state = build_judgment_state(state, screen_line)
     previous_agent = get_cost_context().agent
     set_agent_context("router")
     forced_agent = config["configurable"].get("forced_agent")
+    screen_agent = (
+        None
+        if forced_agent
+        else screen_owner(
+            config["configurable"].get("screen_context"), set(get_enabled_agents())
+        )
+    )
     try:
         if forced_agent:
             envelope = await router.route_forced(
                 routing_text, state["session_id"], forced_agent
+            )
+        elif screen_agent:
+            envelope = await router.route_forced(
+                routing_text, state["session_id"], screen_agent, method="screen"
             )
         else:
             envelope = await router.route(

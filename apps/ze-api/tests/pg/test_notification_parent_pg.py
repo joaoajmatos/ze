@@ -47,3 +47,18 @@ async def test_column_is_nullable_text_added_by_zpro005(pg_pool):
             "WHERE table_name = 'notifications' AND column_name = 'target_parent_id'"
         )
     assert (row["data_type"], row["is_nullable"]) == ("text", "YES")
+
+
+async def test_get_returns_the_row_with_its_target_and_none_for_unknown_ids(pg_pool):
+    store = NotificationStore(pg_pool)
+    created = await _create(store, target_parent_id="wf-9", delivery="delivered")
+    row = await store.get(created.id)
+    assert row is not None
+    assert (row.title, row.target_type, row.target_id, row.target_parent_id) == (
+        "Workflow failed",
+        "workflow_execution",
+        "ex-1",
+        "wf-9",
+    )
+    assert await store.get("00000000-0000-0000-0000-000000000000") is None
+    assert await store.get("not-a-uuid") is None

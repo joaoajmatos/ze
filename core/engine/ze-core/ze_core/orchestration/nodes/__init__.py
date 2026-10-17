@@ -10,6 +10,7 @@ from ze_core.orchestration.nodes.loop_surfacing import surface_loops
 from ze_core.orchestration.nodes.memory import synthesize, write_memory
 from ze_core.orchestration.nodes.preprocessing import preprocess
 from ze_core.orchestration.nodes.routing import decompose, embed_route
+from ze_core.orchestration.nodes.screen import resolve_screen
 from ze_core.orchestration.nodes.skills import match_skills
 from ze_core.orchestration.nodes.tier import choose_tier
 from ze_core.orchestration.nodes.trace import record_trace
@@ -27,6 +28,7 @@ __all__ = [
     "preflight",
     "preprocess",
     "record_trace",
+    "resolve_screen",
     "surface_loops",
     "synthesize",
     "write_memory",

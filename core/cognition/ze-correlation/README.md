@@ -18,6 +18,8 @@ Ze's memory graph connects facts, episodes, contacts, news signals, and calendar
 
 A graph node in `ze-core` runs inline correlation during `fetch_context`. `CorrelationJob` runs on a schedule from `ze-api`. Plugins contribute signal sources via `ZePlugin.signal_sources()` — news and calendar plugins feed the engine.
 
+`screen_resolvers.py` registers the `hypothesis` screen resolver. A hypothesis line says it is an inference.
+
 ## Responsibilities
 
 | Module | What it provides |

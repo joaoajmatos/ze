@@ -489,6 +489,7 @@ system_one:
       choice_trust: null          # shipped: 0.5 — set from make calibrate-routing
       multi_specialist_hold: null # shipped: 0.5 — set from make calibrate-routing
       shortlist_k: 5              # shipped: 9
+      screen_hint: false          # true adds one screen subject line to the routing request (Phase 195); ships off
     skills:                       # Skill gating after E5 (Phase 166)
       enabled: false              # the shipped config.yaml sets true
       choice_trust: null          # shipped: 0.75 — set from make calibrate-skills

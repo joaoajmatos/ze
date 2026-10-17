@@ -64,6 +64,9 @@ def make_graph_input(
         "conductor_delegate_counts": {},
         "conductor_delegate_total": 0,
         "routing_hints": None,
+        "screen_note": None,
+        "screen_trace": None,
+        "screen_subject_line": None,
         "correlations": [],
         "message_trace": None,
         "judgments": [],
@@ -173,6 +176,13 @@ async def invoke_raw_turn(
                         else [],
                     },
                     thread_id,
+                )
+
+        elif kind == "on_chain_end" and name == "resolve_screen":
+            screen = (data.get("output") or {}).get("screen_trace")
+            if screen is not None and interface is not None:
+                await interface.send_trace_partial(
+                    pending_message_id, {"screen": screen}, thread_id
                 )
 
         elif kind == "on_chain_end" and name == "choose_tier":

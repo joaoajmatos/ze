@@ -359,6 +359,7 @@ Override only the hooks your plugin needs. All methods have no-op defaults.
 | `ui_contributions()` | `-> list` | Nav items, settings sections, and pages for ze-web, served at `GET /api/v0/ui/manifest`. |
 | `rest_routes()` | `-> list` | FastAPI routers the plugin owns. |
 | `rest_stores()` | `-> dict[str, Any]` | Named stores that REST routes can reach. |
+| `screen_resolvers()` | `-> list[ScreenResolver]` | Readers that turn a screen ref (`kind`, `id`) into a short line for the screen note. One resolver per `kind`; a duplicate `kind` fails at startup. See [Screen resolvers](#screen-resolvers). |
 | `seed_domains()` | `-> list` | Dev seed fixtures for `ze-seed`. |
 | `bundled_skill_paths()` | `-> list[str]` | Filesystem paths to bundled `SKILL.md` files. Registered at startup as `source=bundled`, `status=active`. See [skills.md](skills.md#bundled-skills). |
 
@@ -532,3 +533,40 @@ class MyStore:
 ```
 
 `DBPool` is a structural Protocol satisfied by any asyncpg `Pool`. Use it as a type hint — the DI container resolves it by type at startup.
+
+## Screen resolvers
+
+The web app tells Ze what the user is looking at as a list of refs (`{kind, id}`). A plugin that owns a record the user can look at registers a resolver for its kinds, so "this" can mean that record.
+
+```python
+from ze_sdk.screen import (
+    ResolveContext, ScreenLine, ScreenPosture, ScreenRef, ScreenResolver,
+    as_utc, parse_uuid, resolve_each, sanitize_text,
+)
+
+class ReminderScreenResolver:
+    kinds = frozenset({"reminder"})
+
+    def __init__(self, reminder_store) -> None:
+        self._reminders = reminder_store
+
+    async def resolve(self, refs: list[ScreenRef], ctx: ResolveContext) -> list[ScreenLine]:
+        return await resolve_each(refs, lambda ref: self._load(ref, ctx))
+
+    async def _load(self, ref, ctx) -> ScreenLine | None:
+        reminder = await self._reminders.get(parse_uuid(ref.id))
+        if reminder is None:
+            return None  # becomes a "missing" line
+        return ScreenLine(
+            ref=ref,
+            label=sanitize_text(reminder.label, 120),
+            summary="fires " + as_utc(reminder.fire_at).strftime("%Y-%m-%d %H:%M UTC"),
+            posture=ScreenPosture(source="reminder"),
+        )
+
+class MyPlugin(ZePlugin):
+    def screen_resolvers(self) -> list[ScreenResolver]:
+        return [ReminderScreenResolver(self._reminders)]
+```
+
+A resolver reads one record per ref and returns a label, a summary and the record's posture. `resolve_each` reads the refs in parallel and turns a `None` into a `missing` line and an exception into a `failed` one. Wrap every piece of user text in `sanitize_text`: it collapses newlines and defuses brackets and forged `"this" =` bindings. Each resolver gets 300 ms and the whole step 800 ms, so read one row and no more. Two resolvers cannot claim the same kind; Ze fails at startup. The note is a hint. It never replaces a tool read.

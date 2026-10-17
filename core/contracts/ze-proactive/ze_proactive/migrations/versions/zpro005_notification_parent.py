@@ -17,7 +17,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS target_parent_id TEXT")
+    op.execute(
+        "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS target_parent_id TEXT"
+    )
 
 
 def downgrade() -> None:

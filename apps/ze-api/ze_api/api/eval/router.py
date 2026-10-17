@@ -1,4 +1,5 @@
 from ze_agents.registry import get_enabled_agents
+from ze_agents.screen import ScreenContext
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from ze_agents.delegate import DELEGATE_TOOL_NAME
 from ze_agents.interface.types import RawInput
@@ -57,7 +58,10 @@ async def eval_chat(
             )
         config_extra = {"forced_agent": body.force_agent}
     if body.context:
-        config_extra = {**(config_extra or {}), "screen_context": body.context}
+        eval_context, eval_warnings = ScreenContext.from_wire(body.context)
+        config_extra = {**(config_extra or {}), "screen_context": eval_context}
+        if eval_warnings:
+            config_extra["screen_context_invalid"] = eval_warnings
 
     container = request.app.state.container
     session_id = f"eval-{body.session_id}"

@@ -1,0 +1,371 @@
+{
+  "workflow": "speckit",
+  "specName": "Screen Context Awareness",
+  "branch": "195-screen-context-awareness",
+  "currentStep": "implement",
+  "status": "implemented",
+  "currentTask": "T026",
+  "history": [
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T17:03:28.193Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T17:03:28.369Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T17:06:07.059Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T17:10:08.916Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:13:58.351Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:29:14.485Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:40:16.295Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:40:16.564Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:40:16.769Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:40:16.973Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:40:17.272Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:40:17.602Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:43:27.333Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:43:27.523Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:46:23.553Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T19:03:02.522Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T19:03:03.125Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T19:03:03.821Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T19:03:04.390Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T19:03:04.823Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T19:03:05.281Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T19:06:23.726Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "Mortise",
+      "at": "2026-10-17T19:09:53.160Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "Mortise",
+      "at": "2026-10-17T19:09:53.354Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "Mortise",
+      "at": "2026-10-17T19:24:14.660Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "Mortise",
+      "at": "2026-10-17T19:24:14.850Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "Mortise",
+      "at": "2026-10-17T19:24:15.018Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "Mortise",
+      "at": "2026-10-17T19:24:15.250Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "Mortise",
+      "at": "2026-10-17T19:38:25.831Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "Mortise",
+      "at": "2026-10-17T19:38:25.993Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T19:38:26.420Z"
+    }
+  ],
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "T001 done"
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "T002 done"
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "WsScreenContext reshaped"
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "zc039 + Message.screen_context"
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "registry + note builder"
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "resolve_screen node, state, graph, judgment_state, preset_note, screen_hint"
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "T007 done"
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "T008 done"
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "T009 done"
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "T010 done"
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "T011 done"
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "T014 done"
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "T012 done"
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "T013 done"
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "ScreenTrace on MessageTrace"
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "T016 done"
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "T017 done"
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "T018 done"
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "T019 done"
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "T020 done"
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "T021 done"
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "setup block"
+    },
+    "T024": {
+      "status": "DONE"
+    },
+    "T025": {
+      "status": "DONE"
+    },
+    "T027": {
+      "status": "DONE"
+    },
+    "T028": {
+      "status": "DONE"
+    },
+    "T029": {
+      "status": "DONE"
+    },
+    "T030": {
+      "status": "DONE"
+    },
+    "T023": {
+      "status": "DONE"
+    },
+    "T026": {
+      "status": "DONE"
+    }
+  }
+}

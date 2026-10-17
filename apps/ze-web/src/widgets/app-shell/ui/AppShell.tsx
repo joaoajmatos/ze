@@ -37,8 +37,24 @@ function Shell({ overlay }: { overlay?: ReactNode }) {
     if (bellRef.current) presenceRef.current?.glance(bellRef.current);
   });
 
+  // "Chat about this" asks the orb to look at the component the person chose. It wins over the
+  // overlay's own glance at its panel, which would otherwise pull the eye away a frame later.
+  const glanceTick = useAskOverlay((s) => s.glanceTick);
+  const lastGlanceTick = useRef(0);
+  useEffect(() => {
+    if (glanceTick === lastGlanceTick.current) return;
+    lastGlanceTick.current = glanceTick;
+    const target = useAskOverlay.getState().glanceTarget;
+    if (target) presenceRef.current?.glance(target);
+  }, [glanceTick]);
+
+  const overlayGlanceSkipped = useRef(0);
   useEffect(() => {
     if (!overlayOpen) return;
+    if (useAskOverlay.getState().glanceTick !== overlayGlanceSkipped.current && useAskOverlay.getState().glanceTarget) {
+      overlayGlanceSkipped.current = useAskOverlay.getState().glanceTick;
+      return;
+    }
     // The panel mounts on the next commit; look at it once it is there.
     const id = requestAnimationFrame(() => {
       const panel = document.querySelector(".ask-overlay");

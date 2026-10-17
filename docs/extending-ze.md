@@ -403,6 +403,10 @@ Return instances from `ZePlugin.channels()`. `ze-api` collects them into the sha
 
 ---
 
+## Let the user point at your records
+
+If your plugin owns a record the user can look at, such as a reminder or an article, register a screen resolver so "this" and "Chat about this" work on it. Return resolvers from `ZePlugin.screen_resolvers()`; see [Screen resolvers](sdk.md#screen-resolvers) for the contract. On the web side, publish the page's subject with `useScreenPublisher` and pass `onChatAbout` to the `Module` that frames the record. If something emits refs of a new kind, add its kind to the resolver and test that a missing record gives a `missing` line.
+
 ## Write confirmation
 
 Ze asks before an irreversible write runs. The rule comes from the tool declaration,

@@ -7,7 +7,7 @@ from typing import Any
 
 from ze_core.conversation.messages.memory_chunks import extract_memory_chunks
 from ze_core.orchestration.state import AgentState
-from ze_core.routing.judge import build_state
+from ze_core.routing.judge import CONTEXT_CAP, build_state
 
 HISTORY_HINT_TURNS = 4  # last N messages included as routing context
 HISTORY_HINT_CHARS = 240  # per-message truncation
@@ -22,6 +22,7 @@ TIER_MEMORY_ITEMS = 5
 TIER_MEMORY_ITEM_CAP = 200
 TIER_FOCUS_CAP = 600
 TIER_SKILL_CAP = 300
+SCREEN_LINE_CAP = 120
 
 _RECAP_HEADER = "[Resuming"
 _RECAP_WORKFLOWS = "In-flight workflows:"
@@ -51,12 +52,27 @@ def history_hint(state: AgentState) -> str | None:
     return "[Recent conversation]\n" + "\n".join(lines)
 
 
-def build_judgment_state(state: AgentState) -> dict[str, str]:
-    """``{user, history?, context?}`` — user text, history hint, routing hints, each capped."""
+def with_screen_line(context: str | None, screen_line: str | None) -> str | None:
+    """``context`` with one capped screen line appended, inside ``CONTEXT_CAP``."""
+    context = (context or "").strip()
+    line = (screen_line or "").strip()[:SCREEN_LINE_CAP]
+    if line:
+        context = f"{context[: max(0, CONTEXT_CAP - len(line) - 1)]}\n{line}".strip()
+    return context or None
+
+
+def build_judgment_state(
+    state: AgentState, screen_line: str | None = None
+) -> dict[str, str]:
+    """``{user, history?, context?}`` — user text, history hint, routing hints, each capped.
+
+    ``screen_line`` (one capped line) is appended to ``context``; only the routing node passes it,
+    and only when ``screen_hint`` is on. The skills and tier states never get it.
+    """
     return build_state(
         user=state.get("image_caption") or state["prompt"],
         history=history_hint(state),
-        context=state.get("routing_hints"),
+        context=with_screen_line(state.get("routing_hints"), screen_line),
     )
 
 
@@ -119,9 +135,6 @@ def _tier_focus(state: AgentState, ctx: Any, workflows: list[str]) -> str:
     hints = (state.get("routing_hints") or "").strip()
     if hints:
         parts.append(hints)
-    note = (getattr(ctx, "screen_context_note", None) or "").strip()
-    if note:
-        parts.append(note)
     for match in getattr(ctx, "procedure_matches", None) or []:
         name = getattr(match, "name", None)
         if name:

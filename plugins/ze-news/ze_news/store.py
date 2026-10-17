@@ -267,6 +267,19 @@ class NewsStore:
                 rows = await conn.fetch(sql, vec, limit)
         return [_row_to_article(r) for r in rows]
 
+    async def get_by_ref(self, ref_id: str) -> Article | None:
+        """The article whose `article_ref_id(url)` is `ref_id`. Small table: no index."""
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT url, source_key, title, summary, published_at, tags, credibility_analysis
+                FROM news_articles
+                WHERE md5(url) = $1
+                """,
+                ref_id,
+            )
+        return _row_to_article(row) if row is not None else None
+
     async def get_recent(
         self,
         limit: int = 20,

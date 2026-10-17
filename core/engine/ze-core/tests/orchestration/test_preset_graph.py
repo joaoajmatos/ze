@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ze_agents.screen import ScreenContext
+
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -130,7 +132,7 @@ async def test_a_plain_turn_after_a_preset_turn_has_no_preset_cards():
     graph = _graph()
     composer = _composer()
     preset = _config(
-        screen_context={"screen": "world", "compose": "slipping"}, composer=composer
+        screen_context=ScreenContext(place="world", compose="slipping"), composer=composer
     )
     await graph.ainvoke(_input(), preset)
     first = (await graph.aget_state(preset)).values
@@ -149,7 +151,7 @@ async def test_retrying_a_preset_turn_answers_from_normal_routing():
     graph = _graph()
     composer = _composer()
     preset = _config(
-        screen_context={"screen": "world", "compose": "slipping"}, composer=composer
+        screen_context=ScreenContext(place="world", compose="slipping"), composer=composer
     )
     await graph.ainvoke(_input(), preset)
 

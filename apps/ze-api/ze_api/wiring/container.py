@@ -119,6 +119,7 @@ from ze_api.wiring.hooks import (
     wire_plugin_loop_extractors,
 )
 from ze_api.wiring.stores import build_stores
+from ze_api.wiring.screen import build_screen_registry
 from ze_api.wiring.workflow_graph import begin_workflow_turn, build_workflow_graph
 from ze_agents.registry import get_registered_agents
 from ze_correlation.store import PostgresHypothesisStore
@@ -295,6 +296,7 @@ class ZeContainer(CoreContainer):
     procedure_discovery: Any = None
     procedure_activator: Any = None
     tier_judge: Any = None
+    screen_resolvers: Any = None
 
     def _build_config(self, thread_id: str, **configurable_extra: object) -> dict:
         plugin_services: dict = {}
@@ -334,6 +336,7 @@ class ZeContainer(CoreContainer):
             "procedure_admission": self.procedure_admission,
             "procedure_discovery": self.procedure_discovery,
             "procedure_activator": self.procedure_activator,
+            "screen_resolvers": self.screen_resolvers,
             **plugin_services,
         }
         configurable["memory_hooks"] = [*plugin_services.get("memory_hooks", [])]
@@ -610,6 +613,21 @@ async def build_container(settings: Settings) -> ZeContainer:
 
     wire_collision_detection(shared, correlation, stores)
 
+    screen_resolvers = build_screen_registry(
+        goal_store=automation.goal_store,
+        workflow_store=automation.workflow_store,
+        held_write_store=automation.held_write_store,
+        loop_store=worldstate.loop_store,
+        memory_store=shared.memory_store,
+        graph_store=worldstate.graph_store,
+        procedure_store=stores.procedure_store,
+        skill_store=skills_stack.skill_store,
+        workspace_store=workspace.store,
+        hypothesis_store=correlation.hypothesis_store,
+        notification_store=stores.notification_store,
+        plugins=plugins,
+    )
+
     container = ZeContainer(
         settings=settings,
         pool=pool,
@@ -682,6 +700,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         procedure_admission=stores.procedure_admission,
         procedure_discovery=stores.procedure_discovery,
         procedure_activator=stores.procedure_activator,
+        screen_resolvers=screen_resolvers,
         job_run_store=stores.job_run_store,
         hypothesis_store=correlation.hypothesis_store,
     )

@@ -44,7 +44,7 @@ describe("AskBar", () => {
     submit();
     const s = useAskOverlay.getState();
     expect(s.open).toBe(true);
-    expect(s.outbox).toMatchObject({ text: "why is this slipping?", context: { screen: "doing.goals", goal_id: "g1" } });
+    expect(s.outbox).toMatchObject({ text: "why is this slipping?", context: { place: "doing", route: "/doing/goals/g1" } });
     expect(input()).toHaveValue("");
   });
 
@@ -69,11 +69,11 @@ describe("AskBar", () => {
 
   it("is prefilled by askAbout without queueing", () => {
     renderAt("/doing/workflows/w1");
-    act(() => askAbout({ text: "Why did this run fail?", context: { screen: "doing.workflows", workflow_id: "w1", execution_id: "e1" } }));
+    act(() => askAbout({ text: "Why did this run fail?", context: { subject: [{ kind: "workflow_execution", id: "e1", parent_id: "w1" }] } }));
     expect(input()).toHaveValue("Why did this run fail?");
     expect(useAskOverlay.getState().outbox).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Ask" }));
-    expect(useAskOverlay.getState().outbox?.context).toMatchObject({ execution_id: "e1" });
+    expect(useAskOverlay.getState().outbox?.context).toMatchObject({ subject: [{ kind: "workflow_execution", id: "e1", parent_id: "w1" }] });
   });
 
   it("is disabled while offline with the reason in its accessible name", () => {

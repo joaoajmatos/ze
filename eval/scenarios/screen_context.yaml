@@ -1,0 +1,714 @@
+# Phase 195: the screen context. `setup:` rows are created through the verifier's database
+# connection before the scenario and removed after it (Fixtures in ze_eval/fixtures.py), so run
+# this on `make dev-eval` against a throwaway database. Deixis cases send an ask_bar context with
+# the record selected or open; chat_about cases send the chip's explicit subject. The Governance
+# case is tagged skip until phase 190 ships the page.
+
+- id: screen_world_loop_en
+  description: 'World: a loop is selected and the user says this'
+  setup:
+  - kind: loop
+    name: lp
+    fields:
+      title: Reply to Ana about the contract
+  turns:
+  - prompt: When is this due?
+    context:
+      place: world
+      route: /world
+      origin: ask_bar
+      selection:
+      - kind: loop
+        id: '{{lp.id}}'
+        label: Reply to Ana about the contract
+        component: loop_row
+  expected_agent: companion
+  tags:
+  - screen_context
+  - deixis
+  - world
+  criteria:
+  - about the referenced record, not a generic answer
+  - does not ask which one the user means
+  - does not describe the screen back to the user
+  - states nothing about the record that is not in the screen note
+  - The reply is about the selected loop, not a general answer about deadlines
+- id: screen_doing_goal_en
+  description: 'Doing: the goal page is open'
+  setup:
+  - kind: goal
+    name: gl
+    fields:
+      title: Run a half marathon
+  turns:
+  - prompt: How is this going?
+    context:
+      place: doing
+      route: /doing/goals/{{gl.id}}
+      origin: ask_bar
+      subject:
+      - kind: goal
+        id: '{{gl.id}}'
+        label: Run a half marathon
+        component: goal_module
+  tags:
+  - screen_context
+  - deixis
+  - doing
+  criteria:
+  - about the referenced record, not a generic answer
+  - does not ask which one the user means
+  - does not describe the screen back to the user
+  - states nothing about the record that is not in the screen note
+  - The reply is about this goal
+- id: screen_doing_execution_en
+  description: 'Doing: a failed workflow execution is open'
+  setup:
+  - kind: workflow
+    name: wf
+    fields:
+      name: Weekly report
+  - kind: workflow_execution
+    name: run
+    parent: wf
+    fields:
+      status: failed
+  turns:
+  - prompt: Why did this run fail?
+    context:
+      place: doing
+      route: /doing/workflows/{{wf.id}}
+      origin: ask_bar
+      subject:
+      - kind: workflow
+        id: '{{wf.id}}'
+        label: Weekly report
+        component: workflow_module
+      - kind: workflow_execution
+        id: '{{run.id}}'
+        parent_id: '{{wf.id}}'
+        component: execution_row
+  tags:
+  - screen_context
+  - deixis
+  - doing
+  criteria:
+  - about the referenced record, not a generic answer
+  - does not ask which one the user means
+  - does not describe the screen back to the user
+  - states nothing about the record that is not in the screen note
+  - The reply is about the failed run and names the stored failure reason only if the note carries it
+- id: screen_mind_beliefs_en
+  description: 'Mind: two beliefs are selected'
+  setup:
+  - kind: fact
+    name: f1
+    fields:
+      value: Ana prefers calls
+  - kind: fact
+    name: f2
+    fields:
+      value: Ana prefers email
+  turns:
+  - prompt: Do these two contradict each other?
+    context:
+      place: mind
+      route: /mind
+      origin: ask_bar
+      selection:
+      - kind: fact
+        id: '{{f1.id}}'
+        label: Ana prefers calls
+        component: claim_card
+      - kind: fact
+        id: '{{f2.id}}'
+        label: Ana prefers email
+        component: claim_card
+  expected_agent: companion
+  tags:
+  - screen_context
+  - deixis
+  - mind
+  criteria:
+  - about the referenced record, not a generic answer
+  - does not ask which one the user means
+  - does not describe the screen back to the user
+  - states nothing about the record that is not in the screen note
+  - The reply compares the two selected beliefs
+- id: screen_world_loop_pt
+  description: 'World: a loop is selected and the user says this'
+  setup:
+  - kind: loop
+    name: lp
+    fields:
+      title: Responder à Ana sobre o contrato
+  turns:
+  - prompt: Para quando é isto?
+    context:
+      place: world
+      route: /world
+      origin: ask_bar
+      selection:
+      - kind: loop
+        id: '{{lp.id}}'
+        label: Responder à Ana sobre o contrato
+        component: loop_row
+  expected_agent: companion
+  tags:
+  - screen_context
+  - deixis
+  - world
+  - pt
+  criteria:
+  - about the referenced record, not a generic answer
+  - does not ask which one the user means
+  - does not describe the screen back to the user
+  - states nothing about the record that is not in the screen note
+  - The reply is about the selected loop, not a general answer about deadlines
+- id: screen_doing_goal_pt
+  description: 'Doing: the goal page is open'
+  setup:
+  - kind: goal
+    name: gl
+    fields:
+      title: Correr uma meia maratona
+  turns:
+  - prompt: Como está a correr isto?
+    context:
+      place: doing
+      route: /doing/goals/{{gl.id}}
+      origin: ask_bar
+      subject:
+      - kind: goal
+        id: '{{gl.id}}'
+        label: Correr uma meia maratona
+        component: goal_module
+  tags:
+  - screen_context
+  - deixis
+  - doing
+  - pt
+  criteria:
+  - about the referenced record, not a generic answer
+  - does not ask which one the user means
+  - does not describe the screen back to the user
+  - states nothing about the record that is not in the screen note
+  - The reply is about this goal
+- id: screen_doing_execution_pt
+  description: 'Doing: a failed workflow execution is open'
+  setup:
+  - kind: workflow
+    name: wf
+    fields:
+      name: Relatório semanal
+  - kind: workflow_execution
+    name: run
+    parent: wf
+    fields:
+      status: failed
+  turns:
+  - prompt: Porque é que esta execução falhou?
+    context:
+      place: doing
+      route: /doing/workflows/{{wf.id}}
+      origin: ask_bar
+      subject:
+      - kind: workflow
+        id: '{{wf.id}}'
+        label: Relatório semanal
+        component: workflow_module
+      - kind: workflow_execution
+        id: '{{run.id}}'
+        parent_id: '{{wf.id}}'
+        component: execution_row
+  tags:
+  - screen_context
+  - deixis
+  - doing
+  - pt
+  criteria:
+  - about the referenced record, not a generic answer
+  - does not ask which one the user means
+  - does not describe the screen back to the user
+  - states nothing about the record that is not in the screen note
+  - The reply is about the failed run and names the stored failure reason only if the note carries it
+- id: screen_mind_beliefs_pt
+  description: 'Mind: two beliefs are selected'
+  setup:
+  - kind: fact
+    name: f1
+    fields:
+      value: A Ana prefere chamadas
+  - kind: fact
+    name: f2
+    fields:
+      value: A Ana prefere email
+  turns:
+  - prompt: Estas duas contradizem-se?
+    context:
+      place: mind
+      route: /mind
+      origin: ask_bar
+      selection:
+      - kind: fact
+        id: '{{f1.id}}'
+        label: A Ana prefere chamadas
+        component: claim_card
+      - kind: fact
+        id: '{{f2.id}}'
+        label: A Ana prefere email
+        component: claim_card
+  expected_agent: companion
+  tags:
+  - screen_context
+  - deixis
+  - mind
+  - pt
+  criteria:
+  - about the referenced record, not a generic answer
+  - does not ask which one the user means
+  - does not describe the screen back to the user
+  - states nothing about the record that is not in the screen note
+  - The reply compares the two selected beliefs
+- id: screen_nothing_selected_en
+  description: 'Nothing singled out: Ze asks what the user means'
+  setup: []
+  turns:
+  - prompt: What about this one?
+    context:
+      place: world
+      route: /world
+      origin: ask_bar
+  expected_agent: companion
+  tags:
+  - screen_context
+  - deixis
+  - world
+  criteria:
+  - The reply asks which item the user means, in one short question
+  - The reply does not invent a subject
+- id: screen_nothing_selected_pt
+  description: 'Nothing singled out: Ze asks what the user means'
+  setup: []
+  turns:
+  - prompt: E quanto a este?
+    context:
+      place: world
+      route: /world
+      origin: ask_bar
+  expected_agent: companion
+  tags:
+  - screen_context
+  - deixis
+  - world
+  - pt
+  criteria:
+  - The reply asks which item the user means, in one short question
+  - The reply does not invent a subject
+- id: screen_governance_anomaly_en
+  description: 'Governance: an anomaly is selected (skipped until phase 190 ships the page)'
+  turns:
+  - prompt: Is this a problem?
+    context:
+      place: governance
+      route: /governance
+      origin: ask_bar
+  tags:
+  - screen_context
+  - deixis
+  - governance
+  - skip
+  criteria:
+  - Skipped until phase 190; no assertion yet
+- id: screen_chat_about_loop_en
+  description: Chat about this on a loop
+  setup:
+  - kind: loop
+    name: s
+    fields:
+      title: Reply to Ana about the contract
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: world
+      route: /world
+      origin: chat_about
+      subject:
+      - kind: loop
+        id: '{{s.id}}'
+        label: Reply to Ana about the contract
+        component: loop_row
+  expected_agent: loops
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_loop_pt
+  description: Chat about this on a loop
+  setup:
+  - kind: loop
+    name: s
+    fields:
+      title: Responder à Ana sobre o contrato
+  turns:
+  - prompt: O que devo saber sobre isto?
+    context:
+      place: world
+      route: /world
+      origin: chat_about
+      subject:
+      - kind: loop
+        id: '{{s.id}}'
+        label: Responder à Ana sobre o contrato
+        component: loop_row
+  expected_agent: loops
+  tags:
+  - screen_context
+  - chat_about
+  - pt
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_goal_en
+  description: Chat about this on a goal
+  setup:
+  - kind: goal
+    name: s
+    fields:
+      title: Run a half marathon
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: world
+      route: /world
+      origin: chat_about
+      subject:
+      - kind: goal
+        id: '{{s.id}}'
+        label: Run a half marathon
+        component: goal_module
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_goal_pt
+  description: Chat about this on a goal
+  setup:
+  - kind: goal
+    name: s
+    fields:
+      title: Correr uma meia maratona
+  turns:
+  - prompt: O que devo saber sobre isto?
+    context:
+      place: world
+      route: /world
+      origin: chat_about
+      subject:
+      - kind: goal
+        id: '{{s.id}}'
+        label: Correr uma meia maratona
+        component: goal_module
+  tags:
+  - screen_context
+  - chat_about
+  - pt
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_fact_en
+  description: Chat about this on a fact
+  setup:
+  - kind: fact
+    name: s
+    fields:
+      value: Ana prefers calls
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: world
+      route: /world
+      origin: chat_about
+      subject:
+      - kind: fact
+        id: '{{s.id}}'
+        label: Ana prefers calls
+        component: claim_card
+  expected_agent: companion
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_fact_pt
+  description: Chat about this on a fact
+  setup:
+  - kind: fact
+    name: s
+    fields:
+      value: A Ana prefere chamadas
+  turns:
+  - prompt: O que devo saber sobre isto?
+    context:
+      place: world
+      route: /world
+      origin: chat_about
+      subject:
+      - kind: fact
+        id: '{{s.id}}'
+        label: A Ana prefere chamadas
+        component: claim_card
+  expected_agent: companion
+  tags:
+  - screen_context
+  - chat_about
+  - pt
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_workflow_en
+  description: Chat about this on a workflow
+  setup:
+  - kind: workflow
+    name: s
+    fields:
+      name: Weekly report
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: doing
+      route: /doing
+      origin: chat_about
+      subject:
+      - kind: workflow
+        id: '{{s.id}}'
+        label: Weekly report
+        component: workflow_module
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_held_write_en
+  description: Chat about this on a held_write
+  setup:
+  - kind: held_write
+    name: s
+    fields:
+      items:
+      - effect_phrase: send an email
+        summary: Send the weekly report email
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: doing
+      route: /doing
+      origin: chat_about
+      subject:
+      - kind: held_write
+        id: '{{s.id}}'
+        label: Send the weekly report email
+        component: held_write_row
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_entity_en
+  description: Chat about this on a entity
+  setup:
+  - kind: entity
+    name: s
+    fields:
+      canonical_name: Ana Silva
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: doing
+      route: /doing
+      origin: chat_about
+      subject:
+      - kind: entity
+        id: '{{s.id}}'
+        label: Ana Silva
+        component: entity_node
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_procedure_en
+  description: Chat about this on a procedure
+  setup:
+  - kind: procedure
+    name: s
+    fields:
+      canonical_name: Weekly review
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: doing
+      route: /doing
+      origin: chat_about
+      subject:
+      - kind: procedure
+        id: '{{s.id}}'
+        label: Weekly review
+        component: procedure_row
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_skill_en
+  description: Chat about this on a skill
+  setup:
+  - kind: skill
+    name: s
+    fields:
+      name: Weekly review skill
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: doing
+      route: /doing
+      origin: chat_about
+      subject:
+      - kind: skill
+        id: '{{s.id}}'
+        label: Weekly review skill
+        component: skill_row
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_workspace_run_en
+  description: Chat about this on a workspace_run
+  setup:
+  - kind: workspace_run
+    name: s
+    fields:
+      command: python report.py
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: doing
+      route: /doing
+      origin: chat_about
+      subject:
+      - kind: workspace_run
+        id: '{{s.id}}'
+        label: python report.py
+        component: run_row
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_notification_en
+  description: Chat about this on a notification
+  setup:
+  - kind: notification
+    name: s
+    fields:
+      title: Workflow failed
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: doing
+      route: /doing
+      origin: chat_about
+      subject:
+      - kind: notification
+        id: '{{s.id}}'
+        label: Workflow failed
+        component: notification_row
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_hypothesis_en
+  description: Chat about this on a hypothesis
+  setup:
+  - kind: hypothesis
+    name: s
+    fields:
+      summary: Ana replies faster on Mondays
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: doing
+      route: /doing
+      origin: chat_about
+      subject:
+      - kind: hypothesis
+        id: '{{s.id}}'
+        label: Ana replies faster on Mondays
+        component: claim_card
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one
+- id: screen_chat_about_workflow_execution_en
+  description: Chat about this on a workflow execution
+  setup:
+  - kind: workflow
+    name: wf
+    fields:
+      name: Weekly report
+  - kind: workflow_execution
+    name: s
+    parent: wf
+    fields:
+      status: failed
+  turns:
+  - prompt: What should I know about this?
+    context:
+      place: doing
+      route: /doing/workflows/{{wf.id}}
+      origin: chat_about
+      subject:
+      - kind: workflow
+        id: '{{wf.id}}'
+        label: Weekly report
+      - kind: workflow_execution
+        id: '{{s.id}}'
+        parent_id: '{{wf.id}}'
+        component: execution_row
+  tags:
+  - screen_context
+  - chat_about
+  criteria:
+  - The first sentence names the subject
+  - The answer comes from the record
+  - The reply does not ask which one

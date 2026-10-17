@@ -84,6 +84,7 @@ class Message:
     replaces: UUID | None = None
     replaced_by: UUID | None = None
     rollback: RollbackRecord | None = None
+    screen_context: dict[str, Any] | None = None
 
 
 @dataclass
@@ -171,6 +172,44 @@ class TierTrace:
 
 
 @dataclass
+class ScreenResolverTrace:
+    kind: str
+    id: str
+    status: str  # ok | missing | changed | failed | timeout | cut
+    ms: int = 0
+
+
+@dataclass
+class ScreenTrace:
+    """What Ze could see of the user's screen on a turn, and from where. JSON-safe: stored on the trace."""
+
+    origin: str = "ask_bar"
+    place: str | None = None
+    route: str | None = None
+    subject: list[str] = field(default_factory=list)
+    selection_count: int = 0
+    visible_count: int = 0
+    canvas_count: int = 0
+    focused_module: str | None = None
+    captured_at: str | None = None
+    note_chars: int = 0
+    invalid: list[str] = field(default_factory=list)
+    resolvers: list[ScreenResolverTrace] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ScreenTrace:
+        fields = {k: v for k, v in data.items() if k in cls.__dataclass_fields__ and k != "resolvers"}
+        return cls(
+            **fields,
+            resolvers=[
+                ScreenResolverTrace(**{k: v for k, v in r.items() if k in ScreenResolverTrace.__dataclass_fields__})
+                for r in data.get("resolvers") or []
+                if isinstance(r, dict)
+            ],
+        )
+
+
+@dataclass
 class SourceTrace:
     url: str
     title: str = ""
@@ -203,3 +242,4 @@ class MessageTrace:
     write_confirmations: list[dict[str, Any]] = field(default_factory=list)
     rollback: RollbackTrace | None = None
     tier: TierTrace | None = None
+    screen: ScreenTrace | None = None

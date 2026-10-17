@@ -56,6 +56,8 @@ This package is wired directly by `ze-api`, not as a `ZePlugin`.
 
 User-facing guide: [docs/skills.md](../../docs/skills.md).
 
+`screen_resolvers.py` registers the `skill` screen resolver, which reports a skill's name and review status.
+
 ## Responsibilities
 
 | Module | What it provides |

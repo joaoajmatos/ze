@@ -453,21 +453,50 @@ While quiet hours are active, Ze holds accountability and discretionary pushes a
 
 ## Screen context
 
-The `message` frame accepts an optional `context` object for screen-aware responses:
+The `message` frame accepts an optional `context` object. It tells Ze what the user is looking at, so "this" and "it" mean something. The web app builds it. Every key is optional.
 
 ```json
 {
   "type": "message",
-  "text": "What is this?",
+  "text": "Why did this fail?",
   "context": {
-    "screen": "GoalDetail",
-    "goal_id": "uuid"
+    "place": "doing",
+    "route": "/doing/workflows/w1",
+    "origin": "chat_about",
+    "subject": [
+      {"kind": "workflow", "id": "w1", "label": "Weekly report"},
+      {"kind": "workflow_execution", "id": "e1", "parent_id": "w1", "component": "execution_row"}
+    ],
+    "selection": [{"kind": "loop", "id": "L1"}],
+    "visible": [{"kind": "goal", "id": "g1"}],
+    "focused_module": "Workflows",
+    "canvas": [{"index": 1, "type": "claim_card", "ref": {"kind": "loop", "id": "L1"}}],
+    "captured_at": "2026-10-17T14:02:11Z"
   }
 }
 ```
 
-The context is passed as `screen_context` in the graph config's `configurable` dict,
-making it available to agents via `ctx.config`.
+| Key | Meaning |
+|---|---|
+| `place` | `world`, `ask`, `doing`, `mind`, or `governance` |
+| `route` | The path the user was on |
+| `origin` | `ask_bar` (default) or `chat_about` (the user clicked "Chat about this") |
+| `subject` | Up to 3 refs the user singled out. The first one is what "this" means. |
+| `selection`, `visible` | Up to 20 selected and 30 visible refs |
+| `focused_module` | The label of the module that had focus |
+| `canvas` | Up to 12 components in the chat canvas, each with an optional ref |
+| `captured_at` | When the web app took the snapshot. Ze clamps a future time to receipt. |
+| `workspace_placed` | Files the user placed in the workspace: `path` and `size` |
+
+A ref is `{kind, id, parent_id?, label?, component?, as_of?}`. Ze drops a ref whose `kind`, `id` or `parent_id` is longer than 64 characters. The server never rejects a context. It parses it with `ScreenContext.from_wire`, applies the caps, and drops what it cannot read. The `trace_update` frame lists those drops as `invalid`.
+
+Before routing, the `resolve_screen` node reads each ref from its store and writes one short screen note of at most 1,200 characters. The note names the record the user means, with its state and age. It is a hint, not a fact: the model reads the record through its tools. Each resolver gets 300 ms and the whole step 800 ms. A record that is gone, changed since the snapshot, slow or unreadable appears in the note with that status. Ze never states what the note does not contain. Plugins add resolvers with `ZePlugin.screen_resolvers()`.
+
+Ze stores the context on the user message (`messages.screen_context`), so Retry replays exactly what the first attempt saw. The trace carries a `screen` section: one row per resolver with its status and time in milliseconds. It reaches `GET /api/v0/messages/{id}/trace` and the `trace_update` frames, including a partial frame as soon as the note is built.
+
+A turn with `origin: "chat_about"` and a subject skips scoring: the first subject's kind picks the agent (`loop` to `loops`, `goal` and `goal_gate` to `goals`, `workflow` and `workflow_execution` to `workflow`, `reminder` to `reminders`, `news_article` to `news`, everything else to `companion`). The routing log shows `routing_method: screen`. Only the first message of the chip click routes this way; follow-ups are ordinary Ask turns and route as usual.
+
+The routing judge reads the subject line only when `system_one.surfaces.routing.screen_hint` is true. It ships off.
 
 ### Composed answers
 
@@ -479,7 +508,7 @@ Two more keys ask for a composed answer. A preset chip on the world screen sends
 | `topic` | text | The subject for `compose: "topic"`. |
 
 ```json
-{"type": "message", "text": "What is slipping?", "context": {"screen": "world", "compose": "slipping"}}
+{"type": "message", "text": "What is slipping?", "context": {"place": "world", "compose": "slipping"}}
 ```
 
 The composer gets two seconds. If it fails or runs out of time, the turn continues without the composed answer and without a note. If only some sources fail, Ze builds the answer from the rest and names the sources it could not read. A typed question reaches the same composer through the companion tools `show_slipping`, `show_decisions`, and `show_topic`.
@@ -516,9 +545,13 @@ A target without a parent, where one is required, has no link.
 
 ### Ask from any screen
 
-The web app has no floating launcher. A sticky Ask bar sits on every screen except Ask. When the user submits text there, the app opens an overlay over the current screen and sends a `message` frame on the thread selected in Ask. The frame carries `context.screen` and the ids from the route. Examples are `doing.workflows` with `workflow_id` and `execution_id`, or `doing.goals` with `goal_id`.
+The web app has no floating launcher. A sticky Ask bar sits on every screen except Ask. When the user submits text there, the app opens an overlay over the current screen and sends a `message` frame on the thread selected in Ask. The frame carries the screen context the open page published: place, route, subject, selection, visible refs and the focused module. A page publishes its subject with `useScreenPublisher`. Pages that publish nothing still send the place and route.
 
 The exchange is an ordinary Ask thread. It appears in Ask and in Sessions. "Open in Ask" goes to `/ask/<thread>`. "New chat" selects a fresh thread. A page can open the overlay with text prefilled and its own context, as the workflow run page does for "Ask Ze".
+
+### Chat about this
+
+Modules and cards show a bracketed "Chat about this" chip. On a device with hover, the chip stays hidden until the pointer or focus reaches the module, and it remains focusable. On touch it is always visible. Pressing `c` while focus is inside a module triggers it. The chip makes the clicked record the first `subject` with `origin: "chat_about"`, opens the overlay with an empty bar and three suggestions (keys 1 to 3), and makes the orb glance at the element. On Ask, the record becomes a removable chip above the composer. A suggestion fills the bar and sends it.
 
 ---
 

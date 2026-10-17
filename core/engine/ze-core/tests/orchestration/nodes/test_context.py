@@ -10,6 +10,7 @@ from ze_agents.types import AgentContext, AgentResult
 from ze_automation.workflow.types import Workflow, WorkflowExecution
 from ze_memory.types import Entity, MemoryContext, SessionSummary
 
+from ze_agents.screen import ScreenContext
 from ze_core.orchestration.nodes.context import fetch_context
 from ze_core.orchestration.nodes.loop_surfacing import surface_loops
 from ze_core.routing.types import RoutingEnvelope, SubTask
@@ -569,7 +570,7 @@ class TestPresetComposition:
             context["compose"] = compose
         if topic is not None:
             context["topic"] = topic
-        config["configurable"]["screen_context"] = context
+        config["configurable"]["screen_context"] = ScreenContext.from_wire(context)[0]
         config["configurable"]["world_composer"] = composer
         config["configurable"]["forced_agent"] = forced
         router = MagicMock()
@@ -594,8 +595,9 @@ class TestPresetComposition:
         assert [c["type"] for c in result["preset_components"]] == ["headline", "claim_card"]
         ctx = result["agent_context"]
         assert ctx.preset == "slipping"
-        assert "slipping summary" in ctx.screen_context_note
-        assert "modules are already on screen" in ctx.screen_context_note
+        assert "slipping summary" in ctx.preset_note
+        assert "modules are already on screen" in ctx.preset_note
+        assert not ctx.screen_context_note
         assert composer.calls == [("slipping",)]
 
     async def test_decisions_and_topic_call_their_composer_method(self):
@@ -660,7 +662,7 @@ class TestPresetComposition:
         assert "preset_components" not in result or result["preset_components"] == []
         assert result["agent_context"].preset is None
         assert composer.calls == []
-        assert "preset_compose_invalid" in warnings
+        assert ("preset_compose_invalid" in warnings) == (compose == "topic")
 
     async def test_no_compose_key_leaves_the_turn_alone(self):
         result = await fetch_context(self._goals_state(), self._config(_Composer(), compose=None))
@@ -695,20 +697,13 @@ class TestPresetComposition:
         assert not result.get("preset_components")
         assert result["agent_context"].preset is None
 
-    async def test_preset_note_follows_a_workflow_screen_note(self):
-        wf = Workflow(
-            id=uuid4(), name="Digest", description="d", steps=[], schedule=None,
-            enabled=True, last_run_at=None, next_run_at=None,
-            created_at=time_now(), updated_at=time_now(),
-        )
-        store = AsyncMock()
-        store.get = AsyncMock(return_value=wf)
-        store.list_executions = AsyncMock(return_value=[])
-        config = self._config(_Composer(), workflow_store=store)
-        config["configurable"]["screen_context"]["workflow_id"] = str(wf.id)
-        result = await fetch_context(self._goals_state(), config)
-        note = result["agent_context"].screen_context_note
-        assert note.index("viewing workflow") < note.index("slipping summary")
+    async def test_a_preset_turn_with_a_screen_note_has_both(self):
+        state = self._goals_state()
+        state["screen_note"] = "[Screen: World. ...]"
+        result = await fetch_context(state, self._config(_Composer()))
+        ctx = result["agent_context"]
+        assert ctx.screen_context_note == "[Screen: World. ...]"
+        assert "slipping summary" in ctx.preset_note
 
 
 def time_now():

@@ -41,7 +41,7 @@ import { useSession } from "@/entities/session";
 import { useWsStore } from "@/shared/api";
 import { AskOverlay } from "./AskOverlay";
 
-const ROUTE = { screen: "doing.workflows", workflow_id: "w1", execution_id: "e1" };
+const ROUTE = { place: "doing" as const, route: "/doing/workflows/w1", captured_at: "2026-10-17T14:00:00Z", subject: [{ kind: "workflow", id: "w1" }] };
 
 function emit(frame: unknown) {
   act(() => mocks.handlers.get((frame as { type: string }).type)?.forEach((h) => h(frame)));

@@ -19,6 +19,7 @@ def _make_message(**kwargs) -> Message:
         thread_id=kwargs.get("thread_id", None),
         replaces=kwargs.get("replaces", None),
         replaced_by=kwargs.get("replaced_by", None),
+        screen_context=kwargs.get("screen_context", None),
     )
 
 
@@ -44,7 +45,7 @@ class _AsyncContextManagerMock:
         pass
 
 
-def _make_row(msg: Message, rollback=None):
+def _make_row(msg: Message, rollback=None, screen_context=None):
     row = MagicMock()
     row.__getitem__ = lambda self, key: {
         "id": msg.id,
@@ -57,6 +58,7 @@ def _make_row(msg: Message, rollback=None):
         "replaces": msg.replaces,
         "replaced_by": msg.replaced_by,
         "rollback": rollback,
+        "screen_context": screen_context,
     }[key]
     return row
 
@@ -349,3 +351,51 @@ async def test_agent_activity_by_day_counts_assistant_traces_in_range():
     sql, *args = conn.fetch.call_args[0]
     assert "role = 'assistant'" in sql
     assert args == [start, end]
+
+
+async def test_screen_context_column_is_selected_on_every_read():
+    msg = _make_message()
+    pool, conn = _make_pool_mock(rows=[_make_row(msg)])
+    store = PostgresMessageStore(pool=pool)
+    await store.list_since(datetime.now(timezone.utc))
+    await store.list_by_thread("t")
+    await store.list_unread("t")
+    await store.list_unread()
+    await store.get_message(msg.id)
+    await store.get_messages([msg.id])
+    await store.previous_user_message(msg.id)
+    sqls = [c.args[0] for c in conn.fetch.call_args_list + conn.fetchrow.call_args_list]
+    assert len(sqls) == 7
+    assert all("screen_context" in sql for sql in sqls)
+
+
+async def test_save_writes_the_screen_context_as_jsonb():
+    ctx = {"place": "doing", "subject": [{"kind": "workflow", "id": "w1"}]}
+    msg = _make_message(role="user", screen_context=ctx)
+    pool, conn = _make_pool_mock()
+    await PostgresMessageStore(pool=pool).save(msg)
+    sql, *args = conn.execute.call_args.args
+    assert "screen_context" in sql and "$9::jsonb" in sql
+    assert json.loads(args[-1]) == ctx
+
+
+async def test_save_without_a_screen_context_writes_null():
+    pool, conn = _make_pool_mock()
+    await PostgresMessageStore(pool=pool).save(_make_message(role="user"))
+    assert conn.execute.call_args.args[-1] is None
+
+
+async def test_screen_context_loads_from_dict_or_json_text():
+    ctx = {"place": "ask"}
+    for raw in (ctx, json.dumps(ctx)):
+        msg = _make_message(role="user")
+        pool, _ = _make_pool_mock(rows=[_make_row(msg, screen_context=raw)])
+        loaded = await PostgresMessageStore(pool=pool).get_message(msg.id)
+        assert loaded is not None and loaded.screen_context == ctx
+
+
+async def test_unreadable_screen_context_loads_as_none():
+    msg = _make_message(role="user")
+    pool, _ = _make_pool_mock(rows=[_make_row(msg, screen_context="{not json")])
+    loaded = await PostgresMessageStore(pool=pool).get_message(msg.id)
+    assert loaded is not None and loaded.screen_context is None

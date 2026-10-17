@@ -262,6 +262,9 @@ class BaseAgent(ABC):
             )
             persona_block, biography_block = _split_identity(identity)
         rendered = agent_instructions.format(**extra) if extra else agent_instructions
+        preset_note = getattr(ctx, "preset_note", None)
+        if preset_note:
+            rendered = f"{preset_note}\n\n{rendered}"
         if ctx.screen_context_note:
             rendered = f"{ctx.screen_context_note}\n\n{rendered}"
         if ctx.resume_recap:

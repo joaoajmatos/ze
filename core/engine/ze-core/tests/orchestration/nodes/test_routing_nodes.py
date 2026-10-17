@@ -581,3 +581,41 @@ class TestEmbedRouteForcedAgent:
         await embed_route(_state(), _config(AsyncMock(), router))
         router.route.assert_awaited_once()
         router.route_forced.assert_not_awaited()
+
+
+class TestEmbedRouteScreenOwner:
+    async def test_chat_about_subject_routes_to_its_owner_without_scoring(self):
+        from unittest.mock import patch
+
+        from ze_agents.screen import ScreenContext, ScreenOrigin, ScreenRef
+
+        router = MagicMock()
+        router.route = AsyncMock()
+        router.route_forced = AsyncMock(return_value=_envelope(is_compound=False))
+        config = _config(AsyncMock(), router)
+        config["configurable"]["screen_context"] = ScreenContext(
+            origin=ScreenOrigin.CHAT_ABOUT,
+            subject=(ScreenRef(kind="loop", id="L1"),),
+        )
+        with patch(
+            "ze_core.orchestration.nodes.routing.get_enabled_agents",
+            return_value={"loops": object(), "companion": object()},
+        ):
+            await embed_route({**_state(), "session_id": "s1"}, config)
+        assert router.route_forced.await_args.args[-1] == "loops"
+        assert router.route_forced.await_args.kwargs == {"method": "screen"}
+        router.route.assert_not_awaited()
+
+    async def test_typed_ask_bar_context_still_scores(self):
+        from ze_agents.screen import ScreenContext, ScreenRef
+
+        router = MagicMock()
+        router.route = AsyncMock(return_value=_envelope(is_compound=False))
+        router.route_forced = AsyncMock()
+        config = _config(AsyncMock(), router)
+        config["configurable"]["screen_context"] = ScreenContext(
+            subject=(ScreenRef(kind="loop", id="L1"),)
+        )
+        await embed_route({**_state(), "session_id": "s1"}, config)
+        router.route.assert_awaited_once()
+        router.route_forced.assert_not_awaited()

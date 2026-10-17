@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -148,6 +149,7 @@ def _trace_to_response(trace) -> MessageTraceResponse:
             for row in getattr(trace, "write_confirmations", None) or []
         ],
         tier=_tier_to_response(getattr(trace, "tier", None)),
+        screen=_screen_to_response(getattr(trace, "screen", None)),
     )
 
 
@@ -162,6 +164,10 @@ def _write_confirmation_row(row: dict) -> dict:
         "summary": str(row.get("summary", "")),
         "outcome": row.get("outcome", "denied"),
     }
+
+
+def _screen_to_response(screen) -> dict | None:
+    return asdict(screen) if screen is not None else None
 
 
 def _tier_to_response(tier) -> dict | None:

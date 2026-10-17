@@ -51,6 +51,10 @@ class EmbeddingRouter:
         self._agent_matrix: Any = None
         self._load_agent_embeddings()
 
+    @property
+    def screen_hint(self) -> bool:
+        return self._surface.screen_hint
+
     # ── Public ────────────────────────────────────────────────────────────────
 
     async def route(
@@ -78,9 +82,13 @@ class EmbeddingRouter:
         return envelope
 
     async def route_forced(
-        self, prompt: str, session_id: str, agent_name: str
+        self,
+        prompt: str,
+        session_id: str,
+        agent_name: str,
+        method: str = "forced",
     ) -> RoutingEnvelope:
-        """Skip scoring and route to ``agent_name``. Eval only: the caller gates it."""
+        """Skip scoring and route to ``agent_name``. The caller gates it: eval, or a screen owner."""
         if agent_name not in get_enabled_agents():
             raise RoutingError(f"Forced agent {agent_name!r} is not an enabled agent")
         prompt = prompt.strip()
@@ -88,7 +96,7 @@ class EmbeddingRouter:
             primary_agent=agent_name,
             confidence=1.0,
             score_gap=0.0,
-            routing_method="forced",
+            routing_method=method,
             is_compound=False,
             subtasks=[
                 SubTask(

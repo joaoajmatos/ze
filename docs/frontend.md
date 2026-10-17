@@ -79,7 +79,7 @@ Example: finance overview at `/finance`. Plugin screens normally arrive through 
 4. **`app/router/routes.tsx`** — add the route under its place, or add a section to that place's interim file
 5. **`shared/config/places.ts`** — add a path helper if other screens link to it
 
-To ask Ze about a screen, call `askAbout({ text, context })` from `features/ask-bar`.
+To ask Ze about a screen, call `askAbout({ text, context })` from `features/ask-bar`. To tell Ze what the page shows, call `useScreenPublisher` from `entities/screen-context` with the page's subject, selection and visible refs. The store builds the snapshot that every send attaches. To let the user chat about a record, pass `onChatAbout` to `Module`, or place a `ChatAboutChip` on a component without a frame. A widget calls `useChatAbout` and passes the callback down by props, because features and entities never import `features/ask-bar` from each other.
 
 Each slice exposes a public API through `index.ts`. Internal `ui/`, `api/`, `model/` folders are private to the slice.
 

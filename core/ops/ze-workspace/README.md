@@ -25,6 +25,8 @@ The sidecar is not a browsing session. Web pages stay in `ze-browser`. This pack
 
 <sub>[Interactive version](../../docs/diagrams/core/ops/ze-workspace/dependencies.html)</sub>
 
+`screen_resolvers.py` registers `workspace_run` and the `workspace_placed` pseudo-ref, which names files the user placed this turn.
+
 ## Responsibilities
 
 | Module | What it provides |

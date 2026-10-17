@@ -32,6 +32,8 @@ export type {
   WsPingFrame,
   WsConfirmAction,
   WsScreenContext,
+  WsScreenRef,
+  WsCanvasRef,
   MessageSchema,
   OnboardingMeta,
 } from "./ws";

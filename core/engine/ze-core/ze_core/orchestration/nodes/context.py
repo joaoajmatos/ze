@@ -3,13 +3,12 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
-from datetime import timezone as _tz
 from typing import Any
-from uuid import UUID
 
 from langchain_core.runnables import RunnableConfig
 
 from ze_logging import get_logger
+from ze_agents.screen import ScreenContext
 from ze_agents.types import AgentContext, RetrievalRequest
 from ze_core.orchestration.state import AgentState
 from ze_core.routing.tier import resolve_agent_model
@@ -161,14 +160,14 @@ class _PresetRequest:
     key: str  # what AgentContext.preset carries; a show_* tool compares its own key
 
 
-def _preset_request(screen_ctx: dict) -> _PresetRequest | None:
-    compose = screen_ctx.get("compose")
+def _preset_request(screen_ctx: ScreenContext) -> _PresetRequest | None:
+    compose = screen_ctx.compose
     if compose is None:
         return None
     if compose in ("slipping", "decisions"):
         return _PresetRequest(compose, None, compose)
     if compose == "topic":
-        topic = str(screen_ctx.get("topic") or "").strip()
+        topic = (screen_ctx.topic or "").strip()
         if topic and len(topic) <= _PRESET_TOPIC_MAX:
             # Same normalization as ze_priority.compose.tools.topic_key.
             return _PresetRequest(
@@ -264,7 +263,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     # The open-query detector is calibrated passage-vs-passage (eval/calibration/open_query.py);
     # query-vs-query loses recall at the same false-positive rate.
     open_items_query = _is_open_query(embedder.encode_passage(embed_text), config)
-    screen_ctx = config["configurable"].get("screen_context") or {}
+    screen_ctx = config["configurable"].get("screen_context") or ScreenContext()
     composer = config["configurable"].get("world_composer")
     preset = _preset_request(screen_ctx) if composer is not None else None
     rerouted: RoutingEnvelope | None = None
@@ -369,48 +368,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     if user_message_id is not None:
         agent_context.extensions["user_message_id"] = user_message_id
 
-    workflow_id = screen_ctx.get("workflow_id")
-    execution_id = screen_ctx.get("execution_id")
-    if workflow_id:
-        wf_store = config["configurable"].get("workflow_store")
-        if wf_store is not None:
-            try:
-                wf = await wf_store.get(UUID(str(workflow_id)))
-                if wf:
-                    executions = await wf_store.list_executions(wf.id, limit=20)
-                    ex = (
-                        next(
-                            (e for e in executions if str(e.id) == str(execution_id)),
-                            None,
-                        )
-                        if execution_id
-                        else None
-                    )
-                    agent_context.screen_context_note = _build_screen_context_note(
-                        wf, ex
-                    )
-            except Exception:
-                pass  # best-effort; never block the turn
-
-    placed = screen_ctx.get("workspace_placed") or []
-    if placed:
-        lines = [
-            "[Workspace: the user placed these files in the workspace this turn "
-            "(they are not ingested unless you call ingest_workspace_file)]"
-        ]
-        for item in placed:
-            if isinstance(item, dict):
-                path = item.get("path") or ""
-                size = item.get("size")
-                extra = f" ({size} bytes)" if size is not None else ""
-                lines.append(f"- {path}{extra}")
-            else:
-                lines.append(f"- {item}")
-        note = "\n".join(lines)
-        existing = agent_context.screen_context_note
-        agent_context.screen_context_note = (
-            f"{existing}\n\n{note}" if existing else note
-        )
+    agent_context.screen_context_note = state.get("screen_note")
 
     preset_components: list[dict] = []
     if preset is not None:
@@ -418,11 +376,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         if composition is not None:
             preset_components = list(composition.components)
             agent_context.preset = preset.key
-            note = _preset_note(preset, composition.summary)
-            existing = agent_context.screen_context_note
-            agent_context.screen_context_note = (
-                f"{existing}\n\n{note}" if existing else note
-            )
+            agent_context.preset_note = _preset_note(preset, composition.summary)
 
     updates: dict[str, Any] = {}
     if rerouted is not None:
@@ -438,30 +392,3 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         "open_items_query": open_items_query,
         "procedure_matches": getattr(agent_context, "procedure_matches", None),
     }
-
-
-def _build_screen_context_note(wf: Any, ex: Any) -> str:
-    lines = [f"[Screen context: user is viewing workflow '{wf.name}']"]
-    if ex:
-        duration_s: str | None = None
-        if ex.started_at and ex.completed_at:
-            started = (
-                ex.started_at.replace(tzinfo=_tz.utc)
-                if ex.started_at.tzinfo is None
-                else ex.started_at
-            )
-            completed = (
-                ex.completed_at.replace(tzinfo=_tz.utc)
-                if ex.completed_at.tzinfo is None
-                else ex.completed_at
-            )
-            secs = int((completed - started).total_seconds())
-            duration_s = f"{secs}s"
-        step_count = len(ex.step_results) if ex.step_results else 0
-        parts = [f"status={ex.status}", f"steps={step_count}"]
-        if duration_s:
-            parts.append(f"duration={duration_s}")
-        lines.append(f"Run: {', '.join(parts)}")
-        if ex.error:
-            lines.append(f"Error: {ex.error}")
-    return "\n".join(lines)

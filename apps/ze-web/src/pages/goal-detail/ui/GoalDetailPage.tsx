@@ -3,11 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { GateStatusCard } from "@/widgets/gate-status";
 import { GoalLearningsList } from "@/widgets/goal-learnings";
 import { MilestoneTimeline } from "@/widgets/milestone-timeline";
+import { useChatAbout } from "@/features/ask-bar";
 import { ReviewGoalLearning } from "@/features/review-goal-learning";
 import { useGoalDetailQuery } from "@/entities/goal";
+import { useScreenPublisher } from "@/entities/screen-context";
 import { goalsPath } from "@/shared/config";
 import { useSetBreadcrumbTitle } from "@/shared/lib";
-import { ListSkeleton, ErrorState, PageShell, SectionPanel } from "@/shared/ui";
+import { ListSkeleton, ErrorState, Module, PageShell, SectionPanel } from "@/shared/ui";
 
 const ACTIVE_STATUSES = new Set(["active", "planning"]);
 
@@ -24,6 +26,16 @@ export function GoalDetailPage() {
   const { data: detail, isLoading, isError, refetch } = useGoalDetailQuery(goalId ?? "");
 
   useSetBreadcrumbTitle(detail?.title);
+
+  const chatAbout = useChatAbout();
+  useScreenPublisher(
+    detail
+      ? {
+          subject: [{ kind: "goal", id: detail.id, label: detail.title, component: "goal_module", as_of: detail.updated_at }],
+          focused_module: "Goals",
+        }
+      : null,
+  );
 
   if (isLoading) {
     return (
@@ -58,6 +70,14 @@ export function GoalDetailPage() {
           Goals
         </button>
 
+        <Module
+          as="div"
+          label="Goal"
+          chatAboutLabel={detail.title}
+          onChatAbout={(element) =>
+            chatAbout({ kind: "goal", id: detail.id, label: detail.title, component: "goal_module", as_of: detail.updated_at }, element)
+          }
+        >
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-xl bg-plum-voltage/10 border border-plum-voltage/20 flex items-center justify-center flex-shrink-0 mt-0.5">
             <Target className="w-5 h-5 text-plum-voltage" />
@@ -80,6 +100,7 @@ export function GoalDetailPage() {
             </div>
           </div>
         </div>
+        </Module>
       </div>
 
       {/* Main layout */}

@@ -137,6 +137,28 @@ class TierTraceResponse(BaseModel):
     model: str
 
 
+class ScreenResolverTraceResponse(BaseModel):
+    kind: str
+    id: str
+    status: Literal["ok", "missing", "changed", "failed", "timeout", "cut"]
+    ms: int = 0
+
+
+class ScreenTraceResponse(BaseModel):
+    origin: Literal["ask_bar", "chat_about", "preset"] = "ask_bar"
+    place: str | None = None
+    route: str | None = None
+    subject: list[str] = []
+    selection_count: int = 0
+    visible_count: int = 0
+    canvas_count: int = 0
+    focused_module: str | None = None
+    captured_at: str | None = None
+    note_chars: int = 0
+    invalid: list[str] = []
+    resolvers: list[ScreenResolverTraceResponse] = []
+
+
 class SourceTraceResponse(BaseModel):
     url: str
     title: str = ""
@@ -185,6 +207,7 @@ class MessageTraceResponse(BaseModel):
     loop_offer_ids: list[str] = []
     write_confirmations: list[WriteConfirmationOutcomeResponse] = []
     tier: TierTraceResponse | None = None
+    screen: ScreenTraceResponse | None = None
 
 
 class MessageTraceEntry(BaseModel):

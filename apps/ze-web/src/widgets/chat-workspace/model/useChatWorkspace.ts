@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMessages } from "@/features/load-chat-history";
 import { useConfirmation } from "@/features/respond-to-confirmation";
 import { useOnboardingSession } from "@/entities/onboarding-session";
+import { screenSnapshot } from "@/entities/screen-context";
 import { useSession } from "@/entities/session";
 import { useFrame, useWsStore, send } from "@/shared/api";
 import { useSendNotice } from "@/shared/lib";
@@ -18,6 +19,8 @@ export const DELIVERY_WATCHDOG_MS = 120_000;
 interface SentMessage {
   text: string;
   workspacePlaced?: { path: string; size: number }[];
+  /** What was sent with it; a resend replays this, it does not look at the screen again. */
+  context: ScreenContext;
 }
 
 interface UseChatWorkspaceOptions {
@@ -272,15 +275,19 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
   function sendMessage(
     text: string,
     workspacePlaced?: { path: string; size: number }[],
-    { resend = false }: { resend?: boolean } = {},
+    { resend = false, resendContext }: { resend?: boolean; resendContext?: ScreenContext } = {},
   ): boolean {
     const trimmed = text.trim();
     if (!trimmed || isThinking) return false;
 
-    const mergedContext = {
-      ...context,
-      ...(workspacePlaced?.length ? { workspace_placed: workspacePlaced } : {}),
-    } as typeof context;
+    // One send path: the screen snapshot under whatever the caller knows best. A context that carries
+    // `captured_at` is a finished snapshot (the overlay's queued item) and is sent as it was.
+    const mergedContext: ScreenContext =
+      resendContext ?? {
+        ...(context?.captured_at ? {} : screenSnapshot()),
+        ...context,
+        ...(workspacePlaced?.length ? { workspace_placed: workspacePlaced } : {}),
+      };
 
     const sent = send({
       type: "message",
@@ -293,7 +300,7 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
       return false;
     }
 
-    lastSentRef.current = { text: trimmed, workspacePlaced };
+    lastSentRef.current = { text: trimmed, workspacePlaced, context: mergedContext };
     awaitingRef.current = true;
     setFailedThread(null);
 
@@ -318,7 +325,7 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
   function retry(): boolean {
     const last = lastSentRef.current;
     if (!last) return false;
-    return sendMessage(last.text, last.workspacePlaced, { resend: true });
+    return sendMessage(last.text, last.workspacePlaced, { resend: true, resendContext: last.context });
   }
 
   function resetInteraction() {

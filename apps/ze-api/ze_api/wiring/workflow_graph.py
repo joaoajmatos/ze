@@ -58,7 +58,9 @@ def build_workflow_graph(
 
     builder.set_entry_point("load_workflow_step")
 
-    builder.add_edge("load_workflow_step", "embed_route")
+    # Joins the base graph's preprocess → resolve_screen → embed_route path in the same superstep;
+    # a direct edge to embed_route would run it twice per step.
+    builder.add_edge("load_workflow_step", "resolve_screen")
     builder.add_conditional_edges(
         "embed_route",
         after_embed_route,

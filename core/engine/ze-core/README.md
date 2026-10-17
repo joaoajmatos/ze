@@ -18,6 +18,8 @@ Every user message flows through the LangGraph built by `ze-core`. The graph han
 
 `ze-api` instantiates `ZeContainer` (subclass of `ze_core.container.Container`), builds the graph via `graph_builder`, and injects dependencies at invocation time. Plugins extend the graph through `ZePlugin` hooks in `ze-plugin` — `ze-core` merges their nodes, state fields, and configurable services at build time. Not imported directly from plugin packages.
 
+The `ze_core/screen/` package holds the screen resolver registry and `build_screen_note`. The `resolve_screen` node runs before routing and writes the screen note (at most 1,200 characters) and its trace. Ze stores the context on the user message (`messages.screen_context`, `zc039`), so Retry replays it.
+
 ## Responsibilities
 
 | Module | What it provides |

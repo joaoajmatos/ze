@@ -195,9 +195,9 @@ The server accepts `force_agent` only when it runs with `EVAL_MODE=true`, which 
 
 ### Sending a screen context
 
-Add `"context": {"screen": "world", "compose": "slipping"}` to the request body to send what a
+Add `"context": {"place": "world", "compose": "slipping"}` to the request body to send what a
 client would send in `message.context`. The server passes it to the graph as the turn's screen
-context, so a preset chip can be tested without a browser. `compose` is `slipping`, `decisions` or
+context, so a preset chip can be tested without a browser. The server parses it with the same `ScreenContext.from_wire` as the WebSocket path. `compose` is `slipping`, `decisions` or
 `topic` (`topic` also needs `topic`). `context` works with or without `force_agent`.
 
 ---
@@ -278,14 +278,42 @@ A scenario may carry `context:` with the screen context to send, for example a p
 
 ```yaml
 - id: composed_slipping_en
-  context: { screen: world, compose: slipping }
+  context: { place: world, compose: slipping }
   prompt: "What's slipping?"
 ```
 
 In a multi-turn scenario the scenario-level `context` goes with the final prompt turn only, so
 earlier turns can set up the data. A turn may carry its own `context`, which wins. The runner
-rejects a context without `screen`, an unknown `compose`, or `compose: topic` without `topic`
-before it sends anything.
+rejects a context that is not a non-empty mapping, an unknown `compose`, or `compose: topic`
+without `topic`, before it sends anything. The judge sees the context the turn sent, under
+"Screen context sent with the message".
+
+### Setup rows
+
+A screen context points at records, and `make dev-eval` has no seed data. A scenario lists the
+records it needs in `setup:`. The runner inserts them before the first turn, binds each to a name,
+and deletes them after the scenario, in reverse order.
+
+```yaml
+- id: screen_doing_execution_en
+  setup:
+    - {kind: workflow, name: wf, fields: {name: "Weekly report"}}
+    - {kind: workflow_execution, name: run, parent: wf, fields: {status: failed}}
+  turns:
+    - prompt: "Why did this run fail?"
+      context:
+        place: doing
+        subject:
+          - {kind: workflow_execution, id: "{{run.id}}", parent_id: "{{wf.id}}"}
+```
+
+`{{name.field}}` works inside `context:` and `prompt`. `kind` is one of: goal, goal_gate, workflow,
+workflow_execution, loop, held_write, notification, entity, fact, procedure, skill,
+workspace_run, hypothesis, contact, reminder, news_article. `fields` overrides the defaults for
+that kind, and `parent` names the row it belongs to. The runner writes through the verifier's
+database connection (`DATABASE_URL`), because the API has no create route for most of these
+records. Run these scenarios only against a throwaway database. `eval/scenarios/screen_context.yaml`
+covers deixis per place and one `chat_about` scenario per core kind.
 
 ### Sandbox-only scenarios
 

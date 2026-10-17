@@ -42,6 +42,7 @@ def _conductor_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
 def _prompt_note_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
     return {
         "screen_context_note": base_ctx.screen_context_note,
+        "preset_note": base_ctx.preset_note,
         "resume_recap": base_ctx.resume_recap,
         "open_priorities_note": base_ctx.open_priorities_note,
         "preset": base_ctx.preset,

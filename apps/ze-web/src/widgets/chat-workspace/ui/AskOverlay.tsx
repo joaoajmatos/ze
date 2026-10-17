@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAskOverlay } from "@/features/ask-bar";
+import { AboutPanel, useAskOverlay } from "@/features/ask-bar";
 import { ConfirmationCard } from "@/features/respond-to-confirmation";
+import { screenSnapshot } from "@/entities/screen-context";
 import { useSession } from "@/entities/session";
 import { askPath, placeOf } from "@/shared/config";
+import { useSendNotice } from "@/shared/lib";
 import { Control, Module } from "@/shared/ui";
 import { useChatWorkspace } from "../model/useChatWorkspace";
 import { ChatMessageList } from "./ChatMessageList";
@@ -52,6 +54,16 @@ function AskOverlayPanel() {
     return () => document.removeEventListener("keydown", onKey);
   }, [dismiss]);
 
+  const pathname = useLocation().pathname;
+  const pickSuggestion = useCallback(
+    (text: string) => {
+      if (!useAskOverlay.getState().submit(text, screenSnapshot(pathname))) {
+        useSendNotice.getState().showNotice("Ze has not sent your last message yet. Wait for it, then send this one.");
+      }
+    },
+    [pathname],
+  );
+
   const waitingFor = !outbox ? null : !isConnected ? "Offline" : isThinking ? "Ze is answering" : !ready ? "Loading the conversation" : null;
 
   return (
@@ -81,6 +93,7 @@ function AskOverlayPanel() {
             Open in Ask
           </Control>
         </div>
+        <AboutPanel inputSelector="[data-ask-input]" onPick={pickSuggestion} />
         <ChatMessageList
           messages={visible}
           showTyping={chat.showTyping}

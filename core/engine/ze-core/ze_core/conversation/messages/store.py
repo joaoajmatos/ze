@@ -21,6 +21,7 @@ from ze_core.conversation.messages.types import (
     ProcedureUsageTrace,
     SkillUsageTrace,
     SourceTrace,
+    ScreenTrace,
     TierTrace,
     ToolCallTrace,
     WorkspaceUsageTrace,
@@ -65,9 +66,10 @@ class PostgresMessageStore:
             await conn.execute(
                 """
                 INSERT INTO messages (
-                    id, role, text, components, read, thread_id, created_at, replaces
+                    id, role, text, components, read, thread_id, created_at, replaces,
+                    screen_context
                 )
-                VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)
+                VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9::jsonb)
                 ON CONFLICT DO NOTHING
                 """,
                 message.id,
@@ -78,6 +80,9 @@ class PostgresMessageStore:
                 message.thread_id,
                 message.created_at,
                 message.replaces,
+                json.dumps(message.screen_context)
+                if message.screen_context is not None
+                else None,
             )
 
     async def list_since(
@@ -87,7 +92,7 @@ class PostgresMessageStore:
             rows = await conn.fetch(
                 """
                 SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by, rollback
+                       replaces, replaced_by, rollback, screen_context
                 FROM messages
                 WHERE created_at > $1 AND ($3 OR replaced_by IS NULL)
                 ORDER BY created_at ASC
@@ -106,7 +111,7 @@ class PostgresMessageStore:
             rows = await conn.fetch(
                 """
                 SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by, rollback
+                       replaces, replaced_by, rollback, screen_context
                 FROM messages
                 WHERE thread_id = $1 AND ($3 OR replaced_by IS NULL)
                 ORDER BY created_at ASC
@@ -135,7 +140,7 @@ class PostgresMessageStore:
                 rows = await conn.fetch(
                     """
                     SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by, rollback
+                       replaces, replaced_by, rollback, screen_context
                     FROM messages
                     WHERE NOT read AND thread_id = $1 AND ($2 OR replaced_by IS NULL)
                     ORDER BY created_at ASC
@@ -147,7 +152,7 @@ class PostgresMessageStore:
                 rows = await conn.fetch(
                     """
                     SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by, rollback
+                       replaces, replaced_by, rollback, screen_context
                     FROM messages
                     WHERE NOT read AND ($1 OR replaced_by IS NULL)
                     ORDER BY created_at ASC
@@ -161,7 +166,7 @@ class PostgresMessageStore:
             row = await conn.fetchrow(
                 """
                 SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by, rollback
+                       replaces, replaced_by, rollback, screen_context
                 FROM messages
                 WHERE id = $1
                 """,
@@ -176,7 +181,7 @@ class PostgresMessageStore:
             rows = await conn.fetch(
                 """
                 SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by, rollback
+                       replaces, replaced_by, rollback, screen_context
                 FROM messages
                 WHERE id = ANY($1::uuid[])
                 """,
@@ -203,7 +208,8 @@ class PostgresMessageStore:
             row = await conn.fetchrow(
                 """
                 SELECT u.id, u.role, u.text, u.components, u.read, u.thread_id,
-                       u.created_at, u.replaces, u.replaced_by, u.rollback
+                       u.created_at, u.replaces, u.replaced_by, u.rollback,
+                       u.screen_context
                 FROM messages a
                 JOIN messages u
                   ON u.thread_id = a.thread_id
@@ -361,6 +367,9 @@ def _parse_trace(data: dict) -> MessageTrace:
             if isinstance(row, dict)
         ],
         tier=TierTrace(**data["tier"]) if data.get("tier") else None,
+        screen=ScreenTrace.from_dict(data["screen"])
+        if isinstance(data.get("screen"), dict)
+        else None,
     )
 
 
@@ -381,7 +390,20 @@ def _row_to_message(row: asyncpg.Record) -> Message:
         replaces=row["replaces"],
         replaced_by=row["replaced_by"],
         rollback=_parse_rollback(row["rollback"]),
+        screen_context=_parse_screen_context(row["screen_context"]),
     )
+
+
+def _parse_screen_context(raw: object) -> dict | None:
+    if raw is None:
+        return None
+    try:
+        if isinstance(raw, str):
+            raw = json.loads(raw)
+    except ValueError:
+        log.warning("screen_context_unreadable")
+        return None
+    return raw if isinstance(raw, dict) else None
 
 
 def _parse_rollback(raw: object) -> RollbackRecord | None:

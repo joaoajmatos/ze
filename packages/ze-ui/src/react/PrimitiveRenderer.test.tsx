@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { PrimitiveRendererContext } from "./context";
 import { PrimitiveRenderer } from "./PrimitiveRenderer";
 
 describe("PrimitiveRenderer", () => {
@@ -306,6 +307,35 @@ describe("PrimitiveRenderer", () => {
     it("renders a primitive that carries a claim unchanged", () => {
       render(<PrimitiveRenderer node={{ type: "text", content: "Plain", claim }} />);
       expect(screen.getByText("Plain")).toBeInTheDocument();
+    });
+  });
+});
+
+describe("claim card chat about", () => {
+  const card = {
+    type: "claim_card" as const,
+    title: "Reply to Ana",
+    claim: { subject: "loop" as const, ref_id: "L1" },
+  };
+
+  it("shows no chip unless the host supplies onChatAbout", () => {
+    render(<PrimitiveRenderer node={card} />);
+    expect(screen.queryByRole("button", { name: /Chat about/ })).toBeNull();
+  });
+
+  it("shows the chip and calls back with the claim and the card element", () => {
+    const onChatAbout = vi.fn();
+    const { container } = render(
+      <PrimitiveRendererContext.Provider value={{ onChatAbout }}>
+        <PrimitiveRenderer node={card} />
+      </PrimitiveRendererContext.Provider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Chat about Reply to Ana" }));
+    expect(onChatAbout).toHaveBeenCalledWith({
+      subject: "loop",
+      ref_id: "L1",
+      title: "Reply to Ana",
+      element: container.querySelector(".claim-card"),
     });
   });
 });

@@ -302,3 +302,36 @@ async def test_a_trace_with_a_deduplicated_call_is_served() -> None:
 
     assert resp.status_code == 200
     assert resp.json()["tool_calls"][0]["gate"] == "duplicate"
+
+
+@pytest.mark.asyncio
+async def test_get_message_trace_carries_the_screen_trace():
+    from ze_core.conversation.messages.types import ScreenTrace
+
+    trace = _trace()
+    trace.screen = ScreenTrace.from_dict(
+        {
+            "origin": "chat_about", "place": "doing", "route": "/doing/workflows/w1",
+            "subject": ["Workflow · Weekly report"], "selection_count": 1, "visible_count": 13,
+            "focused_module": "Workflows", "note_chars": 812, "invalid": [],
+            "resolvers": [{"kind": "workflow", "id": "w1", "status": "ok", "ms": 14}],
+        }
+    )
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=trace)
+    app = _make_app(store)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v0/messages/{uuid4()}/trace", headers={"Authorization": f"Bearer {API_KEY}"})
+    screen = resp.json()["screen"]
+    assert screen["origin"] == "chat_about" and screen["subject"] == ["Workflow · Weekly report"]
+    assert screen["resolvers"] == [{"kind": "workflow", "id": "w1", "status": "ok", "ms": 14}]
+
+
+@pytest.mark.asyncio
+async def test_get_message_trace_screen_is_null_when_absent():
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=_trace())
+    app = _make_app(store)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v0/messages/{uuid4()}/trace", headers={"Authorization": f"Bearer {API_KEY}"})
+    assert resp.json()["screen"] is None

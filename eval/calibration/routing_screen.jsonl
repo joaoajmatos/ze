@@ -1,0 +1,20 @@
+{"id": "screen-00-en", "lang": "en", "prompt": "summarize this", "screen": "Goal \"Run a half marathon\" (Goals page, open)", "gold_agent": "goals", "gold_multi": false}
+{"id": "screen-00-pt", "lang": "pt", "prompt": "resume isto", "screen": "Meta \"Correr uma meia maratona\" (página Metas, aberta)", "gold_agent": "goals", "gold_multi": false}
+{"id": "screen-01-en", "lang": "en", "prompt": "why did this fail?", "screen": "Workflow run \"Weekly report\" of Oct 16 (failed)", "gold_agent": "workflow", "gold_multi": false}
+{"id": "screen-01-pt", "lang": "pt", "prompt": "porque é que isto falhou?", "screen": "Execução do fluxo \"Relatório semanal\" de 16 out (falhou)", "gold_agent": "workflow", "gold_multi": false}
+{"id": "screen-02-en", "lang": "en", "prompt": "remind me about this tomorrow morning", "screen": "Loop \"Reply to Ana\" (active)", "gold_agent": "reminders", "gold_multi": false}
+{"id": "screen-02-pt", "lang": "pt", "prompt": "lembra-me disto amanhã de manhã", "screen": "Compromisso \"Responder à Ana\" (ativo)", "gold_agent": "reminders", "gold_multi": false}
+{"id": "screen-03-en", "lang": "en", "prompt": "what is happening with her?", "screen": "Contact \"Ana Silva\" (Mind page)", "gold_agent": "companion", "gold_multi": false}
+{"id": "screen-03-pt", "lang": "pt", "prompt": "o que se passa com ela?", "screen": "Contacto \"Ana Silva\" (página Mente)", "gold_agent": "companion", "gold_multi": false}
+{"id": "screen-04-en", "lang": "en", "prompt": "move it to Friday", "screen": "Reminder \"Call the dentist\" (Tue 10:00)", "gold_agent": "reminders", "gold_multi": false}
+{"id": "screen-04-pt", "lang": "pt", "prompt": "muda para sexta", "screen": "Lembrete \"Ligar ao dentista\" (ter 10:00)", "gold_agent": "reminders", "gold_multi": false}
+{"id": "screen-05-en", "lang": "en", "prompt": "find out more about this", "screen": "News article \"EU approves new chip subsidies\"", "gold_agent": "research", "gold_multi": false}
+{"id": "screen-05-pt", "lang": "pt", "prompt": "descobre mais sobre isto", "screen": "Notícia \"UE aprova novos subsídios para chips\"", "gold_agent": "research", "gold_multi": false}
+{"id": "screen-06-en", "lang": "en", "prompt": "reply to this", "screen": "Notification \"Ana wrote about the contract\"", "gold_agent": "messenger", "gold_multi": false}
+{"id": "screen-06-pt", "lang": "pt", "prompt": "responde a isto", "screen": "Notificação \"A Ana escreveu sobre o contrato\"", "gold_agent": "messenger", "gold_multi": false}
+{"id": "screen-07-en", "lang": "en", "prompt": "what does this mean?", "screen": "Skill \"weekly-review\" (pending review)", "gold_agent": "companion", "gold_multi": false}
+{"id": "screen-07-pt", "lang": "pt", "prompt": "o que significa isto?", "screen": "Skill \"weekly-review\" (a aguardar revisão)", "gold_agent": "companion", "gold_multi": false}
+{"id": "screen-08-en", "lang": "en", "prompt": "what's the weather like in Lisbon?", "screen": "Goal \"Run a half marathon\" (Goals page, open)", "gold_agent": "research", "gold_multi": false}
+{"id": "screen-08-pt", "lang": "pt", "prompt": "como está o tempo em Lisboa?", "screen": "Meta \"Correr uma meia maratona\" (página Metas, aberta)", "gold_agent": "research", "gold_multi": false}
+{"id": "screen-09-en", "lang": "en", "prompt": "what's on my calendar tomorrow", "screen": "Workflow \"Weekly report\" (Doing page)", "gold_agent": "calendar", "gold_multi": false}
+{"id": "screen-09-pt", "lang": "pt", "prompt": "o que tenho na agenda amanhã", "screen": "Fluxo \"Relatório semanal\" (página Fazer)", "gold_agent": "calendar", "gold_multi": false}

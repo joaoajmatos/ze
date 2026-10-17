@@ -35,7 +35,7 @@ class RoutingEnvelope:
     primary_agent: str
     confidence: float
     score_gap: float
-    routing_method: str  # "embedding" | "haiku" | "fallback" | "forced" (eval only) | "open_query" | "preset" (fetch_context reroutes)
+    routing_method: str  # "embedding" | "haiku" | "fallback" | "forced" (eval only) | "screen" (chat_about) | "open_query" | "preset" (fetch_context reroutes)
     is_compound: bool
     subtasks: list[SubTask]
     requires_synthesis: bool

@@ -32,6 +32,9 @@ _PROMPT = """\
 ## Scenario
 {description}
 
+## Screen context sent with the message
+{screen}
+
 ## User message
 {prompt}
 
@@ -132,10 +135,12 @@ def build_prompt(
     tool_calls: list[dict] | None = None,
     components: list[dict] | None = None,
     pending_confirmation: bool = False,
+    screen_context: str | None = None,
     today: date | None = None,
 ) -> str:
     return _PROMPT.format(
         description=description,
+        screen=screen_context or "none",
         prompt=prompt,
         response=response,
         expected_agent=expected_agent or "any",
@@ -159,6 +164,7 @@ async def judge(
     tool_calls: list[dict] | None = None,
     components: list[dict] | None = None,
     pending_confirmation: bool = False,
+    screen_context: str | None = None,
     model: str = DEFAULT_JUDGE_MODEL,
     api_key: str | None = None,
 ) -> JudgeScore:
@@ -173,6 +179,7 @@ async def judge(
         tool_calls=tool_calls,
         components=components,
         pending_confirmation=pending_confirmation,
+        screen_context=screen_context,
     )
 
     async with httpx.AsyncClient(timeout=30.0) as client:

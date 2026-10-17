@@ -67,7 +67,7 @@ class TestScreenContextCompose:
             {
                 "type": "message",
                 "text": "How is LedgerLite going?",
-                "context": {"screen": "world", "compose": "topic", "topic": "LedgerLite"},
+                "context": {"place": "world", "compose": "topic", "topic": "LedgerLite"},
             }
         )
         assert frame.context.compose == "topic"
@@ -77,7 +77,7 @@ class TestScreenContextCompose:
         from ze_api.api.ws.schemas import WsSendMessageFrame
 
         frame = WsSendMessageFrame.model_validate(
-            {"type": "message", "text": "hi", "context": {"screen": "world"}}
+            {"type": "message", "text": "hi", "context": {"place": "world"}}
         )
         assert frame.context.compose is None and frame.context.topic is None
 
@@ -87,16 +87,55 @@ class TestScreenContextCompose:
         from ze_api.api.ws.schemas import WsScreenContext
 
         with pytest.raises(ValidationError):
-            WsScreenContext.model_validate({"screen": "world", "compose": "everything"})
+            WsScreenContext.model_validate({"place": "world", "compose": "everything"})
 
     def test_topic_is_capped_at_120_characters(self):
         import pytest
         from pydantic import ValidationError
         from ze_api.api.ws.schemas import WsScreenContext
 
-        WsScreenContext.model_validate({"screen": "w", "compose": "topic", "topic": "x" * 120})
+        WsScreenContext.model_validate({"place": "world", "compose": "topic", "topic": "x" * 120})
         with pytest.raises(ValidationError):
-            WsScreenContext.model_validate({"screen": "w", "compose": "topic", "topic": "x" * 121})
+            WsScreenContext.model_validate({"place": "world", "compose": "topic", "topic": "x" * 121})
+
+
+class TestScreenContextShape:
+    """message.context follows specs/phases/195-screen-context-awareness/contracts/screen-context.md."""
+
+    def test_contract_example_validates(self):
+        from ze_api.api.ws.schemas import WsScreenContext
+
+        ctx = WsScreenContext.model_validate(
+            {
+                "place": "doing",
+                "route": "/doing/workflows/w1",
+                "origin": "chat_about",
+                "subject": [
+                    {"kind": "workflow_execution", "id": "e1", "parent_id": "w1", "component": "execution_row", "as_of": "2026-10-16T09:01:12Z"}
+                ],
+                "selection": [{"kind": "loop", "id": "L1", "label": "Reply to Ana"}],
+                "visible": [{"kind": "goal", "id": "g1"}],
+                "focused_module": "Workflows",
+                "canvas": [{"index": 1, "type": "claim_card", "ref": {"kind": "loop", "id": "L1"}}],
+                "captured_at": "2026-10-17T14:02:11Z",
+            }
+        )
+        assert ctx.subject[0].parent_id == "w1"
+        assert ctx.canvas[0].ref.id == "L1"
+
+    def test_place_is_optional_and_closed(self):
+        import pytest
+        from pydantic import ValidationError
+        from ze_api.api.ws.schemas import WsScreenContext
+
+        assert WsScreenContext.model_validate({}).place is None
+        with pytest.raises(ValidationError):
+            WsScreenContext.model_validate({"place": "attic"})
+
+    def test_removed_fields_are_gone(self):
+        from ze_api.api.ws.schemas import WsScreenContext
+
+        assert not {"screen", "goal_id", "workflow_id", "execution_id"} & set(WsScreenContext.model_fields)
 
 
 class TestMessageFrameConformance:

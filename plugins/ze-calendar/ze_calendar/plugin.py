@@ -101,6 +101,11 @@ class CalendarPlugin(ZePlugin):
 
         return calendar_seed_domains()
 
+    def screen_resolvers(self) -> list[Any]:
+        from ze_calendar.screen_resolvers import build_screen_resolvers
+
+        return build_screen_resolvers(reminder_store=self.reminder_store)
+
     def rest_stores(self) -> dict[str, Any]:
         return {"reminder_store": self.reminder_store}
 

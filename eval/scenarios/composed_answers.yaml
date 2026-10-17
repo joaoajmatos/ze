@@ -11,7 +11,7 @@
     - prompt: "I haven't decided about the Porto move yet, keep it on my radar"
       description: "Turn 1: fixture, a declared loop with a 7-day window"
     - prompt: "What's slipping?"
-      context: { screen: world, compose: slipping }
+      context: { place: world, compose: slipping }
       description: "Turn 2: the chip sends compose=slipping"
   expected_agent: companion
   verify:
@@ -33,7 +33,7 @@
     - prompt: "ainda não decidi a mudança para o Porto, mantém isso no radar"
       description: "Turn 1: fixture"
     - prompt: "O que está a escorregar?"
-      context: { screen: world, compose: slipping }
+      context: { place: world, compose: slipping }
       description: "Turn 2: the chip sends compose=slipping"
   expected_agent: companion
   verify:
@@ -52,7 +52,7 @@
   description: "Preset chip 'What should I decide today?': the answer comes from stored records and is honest whether or not anything is waiting"
   turns:
     - prompt: "What should I decide today?"
-      context: { screen: world, compose: decisions }
+      context: { place: world, compose: decisions }
       description: "The chip sends compose=decisions"
   expected_agent: companion
   tags: [composed_answers, preset, executive_function]
@@ -67,7 +67,7 @@
     - prompt: "Se calhar devia ligar ao banco por causa daquela comissão, ainda não sei"
       description: "Turn 1: fixture"
     - prompt: "O que tenho de decidir hoje?"
-      context: { screen: world, compose: decisions }
+      context: { place: world, compose: decisions }
       description: "Turn 2: the chip sends compose=decisions"
   expected_agent: companion
   verify:
@@ -88,7 +88,7 @@
     - prompt: "I haven't finished planning the LedgerLite launch, keep it on my radar"
       description: "Turn 1: fixture, a loop about the topic"
     - prompt: "How is the LedgerLite launch going?"
-      context: { screen: world, compose: topic, topic: "LedgerLite launch" }
+      context: { place: world, compose: topic, topic: "LedgerLite launch" }
       description: "Turn 2: the chip sends compose=topic with the topic"
   expected_agent: companion
   verify:
@@ -109,7 +109,7 @@
     - prompt: "ainda não acabei de planear o lançamento do LedgerLite, mantém isso no radar"
       description: "Turn 1: fixture"
     - prompt: "Como vai o lançamento do LedgerLite?"
-      context: { screen: world, compose: topic, topic: "lançamento do LedgerLite" }
+      context: { place: world, compose: topic, topic: "lançamento do LedgerLite" }
       description: "Turn 2: the chip sends compose=topic with the topic"
   expected_agent: companion
   verify:

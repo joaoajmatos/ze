@@ -1,14 +1,14 @@
 import { useEffect, useRef, type FormEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { presenceActions, usePresenceStore } from "@/entities/presence";
+import { screenSnapshot } from "@/entities/screen-context";
 import { useSendNotice } from "@/shared/lib";
 import { Control } from "@/shared/ui";
 import { useAskOverlay } from "../model/ask-overlay";
-import { resolveScreenContext } from "../model/resolve-screen";
 
 /** The sticky Ask input on every place except Ask. Submitting opens the contextual overlay. */
 export function AskBar() {
-  const { pathname, search } = useLocation();
+  const { pathname } = useLocation();
   const offline = usePresenceStore((s) => s.presence.offline);
   const text = useAskOverlay((s) => s.draft);
   const setDraft = useAskOverlay((s) => s.setDraft);
@@ -37,7 +37,7 @@ export function AskBar() {
     e.preventDefault();
     const trimmed = text.trim();
     if (!trimmed || offline) return;
-    if (!submit(trimmed, resolveScreenContext(pathname, search))) {
+    if (!submit(trimmed, screenSnapshot(pathname))) {
       useSendNotice.getState().showNotice("Ze has not sent your last message yet. Wait for it, then send this one.");
     }
   }

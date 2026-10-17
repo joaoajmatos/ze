@@ -18,6 +18,7 @@ from ze_api.api.v0.messages.schemas import (
     RollbackTraceResponse,
     SkillUsageTraceResponse,
     SourceTraceResponse,
+    ScreenTraceResponse,
     TierTraceResponse,
     ToolCallTraceResponse,
     UndoPlanEntryResponse,
@@ -164,6 +165,7 @@ class WsTraceUpdateFrame(BaseModel):
     write_confirmations: list[WriteConfirmationOutcomeResponse] = []
     rollback: RollbackTraceResponse | None = None
     tier: TierTraceResponse | None = None
+    screen: ScreenTraceResponse | None = None
 
 
 class WsNotificationFrame(BaseModel):
@@ -203,11 +205,32 @@ WsInboundFrame = Annotated[
 ]
 
 
+class WsScreenRef(BaseModel):
+    kind: str = Field(max_length=64)
+    id: str = Field(max_length=64)
+    label: str | None = Field(None, max_length=120)
+    component: str | None = Field(None, max_length=40)
+    parent_id: str | None = Field(None, max_length=64)
+    as_of: datetime | None = None
+
+
+class WsCanvasRef(BaseModel):
+    index: int
+    type: str = Field(max_length=40)
+    ref: WsScreenRef | None = None
+
+
 class WsScreenContext(BaseModel):
-    screen: str
-    goal_id: str | None = None
-    workflow_id: str | None = None
-    execution_id: str | None = None
+    place: Literal["world", "ask", "doing", "mind", "governance", "plugin"] | None = None
+    route: str | None = Field(None, max_length=200)
+    origin: Literal["ask_bar", "chat_about", "preset"] | None = None
+    # Caps (3 / 20 / 30 / 12) are applied by ScreenContext.from_wire; a schema limit would turn these into tuple types.
+    subject: list[WsScreenRef] | None = None
+    selection: list[WsScreenRef] | None = None
+    visible: list[WsScreenRef] | None = None
+    focused_module: str | None = Field(None, max_length=80)
+    canvas: list[WsCanvasRef] | None = None
+    captured_at: datetime | None = None
     workspace_placed: list["WsWorkspacePlaced"] | None = None
     compose: Literal["slipping", "decisions", "topic"] | None = None
     topic: str | None = Field(None, max_length=120)
