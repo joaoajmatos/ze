@@ -6,8 +6,10 @@ import type { MemoryFeedFilters } from "./useMemoryFeedQuery";
 export function useReviewFactMutation(filters: MemoryFeedFilters) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: Parameters<typeof reviewFacts>[0]["body"]) =>
-      reviewFacts({ body }),
+    mutationFn: async (body: Parameters<typeof reviewFacts>[0]["body"]) => {
+      const { error } = await reviewFacts({ body });
+      if (error) throw error;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.memoryFeed(filters.type, filters.agent),

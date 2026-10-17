@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { useContactsPageQuery } from "./contact";
 import { useHypothesesQuery } from "./hypothesis";
-import { useMemoryFeedQuery, useMemoryTimelineBoundsQuery } from "./memory-feed-item";
+import { useMemoryFeedQuery, useMemoryTimelineBoundsQuery, useReviewFactMutation } from "./memory-feed-item";
 import { useSearchEntitiesQuery } from "./memory-graph";
 
 const { failed } = vi.hoisted(() => ({ failed: () => Promise.resolve({ data: undefined, error: { detail: "boom" } }) }));
@@ -32,6 +32,14 @@ describe("a failed API call is an error, not an empty result", () => {
     ["hypotheses", () => useHypothesesQuery({ entityId: "e1" })],
   ])("%s", async (_name, hook) => {
     const { result } = renderHook(hook as () => { isError: boolean }, { wrapper });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe("a failed review is an error, not a success", () => {
+  it("rejects when the API returns an error", async () => {
+    const { result } = renderHook(() => useReviewFactMutation({ type: "all" }), { wrapper });
+    result.current.mutate([] as never);
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
