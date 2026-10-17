@@ -283,7 +283,7 @@ async def _correlate_with_existing(existing_for_seeds):
         return_value=existing_for_seeds(seeds)
     )
     results = await engine.correlate(seeds, mode="inline")
-    return results, hyp_store
+    return results, hyp_store, engine
 
 
 def _existing(seeds, feedback):
@@ -301,21 +301,24 @@ def _existing(seeds, feedback):
 
 @pytest.mark.parametrize("feedback", ["not_relevant", "muted"])
 async def test_dismissed_hypothesis_with_same_entities_blocks_reforming(feedback):
-    results, hyp_store = await _correlate_with_existing(
+    results, hyp_store, engine = await _correlate_with_existing(
         lambda seeds: _existing(seeds, feedback)
     )
     assert results == []
     hyp_store.save.assert_not_awaited()
+    engine._llm.complete.assert_not_awaited()
     assert hyp_store.list_by_entities.await_args.kwargs == {"include_dismissed": True}
 
 
 async def test_useful_or_unrated_hypothesis_does_not_block_forming():
-    results, _ = await _correlate_with_existing(lambda seeds: _existing(seeds, "useful"))
+    results, _, _ = await _correlate_with_existing(
+        lambda seeds: _existing(seeds, "useful")
+    )
     assert len(results) == 1
 
 
 async def test_dismissed_hypothesis_on_different_entities_does_not_block():
-    results, _ = await _correlate_with_existing(
+    results, _, _ = await _correlate_with_existing(
         lambda seeds: _existing([uuid4()], "muted")
     )
     assert len(results) == 1
@@ -616,3 +619,19 @@ class TestCorrelationReplyShapes:
         engine, _, _ = _make_engine()
         engine._llm.complete = AsyncMock(return_value="no json at all")
         assert await engine._correlation_call(["x"], []) is None
+
+
+async def test_dismissed_check_fails_open_when_the_store_errors():
+    sig_id, sig2_id = uuid4(), uuid4()
+    sig, ing = _make_signal(sig_id, title="Signal A")
+    sig2, ing2 = _make_signal(sig2_id, title="Signal B")
+    engine, _, hyp_store = _make_engine(
+        expansion=_make_expansion(signal_ids=[sig_id, sig2_id]),
+        signals=[(sig, ing), (sig2, ing2)],
+        llm_response=_make_llm_response(evidence_ids=[str(sig_id), str(sig2_id)]),
+    )
+    hyp_store.list_by_entities = AsyncMock(side_effect=RuntimeError("db"))
+
+    results = await engine.correlate([uuid4()], mode="inline")
+
+    assert len(results) == 1
