@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Ready to implement (pending review by the Floor Reviewer and the user's answers to the open questions in Clarifications)
+**Status**: Implemented
 
 **Input**: Maestro brief 2026-10-17: "184 B1 composed answers + claim posture on render_* descriptors + workflow failure_summary + goal progress fields + notification deep links (backend gaps 1, 2, 9, 10, 14)." Source: `apps/ze-web/.impeccable/plan/overhaul-plan.md` section d (gaps 1, 2, 9, 10, 14), section c (assembly), decision 7 ("B1 runs before W3; W3 does not ship client-side compositions").
 

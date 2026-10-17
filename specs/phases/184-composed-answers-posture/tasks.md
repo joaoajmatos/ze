@@ -84,14 +84,14 @@
 
 - [x] T029 [ENG] [BACKEND] `eval/scenarios/composed_answers.yaml`: six scenarios (slipping, decisions, topic; EN and PT) sending a scenario `context:` with `compose` (T037), `expected_agent: companion`, criteria per plan.md Eval. Run against `make dev-eval` with seeded fixtures for loops, goals and held writes; record results in the Handoffs note.
 - [x] T030 [ENG] [BACKEND] SC-001 spot check on `make dev` seed data: 10 cards across the three presets compared with their rows; SC-003 query over failed executions. Record in the Handoffs note.
-- [ ] T031 [ENG] [PLATFORM] Gates: `make test-py`, `make test-pg`, `make lint`, `make test-web`, `make typecheck-web`. Record command, result and commit.
+- [x] T031 [ENG] [PLATFORM] Gates: `make test-py`, `make test-pg`, `make lint`, `make test-web`, `make typecheck-web`. Record command, result and commit.
 
 ## Phase 10: Docs [DOCS]
 
-- [ ] T032 [P] [DOCS] `docs/native-interface.md` (`message.context.compose`/`topic`, new primitives, `claim`, notification `target_parent_id` + target table), `core/kernel/ze-components/README.md`, `packages/ze-ui/README.md`, `core/arbitration/ze-priority/README.md`. Follow the `doc-style` skill.
-- [ ] T033 [P] [DOCS] `docs/workflows.md` (failure summary), `docs/goals.md` (list progress fields, `STUCK_IDLE_DAYS`), `docs/scheduled-jobs.md` (if it names the 7-day literal), `docs/architecture.md` (preset reroute in `fetch_context`), `docs/package-architecture.md` (`ze-priority → ze-components`).
-- [ ] T034 [DOCS] `AGENTS.md`: dependency graph line for ze-priority, migration table (`zpro005` notifications.target_parent_id), layout note for `ze_priority/compose/`, phase table row 184; `specs/README.md` row 184. Status → Implemented only after T031.
-- [ ] T035 [DOCS] Coverage check against `git diff main...HEAD --stat`; list gaps in the Handoffs note.
+- [x] T032 [P] [DOCS] `docs/native-interface.md` (`message.context.compose`/`topic`, new primitives, `claim`, notification `target_parent_id` + target table), `core/kernel/ze-components/README.md`, `packages/ze-ui/README.md`, `core/arbitration/ze-priority/README.md`. Follow the `doc-style` skill.
+- [x] T033 [P] [DOCS] `docs/workflows.md` (failure summary), `docs/goals.md` (list progress fields, `STUCK_IDLE_DAYS`), `docs/scheduled-jobs.md` (if it names the 7-day literal), `docs/architecture.md` (preset reroute in `fetch_context`), `docs/package-architecture.md` (`ze-priority → ze-components`).
+- [x] T034 [DOCS] `AGENTS.md`: dependency graph line for ze-priority, migration table (`zpro005` notifications.target_parent_id), layout note for `ze_priority/compose/`, phase table row 184; `specs/README.md` row 184. Status → Implemented only after T031.
+- [x] T035 [DOCS] Coverage check against `git diff main...HEAD --stat`; list gaps in the Handoffs note.
 
 ---
 

@@ -459,6 +459,50 @@ The `message` frame accepts an optional `context` object for screen-aware respon
 The context is passed as `screen_context` in the graph config's `configurable` dict,
 making it available to agents via `ctx.config`.
 
+### Composed answers
+
+Two more keys ask for a composed answer. A preset chip on the world screen sends them.
+
+| Key | Value | Effect |
+|---|---|---|
+| `compose` | `slipping`, `decisions`, or `topic` | Ze builds the answer from stored records and attaches it to the reply as components. |
+| `topic` | text | The subject for `compose: "topic"`. |
+
+```json
+{"type": "message", "text": "What is slipping?", "context": {"screen": "world", "compose": "slipping"}}
+```
+
+The composer gets two seconds. If it fails or runs out of time, the turn continues without the composed answer and Ze says what it could not read. A typed question reaches the same composer through the companion tools `show_slipping`, `show_decisions`, and `show_topic`.
+
+### Claim posture on components
+
+Every primitive can carry a `claim` object. Code sets it from the stored record. The model never sets it, and Ze drops a `claim` that a `render_*` tool call supplies.
+
+| Field | Meaning |
+|---|---|
+| `subject` | `loop`, `goal`, `workflow`, `held_write`, or `hypothesis` |
+| `kind` | The record's claim kind, when it has one |
+| `ref_id` | The record's id |
+| `confidence`, `confidence_from` | Stored confidence and where it came from |
+| `source` | The provenance, in plain words |
+| `as_of` | When the record last changed |
+| `state` | The record's state |
+| `slipped` | True when the record is past its deadline |
+
+Three primitives carry this posture: `headline`, `claim_card`, and `claim_timeline`. A `claim_card` shows readouts and actions. Its action `intent` is one of `confirm_loop`, `drop_loop`, `approve_held_write`, `deny_held_write`, `approve_gate`, or `open`. The web app maps each intent to an existing REST call.
+
+### Notification targets
+
+A notification can carry `target_type`, `target_id`, and `target_parent_id`. The bell turns them into a link.
+
+| `target_type` | `target_id` | `target_parent_id` | Link |
+|---|---|---|---|
+| `goal` | the goal | none | `/goals/{target_id}` |
+| `goal_gate` | the gate | the goal | `/goals/{target_parent_id}` |
+| `workflow_execution` | the execution | the workflow | `/workflows/{target_parent_id}?execution={target_id}` |
+
+A target without a parent, where one is required, has no link.
+
 ---
 
 ## Connection manager

@@ -132,6 +132,8 @@ After the last step, `workflow_synthesize` calls the verify-class model to merge
 
 When a run ends as failed, `workflow_failed` records the error and, if any steps succeeded, writes a partial summary of their output. The scheduler's failure handler then sends a `workflow_failure` notification (an `accountability` push) through `ProactiveNotifier` (WebSocket or ntfy). The alert honors `proactive.alerts.workflow_failure_enabled` and `workflow_failure_cooldown_hours`.
 
+Every failed run has a `failure_summary`: one plain line that names the step, the task, and the reason, such as “Step 2 of 3, “Ping the health endpoint”, failed: it ran out of time after 2 attempts.” Ze derives it from the stored run each time (`ze_automation/workflow/failure.py`). It never contains the raw error text, which stays in `error`. The run list, the workflow agent, and the failure push all use it. The push links to the run page for that execution.
+
 ### Cancellation
 
 You can cancel a running execution from the chat or the run page. The run ends with status `cancelled` and a summary of the steps that finished.

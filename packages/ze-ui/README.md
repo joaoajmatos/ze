@@ -11,6 +11,8 @@ Agents describe UI as trees of primitives (text, table, form, progress bar, and 
 - Types for every primitive, generated from the `ze-components` JSON schema
 - `parsePrimitiveTree` and `validatePrimitiveTree` check a tree at runtime and throw `PrimitiveValidationError` on bad input
 - `PrimitiveRenderer` and `PrimitiveTreeRenderer` render parsed trees. The host app handles transport (WebSocket sends, onboarding state)
+- Claim primitives: `headline`, `claim_card`, and `claim_timeline` render a stored record with its posture (confidence, source, age). Tone follows the posture: a slipped item is hot, an item that needs the user is cream, and a suspicion or inference has a dotted edge
+- Card actions go to the host through `CardActionEvent` (`intent`, `ref_id`, `subject`). The host decides what each intent does
 - Chart primitives under `@myguyze/ze-ui/charts` (area, bar, line, and pie)
 
 ### Integration

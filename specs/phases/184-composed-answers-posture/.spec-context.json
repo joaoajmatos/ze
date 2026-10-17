@@ -3,8 +3,8 @@
   "specName": "Composed Answers and Claim Posture (B1)",
   "branch": "184-composed-answers-posture",
   "currentStep": "implement",
-  "currentTask": "T031",
-  "status": "implementing",
+  "currentTask": "T035",
+  "status": "implemented",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -100,6 +100,21 @@
       "status": "DONE"
     },
     "T030": {
+      "status": "DONE"
+    },
+    "T031": {
+      "status": "DONE"
+    },
+    "T032": {
+      "status": "DONE"
+    },
+    "T033": {
+      "status": "DONE"
+    },
+    "T034": {
+      "status": "DONE"
+    },
+    "T035": {
       "status": "DONE"
     }
   },
@@ -359,6 +374,53 @@
       "kind": "complete",
       "by": "claude",
       "at": "2026-10-17T15:48:22.653Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:54:08.154Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:54:08.401Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:54:08.800Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T034",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:54:09.089Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T035",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:54:09.365Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:54:10.356Z"
     }
   ]
 }
