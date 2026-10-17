@@ -50,11 +50,14 @@ describe("redirects", () => {
     ["/goals", "/doing/goals"],
     ["/workflows", "/doing/workflows"],
     ["/skills", "/doing/skills"],
-    ["/procedures", "/doing/procedures"],
+    ["/procedures", "/mind"],
+    ["/doing/procedures", "/mind"],
+    ["/contacts", "/mind"],
+    ["/mind/graph", "/mind"],
     ["/workspace", "/governance"],
     ["/doing/workspace", "/governance"],
     ["/brain-memory", "/mind"],
-    ["/brain-graph", "/mind/graph"],
+    ["/brain-graph", "/mind"],
     ["/costs", "/governance"],
     ["/data", "/governance"],
     ["/governance/data", "/governance"],
@@ -83,7 +86,7 @@ describe("redirects", () => {
 
   it("covers every old core route once", () => {
     expect(new Set(redirects.map((r) => r.from)).size).toBe(redirects.length);
-    expect(redirects).toHaveLength(17);
+    expect(redirects).toHaveLength(20);
   });
 });
 

@@ -865,6 +865,9 @@ import time, so codegen needs no running server.
 
 | Method | Path | operationId |
 |---|---|---|
+| `GET` | `/api/v0/memory/feed` | `getMemoryFeed` (facts carry `claim_kind`) |
+| `GET` | `/api/v0/memory/entities` | `searchEntities` (`q`, `entity_type`, `limit`; name and alias match, most connected first) |
+| `GET` | `/api/v0/memory/graph/entity/{entity_id}` | `getEntityDetail` (facts carry claim kind, confidence, review state and provenance; neighbours ordered by connections with `neighbour_total`) |
 | `GET` | `/api/v0/memory/facts` | `listFacts` |
 | `POST` | `/api/v0/memory/facts/review` | `reviewFacts` |
 | `GET` | `/api/v0/memory/digest` | `getMemoryDigest` |

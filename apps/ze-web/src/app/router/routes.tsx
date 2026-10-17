@@ -3,7 +3,8 @@ import { type RouteObject } from "react-router-dom";
 import { AskInterim } from "@/pages/ask";
 import { DoingInterim } from "@/pages/doing";
 import { GovernancePage } from "@/pages/governance";
-import { MindInterim } from "@/pages/mind";
+import { MindPage } from "@/pages/mind";
+import { MindEntityPage } from "@/pages/mind-entity";
 import { WorldInterim } from "@/pages/world";
 import { AppShell } from "@/widgets/app-shell";
 import { AskOverlay } from "@/widgets/chat-workspace";
@@ -30,11 +31,6 @@ const doingLoaders = {
   goals: () => import("@/pages/goals").then((m) => ({ default: m.GoalsPage })),
   workflows: () => import("@/pages/workflows").then((m) => ({ default: m.WorkflowsPage })),
   skills: () => import("@/pages/skills").then((m) => ({ default: m.SkillsPage })),
-  procedures: () => import("@/pages/procedures").then((m) => ({ default: m.ProceduresPage })),
-};
-const mindLoaders = {
-  memory: () => import("@/pages/brain-memory").then((m) => ({ default: m.BrainMemoryPage })),
-  graph: () => import("@/pages/brain-graph").then((m) => ({ default: m.BrainGraphPage })),
 };
 
 const notFound = <ZeErrorFallback error={new Error("Nothing lives at this address.")} />;
@@ -58,7 +54,8 @@ export const routes: RouteObject[] = [
         element: lazyPage(() => import("@/pages/workflow-detail").then((m) => ({ default: m.WorkflowDetailPage }))),
       },
       { path: "doing/*", element: <DoingInterim loaders={doingLoaders} fallback={notFound} /> },
-      { path: "mind/*", element: <MindInterim loaders={mindLoaders} fallback={notFound} /> },
+      { path: "mind", element: <MindPage /> },
+      { path: "mind/:entityId", element: <MindEntityPage /> },
       { path: "governance", element: <GovernancePage /> },
       { path: "governance/*", element: notFound },
       {

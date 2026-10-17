@@ -1,7 +1,8 @@
 interface ChatAboutChipProps {
   /** What the chat would be about; it names the control for assistive technology. */
   label: string;
-  onClick: () => void;
+  /** Called with the chip itself, so a caller without a wider element can still point the orb at it. */
+  onClick: (chip: Element) => void;
 }
 
 /**
@@ -10,7 +11,7 @@ interface ChatAboutChipProps {
  */
 export function ChatAboutChip({ label, onClick }: ChatAboutChipProps) {
   return (
-    <button type="button" className="chat-about" aria-label={`Chat about ${label}`} aria-keyshortcuts="c" onClick={onClick}>
+    <button type="button" className="chat-about" aria-label={`Chat about ${label}`} aria-keyshortcuts="c" onClick={(e) => onClick(e.currentTarget)}>
       [ chat about this ]
     </button>
   );

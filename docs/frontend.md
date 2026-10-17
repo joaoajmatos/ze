@@ -63,8 +63,8 @@ Old paths redirect to their place and keep params, query and hash. The table is 
 | `/priority` | `/world/priority` |
 | `/goals`, `/goals/:id` | `/doing/goals`, `/doing/goals/:id` |
 | `/workflows`, `/workflows/:id` | `/doing/workflows`, `/doing/workflows/:id` |
-| `/skills`, `/procedures` | `/doing/skills`, `/doing/procedures` |
-| `/brain-memory`, `/brain-graph` | `/mind`, `/mind/graph` |
+| `/skills` | `/doing/skills` |
+| `/brain-memory`, `/brain-graph`, `/mind/graph`, `/procedures`, `/doing/procedures`, `/contacts` | `/mind` |
 | `/costs` | `/governance` |
 | `/data`, `/governance/data` | `/governance#data` |
 | `/settings`, `/governance/settings` | `/governance#connections` |
@@ -72,7 +72,19 @@ Old paths redirect to their place and keep params, query and hash. The table is 
 
 A redirect entry can carry a `hint`. `RedirectTo` then replaces the incoming hash with the hint and keeps the query. An entry can also carry a `hintMap`, which lets an old hash win (`#your-data` becomes `#data`).
 
-Until each place has its own design, it hosts the old pages as sections behind a row of tabs. One file per place holds the sections: `pages/world/ui/WorldInterim.tsx` (phase 186 replaces it), `pages/ask/ui/AskInterim.tsx` (187), `pages/doing/ui/DoingInterim.tsx` (188), and `pages/mind/ui/MindInterim.tsx` (189). A page cannot import another page, so `app/router/routes.tsx` passes each interim file the loaders for its sections. Plugin pages still use `/:pluginPath` (phase 191 places them).
+### Mind
+
+Mind shows what Ze believes. `/mind` holds four modules: Beliefs, People, Find an entity and Procedures. `/mind/:entityId` shows one entity.
+
+- **Beliefs** (`widgets/beliefs-feed`): each fact is a `BeliefRow` with a glyph for its claim kind, a plain sentence, confidence, source and age. Keep, Edit and Drop review it in place. An "As of" date shows the feed as it stood then; kind and confidence stay current.
+- **People** (`widgets/people`): the Contacts plugin page, rendered through `ConnectedPrimitiveTree`.
+- **Find an entity** (`widgets/entity-search`): a server search by name or alias (`searchEntities`). There is no whole-graph view.
+- **Entity page**: a small radial field of up to 20 neighbours (`widgets/entity-neighbourhood`), an activity chart, the entity's facts, and an "I suspect…" list of hypotheses with Useful, Not relevant and Mute.
+- **Procedures** (`widgets/procedures`): candidates to review first, then the library.
+
+The claim posture table (glyph, chip word, plain words per state) lives in `shared/lib/claim-posture.ts`. Beliefs publish their visible and selected rows to screen context, the entity page publishes its entity as the subject, and rows carry "Chat about this".
+
+Until each place has its own design, it hosts the old pages as sections behind a row of tabs. One file per place holds the sections: `pages/world/ui/WorldInterim.tsx` (phase 186 replaces it), `pages/ask/ui/AskInterim.tsx` (187), `pages/doing/ui/DoingInterim.tsx` (188). A page cannot import another page, so `app/router/routes.tsx` passes each interim file the loaders for its sections. Plugin pages still use `/:pluginPath` (phase 191 places them).
 
 ## Governance
 

@@ -101,3 +101,121 @@ def test_openapi_includes_rest_paths(client):
     assert "/memory/facts/review" in paths
     assert "/memory/digest" not in paths
     assert "/routing/log" in paths
+
+
+# ── Mind reads (phase 189) ────────────────────────────────────────────────────
+
+
+def test_feed_items_carry_claim_kind(client):
+    from datetime import datetime, timezone
+    from uuid import uuid4
+
+    c, conn = client
+    conn.fetchrow = AsyncMock(return_value={"total_facts": 1, "total_episodes": 0})
+    conn.fetch = AsyncMock(
+        return_value=[
+            {
+                "id": uuid4(),
+                "type": "fact",
+                "key": "works_at",
+                "value": "Acme",
+                "confidence": 0.9,
+                "reviewed": False,
+                "contradicted": False,
+                "provenance": "user_stated",
+                "claim_kind": "identity",
+                "summary": None,
+                "prompt_snippet": None,
+                "agent": "companion",
+                "created_at": datetime(2026, 10, 1, tzinfo=timezone.utc),
+            }
+        ]
+    )
+    resp = c.get("/memory/feed")
+    assert resp.status_code == 200
+    assert resp.json()["items"][0]["claim_kind"] == "identity"
+
+
+def test_entity_detail_exposes_claim_fields_and_neighbour_total(client):
+    from datetime import datetime, timezone
+    from uuid import uuid4
+
+    c, conn = client
+    eid = uuid4()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "id": eid,
+            "entity_type": "person",
+            "canonical_name": "Ada",
+            "aliases": [],
+            "attrs": {},
+            "degree": 0,
+        }
+    )
+    conn.fetchval = AsyncMock(return_value=25)
+    conn.fetch = AsyncMock(
+        side_effect=[
+            [
+                {
+                    "id": uuid4(),
+                    "key": "likes",
+                    "value": "tea",
+                    "agent": "companion",
+                    "created_at": datetime(2026, 10, 1, tzinfo=timezone.utc),
+                    "claim_kind": "fact",
+                    "confidence": 0.7,
+                    "reviewed": False,
+                    "contradicted": False,
+                    "provenance": "user_stated",
+                }
+            ],
+            [],
+            [],
+            [],
+        ]
+    )
+    body = c.get(f"/memory/graph/entity/{eid}").json()
+    assert body["neighbour_total"] == 25
+    assert body["facts"][0]["claim_kind"] == "fact"
+    assert body["facts"][0]["confidence"] == 0.7
+
+
+def test_search_entities_returns_nodes(client):
+    from uuid import uuid4
+
+    c, conn = client
+    conn.fetch = AsyncMock(
+        return_value=[
+            {
+                "id": uuid4(),
+                "entity_type": "person",
+                "canonical_name": "Ada",
+                "aliases": [],
+                "attrs": {},
+                "degree": 2,
+            }
+        ]
+    )
+    resp = c.get("/memory/entities", params={"q": "ad"})
+    assert resp.status_code == 200
+    assert resp.json()[0]["canonical_name"] == "Ada"
+
+
+@pytest.mark.parametrize(
+    "params",
+    [{"q": ""}, {"q": "x" * 81}, {"q": "a", "limit": 0}, {"q": "a", "limit": 51}, {}],
+)
+def test_search_entities_validates_params(client, params):
+    c, _ = client
+    assert c.get("/memory/entities", params=params).status_code == 422
+
+
+def test_search_entities_requires_api_key(config_dir):
+    settings = make_settings(config_dir)
+    settings.ze_api_key = "secret"
+    app = FastAPI()
+    app.state.settings = settings
+    app.include_router(memory.router)
+    app.dependency_overrides[deps.get_container] = lambda: SimpleNamespace(pool=MagicMock())
+    with TestClient(app) as c:
+        assert c.get("/memory/entities", params={"q": "a"}).status_code == 401

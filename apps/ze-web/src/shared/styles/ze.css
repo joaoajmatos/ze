@@ -1826,3 +1826,162 @@ h2.lbl {
 .tabs .ctl:not([aria-current="page"]) {
   --c: color-mix(in oklab, var(--main) 45%, transparent);
 }
+
+/* ---------- Mind (phase 189) ---------- */
+.belief .s .chip {
+  margin-right: 6px;
+}
+.belief .struck {
+  text-decoration: line-through;
+  color: var(--dim);
+}
+.belief-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.text-field {
+  min-height: 44px;
+  min-width: 0;
+  flex: 1 1 12rem;
+  padding: 0 12px;
+  background: transparent;
+  border: 1px solid var(--hair-strong);
+  color: var(--cream);
+  font: inherit;
+}
+.text-field::placeholder {
+  color: var(--dim);
+}
+.text-field:focus-visible {
+  outline: 1px solid var(--cream);
+  outline-offset: 2px;
+}
+.belief-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.belief-asof {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+.belief-asof .text-field {
+  flex: 0 1 11rem;
+  color-scheme: dark;
+}
+.note {
+  color: var(--dim);
+  font-size: 0.8125rem;
+  margin: 8px 0;
+}
+.row.episode .t {
+  color: var(--dim);
+  font-style: italic;
+}
+.hood-field {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+.hood-edge {
+  stroke: var(--hair-strong);
+  stroke-width: 1;
+}
+.hood-centre,
+.hood-dot {
+  fill: var(--main);
+}
+.hood-hit {
+  fill: transparent;
+}
+.hood-node {
+  cursor: pointer;
+}
+.hood-node:hover .hood-dot,
+.hood-node:focus-visible .hood-dot {
+  fill: var(--cream);
+}
+.hood-node:focus-visible {
+  outline: 1px solid var(--cream);
+  outline-offset: 2px;
+}
+.hood-label {
+  fill: var(--l1);
+  font-size: 12px;
+}
+.hood-label-centre {
+  fill: var(--cream);
+  stroke: var(--wash);
+  stroke-width: 4px;
+  paint-order: stroke;
+}
+.hood-list ul {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.hood-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink);
+}
+.entity-search-box {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.entity-hit {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  align-content: center;
+  text-align: left;
+}
+.mind-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 14px;
+  align-items: start;
+}
+.mind-main,
+.mind-rail {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--l1);
+}
+@media (max-width: 1023px) {
+  .mind-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.belief-select {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-align: left;
+  color: inherit;
+}
+.row.selected {
+  background: color-mix(in oklab, var(--main) 8%, transparent);
+}
+@media (hover: none) {
+  .chat-about {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

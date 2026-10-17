@@ -97,3 +97,9 @@ async def test_get_contacts_page_title_with_count():
 
     assert resp.status_code == 200
     assert resp.json()["title"] == "1 person"
+
+
+def test_personal_plugin_has_no_nav_entry():
+    from ze_personal.plugin import PersonalPlugin
+
+    assert PersonalPlugin.__new__(PersonalPlugin).ui_contributions() == []

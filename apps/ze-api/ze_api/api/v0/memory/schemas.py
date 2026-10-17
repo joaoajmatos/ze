@@ -15,6 +15,11 @@ class FactDigestItem(BaseModel):
     value: str
     agent: str
     created_at: datetime | None = None
+    claim_kind: str | None = None
+    confidence: float | None = None
+    reviewed: bool | None = None
+    contradicted: bool | None = None
+    provenance: str | None = None
 
 
 class EpisodeDigestItem(BaseModel):
@@ -43,6 +48,7 @@ class MemoryFeedItem(BaseModel):
     reviewed: bool | None
     contradicted: bool | None
     provenance: str | None
+    claim_kind: str | None = None
     summary: str | None
     prompt_snippet: str | None
     agent: str
@@ -100,4 +106,5 @@ class EntityDetailResponse(BaseModel):
     facts: list[FactDigestItem]
     episodes: list[EpisodeDigestItem]
     neighbours: list[GraphEntityNode]
+    neighbour_total: int
     neighbour_edges: list[GraphEdge]

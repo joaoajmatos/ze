@@ -10,10 +10,11 @@ export {
 } from "./top-bar-actions";
 export { useSendNotice } from "./notice-store";
 export { humanizeStatus, humanizeIdentifier } from "./humanize";
-export { useOptionalCharts } from "./optional-charts";
 export { PALETTE_IDS, applyPalette, readPalette, storePalette } from "./palette";
 export type { PaletteId } from "./palette";
 export { useMediaQuery } from "./use-media-query";
 export { REDUCED_MOTION_QUERY, useReducedMotion } from "./use-reduced-motion";
 export { NARROW_QUERY, useNarrow } from "./use-narrow";
 export { dayMonth, hhmm, longDate, weekday } from "./clock-format";
+export { chipLabelOf, glyphOf, postureOf, stateWords } from "./claim-posture";
+export type { Posture } from "./claim-posture";

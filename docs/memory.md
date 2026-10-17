@@ -612,6 +612,12 @@ Migrations: `core/cognition/ze-memory/ze_memory/migrations/versions/` (raw SQL, 
 
 ---
 
+## Reviewing beliefs in Mind
+
+The web app's Mind place is where you review what Ze believes. The memory feed returns each fact's `claim_kind`, so a row can show whether Ze holds it as an identity, a fact, an inference or a suspicion. `reviewFacts` keeps, edits or drops a fact. `searchEntities` finds an entity by name or alias, and `getEntityDetail` returns its facts, up to 20 neighbours ordered by connections, and `neighbour_total` for the rest. The "As of" control filters by `created_at`; kind, confidence and review state are always current.
+
+---
+
 ## Dreaming
 
 Ze's offline dream phase (wake → sleep → dream → morning integration) extends the memory
