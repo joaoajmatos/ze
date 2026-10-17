@@ -13,11 +13,14 @@ description: "Task list template for feature implementation"
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
-## Format: `[ID] [P?] [Story] Description`
+## Format: `[ID] [P?] [Lane] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
+- **[Lane]**: The crew lane from plan.md's Lane Plan that owns this task, as `[L:lead]`, `[L:a]`, `[L:jr1]`, `[L:docs]`. A task may only touch files its lane owns
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
 - Include exact file paths in descriptions
+
+**Crew**: the Maestro staffs one agent per lane (Sonnet lead and ENG lanes, Haiku JR and DOCS lanes). The contract step (`[L:lead]`) lands first; the other lanes then run in parallel in their own worktrees and are reviewed as each finishes.
 
 ## Path Conventions
 

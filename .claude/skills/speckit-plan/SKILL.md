@@ -156,7 +156,14 @@ Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generate
    - Do not include full implementation code, model/service/controller bodies, migrations, or complete test suites
    - Keep this artifact as a validation/run guide; implementation details belong in `tasks.md` and the implementation phase
 
-**Output**: data-model.md, /contracts/*, quickstart.md
+4. **Write the Lane Plan** → the `## Lane Plan (Maestri crew)` section of plan.md:
+   - Split the work into lanes with disjoint file ownership (no file in two lanes)
+   - Define the contract step (lane `lead`): the shared types, stubs, route slots and fixtures that land first so the other lanes can build in parallel
+   - Shared files (router, places, query keys, app shell, generated client) belong to `lead`
+   - Assign each lane a model and role: Sonnet ENG for design, UI, cross-layer and integration work; Haiku JR only for fully specified work (pure functions with tests written into the task, codegen, captures, gate runs); Haiku DOCS for docs from a finished diff
+   - Give each lane its start dependency and reviewer, and size the crew to the phase (a small phase is `lead` alone)
+
+**Output**: data-model.md, /contracts/*, quickstart.md, the Lane Plan in plan.md
 
 ## Key rules
 
