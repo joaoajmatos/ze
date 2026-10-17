@@ -41,17 +41,17 @@
 
 Each task: tests first with a fake store (ok, missing, posture fields, summary per the contract table, sanitised, never raw error text), then `screen_resolvers.py` with `build_screen_resolvers(...)`.
 
-- [ ] T007 [P] [JR] [BACKEND] ze-automation: `goal` (uses 184 `list_progress` fields when present), `goal_gate`, `workflow`, `workflow_execution` (`get_execution(parent_id, id)`; no `parent_id` → `failed` "missing parent"; 184 `failure_summary`), `held_write`.
-- [ ] T008 [P] [JR] [BACKEND] ze-worldstate: `loop` (flags from the row only: "has a reminder", "linked to a goal").
-- [ ] T009 [P] [JR] [BACKEND] ze-memory: `entity` (one-hop relation names, cap 5), `fact` (value sentence, never the raw key), `procedure` (method from T001(c)); `@pytest.mark.pg` for the entity one-hop query.
-- [ ] T010 [P] [JR] [BACKEND] ze-skills `skill`; ze-workspace `workspace_run` and `workspace_placed` (existing text moved from `fetch_context`); ze-correlation `hypothesis`.
-- [ ] T011 [P] [JR] [BACKEND] ze-proactive: `NotificationStore.get(id)` (+ fake-store updates in `apps/ze-api/tests/api/test_workspace_followthrough.py`, `tests/test_governor_acceptance.py`; `@pytest.mark.pg`), `notification` resolver returning the target ref with `parent_id` from `target_parent_id` (184 `zpro005`).
+- [x] T007 [P] [JR] [BACKEND] ze-automation: `goal` (uses 184 `list_progress` fields when present), `goal_gate`, `workflow`, `workflow_execution` (`get_execution(parent_id, id)`; no `parent_id` → `failed` "missing parent"; 184 `failure_summary`), `held_write`.
+- [x] T008 [P] [JR] [BACKEND] ze-worldstate: `loop` (flags from the row only: "has a reminder", "linked to a goal").
+- [x] T009 [P] [JR] [BACKEND] ze-memory: `entity` (one-hop relation names, cap 5), `fact` (value sentence, never the raw key), `procedure` (method from T001(c)); `@pytest.mark.pg` for the entity one-hop query.
+- [x] T010 [P] [JR] [BACKEND] ze-skills `skill`; ze-workspace `workspace_run` and `workspace_placed` (existing text moved from `fetch_context`); ze-correlation `hypothesis`.
+- [x] T011 [P] [JR] [BACKEND] ze-proactive: `NotificationStore.get(id)` (+ fake-store updates in `apps/ze-api/tests/api/test_workspace_followthrough.py`, `tests/test_governor_acceptance.py`; `@pytest.mark.pg`), `notification` resolver returning the target ref with `parent_id` from `target_parent_id` (184 `zpro005`).
 
 ## Phase 4: Plugins and wiring [US2, US5, US6]
 
 - [ ] T012 [ENG] [BACKEND] `ZePlugin.screen_resolvers()` (default `[]`) + test; ze-api `wiring/container.py` builds `ScreenResolverRegistry` from every core factory (T007–T011) and every plugin's `screen_resolvers()` into `configurable["screen_resolvers"]`; duplicate kind fails startup (test).
 - [ ] T013 [P] [JR] [BACKEND] Plugins: ze-personal `contact`, ze-calendar `reminder`, ze-news `news_article` resolvers via `ze_sdk.screen`, returned from `screen_resolvers()`; tests per plugin; `packages/ze-sdk/tests/test_plugin_boundaries.py` passes.
-- [ ] T014 [ENG] [BACKEND] `api/ws/turns.py`: `from_wire` (warnings → `screen_context_invalid` for the trace), store on the user message, `config_extra["screen_context"]`; retry passes the stored context (OQ-2). Tests: stores and passes; invalid context → turn proceeds with warnings traced; retry passes the stored one; retry of a stored ref whose record changed since → `changed`; no context → none. The eval router passes `context` through `from_wire` too.
+- [x] T014 [ENG] [BACKEND] `api/ws/turns.py`: `from_wire` (warnings → `screen_context_invalid` for the trace), store on the user message, `config_extra["screen_context"]`; retry passes the stored context (OQ-2). Tests: stores and passes; invalid context → turn proceeds with warnings traced; retry passes the stored one; retry of a stored ref whose record changed since → `changed`; no context → none. The eval router passes `context` through `from_wire` too.
 
 ## Phase 5: Trace [US4]
 
