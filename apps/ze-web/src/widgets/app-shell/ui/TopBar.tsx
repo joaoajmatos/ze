@@ -11,7 +11,7 @@ export const TopBar = forwardRef<HTMLDivElement, { showTabs: boolean }>(function
   return (
     <header className="top">
       <Link to="/" className="brand ctl-text" aria-label="Ze, home">
-        <DotMatrix text="ZE" size={3} color="var(--main)" title="Ze" />
+        <DotMatrix text="ZE" size={5} color="var(--cream)" title="Ze" />
       </Link>
       {showTabs && (
         <nav className="tabs" aria-label="Places">

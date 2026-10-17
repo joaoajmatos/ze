@@ -67,7 +67,7 @@
   --l3: var(--dim);
   --l4: color-mix(in oklab, var(--dim) 55%, var(--field));
   --ink-2: color-mix(in oklab, var(--cream) 74%, var(--field));
-  --label: 0.625rem;
+  --label: 0.6875rem;
   --body: 0.9375rem;
   --orb: 168px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -1517,10 +1517,13 @@ h2.lbl {
   padding: 24px 0;
 }
 .palette-choice {
+  min-width: 0;
   display: grid;
   gap: 4px;
 }
 .palette-choice .seg {
+  display: flex;
+  flex-wrap: wrap;
   margin-top: 4px;
 }
 .bottombar {
@@ -1543,11 +1546,11 @@ h2.lbl {
   padding: 6px 2px;
   border-width: 0;
   letter-spacing: 0.08em;
-  font-size: 0.5rem;
+  font-size: 0.6875rem;
 }
 .bottombar .ctl span {
   font-family: var(--font-body);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
 }
 .bottombar .ctl[aria-current="page"] {
@@ -1681,4 +1684,71 @@ h2.lbl {
   .section-tabs .ctl {
     flex: none;
   }
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.strip .clock {
+  align-items: center;
+}
+.ask .ctl[type="submit"]:disabled {
+  color: var(--ink-2);
+  border-color: var(--hair-strong);
+}
+@media (max-width: 1023px) {
+  .strip {
+    justify-content: flex-end;
+  }
+  .strip .clock {
+    flex: none;
+  }
+  .bottombar .ctl {
+    letter-spacing: 0;
+  }
+  .bottombar .ctl span {
+    letter-spacing: 0;
+  }
+  .presence {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    grid-template-areas: "orb head" "orb foot";
+    align-items: center;
+    column-gap: 12px;
+  }
+  .presence-head {
+    grid-area: head;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .presence-orb {
+    grid-area: orb;
+  }
+  .presence-foot {
+    grid-area: foot;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .section-tabs {
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  }
+}
+
+/* Old pages may be wider than the column; they scroll inside it so the fixed bars keep the viewport width. */
+.interim-page {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.conn .pulse.off {
+  background: var(--dim);
+  box-shadow: none;
+}
+
+.tabs .ctl:not([aria-current="page"]) {
+  --c: color-mix(in oklab, var(--main) 45%, transparent);
 }

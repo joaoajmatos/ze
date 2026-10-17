@@ -58,7 +58,7 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  const items = data?.pages.flatMap((p) => p.items) ?? [];
+  const items = data?.pages.flatMap((p) => p.items ?? []) ?? [];
 
   function setConfirmParam(requestId: string | null) {
     setSearchParams(

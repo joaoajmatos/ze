@@ -74,7 +74,7 @@ typography:
     letterSpacing: "0.16em"
   label:
     fontFamily: "Michroma, Saira, system-ui, sans-serif"
-    fontSize: "0.625rem"
+    fontSize: "0.6875rem"
     fontWeight: 400
     lineHeight: 1.2
     letterSpacing: "0.22em"
@@ -232,7 +232,7 @@ A near-black plum field lit by one purple, with cream for what matters and coral
 - **Numeral** (Saira 200, 1.375rem `.num.md` / 2rem `.num.lg`, line-height 1, cream, tabular): counts and day deltas ("3 D"). Counts tick up on arrival.
 - **Sentence** (Saira 300, 1.125rem, line-height 1.5, cream, max 62ch, `text-wrap: pretty`): the one plain-language sentence Ze speaks on a view, and card titles at 1.0625rem.
 - **Body** (Saira 300, 0.9375rem, line-height 1.45, ink-2): descriptions and row text. Key nouns inside body get `.key` (cream). Rows' titles are cream.
-- **Label** (Michroma 400, 0.625rem, 0.22em tracking, uppercase, dim at rest, orchid when live, coral when slipped): module names (rendered as `h2`), axis and band titles, chips at 0.5625rem / 0.16em.
+- **Label** (Michroma 400, 0.6875rem, 0.22em tracking, uppercase, dim at rest, orchid when live, coral when slipped): module names (rendered as `h2`), axis and band titles, chips at 0.5625rem / 0.16em.
 - **Readout** (JetBrains Mono 300, 0.75rem, 0.04em, tabular, cream; orchid `.on`, coral `.hot`): "synced 14:27", "0.74 ▾0.05", "2/4", "in 3 days 09:00", key hints. **Micro** (0.6875rem, 0.08em) for deltas, chip indices and key hints. **Input** (Saira 1rem) for the Ask bar. Inside fixed-viewBox SVG timelines, ticks are Michroma 8px and labels Saira 11px (viewBox units); the field chart uses the px-true rule instead.
 - **Title** (Saira 300, 1.0625rem, line-height 1.4, cream): card titles on the Assemble canvas.
 - **Note** (Saira 300, 0.875rem, ink-2 or dim): a card's supporting line, offers and held-for-OK notes.

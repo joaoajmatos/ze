@@ -48,9 +48,9 @@ export function InterimSections({
     <div className="interim">
       <SectionTabs label={label} sections={sections} currentId={current.id} />
       {header?.(current.id)}
-      <Suspense fallback={<div className="interim-loading lbl">Loading</div>}>
-        {createElement(lazyPage(current.load))}
-      </Suspense>
+      <div className="interim-page">
+        <Suspense fallback={<div className="interim-loading lbl">Loading</div>}>{createElement(lazyPage(current.load))}</Suspense>
+      </div>
     </div>
   );
 }

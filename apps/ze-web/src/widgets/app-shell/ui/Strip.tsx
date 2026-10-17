@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { dayMonth, hhmm, longDate, weekday } from "@/shared/lib";
-import { DotMatrix } from "@/shared/ui";
+import { DotMatrix, Glyph } from "@/shared/ui";
 
 function useClock(): Date {
   const [now, setNow] = useState(() => new Date());
@@ -16,9 +16,19 @@ export function Strip() {
   const now = useClock();
   return (
     <div className="strip">
-      <div className="coords" title="Filled marks are told by you, half-filled are inferred, dashed are suspected. Coral means something is slipping." role="note" aria-label="Legend: solid means told, dotted means inferred or suspected, coral means slipping">
-        <span className="lbl">claims · filled told · half inferred · dashed suspected</span>
-        <span className="lbl hot">coral slipping</span>
+      <div className="coords" title="Filled marks are told by you, half-filled are inferred, dashed are suspected. Coral means something is slipping." role="note" aria-label="Legend: filled means told, half-filled means inferred, dashed means suspected, coral means slipping">
+        <span className="lbl legend-item">
+          <Glyph kind="told" /> told
+        </span>
+        <span className="lbl legend-item">
+          <Glyph kind="inferred" /> inferred
+        </span>
+        <span className="lbl legend-item">
+          <Glyph kind="suspected" /> suspected
+        </span>
+        <span className="lbl legend-item">
+          <Glyph kind="told" hot /> slipping
+        </span>
       </div>
       <div className="clock" role="group" aria-label={`${longDate(now)}, ${hhmm(now)}`}>
         <span className="lbl only-wide">{longDate(now)}</span>
