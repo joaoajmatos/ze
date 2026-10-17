@@ -42,10 +42,21 @@ _REMEMBER_PROMISE = re.compile(
     r"("
     r"i['’]ll remember|"
     r"i will remember|"
-    r"i will store|"
     r"vou lembrar"
     r")",
     re.IGNORECASE,
+)
+
+# Renders that wait for the user's answer; table, chart, metric and the like only show data.
+_AWAITING_RENDERS = frozenset(
+    {
+        "render_choice_group",
+        "render_form",
+        "render_consent",
+        "render_confirm",
+        "render_review",
+        "render_connect_account",
+    }
 )
 
 _FORGET_CLAIM = re.compile(
@@ -188,7 +199,7 @@ def _earned(tool_calls: list[ToolCall], name: str) -> bool:
 
 def _rendered(tool_calls: list[ToolCall]) -> bool:
     return any(
-        call.tool_name.startswith("render_") and call.success for call in tool_calls
+        call.tool_name in _AWAITING_RENDERS and call.success for call in tool_calls
     )
 
 
