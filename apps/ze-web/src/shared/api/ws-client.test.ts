@@ -13,7 +13,7 @@ class FakeSocket {
   readyState = 1;
   sent: string[] = [];
   onopen: (() => void) | null = null;
-  onclose: (() => void) | null = null;
+  onclose: ((e?: { code: number }) => void) | null = null;
   onerror: (() => void) | null = null;
   onmessage: ((e: { data: string }) => void) | null = null;
   constructor(public url: string) {
@@ -122,6 +122,36 @@ describe("connection lifecycle", () => {
     second.onopen?.();
 
     expect(useWsStore.getState().isConnected).toBe(true);
+    expect(FakeSocket.instances).toHaveLength(2);
+  });
+
+  it("does not reconnect when another window took over (close 4000)", async () => {
+    const { startWs, useWsStore } = await loadClient();
+    startWs();
+    const socket = FakeSocket.instances[0];
+    socket.onopen?.();
+
+    socket.onclose?.({ code: 4000 });
+    vi.advanceTimersByTime(60_000);
+
+    expect(useWsStore.getState().isConnected).toBe(false);
+    expect(useWsStore.getState().displaced).toBe(true);
+    expect(FakeSocket.instances).toHaveLength(1);
+
+    window.dispatchEvent(new Event("focus"));
+    expect(useWsStore.getState().displaced).toBe(false);
+    expect(FakeSocket.instances).toHaveLength(2);
+  });
+
+  it("still reconnects after an ordinary close", async () => {
+    const { startWs } = await loadClient();
+    startWs();
+    const socket = FakeSocket.instances[0];
+    socket.onopen?.();
+
+    socket.onclose?.({ code: 1006 });
+    vi.advanceTimersByTime(1_000);
+
     expect(FakeSocket.instances).toHaveLength(2);
   });
 });

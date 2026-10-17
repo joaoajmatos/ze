@@ -5,6 +5,8 @@ import { getConfig } from "@/shared/config";
 
 interface WsStore {
   isConnected: boolean;
+  /** Another window took over the connection (close 4000); this one waits for focus. */
+  displaced: boolean;
   thinkingThreads: Record<string, boolean>;
   typingTextThreads: Record<string, string | null>;
   attentionThreads: Record<string, boolean>;
@@ -19,6 +21,7 @@ interface WsStore {
 
 export const useWsStore = create<WsStore>((set) => ({
   isConnected: false,
+  displaced: false,
   thinkingThreads: {},
   typingTextThreads: {},
   attentionThreads: {},
@@ -55,6 +58,9 @@ const PING_INTERVAL_MS = 30_000;
 // A live server answers every ping with a pong, so two silent intervals mean a
 // half-open socket the browser has not noticed yet.
 const SILENCE_LIMIT_MS = PING_INTERVAL_MS * 2;
+// The server closes the older socket with this code when a newer one connects.
+// Reconnecting on it would make two windows displace each other forever.
+const DISPLACED_CODE = 4000;
 
 function buildUrl() {
   const cfg = getConfig();
@@ -77,7 +83,7 @@ function stopPing() {
   pingInterval = null;
 }
 
-function handleClosed(socket: WebSocket) {
+function handleClosed(socket: WebSocket, displaced = false) {
   // A replaced socket (reconnect() opens a new one before the old one closes)
   // must not tear down its successor.
   if (ws !== socket) return;
@@ -96,8 +102,25 @@ function handleClosed(socket: WebSocket) {
       ...s.interruptedThreads,
       ...Object.fromEntries(inFlight.map((id) => [id, true])),
     },
+    displaced,
   }));
-  scheduleReconnect();
+  if (!displaced) scheduleReconnect();
+}
+
+function takeOverIfDisplaced() {
+  if (!useWsStore.getState().displaced || ws || retryTimeout) return;
+  if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+  useWsStore.setState({ displaced: false });
+  retryDelay = 1000;
+  connect();
+}
+
+let focusListening = false;
+function listenForFocus() {
+  if (focusListening || typeof window === "undefined") return;
+  focusListening = true;
+  window.addEventListener("focus", takeOverIfDisplaced);
+  document.addEventListener("visibilitychange", takeOverIfDisplaced);
 }
 
 function connect() {
@@ -143,7 +166,7 @@ function connect() {
     dispatch(frame);
   };
 
-  socket.onclose = () => handleClosed(socket);
+  socket.onclose = (event?: CloseEvent) => handleClosed(socket, event?.code === DISPLACED_CODE);
 
   socket.onerror = () => {
     socket.close();
@@ -165,6 +188,7 @@ export function reconnect() {
   }
   ws?.close();
   retryDelay = 1000;
+  useWsStore.setState({ displaced: false });
   connect();
 }
 
@@ -189,5 +213,6 @@ export function useFrame<T extends FrameType>(
 }
 
 export function startWs() {
+  listenForFocus();
   if (!ws && !retryTimeout) connect();
 }
