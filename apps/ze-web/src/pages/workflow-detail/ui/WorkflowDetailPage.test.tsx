@@ -89,6 +89,7 @@ function execution(overrides: Partial<WorkflowExecutionResponse>): WorkflowExecu
     step_results: [],
     steps_snapshot: [],
     error: null,
+    failure_summary: null,
     summary: null,
     started_at: "2026-07-09T12:00:00.000Z",
     completed_at: "2026-07-09T12:05:00.000Z",
@@ -97,9 +98,9 @@ function execution(overrides: Partial<WorkflowExecutionResponse>): WorkflowExecu
   };
 }
 
-function renderPage() {
+function renderPage(path = "/workflows/wf-1") {
   return render(
-    <MemoryRouter initialEntries={["/workflows/wf-1"]}>
+    <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/workflows/:workflowId" element={<WorkflowDetailPage />} />
       </Routes>
@@ -145,6 +146,29 @@ describe("WorkflowDetailPage definition notices", () => {
     renderPage();
     expect(screen.getByTestId("definition-notice")).toHaveTextContent("current");
     expect(screen.getByTestId("workflow-graph")).toHaveTextContent("Current step");
+  });
+
+  it("selects the run named by ?execution= so a notification opens the exact run", () => {
+    const step = (task: string) => ({
+      id: "s0",
+      task,
+      agent_hint: null,
+      verify: null,
+      branches: [],
+      default_next: null,
+      on_failure: "fail",
+    });
+    vi.mocked(useWorkflowExecutionsQuery).mockReturnValue({
+      data: [
+        execution({ id: "exec-1", steps_snapshot: [step("Other step")] }),
+        execution({ id: "exec-2", status: "failed", steps_snapshot: [step("Failed run step")] }),
+      ],
+      isLoading: false,
+    } as never);
+
+    renderPage("/workflows/wf-1?execution=exec-2");
+
+    expect(screen.getByTestId("workflow-graph")).toHaveTextContent("Failed run step");
   });
 
   it("shows edited-since banner and snapshot graph for historical runs", async () => {

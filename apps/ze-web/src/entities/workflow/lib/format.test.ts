@@ -15,6 +15,7 @@ function execution(
     step_results: [],
     steps_snapshot: [],
     error: null,
+    failure_summary: null,
     summary: null,
     started_at: "2026-07-01T19:20:00.000Z",
     completed_at: "2026-07-01T19:24:00.000Z",

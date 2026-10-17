@@ -13,7 +13,7 @@ import {
 import { useSession } from "@/entities/session";
 import { cn } from "@/shared/lib/cn";
 import { EmptyState } from "@/shared/ui";
-import { relativeTime, targetRoute } from "../lib/notification-format";
+import { notificationHref, relativeTime } from "../lib/notification-format";
 
 const HELD_ACTIONS = [
   { label: "Approve all", value: "approve", style: "primary" as const },
@@ -95,7 +95,7 @@ export function NotificationBell() {
       navigate("/");
       return;
     }
-    const route = targetRoute(item.target_type, item.target_id);
+    const route = notificationHref(item);
     if (route) {
       setOpen(false);
       navigate(route);

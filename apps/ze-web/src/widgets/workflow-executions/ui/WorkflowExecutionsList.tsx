@@ -63,6 +63,9 @@ function ExecutionRow({ execution, selected, onClick }: ExecutionRowProps) {
             </span>
           )}
         </div>
+        {execution.failure_summary && (
+          <p className="mt-1 text-xs text-destructive">{execution.failure_summary}</p>
+        )}
         <div className="flex items-center justify-between mt-0.5">
           {execution.started_at && (
             <span className="text-xs text-smoke/80">{formatTimestamp(execution.started_at)}</span>

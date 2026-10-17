@@ -70,10 +70,10 @@
 
 ## Phase 8: Web (minimal) [WEB]
 
-- [ ] T025 [JR] [WEB] `make codegen` (after T009, T019, T023); `features/primitive-tree/ui/ConnectedPrimitiveTree.tsx` maps card intents: `confirm_loop` → `confirmLoop`, `drop_loop` → `dropLoop`, `approve_held_write`/`deny_held_write` → `decideHeldWrite`, `approve_gate` → `action` frame `goal:approve:<ref_id>`, `open` → navigate via a `claimHref(subject, ref_id)` helper. Tests per intent.
-- [ ] T026 [P] [JR] [WEB] `widgets/workflow-executions`: render `failure_summary`; delete any parsing of `error`. `widgets/goals-overview` (start from a base that includes 183 T012, which removes `FloatingButton` from `GoalsOverview.tsx`; if 183 has not landed, coordinate the merge order with the Maestro): done/total meter text, next milestone, "waiting on you since …" for an open gate, stuck since. Tests.
-- [ ] T027 [P] [JR] [WEB] Notification links: phase 183 owns `notificationHref` in `widgets/app-shell/lib/notification-format.ts`. Here: add `target_parent_id` to the generated `NotificationItem` consumers and extend the `notificationHref` table tests for `workflow_execution` and `goal_gate` parents. If 183 has not landed, implement `notificationHref(n)` per `contracts/notification-targets.md` with current paths and record that 183 T010 must re-point it.
-- [ ] T028 [JR] [WEB] Gates: `make test-web`, `make typecheck-web`, `make web-build`.
+- [x] T025 [JR] [WEB] `make codegen` (after T009, T019, T023); `features/primitive-tree/ui/ConnectedPrimitiveTree.tsx` maps card intents: `confirm_loop` → `confirmLoop`, `drop_loop` → `dropLoop`, `approve_held_write`/`deny_held_write` → `decideHeldWrite`, `approve_gate` → `action` frame `goal:approve:<ref_id>`, `open` → navigate via a `claimHref(subject, ref_id)` helper. Tests per intent.
+- [x] T026 [P] [JR] [WEB] `widgets/workflow-executions`: render `failure_summary`; delete any parsing of `error`. `widgets/goals-overview` (start from a base that includes 183 T012, which removes `FloatingButton` from `GoalsOverview.tsx`; if 183 has not landed, coordinate the merge order with the Maestro): done/total meter text, next milestone, "waiting on you since …" for an open gate, stuck since. Tests.
+- [x] T027 [P] [JR] [WEB] Notification links: phase 183 owns `notificationHref` in `widgets/app-shell/lib/notification-format.ts`. Here: add `target_parent_id` to the generated `NotificationItem` consumers and extend the `notificationHref` table tests for `workflow_execution` and `goal_gate` parents. If 183 has not landed, implement `notificationHref(n)` per `contracts/notification-targets.md` with current paths and record that 183 T010 must re-point it.
+- [x] T028 [JR] [WEB] Gates: `make test-web`, `make typecheck-web`, `make web-build`.
 
 ## Phase 8b: Wire contracts for the preset [WEB] [BACKEND]
 

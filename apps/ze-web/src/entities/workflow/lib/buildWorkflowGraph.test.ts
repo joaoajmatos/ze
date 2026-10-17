@@ -19,6 +19,7 @@ function execution(overrides: Partial<WorkflowExecutionResponse>): WorkflowExecu
     status: "completed",
     step_results: [],
     error: null,
+    failure_summary: null,
     summary: null,
     started_at: null,
     completed_at: null,

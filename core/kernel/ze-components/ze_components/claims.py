@@ -31,9 +31,9 @@ HEADLINE_MAX = 40
 _NOT_GLYPH = re.compile(r"[^A-Z0-9·:\- ]")
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ClaimPosture:
-    kind: ClaimKindName | None
+    kind: ClaimKindName | None = None
     subject: ClaimSubject
     ref_id: str
     confidence: float | None = None

@@ -535,7 +535,7 @@ const CARD_TONE: Record<NonNullable<ClaimCard["tone"]>, string> = {
 };
 
 function postureLine(claim: ClaimCard["claim"]): string {
-  const parts = [claim.kind ?? claim.subject.replace("_", " ")];
+  const parts: string[] = [claim.kind ?? claim.subject.replace("_", " ")];
   if (claim.state) parts.push(claim.state.replace("_", " "));
   if (claim.confidence != null) parts.push(`${Math.round(claim.confidence * 100)}%`);
   if (claim.slipped) parts.push("slipped");
@@ -578,7 +578,13 @@ function ClaimCardRenderer({ node }: { node: ClaimCard }) {
             <button
               key={i}
               type="button"
-              onClick={() => onCardAction?.({ intent: action.intent, ref_id: action.ref_id })}
+              onClick={() =>
+                onCardAction?.({
+                  intent: action.intent,
+                  ref_id: action.ref_id,
+                  subject: node.claim.subject,
+                })
+              }
               className="px-3 py-1 rounded-pill border border-white/15 text-xs hover:bg-white/5 cursor-pointer"
             >
               {action.label}

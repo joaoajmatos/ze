@@ -214,7 +214,11 @@ describe("PrimitiveRenderer", () => {
       expect(screen.getByText("0.55")).toBeInTheDocument();
       expect(screen.getAllByRole("button")).toHaveLength(2);
       fireEvent.click(screen.getByText("Yes, track it"));
-      expect(onCardAction).toHaveBeenCalledWith({ intent: "confirm_loop", ref_id: "l1" });
+      expect(onCardAction).toHaveBeenCalledWith({
+        intent: "confirm_loop",
+        ref_id: "l1",
+        subject: "loop",
+      });
     });
 
     it("shows the claim's posture on a card", () => {

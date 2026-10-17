@@ -3,7 +3,7 @@
   "specName": "Composed Answers and Claim Posture (B1)",
   "branch": "184-composed-answers-posture",
   "currentStep": "implement",
-  "currentTask": "T025",
+  "currentTask": "T029",
   "status": "implementing",
   "task_summaries": {
     "T001": {
@@ -82,6 +82,18 @@
       "status": "DONE"
     },
     "T037": {
+      "status": "DONE"
+    },
+    "T025": {
+      "status": "DONE"
+    },
+    "T026": {
+      "status": "DONE"
+    },
+    "T027": {
+      "status": "DONE"
+    },
+    "T028": {
       "status": "DONE"
     }
   },
@@ -293,6 +305,38 @@
       "kind": "complete",
       "by": "claude",
       "at": "2026-10-17T15:20:24.909Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:34:09.635Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:34:10.157Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:34:11.864Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:34:12.446Z"
     }
   ]
 }

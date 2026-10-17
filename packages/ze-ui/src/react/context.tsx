@@ -3,6 +3,8 @@ import { createContext, useContext } from "react";
 export interface CardActionEvent {
   intent: string;
   ref_id: string;
+  /** The card's claim subject, so `open` knows which record to navigate to. */
+  subject: string;
 }
 
 export interface PrimitiveRendererActions {

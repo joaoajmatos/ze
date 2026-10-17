@@ -8,10 +8,20 @@ export function relativeTime(dateStr: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+export interface NotificationTarget {
+  target_type: string | null;
+  target_id: string | null;
+  target_parent_id?: string | null;
+}
+
 /** Route for a notification's deep link target, or null if it has none / isn't navigable. */
-export function targetRoute(targetType: string | null, targetId: string | null): string | null {
-  if (!targetType || !targetId) return null;
-  if (targetType === "goal") return `/goals/${targetId}`;
-  if (targetType === "workflow_run") return `/workflows/${targetId}`;
+export function notificationHref(n: NotificationTarget): string | null {
+  const { target_type: type, target_id: id, target_parent_id: parent } = n;
+  if (!type || !id) return null;
+  if (type === "goal") return `/goals/${id}`;
+  if (type === "goal_gate") return parent ? `/goals/${parent}` : null;
+  if (type === "workflow_execution") {
+    return parent ? `/workflows/${parent}?execution=${id}` : null;
+  }
   return null;
 }

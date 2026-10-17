@@ -50,7 +50,7 @@ export interface Row {
   type: "row";
 }
 export interface ClaimPosture {
-  kind: "identity" | "fact" | "inference" | "suspicion" | "priority" | "action_record" | "feedback_record";
+  kind?: "identity" | "fact" | "inference" | "suspicion" | "priority" | "action_record" | "feedback_record";
   subject: "loop" | "goal" | "workflow" | "hypothesis" | "person" | "held_write" | "fact";
   ref_id: string;
   confidence?: number;
