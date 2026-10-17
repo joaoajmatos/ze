@@ -35,6 +35,8 @@ async def list_proactive_job_runs(
     ),
     store=Depends(get_job_run_store),
 ) -> list[ProactiveJobRunItem]:
+    if since is not None and since.tzinfo is None:
+        raise HTTPException(status_code=422, detail="since needs a UTC offset")
     try:
         runs = await store.list_runs()
     except Exception as exc:

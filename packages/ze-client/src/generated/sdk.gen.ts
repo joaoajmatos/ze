@@ -980,7 +980,7 @@ export const getRemindersPage = <ThrowOnError extends boolean = false>(options?:
 /**
  * List reminders
  *
- * Reminders the user set. status upcoming is unsent and still in the future; overdue is unsent with a time that has passed (missed while Ze was down); fired is sent; all is every reminder. Timestamps carry a UTC offset.
+ * Reminders the user set. status upcoming is unsent and still in the future; overdue is unsent with a time that has passed (missed while Ze was down); fired is sent; all is every reminder. Timestamps carry a UTC offset. Returns 503 when the reminder store is not available.
  */
 export const listReminders = <ThrowOnError extends boolean = false>(options?: Options<ListRemindersData, ThrowOnError>): RequestResult<ListRemindersResponses, ListRemindersErrors, ThrowOnError> => (options?.client ?? client).get<ListRemindersResponses, ListRemindersErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

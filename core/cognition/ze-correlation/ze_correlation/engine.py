@@ -196,6 +196,18 @@ class CorrelationEngine:
                 log.warning("correlation_relevance_score_failed", error=str(exc))
                 cached_relevance = 0.0
 
+        # 9b. A dismissal sticks: do not re-form a connection the user dismissed
+        existing = await self._store.list_by_entities(
+            working_seeds, include_dismissed=True
+        )
+        if any(
+            h.feedback in ("not_relevant", "muted")
+            and set(h.entities) == set(working_seeds)
+            for h in existing
+        ):
+            log.info("correlation_skipped_dismissed", seeds=len(working_seeds))
+            return []
+
         # 10. Form hypothesis
         hypothesis = Hypothesis(
             id=uuid4(),

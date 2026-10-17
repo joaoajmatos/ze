@@ -70,6 +70,8 @@ async def list_notifications(
     ] = None,
     notification_store=Depends(get_notification_store),
 ) -> NotificationListResponse:
+    if since is not None and since.tzinfo is None:
+        raise HTTPException(status_code=422, detail="since needs a UTC offset")
     try:
         items, next_cursor = await notification_store.list_page(
             cursor=cursor,
@@ -136,19 +138,20 @@ async def get_attention_budget(
 ) -> AttentionBudgetResponse:
     try:
         status = await notifier.budget_status()
+        setting = await settings_store.get()
+        held_count = await notification_store.count_held()
     except Exception as exc:
         log.warning("attention_budget_unavailable", error=str(exc))
         raise HTTPException(
             status_code=503, detail="Attention budget unavailable"
         ) from exc
-    setting = await settings_store.get()
     return AttentionBudgetResponse(
         used=status.used,
         max_per_day=status.max_per_day,
         remaining=status.remaining,
         window_hours=status.window_hours,
         next_slot_at=status.next_slot_at,
-        held_count=await notification_store.count_held(),
+        held_count=held_count,
         quiet_hours_active=is_active(setting, datetime.now(timezone.utc)),
     )
 

@@ -159,9 +159,9 @@ async def test_unknown_status_is_422():
 
 
 @pytest.mark.asyncio
-async def test_missing_store_returns_empty_list():
+async def test_missing_store_is_503_not_an_empty_list():
     resp = await _get_reminders(None)
-    assert resp.status_code == 200 and resp.json() == []
+    assert resp.status_code == 503
 
 
 @pytest.mark.asyncio

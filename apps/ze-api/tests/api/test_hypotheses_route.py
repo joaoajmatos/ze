@@ -141,6 +141,23 @@ async def test_requires_api_key():
 
 
 @pytest.mark.asyncio
+async def test_entity_name_adapter_degrades_to_no_names_on_memory_failure():
+    from unittest.mock import AsyncMock
+
+    from ze_api.api.deps import get_entity_names
+
+    memory_store = SimpleNamespace(
+        get_entities_by_ids=AsyncMock(side_effect=RuntimeError("down"))
+    )
+    request = SimpleNamespace(
+        app=SimpleNamespace(
+            state=SimpleNamespace(container=SimpleNamespace(memory_store=memory_store))
+        )
+    )
+    assert await get_entity_names(request)([uuid4()]) == {}
+
+
+@pytest.mark.asyncio
 async def test_entity_name_adapter_maps_memory_entities():
     from unittest.mock import AsyncMock
 

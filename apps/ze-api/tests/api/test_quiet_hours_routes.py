@@ -328,6 +328,18 @@ async def test_budget_unavailable_is_503_never_zero(error):
 
 
 @pytest.mark.asyncio
+async def test_budget_settings_or_held_count_failure_is_503():
+    env = _Env()
+    env.notifications.count_held = AsyncMock(side_effect=RuntimeError("db"))
+    async with env.client() as c:
+        assert (await c.get("/api/v0/notifications/budget")).status_code == 503
+    env = _Env()
+    env.settings.get = AsyncMock(side_effect=RuntimeError("db"))
+    async with env.client() as c:
+        assert (await c.get("/api/v0/notifications/budget")).status_code == 503
+
+
+@pytest.mark.asyncio
 async def test_budget_without_api_key_is_401():
     env = _Env()
     client = env.client()

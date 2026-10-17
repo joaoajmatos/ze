@@ -1630,15 +1630,15 @@ export type NotificationItem = {
     /**
      * Push Class
      */
-    push_class: string;
+    push_class: 'requested' | 'accountability' | 'discretionary';
     /**
      * Urgency
      */
-    urgency: string;
+    urgency: 'low' | 'normal' | 'high';
     /**
      * Delivery
      */
-    delivery: string;
+    delivery: 'delivered' | 'held' | 'released' | 'suppressed' | 'failed';
     /**
      * Delivered At
      */

@@ -84,3 +84,14 @@ async def test_requires_api_key():
     async with _client(store, auth_override=False) as c:
         resp = await c.get("/api/v0/proactive/job-runs")
     assert resp.status_code in (401, 403)
+
+
+@pytest.mark.asyncio
+async def test_since_without_utc_offset_is_422():
+    store = SimpleNamespace(list_runs=AsyncMock(return_value=[]))
+    async with _client(store) as c:
+        resp = await c.get(
+            "/api/v0/proactive/job-runs", params={"since": "2026-10-17T08:00:00"}
+        )
+    assert resp.status_code == 422
+    store.list_runs.assert_not_called()

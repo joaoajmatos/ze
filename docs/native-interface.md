@@ -86,7 +86,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "confirm_cancel", "id": "...", "thread_id": "...", "reason": "answered"}` | Closes the card for that `id`. `reason` is `answered` when the user approved or denied it, on any client. Ze sends the frame without `reason` when it supersedes or expires a request. |
 | `{"type": "message_superseded", "message_id": "...", "replaced_by": "...", "thread_id": "..."}` | A retry replaced `message_id` with `replaced_by`. Sent after the new `message` frame. |
 | `{"type": "message_rollback", "message_id": "...", "thread_id": "...", "rollback": {...}}` | The stored rollback record of `message_id` changed. Sent on each state change of a retry. |
-| `{"type": "notification", "id": "...", "event_type": "...", "push_class": "...", "delivery": "..."}` | A proactive push entered the notification bell. `push_class` is `requested`, `accountability`, or `discretionary`. `delivery` is `delivered`, `held`, `suppressed`, `released`, or `failed`. A `held` or `suppressed` row arrives with no chat message and no ntfy. |
+| `{"type": "notification", "id": "...", "event_type": "...", "push_class": "...", "urgency": "...", "delivery": "..."}` | A proactive push entered the notification bell. `push_class` is `requested`, `accountability`, or `discretionary`. `delivery` is `delivered`, `held`, `suppressed`, `released`, or `failed`. A `held` or `suppressed` row arrives with no chat message and no ntfy. |
 | `{"type": "error", "detail": "...", "code": "..."}` | Error from the server (e.g. "busy"). `code` is optional; see [Error codes](#error-codes). |
 
 ### Progress messages
@@ -494,7 +494,7 @@ Every primitive can carry a `claim` object. Code sets it from the stored record.
 | `kind` | The claim kind: `identity`, `fact`, `inference`, `suspicion`, `priority`, `action_record`, or `feedback_record`. A workflow or held write has none. |
 | `ref_id` | The record's id |
 | `confidence` | The stored confidence, when the record has one |
-| `confidence_from` | The confidence before decay. No producer sets it today. |
+| `confidence_from` | The confidence before the last change. Loops set it from `open_loops.confidence_prior`; it can be lower than the current value, because corroboration raises confidence. Omitted when the record has none. |
 | `source` | A raw provenance key, such as `user_declared`, `goal`, or `correlation` |
 | `as_of` | When the record last changed |
 | `state` | The record's state |

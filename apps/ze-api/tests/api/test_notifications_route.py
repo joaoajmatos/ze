@@ -281,3 +281,19 @@ async def test_mark_all_notifications_read():
 
     assert resp.status_code == 200
     assert resp.json() == {"marked": 12}
+
+
+@pytest.mark.asyncio
+async def test_list_notifications_since_without_utc_offset_is_422():
+    store = AsyncMock()
+    app, _ = _make_app(store)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            "/api/v0/notifications",
+            params={"since": "2026-10-17T08:00:00"},
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+    assert resp.status_code == 422
+    store.list_page.assert_not_called()

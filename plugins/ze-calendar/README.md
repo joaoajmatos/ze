@@ -42,7 +42,7 @@ Every `WRITE` tool in this package declares `reversibility` and an `effect_phras
 
 ## Reminders REST (phase 185)
 
-`GET /api/v0/reminders` (`listReminders`) lists `{id, label, fire_at, sent_at, status}` with `status` one of `upcoming`, `overdue` (unsent, time passed) or `fired`. Filter by `status` (`upcoming`, `overdue`, `fired`, `all`) and `limit`. The route is absent when the plugin is disabled. A client joins a reminder to its loop through the loop's `reminder_id`.
+`GET /api/v0/reminders` (`listReminders`) lists `{id, label, fire_at, sent_at, status}` with `status` one of `upcoming`, `overdue` (unsent, time passed) or `fired`. Filter by `status` (`upcoming`, `overdue`, `fired`, `all`) and `limit`. The route is absent when the plugin is disabled, and returns 503 when the reminder store is not available. A client joins a reminder to its loop through the loop's `reminder_id`.
 
 ## Testing
 

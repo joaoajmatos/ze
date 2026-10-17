@@ -40,7 +40,7 @@ Most of what someone means to follow up on is smaller than a goal: a promise mad
 
 Goals and open loops are Ze's two hands of executive function: one heavyweight and declared, one lightweight and ambient. Together they're the shipped first slice of what the doctrine calls **active concerns** — the fourth face of Ze's world-state, the model of you the rest of the system attaches to. See [the doctrine](../specs/arch/ze-doctrine.md) and [cognitive architecture](cognitive-architecture.md).
 
-Hypotheses Ze forms from cross-domain evidence are listed over REST, and you can dismiss one (not relevant, or muted). A dismissed hypothesis is no longer pushed, ranked or offered in conversation, and clearing the dismissal brings it back. Reminders are listed over REST as upcoming, overdue or fired.
+Hypotheses Ze forms from cross-domain evidence are listed over REST, and you can dismiss one (not relevant, or muted). A dismissed hypothesis is no longer pushed, ranked or offered in conversation, and clearing the dismissal brings it back. Dismissal applies to that one hypothesis: if Ze later forms the same connection again, it is a new hypothesis. A confirmed hypothesis stays listed as confirmed whatever its feedback. Reminders are listed over REST as upcoming, overdue or fired. Confidence values are stored in single precision and only the last change is kept, so clients should round and compare with a tolerance.
 
 ## Memory
 

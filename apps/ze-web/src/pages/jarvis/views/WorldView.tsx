@@ -162,13 +162,19 @@ export function WorldView() {
           <div className="row">
             <span className="t">Push budget</span>
             <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-              <Dots max={world.budget.max} lit={world.budget.spent} label={`${world.budget.spent} of ${world.budget.max} pushes used today`} />
-              <span className="ro">{world.budget.spent} of {world.budget.max} used</span>
+              {world.budget.max !== null && world.budget.spent !== null ? (
+                <>
+                  <Dots max={world.budget.max} lit={world.budget.spent} label={`${world.budget.spent} of ${world.budget.max} pushes used in the last 24 hours`} />
+                  <span className="ro">{world.budget.spent} of {world.budget.max} used</span>
+                </>
+              ) : (
+                <span className="lbl">unavailable</span>
+              )}
             </span>
           </div>
           <div className="row">
             <span className="t">Held for you</span>
-            {world.budget.held ? <span className="num md">{world.budget.held}</span> : <span className="lbl">none</span>}
+            {world.budget.held === null ? <span className="lbl">unavailable</span> : world.budget.held ? <span className="num md">{world.budget.held}</span> : <span className="lbl">none</span>}
           </div>
         </Module>
       </aside>
