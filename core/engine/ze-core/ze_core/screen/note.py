@@ -346,7 +346,7 @@ def _binding(
         lines.append(
             f'{_BINDING_THIS}{kind_label(this.ref.kind)} "{label}"{_BINDING_THIS_TAIL}'
         )
-    else:
+    elif not selected:
         lines.append(NOTHING_SINGLED_OUT)
     if selected:
         n = len(selected)

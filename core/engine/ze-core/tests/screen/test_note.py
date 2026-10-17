@@ -116,8 +116,9 @@ async def test_nothing_singled_out():
 async def test_two_selected_items_leave_this_unbound():
     ctx = ScreenContext(place="mind", selection=(ref("loop", "a"), ref("loop", "b")))
     res = await note(ctx, Fake({"loop"}))
-    assert "Nothing on screen is singled out" in res.note
-    assert "the 2 selected items shown above" in res.note
+    assert "Nothing on screen is singled out" not in res.note
+    assert '"this"' not in res.note
+    assert '"these" / "those" = the 2 selected items shown above' in res.note
 
 
 async def test_chat_about_line_only_for_that_origin():
