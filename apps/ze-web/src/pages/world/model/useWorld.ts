@@ -1,5 +1,6 @@
 import type { AttentionBudgetResponse, GoalListItem, LoopListItem, NotificationItem, WorkflowExecutionResponse, WorkflowResponse } from "@myguyze/ze-client";
 import { useEffect, useMemo, useState } from "react";
+import { usePendingConfirms } from "@/features/respond-to-confirmation";
 import { useHeldWritesQuery } from "@/entities/confirmation";
 import { useGoalsQuery } from "@/entities/goal";
 import { useHypothesesQuery } from "@/entities/hypothesis";
@@ -9,7 +10,6 @@ import { usePrioritySnapshotQuery } from "@/entities/priority-item";
 import { useProactiveJobRunsQuery, type VisibleJobRun } from "@/entities/proactive-job";
 import { useRemindersQuery } from "@/entities/reminder";
 import { useLatestExecutionsQuery, useWorkflowsQuery } from "@/entities/workflow";
-import { usePendingConfirms } from "@/features/respond-to-confirmation";
 import { buildConcerns, type Concern } from "../lib/concerns";
 import { buildDecisions, type Decision } from "../lib/decisions";
 import { useLastSeen } from "../lib/last-seen";

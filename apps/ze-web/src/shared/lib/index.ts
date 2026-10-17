@@ -21,3 +21,6 @@ export { postureOf, glyphOf, chipLabelOf, stateWords, provenanceWords } from "./
 export type { Posture, GlyphKind, ConcernKind, PostureInput } from "./claim-posture";
 export { notificationHref, focusHref } from "./notification-href";
 export type { FocusKind } from "./notification-href";
+export { concernStateWords } from "./concern";
+export type { Concern } from "./concern";
+export { ago, dayDiff, pct, relDay } from "./time-format";
