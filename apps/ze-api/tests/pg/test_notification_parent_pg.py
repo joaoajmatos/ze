@@ -46,6 +46,9 @@ async def test_column_is_nullable_text_added_by_zpro005(pg_pool):
             "SELECT data_type, is_nullable FROM information_schema.columns "
             "WHERE table_name = 'notifications' AND column_name = 'target_parent_id'"
         )
-        head = await conn.fetchval("SELECT version_num FROM alembic_version LIMIT 1")
+        applied = {
+            r["version_num"]
+            for r in await conn.fetch("SELECT version_num FROM alembic_version")
+        }
     assert (row["data_type"], row["is_nullable"]) == ("text", "YES")
-    assert head is not None
+    assert "zpro005" in applied

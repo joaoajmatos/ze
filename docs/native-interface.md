@@ -472,7 +472,7 @@ Two more keys ask for a composed answer. A preset chip on the world screen sends
 {"type": "message", "text": "What is slipping?", "context": {"screen": "world", "compose": "slipping"}}
 ```
 
-The composer gets two seconds. If it fails or runs out of time, the turn continues without the composed answer and Ze says what it could not read. A typed question reaches the same composer through the companion tools `show_slipping`, `show_decisions`, and `show_topic`.
+The composer gets two seconds. If it fails or runs out of time, the turn continues without the composed answer and without a note. If only some sources fail, Ze builds the answer from the rest and names the sources it could not read. A typed question reaches the same composer through the companion tools `show_slipping`, `show_decisions`, and `show_topic`.
 
 ### Claim posture on components
 
@@ -480,14 +480,15 @@ Every primitive can carry a `claim` object. Code sets it from the stored record.
 
 | Field | Meaning |
 |---|---|
-| `subject` | `loop`, `goal`, `workflow`, `held_write`, or `hypothesis` |
-| `kind` | The record's claim kind, when it has one |
+| `subject` | `loop`, `goal`, `workflow`, `hypothesis`, `person`, `held_write`, or `fact` |
+| `kind` | The claim kind: `identity`, `fact`, `inference`, `suspicion`, `priority`, `action_record`, or `feedback_record`. A workflow or held write has none. |
 | `ref_id` | The record's id |
-| `confidence`, `confidence_from` | Stored confidence and where it came from |
-| `source` | The provenance, in plain words |
+| `confidence` | The stored confidence, when the record has one |
+| `confidence_from` | The confidence before decay. No producer sets it today. |
+| `source` | A raw provenance key, such as `user_declared`, `goal`, or `correlation` |
 | `as_of` | When the record last changed |
 | `state` | The record's state |
-| `slipped` | True when the record is past its deadline |
+| `slipped` | True for a drifting loop, a stuck goal, or a workflow whose last run failed |
 
 Three primitives carry this posture: `headline`, `claim_card`, and `claim_timeline`. A `claim_card` shows readouts and actions. Its action `intent` is one of `confirm_loop`, `drop_loop`, `approve_held_write`, `deny_held_write`, `approve_gate`, or `open`. The web app maps each intent to an existing REST call.
 

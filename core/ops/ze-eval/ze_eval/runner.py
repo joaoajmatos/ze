@@ -395,6 +395,7 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
         latency_ms: int | None = None
 
         t_start = time.monotonic()
+        started_at = datetime.now(UTC)
         try:
             ze_result = await _run_turns(scenario, session_id, ze_url, ze_key)
             error = ze_result.get("error")
@@ -414,7 +415,7 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
             tools = tools_correct(scenario, ze_result)
 
             if scenario.get("verify"):
-                vr = await run_verification(scenario["verify"])
+                vr = await run_verification(scenario["verify"], since=started_at)
                 verify_results = [
                     {
                         "table": r.table,

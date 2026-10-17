@@ -17,7 +17,7 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 
 - `WorldComposer` (`compose/`) — builds three composed answers from stored records: what is slipping, what needs a decision, and what Ze knows about a topic. It reads the sources in parallel, drops a source that fails, and names it. Pure rules in `compose/rules.py` set every card's posture from the record. The model never does
 - `show_slipping`, `show_decisions`, and `show_topic` — companion READ tools that reach the same composer from a typed question
-- Topic matching needs an E5 cosine of at least 0.90 (`TOPIC_FLOOR`) and a shared word of four or more letters. Unrelated short texts score 0.81 to 0.87, so a lower floor matched the wrong records. `reprioritize_item` keeps the looser `MATCH_FLOOR` of 0.55
+- Topic matching keeps an item that shares a whole topic word of four or more letters (a stem match needs five), or whose E5 cosine reaches 0.90 (`TOPIC_FLOOR`). Common English and Portuguese words do not count. Unrelated short texts score 0.81 to 0.87, so a lower floor matched the wrong records. `reprioritize_item` keeps the looser `MATCH_FLOOR` of 0.55
 
 ### Integration
 

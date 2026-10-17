@@ -30,7 +30,7 @@ Agents call component tools during execution. A harness hook in `ze-api` collect
 
 ## Dependencies
 
-No Ze package dependencies. Pure Python — no third-party runtime dependencies.
+Depends on `ze-agents` and `ze-logging`. No third-party runtime dependencies.
 
 `ze-priority` depends on this package to build composed answers.
 

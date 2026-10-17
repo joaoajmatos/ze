@@ -269,6 +269,26 @@ def test_shared_words_fold_case_and_diacritics():
     assert [c.title for c in _cards(draft)] == ["Planear o lançamento"]
 
 
+def test_a_topic_word_does_not_match_inside_a_longer_word():
+    loop = make_loop(title="Ongoing website network work", state=LoopState.ACTIVE)
+    for topic in ("topic: how is the launch going?", "topic: site", "topic: planet"):
+        draft = rules.topic(_snapshot([loop]), topic, _NoisyEmbedder(), NOW)
+        assert _cards(draft) == [], topic
+
+
+def test_stopwords_do_not_make_a_match_in_either_language():
+    loop = make_loop(title="Talk about this with Ana", state=LoopState.ACTIVE)
+    for topic in ("topic: about this with", "topic: como para isso"):
+        draft = rules.topic(_snapshot([loop]), topic, _NoisyEmbedder(), NOW)
+        assert _cards(draft) == [], topic
+
+
+def test_five_letter_stems_match_other_forms():
+    loop = make_loop(title="Launching the LedgerLite beta", state=LoopState.ACTIVE)
+    draft = rules.topic(_snapshot([loop]), "topic: launch", _NoisyEmbedder(), NOW)
+    assert [c.title for c in _cards(draft)] == ["Launching the LedgerLite beta"]
+
+
 def test_short_words_do_not_count_as_shared():
     loop = make_loop(title="Pay the tax for me", state=LoopState.ACTIVE)
     draft = rules.topic(_snapshot([loop]), "topic: the me tax", _NoisyEmbedder(), NOW)

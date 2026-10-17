@@ -548,6 +548,8 @@ function HeadlineRenderer({ node }: { node: Headline }) {
 
 function ClaimCardRenderer({ node }: { node: ClaimCard }) {
   const { onCardAction } = usePrimitiveRendererActions();
+  const [decided, setDecided] = useState(false);
+  const actions = (node.actions ?? []).filter((a) => !decided || a.intent === "open");
   return (
     <div className={cn("rounded-lg border p-3 flex flex-col gap-1", CARD_TONE[node.tone ?? "default"])}>
       <p className="text-sm font-medium">{node.title}</p>
@@ -572,19 +574,21 @@ function ClaimCardRenderer({ node }: { node: ClaimCard }) {
           ))}
         </dl>
       )}
-      {node.actions && node.actions.length > 0 && (
+      {decided && <p className="text-xs text-white/50">Sent.</p>}
+      {actions.length > 0 && (
         <div className="flex gap-2 pt-1">
-          {node.actions.map((action: CardAction, i) => (
+          {actions.map((action: CardAction, i) => (
             <button
               key={i}
               type="button"
-              onClick={() =>
+              onClick={() => {
+                if (action.intent !== "open") setDecided(true);
                 onCardAction?.({
                   intent: action.intent,
                   ref_id: action.ref_id,
                   subject: node.claim.subject,
-                })
-              }
+                });
+              }}
               className="px-3 py-1 rounded-pill border border-white/15 text-xs hover:bg-white/5 cursor-pointer"
             >
               {action.label}

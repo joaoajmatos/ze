@@ -221,6 +221,29 @@ describe("PrimitiveRenderer", () => {
       });
     });
 
+    it("drops the decision buttons once one is clicked and keeps Open", () => {
+      const onCardAction = vi.fn();
+      render(
+        <PrimitiveRenderer
+          actions={{ onCardAction }}
+          node={{
+            type: "claim_card",
+            title: "Reach B1",
+            claim: { kind: "priority", subject: "goal", ref_id: "g1", slipped: false },
+            actions: [
+              { label: "Approve", intent: "approve_gate", ref_id: "g1" },
+              { label: "Open", intent: "open", ref_id: "g1" },
+            ],
+          }}
+        />,
+      );
+      fireEvent.click(screen.getByText("Approve"));
+      expect(screen.queryByText("Approve")).not.toBeInTheDocument();
+      expect(screen.getByText("Open")).toBeInTheDocument();
+      expect(screen.getByText("Sent.")).toBeInTheDocument();
+      expect(onCardAction).toHaveBeenCalledTimes(1);
+    });
+
     it("shows the claim's posture on a card", () => {
       render(
         <PrimitiveRenderer
