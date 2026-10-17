@@ -21,7 +21,7 @@ vi.mock("@/pages/world", () => ({ WorldInterim: () => <p data-testid="world">wor
 vi.mock("@/pages/doing", () => ({ DoingInterim: ({ fallback }: { fallback: React.ReactNode }) => <p data-testid="doing">doing {fallback ? "" : ""}</p> }));
 vi.mock("@/pages/mind", () => ({ MindInterim: () => <p data-testid="mind">mind</p> }));
 vi.mock("@/pages/governance", () => ({
-  GovernanceInterim: () => {
+  GovernancePage: () => {
     const { hash, search } = useLocation();
     return <p data-testid="governance">governance {search}{hash}</p>;
   },
@@ -62,7 +62,6 @@ describe("places", () => {
     ["/mind", "mind"],
     ["/mind/graph", "mind"],
     ["/governance", "governance"],
-    ["/governance/settings", "governance"],
   ])("%s renders inside the shell", async (path, id) => {
     go(path);
     expect(await screen.findByTestId(id)).toBeInTheDocument();
@@ -110,21 +109,30 @@ describe("redirects", () => {
     ["/workflows/w-1", "/doing/workflows/w-1"],
     ["/skills", "/doing/skills"],
     ["/procedures", "/doing/procedures"],
-    ["/workspace", "/doing/workspace"],
+    ["/workspace", "/governance#files"],
+    ["/doing/workspace", "/governance#files"],
     ["/brain-memory", "/mind"],
     ["/brain-graph", "/mind/graph"],
     ["/costs", "/governance"],
-    ["/data", "/governance/data"],
-    ["/settings", "/governance/settings"],
+    ["/data", "/governance#data"],
+    ["/governance/data", "/governance#data"],
+    ["/settings", "/governance#connections"],
+    ["/governance/settings", "/governance#connections"],
   ])("%s lands on %s", async (from, to) => {
     const router = go(from);
     await waitFor(() => expect(where(router)).toBe(to));
   });
 
-  it("keeps the query and the hash", async () => {
+  it("keeps the query and maps a legacy hash to its module", async () => {
     const router = go("/settings?x=1#your-data");
-    await waitFor(() => expect(where(router)).toBe("/governance/settings?x=1#your-data"));
-    expect(await screen.findByTestId("governance")).toHaveTextContent("?x=1#your-data");
+    await waitFor(() => expect(where(router)).toBe("/governance?x=1#data"));
+    expect(await screen.findByTestId("governance")).toHaveTextContent("?x=1#data");
+  });
+
+  it("sends other /governance paths to not found", async () => {
+    go("/governance/nowhere");
+    expect(await screen.findByText(/nothing lives at this address/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("governance")).toBeNull();
   });
 
   it("keeps params, query and hash together", async () => {

@@ -1,1 +1,1 @@
-export { GovernanceInterim } from "./ui/GovernanceInterim";
+export { GovernancePage } from "./ui/GovernancePage";
