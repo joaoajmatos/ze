@@ -139,3 +139,21 @@ def test_prompt_labels_the_turn_a_component_came_from_and_lists_none():
     assert format_components(None) == "- none"
     text = format_components([{"turn": 2, "component": {"type": "chart"}}])
     assert text.startswith("- [turn 2] chart:")
+
+
+def test_nested_data_fields_named_like_styling_keys_are_kept():
+    from ze_eval.judge import format_components
+
+    shown = format_components(
+        [{"type": "table", "color": "x", "rows": [{"color": "red", "id": "r1"}]}]
+    )
+    assert '"color": "red"' in shown and '"id": "r1"' in shown
+    assert '"color": "x"' not in shown
+
+
+def test_component_count_is_capped():
+    from ze_eval.judge import format_components
+
+    shown = format_components([{"type": "metric"}] * 12)
+    assert shown.count("- metric:") == 8
+    assert shown.endswith("and 4 more not shown")

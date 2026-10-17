@@ -92,17 +92,13 @@ _PRESENTATION_KEYS = frozenset(
     {"color", "gap", "style", "variant", "size", "align", "padding", "id"}
 )
 _COMPONENT_CHARS = 700
+_MAX_COMPONENTS = 8
 
 
 def _strip_presentation(node):
+    # Top level only: nested keys such as "color" or "id" are often data fields.
     if isinstance(node, dict):
-        return {
-            k: _strip_presentation(v)
-            for k, v in node.items()
-            if k not in _PRESENTATION_KEYS
-        }
-    if isinstance(node, list):
-        return [_strip_presentation(v) for v in node]
+        return {k: v for k, v in node.items() if k not in _PRESENTATION_KEYS}
     return node
 
 
@@ -111,7 +107,7 @@ def format_components(components: list[dict] | None) -> str:
     if not components:
         return "- none"
     lines = []
-    for component in components:
+    for component in components[:_MAX_COMPONENTS]:
         turn = component.get("turn") if isinstance(component, dict) else None
         body = component.get("component", component) if turn else component
         kind = body.get("type", "?") if isinstance(body, dict) else "?"
@@ -120,6 +116,8 @@ def format_components(components: list[dict] | None) -> str:
             data = data[:_COMPONENT_CHARS] + "…"
         turn_prefix = f"[turn {turn}] " if turn else ""
         lines.append(f"- {turn_prefix}{kind}: {data}")
+    if len(components) > _MAX_COMPONENTS:
+        lines.append(f"- … and {len(components) - _MAX_COMPONENTS} more not shown")
     return "\n".join(lines)
 
 

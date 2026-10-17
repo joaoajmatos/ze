@@ -11,8 +11,10 @@ CF-16 applies these and deletes this file.
 - Layout, `ze-personal/agents` tree: the companion takes an `OutreachLog` Protocol
   (`agents/companion/outreach_log.py`) instead of a pool. `ze-prospecting` supplies it through
   `agent_deps` (the campaign store).
-- Layout, `ze-agents/honesty.py` line, if present: "a successful `render_*` call lets a
-  future-tense 'I'll remember your pick' stand; past-tense save claims still strip."
+- Layout, `ze-agents` tree (after the `effects.py` line): add
+  `honesty.py   # reply-honesty guards (enforce_memory_confirmations); a successful render that waits for the user (choice group, form, consent, confirm, review, connect account) lets "I'll remember your pick" stand; data renders (table, chart, metric, timeline) and past-tense save claims still strip`.
+- Layout, `ze-core/container.py` line: agent constructor parameters typed `X | None` get `None`
+  when no plugin registers `X` (the companion's `OutreachLog` is the first).
 
 ## docs/eval.md
 
