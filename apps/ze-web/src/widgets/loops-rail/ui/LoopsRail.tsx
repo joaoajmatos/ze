@@ -25,7 +25,6 @@ export function LoopsRail({ loops, loading, error, now, offline, selected, onSel
   const suspected = loops.filter((l) => l.state === "suspected").length;
 
   useScreenPublisher({
-    focused_module: "loops-rail",
     visible: open.slice(0, 10).map((l) => ({ kind: "loop", id: l.id }) as WsScreenRef),
   });
 

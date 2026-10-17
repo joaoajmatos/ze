@@ -63,6 +63,13 @@ describe("LoopsRail", () => {
     expect((screen.getByRole("button", { name: "Close" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it("offers Chat about this with a loop ref", () => {
+    const onChatAbout = vi.fn();
+    setup([loop("a")], { onChatAbout });
+    fireEvent.click(screen.getByRole("button", { name: "Chat about Loop a" }));
+    expect(onChatAbout).toHaveBeenCalledWith({ kind: "loop", id: "a", label: "Loop a" }, null);
+  });
+
   it("renders the error state", () => {
     setup([], { error: true });
     expect(screen.getByRole("alert").textContent).toContain("Couldn't read");

@@ -31,6 +31,10 @@ export const queryKeys = {
   quietHours: ["quiet-hours"] as const,
   notificationsSince: (since: string) => ["notifications-since", since] as const,
   attentionBudget: ["attention-budget"] as const,
+  remindersAll: ["reminders"] as const,
+  hypothesesAll: ["hypotheses"] as const,
+  notificationsSinceAll: ["notifications-since"] as const,
+  workflowExecutionsAll: ["workflow-executions"] as const,
   reminders: (status: string) => ["reminders", status] as const,
   hypotheses: (state: string, entityId?: string) => ["hypotheses", state, entityId ?? ""] as const,
   proactiveJobRuns: (since: string) => ["proactive-job-runs", since] as const,
@@ -50,16 +54,17 @@ export const queryKeys = {
   procedureDetail: (procedureId: string) => ["procedure-detail", procedureId] as const,
 };
 
-const CORE_REFRESH_SCREEN_MAP: Record<string, readonly string[]> = {
-  goals: queryKeys.goals,
-  workflows: queryKeys.workflows,
-  costs: queryKeys.costs,
+const CORE_REFRESH_SCREEN_MAP: Record<string, readonly (readonly string[])[]> = {
+  goals: [queryKeys.goals, queryKeys.prioritySnapshot(), queryKeys.workflowExecutionsAll],
+  workflows: [queryKeys.workflows],
+  costs: [queryKeys.costs],
 };
 
+/** The query keys a `refresh` frame for `screen` invalidates. */
 export function refreshKeysForScreen(
   screen: string,
   manifest?: UiManifestResponse | null,
-): readonly string[] | undefined {
+): readonly (readonly string[])[] | undefined {
   const coreKeys = CORE_REFRESH_SCREEN_MAP[screen];
   if (coreKeys) {
     return coreKeys;
@@ -67,7 +72,7 @@ export function refreshKeysForScreen(
 
   const pluginEntry = manifest?.nav.find((item) => item.path === screen);
   if (pluginEntry) {
-    return queryKeys.pluginPage(pluginEntry.id);
+    return [queryKeys.pluginPage(pluginEntry.id)];
   }
 
   return undefined;

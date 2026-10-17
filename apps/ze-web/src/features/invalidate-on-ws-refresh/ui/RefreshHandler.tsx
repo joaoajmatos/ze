@@ -5,15 +5,38 @@ import type { UiManifest } from "@/entities/ui-manifest";
 import { useFrame } from "@/shared/api";
 import { queryKeys, refreshKeysForScreen } from "@/shared/lib";
 
+const WORLD_KEYS: readonly (readonly string[])[] = [
+  queryKeys.loopsAll,
+  queryKeys.prioritySnapshot(),
+  queryKeys.remindersAll,
+  queryKeys.hypothesesAll,
+  queryKeys.goals,
+  queryKeys.heldWrites,
+  queryKeys.attentionBudget,
+];
+
+/** What a notification about a record means for the World queries. */
+const TARGET_KEYS: Record<string, readonly (readonly string[])[]> = {
+  open_loop: [queryKeys.loopsAll],
+  goal: [queryKeys.goals, queryKeys.prioritySnapshot()],
+  goal_gate: [queryKeys.goals, queryKeys.prioritySnapshot()],
+  workflow_execution: [queryKeys.workflowExecutionsAll],
+  reminder: [queryKeys.remindersAll],
+  hypothesis: [queryKeys.hypothesesAll],
+};
+
 export function RefreshHandler() {
   const queryClient = useQueryClient();
 
   useFrame("refresh", (frame) => {
     const manifest = queryClient.getQueryData<UiManifest>(queryKeys.uiManifest);
     const keys = refreshKeysForScreen(frame.screen, manifest);
-    if (keys) {
-      void queryClient.invalidateQueries({ queryKey: [...keys] });
-    }
+    for (const key of keys ?? []) void queryClient.invalidateQueries({ queryKey: [...key] });
+  });
+
+  // Loops are written after a turn with no `refresh` frame, so a reply is the cue to re-read the World keys.
+  useFrame("message", () => {
+    for (const key of WORLD_KEYS) void queryClient.invalidateQueries({ queryKey: [...key] });
   });
 
   useFrame("notification", (frame) => {
@@ -50,6 +73,8 @@ export function RefreshHandler() {
     );
 
     void queryClient.invalidateQueries({ queryKey: queryKeys.attentionBudget });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsSinceAll });
+    for (const key of TARGET_KEYS[frame.target_type ?? ""] ?? []) void queryClient.invalidateQueries({ queryKey: [...key] });
     queryClient.setQueryData<number>(
       queryKeys.unreadNotificationCount,
       (count) => (count ?? 0) + 1,

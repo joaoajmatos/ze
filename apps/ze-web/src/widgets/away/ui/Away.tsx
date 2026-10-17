@@ -24,7 +24,7 @@ export function Away({ notifications, jobRuns, budget, loading, error, now, onCh
       ? ({ kind: "workflow_execution", id: n.target_id, parent_id: n.target_parent_id ?? undefined } as WsScreenRef)
       : ({ kind: "notification", id: n.id } as WsScreenRef);
 
-  useScreenPublisher({ focused_module: "away", visible: notifications.slice(0, 10).map(refOf) });
+  useScreenPublisher({ visible: notifications.slice(0, 10).map(refOf) });
 
   return (
     <Module label="While you were away" className="world-away">

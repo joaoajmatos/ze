@@ -131,3 +131,62 @@ describe("RefreshHandler — notification frame", () => {
     expect(invalidate).not.toHaveBeenCalledWith({ queryKey: queryKeys.heldWrites });
   });
 });
+
+describe("RefreshHandler - World keys", () => {
+  function setup() {
+    useFrame.mockClear();
+    const queryClient = new QueryClient();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RefreshHandler />
+      </QueryClientProvider>,
+    );
+    const invalidated = () => invalidate.mock.calls.map((c) => c[0]?.queryKey);
+    return { queryClient, invalidated, invalidate };
+  }
+
+  it("a message frame invalidates the World keys", () => {
+    const { invalidated } = setup();
+    getHandler("message")({ type: "message", message: { thread_id: "t" } });
+    for (const key of [["loops"], ["priority-snapshot"], ["reminders"], ["hypotheses"], ["goals"], ["held-writes"], ["attention-budget"]]) {
+      expect(invalidated()).toContainEqual(key);
+    }
+  });
+
+  it("a notification frame also invalidates the budget, notifications-since and its target kind", () => {
+    const { invalidated, invalidate } = setup();
+    const frame = (target_type: string | null) => ({ type: "notification", id: "n", event_type: "x", source: "x", title: "t", body: "", target_type, target_id: "id", target_parent_id: null, created_at: "2026-10-17T00:00:00Z", push_class: "requested", urgency: "normal", delivery: "delivered" });
+    getHandler("notification")(frame("open_loop"));
+    expect(invalidated()).toContainEqual(["attention-budget"]);
+    expect(invalidated()).toContainEqual(["notifications-since"]);
+    expect(invalidated()).toContainEqual(["loops"]);
+    invalidate.mockClear();
+    getHandler("notification")(frame("goal_gate"));
+    expect(invalidated()).toContainEqual(["goals"]);
+    expect(invalidated()).toContainEqual(["priority-snapshot"]);
+    invalidate.mockClear();
+    getHandler("notification")(frame("workflow_execution"));
+    expect(invalidated()).toContainEqual(["workflow-executions"]);
+    invalidate.mockClear();
+    getHandler("notification")(frame("reminder"));
+    expect(invalidated()).toContainEqual(["reminders"]);
+    invalidate.mockClear();
+    getHandler("notification")(frame("hypothesis"));
+    expect(invalidated()).toContainEqual(["hypotheses"]);
+  });
+
+  it("leaves a notifications-since cache untouched by the InfiniteData rewrite", () => {
+    const { queryClient } = setup();
+    const since = ["notifications-since", "2026-10-16T00:00:00Z"];
+    queryClient.setQueryData(since, [{ id: "a" }]);
+    getHandler("notification")({ type: "notification", id: "n", event_type: "x", source: "x", title: "t", body: "", target_type: null, target_id: null, target_parent_id: null, created_at: "x", push_class: "requested", urgency: "normal", delivery: "delivered" });
+    expect(queryClient.getQueryData(since)).toEqual([{ id: "a" }]);
+  });
+
+  it("a goals refresh frame invalidates goals, the snapshot and workflow executions", () => {
+    const { invalidated } = setup();
+    getHandler("refresh")({ type: "refresh", screen: "goals" });
+    expect(invalidated()).toEqual([["goals"], ["priority-snapshot"], ["workflow-executions"]]);
+  });
+});

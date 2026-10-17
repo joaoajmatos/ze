@@ -114,6 +114,17 @@ describe("NeedsYou", () => {
     expect(m.navigate).toHaveBeenCalledWith("/ask/t-7");
   });
 
+  it("each row offers Chat about this with the right ref: held_write, goal_gate, loop", () => {
+    const onChatAbout = vi.fn();
+    setup({ onChatAbout });
+    for (const name of ["Chat about Weekly summary", "Chat about Review the plan", "Chat about Learn Rust"]) fireEvent.click(screen.getByRole("button", { name }));
+    expect(onChatAbout.mock.calls.map((c) => c[0])).toEqual([
+      { kind: "held_write", id: "req-1" },
+      { kind: "goal_gate", id: "gate1", parent_id: "g1" },
+      { kind: "loop", id: "l1" },
+    ]);
+  });
+
   it("offline disables every action", () => {
     setup({ offline: true });
     const actions = screen.getAllByRole("button").filter((b) => ["Approve", "Deny", "Proceed", "Stop", "Redirect", "Yes, track it", "Drop"].includes(b.textContent ?? ""));

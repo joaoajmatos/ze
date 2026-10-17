@@ -19,6 +19,7 @@ export { NARROW_QUERY, useNarrow } from "./use-narrow";
 export { dayMonth, hhmm, longDate, weekday } from "./clock-format";
 export { postureOf, glyphOf, chipLabelOf, stateWords, provenanceWords } from "./claim-posture";
 export type { Posture, GlyphKind, ConcernKind, PostureInput } from "./claim-posture";
+export { useRailSlot } from "./rail-slot";
 export { notificationHref, focusHref } from "./notification-href";
 export type { FocusKind } from "./notification-href";
 export { concernStateWords } from "./concern";

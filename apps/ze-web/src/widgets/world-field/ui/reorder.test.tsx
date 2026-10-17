@@ -125,6 +125,34 @@ describe("reorder", () => {
   });
 });
 
+describe("Chat about this on the readout", () => {
+  it.each([
+    ["loop", { kind: "loop" as const, key: "loop:a" }],
+    ["goal", { kind: "goal" as const, key: "goal:a" }],
+    ["hypothesis", { kind: "hypothesis" as const, key: "hypothesis:a" }],
+    ["reminder", { kind: "reminder" as const, key: "reminder:a", rank: null }],
+  ])("%s", (kind, extra) => {
+    const onChatAbout = vi.fn();
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <WorldField concerns={[concern("a", { title: "Thing", ...extra })]} now={NOW} loading={false} error={false} narrow={false} offline={false} selected={extra.key} onSelect={() => {}} onChatAbout={onChatAbout} />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Chat about Thing" }));
+    expect(onChatAbout.mock.calls[0][0]).toMatchObject({ kind, id: "a" });
+  });
+
+  it("offers none for a relationship, which no resolver owns", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <WorldField concerns={[concern("p", { title: "Ana", kind: "relationship", key: "relationship:p" })]} now={NOW} loading={false} error={false} narrow={false} offline={false} selected="relationship:p" onSelect={() => {}} onChatAbout={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    expect(screen.queryByRole("button", { name: /Chat about/ })).toBeNull();
+  });
+});
+
 describe("reorder: pointer safety", () => {
   beforeEach(() => {
     api.submitPriorityOverride.mockReset().mockResolvedValue({ data: {} });

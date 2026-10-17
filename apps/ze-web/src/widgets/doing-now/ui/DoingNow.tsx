@@ -34,7 +34,6 @@ export function DoingNow({ goals, workflows, executions, loading, error, now }: 
     .filter(({ e }) => e?.status === "failed");
 
   useScreenPublisher({
-    focused_module: "doing-now",
     visible: [
       ...active.map((g) => ({ kind: "goal", id: g.id }) as WsScreenRef),
       ...running.map(({ workflowId, e }) => ({ kind: "workflow_execution", id: e.id, parent_id: workflowId }) as WsScreenRef),

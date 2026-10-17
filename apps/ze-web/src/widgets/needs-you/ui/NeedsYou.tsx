@@ -68,7 +68,6 @@ export function NeedsYou({ decisions, loading, error, now, offline, focus, onCha
   };
 
   useScreenPublisher({
-    focused_module: "needs-you",
     visible: decisions.map(refOf).filter((r): r is WsScreenRef => r !== null).slice(0, 10),
   });
 

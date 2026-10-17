@@ -53,7 +53,6 @@ export function WorldField({ concerns, now, loading, error, recordsFailed = [], 
   const shown = loading ? [] : concerns;
 
   useScreenPublisher({
-    focused_module: "world-field",
     ...(sel && PUBLISHED_KINDS.has(sel.kind) ? { subject: [{ kind: sel.kind, id: sel.id, label: sel.title } as WsScreenRef], selection: [{ kind: sel.kind, id: sel.id } as WsScreenRef] } : {}),
     visible: shown.filter((c) => PUBLISHED_KINDS.has(c.kind)).slice(0, 20).map((c) => ({ kind: c.kind, id: c.id }) as WsScreenRef),
   });

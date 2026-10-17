@@ -4,7 +4,7 @@ import { AskInterim } from "@/pages/ask";
 import { DoingInterim } from "@/pages/doing";
 import { GovernancePage } from "@/pages/governance";
 import { MindInterim } from "@/pages/mind";
-import { WorldInterim } from "@/pages/world";
+import { WorldPage } from "@/pages/world";
 import { AppShell } from "@/widgets/app-shell";
 import { AskOverlay } from "@/widgets/chat-workspace";
 import { redirects } from "@/shared/config";
@@ -22,10 +22,6 @@ function lazyPage(loader: () => Promise<{ default: ComponentType }>) {
 }
 
 // Interim sections load the old pages; they live here because a page cannot import a page.
-const worldLoaders = {
-  loops: () => import("@/pages/loops").then((m) => ({ default: m.LoopsPage })),
-  priority: () => import("@/pages/priority").then((m) => ({ default: m.PriorityPage })),
-};
 const doingLoaders = {
   goals: () => import("@/pages/goals").then((m) => ({ default: m.GoalsPage })),
   workflows: () => import("@/pages/workflows").then((m) => ({ default: m.WorkflowsPage })),
@@ -45,8 +41,7 @@ export const routes: RouteObject[] = [
     element: <AppShell overlay={<AskOverlay />} />,
     errorElement: <RouteErrorPage />,
     children: [
-      { index: true, element: <WorldInterim loaders={worldLoaders} /> },
-      { path: "world/*", element: <WorldInterim loaders={worldLoaders} fallback={notFound} /> },
+      { index: true, element: <WorldPage /> },
       { path: "ask", element: <AskInterim /> },
       { path: "ask/:threadId", element: <AskInterim /> },
       {

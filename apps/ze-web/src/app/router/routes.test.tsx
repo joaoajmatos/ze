@@ -17,7 +17,7 @@ vi.mock("@/pages/ask", () => ({
     return <p data-testid="ask">ask {threadId ?? "none"}</p>;
   },
 }));
-vi.mock("@/pages/world", () => ({ WorldInterim: () => <p data-testid="world">world</p> }));
+vi.mock("@/pages/world", () => ({ WorldPage: () => <p data-testid="world">world</p> }));
 vi.mock("@/pages/doing", () => ({ DoingInterim: ({ fallback }: { fallback: React.ReactNode }) => <p data-testid="doing">doing {fallback ? "" : ""}</p> }));
 vi.mock("@/pages/mind", () => ({ MindInterim: () => <p data-testid="mind">mind</p> }));
 vi.mock("@/pages/governance", () => ({
@@ -36,8 +36,6 @@ vi.mock("@/pages/jarvis", () => ({ JarvisApp: () => <p data-testid="jarvis">jarv
 vi.mock("@/pages/plugin-page", () => ({
   PluginPage: () => <p data-testid="plugin">plugin {useParams().pluginPath}</p>,
 }));
-vi.mock("@/pages/loops", () => ({ LoopsPage: () => null }));
-vi.mock("@/pages/priority", () => ({ PriorityPage: () => null }));
 
 import { routes } from "./routes";
 
@@ -55,7 +53,6 @@ const where = (router: ReturnType<typeof go>) => {
 describe("places", () => {
   it.each([
     ["/", "world"],
-    ["/world/priority", "world"],
     ["/ask", "ask"],
     ["/doing", "doing"],
     ["/doing/goals", "doing"],
@@ -92,6 +89,12 @@ describe("places", () => {
     expect(await screen.findByTestId("plugin")).toHaveTextContent("plugin contacts");
   });
 
+  it("/world/priority is gone: nothing owns it any more", async () => {
+    go("/world/priority");
+    expect(await screen.findByRole("link", { name: /Back to the world/ })).toHaveAttribute("href", "/");
+    expect(screen.queryByTestId("world")).toBeNull();
+  });
+
   it("renders a way back for a path nothing owns", async () => {
     go("/nowhere/at/all");
     expect(await screen.findByRole("link", { name: /Back to the world/ })).toHaveAttribute("href", "/");
@@ -102,7 +105,9 @@ describe("places", () => {
 describe("redirects", () => {
   it.each([
     ["/loops", "/"],
-    ["/priority", "/world/priority"],
+    ["/priority", "/"],
+    ["/reminders", "/"],
+    ["/world", "/"],
     ["/goals", "/doing/goals"],
     ["/goals/g-1", "/doing/goals/g-1"],
     ["/workflows", "/doing/workflows"],
