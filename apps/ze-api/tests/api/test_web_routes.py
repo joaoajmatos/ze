@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
@@ -13,6 +14,7 @@ from ze_api.api.v0.goals import router as goals
 
 @pytest.fixture
 def container():
+    gate_id = uuid4()
     goal = SimpleNamespace(
         id=uuid4(),
         title="Launch product",
@@ -21,8 +23,19 @@ def container():
         created_at="2026-06-01T00:00:00+00:00",
     )
 
+    progress = SimpleNamespace(
+        goal=goal,
+        milestones_done=2,
+        milestones_total=5,
+        next_milestone="Draft the landing page",
+        gate_id=gate_id,
+        gate_title="Approve pricing",
+        gate_open_since=datetime(2026, 6, 2, tzinfo=timezone.utc),
+        last_progress_at=datetime(2026, 6, 1, tzinfo=timezone.utc),
+        stuck_since=datetime(2026, 6, 1, tzinfo=timezone.utc),
+    )
     goal_store = AsyncMock()
-    goal_store.list_for_display = AsyncMock(return_value=[goal])
+    goal_store.list_progress = AsyncMock(return_value=[progress])
 
     return SimpleNamespace(
         _plugin_stores={
@@ -69,6 +82,18 @@ def test_list_goals(client):
     assert data[0]["title"] == "Launch product"
     assert data[0]["objective"] == "Launch product"
     assert data[0]["status"] == "active"
+
+
+def test_list_goals_carries_progress_fields(client, container):
+    [row] = client.get("/api/v0/goals").json()
+    assert row["milestones_done"] == 2
+    assert row["milestones_total"] == 5
+    assert row["next_milestone"] == "Draft the landing page"
+    assert row["gate_id"] is not None
+    assert row["gate_title"] == "Approve pricing"
+    assert row["gate_open_since"].startswith("2026-06-02")
+    assert row["last_progress_at"].startswith("2026-06-01")
+    assert row["stuck_since"].startswith("2026-06-01")
 
 
 def test_start_goal(client, container):

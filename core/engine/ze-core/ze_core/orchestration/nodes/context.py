@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import time
 from dataclasses import dataclass, field
 from datetime import timezone as _tz
@@ -21,6 +22,8 @@ SESSION_HISTORY_LIMIT = 10
 _RECAP_LIMIT = 5
 _OPEN_QUERY_LIMIT = 10
 _DEFAULT_INACTIVITY_MINUTES = 30
+PRESET_TIMEOUT_SECONDS = 2.0
+_PRESET_TOPIC_MAX = 120
 
 
 @dataclass
@@ -148,48 +151,94 @@ async def _open_priorities_note(
     return "\n".join(lines)
 
 
-_OPEN_QUERY_AGENT = "companion"
+_COMPANION_AGENT = "companion"
 
 
-def _open_query_envelope(
-    envelope: RoutingEnvelope | None, config: RunnableConfig
+@dataclass(frozen=True)
+class _PresetRequest:
+    kind: str  # "slipping" | "decisions" | "topic"
+    topic: str | None
+    key: str  # what AgentContext.preset carries; a show_* tool compares its own key
+
+
+def _preset_request(screen_ctx: dict) -> _PresetRequest | None:
+    compose = screen_ctx.get("compose")
+    if compose is None:
+        return None
+    if compose in ("slipping", "decisions"):
+        return _PresetRequest(compose, None, compose)
+    if compose == "topic":
+        topic = str(screen_ctx.get("topic") or "").strip()
+        if topic and len(topic) <= _PRESET_TOPIC_MAX:
+            # Same normalization as ze_priority.compose.tools.topic_key.
+            return _PresetRequest(
+                "topic", topic, "topic:" + " ".join(topic.lower().split())
+            )
+    log.warning("preset_compose_invalid", compose=compose)
+    return None
+
+
+async def _compose_preset(request: _PresetRequest, composer: Any) -> Any | None:
+    try:
+        if request.kind == "slipping":
+            pending = composer.compose_slipping()
+        elif request.kind == "decisions":
+            pending = composer.compose_decisions()
+        else:
+            pending = composer.compose_topic(request.topic)
+        return await asyncio.wait_for(pending, timeout=PRESET_TIMEOUT_SECONDS)
+    except Exception as exc:
+        log.warning("preset_compose_failed", preset=request.key, error=repr(exc))
+        return None
+
+
+def _preset_note(request: _PresetRequest, summary: str) -> str:
+    return (
+        f'[Composed answer for "{request.key}" — the modules are already on screen. '
+        "Write one or two sentences from this only, and offer one next step if it "
+        f"helps:\n{summary}]"
+    )
+
+
+def _companion_envelope(
+    envelope: RoutingEnvelope | None, config: RunnableConfig, routing_method: str
 ) -> RoutingEnvelope | None:
-    """Reroute a single-agent "what's open?" turn to companion.
+    """Reroute a single-agent open-query or preset turn to companion.
 
-    The merged PriorityView is not any specialist's data: the goals agent would
-    answer with its own goals only.
+    The merged PriorityView and the composed answers are not any specialist's data:
+    the goals agent would answer with its own goals only.
     Forced (eval) routes, compound turns and an absent companion stay as routed.
     """
     from ze_agents.registry import get_enabled_agents
 
     if envelope is None or not envelope.subtasks or envelope.is_compound:
         return None
-    if envelope.primary_agent == _OPEN_QUERY_AGENT:
+    if envelope.primary_agent == _COMPANION_AGENT:
         return None
     if config["configurable"].get("forced_agent"):
         return None
-    if _OPEN_QUERY_AGENT not in get_enabled_agents():
+    if _COMPANION_AGENT not in get_enabled_agents():
         return None
     router = config["configurable"].get("router")
     model = resolve_agent_model(
-        _OPEN_QUERY_AGENT, "full", router._app_config if router is not None else {}
+        _COMPANION_AGENT, "full", router._app_config if router is not None else {}
     )
     prompt = envelope.subtasks[0].prompt
     return RoutingEnvelope(
-        primary_agent=_OPEN_QUERY_AGENT,
+        primary_agent=_COMPANION_AGENT,
         confidence=1.0,
         score_gap=0.0,
-        routing_method="open_query",
+        routing_method=routing_method,
         is_compound=False,
         subtasks=[
             SubTask(
-                agent=_OPEN_QUERY_AGENT,
+                agent=_COMPANION_AGENT,
                 prompt=prompt,
                 model=model,
             )
         ],
         requires_synthesis=False,
-        raw_scores={_OPEN_QUERY_AGENT: 1.0},
+        raw_scores={_COMPANION_AGENT: 1.0},
     )
 
 
@@ -215,9 +264,19 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     # The open-query detector is calibrated passage-vs-passage (eval/calibration/open_query.py);
     # query-vs-query loses recall at the same false-positive rate.
     open_items_query = _is_open_query(embedder.encode_passage(embed_text), config)
+    screen_ctx = config["configurable"].get("screen_context") or {}
+    composer = config["configurable"].get("world_composer")
+    preset = _preset_request(screen_ctx) if composer is not None else None
     rerouted: RoutingEnvelope | None = None
-    if open_items_query:
-        rerouted = _open_query_envelope(envelope, config)
+    if preset is not None:
+        rerouted = _companion_envelope(envelope, config, "preset")
+        if rerouted is not None:
+            envelope = rerouted
+            log.info(
+                "preset_rerouted", session_id=state["session_id"], preset=preset.key
+            )
+    elif open_items_query:
+        rerouted = _companion_envelope(envelope, config, "open_query")
         if rerouted is not None:
             envelope = rerouted
             log.info("open_query_rerouted", session_id=state["session_id"])
@@ -310,7 +369,6 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     if user_message_id is not None:
         agent_context.extensions["user_message_id"] = user_message_id
 
-    screen_ctx = config["configurable"].get("screen_context") or {}
     workflow_id = screen_ctx.get("workflow_id")
     execution_id = screen_ctx.get("execution_id")
     if workflow_id:
@@ -354,11 +412,24 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
             f"{existing}\n\n{note}" if existing else note
         )
 
+    preset_components: list[dict] = []
+    if preset is not None:
+        composition = await _compose_preset(preset, composer)
+        if composition is not None:
+            preset_components = list(composition.components)
+            agent_context.preset = preset.key
+            note = _preset_note(preset, composition.summary)
+            existing = agent_context.screen_context_note
+            agent_context.screen_context_note = (
+                f"{existing}\n\n{note}" if existing else note
+            )
+
     updates: dict[str, Any] = {}
     if rerouted is not None:
         updates["envelope"] = rerouted
     return {
         **updates,
+        "preset_components": preset_components,
         "memory_context": memory_context,
         "agent_context": agent_context,
         "last_active_at": now,

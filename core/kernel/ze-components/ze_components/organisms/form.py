@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from typing import Literal
 
+from ze_components.claims import ClaimPosture
+
 
 @dataclass
 class FormField:
@@ -31,6 +33,7 @@ class Form:
     id: str
     title: str
     fields: list[FormField]
+    claim: ClaimPosture | None = None
     type: Literal["form"] = dc_field(default="form", init=False)
 
 

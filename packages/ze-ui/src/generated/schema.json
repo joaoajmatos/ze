@@ -2,6 +2,128 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ze UI Primitives",
   "$defs": {
+    "ClaimPosture": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "identity",
+            "fact",
+            "inference",
+            "suspicion",
+            "priority",
+            "action_record",
+            "feedback_record"
+          ]
+        },
+        "subject": {
+          "enum": [
+            "loop",
+            "goal",
+            "workflow",
+            "hypothesis",
+            "person",
+            "held_write",
+            "fact"
+          ]
+        },
+        "ref_id": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "confidence_from": {
+          "type": "number"
+        },
+        "source": {
+          "type": "string"
+        },
+        "as_of": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "slipped": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "subject",
+        "ref_id"
+      ]
+    },
+    "Readout": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "tone": {
+          "enum": [
+            "default",
+            "live",
+            "hot"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "value"
+      ]
+    },
+    "CardAction": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "intent": {
+          "enum": [
+            "confirm_loop",
+            "drop_loop",
+            "approve_held_write",
+            "deny_held_write",
+            "approve_gate",
+            "open"
+          ]
+        },
+        "ref_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "intent",
+        "ref_id"
+      ]
+    },
+    "TimelineEntry": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "due_at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "claim"
+      ]
+    },
     "FormField": {
       "type": "object",
       "properties": {
@@ -162,6 +284,9 @@
             "section"
           ]
         },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
         "type": {
           "const": "col"
         }
@@ -196,6 +321,9 @@
             "end",
             "between"
           ]
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
         },
         "type": {
           "const": "row"
@@ -232,6 +360,9 @@
             "error"
           ]
         },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
         "type": {
           "const": "text"
         }
@@ -257,6 +388,9 @@
             "info"
           ]
         },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
         "type": {
           "const": "badge"
         }
@@ -270,6 +404,9 @@
     "Divider": {
       "type": "object",
       "properties": {
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
         "type": {
           "const": "divider"
         }
@@ -288,6 +425,9 @@
             "md",
             "lg"
           ]
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
         },
         "type": {
           "const": "spacer"
@@ -314,6 +454,9 @@
             "danger"
           ]
         },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
         "type": {
           "const": "button"
         }
@@ -333,6 +476,9 @@
         },
         "label": {
           "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
         },
         "type": {
           "const": "progress"
@@ -368,6 +514,9 @@
         "caption": {
           "type": "string"
         },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
         "type": {
           "const": "table"
         }
@@ -394,6 +543,9 @@
             "$ref": "#/$defs/FormField"
           }
         },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
         "type": {
           "const": "form"
         }
@@ -418,6 +570,9 @@
         "title": {
           "type": "string"
         },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
         "type": {
           "const": "connections"
         }
@@ -439,6 +594,9 @@
         },
         "title": {
           "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
         },
         "type": {
           "const": "steps"
@@ -485,6 +643,9 @@
         "legend": {
           "type": "boolean"
         },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
         "type": {
           "const": "chart"
         }
@@ -493,6 +654,125 @@
       "required": [
         "chart_type",
         "data",
+        "type"
+      ]
+    },
+    "Headline": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "headline"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "type"
+      ]
+    },
+    "ClaimCard": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "span": {
+          "enum": [
+            4,
+            6,
+            8,
+            12
+          ]
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "readouts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Readout"
+          }
+        },
+        "progress_done": {
+          "type": "integer"
+        },
+        "progress_total": {
+          "type": "integer"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CardAction"
+          }
+        },
+        "tone": {
+          "enum": [
+            "default",
+            "cream",
+            "hot",
+            "dotted"
+          ]
+        },
+        "type": {
+          "const": "claim_card"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "claim",
+        "type"
+      ]
+    },
+    "ClaimTimeline": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimelineEntry"
+          }
+        },
+        "days_before": {
+          "type": "integer"
+        },
+        "days_after": {
+          "type": "integer"
+        },
+        "span": {
+          "enum": [
+            4,
+            6,
+            8,
+            12
+          ]
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "claim_timeline"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "entries",
         "type"
       ]
     },
@@ -536,6 +816,15 @@
         },
         {
           "$ref": "#/$defs/Chart"
+        },
+        {
+          "$ref": "#/$defs/Headline"
+        },
+        {
+          "$ref": "#/$defs/ClaimCard"
+        },
+        {
+          "$ref": "#/$defs/ClaimTimeline"
         }
       ],
       "discriminator": {
@@ -553,7 +842,10 @@
           "form": "#/$defs/Form",
           "connections": "#/$defs/Connections",
           "steps": "#/$defs/Steps",
-          "chart": "#/$defs/Chart"
+          "chart": "#/$defs/Chart",
+          "headline": "#/$defs/Headline",
+          "claim_card": "#/$defs/ClaimCard",
+          "claim_timeline": "#/$defs/ClaimTimeline"
         }
       }
     },
@@ -604,6 +896,15 @@
     },
     {
       "$ref": "#/$defs/Chart"
+    },
+    {
+      "$ref": "#/$defs/Headline"
+    },
+    {
+      "$ref": "#/$defs/ClaimCard"
+    },
+    {
+      "$ref": "#/$defs/ClaimTimeline"
     }
   ],
   "discriminator": {
@@ -621,7 +922,10 @@
       "form": "#/$defs/Form",
       "connections": "#/$defs/Connections",
       "steps": "#/$defs/Steps",
-      "chart": "#/$defs/Chart"
+      "chart": "#/$defs/Chart",
+      "headline": "#/$defs/Headline",
+      "claim_card": "#/$defs/ClaimCard",
+      "claim_timeline": "#/$defs/ClaimTimeline"
     }
   }
 }

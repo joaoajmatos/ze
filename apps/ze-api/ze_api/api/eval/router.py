@@ -43,7 +43,7 @@ async def eval_chat(
     # session_id is prefixed with "eval-" so eval threads don't collide with real ones.
     set_flow_context("eval", session_id=body.session_id)
 
-    config_extra = None
+    config_extra: dict | None = None
     if body.force_agent:
         if not request.app.state.settings.eval_mode:
             raise HTTPException(
@@ -56,6 +56,8 @@ async def eval_chat(
                 detail=f"Unknown agent {body.force_agent!r}",
             )
         config_extra = {"forced_agent": body.force_agent}
+    if body.context:
+        config_extra = {**(config_extra or {}), "screen_context": body.context}
 
     container = request.app.state.container
     session_id = f"eval-{body.session_id}"

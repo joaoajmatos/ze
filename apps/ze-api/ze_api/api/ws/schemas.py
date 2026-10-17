@@ -175,6 +175,7 @@ class WsNotificationFrame(BaseModel):
     body: str
     target_type: str | None
     target_id: str | None
+    target_parent_id: str | None
     created_at: datetime
     read: bool = False
     push_class: str
@@ -207,6 +208,8 @@ class WsScreenContext(BaseModel):
     workflow_id: str | None = None
     execution_id: str | None = None
     workspace_placed: list["WsWorkspacePlaced"] | None = None
+    compose: Literal["slipping", "decisions", "topic"] | None = None
+    topic: str | None = Field(None, max_length=120)
 
 
 class WsWorkspacePlaced(BaseModel):

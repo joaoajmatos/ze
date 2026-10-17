@@ -81,3 +81,28 @@ async def test_plain_eval_chat_passes_no_config_extra(eval_mode):
     resp = await _post(app, {"prompt": "hi"})
     assert resp.status_code == 200
     assert invoke.await_args.kwargs.get("config_extra") is None
+
+
+async def test_context_reaches_the_graph_config_as_screen_context():
+    app, invoke = _app(eval_mode=False)
+    context = {"screen": "world", "compose": "slipping"}
+    resp = await _post(app, {"prompt": "What's slipping?", "context": context})
+    assert resp.status_code == 200
+    assert invoke.await_args.kwargs["config_extra"] == {"screen_context": context}
+
+
+async def test_context_and_force_agent_combine_in_eval_mode():
+    app, invoke = _app(eval_mode=True)
+    context = {"screen": "world", "compose": "decisions"}
+    await _post(app, {"prompt": "x", "force_agent": "research", "context": context})
+    assert invoke.await_args.kwargs["config_extra"] == {
+        "forced_agent": "research",
+        "screen_context": context,
+    }
+
+
+async def test_context_is_refused_outside_eval_mode_only_when_forcing():
+    app, invoke = _app(eval_mode=False)
+    resp = await _post(app, {"prompt": "x", "context": {"screen": "w"}})
+    assert resp.status_code == 200
+    invoke.assert_awaited_once()

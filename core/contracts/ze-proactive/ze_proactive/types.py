@@ -66,6 +66,7 @@ class NotificationRow:
     actions: list[dict] | None = None
     delivery: str = "delivered"
     delivered_at: datetime | None = None
+    target_parent_id: str | None = None
 
 
 @dataclass
@@ -84,3 +85,4 @@ class Notification:
     push_class: str = "accountability"
     urgency: str = "normal"
     delivery: str = "delivered"
+    target_parent_id: str | None = None

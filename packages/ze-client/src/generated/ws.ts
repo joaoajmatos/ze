@@ -207,6 +207,7 @@ export type Title2 = string;
 export type Body = string;
 export type TargetType = string | null;
 export type TargetId = string | null;
+export type TargetParentId = string | null;
 export type CreatedAt1 = string;
 export type Read1 = boolean;
 export type PushClass = string;
@@ -234,6 +235,8 @@ export type ExecutionId = string | null;
 export type WorkspacePlaced = WsWorkspacePlaced[] | null;
 export type Path1 = string;
 export type Size = number;
+export type Compose = ("slipping" | "decisions" | "topic") | null;
+export type Topic = string | null;
 export type Type14 = "ack";
 export type Ids = string[];
 export type Type15 = "confirm";
@@ -646,6 +649,7 @@ export interface WsNotificationFrame {
   body: Body;
   target_type: TargetType;
   target_id: TargetId;
+  target_parent_id: TargetParentId;
   created_at: CreatedAt1;
   read?: Read1;
   push_class: PushClass;
@@ -671,6 +675,8 @@ export interface WsScreenContext {
   workflow_id?: WorkflowId;
   execution_id?: ExecutionId;
   workspace_placed?: WorkspacePlaced;
+  compose?: Compose;
+  topic?: Topic;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

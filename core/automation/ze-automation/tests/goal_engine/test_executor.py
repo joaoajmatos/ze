@@ -197,6 +197,23 @@ async def test_advance_skips_milestone_on_execution_error(
     )
 
 
+async def test_gate_push_targets_the_gate_inside_its_goal(executor, store, push):
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)
+    m2 = _milestone(2, MilestoneStatus.PENDING, goal_id=goal.id)
+    gate = _gate(after_seq=1, goal_id=goal.id)
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1, m2])
+    store.get_pending_gate = AsyncMock(return_value=gate)
+
+    await executor.advance(goal.id)
+
+    kwargs = push.call_args.kwargs
+    assert kwargs["target_type"] == "goal_gate"
+    assert kwargs["target_id"] == str(gate.id)
+    assert kwargs["target_parent_id"] == str(goal.id)
+
+
 async def test_gate_fires_before_next_milestone(executor, store, push):
     goal = _goal()
     m1 = _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)

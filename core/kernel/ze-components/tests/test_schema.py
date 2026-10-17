@@ -117,3 +117,66 @@ def test_progress_steps_pattern_emits_steps_primitive():
     assert data["title"] == "Reach B1"
     assert data["steps"][0] == {"label": "A2 assessment", "status": "done"}
     assert data["steps"][1]["note"] == "2x weekly"
+
+
+def _keys_at_any_depth(node: object) -> set[str]:
+    found: set[str] = set()
+    if isinstance(node, dict):
+        for key, value in node.items():
+            found.add(key)
+            found |= _keys_at_any_depth(value)
+    elif isinstance(node, list):
+        for item in node:
+            found |= _keys_at_any_depth(item)
+    return found
+
+
+def test_export_json_schema_has_claim_vocabulary():
+    defs = export_json_schema()["$defs"]
+    for name in ("ClaimPosture", "Readout", "CardAction", "TimelineEntry"):
+        assert name in defs
+    mapping = export_json_schema()["discriminator"]["mapping"]
+    for key in ("headline", "claim_card", "claim_timeline"):
+        assert key in mapping
+
+
+def test_every_primitive_has_optional_claim_and_claim_card_requires_it():
+    from ze_components import PRIMITIVE_TYPES
+
+    defs = export_json_schema()["$defs"]
+    for cls in PRIMITIVE_TYPES:
+        node = defs[cls.__name__]
+        assert node["properties"]["claim"] == {"$ref": "#/$defs/ClaimPosture"}, cls
+        if cls.__name__ == "ClaimCard":
+            assert "claim" in node["required"]
+        else:
+            assert "claim" not in node["required"], cls
+
+
+def test_card_action_intent_is_the_closed_set_of_six():
+    action = export_json_schema()["$defs"]["CardAction"]
+    assert action["properties"]["intent"] == {
+        "enum": [
+            "confirm_loop",
+            "drop_loop",
+            "approve_held_write",
+            "deny_held_write",
+            "approve_gate",
+            "open",
+        ]
+    }
+
+
+def test_no_render_tool_schema_exposes_claim_at_any_depth():
+    import ze_components.tools  # noqa: F401
+    from ze_agents.tool import _tools
+
+    render = {n: t for n, t in _tools.items() if n.startswith("render_")}
+    assert render
+    for name, spec in render.items():
+        assert "claim" not in _keys_at_any_depth(spec.llm_schema()), name
+
+
+def test_build_render_schema_omits_claim_for_a_primitive_with_one():
+    schema = build_render_schema(Table)
+    assert "claim" not in schema["properties"]

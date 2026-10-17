@@ -37,9 +37,6 @@ export function notificationHref(n: NotificationTarget): string | null {
       return "/doing";
     case "workflow_execution":
       return parent ? workflowPath(parent, id) : workflowsPath();
-    // Until 184 renames it, the backend still sends the workflow id as `workflow_run`.
-    case "workflow_run":
-      return workflowPath(id);
     case "workspace_run":
       return "/doing/workspace";
     case "chat_thread":

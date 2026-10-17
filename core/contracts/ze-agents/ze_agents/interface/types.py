@@ -71,6 +71,7 @@ class Notification:
     title: str | None = None
     target_type: str | None = None
     target_id: str | None = None
+    target_parent_id: str | None = None
     created_at: datetime | None = None
     # Governor fields (phase 177). `buzz=False` keeps the ntfy hop silent;
     # `delivery` "held"/"suppressed" means frame-only, no chat message.

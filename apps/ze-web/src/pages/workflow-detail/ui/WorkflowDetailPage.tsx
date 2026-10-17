@@ -1,8 +1,8 @@
 import type { WorkflowExecutionResponse, WorkflowRevisionResponse, WorkflowStepResponse } from "@myguyze/ze-client";
 import { ArrowLeft, Workflow, Loader2, CheckCircle2, XCircle, MessageCircle, Ban, ChevronDown, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { WorkflowExecutionsList } from "@/widgets/workflow-executions";
 import { WorkflowGraph, WorkflowDefinitionNotice, type WorkflowDefinitionNoticeMode } from "@/widgets/workflow-graph";
 import { askAbout } from "@/features/ask-bar";
@@ -33,6 +33,18 @@ export function WorkflowDetailPage() {
   const { data: revisions, isLoading: revisionsLoading } = useWorkflowRevisionsQuery(workflowId ?? "");
   const { data: liveExecution } = useLiveExecutionQuery(workflowId ?? "", liveExecutionId);
   const [revisionsSinceFilter, setRevisionsSinceFilter] = useState<string | null>(null);
+
+  const [searchParams] = useSearchParams();
+  const requestedExecution = searchParams.get("execution");
+  const appliedRequest = useRef<string | null>(null);
+  useEffect(() => {
+    if (!requestedExecution || appliedRequest.current === requestedExecution || !executions) return;
+    const match = executions.find((e) => e.id === requestedExecution);
+    if (match) {
+      appliedRequest.current = requestedExecution;
+      setSelectedExecution(match);
+    }
+  }, [requestedExecution, executions]);
 
   const trigger = useTriggerWorkflowMutation();
   const cancelExecution = useCancelExecutionMutation();
@@ -288,7 +300,7 @@ function ChatAboutRunButton({ execution, workflowName }: ChatAboutRunButtonProps
   const stepCount = execution.step_results.length;
   const status = execution.status === "completed" ? "completed" : "failed";
   const durationPart = duration ? ` in ${duration}` : "";
-  const errorPart = execution.error ? `. Error: ${execution.error}` : "";
+  const errorPart = execution.failure_summary ? `. ${execution.failure_summary}` : "";
   const prefillMessage = `Tell me about the "${workflowName}" workflow run from ${date}. It ${status}${durationPart} with ${stepCount} step${stepCount !== 1 ? "s" : ""}${errorPart}.`;
 
   return (

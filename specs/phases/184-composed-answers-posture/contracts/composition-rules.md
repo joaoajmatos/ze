@@ -16,7 +16,7 @@ Normative for FR-007 to FR-010. Every rule is a pure function over records the c
 
 ## Constants
 
-`WINDOW_DAYS = 7`, `LIST_CAP = 6` (per kind), `COMPOSITION_CAP = 12` cards, `PERSON_CAP = 2`, `TOPIC_FLOOR = ze_priority.tools._MATCH_FLOOR` (0.55; moved to a public name `MATCH_FLOOR` in `ze_priority/matching.py` and imported by both).
+`WINDOW_DAYS = 7`, `LIST_CAP = 6` (per kind), `COMPOSITION_CAP = 12` cards, `PERSON_CAP = 2`, `TOPIC_FLOOR = 0.90` (`ze_priority/matching.py`). `MATCH_FLOOR` (0.55) stays for `reprioritize_item`, which also needs a margin. Measured 2026-10-17: real E5 passage cosines for unrelated short texts are 0.81-0.87, so 0.55 matches everything; a topic therefore matches an item when it shares a word of 4+ characters (case and diacritics folded) with the item's text or the cosine is at least 0.90.
 
 ## `compose_slipping(now)`
 
@@ -36,7 +36,7 @@ Normative for FR-007 to FR-010. Every rule is a pure function over records the c
 
 ## `compose_topic(topic, now)`
 
-- Embed `topic` once (`encode_passage`); for each candidate title compute cosine; keep `≥ MATCH_FLOOR`.
+- Embed `topic` and all candidate texts in one batched `encode_passage` call (off the event loop); keep an item that shares a topic word or has cosine `≥ TOPIC_FLOOR`; order by shared words, then cosine.
 - Candidates: open loops (suspected/active/drifting), goals from `list_progress()` (title + objective, max of the two cosines), workflows (name + description), hypotheses from the priority ranking.
 - Cards: loops (as in slipping/decisions, by cosine), goals (`span=8`, progress, next milestone line), workflows (`subject="workflow"`, `kind=None`, `state` from the last execution: `ok` / `failed` (`slipped=True`) / `never_run`, or `off` when disabled; readout last run "N h ago" and next run; line `failure_summary` when failed), hypotheses (`kind` from the hypothesis, dotted). Cap per kind 6.
 - Headline `<TOPIC> · N SLIPPED · M WORKFLOWS` with `<TOPIC>` from `headline_text(topic)` truncated so the whole line fits 40 characters; nothing matched → `NOTHING ON <TOPIC>`.

@@ -60,6 +60,7 @@ class WorkflowExecutionResponse(BaseModel):
     step_results: list[StepResultResponse]
     steps_snapshot: list[WorkflowStepResponse] = []
     error: str | None
+    failure_summary: str | None
     summary: str | None
     started_at: str | None
     completed_at: str | None

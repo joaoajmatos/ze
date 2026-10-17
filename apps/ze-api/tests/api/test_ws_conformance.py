@@ -57,6 +57,48 @@ def _frames_sent(ws: Any) -> list[dict]:
 # ── Protocol conformance: InboundFrame shapes ─────────────────────────────────
 
 
+class TestScreenContextCompose:
+    """message.context.compose / topic drive the preset path (phase 184)."""
+
+    def test_compose_and_topic_are_accepted(self):
+        from ze_api.api.ws.schemas import WsSendMessageFrame
+
+        frame = WsSendMessageFrame.model_validate(
+            {
+                "type": "message",
+                "text": "How is LedgerLite going?",
+                "context": {"screen": "world", "compose": "topic", "topic": "LedgerLite"},
+            }
+        )
+        assert frame.context.compose == "topic"
+        assert frame.context.topic == "LedgerLite"
+
+    def test_compose_is_optional(self):
+        from ze_api.api.ws.schemas import WsSendMessageFrame
+
+        frame = WsSendMessageFrame.model_validate(
+            {"type": "message", "text": "hi", "context": {"screen": "world"}}
+        )
+        assert frame.context.compose is None and frame.context.topic is None
+
+    def test_unknown_compose_value_is_rejected(self):
+        import pytest
+        from pydantic import ValidationError
+        from ze_api.api.ws.schemas import WsScreenContext
+
+        with pytest.raises(ValidationError):
+            WsScreenContext.model_validate({"screen": "world", "compose": "everything"})
+
+    def test_topic_is_capped_at_120_characters(self):
+        import pytest
+        from pydantic import ValidationError
+        from ze_api.api.ws.schemas import WsScreenContext
+
+        WsScreenContext.model_validate({"screen": "w", "compose": "topic", "topic": "x" * 120})
+        with pytest.raises(ValidationError):
+            WsScreenContext.model_validate({"screen": "w", "compose": "topic", "topic": "x" * 121})
+
+
 class TestMessageFrameConformance:
     """message frame: {type, message: {id, role, text, components, read, created_at, thread_id}}"""
 

@@ -33,6 +33,7 @@ export function RefreshHandler() {
           body: frame.body,
           target_type: frame.target_type,
           target_id: frame.target_id,
+          target_parent_id: frame.target_parent_id,
           created_at: frame.created_at,
           read: false,
           push_class: frame.push_class,

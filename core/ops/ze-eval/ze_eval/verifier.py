@@ -11,8 +11,13 @@ Scenario YAML format:
         where:
           label__icontains: dentist   # case-insensitive substring
           sent: false                 # exact match
-        expect: exists                # 'exists' or 'not_exists'
+        expect: exists                # 'exists', 'not_exists' or 'any' (cleanup only)
         cleanup: true                 # delete matching rows after check (default: true)
+        created_since_run: true       # only rows with created_at at or after the scenario start
+
+Cleanup deletes every row the where clause matches, so scenarios that match on
+words a user could also have written must set created_since_run. Even so, run
+evals against a throwaway database.
 
 Requires DATABASE_URL env var (same as Ze).
 """
@@ -20,10 +25,21 @@ Requires DATABASE_URL env var (same as Ze).
 from __future__ import annotations
 
 import os
+from datetime import datetime
 
 import asyncpg
 
 from ze_eval.types import VerifyResult
+
+
+def _scoped_where(check: dict, since: datetime | None) -> tuple[str, list]:
+    where_sql, params = _build_where(check.get("where", {}))
+    if check.get("created_since_run"):
+        if since is None:
+            raise ValueError("created_since_run needs the scenario start time")
+        params = [*params, since]
+        where_sql = f"({where_sql}) AND created_at >= ${len(params)}"
+    return where_sql, params
 
 
 def _build_where(where: dict) -> tuple[str, list]:
@@ -51,11 +67,13 @@ def _build_where(where: dict) -> tuple[str, list]:
     return " AND ".join(clauses), params
 
 
-async def _check(conn: asyncpg.Connection, check: dict) -> VerifyResult:
+async def _check(
+    conn: asyncpg.Connection, check: dict, since: datetime | None = None
+) -> VerifyResult:
     table = check["table"]
     where = check.get("where", {})
     expect = check.get("expect", "exists")
-    where_sql, params = _build_where(where)
+    where_sql, params = _scoped_where(check, since)
 
     count = await conn.fetchval(
         f"SELECT COUNT(*) FROM {table} WHERE {where_sql}", *params
@@ -66,6 +84,8 @@ async def _check(conn: asyncpg.Connection, check: dict) -> VerifyResult:
         passed = count > 0
     elif expect == "not_exists":
         passed = count == 0
+    elif expect == "any":
+        passed = True
     else:
         passed = False
 
@@ -74,17 +94,19 @@ async def _check(conn: asyncpg.Connection, check: dict) -> VerifyResult:
     )
 
 
-async def _cleanup(conn: asyncpg.Connection, check: dict) -> None:
+async def _cleanup(
+    conn: asyncpg.Connection, check: dict, since: datetime | None = None
+) -> None:
     table = check["table"]
     where = check.get("where", {})
     if not where:
         return
-    where_sql, params = _build_where(where)
+    where_sql, params = _scoped_where(check, since)
     await conn.execute(f"DELETE FROM {table} WHERE {where_sql}", *params)
 
 
 async def run_verification(
-    checks: list[dict], db_url: str | None = None
+    checks: list[dict], db_url: str | None = None, since: datetime | None = None
 ) -> list[VerifyResult]:
     """Run all checks then clean up eval-created rows."""
     url = db_url or os.environ.get(
@@ -110,10 +132,10 @@ async def run_verification(
     try:
         for check in checks:
             try:
-                result = await _check(conn, check)
+                result = await _check(conn, check, since)
                 results.append(result)
                 if check.get("cleanup", True):
-                    await _cleanup(conn, check)
+                    await _cleanup(conn, check, since)
             except Exception as exc:
                 results.append(
                     VerifyResult(

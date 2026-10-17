@@ -54,7 +54,7 @@ Client mapping of intents (FR-019, phase 187 keeps it): `confirm_loop` → `conf
 
 ## Tone derivation (`claim_tone(claim, needs_user)`)
 
-1. `claim.slipped` → `hot`.
+1. `claim.slipped` → `hot`. Exception: an open gate that has waited past its deadline keeps `claim.slipped = true` but the card passes `tone="cream"`, because a gate is the user's to decide, not an alarm (One Alarm Rule). `claim_card(tone=...)` is the only override.
 2. `needs_user` (held write, open gate) → `cream`.
 3. `claim.kind in (suspicion, inference)` → `dotted` (a null kind never matches).
 4. otherwise `default`.

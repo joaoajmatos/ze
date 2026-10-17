@@ -189,3 +189,22 @@ async def test_render_card_appends_col_primitive():
     assert len(components) == 1
     assert components[0]["type"] == "col"
     assert components[0]["variant"] == "section"
+
+
+async def test_render_tool_drops_a_claim_argument_and_logs(monkeypatch):
+    from ze_components import tools as render_tools
+
+    warnings: list[tuple] = []
+    monkeypatch.setattr(
+        render_tools.log, "warning", lambda event, **kw: warnings.append((event, kw))
+    )
+    token = ctx.begin_collection()
+    await ze_components.tools.render_table(
+        headers=["A"],
+        rows=[["1"]],
+        claim={"kind": "fact", "subject": "loop", "ref_id": "x", "confidence": 1.0},
+    )
+    components = ctx.collect_and_reset(token)
+
+    assert "claim" not in components[0]
+    assert ("render_tool_claim_dropped", {"tool": "render_table"}) in warnings

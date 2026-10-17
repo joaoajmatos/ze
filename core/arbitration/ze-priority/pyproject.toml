@@ -9,6 +9,7 @@ description = "Attention arbitration for Ze — PriorityView ranking + shared pu
 requires-python = ">=3.11"
 dependencies = [
     "ze-agents",
+    "ze-components",
     "ze-worldstate",
     "ze-automation",
     "ze-correlation",
@@ -33,6 +34,7 @@ testpaths = ["tests"]
 
 [tool.uv.sources]
 ze-agents      = { workspace = true }
+ze-components  = { workspace = true }
 ze-worldstate  = { workspace = true }
 ze-automation  = { workspace = true }
 ze-correlation = { workspace = true }

@@ -3,11 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ze_components.claims import ClaimPosture
+
 
 @dataclass
 class Badge:
     label: str
     color: Literal["default", "success", "warning", "error", "info"] = "default"
+    claim: ClaimPosture | None = None
     type: Literal["badge"] = field(default="badge", init=False)
 
 

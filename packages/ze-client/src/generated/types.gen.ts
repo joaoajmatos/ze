@@ -673,6 +673,38 @@ export type GoalListItem = {
      * Created At
      */
     created_at: string;
+    /**
+     * Milestones Done
+     */
+    milestones_done: number;
+    /**
+     * Milestones Total
+     */
+    milestones_total: number;
+    /**
+     * Next Milestone
+     */
+    next_milestone: string | null;
+    /**
+     * Gate Id
+     */
+    gate_id: string | null;
+    /**
+     * Gate Title
+     */
+    gate_title: string | null;
+    /**
+     * Gate Open Since
+     */
+    gate_open_since: string | null;
+    /**
+     * Last Progress At
+     */
+    last_progress_at: string | null;
+    /**
+     * Stuck Since
+     */
+    stuck_since: string | null;
 };
 
 /**
@@ -1437,6 +1469,10 @@ export type NotificationItem = {
      * Target Id
      */
     target_id: string | null;
+    /**
+     * Target Parent Id
+     */
+    target_parent_id: string | null;
     /**
      * Created At
      */
@@ -2782,6 +2818,10 @@ export type WorkflowExecutionResponse = {
      * Error
      */
     error: string | null;
+    /**
+     * Failure Summary
+     */
+    failure_summary: string | null;
     /**
      * Summary
      */

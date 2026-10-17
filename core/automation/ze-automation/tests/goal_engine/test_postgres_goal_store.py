@@ -226,15 +226,16 @@ async def test_list_retrospectives_returns_empty_when_no_rows():
     assert result == []
 
 
-# ── list_for_display ─────────────────────────────────────────────────────────
+# ── list_progress ────────────────────────────────────────────────────────────
 
 
-async def test_list_for_display_includes_planning_and_paused():
+async def test_list_progress_includes_planning_and_paused_in_one_query():
     pool, conn = _make_pool(fetch=[])
     store = PostgresGoalStore(pool)
 
-    await store.list_for_display()
+    await store.list_progress()
 
+    conn.fetch.assert_called_once()
     sql = conn.fetch.call_args.args[0]
     assert "planning" in sql
     assert "paused" in sql

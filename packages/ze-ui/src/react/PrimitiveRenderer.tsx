@@ -3,11 +3,15 @@ import { cn } from "../lib/cn";
 import type {
   Badge,
   Button,
+  CardAction,
   Chart,
+  ClaimCard,
+  ClaimTimeline,
   Col,
   ConnectionItem,
   Connections,
   Form,
+  Headline,
   Primitive,
   ProgressBar,
   Row,
@@ -144,6 +148,12 @@ function PrimitiveNodeRenderer({ node }: { node: Primitive }) {
       return <StepsRenderer node={node} />;
     case "chart":
       return <ChartRenderer node={node} />;
+    case "headline":
+      return <HeadlineRenderer node={node} />;
+    case "claim_card":
+      return <ClaimCardRenderer node={node} />;
+    case "claim_timeline":
+      return <ClaimTimelineRenderer node={node} />;
     default:
       // Unknown primitive from a newer backend — render nothing, don't crash.
       return null;
@@ -512,6 +522,114 @@ function ConnectionsRenderer({ node }: { node: Connections }) {
       {node.connections.map((item, i) => (
         <ConnectionCard key={i} item={item} />
       ))}
+    </div>
+  );
+}
+
+// Interim markup: phase 187 restyles these. Posture comes from the record, never the model.
+const CARD_TONE: Record<NonNullable<ClaimCard["tone"]>, string> = {
+  default: "border-white/10",
+  cream: "border-white/30 bg-white/[0.05]",
+  hot: "border-ember/60",
+  dotted: "border-dashed border-white/25",
+};
+
+function postureLine(claim: ClaimCard["claim"]): string {
+  const parts: string[] = [claim.kind ?? claim.subject.replace("_", " ")];
+  if (claim.state) parts.push(claim.state.replace("_", " "));
+  if (claim.confidence != null) parts.push(`${Math.round(claim.confidence * 100)}%`);
+  if (claim.slipped) parts.push("slipped");
+  return parts.join(" · ");
+}
+
+function HeadlineRenderer({ node }: { node: Headline }) {
+  return <p className="text-sm font-semibold tracking-widest">{node.text}</p>;
+}
+
+function ClaimCardRenderer({ node }: { node: ClaimCard }) {
+  const { onCardAction } = usePrimitiveRendererActions();
+  const [decided, setDecided] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const actions = (node.actions ?? []).filter((a) => !decided || a.intent === "open");
+  return (
+    <div className={cn("rounded-lg border p-3 flex flex-col gap-1", CARD_TONE[node.tone ?? "default"])}>
+      <p className="text-sm font-medium">{node.title}</p>
+      <p className="text-[11px] text-white/45">{postureLine(node.claim)}</p>
+      {node.lines?.map((line, i) => (
+        <p key={i} className="text-xs text-white/60">
+          {line}
+        </p>
+      ))}
+      {node.progress_total != null && (
+        <p className="text-xs text-white/60">
+          {node.progress_done ?? 0}/{node.progress_total}
+        </p>
+      )}
+      {node.readouts && node.readouts.length > 0 && (
+        <dl className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+          {node.readouts.map((readout, i) => (
+            <div key={i} className="flex gap-1">
+              <dt className="text-white/50">{readout.label}</dt>
+              <dd className={cn(readout.tone === "hot" && "text-ember")}>{readout.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {decided && <p className="text-xs text-white/50">Sent.</p>}
+      {failed && <p className="text-xs text-ember">Could not send. Try again.</p>}
+      {actions.length > 0 && (
+        <div className="flex gap-2 pt-1">
+          {actions.map((action: CardAction, i) => (
+            <button
+              key={i}
+              type="button"
+              disabled={pending}
+              onClick={async () => {
+                const event = {
+                  intent: action.intent,
+                  ref_id: action.ref_id,
+                  subject: node.claim.subject,
+                };
+                if (action.intent === "open") {
+                  void onCardAction?.(event);
+                  return;
+                }
+                setPending(true);
+                setFailed(false);
+                let accepted: boolean | void = true;
+                try {
+                  accepted = await onCardAction?.(event);
+                } catch {
+                  accepted = false;
+                }
+                setPending(false);
+                if (accepted === false) setFailed(true);
+                else setDecided(true);
+              }}
+              className="px-3 py-1 rounded-pill border border-white/15 text-xs hover:bg-white/5 cursor-pointer disabled:opacity-50 disabled:cursor-default"
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClaimTimelineRenderer({ node }: { node: ClaimTimeline }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-xs text-white/60">{node.title}</p>
+      <ol className="flex flex-col gap-1 text-xs">
+        {node.entries.map((entry, i) => (
+          <li key={i}>
+            {entry.title}
+            {entry.due_at ? ` · ${entry.due_at.slice(0, 10)}` : ""}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

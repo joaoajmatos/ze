@@ -337,3 +337,23 @@ async def test_cancel_workflow_run_delegates_to_scheduler():
 
     scheduler.cancel_execution.assert_called_once_with(wf.id, execution.id)
     assert result["status"] == "cancelled"
+
+
+async def test_failed_execution_carries_a_plain_failure_summary():
+    wf = _workflow()
+    failed = _execution(status="failed")
+    failed.step_results[0].success = False
+    failed.step_results[0].error = "TimeoutError: step took too long"
+    failed.error = "TimeoutError: step took too long"
+    store = AsyncMock()
+    store.get_by_name = AsyncMock(return_value=wf)
+    store.list_executions = AsyncMock(return_value=[failed, _execution()])
+
+    result = await tools.list_workflow_executions(store, "trump-health", limit=3)
+
+    failed_row, ok_row = result["executions"]
+    assert failed_row["failure_summary"] == (
+        "Step 1 of 1, \u201cSearch recent headlines\u201d, failed: it ran out of time."
+    )
+    assert "TimeoutError" not in failed_row["failure_summary"]
+    assert ok_row["failure_summary"] is None

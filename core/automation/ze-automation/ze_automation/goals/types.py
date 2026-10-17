@@ -8,6 +8,8 @@ from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
 
+STUCK_IDLE_DAYS = 7
+
 
 class SuggestionStatus(StrEnum):
     PENDING = "pending"
@@ -256,6 +258,19 @@ class StuckGoal:
     idle_days: int
     last_milestone_title: str | None
     gate: VerificationGate | None
+
+
+@dataclass
+class GoalProgress:
+    goal: Goal
+    milestones_done: int
+    milestones_total: int
+    next_milestone: str | None
+    gate_id: UUID | None
+    gate_title: str | None
+    gate_open_since: datetime | None
+    last_progress_at: datetime | None
+    stuck_since: datetime | None
 
 
 @dataclass

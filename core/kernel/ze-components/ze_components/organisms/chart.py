@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ze_components.claims import ClaimPosture
+
 
 @dataclass
 class ChartPoint:
@@ -20,6 +22,7 @@ class Chart:
     y_label: str | None = None
     title: str | None = None
     legend: bool = True
+    claim: ClaimPosture | None = None
     type: Literal["chart"] = field(default="chart", init=False)
 
 

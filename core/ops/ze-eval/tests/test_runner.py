@@ -211,3 +211,66 @@ def test_collect_components_tags_each_with_its_turn():
         {"turn": 1, "component": {"type": "table"}},
         {"turn": 3, "component": {"type": "chart"}},
     ]
+
+
+# ── scenario context (phase 184) ──────────────────────────────────────────────
+
+_CHAT_REPLY = {"response": "ok", "agent_used": "companion", "pending_confirmation": False}
+
+
+def _bodies(ze_http):
+    return [json.loads(r.content) for r in ze_http.requests]
+
+
+def test_single_prompt_scenario_forwards_its_context(ze_http):
+    ze_http.replies["/eval/chat"] = [httpx.Response(200, json=_CHAT_REPLY)]
+    _run({"prompt": "What's slipping?", "context": {"screen": "world", "compose": "slipping"}})
+    assert _bodies(ze_http)[0]["context"] == {"screen": "world", "compose": "slipping"}
+
+
+def test_scenario_context_applies_to_the_final_prompt_turn_only(ze_http):
+    ze_http.replies["/eval/chat"] = [
+        httpx.Response(200, json=_CHAT_REPLY),
+        httpx.Response(200, json=_CHAT_REPLY),
+    ]
+    _run(
+        {
+            "context": {"screen": "world", "compose": "decisions"},
+            "turns": [{"prompt": "set things up"}, {"prompt": "What should I decide?"}],
+        }
+    )
+    first, second = _bodies(ze_http)
+    assert "context" not in first
+    assert second["context"]["compose"] == "decisions"
+
+
+def test_a_turn_context_overrides_the_scenario_context(ze_http):
+    ze_http.replies["/eval/chat"] = [httpx.Response(200, json=_CHAT_REPLY)]
+    _run(
+        {
+            "context": {"screen": "world", "compose": "slipping"},
+            "turns": [{"prompt": "how is it going", "context": {"screen": "w", "compose": "topic", "topic": "LedgerLite"}}],
+        }
+    )
+    assert _bodies(ze_http)[0]["context"]["topic"] == "LedgerLite"
+
+
+def test_no_context_sends_no_context_key(ze_http):
+    ze_http.replies["/eval/chat"] = [httpx.Response(200, json=_CHAT_REPLY)]
+    _run({"prompt": "hi"})
+    assert "context" not in _bodies(ze_http)[0]
+
+
+@pytest.mark.parametrize(
+    "context",
+    [
+        "slipping",
+        {"screen": "w", "compose": "everything"},
+        {"screen": "w", "compose": "topic"},
+        {"compose": "slipping"},
+    ],
+)
+def test_invalid_context_is_rejected_before_any_request(ze_http, context):
+    with pytest.raises(ValueError):
+        _run({"prompt": "x", "context": context})
+    assert ze_http.requests == []

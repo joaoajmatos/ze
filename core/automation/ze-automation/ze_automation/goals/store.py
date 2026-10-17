@@ -9,6 +9,7 @@ from ze_automation.goals.types import (
     GoalDetail,
     GoalLearning,
     GoalLearningSummary,
+    GoalProgress,
     GoalStatus,
     GateStatus,
     EligibleLearning,
@@ -33,8 +34,8 @@ class GoalStore(Protocol):
 
     async def list_active(self) -> list[Goal]: ...
 
-    async def list_for_display(self) -> list[Goal]:
-        """Goals visible on the web goals screen (includes planning and paused)."""
+    async def list_progress(self) -> list[GoalProgress]:
+        """Goals visible on the web goals screen (includes planning and paused), with progress."""
         ...
 
     async def list_for_advance(self) -> list[Goal]:

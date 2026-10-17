@@ -25,6 +25,7 @@ class EvalChatRequest(BaseModel):
     prompt: str
     session_id: str = "eval"
     force_agent: str | None = None
+    context: dict | None = None
 
 
 class EvalRoutingInfo(BaseModel):

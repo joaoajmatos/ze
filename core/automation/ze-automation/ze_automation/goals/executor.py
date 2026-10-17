@@ -1027,6 +1027,7 @@ class GoalExecutor:
             content,
             target_type="goal_gate",
             target_id=gate_id_str,
+            target_parent_id=str(goal.id),
             format="html",
             actions=(
                 Action(

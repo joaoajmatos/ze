@@ -5,6 +5,7 @@ import { goalPath } from "@/shared/config";
 import { humanizeStatus } from "@/shared/lib";
 import { Button } from "@/shared/ui";
 import { useStartGoalMutation } from "../api/useStartGoalMutation";
+import { progressLines } from "../lib/progress";
 
 interface GoalCardProps {
   goal: GoalListItem;
@@ -16,6 +17,20 @@ function statusStyle(status: string) {
   if (status === "completed") return "border-success/50 text-success";
   if (status === "abandoned") return "border-foreground/20 text-smoke";
   return "border-foreground/20 text-smoke";
+}
+
+function ProgressLines({ goal }: { goal: GoalListItem }) {
+  const lines = progressLines(goal);
+  if (!lines.length) return null;
+  return (
+    <div className="mt-1 space-y-0.5">
+      {lines.map((line) => (
+        <p key={line.text} className={line.alarm ? "text-xs text-destructive" : "text-xs text-smoke"}>
+          {line.text}
+        </p>
+      ))}
+    </div>
+  );
 }
 
 export function GoalCard({ goal, variant = "row" }: GoalCardProps) {
@@ -42,6 +57,7 @@ export function GoalCard({ goal, variant = "row" }: GoalCardProps) {
           {goal.objective !== goal.title && (
             <p className="mt-1 text-xs text-smoke line-clamp-2">{goal.objective}</p>
           )}
+          <ProgressLines goal={goal} />
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
@@ -78,6 +94,7 @@ export function GoalCard({ goal, variant = "row" }: GoalCardProps) {
         {goal.objective !== goal.title && (
           <p className="text-xs text-smoke truncate mt-0.5">{goal.objective}</p>
         )}
+        <ProgressLines goal={goal} />
       </div>
 
       <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>

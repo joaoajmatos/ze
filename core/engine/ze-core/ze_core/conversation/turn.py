@@ -58,6 +58,7 @@ def make_graph_input(
         "final_response": None,
         "error": None,
         "components": [],
+        "preset_components": [],
         "conductor_hint": None,
         "conductor_ledger": [],
         "conductor_delegate_counts": {},

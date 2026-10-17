@@ -6,14 +6,13 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-import numpy as np
-
 from ze_agents.nli import NLIClient
 from ze_agents.tool import Injected, ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_collision.store import CollisionLogStore
 from ze_logging import get_logger
 
+from ze_priority.matching import MATCH_FLOOR, cosine
 from ze_priority.errors import (
     StalePriorityRestoreError,
     StaleReprioritizationTargetError,
@@ -25,13 +24,7 @@ from ze_priority.view import PriorityView
 
 log = get_logger(__name__)
 
-_MATCH_FLOOR = 0.55
 _MATCH_MARGIN = 0.05
-
-
-def _cosine(a: np.ndarray, b: np.ndarray) -> float:
-    denom = float(np.linalg.norm(a) * np.linalg.norm(b))
-    return float(np.dot(a, b) / denom) if denom else 0.0
 
 
 def _disambiguate(
@@ -42,14 +35,14 @@ def _disambiguate(
     query_vec = embedder.encode_passage(item_description)
     scored = sorted(
         (
-            (_cosine(query_vec, embedder.encode_passage(item.title)), item)
+            (cosine(query_vec, embedder.encode_passage(item.title)), item)
             for item in items
         ),
         key=lambda pair: pair[0],
         reverse=True,
     )
     top_score, top_item = scored[0]
-    if top_score < _MATCH_FLOOR:
+    if top_score < MATCH_FLOOR:
         return None
     if len(scored) > 1 and (top_score - scored[1][0]) < _MATCH_MARGIN:
         return None

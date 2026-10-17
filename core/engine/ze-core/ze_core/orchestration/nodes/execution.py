@@ -44,6 +44,7 @@ def _prompt_note_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
         "screen_context_note": base_ctx.screen_context_note,
         "resume_recap": base_ctx.resume_recap,
         "open_priorities_note": base_ctx.open_priorities_note,
+        "preset": base_ctx.preset,
     }
 
 
@@ -430,9 +431,9 @@ async def _execute_single(
     base_ctx.conductor_delegate_total = int(
         getattr(ctx, "conductor_delegate_total", 0) or 0
     )
-    components: list = []
+    components: list = list(state.get("preset_components") or [])
     if component_hook is not None:
-        components = component_hook.pop_components(ctx.session_id)
+        components += component_hook.pop_components(ctx.session_id)
     return {
         **_park_updates(state, []),
         "agent_result": result,
@@ -533,6 +534,7 @@ async def _execute_compound(
         "agent_result": None,
         "subtask_results": [results_by_index[i] for i in ordered_indexes],
         "completed_subtask_indexes": ordered_indexes,
+        "components": list(state.get("preset_components") or []),
         "agent_context": base_ctx,
     }
 

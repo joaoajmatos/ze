@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ze_components.claims import ClaimPosture
+
 
 @dataclass
 class StepItem:
@@ -15,6 +17,7 @@ class StepItem:
 class Steps:
     steps: list[StepItem]
     title: str | None = None
+    claim: ClaimPosture | None = None
     type: Literal["steps"] = field(default="steps", init=False)
 
 

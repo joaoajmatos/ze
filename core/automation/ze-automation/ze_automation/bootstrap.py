@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import os
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable
 
 import asyncpg
 
@@ -22,6 +22,7 @@ from ze_automation.jobs.goal_narrative import GoalNarrativeJob
 from ze_automation.jobs.goal_suggestion import GoalSuggestionJob
 from ze_automation.jobs.held_write_expiry import HeldWriteExpiryJob
 from ze_automation.jobs.stuck_goals import StuckGoalJob
+from ze_automation.workflow.failure import failure_summary
 from ze_automation.workflow.planner import WorkflowPlanner
 from ze_automation.workflow.postgres import PostgresWorkflowStore
 from ze_automation.workflow.runner import WorkflowRunner
@@ -208,6 +209,46 @@ def wire_goal_executor_push(
     stack.goal_executor._notify = notifier.notify
 
 
+def make_workflow_failure_handler(
+    *,
+    settings: Any,
+    workflow_store: WorkflowStore,
+    notifier: ProactiveNotifier,
+    push_log_store: PushLogStore,
+) -> Callable[[Any, Exception], Awaitable[None]]:
+    async def _handle(workflow: Any, exc: Exception) -> None:
+        alerts_cfg = settings.proactive_config.get("alerts", {})
+        if not alerts_cfg.get("workflow_failure_enabled", True):
+            return
+        cooldown = int(alerts_cfg.get("workflow_failure_cooldown_hours", 1))
+        event_type = f"workflow_failure:{workflow.id}"
+        if await push_log_store.was_sent_within_hours(event_type, cooldown):
+            log.info("failure_alert_suppressed_cooldown", workflow=workflow.name)
+            return
+        executions = await workflow_store.list_executions(workflow.id, limit=5)
+        execution = next((e for e in executions if e.status == "failed"), None)
+        if execution is None:
+            body = "The run failed before it started."
+            targets: dict[str, str] = {}
+        else:
+            body = (failure_summary(execution) or "The run failed.")[:200]
+            targets = {
+                "target_type": "workflow_execution",
+                "target_id": str(execution.id),
+                "target_parent_id": str(workflow.id),
+            }
+        await notifier.notify(
+            WORKFLOW_FAILURE,
+            f'Workflow failed: "{workflow.name}"',
+            body,
+            **targets,
+        )
+        await push_log_store.log(event_type, workflow.name)
+        log.info("failure_alert_sent", workflow=workflow.name)
+
+    return _handle
+
+
 async def configure_workflow_executor(
     stack: AutomationStack,
     shared: Any,
@@ -253,30 +294,6 @@ async def configure_workflow_executor(
         }
         await runner.run(workflow, execution_id, initial_state)
 
-    async def _workflow_failure_handler(workflow: Any, exc: Exception) -> None:
-        alerts_cfg = settings.proactive_config.get("alerts", {})
-        if not alerts_cfg.get("workflow_failure_enabled", True):
-            return
-        cooldown = int(alerts_cfg.get("workflow_failure_cooldown_hours", 1))
-        event_type = f"workflow_failure:{workflow.id}"
-        if await push_log_store.was_sent_within_hours(event_type, cooldown):
-            log.info("failure_alert_suppressed_cooldown", workflow=workflow.name)
-            return
-        executions = await stack.workflow_store.list_executions(workflow.id, limit=1)
-        execution = executions[0] if executions else None
-        body = (execution.summary if execution and execution.summary else str(exc))[
-            :200
-        ]
-        await notifier.notify(
-            WORKFLOW_FAILURE,
-            f'Workflow failed: "{workflow.name}"',
-            body,
-            target_type="workflow_run",
-            target_id=str(workflow.id),
-        )
-        await push_log_store.log(event_type, workflow.name)
-        log.info("failure_alert_sent", workflow=workflow.name)
-
     runner = WorkflowRunner(
         scheduler=stack.workflow_scheduler,
         graph=workflow_graph,
@@ -290,7 +307,12 @@ async def configure_workflow_executor(
     stack.workflow_scheduler.configure_held_canceller(runner.cancel_held)
     stack.workflow_scheduler.configure_executor(
         executor=_workflow_executor,
-        on_failure=_workflow_failure_handler,
+        on_failure=make_workflow_failure_handler(
+            settings=settings,
+            workflow_store=stack.workflow_store,
+            notifier=notifier,
+            push_log_store=push_log_store,
+        ),
     )
 
 

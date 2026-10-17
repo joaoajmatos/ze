@@ -10,6 +10,8 @@ Text-only responses aren't enough for structured data — goal cards, confirmati
 
 - Typed component descriptors (cards, forms, tables, timelines, metrics, confirmations)
 - JSON schema generation from Python dataclasses for LLM tool schemas
+- Claim posture — `claims.py` defines `ClaimPosture`, set by code from a stored record. The `claim` field is on every primitive. Ze omits it from every `render_*` tool schema and drops it with a `render_tool_claim_dropped` warning if a model supplies one
+- `headline`, `claim_card`, and `claim_timeline` primitives show what Ze knows, how sure it is, and where it learned it
 - Code generation pipeline — `make generate-components` produces schemas and TypeScript types
 
 ### Integration
@@ -22,12 +24,15 @@ Agents call component tools during execution. A harness hook in `ze-api` collect
 |---|---|
 | `schema.py` | JSON schema generation from Python dataclasses — used to build LLM tool schemas |
 | `types.py` | Component descriptor dataclasses |
-| `context.py` | Component context helpers |
+| `claims.py` | `ClaimPosture`, `Readout`, `CardAction`, `TimelineEntry`, `headline_text()`, `claim_tone()` |
+| `context.py` | Component context helpers, including `append_serialized()` for components that are already dicts |
 | `tools.py` | Agent tool integration for emitting components |
 
 ## Dependencies
 
-No Ze package dependencies. Pure Python — no third-party runtime dependencies.
+Depends on `ze-agents` and `ze-logging`. No third-party runtime dependencies.
+
+`ze-priority` depends on this package to build composed answers.
 
 ## Usage
 

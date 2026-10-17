@@ -3,12 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ze_components.claims import ClaimPosture
+
 
 @dataclass
 class Button:
     label: str
     action: str
     style: Literal["primary", "secondary", "danger"] = "secondary"
+    claim: ClaimPosture | None = None
     type: Literal["button"] = field(default="button", init=False)
 
 

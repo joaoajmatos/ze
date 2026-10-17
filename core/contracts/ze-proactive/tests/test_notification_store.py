@@ -16,6 +16,7 @@ def _make_row(
     body="Goal A hasn't moved in 3 days",
     target_type="goal",
     target_id="goal-a",
+    target_parent_id=None,
     created_at=None,
     read_at=None,
     push_class="accountability",
@@ -29,6 +30,7 @@ def _make_row(
         "body": body,
         "target_type": target_type,
         "target_id": target_id,
+        "target_parent_id": target_parent_id,
         "created_at": created_at or datetime.now(timezone.utc),
         "read_at": read_at,
         "push_class": push_class,
@@ -82,8 +84,9 @@ async def test_create_inserts_and_returns_row():
         source="workflows",
         title="Run failed",
         body="Workflow X failed",
-        target_type="workflow_run",
+        target_type="workflow_execution",
         target_id="run-1",
+        target_parent_id="wf-1",
         push_class="accountability",
         urgency="high",
         format="text",
@@ -93,6 +96,52 @@ async def test_create_inserts_and_returns_row():
 
     assert result.event_type == "workflow_failure"
     assert result.read_at is None
+    sql, *params = conn.fetchrow.call_args.args
+    assert "target_parent_id" in sql
+    assert "wf-1" in params
+
+
+async def test_create_persists_the_parent_it_is_given():
+    conn = make_conn()
+    conn.fetchrow = AsyncMock(
+        return_value=_make_row(target_type="goal_gate", target_parent_id="goal-1")
+    )
+    store, _ = make_store(conn)
+
+    result = await store.create(
+        event_type="goal_gate",
+        source="goals",
+        title="t",
+        body="b",
+        target_type="goal_gate",
+        target_id="gate-1",
+        target_parent_id="goal-1",
+        push_class="accountability",
+        urgency="normal",
+        format="text",
+        actions=[],
+        delivery="delivered",
+    )
+
+    assert result.target_parent_id == "goal-1"
+
+
+async def test_list_page_and_list_held_return_the_parent():
+    rows = [_make_row(target_type="workflow_execution", target_parent_id="wf-9")]
+    store, conn = make_store(make_conn(rows))
+
+    items, _ = await store.list_page()
+    held = await store.list_held()
+
+    assert items[0].target_parent_id == "wf-9"
+    assert held[0].target_parent_id == "wf-9"
+    assert "target_parent_id" in conn.fetch.call_args.args[0]
+
+
+async def test_a_notification_without_a_parent_lists_none():
+    store, _ = make_store(make_conn([_make_row()]))
+    items, _ = await store.list_page()
+    assert items[0].target_parent_id is None
 
 
 # ── list_page (pagination) ─────────────────────────────────────────────────

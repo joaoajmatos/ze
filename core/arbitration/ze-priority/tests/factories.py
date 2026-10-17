@@ -66,3 +66,47 @@ def make_hypothesis(**overrides) -> Hypothesis:
     )
     base.update(overrides)
     return Hypothesis(**base)
+
+
+def make_goal_progress(**overrides):
+    from ze_automation.goals.types import GoalProgress
+
+    goal_overrides = overrides.pop("goal_overrides", {})
+    goal_base = dict(
+        id=uuid4(),
+        title="Ship the quarterly report",
+        objective="Deliver the Q3 report",
+        success_condition="Report sent to stakeholders",
+        status=GoalStatus.ACTIVE,
+        created_at=datetime.now(UTC) - timedelta(days=20),
+    )
+    goal_base.update(goal_overrides)
+    base = dict(
+        goal=Goal(**goal_base),
+        milestones_done=2,
+        milestones_total=5,
+        next_milestone="Draft outline",
+        gate_id=None,
+        gate_title=None,
+        gate_open_since=None,
+        last_progress_at=None,
+        stuck_since=None,
+    )
+    base.update(overrides)
+    return GoalProgress(**base)
+
+
+def make_held_write(**overrides):
+    from ze_automation.holds.types import HeldWrite
+
+    base = dict(
+        request_id=str(uuid4()),
+        source="workflow",
+        owner_ref=str(uuid4()),
+        items=[{"effect_phrase": "Send the email", "summary": "Invoice to Ana"}],
+        payload={"source_name": "Weekly invoices"},
+        expires_at=datetime.now(UTC) + timedelta(hours=20),
+        created_at=datetime.now(UTC) - timedelta(hours=4),
+    )
+    base.update(overrides)
+    return HeldWrite(**base)

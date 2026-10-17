@@ -34,7 +34,7 @@ import os
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-from ze_eval.scenario import load_scenarios
+from ze_eval.scenario import load_scenarios, turn_contexts
 
 _ZE_EVAL_URL = os.getenv("ZE_EVAL_URL", "http://localhost:8000")
 _ZE_API_KEY = os.getenv("ZE_API_KEY", "")
@@ -43,11 +43,16 @@ _HEADERS = {"Authorization": f"Bearer {_ZE_API_KEY}"}
 mcp = FastMCP("Ze Eval")
 
 
-async def _do_chat(prompt: str, session_id: str) -> dict:
+async def _do_chat(
+    prompt: str, session_id: str, context: dict | None = None
+) -> dict:
+    body: dict = {"prompt": prompt, "session_id": session_id}
+    if context:
+        body["context"] = context
     async with httpx.AsyncClient(timeout=90.0) as client:
         resp = await client.post(
             f"{_ZE_EVAL_URL}/eval/chat",
-            json={"prompt": prompt, "session_id": session_id},
+            json=body,
             headers=_HEADERS,
         )
         resp.raise_for_status()
@@ -71,6 +76,7 @@ async def _do_confirm(
 
 
 async def _run_scenario_turns(scenario: dict, session_id: str) -> dict:
+    contexts = turn_contexts(scenario)
     turns = scenario.get("turns")
     if turns:
         turn_results = []
@@ -81,7 +87,7 @@ async def _run_scenario_turns(scenario: dict, session_id: str) -> dict:
                 )
                 step = {"confirm": turn["confirm"]}
             else:
-                result = await _do_chat(turn["prompt"], session_id)
+                result = await _do_chat(turn["prompt"], session_id, contexts[i])
                 step = {"prompt": turn["prompt"]}
             turn_results.append(
                 {
@@ -95,7 +101,7 @@ async def _run_scenario_turns(scenario: dict, session_id: str) -> dict:
             turn_results[-1]["result"].get("agent_used") if turn_results else None
         )
         return {"turns": turn_results, "agent_used": final_agent}
-    return await _do_chat(scenario["prompt"], session_id)
+    return await _do_chat(scenario["prompt"], session_id, contexts[0])
 
 
 @mcp.tool()

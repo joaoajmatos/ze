@@ -3,12 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ze_components.claims import ClaimPosture
+
 
 @dataclass
 class Text:
     content: str
     style: Literal["heading", "subheading", "body", "label", "caption", "code"] = "body"
     color: Literal["default", "muted", "success", "warning", "error"] = "default"
+    claim: ClaimPosture | None = None
     type: Literal["text"] = field(default="text", init=False)
 
 

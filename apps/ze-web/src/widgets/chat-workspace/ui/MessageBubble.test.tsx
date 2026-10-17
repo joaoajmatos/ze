@@ -8,6 +8,9 @@ const { useWorkspaceRunEventsQuery } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/entities/workspace", () => ({ useWorkspaceRunEventsQuery }));
+vi.mock("@/features/primitive-tree/api/useCardActions", () => ({
+  useCardActions: () => vi.fn(),
+}));
 
 const baseMessage = {
   id: "msg-1",

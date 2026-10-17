@@ -15,6 +15,7 @@ from ze_automation.holds.planned import (
     planned_writes,
     plan_writes_check,
 )
+from ze_automation.workflow.failure import failure_summary
 from ze_automation.workflow.planner import WorkflowPlanner, validate_step_targets
 from ze_automation.workflow.revision_summary import changed_step_ids
 from ze_automation.workflow.validation import validate_workflow_steps
@@ -74,6 +75,7 @@ def _serialize_execution(execution: WorkflowExecution) -> dict:
         "status": execution.status,
         "step_results": [_serialize_step_result(r) for r in execution.step_results],
         "error": execution.error,
+        "failure_summary": failure_summary(execution),
         "summary": execution.summary,
         "started_at": execution.started_at.isoformat()
         if execution.started_at

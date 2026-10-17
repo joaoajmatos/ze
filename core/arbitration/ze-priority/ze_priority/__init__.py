@@ -18,11 +18,16 @@ from ze_priority.types import (
     SourceKind,
     SourceSignal,
 )
+from ze_priority.compose import WorldComposer
 from ze_priority.open_query import OpenQueryDetector
 from ze_priority.turn import TurnSurfacing
 from ze_priority.view import PriorityView
 
-_AGENT_MODULE_PATHS = ["ze_priority.tools", "ze_priority.agent"]
+_AGENT_MODULE_PATHS = [
+    "ze_priority.tools",
+    "ze_priority.compose.tools",
+    "ze_priority.agent",
+]
 
 
 def agent_module_paths() -> list[str]:
@@ -55,6 +60,7 @@ __all__ = [
     "SourceSignal",
     "StaleReprioritizationTargetError",
     "TurnSurfacing",
+    "WorldComposer",
     "ZePriorityError",
     "agent_module_paths",
     "import_agent_modules",

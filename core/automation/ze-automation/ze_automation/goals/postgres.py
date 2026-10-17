@@ -16,11 +16,13 @@ from ze_automation.goals.learning import (
     validate_learning_draft,
 )
 from ze_automation.goals.types import (
+    STUCK_IDLE_DAYS,
     ExecutionTrace,
     Goal,
     GoalDetail,
     GoalLearning,
     GoalLearningSummary,
+    GoalProgress,
     GoalStatus,
     GateStatus,
     LearningEvidence,
@@ -60,6 +62,37 @@ def _goal_from_row(row) -> Goal:
         else None,
         created_at=row["created_at"],
         updated_at=row["updated_at"],
+    )
+
+
+def _utc(value: datetime | None) -> datetime | None:
+    if value is not None and value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
+def _progress_from_row(row, idle_days: int) -> GoalProgress:
+    goal = _goal_from_row(row)
+    last_progress = _utc(row["last_progress_at"])
+    gate_open_since = _utc(row["gate_open_since"])
+    reference: datetime | None = None
+    if goal.status == GoalStatus.ACTIVE:
+        reference = last_progress or _utc(goal.created_at)
+    elif goal.status == GoalStatus.AWAITING_GATE:
+        reference = gate_open_since
+    stuck_since = (
+        reference if reference is not None and is_stale(reference, idle_days) else None
+    )
+    return GoalProgress(
+        goal=goal,
+        milestones_done=row["milestones_done"] or 0,
+        milestones_total=row["milestones_total"] or 0,
+        next_milestone=row["next_milestone"],
+        gate_id=row["gate_id"],
+        gate_title=row["gate_title"],
+        gate_open_since=gate_open_since,
+        last_progress_at=last_progress,
+        stuck_since=stuck_since,
     )
 
 
@@ -186,14 +219,49 @@ class PostgresGoalStore:
             )
         return [_goal_from_row(r) for r in rows]
 
-    async def list_for_display(self) -> list[Goal]:
+    async def list_progress(self) -> list[GoalProgress]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT * FROM goals"
-                " WHERE status IN ('planning', 'active', 'awaiting_gate', 'paused')"
-                " ORDER BY created_at ASC"
+                """
+                SELECT
+                    g.*,
+                    ms.milestones_done,
+                    ms.milestones_total,
+                    ms.last_progress_at,
+                    nm.title AS next_milestone,
+                    og.id AS gate_id,
+                    og.title AS gate_title,
+                    og.fired_at AS gate_open_since
+                FROM goals g
+                LEFT JOIN LATERAL (
+                    SELECT
+                        count(*) FILTER (WHERE status IN ('completed', 'skipped'))
+                            AS milestones_done,
+                        count(*) AS milestones_total,
+                        max(completed_at) FILTER (WHERE status IN ('completed', 'skipped'))
+                            AS last_progress_at
+                    FROM goal_milestones
+                    WHERE goal_id = g.id
+                ) ms ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT title FROM goal_milestones
+                    WHERE goal_id = g.id AND status IN ('pending', 'in_progress')
+                    ORDER BY sequence ASC
+                    LIMIT 1
+                ) nm ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT id, title, fired_at FROM goal_gates
+                    WHERE goal_id = g.id
+                      AND status IN ('pending', 'awaiting_approval')
+                      AND fired_at IS NOT NULL
+                    ORDER BY fired_at ASC
+                    LIMIT 1
+                ) og ON TRUE
+                WHERE g.status IN ('planning', 'active', 'awaiting_gate', 'paused')
+                ORDER BY g.created_at ASC
+                """
             )
-        return [_goal_from_row(r) for r in rows]
+        return [_progress_from_row(r, STUCK_IDLE_DAYS) for r in rows]
 
     async def list_for_advance(self) -> list[Goal]:
         async with self._pool.acquire() as conn:

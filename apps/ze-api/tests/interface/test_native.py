@@ -167,6 +167,7 @@ async def test_push_structured_notification_sends_notification_frame():
             title="Goal stuck",
             target_type="goal",
             target_id="goal-a",
+            target_parent_id="parent-1",
             created_at=created_at,
         )
     )
@@ -181,6 +182,7 @@ async def test_push_structured_notification_sends_notification_frame():
     assert frame["body"] == "Goal A hasn't moved in 3 days"
     assert frame["target_type"] == "goal"
     assert frame["target_id"] == "goal-a"
+    assert frame["target_parent_id"] == "parent-1"
     assert frame["read"] is False
 
 

@@ -201,6 +201,8 @@ def render_tool(schema_cls: type, *, description: str) -> Callable:
             return func
 
         async def _wrapper(**kwargs):
+            if kwargs.pop("claim", None) is not None:
+                log.warning("render_tool_claim_dropped", tool=name)
             primitive = await func(**kwargs)
             _ctx.append(primitive)
             label = name.removeprefix("render_")

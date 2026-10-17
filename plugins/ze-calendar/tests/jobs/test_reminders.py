@@ -469,8 +469,9 @@ def make_failure_handler(settings=None, push_log=None, notifier=None):
             WORKFLOW_FAILURE,
             f'Workflow failed: "{workflow.name}"',
             str(exc)[:200],
-            target_type="workflow_run",
+            target_type="workflow_execution",
             target_id=str(workflow.id),
+            target_parent_id=str(workflow.id),
         )
         await _push_log.log(event_type, workflow.name)
 

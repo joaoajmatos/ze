@@ -6,6 +6,7 @@ from uuid import UUID
 from ze_agents.errors import WorkflowPlanError
 from ze_automation.holds.store import HeldWriteStore
 from ze_automation.holds.types import HeldWrite, HeldWriteStatus
+from ze_automation.workflow.failure import failure_summary
 from ze_automation.workflow.store import WorkflowStore
 from ze_automation.workflow.types import WorkflowStep
 
@@ -111,6 +112,7 @@ def _execution_to_dict(ex) -> dict:
         ],
         "steps_snapshot": [_step_to_response_dict(s) for s in ex.steps_snapshot],
         "error": ex.error,
+        "failure_summary": failure_summary(ex),
         "summary": ex.summary,
         "started_at": ex.started_at.isoformat() if ex.started_at else None,
         "completed_at": ex.completed_at.isoformat() if ex.completed_at else None,

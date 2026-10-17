@@ -459,6 +459,51 @@ The `message` frame accepts an optional `context` object for screen-aware respon
 The context is passed as `screen_context` in the graph config's `configurable` dict,
 making it available to agents via `ctx.config`.
 
+### Composed answers
+
+Two more keys ask for a composed answer. A preset chip on the world screen sends them.
+
+| Key | Value | Effect |
+|---|---|---|
+| `compose` | `slipping`, `decisions`, or `topic` | Ze builds the answer from stored records and attaches it to the reply as components. |
+| `topic` | text | The subject for `compose: "topic"`. |
+
+```json
+{"type": "message", "text": "What is slipping?", "context": {"screen": "world", "compose": "slipping"}}
+```
+
+The composer gets two seconds. If it fails or runs out of time, the turn continues without the composed answer and without a note. If only some sources fail, Ze builds the answer from the rest and names the sources it could not read. A typed question reaches the same composer through the companion tools `show_slipping`, `show_decisions`, and `show_topic`.
+
+### Claim posture on components
+
+Every primitive can carry a `claim` object. Code sets it from the stored record. The model never sets it, and Ze drops a `claim` that a `render_*` tool call supplies.
+
+| Field | Meaning |
+|---|---|
+| `subject` | `loop`, `goal`, `workflow`, `hypothesis`, `person`, `held_write`, or `fact` |
+| `kind` | The claim kind: `identity`, `fact`, `inference`, `suspicion`, `priority`, `action_record`, or `feedback_record`. A workflow or held write has none. |
+| `ref_id` | The record's id |
+| `confidence` | The stored confidence, when the record has one |
+| `confidence_from` | The confidence before decay. No producer sets it today. |
+| `source` | A raw provenance key, such as `user_declared`, `goal`, or `correlation` |
+| `as_of` | When the record last changed |
+| `state` | The record's state |
+| `slipped` | True for a drifting loop, a stuck goal, or a workflow whose last run failed |
+
+Three primitives carry this posture: `headline`, `claim_card`, and `claim_timeline`. A `claim_card` shows readouts and actions. Its action `intent` is one of `confirm_loop`, `drop_loop`, `approve_held_write`, `deny_held_write`, `approve_gate`, or `open`. The web app maps each intent to an existing REST call.
+
+### Notification targets
+
+A notification can carry `target_type`, `target_id`, and `target_parent_id`. The bell turns them into a link.
+
+| `target_type` | `target_id` | `target_parent_id` | Link |
+|---|---|---|---|
+| `goal` | the goal | none | `/doing/goals/{target_id}` |
+| `goal_gate` | the gate | the goal | `/doing/goals/{target_parent_id}` |
+| `workflow_execution` | the execution | the workflow | `/doing/workflows/{target_parent_id}?execution={target_id}` |
+
+A target without a parent, where one is required, has no link.
+
 ### Ask from any screen
 
 The web app has no floating launcher. A sticky Ask bar sits on every screen except Ask. When the user submits text there, the app opens an overlay over the current screen and sends a `message` frame on the thread selected in Ask. The frame carries `context.screen` and the ids from the route. Examples are `doing.workflows` with `workflow_id` and `execution_id`, or `doing.goals` with `goal_id`.

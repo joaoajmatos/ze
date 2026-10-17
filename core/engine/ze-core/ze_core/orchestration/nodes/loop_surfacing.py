@@ -15,7 +15,7 @@ async def surface_loops(state: AgentState, config: RunnableConfig) -> dict:
     if surfacer is None:
         return {}
 
-    if state.get("open_items_query"):
+    if state.get("open_items_query") or state.get("preset_components"):
         return {}
 
     memory_context = state.get("memory_context")
@@ -32,7 +32,11 @@ async def surface_loops(state: AgentState, config: RunnableConfig) -> dict:
     if not mentions:
         return {}
 
-    component = _build_component(mentions)
+    try:
+        cards = await surfacer.mention_cards(mentions)
+    except Exception as exc:
+        log.warning("inline_turn_surfacing_cards_error", error=str(exc))
+        cards = []
     existing_components = list(state.get("components") or [])
 
     envelope = state.get("envelope")
@@ -42,7 +46,7 @@ async def surface_loops(state: AgentState, config: RunnableConfig) -> dict:
     )
     updates: dict = {
         "open_item_mentions": mentions,
-        "components": existing_components + [component],
+        "components": existing_components + cards,
     }
     if not is_compound and result is not None:
         updates["final_response"] = (
@@ -59,22 +63,6 @@ def _extract_entities(memory_context: Any) -> tuple[list, list]:
     entities = list(getattr(memory_context, "entities", []) or [])
     entity_ids = [e.id for e in entities if getattr(e, "id", None) is not None]
     return entity_ids, entities
-
-
-def _build_component(mentions: list) -> dict:
-    return {
-        "type": "open_items",
-        "title": "Still open",
-        "items": [
-            {
-                "id": str(m.source_id),
-                "source_kind": m.source_kind,
-                "title": m.title,
-                "mention_text": m.mention_text,
-            }
-            for m in mentions
-        ],
-    }
 
 
 def _format_text_section(mentions: list) -> str:

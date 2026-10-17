@@ -511,11 +511,13 @@ No ze dependencies.
 ## ze-components — Server-Driven UI
 
 `ze_components` defines server-driven UI component descriptors sent to the React web app
-inside message frames. No ze dependencies.
+inside message frames. It depends on `ze-agents` and `ze-logging`. `ze-priority` depends on it for composed answers.
 
 | Module | What it provides |
 |--------|-----------------|
 | `types.py` | Component descriptor dataclasses |
+| `claims.py` | `ClaimPosture`, `Readout`, `CardAction`, `TimelineEntry` |
+| `organisms/` | The `headline`, `claim_card`, and `claim_timeline` primitives |
 | `tools.py` | `@tool`-registered render helpers (imported at startup for side effects) |
 
 ---

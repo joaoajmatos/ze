@@ -15,6 +15,14 @@ class GoalListItem(BaseModel):
     objective: str
     status: str
     created_at: datetime
+    milestones_done: int
+    milestones_total: int
+    next_milestone: str | None
+    gate_id: UUIDType | None
+    gate_title: str | None
+    gate_open_since: datetime | None
+    last_progress_at: datetime | None
+    stuck_since: datetime | None
 
 
 class GoalActionResponse(BaseModel):
