@@ -318,3 +318,31 @@ def test_mixed_cancel_and_invented_forget_is_dropped():
     assert "forgotten" not in gated.lower()
     assert "cancelled" not in gated.lower()
     assert gated == COULD_NOT_FORGET
+
+
+def test_render_success_keeps_a_promise_to_remember_the_pick():
+    text = "Pick one below and I'll remember it."
+    gated = enforce_memory_confirmations(
+        text, [_call("render_choice_group", "Rendered choice_group")]
+    )
+    assert gated == text
+
+
+def test_render_success_does_not_license_a_past_tense_save_claim():
+    gated = enforce_memory_confirmations(
+        "I've saved your choice.",
+        [_call("render_choice_group", "Rendered choice_group")],
+    )
+    assert gated == COULD_NOT_STORE
+
+
+def test_failed_render_does_not_license_a_promise():
+    gated = enforce_memory_confirmations(
+        "I'll remember it.",
+        [_call("render_choice_group", "boom", success=False)],
+    )
+    assert gated == COULD_NOT_STORE
+
+
+def test_promise_without_any_render_is_still_stripped():
+    assert enforce_memory_confirmations("I'll remember it.", []) == COULD_NOT_STORE
