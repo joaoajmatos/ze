@@ -227,7 +227,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 183 | [Web Shell and Tokens (W1)](phases/183-web-shell-tokens/spec.md) | ✅ Implemented |
 | 184 | [Composed Answers and Claim Posture (B1)](phases/184-composed-answers-posture/spec.md) | ✅ Implemented |
 | 185 | [World Data Gaps (B2)](phases/185-world-data-gaps/spec.md) | ✅ Implemented |
-| 186 | [World (W2)](phases/186-web-world/spec.md) | 🔲 Ready to implement (after 184, 185, 195) |
+| 186 | [World (W2)](phases/186-web-world/spec.md) | ✅ Implemented |
 | 187 | [Ask / Assemble (W3)](phases/187-web-ask-assemble/spec.md) | 🔲 Ready to implement (after 184, 195, 186) |
 | 188 | [Doing (W4)](phases/188-web-doing/spec.md) | 🔲 Ready to implement (with 183 + 184; reminders after 185, screen context after 195) |
 | 189 | [Mind (W5)](phases/189-web-mind/spec.md) | ✅ Implemented |
