@@ -22,7 +22,7 @@
 
 ## Phase 0: Gate [ENG]
 
-- [ ] T001 [ENG] [WEB] Rebase onto `main`. Record in the Handoffs note: (a) `rtk proxy grep -rln "open-context-overlay\|ContextOverlay\|FloatingButton\|nav-routes\|getRoute\|settingsDataPath\|mergeMobileNavRoutes" apps/ze-web/src` compared with plan.md "Blast radius"; (b) where the active thread id lives (`useChatWorkspace` / session store) for the presence reducer, per plan.md `entities/presence`; (c) a baseline impeccable critique score of `/jarvis` (SC-004) and captures of `/jarvis` at 1440 and 390. Stop and report any difference to the Spec Architect.
+- [ ] T001 [ENG] [WEB] Rebase onto `main`. Record in the Handoffs note: (a) `rtk proxy grep -rln "open-context-overlay\|ContextOverlay\|FloatingButton\|nav-routes\|getRoute\|settingsDataPath\|mergeMobileNavRoutes" apps/ze-web/src` compared with plan.md "Blast radius"; (b) (dropped: the active thread comes from `useSession` in `entities/session`, passed into `usePresence` by the shell); (c) a baseline impeccable critique score of `/jarvis` (SC-004) and captures of `/jarvis` at 1440 and 390. Stop and report any difference to the Spec Architect.
 
 ## Phase 1: Tokens and type (blocks everything)
 
@@ -38,7 +38,7 @@
 
 ## Phase 3: Presence [US3]
 
-- [ ] T008 [ENG] [WEB] Test first `entities/presence/model/presence.test.ts`: table over (state, event) → state for every event in FR-006, including `ws_closed` from any state → `error` with phrase "Offline", `ws_open` from `error` → `idle`, `turn_thinking("Looking at your calendar")` → `thinking` with that phrase, `turn_token` → `speaking`, `turn_message` → `done` then `idle` after 1 s (fake timers), `turn_message` from `idle` → stays `idle`, `ask_focus` + `ask_text(true)` → `listening`, `ask_blur` → `idle` unless a turn is in flight, `turn_error` → `idle` with no phrase. Then `usePresence.test.tsx` with `useWsStore.setState`: a replayed message after `ws_open` leaves the orb `idle`; thinking/tokens for a non-active thread are ignored; thinking for the active thread → `thinking`. Implement `nextPresence` and `usePresence` (plan.md `entities/presence`; lift the active-thread id into `entities/session` if T001(b) found it inside the widget).
+- [ ] T008 [ENG] [WEB] Test first `entities/presence/model/presence.test.ts`: table over (state, event) → state for every event in FR-006, including `ws_closed` from any state → `error` with phrase "Offline", `ws_open` from `error` → `idle`, `turn_thinking("Looking at your calendar")` → `thinking` with that phrase, `turn_token` → `speaking`, `turn_message` → `done` then `idle` after 1 s (fake timers), `turn_message` from `idle` → stays `idle`, `ask_focus` + `ask_text(true)` → `listening`, `ask_blur` → `idle` unless a turn is in flight, `turn_error` → `idle` with no phrase. Then `usePresence.test.tsx` calling `usePresence("t1")` with `useWsStore.setState` and a fake frame emitter: a replayed message after `ws_open` leaves the orb `idle`; thinking and tokens for thread `t2` are ignored; a token with `thread_id: null` is ignored; thinking for `t1` → `thinking`; a token for `t1` → `speaking`; `usePresence(null)` derives no turn events. Implement `nextPresence` and `usePresence(activeThreadId)` (plan.md `entities/presence`); no import from `entities/session` inside `entities/presence`.
 - [ ] T009 [ENG] [WEB] Copy `Orb.tsx`, `LeaderLine.tsx`, `noise.ts` to `shared/ui/hud/presence/` and write `Presence.tsx` there with props `state`, `phrase`, `compact` (session clock included); export from `shared/ui/index.ts`. Orb reads palette colours from computed root styles and observes `data-palette`. Pause on `IntersectionObserver` off-screen and on `document.hidden`. Tests: `heartbeat()` periodicity (2.2 s) and the stagger bound (≤ 320 ms at r = 1); with reduced motion mocked, `requestAnimationFrame` is called at most once (spy); `Presence` sets `aria-live="polite"` only for `attention`, `done`, `error`. Do not touch `pages/jarvis/**` (T017).
 
 ## Phase 4: Shell, Ask bar, routes [US1, US2, US4]
@@ -90,7 +90,7 @@
 
 ### Lane ENG (Claude Sonnet, lane lead)
 
-Tasks: T001–T003, T008–T014, T018–T020. Owns `app/**`, `main.tsx`, `public/fonts/**`, `shared/styles/**`, `shared/config/**`, `shared/lib/palette.ts`, `shared/ui/hud/presence/**`, `entities/presence/**`, `entities/session/**` (active-thread lift only), `features/ask-bar/**`, `widgets/app-shell/**`, `widgets/chat-workspace/**` (pending-ask consumer and overlay deletion only), the interim-page edits listed in T012, and this phase's `tasks.md`.
+Tasks: T001–T003, T008–T014, T018–T020. Owns `app/**`, `main.tsx`, `public/fonts/**`, `shared/styles/**`, `shared/config/**`, `shared/lib/palette.ts`, `shared/ui/hud/presence/**`, `entities/presence/**`, `features/ask-bar/**`, `widgets/app-shell/**`, `widgets/chat-workspace/**` (pending-ask consumer and overlay deletion only), the interim-page edits listed in T012, and this phase's `tasks.md`.
 
 ### Lane JR (OpenCode junior)
 
