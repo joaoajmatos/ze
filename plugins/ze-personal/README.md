@@ -11,7 +11,7 @@ Personal-assistant domain layer for Ze. Implements the user-facing features that
 - **Goals** — autonomous multi-week goal execution with milestones, verification gates, and adaptive replanning
 - **Workflows** — multi-step plans persisted in Postgres with a scheduling loop
 - **Persona** — named profiles with TARS-style numeric dials that shape agent tone and behaviour
-- **Contacts** — person tracking with extraction from email, calendar, and conversation
+- **Contacts** — person tracking with extraction from email, calendar, and conversation. The web app shows them in Mind › People; the plugin has no nav entry of its own
 - **Proactive jobs** — morning briefing, weekly insights, goal suggestions, stuck-goal alerts, cost anomaly detection
 - **Agents** — ResearchAgent, CompanionAgent, GoalAgent, WorkflowAgent
 

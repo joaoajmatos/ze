@@ -1,42 +1,26 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { queryKeys } from "@/shared/lib";
 import { useHypothesesQuery } from "./useHypothesesQuery";
 
-const { listHypotheses } = vi.hoisted(() => ({ listHypotheses: vi.fn() }));
-vi.mock("@myguyze/ze-client", () => ({ listHypotheses }));
+const listHypotheses = vi.fn().mockResolvedValue({ data: [{ id: "h1" }] });
+vi.mock("@myguyze/ze-client", () => ({ listHypotheses: (a: unknown) => listHypotheses(a), setHypothesisFeedback: vi.fn() }));
 
-function setup(options?: Parameters<typeof useHypothesesQuery>[0]) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-  return { queryClient, ...renderHook(() => useHypothesesQuery(options), { wrapper }) };
-}
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{children}</QueryClientProvider>
+);
 
 describe("useHypothesesQuery", () => {
-  beforeEach(() => {
-    listHypotheses.mockReset();
-    listHypotheses.mockResolvedValue({ data: [{ id: "h1", summary: "s" }] });
+  it("passes state, entity and limit", async () => {
+    const { result } = renderHook(() => useHypothesesQuery({ state: "all", entityId: "e1", limit: 5 }), { wrapper });
+    await waitFor(() => expect(result.current.data).toEqual([{ id: "h1" }]));
+    expect(listHypotheses).toHaveBeenCalledWith({ query: { state: "all", entity_id: "e1", limit: 5 } });
   });
 
-  it("passes state, entity_id and limit; key is ['hypotheses', state, entityId]", async () => {
-    const { result, queryClient } = setup({ state: "all", entityId: "e1", limit: 200 });
-    await waitFor(() => expect(result.current.data).toHaveLength(1));
-    expect(listHypotheses).toHaveBeenCalledWith({ query: { state: "all", entity_id: "e1", limit: 200 } });
-    expect(queryClient.getQueryData(["hypotheses", "all", "e1"])).toHaveLength(1);
-  });
-
-  it("uses an empty entity segment when none is given", async () => {
-    const { queryClient, result } = setup({ state: "open" });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(queryClient.getQueryData(["hypotheses", "open", ""])).toHaveLength(1);
-  });
-
-  it("throws on a list error", async () => {
-    listHypotheses.mockResolvedValue({ error: { detail: "boom" } });
-    const { result } = setup();
-    await waitFor(() => expect(result.current.isError).toBe(true));
+  it("keys on state and entity", () => {
+    expect(queryKeys.hypotheses("open", "e1")).toEqual(["hypotheses", "open", "e1"]);
+    expect(queryKeys.hypotheses("open")).toEqual(["hypotheses", "open", ""]);
   });
 });

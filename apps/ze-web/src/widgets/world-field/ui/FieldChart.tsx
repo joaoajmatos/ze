@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { chipLabelOf, concernStateWords, pct, postureOf, useMediaQuery, type Concern } from "@/shared/lib";
+import { concernChip, concernPosture, concernStateWords, pct, useMediaQuery, type Concern } from "@/shared/lib";
 import { deadlinePhrase, markLabel } from "../lib/labels";
 import { BANDS, H, ML, NOW_X, PH, PW, W, Y0, Y1, layoutMarks, xOfDays, yOf, type Mark } from "../lib/placement";
 import { trailOf } from "../lib/trail";
@@ -42,7 +42,7 @@ interface Props {
 /** The mark fill for a posture: filled told, half inferred, dashed hollow suspected, hollow goal, plain hollow. */
 function markStyle(m: Mark) {
   const c = m.concern;
-  const posture = postureOf(c);
+  const posture = concernPosture(c);
   const hot = c.slipped;
   const color = hot ? "var(--coral)" : posture === "suspected" ? "var(--dim)" : "var(--main)";
   const fill =
@@ -177,7 +177,7 @@ export function FieldChart({ concerns, now, selected, onSelect, reorder }: Props
               </text>
               <text className="callout-meta" x={calloutX + 10} y={calloutY + calloutH - 22}>
                 <tspan className={active.concern.slipped ? "hot" : ""}>{concernStateWords(active.concern)}</tspan>
-                <tspan> · {chipLabelOf(postureOf(active.concern)) ?? active.concern.kind}</tspan>
+                <tspan> · {concernChip(concernPosture(active.concern)) ?? active.concern.kind}</tspan>
               </text>
               <text className="callout-meta" x={calloutX + 10} y={calloutY + calloutH - 9}>
                 <tspan>{active.concern.confidence != null ? `${pct(active.concern.confidence)} sure` : "not a claim"}</tspan>

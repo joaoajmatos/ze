@@ -1,4 +1,4 @@
-import { chipLabelOf, concernStateWords, glyphOf, pct, postureOf, useReducedMotion, type Concern } from "@/shared/lib";
+import { concernChip, concernGlyph, concernPosture, concernStateWords, pct, useReducedMotion, type Concern } from "@/shared/lib";
 import { Glyph } from "@/shared/ui";
 import { BANDS, bandOfConcern, shortTitle } from "../lib/placement";
 
@@ -28,15 +28,15 @@ export function FieldList({ concerns, now, selected, onSelect }: Props) {
           </h3>
           <ol className="field-key">
             {items.map((c) => {
-              const posture = postureOf(c);
-              const glyph = glyphOf(posture);
+              const posture = concernPosture(c);
+              const glyph = concernGlyph(posture);
               return (
                 <li key={c.key} className={`${c.slipped ? "hot" : ""} ${c.slipped && !reduced ? "slip-pulse" : ""}`}>
                   <button type="button" onClick={() => onSelect(selected === c.key ? null : c.key)} aria-pressed={selected === c.key}>
                     {glyph ? <Glyph kind={glyph} hot={c.slipped} /> : <i className="glyph plain" aria-hidden="true" />}
                     <span className="field-title">
                       {shortTitle(c.title)}
-                      <span className="s"> · {concernStateWords(c)}{chipLabelOf(posture) ? ` · ${chipLabelOf(posture)}` : ""}</span>
+                      <span className="s"> · {concernStateWords(c)}{concernChip(posture) ? ` · ${concernChip(posture)}` : ""}</span>
                     </span>
                     <span className="ro">{c.confidence == null ? "—" : pct(c.confidence)}</span>
                   </button>

@@ -10,7 +10,6 @@ from ze_logging import get_logger
 from ze_sdk import NLIClient, ZePlugin
 from ze_sdk.contribution import CollisionLogStore
 from ze_sdk.correlation import PostgresHypothesisStore
-from ze_sdk.ui import UiContribution
 from ze_agents.settings import Settings as CoreSettings
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
@@ -245,20 +244,6 @@ class PersonalPlugin(ZePlugin):
             "watermark_store": self.watermark_store,
             "thread_channel_map": self.thread_channel_map,
         }
-
-    def ui_contributions(self) -> list[UiContribution]:
-        return [
-            UiContribution(
-                id="ze_personal.contacts.overview",
-                plugin="ze_personal",
-                kind="nav",
-                label="Contacts",
-                icon="users",
-                path="contacts",
-                page_operation_id="getContactsPage",
-                show_in_mobile_nav=True,
-            ),
-        ]
 
     def rest_routes(self) -> list:
         from ze_personal.api.routes import router

@@ -1,6 +1,6 @@
 import type { WsScreenRef } from "@myguyze/ze-client";
 import { useRef } from "react";
-import { chipLabelOf, concernStateWords, pct, postureOf, provenanceWords, relDay, type Concern } from "@/shared/lib";
+import { concernChip, concernPosture, concernStateWords, pct, provenanceWords, relDay, type Concern } from "@/shared/lib";
 import { ChatAboutChip, Meter } from "@/shared/ui";
 import { deadlinePhrase } from "./../lib/labels";
 
@@ -24,7 +24,7 @@ const CHAT_KINDS = new Set(["loop", "goal", "hypothesis", "reminder"]);
 /** The selected mark in full: what Ze holds, how sure, and why it sits where it does in the order. */
 export function FieldReadout({ concern: c, now, offline, pinOnDrop, onPinOnDrop, onUnpin, onTransition, busy, error, onClose, onChatAbout }: Props) {
   const root = useRef<HTMLDivElement>(null);
-  const posture = postureOf(c);
+  const posture = concernPosture(c);
   const tone = c.slipped ? "hot" : posture === "inferred" || posture === "suspected" ? "dotted" : "default";
   const source = c.sources.length ? c.sources.join(", ") : provenanceWords(c.provenance);
   const canClose = c.kind === "loop" && (c.state === "active" || c.state === "drifting");
@@ -60,10 +60,10 @@ export function FieldReadout({ concern: c, now, offline, pinOnDrop, onPinOnDrop,
               <span className={c.slipped ? "hot" : ""}>{concernStateWords(c)}</span>
             </div>
           )}
-          {chipLabelOf(posture) && (
+          {concernChip(posture) && (
             <div className="k">
               <span className="lbl">Claim</span>
-              <span>{chipLabelOf(posture)}</span>
+              <span>{concernChip(posture)}</span>
             </div>
           )}
           {source && (

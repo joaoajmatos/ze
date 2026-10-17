@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { DoingInterim } from "./DoingInterim";
 
 const page = (name: string) => () => Promise.resolve({ default: () => <p>{name} page</p> });
-const loaders = { goals: page("goals"), workflows: page("workflows"), skills: page("skills"), procedures: page("procedures") };
+const loaders = { goals: page("goals"), workflows: page("workflows"), skills: page("skills") };
 
 function at(path: string) {
   return render(
@@ -18,7 +18,7 @@ describe("DoingInterim", () => {
   it("lists the four sections", () => {
     at("/doing");
     const tabs = within(screen.getByRole("navigation", { name: "Doing sections" })).getAllByRole("link");
-    expect(tabs.map((t) => t.textContent)).toEqual(["Goals", "Workflows", "Skills", "Procedures"]);
+    expect(tabs.map((t) => t.textContent)).toEqual(["Goals", "Workflows", "Skills"]);
   });
 
   it("makes Goals the index", async () => {
@@ -30,7 +30,6 @@ describe("DoingInterim", () => {
   it.each([
     ["/doing/workflows", "Workflows", "workflows page"],
     ["/doing/skills", "Skills", "skills page"],
-    ["/doing/procedures", "Procedures", "procedures page"],
   ])("%s follows the URL", async (path, label, content) => {
     at(path);
     expect(await screen.findByText(content)).toBeInTheDocument();

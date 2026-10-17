@@ -1,6 +1,6 @@
 import type { LoopListItem, WsScreenRef } from "@myguyze/ze-client";
 import { useScreenPublisher } from "@/entities/screen-context";
-import { agoPhrase, glyphOf, postureOf, provenanceWords, stateWords } from "@/shared/lib";
+import { agoPhrase, concernGlyph, concernPosture, concernStateWords, provenanceWords } from "@/shared/lib";
 import { ChatAboutChip, Glyph, Module, Spark } from "@/shared/ui";
 
 interface Props {
@@ -41,8 +41,8 @@ export function LoopsRail({ loops, loading, error, now, offline, selected, onSel
           {open.length === 0 && <p className="muted">No open loops.</p>}
           {open.map((l) => {
             const hot = l.state === "drifting";
-            const posture = postureOf({ kind: "loop", state: l.state, claimKind: l.claim_kind, provenance: l.provenance });
-            const glyph = glyphOf(posture) ?? "told";
+            const posture = concernPosture({ kind: "loop", state: l.state, claimKind: l.claim_kind, provenance: l.provenance, confirmed: false, partial: false });
+            const glyph = concernGlyph(posture) ?? "told";
             const prior = l.confidence_prior;
             const delta = prior != null ? l.confidence - prior : 0;
             const moved = prior != null && Math.abs(delta) >= 0.02;
@@ -62,7 +62,7 @@ export function LoopsRail({ loops, loading, error, now, offline, selected, onSel
                   </span>
                 </span>
                 <span className="s">
-                  {cap(stateWords("loop", l.state))} · {source} · {when}
+                  {cap(concernStateWords({ kind: "loop", state: l.state, slipped: hot }))} · {source} · {when}
                 </span>
                 <span className="acts">
                   <button type="button" className="ctl" disabled={offline || busyId === l.id} onClick={() => onTransition(l.id, "close")}>

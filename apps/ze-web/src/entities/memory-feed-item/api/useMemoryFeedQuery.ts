@@ -12,7 +12,7 @@ export function useMemoryFeedQuery(filters: MemoryFeedFilters, asOf?: string) {
   return useInfiniteQuery({
     queryKey: queryKeys.memoryFeed(filters.type, filters.agent, asOf),
     queryFn: async ({ pageParam }) => {
-      const { data } = await getMemoryFeed({
+      const { data, error } = await getMemoryFeed({
         query: {
           limit: 50,
           before: pageParam ?? undefined,
@@ -22,6 +22,7 @@ export function useMemoryFeedQuery(filters: MemoryFeedFilters, asOf?: string) {
           include_totals: pageParam == null,
         },
       });
+      if (error) throw error;
       return data as MemoryFeedResponse;
     },
     getNextPageParam: (lastPage) => lastPage?.next_before ?? undefined,

@@ -1,5 +1,5 @@
 import type { GoalListItem, LoopListItem, WorkflowResponse } from "@myguyze/ze-client";
-import { agoPhrase, stateWords } from "@/shared/lib";
+import { agoPhrase, concernStateWords } from "@/shared/lib";
 import { Module } from "@/shared/ui";
 
 interface Props {
@@ -33,11 +33,11 @@ export function Touched({ loops, closedLoops, goals, workflows, loading, error, 
   const touches: Touch[] = [];
   for (const l of [...loops, ...closedLoops]) {
     const at = within(l.updated_at);
-    if (at) touches.push({ key: `l${l.id}`, kind: "loop", title: l.title, state: stateWords("loop", l.state), at });
+    if (at) touches.push({ key: `l${l.id}`, kind: "loop", title: l.title, state: concernStateWords({ kind: "loop", state: l.state, slipped: false }), at });
   }
   for (const g of goals) {
     const at = within(g.last_progress_at);
-    if (at) touches.push({ key: `g${g.id}`, kind: "goal", title: g.title, state: stateWords("goal", g.status), at });
+    if (at) touches.push({ key: `g${g.id}`, kind: "goal", title: g.title, state: concernStateWords({ kind: "goal", state: g.status, slipped: false }), at });
   }
   for (const w of workflows) {
     const at = within(w.last_run_at);

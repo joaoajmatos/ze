@@ -23,7 +23,7 @@ describe("FieldList", () => {
     const text = container.textContent ?? "";
     expect(text).toContain("62%");
     expect(text).toContain("stuck");
-    expect(text).toContain("you told me");
+    expect(text).toContain("· told");
     expect(text).not.toMatch(/user_declared|awaiting_gate|drifting_/);
     const goalRow = screen.getByRole("button", { name: /Ship v1/ });
     expect(goalRow.textContent).toContain("—");

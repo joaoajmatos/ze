@@ -37,6 +37,11 @@ async def test_get_entity_detail_returns_fact_created_at():
                     "value": "teal",
                     "agent": "companion",
                     "created_at": created_at,
+                    "claim_kind": "fact",
+                    "confidence": 0.8,
+                    "reviewed": False,
+                    "contradicted": False,
+                    "provenance": "user_stated",
                 }
             ],
             [],

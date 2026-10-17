@@ -1,106 +1,64 @@
-/** One vocabulary for how sure Ze is and why: the field marks, rows and cards all read it. */
+import { humanizeIdentifier } from "./humanize";
+
 export type Posture = "told" | "evidenced" | "inferred" | "suspected" | "goal" | "plain";
-export type GlyphKind = "told" | "inferred" | "suspected" | "goal";
-export type ConcernKind = "loop" | "goal" | "hypothesis" | "relationship" | "reminder";
 
-export interface PostureInput {
-  kind: ConcernKind;
-  state?: string | null;
-  claimKind?: string | null;
-  provenance?: string | null;
-  /** A hypothesis the user confirmed: evidenced, not told (they confirmed Ze's inference, they did not declare it). */
-  confirmed?: boolean;
-  /** The record behind the item did not load: nothing is claimed about it. */
-  partial?: boolean;
+const BY_CLAIM_KIND: Record<string, Posture> = {
+  identity: "told",
+  fact: "evidenced",
+  inference: "inferred",
+  suspicion: "suspected",
+};
+
+const BY_STATE: Record<string, Posture> = {
+  suspected: "suspected",
+  user_declared: "told",
+  causal_guess: "inferred",
+  pattern: "inferred",
+  tension: "inferred",
+  convergence: "inferred",
+};
+
+/** Posture from the stored record: the claim kind first, then the owner kind and state. */
+export function postureOf(claimKind?: string | null, kind?: string | null, state?: string | null): Posture {
+  if (claimKind && BY_CLAIM_KIND[claimKind]) return BY_CLAIM_KIND[claimKind];
+  if (kind === "goal") return "goal";
+  if (state && BY_STATE[state]) return BY_STATE[state];
+  if (kind === "loop" || kind === "hypothesis" || kind === "relationship") return "evidenced";
+  return "plain";
 }
 
-export function postureOf(c: PostureInput): Posture {
-  if (c.partial) return "plain";
-  switch (c.kind) {
-    case "goal":
-      return "goal";
-    case "relationship":
-    case "reminder":
-      return "plain";
-    case "hypothesis":
-      if (c.confirmed) return "evidenced";
-      return c.claimKind === "suspicion" ? "suspected" : "inferred";
-    case "loop":
-      if (c.state === "suspected" || c.claimKind === "suspicion") return "suspected";
-      if (c.provenance === "user_declared") return "told";
-      if (c.claimKind === "inference") return "inferred";
-      return "evidenced";
-  }
+/** The `.glyph` modifier class: filled told or evidenced, half inferred, dashed suspected, hollow goal. */
+export function glyphOf(posture: Posture): string {
+  return posture === "inferred" || posture === "suspected" || posture === "goal" ? posture : "";
 }
 
-export function glyphOf(p: Posture): GlyphKind | null {
-  switch (p) {
-    case "told":
-    case "evidenced":
-      return "told";
-    case "plain":
-      return null;
-    default:
-      return p;
-  }
-}
+const CHIP: Record<Posture, string> = {
+  told: "told",
+  evidenced: "evidenced",
+  inferred: "inferred",
+  suspected: "suspected",
+  goal: "goal",
+  plain: "noted",
+};
 
-export function chipLabelOf(p: Posture): string | null {
-  switch (p) {
-    case "told":
-      return "you told me";
-    case "evidenced":
-      return "seen in evidence";
-    case "inferred":
-      return "asked, not stated";
-    case "suspected":
-      return "suspected";
-    case "goal":
-      return "goal";
-    case "plain":
-      return null;
-  }
+export function chipLabelOf(posture: Posture): string {
+  return CHIP[posture];
 }
 
 const STATE_WORDS: Record<string, string> = {
-  suspected: "suspected",
-  active: "active",
+  awaiting_gate: "waiting on you",
+  user_declared: "you told me",
+  causal_guess: "my guess at a cause",
+  pattern: "a pattern I noticed",
+  tension: "two things pulling apart",
+  convergence: "things coming together",
+  suspected: "I suspect this",
+  active: "open",
   drifting: "drifting",
   closed: "done",
   dropped: "dropped",
-  planning: "planning",
-  awaiting_gate: "waiting on you",
-  paused: "paused",
-  completed: "done",
-  abandoned: "abandoned",
-  upcoming: "upcoming",
-  overdue: "overdue",
-  fired: "sent",
-  open: "open",
-  dismissed: "dismissed",
 };
 
-function plain(raw: string): string {
-  return raw.replace(/_/g, " ").trim();
-}
-
-export function stateWords(kind: ConcernKind, state: string | null | undefined): string {
-  if (!state) return "";
-  if (kind === "hypothesis" && state === "confirmed") return "confirmed by you";
-  return STATE_WORDS[state] ?? plain(state);
-}
-
-const PROVENANCE_WORDS: Record<string, string> = {
-  user_declared: "you told me",
-  conversation: "chat",
-  ingestion: "ingested",
-  graph_recall: "memory",
-  live_search: "web search",
-  prompt_supplied: "your message",
-  synthesized: "worked out by Ze",
-};
-
-export function provenanceWords(provenance: string | null | undefined): string {
-  if (!provenance) return "";
-  return PROVENANCE_WORDS[provenance] ?? plain(provenance);
+export function stateWords(state: string): string {
+  return STATE_WORDS[state] ?? humanizeIdentifier(state).toLowerCase();
 }

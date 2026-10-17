@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Ready to implement on `main` with 183 and 184 (plan and tasks written 2026-10-17 against `main` b5fdc1c1). Phase 6 tasks wait for 185 (hypotheses) and Phase 7 tasks wait for 195 (screen context); everything else starts now, alongside 186.
+**Status**: Implemented. Was: ready to implement on `main` with 183 and 184 (plan and tasks written 2026-10-17 against `main` b5fdc1c1). Phase 6 tasks wait for 185 (hypotheses) and Phase 7 tasks wait for 195 (screen context); everything else starts now, alongside 186.
 
 **Input**: Maestro brief 2026-10-17, phase W5; overhaul plan sections a (Mind), b.4, e (Phase W5). User decision 4: entity-first neighbourhood; the whole-graph hairball is deleted.
 

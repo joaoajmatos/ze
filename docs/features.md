@@ -50,6 +50,7 @@ Ze extracts facts and episodes after each turn, consolidates them nightly, and s
 - **Say it, and Ze remembers it.** You can tell companion to remember or forget something. Ze says it remembered or forgot something only after the write succeeds.
 - **Read contract.** Facts you reviewed are always in context. Ze shows the origin, confidence, and age of each fact to the model, and it uses facts silently instead of reciting them.
 - **Evidence-backed learning.** Ze logs what its agents did in an append-only action ledger. Goal learnings cite that evidence, and Ze promotes them to long-term memory on completion.
+- **Mind.** The Mind place shows what Ze believes, with each belief's kind, confidence, source and age, and lets you keep, edit or drop it. You can search any person, place or project and see what Ze knows around it, review the procedures Ze proposes, and see the people Ze knows.
 - **Procedures.** Ze proposes a procedure when it detects a reusable multi-step pattern. The proposal goes through admission and validation before it becomes available. Companion can then invoke it as advisory guidance. A procedure never grants new tool access.
 
 ## Dreaming

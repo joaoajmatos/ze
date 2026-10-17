@@ -12,6 +12,7 @@ from ze_api.api.openapi import OPENAPI_RESPONSES_422
 from ze_api.api.v0.memory.schemas import (
     EntityDetailResponse,
     FactReviewRequest,
+    GraphEntityNode,
     MemoryActivityResponse,
     MemoryFeedItem,
     MemoryFeedResponse,
@@ -160,6 +161,28 @@ async def get_memory_graph(
         seed_id=seed_id,
     )
     return MemoryGraphResponse.model_validate(result)
+
+
+@router.get(
+    "/entities",
+    response_model=list[GraphEntityNode],
+    operation_id="searchEntities",
+    summary="Search entities",
+    description=(
+        "Entities whose name or alias contains `q` (case-insensitive), "
+        "most-connected first. Filter by `entity_type`."
+    ),
+)
+async def search_entities(
+    q: str = Query(min_length=1, max_length=80, description="Name or alias text"),
+    entity_type: str | None = Query(default=None, description="Filter by entity type"),
+    limit: int = Query(default=20, ge=1, le=50, description="Max entities to return"),
+    container=Depends(get_container),
+) -> list[GraphEntityNode]:
+    rows = await memory_admin.search_entities(
+        container.pool, q=q, entity_type=entity_type, limit=limit
+    )
+    return [GraphEntityNode.model_validate(r) for r in rows]
 
 
 @router.get(
