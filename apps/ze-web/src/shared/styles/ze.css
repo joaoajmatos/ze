@@ -1888,7 +1888,7 @@ h2.lbl {
 .hood-field {
   display: block;
   width: 100%;
-  max-width: 28rem;
+  max-width: 40rem;
   margin: 0 auto;
 }
 .hood-edge {
@@ -1915,7 +1915,13 @@ h2.lbl {
 }
 .hood-label {
   fill: var(--l1);
-  font-size: 10px;
+  font-size: 12px;
+}
+.hood-label-centre {
+  fill: var(--cream);
+  stroke: var(--wash);
+  stroke-width: 4px;
+  paint-order: stroke;
 }
 .hood-list ul {
   list-style: none;
@@ -1972,4 +1978,10 @@ h2.lbl {
 }
 .row.selected {
   background: color-mix(in oklab, var(--main) 8%, transparent);
+}
+@media (hover: none) {
+  .chat-about {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }

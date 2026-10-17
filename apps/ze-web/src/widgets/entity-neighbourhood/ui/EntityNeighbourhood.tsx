@@ -77,7 +77,7 @@ export function EntityNeighbourhood({ detail, onSelectEntity, onChatAbout }: Ent
             )),
           )}
           <circle cx={layout.centre.x} cy={layout.centre.y} r={7} className="hood-centre" />
-          <text x={layout.centre.x} y={layout.centre.y + 22} textAnchor="middle" className="hood-label">{name}</text>
+          <text x={layout.centre.x} y={layout.centre.y + 24} textAnchor="middle" className="hood-label hood-label-centre">{name}</text>
           {layout.groups.flatMap((g) =>
             g.nodes.map((n) => (
               <g
@@ -97,7 +97,7 @@ export function EntityNeighbourhood({ detail, onSelectEntity, onChatAbout }: Ent
                 }}              >
                 <circle cx={n.x} cy={n.y} r={14} className="hood-hit" />
                 <circle cx={n.x} cy={n.y} r={4} className="hood-dot" />
-                <text x={n.x} y={n.y + 18} textAnchor="middle" className="hood-label">{n.node.canonical_name}</text>
+                <text x={n.labelX} y={n.labelY} textAnchor={n.anchor} className="hood-label">{n.node.canonical_name}</text>
               </g>
             )),
           )}

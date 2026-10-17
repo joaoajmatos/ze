@@ -3,8 +3,8 @@
   "specName": "Mind (W5)",
   "branch": "189-web-mind",
   "currentStep": "implement",
-  "status": "implementing",
-  "currentTask": "T020",
+  "status": "implemented",
+  "currentTask": "T023",
   "history": [
     {
       "step": "implement",
@@ -157,6 +157,45 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-17T21:22:04.170Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T21:40:53.994Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T21:40:54.502Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T21:40:54.855Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T21:40:55.206Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T21:40:56.582Z"
     }
   ],
   "task_summaries": {
@@ -233,6 +272,22 @@
       "did": "done"
     },
     "T019": {
+      "status": "DONE",
+      "did": "done"
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "done"
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "done"
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "done"
+    },
+    "T023": {
       "status": "DONE",
       "did": "done"
     }

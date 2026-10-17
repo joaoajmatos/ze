@@ -1,12 +1,16 @@
 import type { GraphEdge, GraphEntityNode } from "@myguyze/ze-client";
 
 export const MAX_NEIGHBOURS = 20;
-const SIZE = 320;
+const SIZE = 640;
 
 export interface PlacedNode {
   node: GraphEntityNode;
   x: number;
   y: number;
+  /** Where the name sits: pushed outward along the spoke, anchored away from the dot. */
+  labelX: number;
+  labelY: number;
+  anchor: "start" | "middle" | "end";
 }
 
 export interface RadialGroup {
@@ -48,7 +52,7 @@ export function radialLayout(
   }
 
   const mid = SIZE / 2;
-  const radius = SIZE / 2 - 48;
+  const radius = SIZE / 2 - 150;
   const ordered = [...byPredicate.keys()].sort();
   const count = capped.length;
   let i = 0;
@@ -56,14 +60,23 @@ export function radialLayout(
     predicate,
     nodes: byPredicate.get(predicate)!.map((node) => {
       const angle = -Math.PI / 2 + (2 * Math.PI * i++) / Math.max(count, 1);
-      return { node, x: round(mid + radius * Math.cos(angle)), y: round(mid + radius * Math.sin(angle)) };
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      return {
+        node,
+        x: round(mid + radius * cos),
+        y: round(mid + radius * sin),
+        labelX: round(mid + (radius + 16) * cos),
+        labelY: round(mid + (radius + 16) * sin + (Math.abs(cos) > 0.2 ? 4 : sin > 0 ? 12 : -4)),
+        anchor: cos > 0.2 ? "start" : cos < -0.2 ? "end" : "middle",
+      };
     }),
   }));
 
   return {
     size: SIZE,
     radius,
-    centre: { node: centre, x: mid, y: mid },
+    centre: { node: centre, x: mid, y: mid, labelX: mid, labelY: mid + 24, anchor: "middle" },
     groups,
     shown: count,
     more: Math.max(0, total - count),

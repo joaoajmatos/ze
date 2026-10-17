@@ -66,10 +66,10 @@
 
 ## Phase 8: Acceptance and docs
 
-- [ ] T020 [ENG] [WEB] Gates: `make test-web`, `make typecheck-web`, `make web-build` (no three.js chunk), `make lint`, `make test-py`, `make test-pg` (entity search). Impeccable critique of Mind ≥ 29/40 and ≥ the T001 baseline; detector 0; captures at 1440 and 390 with no console errors. Record in the Handoffs note.
-- [ ] T021 [DOCS] Update every doc in plan.md "Docs touched".
-- [ ] T022 [DOCS] `AGENTS.md` phase row 189 and the places fact; `specs/README.md` row 189 → Implemented; spec status.
-- [ ] T023 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; record in the Handoffs note.
+- [x] T020 [ENG] [WEB] Gates: `make test-web`, `make typecheck-web`, `make web-build` (no three.js chunk), `make lint`, `make test-py`, `make test-pg` (entity search). Impeccable critique of Mind ≥ 29/40 and ≥ the T001 baseline; detector 0; captures at 1440 and 390 with no console errors. Record in the Handoffs note.
+- [x] T021 [DOCS] Update every doc in plan.md "Docs touched".
+- [x] T022 [DOCS] `AGENTS.md` phase row 189 and the places fact; `specs/README.md` row 189 → Implemented; spec status.
+- [x] T023 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; record in the Handoffs note.
 
 ---
 
