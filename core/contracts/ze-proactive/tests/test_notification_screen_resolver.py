@@ -98,3 +98,38 @@ async def test_store_get_maps_a_row_and_rejects_bad_ids():
     got = await store.get(data.id)
     assert got is not None and got.target_parent_id == "w1"
     assert await store.get("nope") is None
+
+
+async def test_every_written_target_type_resolves_or_is_dropped():
+    from ze_proactive.screen_resolvers import TARGET_KIND
+
+    store = AsyncMock()
+    for target_type in (
+        "open_loop",
+        "person",
+        "project",
+        "entity",
+        "fact",
+        "goal",
+        "goal_gate",
+        "hypothesis",
+        "reminder",
+        "workspace_run",
+        "held_write",
+        "workflow_execution",
+        "episode",
+        "insight",
+        "goal_suggestion",
+        "chat_thread",
+        "unknown",
+    ):
+        row = _row(target_type=target_type, target_id="x", target_parent_id=None)
+        store.get = AsyncMock(return_value=row)
+        (line,) = await NotificationScreenResolver(store).resolve(
+            [ScreenRef(kind="notification", id=row.id)], CTX
+        )
+        if target_type in TARGET_KIND:
+            assert line.target is not None
+            assert line.target.kind == TARGET_KIND[target_type]
+        else:
+            assert line.target is None, target_type

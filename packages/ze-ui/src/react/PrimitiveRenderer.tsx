@@ -557,7 +557,7 @@ function ClaimCardRenderer({ node }: { node: ClaimCard }) {
     <div ref={root} className={cn("claim-card rounded-lg border p-3 flex flex-col gap-1", CARD_TONE[node.tone ?? "default"])}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium">{node.title}</p>
-        {onChatAbout && (
+        {onChatAbout && node.claim.subject !== "person" && (
           <button
             type="button"
             className="chat-about"

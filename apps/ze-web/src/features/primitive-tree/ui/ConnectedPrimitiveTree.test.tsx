@@ -34,10 +34,8 @@ describe("ConnectedPrimitiveTree chat about", () => {
     );
   });
 
-  it("a person claim is a contact", () => {
-    const onChatAbout = vi.fn();
-    renderTree(tree("person", "p1"), onChatAbout);
-    fireEvent.click(screen.getByRole("button", { name: /Chat about/ }));
-    expect(onChatAbout.mock.calls[0][0]).toMatchObject({ kind: "contact", id: "p1" });
+  it("a person claim has no chip: its ref id is derived from the name, not a contact id", () => {
+    renderTree(tree("person", "p1"), vi.fn());
+    expect(screen.queryByRole("button", { name: /Chat about/ })).toBeNull();
   });
 });

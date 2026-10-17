@@ -75,7 +75,7 @@ Each task: tests first with a fake store (ok, missing, posture fields, summary p
 
 ## Phase 8: Gates [ENG]
 
-- [ ] T026 [ENG] [PLATFORM] `make test-py`, `make test-pg`, `make lint`, `make test-web`, `make typecheck-web`, `make web-build`, `make calibrate-routing ARGS=--check-sets` (only after T024 lands); SC-004 greps; capture of "Chat about this" on the interim goal page at 1440 and 390 (hover, keyboard Tab, touch emulation). Record results and commit.
+- [ ] T026 [ENG] [PLATFORM] `make test-py`, `make test-pg`, `make lint`, `make test-web`, `make typecheck-web`, `make web-build`, `make calibrate-routing ARGS=--check-sets` (only after T024 lands); SC-004 greps; capture of "Chat about this" on the interim goal page at 1440 and 390 (hover, keyboard Tab, touch emulation): DEFERRED to phase 193 (polish) by the Maestro, 2026-10-17; the chip's hover, focus and touch rules are covered by vitest. Gate results are in the Handoffs note.
 
 ## Phase 9: Docs [DOCS]
 
