@@ -123,6 +123,10 @@ loops = await stack.loop_store.list(states=[LoopState.ACTIVE])
 
 Wired by `ze-api`, not imported directly by plugin code — plugins that want to emit loop-relevant events use their existing `SignalSource` / inflow hooks, which `ze-worldstate` already listens to.
 
+## Confidence movement (phase 185, `zw005`)
+
+Loop confidence changes only on evidence: contradiction, corroboration, a `track_loop` reinforcement, a declaration or confirmation, or promotion. Each write that changes the value stamps `confidence_prior` (the value before the change) and `confidence_changed_at` in the same UPDATE. A write that leaves the value unchanged stamps nothing, and a loop that never changed has both as null. Nothing is back-filled. The loop REST rows carry both fields, plus `drift_deadline` and `confirmed_at`.
+
 ## Testing
 
 From the repo root:

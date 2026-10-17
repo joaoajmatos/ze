@@ -852,6 +852,10 @@ import time, so codegen needs no running server.
 | `GET` | `/api/v0/contacts` | `listContacts` |
 | `GET` | `/api/v0/goals` | `listGoals` |
 | `GET` | `/api/v0/reminders` | `listReminders` |
+| `GET` | `/api/v0/notifications/budget` | `getAttentionBudget` |
+| `GET` | `/api/v0/proactive/job-runs` | `listProactiveJobRuns` |
+| `GET` | `/api/v0/hypotheses` | `listHypotheses` |
+| `POST` | `/api/v0/hypotheses/{id}/feedback` | `setHypothesisFeedback` |
 | `GET` | `/api/v0/news` | `listNews` |
 | `GET` | `/api/v0/costs/summary` | `getCostSummary` |
 | `GET` | `/api/v0/costs/detail` | `getCostDetail` |
@@ -970,7 +974,7 @@ it owns no tables and no revision files.
 | `checkpoints` | LangGraph `AsyncPostgresSaver` graph state — pruned hourly, see [scheduled-jobs.md](scheduled-jobs.md#checkpoint-pruning-hourly) |
 | `workflow_plans` | Persisted multi-step workflow definitions |
 | `workflow_executions` | Per-run state for each workflow |
-| `push_log` | Proactive push delivery log |
+| `push_log` | Budget claims for proactive pushes (not outcomes; outcomes are `notifications.delivery`) |
 | `calendar_reminders` | Synced calendar events scheduled for reminders |
 | `llm_cost_log` | Per-call token usage and estimated cost |
 | `persona_state` | Single-row table: active profile name + dial overrides (JSONB) |

@@ -28,9 +28,9 @@ class NotificationItem(BaseModel):
     target_parent_id: str | None
     created_at: datetime
     read: bool
-    push_class: PushClassLiteral
+    push_class: str
     urgency: str
-    delivery: DeliveryLiteral
+    delivery: str
     delivered_at: datetime | None
 
 

@@ -211,6 +211,7 @@ export type TargetParentId = string | null;
 export type CreatedAt1 = string;
 export type Read1 = boolean;
 export type PushClass = string;
+export type Urgency = "low" | "normal" | "high";
 export type Delivery = string;
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -653,6 +654,7 @@ export interface WsNotificationFrame {
   created_at: CreatedAt1;
   read?: Read1;
   push_class: PushClass;
+  urgency: Urgency;
   delivery: Delivery;
 }
 /**

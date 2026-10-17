@@ -434,8 +434,18 @@ The user sets quiet hours in Settings › Notifications. Two REST routes back th
 
 | Route | Purpose |
 |---|---|
-| `GET /api/v0/notifications/quiet-hours` | Returns `{enabled, start, end, timezone, active_now, held_count, max_discretionary_per_day}`. `start` and `end` are `HH:MM` or null. |
+| `GET /api/v0/notifications/quiet-hours` | Returns `{enabled, start, end, timezone, active_now}`. `start` and `end` are `HH:MM` or null. |
 | `PUT /api/v0/notifications/quiet-hours` | Body `{enabled, start, end, timezone}`. Returns 422 when `enabled` is true and a field is missing, when `start` equals `end`, when a time is not `HH:MM`, or when the timezone is not a valid IANA key. |
+
+### Attention budget and push outcomes
+
+| Route | Purpose |
+|---|---|
+| `GET /api/v0/notifications/budget` (`getAttentionBudget`) | Returns `{used, max_per_day, remaining, window_hours, next_slot_at, held_count, quiet_hours_active}`. The budget is a rolling 24-hour window, not a calendar day. `next_slot_at` is set only when no slot is free: it is when enough counted pushes leave the window for one slot to open. Returns 503 when the push log cannot be read. Ze never shows a guessed count. |
+| `GET /api/v0/notifications` (`listNotifications`) | Accepts `delivery` (repeatable: `delivered`, `held`, `released`, `suppressed`, `failed`), `push_class` and `since`. `since` matches the time a push was delivered, or created if never delivered, so a push held before the user left and released after counts as news. Items carry `urgency` and `delivered_at`. |
+| `GET /api/v0/proactive/job-runs` (`listProactiveJobRuns`) | The last run of each proactive job: `job_id`, `last_started_at`, `last_finished_at`, `last_status` (`running`, `ok`, `error`). Newest first. It is the last run only, not a history. Optional `since` keeps jobs that started at or after it. Returns 503 when the run store cannot be read. |
+
+The push log records budget claims, not outcomes. What happened to each push lives on the notification's `delivery` field.
 
 While quiet hours are active, Ze holds accountability and discretionary pushes and releases them in one batch when quiet hours end. Only reminders and calendar alerts the user set still buzz. Quiet hours ship off.
 

@@ -179,6 +179,7 @@ class WsNotificationFrame(BaseModel):
     created_at: datetime
     read: bool = False
     push_class: str
+    urgency: Literal["low", "normal", "high"]
     delivery: str
 
 

@@ -66,13 +66,13 @@
 ## Phase 7: Client and gates [ENG]
 
 - [x] T021 [ENG] [WEB] Final codegen check: `make codegen` produces no diff. Confirm `getAttentionBudget`, `listProactiveJobRuns`, `listHypotheses`, `setHypothesisFeedback`, `listReminders` exist and `listNotifications` has the new params.
-- [ ] T022 [ENG] [PLATFORM] Gates: `make lint`, `make test-py`, `make test-pg`, `make typecheck-web`, `make test-web`. SC-002: `rtk proxy grep -rn "count_sent_within_hours\|window_sent_at" core apps` shows one query used only by `budget_status`. Record results in the Handoffs note.
+- [x] T022 [ENG] [PLATFORM] Gates: `make lint`, `make test-py`, `make test-pg`, `make typecheck-web`, `make test-web`. SC-002: `rtk proxy grep -rn "count_sent_within_hours\|window_sent_at" core apps` shows one query used only by `budget_status`. Record results in the Handoffs note.
 
 ## Phase 8: Docs [DOCS]
 
-- [ ] T023 [DOCS] Update every doc in plan.md "Docs touched": `docs/native-interface.md`, `docs/architecture.md` (REST tables, `push_log` row), `docs/frontend.md` (quiet-hours widget), `docs/package-architecture.md` (`PushLogStore`), `core/arbitration/ze-priority/README.md` (rolling 24 h), `docs/scheduled-jobs.md`, `docs/configuration.md`, `docs/features.md`, `docs/cognitive-architecture.md` / `docs/memory.md` where they describe loop confidence, package READMEs (ze-proactive, ze-worldstate, ze-correlation, ze-calendar if present).
-- [ ] T024 [DOCS] `AGENTS.md` phase row 185, migration table (`zw005`), ze-worldstate layout line; `specs/README.md` row 185 → Implemented; the 184 `claim-descriptors.md` `confidence_from` line; spec status → Implemented.
-- [ ] T025 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; every changed public surface named in a doc. Record in the Handoffs note.
+- [x] T023 [DOCS] Update every doc in plan.md "Docs touched": `docs/native-interface.md`, `docs/architecture.md` (REST tables, `push_log` row), `docs/frontend.md` (quiet-hours widget), `docs/package-architecture.md` (`PushLogStore`), `core/arbitration/ze-priority/README.md` (rolling 24 h), `docs/scheduled-jobs.md`, `docs/configuration.md`, `docs/features.md`, `docs/cognitive-architecture.md` / `docs/memory.md` where they describe loop confidence, package READMEs (ze-proactive, ze-worldstate, ze-correlation, ze-calendar if present).
+- [x] T024 [DOCS] `AGENTS.md` phase row 185, migration table (`zw005`), ze-worldstate layout line; `specs/README.md` row 185 → Implemented; the 184 `claim-descriptors.md` `confidence_from` line; spec status → Implemented.
+- [x] T025 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; every changed public surface named in a doc. Record in the Handoffs note.
 
 ---
 

@@ -1630,7 +1630,7 @@ export type NotificationItem = {
     /**
      * Push Class
      */
-    push_class: 'requested' | 'accountability' | 'discretionary';
+    push_class: string;
     /**
      * Urgency
      */
@@ -1638,7 +1638,7 @@ export type NotificationItem = {
     /**
      * Delivery
      */
-    delivery: 'delivered' | 'held' | 'released' | 'suppressed' | 'failed';
+    delivery: string;
     /**
      * Delivered At
      */

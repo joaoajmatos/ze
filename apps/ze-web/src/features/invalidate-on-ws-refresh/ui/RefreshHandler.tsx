@@ -37,7 +37,12 @@ export function RefreshHandler() {
           created_at: frame.created_at,
           read: false,
           push_class: frame.push_class,
+          urgency: frame.urgency,
           delivery: frame.delivery,
+          delivered_at:
+            frame.delivery === "delivered" || frame.delivery === "released"
+              ? frame.created_at
+              : null,
         };
         const updatedFirstPage: NotificationListResponse = firstPage
           ? { ...firstPage, items: [item, ...firstPage.items] }
