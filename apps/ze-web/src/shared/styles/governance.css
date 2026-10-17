@@ -15,7 +15,7 @@
     grid-template-areas:
       "spend data"
       "attention connections"
-      "files files";
+      "files connections";
     align-items: start;
   }
   .gov-spend { grid-area: spend; }
@@ -26,6 +26,7 @@
 }
 .gov-stack {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   margin-top: 10px;
 }
@@ -37,6 +38,7 @@
   font-size: 0.5625rem;
 }
 .gov-in {
+  box-sizing: border-box;
   min-height: 44px;
   padding: 0 12px;
   width: 100%;
@@ -63,9 +65,25 @@
   cursor: pointer;
 }
 .gov-check input {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: 0 -10px 0 -12px;
+  cursor: pointer;
+}
+.gov-check input::before {
+  content: "";
   width: 18px;
   height: 18px;
-  accent-color: var(--main);
+  border: 1px solid var(--hair-strong);
+  background: transparent;
+  box-shadow: inset 0 0 0 3px var(--field);
+}
+.gov-check input:checked::before {
+  background: var(--main);
 }
 .gov-pair {
   display: grid;
@@ -157,4 +175,10 @@
   min-width: 44px;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* Data lists every domain; keep the module bounded and scrollable */
+.gov-data [aria-label="Data held"] {
+  max-height: 360px;
+  overflow-y: auto;
 }
