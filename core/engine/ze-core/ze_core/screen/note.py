@@ -21,7 +21,9 @@ from ze_agents.screen import (
     ScreenPosture,
     ScreenRef,
     ScreenStatus,
+    as_utc,
     sanitize_text,
+    time_ago,
 )
 from ze_core.screen.registry import ScreenResolverRegistry
 from ze_logging import get_logger
@@ -34,8 +36,12 @@ TOTAL_TIMEOUT_S = 0.8
 SUBJECT_ESTIMATE = 240
 OTHER_ESTIMATE = 120
 
+PLACED_KIND = "workspace_placed"
+PLACED_ID = "placed"
+SLOT_PLACED = -1
 SLOT_SUBJECT, SLOT_SELECTION, SLOT_FOCUSED, SLOT_VISIBLE, SLOT_CANVAS = range(5)
 _PREFIX = {
+    SLOT_PLACED: "Workspace",
     SLOT_SUBJECT: "Subject",
     SLOT_SELECTION: "Selected",
     SLOT_VISIBLE: "Visible",
@@ -119,15 +125,6 @@ def _clip(text: str, cap: int) -> str:
     return text if len(text) <= cap else text[: cap - 1].rstrip() + "…"
 
 
-def ago(then: datetime, now: datetime) -> str:
-    seconds = max(0, int((now - then).total_seconds()))
-    if seconds < 3600:
-        return f"{max(1, seconds // 60)} min ago"
-    if seconds < 86400:
-        return f"{seconds // 3600} h ago"
-    return f"{seconds // 86400} d ago"
-
-
 def posture_words(posture: ScreenPosture | None) -> list[str]:
     """Claim vocabulary from phase 184; code reads it from the record, never from the client."""
     if posture is None or posture.kind is None:
@@ -166,7 +163,7 @@ def format_line(slot: int, line: ScreenLine, now: datetime, estimate: int) -> st
     body = "; ".join(p for p in parts if p)
     text = f"{head} — {body}." if body else f"{head}."
     if line.posture and line.posture.updated_at:
-        text += f" Updated {ago(line.posture.updated_at, now)}."
+        text += f" Updated {time_ago(line.posture.updated_at, now)}."
     if line.status is ScreenStatus.CHANGED:
         text += " (changed since it was shown to you)"
     return _clip(text, estimate)
@@ -175,6 +172,8 @@ def format_line(slot: int, line: ScreenLine, now: datetime, estimate: int) -> st
 def _dedupe(ctx: ScreenContext) -> list[_Slot]:
     """One entry per (kind, id), in the highest-priority slot, with missing fields filled from lower ones."""
     ordered: list[_Slot] = []
+    if ctx.workspace_placed:
+        ordered.append(_Slot(ScreenRef(kind=PLACED_KIND, id=PLACED_ID), SLOT_PLACED))
     for slot, refs in (
         (SLOT_SUBJECT, ctx.subject),
         (SLOT_SELECTION, ctx.selection),
@@ -202,31 +201,48 @@ def _dedupe(ctx: ScreenContext) -> list[_Slot]:
     return list(seen.values())
 
 
-def _fixed_reserve(ctx: ScreenContext, items: list[_Slot]) -> int:
-    reserve = len(HONESTY) + 100  # header
+def _fixed_reserve(ctx: ScreenContext, items: list[_Slot], *, may_cut: bool) -> int:
+    """Upper bound of the lines that are not refs, sized from what the context actually has."""
+    reserve = len(_header(ctx)) + len(HONESTY) + 2
     if ctx.origin is ScreenOrigin.CHAT_ABOUT:
         reserve += len(CHAT_ABOUT) + 1
-    reserve += 60  # "+N more" line
-    reserve += 100 + 2 * 120  # "this" binding line with its kind and label
-    if any(i.slot == SLOT_SELECTION for i in items):
-        reserve += 110
     if ctx.focused_module:
-        reserve += OTHER_ESTIMATE
+        reserve += len(_focused_line(ctx)) + 1
+    selected = sum(1 for i in items if i.slot == SLOT_SELECTION)
+    if any(i.slot == SLOT_SUBJECT for i in items) or selected == 1:
+        reserve += len(_BINDING_THIS) + len(_BINDING_THIS_TAIL) + 40 + 120 + 1
+    else:
+        reserve += len(NOTHING_SINGLED_OUT) + 1
+    if selected:
+        reserve += 100
+    if may_cut:
+        reserve += len(f"+{len(items)} more on screen not included.") + 1
     return reserve
 
 
 def _plan(ctx: ScreenContext, items: list[_Slot]) -> tuple[list[_Slot], list[_Slot]]:
-    """Admit refs in priority order while their estimated line fits; stop at the first that does not."""
-    budget = SCREEN_NOTE_CAP - _fixed_reserve(ctx, items)
-    admitted: list[_Slot] = []
-    for index, item in enumerate(sorted(items, key=lambda i: i.slot)):
-        estimate = SUBJECT_ESTIMATE if item.slot == SLOT_SUBJECT else OTHER_ESTIMATE
-        if estimate > budget:
-            rest = sorted(items, key=lambda i: i.slot)[index:]
-            return admitted, rest
-        budget -= estimate
-        admitted.append(item)
-    return admitted, []
+    """Admit refs in priority order while their estimated line fits; the first subject is never cut."""
+    ordered = sorted(items, key=lambda i: i.slot)
+    for may_cut in (False, True):
+        budget = SCREEN_NOTE_CAP - _fixed_reserve(ctx, items, may_cut=may_cut)
+        admitted: list[_Slot] = []
+        first_subject = True
+        for item in ordered:
+            estimate = (
+                SUBJECT_ESTIMATE
+                if item.slot in (SLOT_SUBJECT, SLOT_PLACED)
+                else OTHER_ESTIMATE
+            )
+            protected = item.slot == SLOT_SUBJECT and first_subject
+            if item.slot == SLOT_SUBJECT:
+                first_subject = False
+            if estimate > budget and not protected:
+                break
+            budget -= estimate
+            admitted.append(item)
+        if len(admitted) == len(ordered):
+            return admitted, []
+    return admitted, ordered[len(admitted) :]
 
 
 async def _call(resolver, refs: list[ScreenRef], rctx: ResolveContext, timeout: float):
@@ -251,6 +267,7 @@ async def _load(
     by_kind: dict[str, list[ScreenRef]] = {}
     for ref in refs:
         by_kind.setdefault(ref.kind, []).append(ref)
+    started = time.monotonic()
     out: dict[tuple[str, str], tuple[ScreenLine | None, ScreenStatus | None, int]] = {}
     tasks: dict[asyncio.Task, str] = {}
     for kind, group in by_kind.items():
@@ -272,7 +289,7 @@ async def _load(
                     out[(r.kind, r.id)] = (
                         None,
                         ScreenStatus.TIMEOUT,
-                        int(TOTAL_TIMEOUT_S * 1000),
+                        int((time.monotonic() - started) * 1000),
                     )
                 continue
             lines, status, ms = task.result()
@@ -297,7 +314,7 @@ def _settle(
         and ref.as_of is not None
         and line.posture is not None
         and line.posture.updated_at is not None
-        and line.posture.updated_at > ref.as_of
+        and as_utc(line.posture.updated_at) > as_utc(ref.as_of)
     ):
         return ScreenLine(
             ref=line.ref,
@@ -310,6 +327,14 @@ def _settle(
     return line
 
 
+_BINDING_THIS = '"this" / "it" / "that" (or the equivalent in the user\'s language) = '
+_BINDING_THIS_TAIL = " unless the user names something else."
+
+
+def _focused_line(ctx: ScreenContext) -> str:
+    return f'Focused module: "{sanitize_text(ctx.focused_module, 80)}"'
+
+
 def _binding(
     subject: ScreenLine | None, selected: list[ScreenLine], cut_selected: int
 ) -> list[str]:
@@ -318,8 +343,7 @@ def _binding(
     if this is not None:
         label = sanitize_text(this.label or this.ref.label or this.ref.id, 120)
         lines.append(
-            '"this" / "it" / "that" (or the equivalent in the user\'s language) = '
-            f'{kind_label(this.ref.kind)} "{label}" unless the user names something else.'
+            f'{_BINDING_THIS}{kind_label(this.ref.kind)} "{label}"{_BINDING_THIS_TAIL}'
         )
     else:
         lines.append(NOTHING_SINGLED_OUT)
@@ -337,6 +361,42 @@ def _header(ctx: ScreenContext) -> str:
     return f"[Screen: {where}. What the user can see right now, read by Ze from its own records:]"
 
 
+def _render(
+    ctx: ScreenContext,
+    now: datetime,
+    entries: list[tuple[_Slot, ScreenLine]],
+    cut: list[_Slot],
+) -> tuple[str, ScreenLine | None]:
+    """The note for the entries that survive; the binding lines describe only those."""
+    subject: ScreenLine | None = None
+    selected: list[ScreenLine] = []
+    body: list[str] = []
+    for item, line in entries:
+        estimate = (
+            SUBJECT_ESTIMATE
+            if item.slot in (SLOT_SUBJECT, SLOT_PLACED)
+            else OTHER_ESTIMATE
+        )
+        body.append(format_line(item.slot, line, now, estimate))
+        if item.slot == SLOT_SUBJECT and subject is None:
+            subject = line
+        if item.slot == SLOT_SELECTION:
+            selected.append(line)
+    lines = [_header(ctx)]
+    if ctx.focused_module:
+        lines.append(_focused_line(ctx))
+    lines.extend(body)
+    if cut:
+        lines.append(f"+{len(cut)} more on screen not included.")
+    lines.extend(
+        _binding(subject, selected, sum(1 for c in cut if c.slot == SLOT_SELECTION))
+    )
+    if ctx.origin is ScreenOrigin.CHAT_ABOUT and subject is not None:
+        lines.append(CHAT_ABOUT)
+    lines.append(HONESTY)
+    return "\n".join(lines), subject
+
+
 async def build_screen_note(
     ctx: ScreenContext,
     registry: ScreenResolverRegistry,
@@ -349,94 +409,78 @@ async def build_screen_note(
     if not items and not ctx.place and not ctx.route and not ctx.focused_module:
         return ScreenResolution()
     admitted, cut = _plan(ctx, items)
-    rctx = ResolveContext(now=now, captured_at=ctx.captured_at, origin=ctx.origin)
+    rctx = ResolveContext(
+        now=now,
+        captured_at=ctx.captured_at,
+        origin=ctx.origin,
+        placed=ctx.workspace_placed,
+    )
     started = time.monotonic()
     deadline = started + total_timeout
     loaded = await _load(
         [i.ref for i in admitted], registry, rctx, per_call_timeout, deadline
     )
 
-    settled: list[tuple[_Slot, ScreenLine, int]] = []
+    entries: list[tuple[_Slot, ScreenLine]] = []
     rows: list[ResolverRow] = []
     for item in admitted:
         line, status, ms = loaded[(item.ref.kind, item.ref.id)]
         final = _settle(line, status, item.ref)
-        settled.append((item, final, ms))
+        entries.append((item, final))
         rows.append(ResolverRow(item.ref.kind, item.ref.id, final.status, ms))
     rows.extend(ResolverRow(i.ref.kind, i.ref.id, ScreenStatus.CUT, 0) for i in cut)
 
+    # One hop, inside the same total deadline: a notification's target.
+    shown = {(i.ref.kind, i.ref.id) for i, _ in entries}
     hops = [
-        (item, ln)
-        for item, ln, _ in settled
-        if ln.target is not None and ln.status is ScreenStatus.OK
+        (item, ln.target)
+        for item, ln in entries
+        if ln.target is not None
+        and ln.status is ScreenStatus.OK
+        and (ln.target.kind, ln.target.id) not in shown
     ]
-    shown = {(i.ref.kind, i.ref.id) for i, _, _ in settled}
     extra: list[tuple[_Slot, ScreenLine]] = []
-    if hops:
-        targets = [
-            ln.target for _, ln in hops if (ln.target.kind, ln.target.id) not in shown
-        ]
-        if targets:
-            hopped = await _load(
-                targets,
-                registry,
-                rctx,
-                per_call_timeout,
-                max(deadline, time.monotonic() + per_call_timeout),
-            )
-            for item, ln in hops:
-                t = ln.target
-                if (t.kind, t.id) in shown or (t.kind, t.id) not in hopped:
-                    continue
-                tline, tstatus, ms = hopped[(t.kind, t.id)]
-                final = _settle(tline, tstatus, t)
-                extra.append((_Slot(t, item.slot), final))
-                rows.append(ResolverRow(t.kind, t.id, final.status, ms))
-                shown.add((t.kind, t.id))
+    if hops and deadline - time.monotonic() > 0:
+        hopped = await _load(
+            [t for _, t in hops], registry, rctx, per_call_timeout, deadline
+        )
+        for item, target in hops:
+            tline, tstatus, ms = hopped[(target.kind, target.id)]
+            final = _settle(tline, tstatus, target)
+            extra.append((_Slot(target, item.slot), final))
+            rows.append(ResolverRow(target.kind, target.id, final.status, ms))
+    elif hops:
+        for _, target in hops:
+            rows.append(ResolverRow(target.kind, target.id, ScreenStatus.CUT, 0))
 
-    body: list[str] = []
-    subject_line: ScreenLine | None = None
-    selected_lines: list[ScreenLine] = []
-    for item, line, _ in settled:
-        estimate = SUBJECT_ESTIMATE if item.slot == SLOT_SUBJECT else OTHER_ESTIMATE
-        body.append(format_line(item.slot, line, now, estimate))
-        if item.slot == SLOT_SUBJECT and subject_line is None:
-            subject_line = line
-        if item.slot == SLOT_SELECTION:
-            selected_lines.append(line)
-    header = _header(ctx)
-    fixed = [header]
-    if ctx.focused_module:
-        fixed.append(f'Focused module: "{sanitize_text(ctx.focused_module, 80)}"')
-    cut_selected = sum(1 for c in cut if c.slot == SLOT_SELECTION)
-    cut_count = len(cut)
-    tail = _binding(subject_line, selected_lines, cut_selected)
-    if ctx.origin is ScreenOrigin.CHAT_ABOUT:
-        tail.append(CHAT_ABOUT)
-    tail.append(HONESTY)
-
-    lines = [fixed[0], *fixed[1:], *body]
-    # The hop target is added only if the cap still holds, in priority order.
+    cut_now = list(cut)
+    note, subject_line = _render(ctx, now, entries, cut_now)
     for item, line in extra:
-        candidate = format_line(item.slot, line, now, OTHER_ESTIMATE)
-        prospective = "\n".join([*lines, candidate, *tail])
-        if len(prospective) <= SCREEN_NOTE_CAP:
-            lines.append(candidate)
+        candidate = [*entries, (item, line)]
+        trial, _ = _render(ctx, now, candidate, cut_now)
+        if len(trial) <= SCREEN_NOTE_CAP:
+            entries, note = candidate, trial
         else:
-            rows.append(ResolverRow(line.ref.kind, line.ref.id, ScreenStatus.CUT, 0))
-    if cut_count:
-        lines.append(f"+{cut_count} more on screen not included.")
-    note = "\n".join([*lines, *tail])
-    if (
-        len(note) > SCREEN_NOTE_CAP
-    ):  # estimates were exceeded by the fixed lines: drop body lines from the end
-        while len(note) > SCREEN_NOTE_CAP and body:
-            dropped = body.pop()
-            cut_count += 1
-            lines = [ln for ln in lines if ln != dropped]
-            lines = [ln for ln in lines if not ln.startswith("+")]
-            lines.append(f"+{cut_count} more on screen not included.")
-            note = "\n".join([*lines, *tail])
+            rows = [
+                ResolverRow(r.kind, r.id, ScreenStatus.CUT, 0)
+                if (r.kind, r.id) == (line.ref.kind, line.ref.id)
+                else r
+                for r in rows
+            ]
+    # Over the cap (a long fixed line): drop the lowest-priority loaded lines, never the first subject.
+    while len(note) > SCREEN_NOTE_CAP and len(entries) > 1:
+        index = len(entries) - 1
+        if entries[index][0].slot == SLOT_SUBJECT and index == 0:
+            break
+        dropped_item, dropped_line = entries.pop()
+        cut_now.append(dropped_item)
+        rows = [
+            ResolverRow(r.kind, r.id, ScreenStatus.CUT, r.ms)
+            if (r.kind, r.id) == (dropped_line.ref.kind, dropped_line.ref.id)
+            else r
+            for r in rows
+        ]
+        note, subject_line = _render(ctx, now, entries, cut_now)
     subject_text = None
     if subject_line is not None:
         label = sanitize_text(

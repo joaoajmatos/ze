@@ -7,12 +7,15 @@ display. `ScreenContext.from_wire` never raises; bad input becomes warnings.
 
 from __future__ import annotations
 
+import asyncio
 import re
 import unicodedata
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
+from uuid import UUID
 
 from ze_agents.claims import ClaimKind
 from ze_logging import get_logger
@@ -217,6 +220,7 @@ class ResolveContext:
     now: datetime
     captured_at: datetime | None = None
     origin: ScreenOrigin = ScreenOrigin.ASK_BAR
+    placed: tuple[WorkspacePlaced, ...] = ()  # files the user placed this turn, for `workspace_placed`
 
 
 @runtime_checkable
@@ -246,6 +250,51 @@ def sanitize_text(value: object, cap: int) -> str:
     text = _BINDING.sub(r"\1 -", text)
     text = _SPACE.sub(" ", text).strip().lstrip(_LEADING)
     return text[:cap].rstrip()
+
+
+def time_ago(then: datetime, now: datetime) -> str:
+    seconds = max(0, int((now - then).total_seconds()))
+    if seconds < 3600:
+        return f"{max(1, seconds // 60)} min ago"
+    if seconds < 86400:
+        return f"{seconds // 3600} h ago"
+    return f"{seconds // 86400} d ago"
+
+
+def as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
+
+
+def parse_uuid(value: str | None) -> UUID | None:
+    try:
+        return UUID(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
+async def resolve_each(
+    refs: list[ScreenRef],
+    load: Callable[[ScreenRef], Awaitable[ScreenLine | None]],
+) -> list[ScreenLine]:
+    """Resolver helper: `load` returns a line, or None when the record is gone; an error becomes `failed`.
+
+    Never raises and never puts error text in a line, so a resolver built on it cannot leak a store error.
+    """
+
+    async def one(ref: ScreenRef) -> ScreenLine:
+        label = sanitize_text(ref.label or ref.id, MAX_LABEL)
+        try:
+            line = await load(ref)
+        except Exception as exc:
+            log.warning("screen_resolver_ref_failed", kind=ref.kind, error=type(exc).__name__)
+            return ScreenLine(ref=ref, label=label, status=ScreenStatus.FAILED)
+        if line is None:
+            return ScreenLine(ref=ref, label=label, status=ScreenStatus.MISSING)
+        return line
+
+    return list(await asyncio.gather(*(one(r) for r in refs)))
 
 
 def _short(value: object) -> str:

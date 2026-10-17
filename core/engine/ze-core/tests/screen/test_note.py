@@ -332,3 +332,103 @@ def test_duplicate_kind_fails_registration():
     reg = ScreenResolverRegistry([Fake({"goal"})])
     with pytest.raises(DuplicateScreenKindError):
         reg.register(Fake({"goal", "loop"}))
+
+
+def _fact_lines(ids):
+    return {
+        i: ScreenLine(ref=ref("fact", i), label=f"Belief {i}", summary="s" * 100)
+        for i in ids
+    }
+
+
+async def test_chat_about_with_subject_selection_and_focus_keeps_the_subject():
+    ctx = ScreenContext(
+        place="mind",
+        origin=ScreenOrigin.CHAT_ABOUT,
+        subject=(ref("fact", "a"),),
+        selection=(ref("fact", "b"),),
+        focused_module="Beliefs",
+    )
+    res = await note(ctx, Fake({"fact"}, _fact_lines("ab")))
+    assert 'Subject: Fact · "Belief a"' in res.note
+    assert '= Fact "Belief a" unless' in res.note
+    assert "name it in your first sentence" in res.note
+    assert res.subject_line == 'Screen subject: fact "Belief a"'
+    assert all(r.status is not ScreenStatus.CUT for r in res.rows)
+    assert len(res.note) <= SCREEN_NOTE_CAP
+
+
+async def test_ask_bar_with_five_selected_items_shows_more_than_one():
+    sel = tuple(ref("fact", f"s{i}") for i in range(5))
+    ctx = ScreenContext(
+        place="mind",
+        subject=(ref("fact", "a"),),
+        selection=sel,
+        focused_module="Beliefs",
+    )
+    res = await note(
+        ctx, Fake({"fact"}, _fact_lines(["a", *[f"s{i}" for i in range(5)]]))
+    )
+    assert res.note.count("Selected:") >= 2
+    assert len(res.note) <= SCREEN_NOTE_CAP
+
+
+async def test_the_first_subject_is_never_cut_even_with_a_crowded_note():
+    subjects = tuple(ref("fact", f"x{i}") for i in range(3))
+    ctx = ScreenContext(
+        place="mind",
+        origin=ScreenOrigin.CHAT_ABOUT,
+        subject=subjects,
+        selection=tuple(ref("fact", f"s{i}") for i in range(20)),
+        focused_module="m" * 80,
+    )
+    res = await note(ctx, Fake({"fact"}, {}))
+    assert 'Subject: Fact · "Title x0"' in res.note
+    assert len(res.note) <= SCREEN_NOTE_CAP
+
+
+async def test_the_binding_describes_only_the_selection_that_is_shown():
+    sel = tuple(ref("fact", f"s{i}") for i in range(20))
+    ctx = ScreenContext(place="mind", subject=(ref("fact", "a"),), selection=sel)
+    res = await note(ctx, Fake({"fact"}, {}))
+    shown = res.note.count("Selected:")
+    cut = sum(1 for r in res.rows if r.status is ScreenStatus.CUT)
+    assert f"the {shown} selected" in res.note
+    if cut:
+        assert f"({cut} more not shown)" in res.note
+
+
+async def test_workspace_placed_becomes_a_line_through_its_resolver():
+    from ze_agents.screen import WorkspacePlaced
+
+    class Placed:
+        kinds = frozenset({"workspace_placed"})
+
+        async def resolve(self, refs, ctx):
+            return [
+                ScreenLine(ref=r, label="files", summary=f"{len(ctx.placed)} placed")
+                for r in refs
+            ]
+
+    ctx = ScreenContext(workspace_placed=(WorkspacePlaced(path="a.txt", size=3),))
+    res = await note(ctx, Placed())
+    assert "Workspace: Workspace files" in res.note and "1 placed" in res.note
+    assert "Nothing on screen is singled out" in res.note
+
+
+async def test_a_notification_hop_stays_inside_the_total_deadline():
+    target = ref("workflow_execution", "e1", parent_id="w1")
+    notif = ScreenLine(ref=ref("notification", "n1"), label="Run failed", target=target)
+    slow = Fake({"workflow_execution"}, sleep=1.0)
+    ctx = ScreenContext(place="governance", subject=(ref("notification", "n1"),))
+    started = asyncio.get_event_loop().time()
+    res = await note(
+        ctx,
+        Fake({"notification"}, {"n1": notif}),
+        slow,
+        per_call_timeout=5,
+        total_timeout=0.2,
+    )
+    assert asyncio.get_event_loop().time() - started < 0.6
+    hop = next(r for r in res.rows if r.kind == "workflow_execution")
+    assert hop.status is ScreenStatus.TIMEOUT and hop.ms < 400
