@@ -138,7 +138,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 89 | [Message Trace](phases/089-message-trace/spec.md) | ✅ Implemented |
 | 90 | [Ze's Mind Split-Pane](phases/090-ze-mind-split-pane/spec.md) | ✅ Implemented |
 | 91 | [Goal Dashboard v2](phases/091-goal-dashboard-v2/spec.md) | ✅ Implemented |
-| 92 | [Agent Activity Heatmap](phases/092-agent-activity-heatmap/spec.md) | ✅ Implemented |
+| 92 | [Agent Activity Heatmap](phases/092-agent-activity-heatmap/spec.md) | ✅ Implemented (route and chart removed by 190) |
 | 93 | [Temporal Memory Timeline](phases/093-temporal-memory-timeline/spec.md) | ✅ Implemented |
 | 94 | [Memory Graph View](phases/094-memory-graph-view/spec.md) | ✅ Implemented |
 | 95 | [Unified Streaming Architecture](phases/095-live-trace-streaming/spec.md) | ✅ Implemented |

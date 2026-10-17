@@ -88,7 +88,7 @@ Until each place has its own design, it hosts the old pages as sections behind a
 
 On a phone the modules stack as Attention, Spend, Connections, Data, Files. The page publishes the focused module for screen context. It keeps the last focused module until another takes focus, and a click on plain text does not change it.
 
-Spend averages divide by the days since Ze's first cost bucket, up to 30, so a new install does not read as a spike. Today's partial day counts as a whole day. The connection test calls the public `/version` route, then one authenticated route, so it can tell "reachable" from "key rejected". `SeriesSpark` (`shared/ui/hud`) draws a series; `Spark` draws a two-point change.
+Spend averages divide by the days since the first spend inside the 30-day window, up to 30, so a new install does not read as a spike. Today's partial day counts as a whole day. The connection test calls the public `/version` route, then one authenticated route, so it can tell "reachable" from "key rejected". `SeriesSpark` (`shared/ui/hud`) draws a series; `Spark` draws a two-point change.
 
 ## Adding a new screen
 
