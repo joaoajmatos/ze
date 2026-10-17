@@ -25,8 +25,15 @@ import { AreaChart, BarChart, LineChart, PieChart } from "../charts";
 import {
   PrimitiveRendererContext,
   usePrimitiveRendererActions,
+  type PrimitiveClassNames,
   type PrimitiveRendererActions,
 } from "./context";
+
+/** The host's class for `key`, else the renderer's own. */
+function useCx() {
+  const { classNames } = usePrimitiveRendererActions();
+  return (key: keyof PrimitiveClassNames, fallback: string) => classNames?.[key] ?? fallback;
+}
 
 const GAP: Record<string, string> = {
   none: "gap-0",
@@ -131,7 +138,7 @@ function PrimitiveNodeRenderer({ node }: { node: Primitive }) {
     case "badge":
       return <BadgeRenderer node={node} />;
     case "divider":
-      return <hr className="border-white/10 my-1" />;
+      return <DividerRenderer />;
     case "spacer":
       return <SpacerRenderer node={node} />;
     case "button":
@@ -160,9 +167,17 @@ function PrimitiveNodeRenderer({ node }: { node: Primitive }) {
   }
 }
 
+function DividerRenderer() {
+  const cx = useCx();
+  return <hr className={cx("divider", "border-white/10 my-1")} />;
+}
+
 function ColRenderer({ node }: { node: Col }) {
+  const cx = useCx();
+  const variant = node.variant ?? "default";
+  const variantClass = variant === "default" ? "" : cx("card", COL_VARIANT[variant]);
   return (
-    <div className={cn("flex flex-col", GAP[node.gap ?? "sm"], COL_VARIANT[node.variant ?? "default"])}>
+    <div className={cn("flex flex-col", GAP[node.gap ?? "sm"], variantClass)}>
       {node.children.map((child, i) => (
         <PrimitiveNodeRenderer key={i} node={child} />
       ))}
@@ -208,17 +223,22 @@ function renderInlineMarkdown(content: string): ReactNode[] {
 }
 
 function TextRenderer({ node }: { node: Text }) {
-  const styleClass = TEXT_STYLE[node.style ?? "body"] ?? TEXT_STYLE.body;
-  const colorClass = node.color && node.color !== "default" ? TEXT_COLOR[node.color] : "";
+  const cx = useCx();
+  const style = (node.style ?? "body") as keyof typeof TEXT_STYLE;
+  const styleClass = cx(style as keyof PrimitiveClassNames, TEXT_STYLE[style] ?? TEXT_STYLE.body);
+  const colorClass =
+    node.color === "muted" ? cx("muted", TEXT_COLOR.muted) : node.color && node.color !== "default" ? TEXT_COLOR[node.color] : "";
   return (
     <p className={cn(styleClass, colorClass)}>{renderInlineMarkdown(node.content)}</p>
   );
 }
 
 function BadgeRenderer({ node }: { node: Badge }) {
+  const cx = useCx();
   const colorClass = BADGE_COLOR[node.color ?? "default"] ?? BADGE_COLOR.default;
+  const mapped = cx("badge", "");
   return (
-    <span className={cn("px-2 py-0.5 rounded-full border text-xs flex-shrink-0", colorClass)}>
+    <span className={mapped ? cn(mapped, node.color && node.color !== "default" && `is-${node.color}`) : cn("px-2 py-0.5 rounded-full border text-xs flex-shrink-0", colorClass)}>
       {node.label}
     </span>
   );
@@ -231,6 +251,7 @@ function SpacerRenderer({ node }: { node: Spacer }) {
 
 function ButtonRenderer({ node }: { node: Button }) {
   const { onButtonAction, onDisconnected } = usePrimitiveRendererActions();
+  const cx = useCx();
   const [used, setUsed] = useState(false);
 
   function handleClick() {
@@ -255,12 +276,20 @@ function ButtonRenderer({ node }: { node: Button }) {
       type="button"
       onClick={handleClick}
       disabled={used}
-      className={cn(
-        "px-4 py-2 rounded-pill text-xs font-semibold tracking-wide cursor-pointer",
-        "transition-[background-color,opacity] duration-250 disabled:opacity-40 disabled:cursor-default",
-        styleClass,
-        used && "opacity-100",
-      )}
+      className={
+        cx("button", "")
+          ? cn(
+              cx("button", ""),
+              node.style === "primary" && cx("buttonPrimary", ""),
+              node.style === "danger" && cx("buttonDanger", ""),
+            )
+          : cn(
+              "px-4 py-2 rounded-pill text-xs font-semibold tracking-wide cursor-pointer",
+              "transition-[background-color,opacity] duration-250 disabled:opacity-40 disabled:cursor-default",
+              styleClass,
+              used && "opacity-100",
+            )
+      }
     >
       {used ? `✓ ${node.label}` : node.label}
     </button>
@@ -268,13 +297,20 @@ function ButtonRenderer({ node }: { node: Button }) {
 }
 
 function ProgressRenderer({ node }: { node: ProgressBar }) {
+  const cx = useCx();
   const pct = Math.round(Math.max(0, Math.min(1, node.value)) * 100);
   return (
     <div className="w-full">
-      {node.label && <p className="mb-1 text-xs text-smoke">{node.label}</p>}
-      <div className="h-1.5 w-full rounded-full bg-white/10">
+      {node.label && <p className={cx("label", "mb-1 text-xs text-smoke")}>{node.label}</p>}
+      <div
+        className={cx("progressTrack", "h-1.5 w-full rounded-full bg-white/10")}
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
         <div
-          className="h-1.5 rounded-full bg-plum-voltage transition-all"
+          className={cx("progressFill", "h-1.5 rounded-full bg-plum-voltage transition-all")}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -283,8 +319,9 @@ function ProgressRenderer({ node }: { node: ProgressBar }) {
 }
 
 function TableRenderer({ node }: { node: Table }) {
+  const cx = useCx();
   return (
-    <div className="overflow-auto max-h-72 rounded-[20px] border border-white/10 bg-white/[0.02]">
+    <div className={cx("table", "overflow-auto max-h-72 rounded-[20px] border border-white/10 bg-white/[0.02]")}>
       {node.title && (
         <p className="px-4 py-2 text-xs font-semibold tracking-widest uppercase text-smoke">
           {node.title}
@@ -447,8 +484,9 @@ function StepMarker({ status }: { status: string }) {
 }
 
 function StepsRenderer({ node }: { node: Steps }) {
+  const cx = useCx();
   return (
-    <div className="px-4 py-3.5 rounded-[20px] border border-white/10 bg-white/[0.03]">
+    <div className={cx("steps", "px-4 py-3.5 rounded-[20px] border border-white/10 bg-white/[0.03]")}>
       {node.title && (
         <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-smoke">
           {node.title}
@@ -514,8 +552,9 @@ function ChartRenderer({ node }: { node: Chart }) {
 }
 
 function ConnectionsRenderer({ node }: { node: Connections }) {
+  const cx = useCx();
   return (
-    <div className="rounded-[20px] border border-plum-voltage/20 bg-white/[0.02] overflow-hidden">
+    <div className={cx("connections", "rounded-[20px] border border-plum-voltage/20 bg-white/[0.02] overflow-hidden")}>
       <p className="px-4 py-2 text-xs font-semibold tracking-widest uppercase text-plum-voltage border-b border-plum-voltage/20">
         {node.title ?? "Connected to your history"}
       </p>
@@ -526,7 +565,7 @@ function ConnectionsRenderer({ node }: { node: Connections }) {
   );
 }
 
-// Interim markup: phase 187 restyles these. Posture comes from the record, never the model.
+// Posture comes from the record, never the model. A host `classNames` map restyles the card.
 const CARD_TONE: Record<NonNullable<ClaimCard["tone"]>, string> = {
   default: "border-white/10",
   cream: "border-white/30 bg-white/[0.05]",
@@ -543,18 +582,29 @@ function postureLine(claim: ClaimCard["claim"]): string {
 }
 
 function HeadlineRenderer({ node }: { node: Headline }) {
+  const { renderHeadline } = usePrimitiveRendererActions();
+  if (renderHeadline) return <>{renderHeadline(node.text)}</>;
   return <p className="text-sm font-semibold tracking-widest">{node.text}</p>;
 }
 
 function ClaimCardRenderer({ node }: { node: ClaimCard }) {
   const { onCardAction, onChatAbout } = usePrimitiveRendererActions();
+  const cx = useCx();
   const root = useRef<HTMLDivElement>(null);
   const [decided, setDecided] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
   const actions = (node.actions ?? []).filter((a) => !decided || a.intent === "open");
   return (
-    <div ref={root} className={cn("claim-card rounded-lg border p-3 flex flex-col gap-1", CARD_TONE[node.tone ?? "default"])}>
+    <div
+      ref={root}
+      data-tone={node.tone ?? "default"}
+      className={
+        cx("claimCard", "")
+          ? cn("claim-card", cx("claimCard", ""))
+          : cn("claim-card rounded-lg border p-3 flex flex-col gap-1", CARD_TONE[node.tone ?? "default"])
+      }
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium">{node.title}</p>
         {onChatAbout && node.claim.subject !== "person" && (
@@ -635,8 +685,9 @@ function ClaimCardRenderer({ node }: { node: ClaimCard }) {
 }
 
 function ClaimTimelineRenderer({ node }: { node: ClaimTimeline }) {
+  const cx = useCx();
   return (
-    <div className="flex flex-col gap-1">
+    <div className={cx("claimTimeline", "flex flex-col gap-1")}>
       <p className="text-xs text-white/60">{node.title}</p>
       <ol className="flex flex-col gap-1 text-xs">
         {node.entries.map((entry, i) => (
