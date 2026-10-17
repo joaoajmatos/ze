@@ -4,8 +4,8 @@ import { useMemo, type KeyboardEvent } from "react";
 import { BeliefRow, useReviewFactMutation } from "@/entities/memory-feed-item";
 import { humanizeIdentifier, useNarrow } from "@/shared/lib";
 import { Module } from "@/shared/ui";
-import { factAsFeedItem } from "../lib/facts";
 import { entityActivitySeries } from "../lib/entityActivitySeries";
+import { factAsFeedItem } from "../lib/facts";
 import { radialLayout } from "../lib/radial";
 
 const FILTERS = { type: "all" } as const;

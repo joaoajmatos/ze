@@ -3,7 +3,8 @@ import { type RouteObject } from "react-router-dom";
 import { AskInterim } from "@/pages/ask";
 import { DoingInterim } from "@/pages/doing";
 import { GovernanceInterim } from "@/pages/governance";
-import { MindInterim } from "@/pages/mind";
+import { MindPage } from "@/pages/mind";
+import { MindEntityPage } from "@/pages/mind-entity";
 import { WorldInterim } from "@/pages/world";
 import { AppShell } from "@/widgets/app-shell";
 import { AskOverlay } from "@/widgets/chat-workspace";
@@ -30,12 +31,7 @@ const doingLoaders = {
   goals: () => import("@/pages/goals").then((m) => ({ default: m.GoalsPage })),
   workflows: () => import("@/pages/workflows").then((m) => ({ default: m.WorkflowsPage })),
   skills: () => import("@/pages/skills").then((m) => ({ default: m.SkillsPage })),
-  procedures: () => import("@/pages/procedures").then((m) => ({ default: m.ProceduresPage })),
   workspace: () => import("@/pages/workspace").then((m) => ({ default: m.WorkspacePage })),
-};
-const mindLoaders = {
-  memory: () => import("@/pages/brain-memory").then((m) => ({ default: m.BrainMemoryPage })),
-  graph: () => import("@/pages/brain-graph").then((m) => ({ default: m.BrainGraphPage })),
 };
 const governanceLoaders = {
   usage: () => import("@/pages/costs").then((m) => ({ default: m.CostsPage })),
@@ -64,7 +60,8 @@ export const routes: RouteObject[] = [
         element: lazyPage(() => import("@/pages/workflow-detail").then((m) => ({ default: m.WorkflowDetailPage }))),
       },
       { path: "doing/*", element: <DoingInterim loaders={doingLoaders} fallback={notFound} /> },
-      { path: "mind/*", element: <MindInterim loaders={mindLoaders} fallback={notFound} /> },
+      { path: "mind", element: <MindPage /> },
+      { path: "mind/:entityId", element: <MindEntityPage /> },
       { path: "governance/*", element: <GovernanceInterim loaders={governanceLoaders} fallback={notFound} /> },
       {
         path: "jarvis/*",

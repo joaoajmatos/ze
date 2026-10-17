@@ -1940,3 +1940,26 @@ h2.lbl {
   align-content: center;
   text-align: left;
 }
+.mind-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 14px;
+  align-items: start;
+}
+.mind-main,
+.mind-rail {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--l1);
+}
+@media (max-width: 1023px) {
+  .mind-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

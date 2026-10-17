@@ -76,7 +76,7 @@ describe("AppShell desktop", () => {
     ["/", "World"],
     ["/ask", "Ask"],
     ["/doing/goals/g1", "Doing"],
-    ["/mind/graph", "Mind"],
+    ["/mind/11111111-1111-4111-8111-111111111111", "Mind"],
     ["/governance/settings", "Governance"],
   ])("%s marks %s as current", (path, label) => {
     renderShell(path);

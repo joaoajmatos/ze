@@ -10,7 +10,6 @@ export {
 } from "./top-bar-actions";
 export { useSendNotice } from "./notice-store";
 export { humanizeStatus, humanizeIdentifier } from "./humanize";
-export { useOptionalCharts } from "./optional-charts";
 export { PALETTE_IDS, applyPalette, readPalette, storePalette } from "./palette";
 export type { PaletteId } from "./palette";
 export { useMediaQuery } from "./use-media-query";

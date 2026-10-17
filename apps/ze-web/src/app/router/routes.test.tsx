@@ -19,7 +19,8 @@ vi.mock("@/pages/ask", () => ({
 }));
 vi.mock("@/pages/world", () => ({ WorldInterim: () => <p data-testid="world">world</p> }));
 vi.mock("@/pages/doing", () => ({ DoingInterim: ({ fallback }: { fallback: React.ReactNode }) => <p data-testid="doing">doing {fallback ? "" : ""}</p> }));
-vi.mock("@/pages/mind", () => ({ MindInterim: () => <p data-testid="mind">mind</p> }));
+vi.mock("@/pages/mind", () => ({ MindPage: () => <p data-testid="mind">mind</p> }));
+vi.mock("@/pages/mind-entity", () => ({ MindEntityPage: () => <p data-testid="mind-entity">entity {useParams().entityId}</p> }));
 vi.mock("@/pages/governance", () => ({
   GovernanceInterim: () => {
     const { hash, search } = useLocation();
@@ -60,7 +61,7 @@ describe("places", () => {
     ["/doing", "doing"],
     ["/doing/goals", "doing"],
     ["/mind", "mind"],
-    ["/mind/graph", "mind"],
+    ["/mind/11111111-1111-4111-8111-111111111111", "mind-entity"],
     ["/governance", "governance"],
     ["/governance/settings", "governance"],
   ])("%s renders inside the shell", async (path, id) => {
@@ -89,8 +90,8 @@ describe("places", () => {
   });
 
   it("renders a manifest plugin path through PluginPage", async () => {
-    go("/contacts");
-    expect(await screen.findByTestId("plugin")).toHaveTextContent("plugin contacts");
+    go("/news");
+    expect(await screen.findByTestId("plugin")).toHaveTextContent("plugin news");
   });
 
   it("renders a way back for a path nothing owns", async () => {
@@ -109,10 +110,13 @@ describe("redirects", () => {
     ["/workflows", "/doing/workflows"],
     ["/workflows/w-1", "/doing/workflows/w-1"],
     ["/skills", "/doing/skills"],
-    ["/procedures", "/doing/procedures"],
+    ["/procedures", "/mind"],
+    ["/doing/procedures", "/mind"],
+    ["/contacts", "/mind"],
+    ["/mind/graph", "/mind"],
     ["/workspace", "/doing/workspace"],
     ["/brain-memory", "/mind"],
-    ["/brain-graph", "/mind/graph"],
+    ["/brain-graph", "/mind"],
     ["/costs", "/governance"],
     ["/data", "/governance/data"],
     ["/settings", "/governance/settings"],

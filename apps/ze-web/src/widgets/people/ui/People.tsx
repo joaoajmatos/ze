@@ -1,5 +1,5 @@
-import { useContactsPageQuery } from "@/entities/contact";
 import { ConnectedPrimitiveTree } from "@/features/primitive-tree";
+import { useContactsPageQuery } from "@/entities/contact";
 import { Control, Module } from "@/shared/ui";
 
 export function People({ onChatAbout }: { onChatAbout?: (element: Element) => void }) {

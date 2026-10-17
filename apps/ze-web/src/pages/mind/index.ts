@@ -1,1 +1,1 @@
-export { MindInterim } from "./ui/MindInterim";
+export { MindPage } from "./ui/MindPage";
