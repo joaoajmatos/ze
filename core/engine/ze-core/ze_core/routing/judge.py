@@ -59,6 +59,8 @@ class RoutingSurfaceConfig:
     choice_trust: float | None = None
     multi_specialist_hold: float | None = None
     shortlist_k: int = DEFAULT_SHORTLIST_K
+    # Appends the screen subject line to the routing state. Off until a user-approved live calibration (phase 195).
+    screen_hint: bool = False
 
     @property
     def calibrated(self) -> bool:
@@ -89,6 +91,7 @@ def routing_surface_config(settings: Any) -> RoutingSurfaceConfig:
             block.get("multi_specialist_hold"), "multi_specialist_hold"
         ),
         shortlist_k=_shortlist_k(block.get("shortlist_k", DEFAULT_SHORTLIST_K)),
+        screen_hint=block.get("screen_hint") is True,
     )
 
 

@@ -85,20 +85,22 @@ async def test_plain_eval_chat_passes_no_config_extra(eval_mode):
 
 async def test_context_reaches_the_graph_config_as_screen_context():
     app, invoke = _app(eval_mode=False)
-    context = {"screen": "world", "compose": "slipping"}
+    context = {"place": "world", "compose": "slipping"}
     resp = await _post(app, {"prompt": "What's slipping?", "context": context})
     assert resp.status_code == 200
-    assert invoke.await_args.kwargs["config_extra"] == {"screen_context": context}
+    extra = invoke.await_args.kwargs["config_extra"]
+    assert extra["screen_context"].compose == "slipping"
+    assert extra["screen_context"].place == "world"
+    assert "screen_context_invalid" not in extra
 
 
 async def test_context_and_force_agent_combine_in_eval_mode():
     app, invoke = _app(eval_mode=True)
-    context = {"screen": "world", "compose": "decisions"}
+    context = {"place": "world", "compose": "decisions"}
     await _post(app, {"prompt": "x", "force_agent": "research", "context": context})
-    assert invoke.await_args.kwargs["config_extra"] == {
-        "forced_agent": "research",
-        "screen_context": context,
-    }
+    extra = invoke.await_args.kwargs["config_extra"]
+    assert extra["forced_agent"] == "research"
+    assert extra["screen_context"].compose == "decisions"
 
 
 async def test_context_is_refused_outside_eval_mode_only_when_forcing():

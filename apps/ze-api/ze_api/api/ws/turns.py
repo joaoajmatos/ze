@@ -14,6 +14,7 @@ from ze_api.api.ws.confirmation import (
     supersede_open_confirmations,
 )
 from ze_api.api.ws.connection import ConnectionManager
+from ze_agents.screen import ScreenContext
 from ze_api.api.ws.context import bound_turn_context
 from ze_api.api.ws.serializers import extract_thread_id
 from ze_api.api.ws.rollback_state import (
@@ -48,7 +49,7 @@ async def handle_message(
 ) -> tuple[str, dict] | None:
     text: str = data.get("text", "")
     thread_id: str | None = data.get("thread_id") or None
-    context: dict | None = data.get("context") or None
+    screen_context, context_warnings = ScreenContext.from_wire(data.get("context"))
 
     if not text:
         return None
@@ -77,6 +78,7 @@ async def handle_message(
         read=True,
         created_at=datetime.now(timezone.utc),
         thread_id=thread_id,
+        screen_context=None if screen_context.is_empty else screen_context.to_wire(),
     )
     try:
         await msg_store.save(user_msg)
@@ -94,8 +96,11 @@ async def handle_message(
 
     config_extra: dict = {}
     config_extra["user_message_id"] = str(user_msg.id)
-    if context:
-        config_extra["screen_context"] = context
+    if not screen_context.is_empty:
+        config_extra["screen_context"] = screen_context
+    if context_warnings:
+        config_extra["screen_context_invalid"] = context_warnings
+        log.info("ws_screen_context_invalid", warnings=context_warnings)
 
     if getattr(container, "translations", None) is not None:
 
@@ -519,6 +524,11 @@ async def _retry_locked(
     rolled_back = bool(undone_phrases(record))
 
     config_extra: dict = {"user_message_id": str(user_msg.id)}
+    stored_context, stored_warnings = ScreenContext.from_wire(user_msg.screen_context)
+    if not stored_context.is_empty:
+        config_extra["screen_context"] = stored_context
+    if stored_warnings:
+        config_extra["screen_context_invalid"] = stored_warnings
 
     async def _token_sink(chunk: str) -> None:
         await conn_mgr.send_frame({"type": "token", "text": chunk}, thread_id)

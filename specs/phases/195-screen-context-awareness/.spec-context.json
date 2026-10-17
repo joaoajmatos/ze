@@ -4,7 +4,7 @@
   "branch": "195-screen-context-awareness",
   "currentStep": "implement",
   "status": "implementing",
-  "currentTask": "T005",
+  "currentTask": "T006",
   "history": [
     {
       "step": "implement",
@@ -45,6 +45,14 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-17T18:13:58.351Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:29:14.485Z"
     }
   ],
   "task_summaries": {
@@ -67,6 +75,10 @@
     "T005": {
       "status": "DONE",
       "did": "registry + note builder"
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "resolve_screen node, state, graph, judgment_state, preset_note, screen_hint"
     }
   }
 }

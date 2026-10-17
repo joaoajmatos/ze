@@ -38,6 +38,7 @@ system_one:
       # (ho-loops-en: loops->companion at confidence 0.29, never trusted at 0.5, falls back to decompose).
       choice_trust: 0.5
       multi_specialist_hold: 0.5
+      screen_hint: false            # 195: append the screen subject line to the routing state; stays false until a user-approved live calibration
       shortlist_k: 9                # 167 recall gate: smallest k with recall >= 0.95 on all three sets (0.571 at k=6 on holdout2)
     skills:
       enabled: true

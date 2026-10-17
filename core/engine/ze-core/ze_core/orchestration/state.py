@@ -61,7 +61,9 @@ class AgentState(TypedDict):
     final_response: str | None
     error: str | None
     components: list[dict]
-    preset_components: list[dict]  # composed answer a preset chip asked for; reset every turn
+    preset_components: list[
+        dict
+    ]  # composed answer a preset chip asked for; reset every turn
 
     # ── Conductor (Phase 153 — sequential rewrite; not a DAG) ──────────────
     conductor_hint: list | None  # list[{agent, prompt, changes}]
@@ -71,6 +73,13 @@ class AgentState(TypedDict):
 
     # ── Correlation (Phase 58 — populated by correlate node) ──────────────────
     correlations: list  # list[Hypothesis]; qualifying inline hypotheses
+
+    # ── Screen context (Phase 195 — populated by resolve_screen; reset every turn) ─────
+    screen_note: str | None  # the note fetch_context copies to AgentContext
+    screen_trace: (
+        dict | None
+    )  # rows + counts for MessageTrace.screen (plain dict: checkpointed)
+    screen_subject_line: str | None  # routing hint, used only when screen_hint is on
 
     # ── Routing context (populated by pre-route plugin nodes) ────────────────
     routing_hints: str | None  # injected by inject_goal_routing_context

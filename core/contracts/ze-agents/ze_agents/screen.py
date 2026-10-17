@@ -157,7 +157,7 @@ class ScreenContext:
             canvas=_canvas(wire.get("canvas"), warnings),
             captured_at=_captured_at(wire.get("captured_at"), received, warnings),
             compose=compose,
-            topic=_opt_text(wire.get("topic"), MAX_TOPIC, "topic", warnings),
+            topic=_topic(wire.get("topic"), warnings),
             workspace_placed=_placed(wire.get("workspace_placed"), warnings),
         )
         return ctx, warnings[:MAX_WARNINGS]
@@ -259,6 +259,16 @@ def _opt_text(value: Any, cap: int, name: str, warnings: list[str]) -> str | Non
         warnings.append(f"{name}: not a string")
         return None
     return value[:cap]
+
+
+def _topic(value: Any, warnings: list[str]) -> str | None:
+    # A topic over the cap is dropped, not cut: a cut topic would compose a different answer.
+    if value is None:
+        return None
+    if not isinstance(value, str) or len(value) > MAX_TOPIC:
+        warnings.append(f"topic: not a string of at most {MAX_TOPIC} characters")
+        return None
+    return value
 
 
 def _id_field(

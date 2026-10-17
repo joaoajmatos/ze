@@ -51,6 +51,10 @@ class EmbeddingRouter:
         self._agent_matrix: Any = None
         self._load_agent_embeddings()
 
+    @property
+    def screen_hint(self) -> bool:
+        return self._surface.screen_hint
+
     # ── Public ────────────────────────────────────────────────────────────────
 
     async def route(

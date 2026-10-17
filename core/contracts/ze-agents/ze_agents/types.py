@@ -117,9 +117,12 @@ class AgentContext:
     # (appended by agentic_loop, merged upward by delegate_to_agent). Empty in
     # any stored context.
     sources: list[Source] = field(default_factory=list)
-    # screen_context_note is runtime-only; injected by fetch_context when the client
-    # sends a WsScreenContext (e.g. viewing a specific workflow execution). Never checkpoint.
+    # screen_context_note is runtime-only; built by the resolve_screen node from the
+    # client's screen context and copied here by fetch_context. Never checkpoint.
     screen_context_note: str | None = field(default=None, repr=False)
+    # preset_note is runtime-only; the composed-answer summary for a preset turn (phase 184),
+    # rendered after the screen note. Never checkpoint.
+    preset_note: str | None = field(default=None, repr=False)
     # resume_recap is runtime-only; injected by fetch_context's resume-recap branch
     # on a long-gap turn. Rendered into the system prompt, never appended to
     # messages — must never surface as a visible chat message. Never checkpoint.

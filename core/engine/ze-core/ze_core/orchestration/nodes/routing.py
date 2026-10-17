@@ -29,7 +29,12 @@ async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
     if hints:
         routing_text = f"{routing_text}\n\n{hints}"
 
-    judgment_state = build_judgment_state(state)
+    screen_line = (
+        state.get("screen_subject_line")
+        if getattr(router, "screen_hint", False)
+        else None
+    )
+    judgment_state = build_judgment_state(state, screen_line)
     previous_agent = get_cost_context().agent
     set_agent_context("router")
     forced_agent = config["configurable"].get("forced_agent")

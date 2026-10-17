@@ -70,6 +70,7 @@ def graph_builder(
     builder = StateGraph(state_type or AgentState)
 
     builder.add_node("preprocess", ov.get("preprocess", nodes.preprocess))
+    builder.add_node("resolve_screen", ov.get("resolve_screen", nodes.resolve_screen))
     builder.add_node("embed_route", ov.get("embed_route", nodes.embed_route))
     builder.add_node("decompose", ov.get("decompose", nodes.decompose))
     builder.add_node("fetch_context", ov.get("fetch_context", nodes.fetch_context))
@@ -95,9 +96,10 @@ def graph_builder(
     if pre_route_node is not None:
         builder.add_node("inject_routing_context", pre_route_node)
         builder.add_edge("preprocess", "inject_routing_context")
-        builder.add_edge("inject_routing_context", "embed_route")
+        builder.add_edge("inject_routing_context", "resolve_screen")
     else:
-        builder.add_edge("preprocess", "embed_route")
+        builder.add_edge("preprocess", "resolve_screen")
+    builder.add_edge("resolve_screen", "embed_route")
 
     # embed_route and decompose routing conditionals are NOT wired here — see docstring.
 

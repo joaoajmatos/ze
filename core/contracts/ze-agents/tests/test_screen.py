@@ -145,7 +145,7 @@ def test_184_partial_parses() -> None:
     ctx, warnings = ScreenContext.from_wire(
         {"compose": "topic", "topic": "x" * 200}, received_at=NOW
     )
-    assert ctx.topic is not None and len(ctx.topic) == 120
+    assert ctx.topic is None and warnings
     ctx, warnings = ScreenContext.from_wire({"compose": "bogus"}, received_at=NOW)
     assert ctx.compose is None and warnings
 
