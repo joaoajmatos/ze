@@ -2,11 +2,11 @@
 
 **Branch**: `185-world-data-gaps` | **Date**: 2026-10-17 | **Spec**: [spec.md](./spec.md)
 
-**Input**: spec.md (Clarifications 2026-10-17 are binding), code on `main` at fd79e51d, 184 branch at 458207f5.
+**Input**: spec.md (Clarifications 2026-10-17 are binding), code on `main` at fd79e51d, 184 floor at 9ca300d8 (line references to `compose/rules.py::_loop_posture`, `_loop_card_from_item`, `test_rules_slipping.py:116` and `test_composer.py:82` are from that commit; T001 re-checks). Revised after Gauge's review (W-1..W-12).
 
 ## Summary
 
-Five read surfaces and one write, each a thin route over a store that already holds the data, plus one migration. The budget route reuses the governor's own count. The push-outcome view extends `listNotifications`, because outcomes live on `notifications.delivery`, not on `push_log`. Loop confidence movement is stamped inside the three store methods that write `confidence`, so the contradiction, corroboration, track and confirm paths need no change. Hypotheses get a list and a feedback write, and the feedback now filters what is pushed and ranked. Reminders get a plugin route; the client joins them to loops through the existing `LoopListItem.reminder_id`.
+Five read surfaces and one write, each a thin route over a store that already holds the data, plus one migration. The budget route reuses the governor's own count. The push-outcome view extends `listNotifications`, because outcomes live on `notifications.delivery`, not on `push_log`. Loop confidence movement is stamped inside the three store methods that write `confidence`; only the promote path of corroboration changes, so it writes once. Hypotheses get a list and a feedback write, and the feedback now filters what is pushed and ranked. Reminders get a plugin route; the client joins them to loops through the existing `LoopListItem.reminder_id`.
 
 ## Technical Context
 
@@ -35,19 +35,20 @@ From `graphify affected <symbol> --depth 2` (graph updated on the floor at plan 
 | Symbol | Callers (by package) | Change |
 |---|---|---|
 | `within_budget` (ze-proactive) | `try_claim_shared`, `ProactiveNotifier.notify`; tests `test_attention_budget.py` (8), `apps/ze-api/tests/test_governor_acceptance.py`, `test_workspace_followthrough.py`; importers in ze-api `wiring/{agents,container,jobs}.py`, ze-automation goals (import the module, not this name) | Body calls `budget_status`; signature unchanged. |
-| `PushLogStore.count_sent_within_hours` | `attention_budget.within_budget`, `ProactiveNotifier.remaining_budget` (only two; grep) | Replaced by `window_stats`; fakes in `test_attention_budget.py` and the notifier tests rename the method. |
-| `ProactiveNotifier.remaining_budget` | grep at T001 (used by the goal/workflow planners' budget text) | Calls `budget_status`. |
+| `PushLogStore.count_sent_within_hours` | `attention_budget.within_budget`, `ProactiveNotifier.remaining_budget` (only two; grep) | Replaced by `window_sent_at`; fakes in `test_attention_budget.py` and the notifier tests rename the method. |
+| `ProactiveNotifier.remaining_budget` | grep at T001 (used by the goal/workflow planners' budget text) | Calls `budget_status`; new `ProactiveNotifier.budget_status()` for the route. |
 | `QuietHoursResponse`, `_quiet_hours_response` | `notifications/router.py` (`get_quiet_hours`, `update_quiet_hours`), `v0/__init__.py` re-export, tests `test_notifications_route.py`, `test_quiet_hours_routes.py`; web `QuietHoursSettings.tsx` (+ test), `pages/jarvis/model/world.ts` | Two fields removed; web reads `getAttentionBudget`. |
 | `NotificationStore.list_page`, `Notification` | `notifications/router.py`; tests; 184 adds `target_parent_id` beside them | New keyword filters; `Notification` gains `delivered_at`. |
-| `JobRunStore` | ze-api `wiring/stores.py` (`CoreStores.job_run_store`), `ProactiveScheduler`; tests `test_job_run_store.py` | Read only (`get_all`); new deps getter. |
-| `PostgresLoopStore` (`set_confidence`, `stamp_declared`, `promote`, `_loop_from_row`) | callers of the three writes: `decay.cascade_from_evidence`, `corroboration` (set + promote), `tracking.LoopTracker` (set + stamp), `review.confirm` (stamp); pg tests in `apps/ze-api/tests/pg/` (`test_acceptance`, `test_drift`, `test_loop_confirmation_pg`, `test_loop_evidence`); unit tests `core/cognition/ze-worldstate/tests/{test_store,test_tracking,test_corroboration_flow,test_graph_integration}.py` | SQL changes inside the store; caller signatures unchanged. |
+| `JobRunStore` | ze-api `wiring/stores.py` (`CoreStores.job_run_store`), `ProactiveScheduler` (uses `get_all`, which swallows errors on purpose); tests `test_job_run_store.py` | New `list_runs()` that raises; new deps getter. |
+| `PostgresLoopStore` (`set_confidence`, `stamp_declared`, `promote`, `_loop_from_row`) | callers of the three writes: `decay.cascade_from_evidence`, `corroboration` (set + promote; the promote path changes to one write), `tracking.LoopTracker` (set + stamp), `review.confirm` (stamp); pg tests in `apps/ze-api/tests/pg/` (`test_acceptance`, `test_drift`, `test_loop_confirmation_pg`, `test_loop_evidence`); unit tests `core/cognition/ze-worldstate/tests/{test_store,test_tracking,test_corroboration_flow,test_graph_integration}.py` | SQL changes inside the store; caller signatures unchanged; `corroboration.py` promote path calls `promote` alone. |
 | `OpenLoop` (types) | every worldstate module, ze-priority `scoring.py`, 184 `compose/rules.py` | Two optional fields with defaults; no caller breaks. |
 | `_loop_to_list_item`, `LoopListItem` | `ze_worldstate.rest.list_loops`, `tests/test_rest.py` (6), ze-api `loops/router.py`; web `entities/loop` | Four fields added. |
 | `LoopSignal` (ze-priority) | `scoring.py:54` (only constructor); 184 `compose/rules.py::_loop_card_from_item` | `confidence_prior` field. |
-| `PostgresHypothesisStore` | `build_correlation_stack`, `CorrelationEngine`, `HypothesisDecayJob`, `HypothesisPushSweep` (`push.py`), `PriorityView` (`view.py`); tests `ze-correlation/tests/test_store.py`, `test_engine.py` | New `list_for_display`, `set_feedback`; `list_unsurfaced` and `list_recent` gain a feedback predicate. |
+| `PostgresHypothesisStore` | `build_correlation_stack`, `CorrelationEngine`, `HypothesisDecayJob`, `HypothesisPushSweep` (`push.py`), `PriorityView` (`view.py`); tests `ze-correlation/tests/test_store.py`, `test_engine.py` | New `list_for_display`, `set_feedback`; `list_unsurfaced`, `list_recent` and `list_by_entities` gain a feedback predicate; `HypothesisNotFoundError` becomes a `ZeError`. |
+| `PostgresHypothesisStore.list_by_entities` | ze-personal `social/tools.py:63` (`who_is_on_project`: hides dismissed by default), `jobs/social_cooccurrence.py:161` (passes `include_dismissed=True`: it updates their evidence) | New keyword `include_dismissed: bool = False`. |
 | `ReminderStore` | ze-calendar agent and tools, `fire_reminder`, `plugin.py`; tests in `plugins/ze-calendar/tests/` | New `list_by_status`; nothing else changes. |
 
-Out-of-graph surfaces checked by grep: `max_discretionary_per_day` (two web files and one test), `held_count` (same), `getRemindersPage` (unchanged here).
+Out-of-graph surfaces checked by grep: `max_discretionary_per_day` (two web files and one test), `held_count` (same), `getRemindersPage` (unchanged here). Docs naming these surfaces: see "Docs touched".
 
 ## Design
 
@@ -56,31 +57,33 @@ Out-of-graph surfaces checked by grep: `max_discretionary_per_day` (two web file
 ```python
 @dataclass(frozen=True)
 class BudgetStatus:
-    used: int
     max_per_day: int
     window_hours: float
-    oldest_counted_at: datetime | None
+    counted_at: tuple[datetime, ...]   # sent_at of every counted claim, ascending
 
+    @property
+    def used(self) -> int: return len(self.counted_at)
     @property
     def remaining(self) -> int: return max(0, self.max_per_day - self.used)
     @property
     def next_slot_at(self) -> datetime | None:
-        if self.remaining > 0 or self.oldest_counted_at is None: return None
-        return self.oldest_counted_at + timedelta(hours=self.window_hours)
+        # One slot opens when used - max + 1 claims have left the window.
+        if self.remaining > 0 or self.max_per_day == 0: return None  # max 0: discretionary pushes are off; no slot opens
+        return self.counted_at[self.used - self.max_per_day] + timedelta(hours=self.window_hours)
 
 async def budget_status(push_log, max_per_day, *, window_hours=24.0) -> BudgetStatus  # raises on store failure
 async def within_budget(push_log, max_per_day, *, window_hours=24.0) -> bool          # budget_status(...).remaining > 0; fail-open as today
 ```
 
-`PushLogStore.window_stats(event_type, hours) -> tuple[int, datetime | None]` runs `SELECT COUNT(*), MIN(sent_at) FROM push_log WHERE event_type = $1 AND sent_at > NOW() - ($2 * INTERVAL '1 hour')`. `count_sent_within_hours` is deleted. `ProactiveNotifier.remaining_budget()` returns `(await budget_status(...)).remaining`, falling back to `max` on failure as today. `BudgetStatus` lives in `ze_proactive/types.py`.
+`PushLogStore.window_sent_at(event_type, hours) -> list[datetime]` runs `SELECT sent_at FROM push_log WHERE event_type = $1 AND sent_at > NOW() - ($2 * INTERVAL '1 hour') ORDER BY sent_at ASC` (the window holds a handful of claims; no cap needed). `count_sent_within_hours` is deleted. `ProactiveNotifier.budget_status()` raises `BudgetUnavailableError` (new `ZeError` subclass in `ze_proactive/errors.py`) when the notifier has no push log, and lets a store failure raise; `remaining_budget()` calls it and falls back to `max` on any failure as today. `BudgetStatus` lives in `ze_proactive/types.py`.
 
-`NotificationStore.list_page` gains `delivery: Sequence[str] | None`, `push_class: str | None`, `since: datetime | None` (each an AND condition, parameterized; values validated against the zpro004 enums at the route). `Notification` gains `delivered_at: datetime | None` (`urgency` is already there).
+`NotificationStore.list_page` gains `delivery: Sequence[str] | None`, `push_class: str | None`, `since: datetime | None` (each an AND condition, parameterized; values validated against the zpro004 enums at the route). `since` matches `COALESCE(delivered_at, created_at) > $n`: a held push released after the user left counts as news. Ordering and cursor stay on `created_at`. `Notification` gains `delivered_at: datetime | None` (`urgency` is already there).
 
 ### ze-api: routes
 
-- `api/v0/notifications/router.py`: `GET /notifications/budget` → `AttentionBudgetResponse { used, max_per_day, remaining, window_hours, next_slot_at, held_count, quiet_hours_active }`. Store failure → 503 via a typed `BudgetUnavailableError` (ze-api `errors.py`). `QuietHoursResponse` drops `held_count`, `max_discretionary_per_day`. `listNotifications` gains `delivery: list[DeliveryLiteral] | None = Query(None)`, `push_class: PushClassLiteral | None`, `since: datetime | None`; `NotificationItem` gains `urgency`, `delivered_at`. Route order: `/budget` declared before any `/{id}` path.
-- `api/v0/proactive/{router,schemas}.py` (new): `GET /proactive/job-runs?since=` → `list[ProactiveJobRunItem]`, sorted by `last_started_at` desc, filtered `last_started_at >= since`. `deps.get_job_run_store` reads the container's `job_run_store` (T001 confirms the attribute path from `CoreStores`).
-- `api/v0/hypotheses/{router,schemas}.py` (new): `GET /hypotheses` and `POST /hypotheses/{id}/feedback`, calling `ze_correlation.rest`. `deps.get_hypothesis_store` and an entity-name lookup from the memory store (`get_entities_by_ids`; T001 names the container attribute). Unknown id → 404 (`HypothesisNotFoundError`).
+- `api/v0/notifications/router.py`: `GET /notifications/budget` → `AttentionBudgetResponse { used, max_per_day, remaining, window_hours, next_slot_at, held_count, quiet_hours_active }`, from `notifier.budget_status()` (the existing `get_notifier` dependency; ze-api never reads the push log directly). `BudgetUnavailableError` or a store failure → 503. `QuietHoursResponse` drops `held_count`, `max_discretionary_per_day`. `listNotifications` gains `delivery: list[DeliveryLiteral] | None = Query(None)`, `push_class: PushClassLiteral | None`, `since: datetime | None`; `NotificationItem` gains `urgency`, `delivered_at`. Route order: `/budget` declared before any `/{id}` path.
+- `api/v0/proactive/{router,schemas}.py` (new): `GET /proactive/job-runs?since=` → `list[ProactiveJobRunItem]`, sorted by `last_started_at` desc, filtered `last_started_at >= since`. It calls a new `JobRunStore.list_runs()` that lets errors raise (→ 503); `get_all` keeps swallowing for the scheduler. `deps.get_job_run_store` reads the container's `job_run_store` (T001 confirms the attribute path from `CoreStores`).
+- `api/v0/hypotheses/{router,schemas}.py` (new): `GET /hypotheses` and `POST /hypotheses/{id}/feedback`, calling `ze_correlation.rest`. `deps.get_hypothesis_store` and an entity-name lookup from the memory store (`get_entities_by_ids`; T001 names the container attribute). Unknown id → 404 (`HypothesisNotFoundError`, now a `ZeError` subclass, mapped in ze-api `errors.py`). Every new router has `dependencies=[Depends(require_api_key)]`.
 - Register both routers in `api/v0/__init__.py` like `loops`.
 
 ### ze-worldstate: confidence movement
@@ -95,7 +98,9 @@ confidence_changed_at = CASE WHEN confidence IS DISTINCT FROM {new} THEN now() E
 confidence            = {new}
 ```
 
-`{new}` is `$2` in `set_confidence` and `stamp_declared`, and `GREATEST(confidence, $2)` in `promote`. `create` leaves both null. `OpenLoop` gains `confidence_prior: float | None = None`, `confidence_changed_at: datetime | None = None`; `_loop_from_row` reads them. `rest._loop_to_list_item` adds `confidence_prior`, `confidence_changed_at`, `drift_deadline`, `confirmed_at` (ISO or null); `LoopListItem` mirrors them. The decay, corroboration, tracking and review modules do not change.
+`{new}` is `$2` in `set_confidence` and `stamp_declared`, and `GREATEST(confidence, $2)` in `promote`. `create` leaves both null. `OpenLoop` gains `confidence_prior: float | None = None`, `confidence_changed_at: datetime | None = None`; `_loop_from_row` reads them. `rest._loop_to_list_item` adds `confidence_prior`, `confidence_changed_at`, `drift_deadline`, `confirmed_at` (ISO or null); `LoopListItem` mirrors them. The decay, tracking and review modules do not change.
+
+`corroboration.py` (lines 181–193 on `main`) makes two writes when it promotes: `set_confidence(corroborated)` and then `promote(0.7, GREATEST)`. With the stamp, the prior would read the intermediate value. Change: for `decision.kind == "corroborate"` call `set_confidence` as today; for `"promote"` call `promote` alone (0.7 is above `CORROBORATED_CAP` 0.6, so `GREATEST` always takes 0.7 or keeps a higher value) and call `set_confidence(corroborated)` only when `promote` returns `None` (the loop left `suspected` meanwhile). The outcome strings stay the same.
 
 ### ze-priority: loop postures (after 184)
 
@@ -105,18 +110,19 @@ confidence            = {new}
 
 `store.py`:
 - `list_for_display(*, entity_id: UUID | None, state: Literal["open","confirmed","dismissed","all"], limit: int) -> list[Hypothesis]`: `open` = `NOT confirmed AND (feedback IS NULL OR feedback = 'useful')`; `confirmed` = `confirmed`; `dismissed` = `feedback IN ('not_relevant','muted')`; entity filter `entities ? $n` (the jsonb array of id strings, as `list_by_entities` uses); `ORDER BY created_at DESC LIMIT`.
-- `set_feedback(hypothesis_id, feedback) -> Hypothesis` (`RETURNING *`; none → `HypothesisNotFoundError`).
-- `list_unsurfaced` and `list_recent` add `AND (feedback IS NULL OR feedback = 'useful')`.
+- `set_feedback(hypothesis_id, feedback: Literal[...] | None) -> Hypothesis` (`RETURNING *`; none → `HypothesisNotFoundError`). `None` clears feedback (the undo for a dismissal). Feedback on a confirmed hypothesis is stored and changes nothing else; `confirmed` wins in `list_for_display` (`dismissed` = `NOT confirmed AND feedback IN (...)`).
+- `list_unsurfaced`, `list_recent` and `list_by_entities(entity_ids, *, include_dismissed=False)` add `AND (feedback IS NULL OR feedback = 'useful')` (the last one unless `include_dismissed`). `SocialCooccurrenceJob` passes `include_dismissed=True`; `who_is_on_project` keeps the default.
+- `HypothesisNotFoundError` subclasses `ZeError` (from `ze_agents.errors`).
 
 `rest.py` (new): `list_hypotheses(store, entity_names, *, entity_id, state, limit) -> list[dict]` and `set_feedback(store, id, feedback) -> dict`. `entity_names: Callable[[list[UUID]], Awaitable[dict[UUID, str]]]` is passed in by ze-api so the package keeps no wiring knowledge; one call per page with the union of entity ids. `claim_kind` is asserted in `{inference, suspicion}`; a row with another value is skipped and logged (`hypothesis_claim_kind_invalid`), never returned.
 
 ### ze-calendar: reminders route
 
-`ReminderStore.list_by_status(status: Literal["upcoming","fired","all"], limit: int) -> list[Reminder]`: upcoming = `NOT sent ORDER BY fire_at ASC`; fired = `sent ORDER BY sent_at DESC NULLS LAST`; all = `ORDER BY fire_at DESC`. `api/routes.py` adds `GET /api/v0/reminders` (`listReminders`) → `list[ReminderItem { id, label, fire_at, sent_at, status }]`, store from `request.app.state.container._plugin_stores["reminder_store"]` as `get_reminders_page` does; store missing → empty list; `limit` defaults to 50 and is clamped 1..200.
+`ReminderStore.list_by_status(status: Literal["upcoming","overdue","fired","all"], limit: int) -> list[Reminder]`: upcoming = `NOT sent AND fire_at > NOW() ORDER BY fire_at ASC` (as `list_pending`); overdue = `NOT sent AND fire_at <= NOW() ORDER BY fire_at ASC`; fired = `sent ORDER BY sent_at DESC NULLS LAST`; all = `ORDER BY fire_at DESC`. The route derives `status` per row with the same rule (now from the database clock in the query: select `fire_at <= NOW() AS due`). `api/routes.py` adds `GET /api/v0/reminders` (`listReminders`) → `list[ReminderItem { id, label, fire_at, sent_at, status }]`, store from `request.app.state.container._plugin_stores["reminder_store"]` as `get_reminders_page` does; store missing → empty list; `limit` defaults to 50 and is clamped 1..200.
 
 ### Web (hard-cut follow-up only)
 
-`make codegen`. `entities/notification/api/useAttentionBudgetQuery.ts` (exported from the entity index). `widgets/settings-workspace/ui/QuietHoursSettings.tsx` reads `max_per_day` and `held_count` from it; `pages/jarvis/model/world.ts` likewise. No other screen changes; 186/189/190 add their own hooks.
+Generated client: `packages/ze-client/src/generated/*` belongs to the ENG lane. Every task that changes the OpenAPI ends with `make codegen`, and ENG commits the regenerated files with it (for a JR route task, ENG regenerates and commits right after merging it). JR tasks never edit `generated/*`. `entities/notification/api/useAttentionBudgetQuery.ts` (exported from the entity index). `widgets/settings-workspace/ui/QuietHoursSettings.tsx` reads `max_per_day` and `held_count` from it; `pages/jarvis/model/world.ts` likewise. No other screen changes; 186/189/190 add their own hooks.
 
 ## Project Structure
 
@@ -146,6 +152,10 @@ packages/ze-client/src/generated/*
 ## Docs touched ([DOCS] tasks)
 
 - `docs/native-interface.md`: budget route, notification filters, job-runs route, quiet-hours response change.
+- `docs/architecture.md`: REST tables (line ~854 already lists `GET /api/v0/reminders listReminders`, which this phase makes true; add budget, job-runs, hypotheses rows) and the `push_log` row (~973: claims, not outcomes).
+- `docs/frontend.md` (~121): quiet-hours widget and hooks (live path `widgets/settings-workspace/ui/QuietHoursSettings.tsx`; fix stale names).
+- `docs/package-architecture.md` (~106): `PushLogStore` description.
+- `core/arbitration/ze-priority/README.md` (~49): `max_pushes_per_day` is a rolling 24-hour budget.
 - `docs/scheduled-jobs.md`: job-runs route; budget is a rolling 24-hour window with `next_slot_at`.
 - `docs/configuration.md`: `proactive.budget.max_pushes_per_day` text says "rolling 24 hours" if it says "per day" only.
 - `docs/cognitive-architecture.md` and `docs/memory.md` (only if they describe loop confidence): confidence moves on evidence, prior value kept.
