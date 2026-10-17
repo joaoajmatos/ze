@@ -41,6 +41,9 @@
 - [ ] T008 [ENG] [WEB] Test first `entities/presence/model/presence.test.ts`: table over (state, event) → state for every event in FR-006, including `ws_closed` from any state → `error` with phrase "Offline", `ws_open` from `error` → `idle`, `turn_thinking("Looking at your calendar")` → `thinking` with that phrase, `turn_token` → `speaking`, `turn_message` → `done` then `idle` after 1 s (fake timers), `turn_message` from `idle` → stays `idle`, `ask_focus` + `ask_text(true)` → `listening`, `ask_blur` → `idle` unless a turn is in flight, `turn_error` → `idle` with no phrase. Then `usePresence.test.tsx` calling `usePresence("t1")` with `useWsStore.setState` and a fake frame emitter: a replayed message after `ws_open` leaves the orb `idle`; thinking and tokens for thread `t2` are ignored; a token with `thread_id: null` is ignored; thinking for `t1` → `thinking`; a token for `t1` → `speaking`; `usePresence(null)` derives no turn events. Implement `nextPresence` and `usePresence(activeThreadId)` (plan.md `entities/presence`); no import from `entities/session` inside `entities/presence`.
 - [ ] T009 [ENG] [WEB] Copy `Orb.tsx`, `LeaderLine.tsx`, `noise.ts` to `shared/ui/hud/presence/` and write `Presence.tsx` there with props `state`, `phrase`, `compact` (session clock included); export from `shared/ui/index.ts`. Orb reads palette colours from computed root styles and observes `data-palette`. Pause on `IntersectionObserver` off-screen and on `document.hidden`. Tests: `heartbeat()` periodicity (2.2 s) and the stagger bound (≤ 320 ms at r = 1); with reduced motion mocked, `requestAnimationFrame` is called at most once (spy); `Presence` sets `aria-live="polite"` only for `attention`, `done`, `error`. Do not touch `pages/jarvis/**` (T017).
 
+- [ ] T009a [ENG] [WEB] Test first `shared/ui/hud/presence/gaze.test.ts`: the US7 independent-test timeline (follow and clamp, peer after `PEER_DELAY_MS`, lose interest within the attention span range, return to centre, startle above `STARTLE_SPEED` once, blink on a target switch beyond `SWITCH_DISTANCE` once, doze after `DOZE_AFTER_MS`, wake on input, `glance(point)`, touch glance then return, neutral output when the orb state is not `idle`). Implement `gaze.ts` with `GAZE_PERSONALITY`.
+- [ ] T009b [ENG] [WEB] Wire the gaze into `Orb.tsx` per plan.md (window listeners into a ref, rAF read, spring with overshoot, parallax core shift, lean, blink, startle, doze; `glance` via `useImperativeHandle`; disabled under reduced motion; paused off-screen/hidden). Tests: no React re-render on 100 synthetic `pointermove` events (render counter), reduced motion registers no gaze listeners, non-idle state ignores pointer input. The shell calls `glance` on a `notification` frame (bell element) and when the overlay opens (T013/T012). Record a capture of a pointer sweep, peer, flick, doze and wake (US7 acceptance) in T019.
+
 ## Phase 4: Shell, Ask bar, routes [US1, US2, US4]
 
 - [ ] T010 [ENG] [WEB] Test first `shared/config/places.test.ts`: five places in order; `placeOf()` for every new path including detail paths; every redirect row of FR-011 maps old → new with params; `goalPath`, `workflowPath(id, executionId?)`, `askPath(threadId?)`, `settingsDataPath()` (→ `/governance/settings#your-data`). Implement `shared/config/places.ts`. Delete `shared/config/nav-routes.ts` and its test; update every importer from plan.md "Blast radius" in the same change. Then the link audit (FR-014): `git grep -nE 'navigate\(|to=|href=' -- apps/ze-web/src`, fix every old-path literal and every `navigate("/")` meaning chat (→ `askPath()`), excluding `pages/jarvis/**` (T017); list the sites you changed in the Handoffs note. Then `notificationHref(n)` (FR-014a) in `widgets/app-shell/lib/notification-format.ts` from the 184 target table, with one test per target type (`target_parent_id` optional), and `NotificationBell` using it.
@@ -61,7 +64,7 @@
 ## Phase 7: Polish and gates [ENG]
 
 - [ ] T018 [ENG] [WEB] Reduced-motion and keyboard pass: tab order top bar → presence → hero → Ask bar → bottom bar; focus ring per DESIGN.md on every control; `/` shortcut; no `requestAnimationFrame` loop under reduced motion (SC-006).
-- [ ] T019 [ENG] [WEB] Captures at 1440×900 and 390×844 of `/`, `/ask`, `/doing`, `/doing/goals/<seeded id>`, `/mind`, `/governance`, `/governance/settings` on `make dev-full` with seed data: zero console errors, `scrollWidth ≤ innerWidth`, every interactive element ≥ 44×44 (script the check in the capture run). Run the impeccable detector on `shared/ui/hud`, `widgets/app-shell`, `features/ask-bar` (0 findings) and an impeccable critique of the shell (≥ T001 baseline). Attach results to the Handoffs note.
+- [ ] T019 [ENG] [WEB] Captures at 1440×900 and 390×844 of `/`, `/ask`, `/doing`, `/doing/goals/<seeded id>`, `/mind`, `/governance`, `/governance/settings` on `make dev-full` with seed data: zero console errors, `scrollWidth ≤ innerWidth`, every interactive element ≥ 44×44 (script the check in the capture run), plus a recorded clip of the idle orb's curious-pet behaviour (US7). Run the impeccable detector on `shared/ui/hud`, `widgets/app-shell`, `features/ask-bar` (0 findings) and an impeccable critique of the shell (≥ T001 baseline). Attach results to the Handoffs note.
 - [ ] T020 [ENG] [PLATFORM] Gates: `make test-web`, `make typecheck-web`, `make web-build`, `cd apps/ze-web && bun run lint`. Record command, result and commit in the Handoffs note.
 
 ## Phase 8: Docs [DOCS]
@@ -76,7 +79,7 @@
 ## Dependencies
 
 - T001 → everything. T002–T003 → all UI tasks. T004 → T005–T009.
-- T005 → T006 → T007. T008 → T009.
+- T005 → T006 → T007. T008 → T009 → T009a → T009b.
 - T010 → T011 → T012 (T012 also needs T013's shell for the overlay slot; write AskOverlay against the prop and integrate after T013); T008 → T011; T009 + T011 → T013; T010 → T015; T013 + T015 → T014.
 - T016 after T015. T017 after T006, T009, T013. T018–T020 after T017. Docs after T020 (T021–T022 may draft earlier).
 
@@ -90,7 +93,7 @@
 
 ### Lane ENG (Claude Sonnet, lane lead)
 
-Tasks: T001–T003, T008–T014, T018–T020. Owns `app/**`, `main.tsx`, `public/fonts/**`, `shared/styles/**`, `shared/config/**`, `shared/lib/palette.ts`, `shared/ui/hud/presence/**`, `entities/presence/**`, `features/ask-bar/**`, `widgets/app-shell/**`, `widgets/chat-workspace/**` (`AskOverlay` and the `ContextOverlay` deletion only), the interim-page edits listed in T012, and this phase's `tasks.md`.
+Tasks: T001–T003, T008–T009b, T010–T014, T018–T020. Owns `app/**`, `main.tsx`, `public/fonts/**`, `shared/styles/**`, `shared/config/**`, `shared/lib/palette.ts`, `shared/ui/hud/presence/**`, `entities/presence/**`, `features/ask-bar/**`, `widgets/app-shell/**`, `widgets/chat-workspace/**` (`AskOverlay` and the `ContextOverlay` deletion only), the interim-page edits listed in T012, and this phase's `tasks.md`.
 
 ### Lane JR (OpenCode junior)
 
