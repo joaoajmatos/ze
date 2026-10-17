@@ -57,12 +57,12 @@
 
 ## Phase 6: Hypotheses (needs 185 on main) [US3]
 
-- [ ] T017 [ENG] [WEB] If 186 has not created it: `entities/hypothesis` per 186 T003. Tests first `widgets/entity-neighbourhood/ui/Suspicions.test.tsx`: "I suspect …" lists `listHypotheses?entity_id=` with posture (inference/suspicion), relation in words, evidence labels; Useful / Not relevant / Mute call `setHypothesisFeedback` and a dismissed one can be cleared; the section is absent when the list is empty. Implement and add to `MindEntityPage`.
+- [x] T017 [ENG] [WEB] If 186 has not created it: `entities/hypothesis` per 186 T003. Tests first `widgets/entity-neighbourhood/ui/Suspicions.test.tsx`: "I suspect …" lists `listHypotheses?entity_id=` with posture (inference/suspicion), relation in words, evidence labels; Useful / Not relevant / Mute call `setHypothesisFeedback` and a dismissed one can be cleared; the section is absent when the list is empty. Implement and add to `MindEntityPage`.
 
 ## Phase 7: Screen context (needs 195 on main) [US1, US3]
 
-- [ ] T018 [ENG] [WEB] Tests first: Beliefs publishes `selection` (selected rows) and `visible`; `MindEntityPage` publishes `subject` (`entity`). Implement with `useScreenPublisher`.
-- [ ] T019 [JR] [WEB] Tests first, one per kind (195 FR-025): `ChatAboutChip` on `BeliefRow` (`fact`, via its `onChatAbout` prop), entity search rows and the entity page header (`entity`), neighbour marks (`entity`), procedure rows (`procedure`), hypothesis rows (`hypothesis`, if Phase 6 landed); every Mind `Module` gets `onChatAbout`. Callbacks by props from the pages.
+- [x] T018 [ENG] [WEB] Tests first: Beliefs publishes `selection` (selected rows) and `visible`; `MindEntityPage` publishes `subject` (`entity`). Implement with `useScreenPublisher`.
+- [x] T019 [JR] [WEB] Tests first, one per kind (195 FR-025): `ChatAboutChip` on `BeliefRow` (`fact`, via its `onChatAbout` prop), entity search rows and the entity page header (`entity`), neighbour marks (`entity`), procedure rows (`procedure`), hypothesis rows (`hypothesis`, if Phase 6 landed); every Mind `Module` gets `onChatAbout`. Callbacks by props from the pages.
 
 ## Phase 8: Acceptance and docs
 

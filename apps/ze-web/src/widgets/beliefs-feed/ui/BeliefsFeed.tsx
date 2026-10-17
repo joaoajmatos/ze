@@ -1,11 +1,13 @@
-import type { MemoryFeedItem } from "@myguyze/ze-client";
+import type { MemoryFeedItem, WsScreenRef } from "@myguyze/ze-client";
 import { useMemo, useState } from "react";
 import {
   BeliefRow,
+  factRef,
   useMemoryFeedQuery,
   useMemoryTimelineBoundsQuery,
   useReviewFactMutation,
 } from "@/entities/memory-feed-item";
+import { useScreenPublisher } from "@/entities/screen-context";
 import { Chip, Control, Module } from "@/shared/ui";
 
 const FILTERS = { type: "all" } as const;
@@ -27,8 +29,11 @@ function EpisodeRow({ item }: { item: MemoryFeedItem }) {
   );
 }
 
-export function BeliefsFeed({ onChatAbout }: { onChatAbout?: (element: Element) => void }) {
+const VISIBLE_CAP = 20;
+
+export function BeliefsFeed({ onChatAbout }: { onChatAbout?: (ref: WsScreenRef, element: Element) => void }) {
   const [asOfDate, setAsOfDate] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
   const asOf = asOfDate ? new Date(`${asOfDate}T23:59:59`).toISOString() : undefined;
   const feed = useMemoryFeedQuery(FILTERS, asOf);
   const bounds = useMemoryTimelineBoundsQuery();
@@ -37,8 +42,27 @@ export function BeliefsFeed({ onChatAbout }: { onChatAbout?: (element: Element) 
   const items = useMemo(() => feed.data?.pages.flatMap((p) => p.items) ?? [], [feed.data]);
   const totals = feed.data?.pages[0];
 
+  const facts = useMemo(() => items.filter((i) => i.type === "fact"), [items]);
+  const selection = facts.filter((i) => selectedIds.has(i.id)).map(factRef);
+  useScreenPublisher(
+    facts.length === 0
+      ? null
+      : {
+          visible: facts.slice(0, VISIBLE_CAP).map(factRef),
+          ...(selection.length > 0 ? { selection } : {}),
+          focused_module: "Beliefs",
+        },
+  );
+  const toggle = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   return (
-    <Module label="Beliefs" onChatAbout={onChatAbout} chatAboutLabel="my beliefs">
+    <Module label="Beliefs">
       <div className="belief-asof">
         <label className="lbl" htmlFor="beliefs-as-of">As of</label>
         <input
@@ -78,6 +102,9 @@ export function BeliefsFeed({ onChatAbout }: { onChatAbout?: (element: Element) 
                   key={item.id}
                   item={item}
                   busy={review.isPending}
+                  selected={selectedIds.has(item.id)}
+                  onToggleSelect={() => toggle(item.id)}
+                  onChatAbout={onChatAbout ? (element) => onChatAbout(factRef(item), element) : undefined}
                   onKeep={() => review.mutate({ actions: [{ id: item.id, action: "confirm" }] })}
                   onDrop={() => review.mutate({ actions: [{ id: item.id, action: "reject" }] })}
                   onEdit={(value) => review.mutate({ actions: [{ id: item.id, action: "edit", value }] })}

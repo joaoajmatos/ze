@@ -84,6 +84,17 @@ describe("EntityNeighbourhood", () => {
     fireEvent.click(within(group).getByRole("button", { name: "Bob" }));
   });
 
+  it("chats about the centre, a neighbour mark and a fact with their refs", () => {
+    const onChatAbout = vi.fn();
+    render(<EntityNeighbourhood detail={detail()} onSelectEntity={vi.fn()} onChatAbout={onChatAbout} />);
+    fireEvent.click(screen.getByRole("button", { name: "Chat about Ada" }));
+    expect(onChatAbout).toHaveBeenLastCalledWith({ kind: "entity", id: "c", label: "Ada", component: "entity_module" }, expect.any(Element));
+    fireEvent.keyDown(screen.getByRole("link", { name: /open bob/i }), { key: "c" });
+    expect(onChatAbout).toHaveBeenLastCalledWith({ kind: "entity", id: "a", label: "Bob", component: "entity_module" }, expect.any(Element));
+    fireEvent.click(screen.getByRole("button", { name: "Chat about this belief" }));
+    expect(onChatAbout).toHaveBeenLastCalledWith({ kind: "fact", id: "f1", label: "Works at Acme", component: "belief_row" }, expect.any(Element));
+  });
+
   it("says so when nothing is connected", () => {
     render(<EntityNeighbourhood detail={detail({ neighbours: [], neighbour_total: 0, neighbour_edges: [], facts: [] })} onSelectEntity={vi.fn()} />);
     expect(screen.getByText(/nothing connected to ada yet/i)).toBeInTheDocument();

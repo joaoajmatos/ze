@@ -1,7 +1,9 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { EntityNeighbourhood } from "@/widgets/entity-neighbourhood";
+import { EntityNeighbourhood, Suspicions } from "@/widgets/entity-neighbourhood";
 import { EntitySearch } from "@/widgets/entity-search";
+import { useChatAbout } from "@/features/ask-bar";
 import { useEntityDetailQuery } from "@/entities/memory-graph";
+import { useScreenPublisher } from "@/entities/screen-context";
 import { Control } from "@/shared/ui";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -12,6 +14,15 @@ export function MindEntityPage() {
   const valid = entityId != null && UUID.test(entityId);
   const { data, isLoading, isError, refetch } = useEntityDetailQuery(valid ? entityId : null);
   const open = (id: string) => navigate(`/mind/${id}`);
+  const chatAbout = useChatAbout();
+  useScreenPublisher(
+    data
+      ? {
+          subject: [{ kind: "entity", id: data.entity.id, label: data.entity.canonical_name, component: "entity_module" }],
+          focused_module: "Mind",
+        }
+      : null,
+  );
 
   return (
     <div className="mind-grid">
@@ -24,10 +35,11 @@ export function MindEntityPage() {
           </p>
         )}
         {(!valid || data === null) && !isLoading && !isError && <p className="note">No entity here</p>}
-        {valid && data && <EntityNeighbourhood detail={data} onSelectEntity={open} />}
+        {valid && data && <EntityNeighbourhood detail={data} onSelectEntity={open} onChatAbout={chatAbout} />}
+        {valid && data && <Suspicions entityId={data.entity.id} onChatAbout={chatAbout} />}
       </div>
       <div className="mind-rail">
-        <EntitySearch onSelect={open} />
+        <EntitySearch onSelect={open} onChatAbout={chatAbout} />
       </div>
     </div>
   );

@@ -4,4 +4,4 @@ export { useMemoryTimelineBoundsQuery } from "./api/useMemoryTimelineBoundsQuery
 export { useMemoryActivityQuery } from "./api/useMemoryActivityQuery";
 export { useReviewFactMutation } from "./api/useReviewFactMutation";
 export { BeliefRow } from "./ui/BeliefRow";
-export { beliefSentence, sinceLabel, sourceWords } from "./lib/belief";
+export { beliefSentence, factRef, sinceLabel, sourceWords } from "./lib/belief";

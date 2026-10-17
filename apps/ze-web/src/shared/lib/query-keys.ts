@@ -25,6 +25,7 @@ export const queryKeys = {
   entityDetail: (entityId: string) => ["entity-detail", entityId] as const,
   entitySearch: (q: string, type?: string) => ["entity-search", q, type ?? ""] as const,
   contactsPage: ["contacts-page"] as const,
+  hypotheses: (state: string, entityId?: string) => ["hypotheses", state, entityId ?? ""] as const,
   pluginPage: (path: string) => ["plugin-page", path] as const,
   pluginSettings: (id: string) => ["plugin-settings", id] as const,
   dataDomains: () => ["data-domains"] as const,

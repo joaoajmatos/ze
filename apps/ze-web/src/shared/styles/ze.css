@@ -1963,3 +1963,13 @@ h2.lbl {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.belief-select {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-align: left;
+  color: inherit;
+}
+.row.selected {
+  background: color-mix(in oklab, var(--main) 8%, transparent);
+}

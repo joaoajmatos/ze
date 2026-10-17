@@ -1,7 +1,7 @@
 import type { MemoryFeedItem } from "@myguyze/ze-client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { chipLabelOf, glyphOf, postureOf } from "@/shared/lib/claim-posture";
-import { Chip, Control, Glyph } from "@/shared/ui";
+import { ChatAboutChip, Chip, Control, Glyph } from "@/shared/ui";
 import { beliefSentence, sinceLabel, sourceWords } from "../lib/belief";
 
 interface BeliefRowProps {
@@ -11,9 +11,14 @@ interface BeliefRowProps {
   onEdit: (value: string) => void;
   busy?: boolean;
   now?: Date;
+  /** The row is part of the selection Ze can see on screen. */
+  selected?: boolean;
+  onToggleSelect?: () => void;
+  onChatAbout?: (element: Element) => void;
 }
 
-export function BeliefRow({ item, onKeep, onDrop, onEdit, busy = false, now }: BeliefRowProps) {
+export function BeliefRow({ item, onKeep, onDrop, onEdit, busy = false, now, selected = false, onToggleSelect, onChatAbout }: BeliefRowProps) {
+  const root = useRef<HTMLLIElement>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.value ?? "");
   const posture = postureOf(item.claim_kind);
@@ -27,10 +32,16 @@ export function BeliefRow({ item, onKeep, onDrop, onEdit, busy = false, now }: B
   }
 
   return (
-    <li className={`row belief ${dotted ? "dotted" : ""}`}>
+    <li ref={root} className={`row belief ${dotted ? "dotted" : ""} ${selected ? "selected" : ""}`}>
       <span className="t">
         <Glyph kind={(glyph || "told") as "told" | "inferred" | "suspected" | "goal"} />
-        <span className={item.contradicted ? "struck" : undefined}>{sentence}</span>
+        {onToggleSelect ? (
+          <button type="button" className="ctl-text belief-select" aria-pressed={selected} onClick={onToggleSelect}>
+            <span className={item.contradicted ? "struck" : undefined}>{sentence}</span>
+          </button>
+        ) : (
+          <span className={item.contradicted ? "struck" : undefined}>{sentence}</span>
+        )}
       </span>
       {item.confidence != null && <span className="ro">{item.confidence.toFixed(2)}</span>}
       <span className="s">
@@ -60,6 +71,7 @@ export function BeliefRow({ item, onKeep, onDrop, onEdit, busy = false, now }: B
           <Control disabled={busy} onClick={onKeep} aria-label="Keep this belief">Keep</Control>
           <Control disabled={busy} onClick={() => setEditing(true)} aria-label="Edit this belief">Edit</Control>
           <Control disabled={busy} onClick={onDrop} aria-label="Drop this belief">Drop</Control>
+          {onChatAbout && <ChatAboutChip label="this belief" onClick={() => root.current && onChatAbout(root.current)} />}
         </span>
       )}
     </li>

@@ -3,7 +3,8 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { MindPage } from "./MindPage";
 
-vi.mock("@/widgets/beliefs-feed", () => ({ BeliefsFeed: () => <section aria-label="Beliefs" /> }));
+const chatAbout = vi.fn();
+vi.mock("@/widgets/beliefs-feed", () => ({ BeliefsFeed: ({ onChatAbout }: { onChatAbout: unknown }) => <section aria-label="Beliefs" data-wired={String(onChatAbout === chatAbout)} /> }));
 vi.mock("@/widgets/people", () => ({ People: () => <section aria-label="People" /> }));
 vi.mock("@/widgets/procedures", () => ({ Procedures: () => <section aria-label="Procedures" /> }));
 vi.mock("@/widgets/entity-search", () => ({
@@ -13,7 +14,7 @@ vi.mock("@/widgets/entity-search", () => ({
     </section>
   ),
 }));
-vi.mock("@/features/ask-bar", () => ({ useChatAbout: () => vi.fn() }));
+vi.mock("@/features/ask-bar", () => ({ useChatAbout: () => chatAbout }));
 vi.mock("@/entities/screen-context", () => ({ useScreenPublisher: vi.fn() }));
 
 function Where() {
@@ -25,6 +26,11 @@ describe("MindPage", () => {
     render(<MemoryRouter><MindPage /></MemoryRouter>);
     const order = screen.getAllByRole("region").map((r) => r.getAttribute("aria-label"));
     expect(order).toEqual(["Beliefs", "People", "Find an entity", "Procedures"]);
+  });
+
+  it("wires Chat about this from the ask bar into the widgets", () => {
+    render(<MemoryRouter><MindPage /></MemoryRouter>);
+    expect(screen.getByRole("region", { name: "Beliefs" })).toHaveAttribute("data-wired", "true");
   });
 
   it("opens the chosen entity on its own page", () => {

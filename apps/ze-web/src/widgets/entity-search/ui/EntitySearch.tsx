@@ -1,10 +1,11 @@
+import type { WsScreenRef } from "@myguyze/ze-client";
 import { useEffect, useState } from "react";
 import { useSearchEntitiesQuery } from "@/entities/memory-graph";
-import { Module } from "@/shared/ui";
+import { ChatAboutChip, Module } from "@/shared/ui";
 
 interface EntitySearchProps {
   onSelect: (entityId: string) => void;
-  onChatAbout?: (element: Element) => void;
+  onChatAbout?: (ref: WsScreenRef, element: Element) => void;
 }
 
 export function EntitySearch({ onSelect, onChatAbout }: EntitySearchProps) {
@@ -19,7 +20,7 @@ export function EntitySearch({ onSelect, onChatAbout }: EntitySearchProps) {
   const results = search.data ?? [];
 
   return (
-    <Module label="Find an entity" onChatAbout={onChatAbout} chatAboutLabel="entity search">
+    <Module label="Find an entity">
       <input
         type="search"
         className="text-field entity-search-box"
@@ -43,6 +44,14 @@ export function EntitySearch({ onSelect, onChatAbout }: EntitySearchProps) {
                   {r.entity_type} · <span className="ro">{r.degree}</span> {r.degree === 1 ? "connection" : "connections"}
                 </span>
               </button>
+              {onChatAbout && (
+                <ChatAboutChip
+                  label={r.canonical_name}
+                  onClick={(chip) =>
+                    onChatAbout({ kind: "entity", id: r.id, label: r.canonical_name, component: "entity_row" }, chip.closest("li") ?? chip)
+                  }
+                />
+              )}
             </li>
           ))}
         </ul>

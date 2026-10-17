@@ -3,7 +3,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BeliefsFeed } from "./BeliefsFeed";
 
-const { useMemoryFeedQuery, useMemoryTimelineBoundsQuery, useReviewFactMutation, mutate, fetchNextPage } = vi.hoisted(() => ({
+const { useScreenPublisher, useMemoryFeedQuery, useMemoryTimelineBoundsQuery, useReviewFactMutation, mutate, fetchNextPage } = vi.hoisted(() => ({
+  useScreenPublisher: vi.fn(),
   useMemoryFeedQuery: vi.fn(),
   useMemoryTimelineBoundsQuery: vi.fn(),
   useReviewFactMutation: vi.fn(),
@@ -17,6 +18,8 @@ vi.mock("@/entities/memory-feed-item", async (importOriginal) => ({
   useMemoryTimelineBoundsQuery,
   useReviewFactMutation,
 }));
+
+vi.mock("@/entities/screen-context", () => ({ useScreenPublisher }));
 
 const fact: MemoryFeedItem = {
   id: "f1",
@@ -94,6 +97,35 @@ describe("BeliefsFeed", () => {
     expect(screen.getByText(/kinds and confidence as of now/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^now$/i }));
     expect(useMemoryFeedQuery).toHaveBeenLastCalledWith({ type: "all" }, undefined);
+  });
+
+  it("publishes the visible beliefs and the selected ones", () => {
+    feed([fact, { ...fact, id: "f2", value: "Globex" }]);
+    render(<BeliefsFeed />);
+    expect(useScreenPublisher).toHaveBeenLastCalledWith({
+      visible: [
+        { kind: "fact", id: "f1", label: "Works at Acme", component: "belief_row" },
+        { kind: "fact", id: "f2", label: "Works at Globex", component: "belief_row" },
+      ],
+      focused_module: "Beliefs",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Works at Globex" }));
+    expect(useScreenPublisher).toHaveBeenLastCalledWith(
+      expect.objectContaining({ selection: [{ kind: "fact", id: "f2", label: "Works at Globex", component: "belief_row" }] }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Works at Globex" }));
+    expect(useScreenPublisher).toHaveBeenLastCalledWith(expect.not.objectContaining({ selection: expect.anything() }));
+  });
+
+  it("chats about a belief with a fact ref", () => {
+    const onChatAbout = vi.fn();
+    feed([fact]);
+    render(<BeliefsFeed onChatAbout={onChatAbout} />);
+    fireEvent.click(screen.getByRole("button", { name: "Chat about this belief" }));
+    expect(onChatAbout).toHaveBeenCalledWith(
+      { kind: "fact", id: "f1", label: "Works at Acme", component: "belief_row" },
+      expect.any(Element),
+    );
   });
 
   it("explains an empty memory", () => {

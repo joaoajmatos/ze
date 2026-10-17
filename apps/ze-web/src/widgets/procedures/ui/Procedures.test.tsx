@@ -49,6 +49,16 @@ describe("Procedures", () => {
     expect(screen.getByText("failed: send bounced")).toBeInTheDocument();
   });
 
+  it("chats about a procedure with a procedure ref", () => {
+    const onChatAbout = vi.fn();
+    render(<Procedures onChatAbout={onChatAbout} />);
+    fireEvent.click(screen.getByRole("button", { name: "Chat about Inbox sweep" }));
+    expect(onChatAbout).toHaveBeenCalledWith(
+      { kind: "procedure", id: "p1", label: "Inbox sweep", component: "procedure_row" },
+      expect.any(Element),
+    );
+  });
+
   it("says when there is nothing yet", () => {
     useProcedureCandidatesQuery.mockReturnValue({ data: [], isLoading: false });
     useProcedureLibraryQuery.mockReturnValue({ data: [], isLoading: false, isError: false, refetch: vi.fn() });

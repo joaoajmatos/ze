@@ -36,6 +36,19 @@ describe("EntitySearch", () => {
     expect(onSelect).toHaveBeenCalledWith("e1");
   });
 
+  it("chats about a result with an entity ref", () => {
+    const onChatAbout = vi.fn();
+    useSearchEntitiesQuery.mockReturnValue({ data: [ada], isFetching: false, isError: false });
+    render(<EntitySearch onSelect={vi.fn()} onChatAbout={onChatAbout} />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "ada" } });
+    act(() => void vi.advanceTimersByTime(250));
+    fireEvent.click(screen.getByRole("button", { name: "Chat about Ada Lovelace" }));
+    expect(onChatAbout).toHaveBeenCalledWith(
+      { kind: "entity", id: "e1", label: "Ada Lovelace", component: "entity_row" },
+      expect.any(Element),
+    );
+  });
+
   it("says no entity was found and keeps the text", () => {
     useSearchEntitiesQuery.mockReturnValue({ data: [], isFetching: false, isError: false });
     render(<EntitySearch onSelect={vi.fn()} />);

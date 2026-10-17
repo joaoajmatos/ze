@@ -1,3 +1,4 @@
+import type { MemoryFeedItem, WsScreenRef } from "@myguyze/ze-client";
 import { dayMonth } from "@/shared/lib/clock-format";
 
 const FALLBACK = "A fact Ze holds";
@@ -42,4 +43,9 @@ export function sourceWords(provenance: string | null | undefined, agent: string
   const from = provenance ? (PROVENANCE[provenance] ?? provenance.replace(/_/g, " ")) : "";
   const via = agent ? `via ${agent.replace(/[_-]+/g, " ")}` : "";
   return [from, via].filter(Boolean).join(", ");
+}
+
+/** The screen reference for a belief shown as a row. */
+export function factRef(item: Pick<MemoryFeedItem, "id" | "key" | "value">): WsScreenRef {
+  return { kind: "fact", id: item.id, label: beliefSentence(item.key, item.value), component: "belief_row" };
 }

@@ -1,19 +1,18 @@
+import type { WsScreenRef } from "@myguyze/ze-client";
 import { useState } from "react";
 import { ProcedureControls } from "@/features/procedure-review";
 import { ReviewProcedureCandidate } from "@/features/review-procedure";
 import { useProcedureCandidatesQuery, useProcedureDetailQuery, useProcedureLibraryQuery } from "@/entities/procedure";
-import { Chip, Control, Module } from "@/shared/ui";
+import { ChatAboutChip, Chip, Control, Module } from "@/shared/ui";
 
 const STATUS_WORDS: Record<string, string> = { active: "active", retired: "disabled" };
 const status = (s: string) => STATUS_WORDS[s] ?? s.replace(/_/g, " ");
 
 interface ProceduresProps {
-  onChatAbout?: (element: Element) => void;
-  /** Called with a procedure id when its row asks for "Chat about this". */
-  onChatAboutProcedure?: (procedure: { id: string; name: string }, element: Element) => void;
+  onChatAbout?: (ref: WsScreenRef, element: Element) => void;
 }
 
-export function Procedures({ onChatAbout, onChatAboutProcedure }: ProceduresProps) {
+export function Procedures({ onChatAbout }: ProceduresProps) {
   const candidates = useProcedureCandidatesQuery();
   const library = useProcedureLibraryQuery();
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
@@ -23,7 +22,7 @@ export function Procedures({ onChatAbout, onChatAboutProcedure }: ProceduresProp
   const nothing = !candidates.isLoading && !library.isLoading && !library.isError && waiting.length === 0 && rows.length === 0;
 
   return (
-    <Module label="Procedures" onChatAbout={onChatAbout} chatAboutLabel="what I have learned to do">
+    <Module label="Procedures">
       {waiting.length > 0 && (
         <div role="group" aria-label="Waiting for your review">
           <h3 className="lbl">Waiting for your review</h3>
@@ -64,15 +63,13 @@ export function Procedures({ onChatAbout, onChatAboutProcedure }: ProceduresProp
                     {status(row.identity_status)} · version {row.version_number} · {row.trigger}
                   </span>
                 </button>
-                {onChatAboutProcedure && (
-                  <span className="belief-actions">
-                    <Control
-                      aria-label={`Chat about ${row.name}`}
-                      onClick={() => onChatAboutProcedure({ id: row.id, name: row.name }, document.body)}
-                    >
-                      Chat about this
-                    </Control>
-                  </span>
+                {onChatAbout && (
+                  <ChatAboutChip
+                    label={row.name}
+                    onClick={(chip) =>
+                      onChatAbout({ kind: "procedure", id: row.id, label: row.name, component: "procedure_row" }, chip.closest("li") ?? chip)
+                    }
+                  />
                 )}
               </li>
             ))}

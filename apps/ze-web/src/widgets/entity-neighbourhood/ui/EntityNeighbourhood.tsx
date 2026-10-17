@@ -1,9 +1,9 @@
-import type { EntityDetailResponse } from "@myguyze/ze-client";
+import type { EntityDetailResponse, GraphEntityNode, WsScreenRef } from "@myguyze/ze-client";
 import { LineChart } from "@myguyze/ze-ui/charts";
 import { useMemo, type KeyboardEvent } from "react";
-import { BeliefRow, useReviewFactMutation } from "@/entities/memory-feed-item";
+import { BeliefRow, factRef, useReviewFactMutation } from "@/entities/memory-feed-item";
 import { humanizeIdentifier, useNarrow } from "@/shared/lib";
-import { Module } from "@/shared/ui";
+import { ChatAboutChip, Module } from "@/shared/ui";
 import { entityActivitySeries } from "../lib/entityActivitySeries";
 import { factAsFeedItem } from "../lib/facts";
 import { radialLayout } from "../lib/radial";
@@ -13,8 +13,10 @@ const FILTERS = { type: "all" } as const;
 interface EntityNeighbourhoodProps {
   detail: EntityDetailResponse;
   onSelectEntity: (entityId: string) => void;
-  onChatAbout?: (element: Element) => void;
+  onChatAbout?: (ref: WsScreenRef, element: Element) => void;
 }
+
+export const entityRef = (e: GraphEntityNode): WsScreenRef => ({ kind: "entity", id: e.id, label: e.canonical_name, component: "entity_module" });
 
 const words = (predicate: string) => humanizeIdentifier(predicate);
 
@@ -35,7 +37,11 @@ export function EntityNeighbourhood({ detail, onSelectEntity, onChatAbout }: Ent
   };
 
   return (
-    <Module label={`Around ${name}`} onChatAbout={onChatAbout} chatAboutLabel={name}>
+    <Module
+      label={`Around ${name}`}
+      onChatAbout={onChatAbout ? (element) => onChatAbout(entityRef(detail.entity), element) : undefined}
+      chatAboutLabel={name}
+    >
       {layout.shown === 0 ? (
         <p className="note">Nothing connected to {name} yet.</p>
       ) : narrow ? (
@@ -49,6 +55,9 @@ export function EntityNeighbourhood({ detail, onSelectEntity, onChatAbout }: Ent
                     <button type="button" className="ctl-text hood-link" onClick={() => onSelectEntity(node.id)}>
                       {node.canonical_name}
                     </button>
+                    {onChatAbout && (
+                      <ChatAboutChip label={node.canonical_name} onClick={(chip) => onChatAbout(entityRef(node), chip.closest("li") ?? chip)} />
+                    )}
                   </li>
                 ))}
               </ul>
@@ -78,8 +87,14 @@ export function EntityNeighbourhood({ detail, onSelectEntity, onChatAbout }: Ent
                 aria-label={`Open ${n.node.canonical_name}, ${words(g.predicate).toLowerCase()}`}
                 className="hood-node"
                 onClick={() => onSelectEntity(n.node.id)}
-                onKeyDown={open(n.node.id)}
-              >
+                onKeyDown={(e) => {
+                  if (e.key === "c" && onChatAbout && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                    e.preventDefault();
+                    onChatAbout(entityRef(n.node), e.currentTarget);
+                    return;
+                  }
+                  open(n.node.id)(e);
+                }}              >
                 <circle cx={n.x} cy={n.y} r={14} className="hood-hit" />
                 <circle cx={n.x} cy={n.y} r={4} className="hood-dot" />
                 <text x={n.x} y={n.y + 18} textAnchor="middle" className="hood-label">{n.node.canonical_name}</text>
@@ -106,6 +121,7 @@ export function EntityNeighbourhood({ detail, onSelectEntity, onChatAbout }: Ent
               key={f.id}
               item={factAsFeedItem(f)}
               busy={review.isPending}
+              onChatAbout={onChatAbout ? (element) => onChatAbout(factRef(f), element) : undefined}
               onKeep={() => review.mutate({ actions: [{ id: f.id, action: "confirm" }] })}
               onDrop={() => review.mutate({ actions: [{ id: f.id, action: "reject" }] })}
               onEdit={(value) => review.mutate({ actions: [{ id: f.id, action: "edit", value }] })}
