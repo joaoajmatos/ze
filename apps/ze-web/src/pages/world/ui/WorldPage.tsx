@@ -11,9 +11,9 @@ import { WorldField } from "@/widgets/world-field";
 import { useAskOverlay, useChatAbout } from "@/features/ask-bar";
 import { useLoopTransitionMutation } from "@/entities/loop";
 import { presenceActions } from "@/entities/presence";
-import { useScreenPublisher } from "@/entities/screen-context";
+import { screenSnapshot, useScreenPublisher } from "@/entities/screen-context";
 import { useWsStore } from "@/shared/api";
-import { useNarrow, useRailSlot, useReducedMotion } from "@/shared/lib";
+import { useNarrow, useRailSlot, useReducedMotion, useSendNotice } from "@/shared/lib";
 import { Corners, CommandChip, LeaderLine } from "@/shared/ui";
 import { parseFocus } from "../lib/focus";
 import { useWorld } from "../model/useWorld";
@@ -40,7 +40,11 @@ export function WorldPage() {
   const [params] = useSearchParams();
   const focus = parseFocus(params.get("focus"));
   const focusKey = focus && FIELD_KINDS.has(focus.kind) ? `${focus.kind}:${focus.id}` : null;
-  const [picked, setPicked] = useState<string | null | undefined>(undefined);
+  // A manual pick belongs to the focus link it was made under; a new link selects its own item.
+  const rawFocus = params.get("focus");
+  const [pick, setPick] = useState<{ under: string | null; key: string | null } | null>(null);
+  const picked = pick && pick.under === rawFocus ? pick.key : undefined;
+  const setPicked = (key: string | null) => setPick({ under: rawFocus, key });
   const [focusedModule, setFocusedModule] = useState("world-field");
 
   const concerns = world.field.data;
@@ -79,7 +83,10 @@ export function WorldPage() {
   }
 
   function askSlipping() {
-    useAskOverlay.getState().submit("What's slipping?", { place: "world", origin: "preset", compose: "slipping" } as WsScreenContext);
+    const context = { ...screenSnapshot(window.location.pathname), origin: "preset", compose: "slipping" } as WsScreenContext;
+    if (!useAskOverlay.getState().submit("What's slipping?", context)) {
+      useSendNotice.getState().showNotice("Ze has not sent your last message yet. Wait for it, then send this one.");
+    }
   }
 
   const failedNames = world.sourcesFailed;

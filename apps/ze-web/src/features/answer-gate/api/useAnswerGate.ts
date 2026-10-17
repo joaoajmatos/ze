@@ -1,10 +1,7 @@
 import { useEffect } from "react";
 import { useSession } from "@/entities/session";
-import { send, useFrame, useWsStore } from "@/shared/api";
+import { send, useWsStore } from "@/shared/api";
 import { useGateFlights, without } from "../model/gate-flights";
-
-/** An `error` frame this soon after the send is taken to be the server's answer to it (the server sends no ack). */
-const ERROR_WINDOW_MS = 15_000;
 
 export type GateState = "idle" | "in_flight" | "awaiting_instructions";
 
@@ -32,35 +29,6 @@ export function useAnswerGate(openGateIds: readonly string[]) {
       return next;
     });
   }, [openKey]);
-
-  useFrame("message", (f) => {
-    if (f.message.thread_id !== threadId) return;
-    useGateFlights.setState((s) => {
-      const redirecting = Object.entries(s.flights).filter(([, fl]) => fl.kind === "redirect" && fl.threadId === threadId);
-      if (redirecting.length === 0) return s;
-      let flightsNext = s.flights;
-      let awaitingNext = s.awaiting;
-      for (const [id] of redirecting) {
-        flightsNext = without(flightsNext, id);
-        awaitingNext = { ...awaitingNext, [id]: true };
-      }
-      return { ...s, flights: flightsNext, awaiting: awaitingNext };
-    });
-  });
-
-  useFrame("error", (f) => {
-    if (f.thread_id !== threadId) return;
-    const now = Date.now();
-    useGateFlights.setState((s) => {
-      let next = s;
-      for (const [id, fl] of Object.entries(s.flights)) {
-        if (fl.threadId !== threadId) continue;
-        if (fl.kind === "decide" && now - fl.sentAt > ERROR_WINDOW_MS) continue;
-        next = { ...next, flights: without(next.flights, id), errors: { ...next.errors, [id]: f.detail } };
-      }
-      return next;
-    });
-  });
 
   function answer(family: string, action: string, id: string, kind: "decide" | "redirect" = "decide"): boolean {
     if (useGateFlights.getState().flights[id]) return false;

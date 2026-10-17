@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { AnswerGateFrameHandler } from "../ui/AnswerGateFrameHandler";
 import { useAnswerGate } from "./useAnswerGate";
 import { useGateFlights } from "../model/gate-flights";
 
@@ -20,6 +21,12 @@ vi.mock("@/entities/session", () => ({
   useSession: (sel: (s: { threadId: string }) => unknown) => sel({ threadId: "t-1" }),
 }));
 
+// The shell mounts the handler once; the tests mount it beside the hook.
+function useBoth(ids: readonly string[]) {
+  AnswerGateFrameHandler();
+  return useAnswerGate(ids);
+}
+
 const frame = (type: string, extra: Record<string, unknown> = {}) =>
   act(() => m.frames[type](type === "message" ? { type, message: { thread_id: "t-1", ...extra } } : { type, thread_id: "t-1", ...extra }));
 
@@ -34,7 +41,7 @@ describe("useAnswerGate", () => {
   afterEach(() => vi.useRealTimers());
 
   it("Proceed, Stop and Redirect send the action frame on the session thread", () => {
-    const { result } = renderHook(() => useAnswerGate(["g1", "g2", "g3"]));
+    const { result } = renderHook(() => useBoth(["g1", "g2", "g3"]));
     act(() => void result.current.proceed("g1"));
     act(() => void result.current.stop("g2"));
     act(() => void result.current.redirect("g3"));
@@ -46,7 +53,7 @@ describe("useAnswerGate", () => {
   });
 
   it("refuses a second Proceed or Stop for the same gate while in flight", () => {
-    const { result } = renderHook(() => useAnswerGate(["g1"]));
+    const { result } = renderHook(() => useBoth(["g1"]));
     let first = false;
     let second = true;
     act(() => {
@@ -62,7 +69,7 @@ describe("useAnswerGate", () => {
   });
 
   it("stays in flight until the goals data drops the gate", () => {
-    const { result, rerender } = renderHook(({ ids }) => useAnswerGate(ids), { initialProps: { ids: ["g1"] } });
+    const { result, rerender } = renderHook(({ ids }) => useBoth(ids), { initialProps: { ids: ["g1"] } });
     act(() => void result.current.proceed("g1"));
     act(() => void vi.advanceTimersByTime(60_000));
     expect(result.current.stateOf("g1")).toBe("in_flight");
@@ -71,7 +78,7 @@ describe("useAnswerGate", () => {
   });
 
   it("an error frame on the thread within 15 s clears the flight and returns the error", () => {
-    const { result } = renderHook(() => useAnswerGate(["g1"]));
+    const { result } = renderHook(() => useBoth(["g1"]));
     act(() => void result.current.proceed("g1"));
     act(() => void vi.advanceTimersByTime(5_000));
     frame("error", { detail: "Checkpoint not found." });
@@ -86,7 +93,7 @@ describe("useAnswerGate", () => {
   });
 
   it("ignores an error frame after 15 s, and one from another thread", () => {
-    const { result } = renderHook(() => useAnswerGate(["g1"]));
+    const { result } = renderHook(() => useBoth(["g1"]));
     act(() => void result.current.proceed("g1"));
     act(() => m.frames.error({ type: "error", thread_id: "other", detail: "x" }));
     expect(result.current.stateOf("g1")).toBe("in_flight");
@@ -96,7 +103,7 @@ describe("useAnswerGate", () => {
   });
 
   it("Redirect is in flight only until the first message frame, then awaits instructions and Proceed still sends", () => {
-    const { result } = renderHook(() => useAnswerGate(["g1"]));
+    const { result } = renderHook(() => useBoth(["g1"]));
     act(() => void result.current.redirect("g1"));
     expect(result.current.stateOf("g1")).toBe("in_flight");
     frame("message", { text: "Send your instructions" });
@@ -111,17 +118,28 @@ describe("useAnswerGate", () => {
   });
 
   it("Redirect ends on an error frame with the error", () => {
-    const { result } = renderHook(() => useAnswerGate(["g1"]));
+    const { result } = renderHook(() => useBoth(["g1"]));
     act(() => void result.current.redirect("g1"));
     frame("error", { detail: "nope" });
     expect(result.current.stateOf("g1")).toBe("idle");
     expect(result.current.errorOf("g1")).toBe("nope");
   });
 
+  it("one error frame settles only the oldest answer still waiting, so two quick answers are not both re-enabled", () => {
+    const { result } = renderHook(() => useBoth(["g1", "g2"]));
+    act(() => void result.current.proceed("g1"));
+    act(() => void vi.advanceTimersByTime(1_000));
+    act(() => void result.current.proceed("g2"));
+    frame("error", { detail: "boom" });
+    expect(result.current.stateOf("g1")).toBe("idle");
+    expect(result.current.errorOf("g1")).toBe("boom");
+    expect(result.current.stateOf("g2")).toBe("in_flight");
+  });
+
   it("returns false and records nothing when offline", () => {
     m.connected = false;
     m.send.mockReturnValue(false);
-    const { result } = renderHook(() => useAnswerGate(["g1"]));
+    const { result } = renderHook(() => useBoth(["g1"]));
     let sent = true;
     act(() => {
       sent = result.current.proceed("g1");
@@ -132,7 +150,7 @@ describe("useAnswerGate", () => {
   });
 
   it("sends another payload family through the same sender", () => {
-    const { result } = renderHook(() => useAnswerGate([]));
+    const { result } = renderHook(() => useBoth([]));
     act(() => void result.current.answer("goal_stuck", "pause", "g9"));
     expect(m.send).toHaveBeenCalledWith({ type: "action", payload: "goal_stuck:pause:g9", thread_id: "t-1" });
   });

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildDecisions } from "@/pages/world/lib/decisions";
 import { usePendingConfirms, type PendingConfirm } from "@/features/respond-to-confirmation";
 import { useGateFlights } from "@/features/answer-gate/model/gate-flights";
+import { AnswerGateFrameHandler } from "@/features/answer-gate";
 import { NeedsYou } from "./NeedsYou";
 
 const m = vi.hoisted(() => ({
@@ -42,6 +43,7 @@ function setup(over: { offline?: boolean; focus?: { kind: string; id: string } |
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
+        <AnswerGateFrameHandler />
         <NeedsYou decisions={decisions} loading={over.loading ?? false} error={over.error ?? false} now={now} offline={over.offline ?? false} focus={over.focus ?? null} onChatAbout={over.onChatAbout as never} />
       </MemoryRouter>
     </QueryClientProvider>,

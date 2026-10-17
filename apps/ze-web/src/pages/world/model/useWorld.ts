@@ -106,7 +106,8 @@ export function useWorld(): WorldModel {
 
   const latestRuns = Object.values(latest.byWorkflow).map((runs) => runs[0]).filter(Boolean);
   const running = latestRuns.some((r) => r.status === "running");
-  const failedRun = latestRuns.some((r) => r.status === "failed");
+  // A failure older than the week "Runs · 7 d" covers is history, not an alarm.
+  const failedRun = latestRuns.some((r) => r.status === "failed" && now.getTime() - new Date(r.started_at ?? r.created_at).getTime() <= 7 * 86_400_000);
 
   // Until every record has loaded the join is incomplete, so the field waits rather than plot partial marks.
   const field: Part<Concern[]> = {

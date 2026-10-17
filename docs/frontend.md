@@ -93,7 +93,7 @@ World is the home at `/` (`pages/world`, phase 186). It shows what Ze holds, wha
 - **Held writes** use one `HeldWriteCard` (`features/respond-to-confirmation`). A write with an editable field opens the full confirmation card.
 - **Links.** `/?focus=<kind>:<id>` selects one item (`loop`, `goal`, `hypothesis`, `reminder`, `held_write`). `focusHref` and `notificationHref` in `shared/lib` build them.
 - **Refresh.** A `message` frame invalidates the World queries. A `notification` frame also invalidates the budget and the key of its target. A `refresh` frame for `goals` invalidates goals, the priority snapshot and workflow executions.
-- **Screen context.** The page publishes the focused module, the selected mark and the visible rows. Marks, loop rows, Needs-you rows and Away rows offer "Chat about this".
+- **Screen context.** The page publishes the focused module, the selected mark and the visible rows. The selected mark's readout, loop rows, Needs-you rows and Away rows offer "Chat about this". A module has no record of its own, so it carries no chip.
 
 The notification bell no longer lists held writes. A `held_write` notification opens World with the item selected.
 

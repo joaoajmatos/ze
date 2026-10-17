@@ -53,6 +53,13 @@ describe("useWorld", () => {
     expect(result.current.field.data[0]).toMatchObject({ kind: "loop", slipped: true, confidence: 0.6 });
   });
 
+  it("an old failed run is not a live alarm", async () => {
+    api.listWorkflowExecutions.mockResolvedValue({ data: [{ id: "e1", status: "failed", started_at: "2026-07-01T00:00:00Z", created_at: "2026-07-01T00:00:00Z" }] });
+    const { result } = setup();
+    await waitFor(() => expect(result.current.doing.loading).toBe(false));
+    expect(result.current.failedRun).toBe(false);
+  });
+
   it("one failing query sets only its part's error", async () => {
     api.listHeldWrites.mockResolvedValue({ error: { detail: "boom" } });
     const { result } = setup();

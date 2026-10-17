@@ -52,6 +52,17 @@ describe("DoingNow", () => {
     expect(container.textContent).not.toContain("Traceback");
   });
 
+  it("leaves an old failed run out of the alarm, and names planning and other runs", () => {
+    setup({
+      goals: [goal("p", { status: "planning", next_milestone: null })],
+      workflows: [wf("a")],
+      executions: { a: [ex("1", "failed", 24 * 20, { failure_summary: "old failure" }), ex("2", "cancelled", 5)] },
+    });
+    expect(screen.queryByText("old failure")).toBeNull();
+    expect(screen.getByText("Planning")).toBeTruthy();
+    expect(screen.getByText("0 ok · 0 failed · 1 other")).toBeTruthy();
+  });
+
   it("renders the error state", () => {
     setup({ error: true });
     expect(screen.getByRole("alert").textContent).toContain("Couldn't read");

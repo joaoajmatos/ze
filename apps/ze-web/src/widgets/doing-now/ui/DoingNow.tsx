@@ -29,9 +29,10 @@ export function DoingNow({ goals, workflows, executions, loading, error, now }: 
   const failed = week.filter(({ e }) => e.status === "failed");
   const ok = week.filter(({ e }) => e.status === "completed");
   const running = runs.filter(({ e }) => e.status === "running");
+  const other = week.length - ok.length - failed.length;
   const latestFailed = Object.entries(executions)
     .map(([workflowId, list]) => ({ workflowId, e: list[0] }))
-    .filter(({ e }) => e?.status === "failed");
+    .filter(({ e }) => e?.status === "failed" && now.getTime() - stamp(e) <= WEEK);
 
   useScreenPublisher({
     visible: [
@@ -62,7 +63,7 @@ export function DoingNow({ goals, workflows, executions, loading, error, now }: 
                 {g.milestones_done}/{g.milestones_total}
               </span>
               <span className="s">
-                {g.stuck_since ? `Stuck since ${relDay(new Date(g.stuck_since), now)}` : g.gate_id ? "Waiting on your OK" : g.next_milestone ? `Next: ${g.next_milestone}` : g.status === "paused" ? "Paused" : "In progress"}
+                {g.stuck_since ? `Stuck since ${relDay(new Date(g.stuck_since), now)}` : g.gate_id ? "Waiting on your OK" : g.next_milestone ? `Next: ${g.next_milestone}` : g.status === "paused" ? "Paused" : g.status === "planning" ? "Planning" : "In progress"}
               </span>
             </div>
           ))}
@@ -88,7 +89,7 @@ export function DoingNow({ goals, workflows, executions, loading, error, now }: 
           <div className="row">
             <span className="t">Runs · 7 d</span>
             <span className={`lbl ${failed.length ? "hot" : ""}`}>
-              {ok.length} ok · {failed.length} failed
+              {ok.length} ok · {failed.length} failed{other > 0 ? ` · ${other} other` : ""}
             </span>
           </div>
           {latestFailed.map(({ workflowId, e }) => (

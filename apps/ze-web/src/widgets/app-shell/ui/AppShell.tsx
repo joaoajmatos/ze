@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { AnswerGateFrameHandler } from "@/features/answer-gate";
 import { AskBar, useAskOverlay, useAskShortcut } from "@/features/ask-bar";
 import { RefreshHandler } from "@/features/invalidate-on-ws-refresh";
 import { ConfirmationFrameHandler } from "@/features/respond-to-confirmation";
@@ -83,6 +84,7 @@ function Shell({ overlay }: { overlay?: ReactNode }) {
       {narrow && <BottomBar />}
       <RefreshHandler />
       <ConfirmationFrameHandler />
+      <AnswerGateFrameHandler />
       {overlay}
     </div>
   );

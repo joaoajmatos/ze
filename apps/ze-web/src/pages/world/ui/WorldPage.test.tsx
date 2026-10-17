@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useNavigate } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAskOverlay } from "@/features/ask-bar";
 import { usePresenceStore } from "@/entities/presence";
@@ -61,6 +61,15 @@ function renderPage(url = "/") {
 }
 
 const slippedLoop = concern("ana", { title: "Reply to Ana", state: "drifting", slipped: true, due: day(-3), confidence: 0.62, rank: 1 });
+function FocusLink() {
+  const navigate = useNavigate();
+  return (
+    <button type="button" data-testid="go-bo" onClick={() => navigate("/?focus=loop:bo")}>
+      go
+    </button>
+  );
+}
+
 const signal = () => usePresenceStore.getState().presence.worldSignal;
 
 describe("WorldPage", () => {
@@ -153,6 +162,29 @@ describe("WorldPage", () => {
     const { container } = renderPage("/?focus=loop:ana");
     expect(container.querySelector('[data-key="loop:ana"]')!.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("region", { name: /Readout: Reply to Ana/ })).toBeTruthy();
+  });
+
+  it("a new ?focus= link selects its item even after Escape", () => {
+    const other = concern("bo", { title: "Call Bo", due: day(2), confidence: 0.8, rank: 2 });
+    m.world = model({}, [slippedLoop, other]);
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/?focus=loop:ana"]}>
+          <WorldPage />
+          <FocusLink />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("region", { name: /Readout/ })).toBeNull();
+    fireEvent.click(screen.getByTestId("go-bo"));
+    expect(screen.getByRole("region", { name: /Readout: Call Bo/ })).toBeTruthy();
+  });
+
+  it("the preset carries the route and the screen snapshot", () => {
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: /What's slipping\?/ }));
+    expect(useAskOverlay.getState().outbox?.context).toMatchObject({ route: "/", captured_at: expect.any(String), origin: "preset", compose: "slipping" });
   });
 
   it("Escape clears the selection", () => {
