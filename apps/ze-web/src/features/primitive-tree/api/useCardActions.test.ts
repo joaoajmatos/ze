@@ -69,7 +69,7 @@ describe("useCardActions", () => {
 
   it("open navigates to the record's page", () => {
     run("open", "g-1", "goal");
-    expect(navigate).toHaveBeenCalledWith("/goals/g-1");
+    expect(navigate).toHaveBeenCalledWith("/doing/goals/g-1");
   });
 
   it("open does nothing for a subject without a page", () => {
