@@ -9,3 +9,5 @@ export { WorkflowCard } from "./ui/WorkflowCard";
 export { formatSchedule, formatDurationMs, averageSuccessfulRunDuration } from "./lib/format";
 export { buildWorkflowGraph, type StepState, type WorkflowGraphNode } from "./lib/buildWorkflowGraph";
 export { stepsDifferFromSnapshot } from "./lib/stepsSnapshot";
+export { useLatestExecutionsQuery } from "./api/useLatestExecutionsQuery";
+export type { LatestExecutions } from "./api/useLatestExecutionsQuery";

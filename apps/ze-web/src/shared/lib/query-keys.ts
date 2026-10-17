@@ -29,8 +29,13 @@ export const queryKeys = {
   notifications: (unreadOnly: boolean) => ["notifications", unreadOnly] as const,
   unreadNotificationCount: ["unread-notification-count"] as const,
   quietHours: ["quiet-hours"] as const,
+  notificationsSince: (since: string) => ["notifications-since", since] as const,
   attentionBudget: ["attention-budget"] as const,
+  reminders: (status: string) => ["reminders", status] as const,
+  hypotheses: (state: string, entityId?: string) => ["hypotheses", state, entityId ?? ""] as const,
+  proactiveJobRuns: (since: string) => ["proactive-job-runs", since] as const,
   heldWrites: ["held-writes"] as const,
+  loopsAll: ["loops"] as const,
   loops: (state?: string) => ["loops", state ?? ""] as const,
   loopDetail: (loopId: string) => ["loop-detail", loopId] as const,
   skills: (status?: string, source?: string) =>

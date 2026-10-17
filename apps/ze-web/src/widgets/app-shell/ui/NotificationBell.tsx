@@ -12,8 +12,9 @@ import {
 } from "@/entities/notification";
 import { useSession } from "@/entities/session";
 import { cn } from "@/shared/lib/cn";
+import { notificationHref } from "@/shared/lib/notification-href";
 import { EmptyState } from "@/shared/ui";
-import { notificationHref, relativeTime } from "../lib/notification-format";
+import { relativeTime } from "../lib/notification-format";
 
 const HELD_ACTIONS = [
   { label: "Approve all", value: "approve", style: "primary" as const },

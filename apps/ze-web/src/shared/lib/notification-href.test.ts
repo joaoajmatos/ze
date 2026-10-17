@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { notificationHref } from "./notification-format";
+import { focusHref, notificationHref } from "./notification-href";
 
 const n = (target_type: string | null, target_id: string | null, target_parent_id?: string | null) => ({
   target_type,
@@ -9,16 +9,16 @@ const n = (target_type: string | null, target_id: string | null, target_parent_i
 
 describe("notificationHref", () => {
   it.each([
-    ["open_loop", "l-1", undefined, "/"],
-    ["hypothesis", "h-1", undefined, "/"],
+    ["open_loop", "l-1", undefined, "/?focus=loop:l-1"],
+    ["hypothesis", "h-1", undefined, "/?focus=hypothesis:h-1"],
     ["goal", "g-1", undefined, "/doing/goals/g-1"],
     ["goal_gate", "gate-1", "g-1", "/doing/goals/g-1"],
     ["goal_suggestion", "s-1", undefined, "/doing"],
     ["workflow_execution", "e-1", "w-1", "/doing/workflows/w-1?execution=e-1"],
-      ["held_write", "r-1", undefined, "/"],
+    ["held_write", "r-1", undefined, "/?focus=held_write:r-1"],
     ["workspace_run", "run-1", undefined, "/doing/workspace"],
     ["chat_thread", "t-1", undefined, "/ask/t-1"],
-    ["reminder", "rem-1", undefined, "/"],
+    ["reminder", "rem-1", undefined, "/?focus=reminder:rem-1"],
     ["person", "c-1", undefined, "/mind"],
     ["insight", "i-1", undefined, "/mind"],
   ])("%s -> %s", (type, id, parent, href) => {
@@ -34,5 +34,12 @@ describe("notificationHref", () => {
     expect(notificationHref(n("martian", "x"))).toBeNull();
     expect(notificationHref(n(null, "x"))).toBeNull();
     expect(notificationHref(n("goal", null))).toBeNull();
+  });
+});
+
+describe("focusHref", () => {
+  it("builds a World link that selects one item", () => {
+    expect(focusHref("loop", "l-1")).toBe("/?focus=loop:l-1");
+    expect(focusHref("held_write", "req 1")).toBe("/?focus=held_write:req%201");
   });
 });

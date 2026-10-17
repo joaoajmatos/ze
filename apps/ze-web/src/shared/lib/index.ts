@@ -17,3 +17,7 @@ export { useMediaQuery } from "./use-media-query";
 export { REDUCED_MOTION_QUERY, useReducedMotion } from "./use-reduced-motion";
 export { NARROW_QUERY, useNarrow } from "./use-narrow";
 export { dayMonth, hhmm, longDate, weekday } from "./clock-format";
+export { postureOf, glyphOf, chipLabelOf, stateWords, provenanceWords } from "./claim-posture";
+export type { Posture, GlyphKind, ConcernKind, PostureInput } from "./claim-posture";
+export { notificationHref, focusHref } from "./notification-href";
+export type { FocusKind } from "./notification-href";
