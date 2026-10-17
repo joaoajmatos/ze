@@ -58,6 +58,19 @@ def _days_until(moment: datetime, now: datetime) -> int:
     return max(0, math.ceil((_aware(moment) - now).total_seconds() / 86400))
 
 
+_SOURCE_WORDS = {
+    "conversation": "a conversation with you",
+    "ingestion": "a document you added",
+    "user_declared": "what you told me",
+    "email": "your email",
+    "calendar": "your calendar",
+}
+
+
+def _source_label(key: str) -> str:
+    return _SOURCE_WORDS.get(key, key.replace("_", " "))
+
+
 def _loop_posture(loop: OpenLoop) -> ClaimPosture:
     assert loop.id is not None
     return ClaimPosture(
@@ -127,7 +140,7 @@ def _goal_card(
             goal.last_progress_at or goal.gate_open_since or goal.goal.created_at
         ),
         state=state,
-        slipped=stuck,
+        slipped=stuck or goal.stuck_since is not None,
     )
     readouts = [
         Readout("Milestones", f"{goal.milestones_done}/{goal.milestones_total}")
@@ -155,6 +168,7 @@ def _goal_card(
         progress_total=goal.milestones_total,
         actions=actions,
         needs_user=awaiting_gate,
+        tone="cream" if awaiting_gate else None,
     )
 
 
@@ -383,7 +397,7 @@ def decisions(snapshot: SourceSnapshot, now: datetime) -> Draft:
         _loop_card(
             lp,
             now,
-            lines=[f"Seen in {lp.provenance}"],
+            lines=[f"Seen in {_source_label(lp.provenance)}"],
             actions=[
                 CardAction("Yes, track it", "confirm_loop", str(lp.id)),
                 CardAction("Drop", "drop_loop", str(lp.id)),
@@ -419,18 +433,22 @@ def _in(moment: datetime, now: datetime) -> str:
     return f"in {hours} h" if hours < 48 else f"in {hours // 24} d"
 
 
+def _encode(embedder: Any, texts: list[str]) -> list[Any]:
+    """One batched embedder call for all texts."""
+    return list(embedder.encode_passage(texts)) if texts else []
+
+
 def _matches(
     items: list[_T],
     topic_vec: Any,
     embedder: Any,
     texts: Callable[[_T], list[str]],
 ) -> list[_T]:
+    per_item = [[t for t in texts(item) if t] for item in items]
+    vectors = iter(_encode(embedder, [t for group in per_item for t in group]))
     scored = []
-    for item in items:
-        score = max(
-            (cosine(topic_vec, embedder.encode_passage(t)) for t in texts(item) if t),
-            default=0.0,
-        )
+    for item, group in zip(items, per_item):
+        score = max((cosine(topic_vec, next(vectors)) for _ in group), default=0.0)
         if score >= MATCH_FLOOR:
             scored.append((score, item))
     scored.sort(key=lambda pair: -pair[0])
@@ -445,7 +463,7 @@ def match_workflows(
         return []
     return _matches(
         workflows,
-        embedder.encode_passage(topic),
+        _encode(embedder, [topic])[0],
         embedder,
         lambda w: [f"{w.name} {w.description}".strip()],
     )
@@ -515,7 +533,7 @@ def topic(snapshot: SourceSnapshot, topic: str, embedder: Any, now: datetime) ->
     if embedder is None:
         return Draft(empty.text, [empty], _NO_EMBEDDER, _failed(snapshot))
 
-    vec = embedder.encode_passage(topic)
+    vec = _encode(embedder, [topic])[0]
     loops = _matches(snapshot.loops or [], vec, embedder, lambda lp: [lp.title])
     goals = _matches(
         snapshot.goals or [],
@@ -597,7 +615,11 @@ def _goal_card_from_item(item: PriorityItem) -> ClaimCard:
         state=state,
         slipped=stuck,
     )
-    readouts = [Readout("Status", f"no progress for {signal.idle_days} d", "hot")] if stuck else []
+    readouts = (
+        [Readout("Status", f"no progress for {signal.idle_days} d", "hot")]
+        if stuck
+        else []
+    )
     return claim_card(item.title, posture, readouts=readouts)
 
 
@@ -616,6 +638,8 @@ def mention_card(
         return _goal_card_from_item(item)
     if item.source_kind == "hypothesis":
         return _hypothesis_card(item)
-    if item.source_kind == "relationship" and isinstance(item.signal, RelationshipSignal):
+    if item.source_kind == "relationship" and isinstance(
+        item.signal, RelationshipSignal
+    ):
         return _person_card(item)
     return None

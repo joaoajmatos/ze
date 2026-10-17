@@ -63,6 +63,20 @@ def test_failed_step_reason_table(raw, reason):
     assert failure_summary(ex) == (f"Step 2 of 4, “Check the inbox”, failed: {reason}.")
 
 
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "PermissionError: Permission denied",
+        "ConnectionRefusedError: Connection refused",
+        "OAuth token expired",
+        "Quota exceeded for the project budget",
+    ],
+)
+def test_provider_errors_are_not_mistaken_for_user_decisions(raw):
+    ex = _execution([_step(0, success=False, error=raw)])
+    assert failure_summary(ex).endswith("failed: it hit an error.")
+
+
 def test_reason_priority_is_first_match():
     ex = _execution([_step(0, success=False, error="timeout while waiting for cancel")])
     assert "it ran out of time" in failure_summary(ex)

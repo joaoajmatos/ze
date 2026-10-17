@@ -170,6 +170,8 @@ class _Embedder:
     def encode_passage(self, text):
         import numpy as np
 
+        if isinstance(text, list):
+            return np.array([self.encode_passage(t) for t in text])
         return np.array(
             [1.0 if w in text.lower() else 0.0 for w in ("ledgerlite", "launch")]
         )
@@ -213,3 +215,29 @@ async def test_compose_never_raises_for_a_broken_store(name):
     view.rank = AsyncMock(side_effect=RuntimeError("down"))
     composition = await getattr(composer, name)()
     assert composition.components
+
+
+async def test_topic_matching_batches_encodes_and_runs_off_the_event_loop():
+    import threading
+
+    from tests.compose.test_rules_topic import _workflow
+
+    calls: list[tuple[bool, int]] = []
+    main = threading.get_ident()
+
+    class _Spy(_Embedder):
+        def encode_passage(self, text):
+            if isinstance(text, list):
+                calls.append((threading.get_ident() != main, len(text)))
+                return super().encode_passage(text)
+            return _Embedder.encode_passage(self, text)
+
+    loops = [make_loop(title=f"LedgerLite launch {i}", state=LoopState.ACTIVE) for i in range(5)]
+    composer, *_ = _composer(
+        loops=loops, workflows=[_workflow(f"LedgerLite {i}") for i in range(4)], embedder=_Spy()
+    )
+    await composer.compose_topic("ledgerlite launch")
+
+    assert all(off_loop for off_loop, _ in calls)
+    assert len(calls) <= 8
+    assert max(n for _, n in calls) >= 4

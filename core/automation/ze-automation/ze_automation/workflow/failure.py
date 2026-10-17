@@ -10,9 +10,24 @@ _REASONS: tuple[tuple[tuple[str, ...], str], ...] = (
         ("deleted while held",),
         "the workflow was deleted while it waited for your OK",
     ),
-    (("denied", "declined", "refused"), "you declined the write it needed"),
-    (("expired",), "your OK did not come in time"),
-    (("budget",), "the spend budget paused it"),
+    (
+        (
+            "user denied",
+            "user declined",
+            "denied by the user",
+            "declined by the user",
+            "refused by the user",
+            "write denied",
+            "write declined",
+            "declined the write",
+        ),
+        "you declined the write it needed",
+    ),
+    (
+        ("approval expired", "hold expired", "hold has expired", "held write expired"),
+        "your OK did not come in time",
+    ),
+    (("spend budget", "budget exceeded", "budget pause"), "the spend budget paused it"),
     (("cancel",), "it was cancelled"),
     (("no results",), "it found nothing to work with"),
 )

@@ -33,7 +33,7 @@ def test_claim_posture_serializes_nested_and_omits_none():
 def test_headline_text_uppercases_strips_and_truncates():
     assert headline_text("2 slipping · 1 at risk") == "2 SLIPPING · 1 AT RISK"
     assert headline_text("Ledger-Lite: launch!?") == "LEDGER-LITE: LAUNCH"
-    assert headline_text("café ñ") == "CAF"
+    assert headline_text("café ñ") == "CAFE N"
     assert len(headline_text("x" * 100)) == 40
 
 
@@ -45,3 +45,7 @@ def test_claim_tone_table():
     assert claim_tone(_claim(kind="inference")) == "dotted"
     assert claim_tone(_claim(kind=None, subject="workflow")) == "default"
     assert claim_tone(_claim(kind="priority")) == "default"
+
+
+def test_headline_text_folds_portuguese_diacritics_instead_of_dropping_letters():
+    assert headline_text("Ação à vista, São João") == "ACAO A VISTA SAO JOAO"

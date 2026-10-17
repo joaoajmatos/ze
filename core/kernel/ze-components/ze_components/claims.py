@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 from typing import Literal
 
@@ -66,7 +67,9 @@ class TimelineEntry:
 
 def headline_text(text: str) -> str:
     """Uppercase text reduced to the DotMatrix glyph set, at most 40 characters."""
-    cleaned = _NOT_GLYPH.sub("", text.upper())
+    folded = unicodedata.normalize("NFKD", text.upper())
+    folded = "".join(ch for ch in folded if not unicodedata.combining(ch))
+    cleaned = _NOT_GLYPH.sub("", folded)
     return " ".join(cleaned.split())[:HEADLINE_MAX].rstrip()
 
 

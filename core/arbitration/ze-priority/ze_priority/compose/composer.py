@@ -67,7 +67,10 @@ class WorldComposer:
         now = self._clock()
         snapshot = await self._read(priority=True, loops=True, goals=True)
         snapshot.workflows = await self._matched_workflows(topic, snapshot)
-        return self._finish(rules.topic(snapshot, topic, self._embedder, now))
+        draft = await asyncio.to_thread(
+            rules.topic, snapshot, topic, self._embedder, now
+        )
+        return self._finish(draft)
 
     def _finish(self, draft: Draft) -> Composition:
         return Composition(
@@ -114,7 +117,9 @@ class WorldComposer:
     ) -> list[WorkflowDigest] | None:
         try:
             workflows = await self._workflow_store.list_all()
-            matched = rules.match_workflows(workflows, topic, self._embedder)
+            matched = await asyncio.to_thread(
+                rules.match_workflows, workflows, topic, self._embedder
+            )
             executions = await asyncio.gather(
                 *(self._workflow_store.list_executions(w.id, limit=1) for w in matched)
             )

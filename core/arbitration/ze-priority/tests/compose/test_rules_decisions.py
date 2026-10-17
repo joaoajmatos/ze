@@ -98,11 +98,11 @@ def test_gate_card_actions_use_gate_id_and_goal_id():
     ]
 
 
-def test_a_stale_gate_stays_cream_never_hot():
+def test_a_stale_gate_is_honest_about_slipping_but_never_hot():
     goal = _gate_goal(days=12, stuck_since=NOW - timedelta(days=12))
     [card] = _cards(rules.decisions(_snapshot(goals=[goal]), NOW))
     assert card.tone == "cream"
-    assert card.claim.slipped is False
+    assert card.claim.slipped is True
 
 
 def test_suspicion_card_actions_and_posture():
@@ -111,7 +111,7 @@ def test_suspicion_card_actions_and_posture():
 
     assert card.claim.kind == "suspicion"
     assert card.claim.state == "suspected"
-    assert card.lines == ["Seen in email"]
+    assert card.lines == ["Seen in your email"]
     assert card.readouts[0].value == "0.55"
     assert [(a.label, a.intent, a.ref_id) for a in card.actions] == [
         ("Yes, track it", "confirm_loop", str(loop.id)),
@@ -169,3 +169,12 @@ def test_every_source_failed_reads_could_not_read():
     draft = rules.decisions(_snapshot(failed={"loops", "goals", "held_writes"}), NOW)
     assert draft.components[0].text == "COULD NOT READ THE WORLD"
     assert len(draft.components) == 1
+
+
+def test_provenance_keys_are_worded_not_shown_raw():
+    loop = _suspected(provenance="user_declared")
+    [card] = _cards(rules.decisions(_snapshot([loop]), NOW))
+    assert card.lines == ["Seen in what you told me"]
+    odd = _suspected(provenance="plugin_thing")
+    [card] = _cards(rules.decisions(_snapshot([odd]), NOW))
+    assert card.lines == ["Seen in plugin thing"]

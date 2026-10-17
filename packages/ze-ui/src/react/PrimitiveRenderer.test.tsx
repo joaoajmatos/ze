@@ -217,6 +217,28 @@ describe("PrimitiveRenderer", () => {
       expect(onCardAction).toHaveBeenCalledWith({ intent: "confirm_loop", ref_id: "l1" });
     });
 
+    it("shows the claim's posture on a card", () => {
+      render(
+        <PrimitiveRenderer
+          node={{
+            type: "claim_card",
+            title: "Reply to Ana",
+            claim: { kind: "priority", subject: "loop", ref_id: "l1", state: "drifting", confidence: 0.62, slipped: true },
+          }}
+        />,
+      );
+      expect(screen.getByText("priority · drifting · 62% · slipped")).toBeInTheDocument();
+    });
+
+    it("names the subject when a card's claim has no kind", () => {
+      render(
+        <PrimitiveRenderer
+          node={{ type: "claim_card", title: "Send", claim: { kind: undefined, subject: "held_write", ref_id: "h1", state: "open", slipped: false } }}
+        />,
+      );
+      expect(screen.getByText("held write · open")).toBeInTheDocument();
+    });
+
     it("renders claim timeline entries in order", () => {
       render(
         <PrimitiveRenderer

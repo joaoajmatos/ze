@@ -25,7 +25,9 @@ VOCAB = ["ledgerlite", "launch", "billing", "passport", "migration"]
 class FakeEmbedder:
     """Word-presence vectors over a fixed vocabulary; dict-keyed so order never matters."""
 
-    def encode_passage(self, text: str) -> np.ndarray:
+    def encode_passage(self, text):
+        if isinstance(text, list):
+            return np.array([self.encode_passage(t) for t in text])
         lowered = text.lower()
         return np.array([1.0 if word in lowered else 0.0 for word in VOCAB])
 

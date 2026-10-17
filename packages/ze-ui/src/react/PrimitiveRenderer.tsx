@@ -534,6 +534,14 @@ const CARD_TONE: Record<NonNullable<ClaimCard["tone"]>, string> = {
   dotted: "border-dashed border-white/25",
 };
 
+function postureLine(claim: ClaimCard["claim"]): string {
+  const parts = [claim.kind ?? claim.subject.replace("_", " ")];
+  if (claim.state) parts.push(claim.state.replace("_", " "));
+  if (claim.confidence != null) parts.push(`${Math.round(claim.confidence * 100)}%`);
+  if (claim.slipped) parts.push("slipped");
+  return parts.join(" · ");
+}
+
 function HeadlineRenderer({ node }: { node: Headline }) {
   return <p className="text-sm font-semibold tracking-widest">{node.text}</p>;
 }
@@ -543,6 +551,7 @@ function ClaimCardRenderer({ node }: { node: ClaimCard }) {
   return (
     <div className={cn("rounded-lg border p-3 flex flex-col gap-1", CARD_TONE[node.tone ?? "default"])}>
       <p className="text-sm font-medium">{node.title}</p>
+      <p className="text-[11px] text-white/45">{postureLine(node.claim)}</p>
       {node.lines?.map((line, i) => (
         <p key={i} className="text-xs text-white/60">
           {line}

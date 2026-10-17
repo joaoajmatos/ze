@@ -37,8 +37,10 @@ def claim_card(
     progress_total: int | None = None,
     actions: list[CardAction] | None = None,
     needs_user: bool = False,
+    tone: CardTone | None = None,
 ) -> ClaimCard:
-    """Build a card whose tone follows its claim; call sites never pick the tone."""
+    """Build a card whose tone follows its claim. `tone` overrides only where the
+    design fixes it (a gate that waits on the user is cream even when stale)."""
     return ClaimCard(
         title=title,
         claim=claim,
@@ -48,5 +50,5 @@ def claim_card(
         progress_done=progress_done,
         progress_total=progress_total,
         actions=actions or [],
-        tone=claim_tone(claim, needs_user),
+        tone=tone or claim_tone(claim, needs_user),
     )
