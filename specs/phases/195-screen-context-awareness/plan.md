@@ -73,7 +73,7 @@ Replace the ad-hoc `context` dict and the workflow-only note with a typed `Scree
 - `registry.py`: `ScreenResolverRegistry.register(resolver)`; `DuplicateScreenKindError(ZeError)`.
 - `note.py`: `build_screen_note(ctx, registry, now) -> ScreenResolution` — dedupe refs by `(kind, id)` keeping the highest slot; group by kind; `asyncio.wait_for` per resolver call (300 ms) inside an overall 800 ms `asyncio.wait`; `notification` lines ask the registry for their target one hop; stale check `posture.updated_at > ctx.captured_at`; format per contract; budget fill; trace rows. Pure formatting helpers (`format_line`, `posture_words`, `fill_budget`) unit-tested without I/O.
 - `orchestration/nodes/screen.py`: `resolve_screen(state, config)` → `{screen_note, screen_trace, screen_subject_line}`; no context or no registry → `{}`; the whole body in `try/except` (warning, `{}`).
-- `judgment_state.py`: `build_judgment_state` appends `screen_subject_line` to `context` only when `screen_hint` is on; `_tier_focus` no longer reads `screen_context_note`.
+- `judgment_state.py`: `build_judgment_state(state, screen_line=None)`; only `nodes/routing.py` passes `state["screen_subject_line"]` when `screen_hint` is on (the skills state never gets it); `_tier_focus` no longer reads `screen_context_note`.
 - `state.py`: `screen_note`, `screen_trace`, `screen_subject_line`; `conversation/turn.py` `make_graph_input` resets all three.
 - `graph.py`: insert the node on both pre-route branches.
 - `nodes/context.py`: delete L313-356 workflow/workspace branches and `_build_screen_context_note`; set `agent_context.screen_context_note = state.get("screen_note")`; 184's preset helpers read `ScreenContext.compose/topic` and set `agent_context.preset_note`. ze-agents `AgentContext.preset_note`; `BaseAgent` renders it after the screen note; `_prompt_note_kwargs` copies it.
@@ -106,6 +106,7 @@ One module per package, `screen_resolvers.py`, exporting a factory `build_screen
 
 - `ze-eval` runner: `setup:` rows inserted through the verifier's DB connection, bound to names and removed after the scenario; `{{name.field}}` substitution in `context:` and `turns`; the judge's turn description includes the context. (Phase 184's T029 has the same fixture need; reported to the Maestro.)
 - `eval/scenarios/screen_context.yaml`: deixis per place + one `chat_about` per core kind (FR-020, FR-025) using `setup:`.
+- `Makefile`: `calibrate-routing` recipe gains `$(ARGS)` (it ignores it today).
 - `eval/calibration/routing.py`: `--check-sets` (schema, row counts per language; no network) and a per-row `screen` column appended to the state's `context` exactly as `build_judgment_state` does; `eval/calibration/routing_screen.jsonl` (EN + PT); a live run only after the user's OK (OQ-1).
 
 ## Project Structure
