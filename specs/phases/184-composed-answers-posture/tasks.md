@@ -78,7 +78,7 @@
 ## Phase 8b: Wire contracts for the preset [WEB] [BACKEND]
 
 - [x] T036 [JR] [BACKEND] `apps/ze-api/ze_api/api/ws/schemas.py` `WsScreenContext`: `compose: Literal["slipping","decisions","topic"] | None = None`, `topic: str | None` (max 120). Extend `apps/ze-api/tests/api/test_ws_conformance.py`; `make codegen` for the WS types. Must land before T016's graph tests run against the real schema.
-- [ ] T037 [ENG] [BACKEND] Eval context: `apps/ze-api/ze_api/api/eval/schemas.py` `EvalChatRequest.context: dict | None`; `api/eval/router.py` passes it as `config_extra["screen_context"]`; `core/ops/ze-eval` runner forwards a scenario-level `context:` key and validates it; tests for router and runner; `docs/eval.md` documents the key. Needed by T029.
+- [x] T037 [ENG] [BACKEND] Eval context: `apps/ze-api/ze_api/api/eval/schemas.py` `EvalChatRequest.context: dict | None`; `api/eval/router.py` passes it as `config_extra["screen_context"]`; `core/ops/ze-eval` runner forwards a scenario-level `context:` key and validates it; tests for router and runner; `docs/eval.md` documents the key. Needed by T029.
 
 ## Phase 9: Eval and gates [ENG]
 

@@ -193,6 +193,13 @@ Add `"force_agent": "research"` to the request body to skip routing and run a na
 
 The server accepts `force_agent` only when it runs with `EVAL_MODE=true`, which `make dev-eval` sets. Any other server answers `403` and runs nothing. An unknown agent name answers `400`. The WebSocket path has no way to set it.
 
+### Sending a screen context
+
+Add `"context": {"screen": "world", "compose": "slipping"}` to the request body to send what a
+client would send in `message.context`. The server passes it to the graph as the turn's screen
+context, so a preset chip can be tested without a browser. `compose` is `slipping`, `decisions` or
+`topic` (`topic` also needs `topic`). `context` works with or without `force_agent`.
+
 ---
 
 ## Adding scenarios
@@ -264,6 +271,21 @@ the scenario. A confirm step is never the first turn.
 
 `eval/scenarios/write_confirmation.yaml` covers the approve, deny, compound and
 delegation paths.
+
+### Screen context
+
+A scenario may carry `context:` with the screen context to send, for example a preset chip:
+
+```yaml
+- id: composed_slipping_en
+  context: { screen: world, compose: slipping }
+  prompt: "What's slipping?"
+```
+
+In a multi-turn scenario the scenario-level `context` goes with the final prompt turn only, so
+earlier turns can set up the data. A turn may carry its own `context`, which wins. The runner
+rejects a context without `screen`, an unknown `compose`, or `compose: topic` without `topic`
+before it sends anything.
 
 ### Sandbox-only scenarios
 

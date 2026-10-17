@@ -7,7 +7,7 @@ from ze_eval import server
 def test_scenario_confirm_turns_call_eval_confirm_for_the_same_session(monkeypatch):
     calls: list[tuple] = []
 
-    async def fake_chat(prompt, session_id):
+    async def fake_chat(prompt, session_id, context=None):
         calls.append(("chat", prompt, session_id))
         return {"agent_used": "calendar", "pending_confirmation": True}
 
@@ -43,3 +43,19 @@ def test_ze_confirm_returns_the_resumed_turn_as_json(monkeypatch):
     out = asyncio.run(server.ze_confirm("deny", session_id="s"))
 
     assert json.loads(out)["response"] == "Done"
+
+
+def test_scenario_context_reaches_the_final_prompt_turn(monkeypatch):
+    seen: list[tuple] = []
+
+    async def fake_chat(prompt, session_id, context=None):
+        seen.append((prompt, context))
+        return {"agent_used": "companion"}
+
+    monkeypatch.setattr(server, "_do_chat", fake_chat)
+    context = {"screen": "world", "compose": "slipping"}
+    scenario = {"context": context, "turns": [{"prompt": "setup"}, {"prompt": "What's slipping?"}]}
+
+    asyncio.run(server._run_scenario_turns(scenario, "eval-s"))
+
+    assert seen == [("setup", None), ("What's slipping?", context)]

@@ -30,7 +30,7 @@ import httpx
 
 from ze_eval.judge import DEFAULT_JUDGE_MODEL, judge
 from ze_eval.metrics import fetch_session_metrics
-from ze_eval.scenario import is_runnable, load_scenarios
+from ze_eval.scenario import is_runnable, load_scenarios, turn_contexts
 from ze_eval.scoring import outcome_correct, routing_correct, tools_correct
 from ze_eval.verifier import run_verification
 
@@ -42,11 +42,20 @@ _DEFAULT_RESULTS_DIR = (
 # ── Ze chat ───────────────────────────────────────────────────────────────────
 
 
-async def _chat(prompt: str, session_id: str, ze_url: str, ze_key: str) -> dict:
+async def _chat(
+    prompt: str,
+    session_id: str,
+    ze_url: str,
+    ze_key: str,
+    context: dict | None = None,
+) -> dict:
+    body: dict = {"prompt": prompt, "session_id": session_id}
+    if context:
+        body["context"] = context
     async with httpx.AsyncClient(timeout=90.0) as client:
         resp = await client.post(
             f"{ze_url.rstrip('/')}/eval/chat",
-            json={"prompt": prompt, "session_id": session_id},
+            json=body,
             headers={"Authorization": f"Bearer {ze_key}"},
         )
         resp.raise_for_status()
@@ -104,6 +113,7 @@ def _validate_turn(turn: dict) -> None:
 
 
 async def _run_turns(scenario: dict, session_id: str, ze_url: str, ze_key: str) -> dict:
+    contexts = turn_contexts(scenario)
     turns = scenario.get("turns")
     if turns:
         for turn in turns:
@@ -118,7 +128,9 @@ async def _run_turns(scenario: dict, session_id: str, ze_url: str, ze_key: str) 
                 if turn.get("edits"):
                     entry["edits"] = turn["edits"]
             else:
-                result = await _chat(turn["prompt"], session_id, ze_url, ze_key)
+                result = await _chat(
+                    turn["prompt"], session_id, ze_url, ze_key, contexts[i]
+                )
                 entry = {"turn": i + 1, "prompt": turn["prompt"], "result": result}
             turn_results.append(entry)
         final_agent = (
@@ -132,7 +144,7 @@ async def _run_turns(scenario: dict, session_id: str, ze_url: str, ze_key: str) 
             "agent_used": final_agent,
             "response": final_response,
         }
-    return await _chat(scenario["prompt"], session_id, ze_url, ze_key)
+    return await _chat(scenario["prompt"], session_id, ze_url, ze_key, contexts[0])
 
 
 # ── Printing ──────────────────────────────────────────────────────────────────
