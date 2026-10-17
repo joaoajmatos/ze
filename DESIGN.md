@@ -312,14 +312,14 @@ A framed module at the top of the left rail: "● Online" and the dot-matrix ses
 A dot-matrix sphere on a 29-dot grid drawn on canvas: denser and brighter toward a lit cream core, a drifting key light, a limb rim. Every dot keeps its grid home and springs (K=110, critically damped) toward where the current state wants it. A state change reaches the rim 320ms after the core (`stagger = (0.75·r + 0.25·seed) × 320ms`), so every transition is one continuous morph, never a cut or crossfade. Colours mix in oklab; coral drains back at a quarter of the normal rate.
 
 **The monad (the user's direction, 2026-10-17).** The white point at the orb's core is Ze's essence: "the monad, the singularity". In the user's words: "I wanted the white circle on the orb to behave like an eye and also be centered in the deformation caused by the orb focusing on the cursor", "every state action should morph from this single white point", "the same point that is looking around when idle". Rules:
-- **One point, always present.** Draw it as one crisp cream-white disc, separate from the dot field, in every state including error and reduced motion. It is never just the brightest dots.
-- **It is the eye.** In idle, the gaze moves the point itself, not only a parallax offset of the dense core. The point looks around inside the sphere, clamped so it never leaves it.
+- **One point, made of the dots that already exist.** The monad is the existing cluster of cream-white dots at the lit core of the sphere (a small group of a few dots across), not a new shape. In the user's words: "its not something new, its reusing this" and "its not something drawn separately". It is the same dots of the same grid, lit cream. It is present in every state, including error and reduced motion. When it moves, the cream lighting moves across the grid, so different dots become the monad; no disc or overlay is drawn on top.
+- **It is the eye.** In idle, the gaze moves the cream cluster itself, so the lit dots shift across the grid toward where it looks, not only as a parallax offset of the dense core. The point looks around inside the sphere, clamped so it never leaves it.
 - **The deformation is centered on the point.** When the orb leans toward the pointer or a focused element, the dots bulge, gather and compress around the point's current position, so the point always sits at the center of the deformation and never off to one side.
-- **Eye behaviors live in the point:**
-  - peering dilates it a little;
-  - a startle contracts it;
-  - a blink squashes it vertically, like a lid;
-  - dozing narrows and dims it, half-closed;
+- **Eye behaviors live in the cluster, expressed through which dots are lit:**
+  - peering lights a few more dots;
+  - a startle shrinks it to fewer dots;
+  - a blink unlights its rows vertically, like a lid;
+  - dozing narrows it to a dim line, half-closed;
   - waking opens it.
 - **Every state morphs out of the point.** The point is the origin of every state's motion. The stagger is measured from the point's position, not the sphere's geometric center:
   - listening gathers dots toward it;
