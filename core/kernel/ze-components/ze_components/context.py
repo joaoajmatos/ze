@@ -22,6 +22,15 @@ def append(component: object) -> None:
     _pending.set(current + [serialize_primitive(component)])
 
 
+def append_serialized(component: dict[str, Any]) -> None:
+    """Append a component that is already in wire form. No-ops outside a collection context."""
+    try:
+        current = _pending.get()
+    except LookupError:
+        return
+    _pending.set(current + [component])
+
+
 def collect_and_reset(token: object) -> list[dict[str, Any]]:
     """Drain accumulated components, restore prior context state, and return the list."""
     try:

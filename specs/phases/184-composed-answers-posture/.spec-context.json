@@ -3,7 +3,7 @@
   "specName": "Composed Answers and Claim Posture (B1)",
   "branch": "184-composed-answers-posture",
   "currentStep": "implement",
-  "currentTask": "T010",
+  "currentTask": "T016",
   "status": "implementing",
   "task_summaries": {
     "T001": {
@@ -31,6 +31,27 @@
       "status": "DONE"
     },
     "T009": {
+      "status": "DONE"
+    },
+    "T010": {
+      "status": "DONE"
+    },
+    "T011": {
+      "status": "DONE"
+    },
+    "T012": {
+      "status": "DONE"
+    },
+    "T013": {
+      "status": "DONE"
+    },
+    "T014": {
+      "status": "DONE"
+    },
+    "T015": {
+      "status": "DONE"
+    },
+    "T018": {
       "status": "DONE"
     }
   },
@@ -106,6 +127,62 @@
       "kind": "complete",
       "by": "claude",
       "at": "2026-10-17T14:54:20.192Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:03:08.801Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:03:08.977Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:03:09.152Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:03:09.307Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:03:09.470Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:03:09.629Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:03:09.785Z"
     }
   ]
 }

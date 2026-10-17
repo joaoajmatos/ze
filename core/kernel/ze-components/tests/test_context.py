@@ -56,3 +56,14 @@ async def test_two_coroutines_collect_independently():
     assert results["a"][0]["content"] == "from-a"
     assert len(results["b"]) == 1
     assert results["b"][0]["content"] == "from-b"
+
+
+def test_append_serialized_keeps_the_wire_dict_and_order():
+    token = ctx.begin_collection()
+    ctx.append_serialized({"type": "headline", "text": "A"})
+    ctx.append_serialized({"type": "headline", "text": "B"})
+    assert [c["text"] for c in ctx.collect_and_reset(token)] == ["A", "B"]
+
+
+def test_append_serialized_outside_a_collection_is_a_noop():
+    ctx.append_serialized({"type": "headline", "text": "A"})
