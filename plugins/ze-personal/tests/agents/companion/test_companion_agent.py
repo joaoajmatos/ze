@@ -355,3 +355,15 @@ def test_agent_context_defaults():
     ctx = AgentContext(session_id="x", prompt="hi", )
     assert ctx.tool_calls == []
     assert ctx.memory is None
+
+
+async def test_run_without_an_outreach_log_skips_logging():
+    agent = CompanionAgent(
+        openrouter_client=make_client(),
+        settings=make_settings(),
+        person_store=make_person_store(),
+        outreach_log=None,
+        memory_store=AsyncMock(),
+    )
+    result = await agent.run(make_ctx("I sent an email to Carlos Mendes yesterday"))
+    assert result.tool_calls == []

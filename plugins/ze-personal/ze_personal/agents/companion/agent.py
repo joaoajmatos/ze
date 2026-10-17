@@ -161,7 +161,7 @@ class CompanionAgent(BaseAgent):
         openrouter_client: LLMClient,
         settings: Settings,
         person_store: PersonStore,
-        outreach_log: OutreachLog,
+        outreach_log: OutreachLog | None,
         memory_store: PostgresMemoryStore,
     ) -> None:
         self._settings = settings
@@ -204,6 +204,8 @@ class CompanionAgent(BaseAgent):
         yield result.response
 
     async def _attempt_log_outreach(self, ctx: AgentContext) -> ToolCall | None:
+        if self._outreach_log is None:
+            return None
         event = _detect_outreach_event(ctx.prompt)
         if event is None:
             return None

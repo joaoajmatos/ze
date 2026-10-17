@@ -6,7 +6,7 @@ import inspect
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, get_type_hints
+from typing import TYPE_CHECKING, Any, get_args, get_type_hints
 
 from ze_agents.errors import AgentConfigError, RoutingError
 from ze_agents.interface.types import RawInput
@@ -457,6 +457,14 @@ def _validate_model_config(settings: Any) -> None:
     validate_model_config(settings.config, known_model_keys)
 
 
+def _optional_inner(annotation: Any) -> Any | None:
+    """X for an `X | None` annotation, else None."""
+    args = get_args(annotation)
+    if type(None) in args and len(args) == 2:
+        return next(a for a in args if a is not type(None))
+    return None
+
+
 def _resolve(cls: type, deps: dict[type, Any]) -> Any:
     try:
         hints = get_type_hints(cls.__init__)
@@ -474,6 +482,10 @@ def _resolve(cls: type, deps: dict[type, Any]) -> Any:
             raise AgentConfigError(
                 f"{cls.__name__}.__init__ parameter {param_name!r} has no type annotation"
             )
+        optional_inner = _optional_inner(annotation)
+        if optional_inner is not None:
+            kwargs[param_name] = deps.get(optional_inner)
+            continue
         if annotation not in deps:
             raise AgentConfigError(
                 f"No dependency registered for {annotation!r}"
