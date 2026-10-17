@@ -140,8 +140,8 @@ export function FieldChart({ concerns, now, selected, onSelect, reorder }: Props
               </g>
             );
           })}
-          <text className="axis" x={ML + 8} y={Y0 + 16} textAnchor="start">
-            ↑ how sure Ze is
+          <text className="axis" x={ML - 8} y={Y0 - 10} textAnchor="end">
+            ↑ sure
           </text>
           <text className="axis" x={ML + PW} y={Y1 + 34} textAnchor="end">
             time left →

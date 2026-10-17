@@ -1985,3 +1985,97 @@ h2.lbl {
     min-width: 44px;
   }
 }
+
+/* ---------- world (phase 186) ---------- */
+.rail > * {
+  min-width: 0;
+}
+.rail-slot {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+.world {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+}
+.world-hero {
+  min-width: 0;
+}
+.world-right {
+  min-width: 0;
+}
+.field-note {
+  padding: 8px 18px 0;
+  font-size: 0.875rem;
+}
+.glyph.plain {
+  background: transparent;
+  border: 1px solid var(--dim);
+}
+.row.focused,
+.held-write.focused {
+  outline: 1px solid var(--hair-strong);
+  outline-offset: 2px;
+}
+.row .acts {
+  flex-wrap: wrap;
+}
+input[type="checkbox"] {
+  accent-color: var(--main);
+}
+.held-write {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+}
+.held-write p {
+  margin: 0;
+}
+.held-write .acts {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.pt.lifted rect,
+.pt.drop-target rect {
+  stroke: var(--cream);
+}
+.pt.drop-target .bracket {
+  opacity: 1;
+}
+.field-key li.slip-pulse .glyph {
+  animation: slip-pulse 2.2s cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
+  animation-delay: var(--beat-offset, 0s);
+}
+@keyframes slip-pulse {
+  0% { transform: scale(1.5); }
+  12% { transform: scale(1); }
+  13% { transform: scale(1.25); }
+  30%, 100% { transform: scale(1); }
+}
+@media (max-width: 1279px) {
+  .world {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 1023px) {
+  .place:has(> .world),
+  .world,
+  .world-right,
+  .rail-slot {
+    display: contents;
+  }
+  .world-doing {
+    order: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .field-key li.slip-pulse .glyph {
+    animation: none;
+  }
+}

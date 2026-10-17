@@ -100,9 +100,8 @@ export function NeedsYou({ decisions, loading, error, now, offline, focus, onCha
             return (
               <div key={`g${d.id}`} className={`row ${isFocused("goal", d.goalId) ? "focused" : ""}`}>
                 <span className="t">{d.title}</span>
-                <span className="lbl">checkpoint</span>
                 <span className="s">
-                  {d.goalTitle}
+                  Checkpoint · {d.goalTitle}
                   {d.at ? ` · waiting ${ago(d.at, now)}` : ""}
                 </span>
                 {state === "awaiting_instructions" && <span className="s">Waiting for your instructions</span>}
