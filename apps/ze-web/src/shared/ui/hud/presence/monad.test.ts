@@ -160,6 +160,10 @@ describe("the monad is a cluster of the grid's own dots", () => {
     expect(doze.length).toBeGreaterThan(0);
     expect(doze.length).toBeLessThan(litDots({ x: 0, y: 0 }).length);
   });
+  it("a blink at any vertical position still lights a row", () => {
+    const lid = withReflexes(eyeBase("idle", "centered", 0, 0), 1, 0);
+    for (let k = 0; k <= 1000; k++) expect(litDots({ x: 0, y: -0.5 + k / 1000 }, lid).length, `y ${k}`).toBeGreaterThan(0);
+  });
   it("keeps a cluster at the clamp inside the sphere", () => {
     for (const p of litDots({ x: G.POINT_MAX, y: 0 })) expect(Math.hypot(p.x, p.y)).toBeLessThanOrEqual(1);
   });

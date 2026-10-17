@@ -10,8 +10,8 @@ import type { OrbState } from "./types";
 export const MONAD = {
   /** Radius of the resting cluster in sphere units: about 4x4 dots on the 29-dot grid. */
   EYE_RADIUS: 0.16,
-  /** Half a grid pitch: a squashed eye never loses its nearest row of dots. */
-  MIN_HALF: 0.034,
+  /** Just over half a grid pitch (0.5 / (29 / 2) × 1.05): a squashed eye never loses its nearest row of dots. */
+  MIN_HALF: 0.0362,
   /** Peering lights more dots: the cluster widens by this fraction. */
   PEER_DILATE: 0.25,
   /** A startle shrinks the cluster to fewer dots, by this fraction at its peak. */
