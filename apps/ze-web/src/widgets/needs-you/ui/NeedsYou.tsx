@@ -16,6 +16,8 @@ interface Props {
   error: boolean;
   now: Date;
   offline: boolean;
+  /** What the offline line says; another window holding the connection is not "offline". */
+  offlineLine?: string;
   /** `<kind>:<id>` of the row to highlight, from `?focus=`. */
   focus: { kind: string; id: string } | null;
   onChatAbout?: (ref: WsScreenRef, element?: Element | null) => void;
@@ -49,7 +51,7 @@ function PendingConfirmRow({ pending, offline, focused }: { pending: PendingConf
 }
 
 /** Everything waiting on the user, each with its one or two actions. Cream, never coral. */
-export function NeedsYou({ decisions, loading, error, now, offline, focus, onChatAbout }: Props) {
+export function NeedsYou({ decisions, loading, error, now, offline, offlineLine = "Ze is offline.", focus, onChatAbout }: Props) {
   const transition = useLoopTransitionMutation();
   const gateIds = decisions.filter((d) => d.kind === "gate").map((d) => d.id);
   const gate = useAnswerGate(gateIds);
@@ -159,7 +161,7 @@ export function NeedsYou({ decisions, loading, error, now, offline, focus, onCha
           That didn't go through. Try again.
         </p>
       )}
-      {offline && decisions.length > 0 && <p className="s">Ze is offline.</p>}
+      {offline && decisions.length > 0 && <p className="s">{offlineLine}</p>}
     </Module>
   );
 }

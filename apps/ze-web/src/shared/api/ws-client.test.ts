@@ -154,4 +154,39 @@ describe("connection lifecycle", () => {
 
     expect(FakeSocket.instances).toHaveLength(2);
   });
+
+  it("takeOver() clears displaced and connects even when the document is hidden", async () => {
+    const { startWs, takeOver, useWsStore } = await loadClient();
+    startWs();
+    const socket = FakeSocket.instances[0];
+    socket.onopen?.();
+    socket.onclose?.({ code: 4000 });
+    Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+    takeOver();
+    Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+    expect(useWsStore.getState().displaced).toBe(false);
+    expect(FakeSocket.instances).toHaveLength(2);
+  });
+
+  it("takeOver() does nothing when this window is not displaced", async () => {
+    const { startWs, takeOver } = await loadClient();
+    startWs();
+    FakeSocket.instances[0].onopen?.();
+    takeOver();
+    expect(FakeSocket.instances).toHaveLength(1);
+  });
+
+  it("connectionState() is online, displaced or offline", async () => {
+    const { startWs, connectionState } = await loadClient();
+    startWs();
+    const socket = FakeSocket.instances[0];
+    socket.onopen?.();
+    expect(connectionState()).toBe("online");
+    socket.onclose?.({ code: 4000 });
+    expect(connectionState()).toBe("displaced");
+    const { startWs: s2, connectionState: c2, takeOver } = await loadClient();
+    s2();
+    expect(c2()).toBe("offline");
+    void takeOver;
+  });
 });

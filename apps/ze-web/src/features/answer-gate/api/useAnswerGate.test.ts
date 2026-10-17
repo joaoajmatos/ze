@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useConversation } from "@/entities/conversation";
 import { AnswerGateFrameHandler } from "../ui/AnswerGateFrameHandler";
 import { useAnswerGate } from "./useAnswerGate";
 import { useGateFlights } from "../model/gate-flights";
@@ -7,14 +8,10 @@ import { useGateFlights } from "../model/gate-flights";
 const m = vi.hoisted(() => ({
   send: vi.fn(),
   connected: true,
-  frames: {} as Record<string, (f: unknown) => void>,
 }));
 
 vi.mock("@/shared/api", () => ({
   send: m.send,
-  useFrame: (type: string, handler: (f: unknown) => void) => {
-    m.frames[type] = handler;
-  },
   useWsStore: (sel: (s: { isConnected: boolean }) => unknown) => sel({ isConnected: m.connected }),
 }));
 vi.mock("@/entities/session", () => ({
@@ -27,8 +24,16 @@ function useBoth(ids: readonly string[]) {
   return useAnswerGate(ids);
 }
 
-const frame = (type: string, extra: Record<string, unknown> = {}) =>
-  act(() => m.frames[type](type === "message" ? { type, message: { thread_id: "t-1", ...extra } } : { type, thread_id: "t-1", ...extra }));
+// The shell's turn handler feeds the store; the tests feed it the same events.
+const apply = (event: Parameters<ReturnType<typeof useConversation.getState>["apply"]>[0]) =>
+  act(() => {
+    vi.advanceTimersByTime(1);
+    useConversation.getState().apply(event, { activeThreadId: "t-1" });
+  });
+const frame = (type: string, extra: Record<string, unknown> = {}, thread = "t-1") =>
+  type === "message"
+    ? apply({ type: "message", message: { id: `m${Date.now()}`, role: "assistant", text: "x", components: [], read: true, created_at: "x", thread_id: thread, ...extra } })
+    : apply({ type: "error", thread_id: thread, detail: "", ...extra } as never);
 
 describe("useAnswerGate", () => {
   beforeEach(() => {
@@ -37,6 +42,7 @@ describe("useAnswerGate", () => {
     m.send.mockReturnValue(true);
     m.connected = true;
     useGateFlights.setState({ flights: {}, awaiting: {}, errors: {} });
+    useConversation.setState({ byThread: {} });
   });
   afterEach(() => vi.useRealTimers());
 
@@ -95,7 +101,7 @@ describe("useAnswerGate", () => {
   it("ignores an error frame after 15 s, and one from another thread", () => {
     const { result } = renderHook(() => useBoth(["g1"]));
     act(() => void result.current.proceed("g1"));
-    act(() => m.frames.error({ type: "error", thread_id: "other", detail: "x" }));
+    frame("error", { detail: "x" }, "other");
     expect(result.current.stateOf("g1")).toBe("in_flight");
     act(() => void vi.advanceTimersByTime(16_000));
     frame("error", { detail: "late" });

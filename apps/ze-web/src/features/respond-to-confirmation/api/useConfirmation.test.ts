@@ -1,6 +1,7 @@
 import { act, renderHook as baseRenderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useConversation } from "@/entities/conversation";
 import { useSession } from "@/entities/session";
 import { useSendNotice } from "@/shared/lib";
 import { usePendingConfirms } from "../model/pending-store";
@@ -71,6 +72,7 @@ describe("useConfirmation", () => {
     sendMock.mockReset();
     sendMock.mockReturnValue(true);
     useWsStore.setState({ thinkingThreads: {} });
+    useConversation.setState({ byThread: {} });
     usePendingConfirms.setState({ byThread: {} });
     useSession.setState({ threadId: THREAD });
     useSendNotice.getState().clearNotice();
@@ -120,7 +122,7 @@ describe("useConfirmation", () => {
     open();
     act(() => result.current.respond("req-1", "approve", {}));
     expect(result.current.pendingConfirms[0]?.submitted).toBe(true);
-    expect(useWsStore.getState().thinkingThreads[THREAD]).toBe(true);
+    expect(useConversation.getState().byThread[THREAD]?.turn.phase).toBe("awaiting");
     act(() => handlers.get("confirm_cancel")?.({ type: "confirm_cancel", id: "req-1", thread_id: THREAD }));
     expect(result.current.pendingConfirms).toEqual([]);
   });
@@ -248,7 +250,7 @@ describe("useConfirmation", () => {
       act(() => result.current.respond("held-1", "approve", {}));
       expect(sendMock).toHaveBeenCalledWith({ type: "confirm", id: "held-1", choice: "approve", thread_id: THREAD, edits: {} });
       expect(result.current.pendingConfirms).toEqual([]);
-      expect(useWsStore.getState().thinkingThreads[THREAD]).toBeFalsy();
+      expect(useConversation.getState().byThread[THREAD]?.turn.phase ?? "idle").toBe("idle");
     });
 
     it("lists it beside the thread's own confirmation", () => {
@@ -301,7 +303,7 @@ describe("useConfirmation", () => {
         thread_id: THREAD,
       });
       expect(result.current.pendingConfirms).toEqual([]);
-      expect(useWsStore.getState().thinkingThreads[THREAD]).toBeFalsy();
+      expect(useConversation.getState().byThread[THREAD]?.turn.phase ?? "idle").toBe("idle");
     });
 
     it("sends approve/deny on a prompt frame as a confirm frame and closes the card", () => {

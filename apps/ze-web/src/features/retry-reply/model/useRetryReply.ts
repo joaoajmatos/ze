@@ -1,37 +1,46 @@
 import type { WsOutboundFrame } from "@myguyze/ze-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { send, useFrame, useWsStore } from "@/shared/api";
+import { useEffect, useRef, useState } from "react";
+import { useConversation, useThread } from "@/entities/conversation";
+import { useSession } from "@/entities/session";
+import { send } from "@/shared/api";
 import { queryKeys } from "@/shared/lib";
 
-const RETRY_FAILED_NOTICE = "Retry failed. The original reply is unchanged.";
-const PARTIAL_NOTICE = "Ze could not undo everything, so the original reply stays.";
-const ROLLED_BACK_FAILED_NOTICE = "Ze undid the earlier actions but could not write a new reply.";
 const NOT_CONNECTED_NOTICE = "Not connected. Retry when Ze reconnects.";
 
 interface UseRetryReplyOptions {
   threadId: string;
-  /** Called when the server replaced `messageId` with `replacedBy`. */
-  onSuperseded: (messageId: string, replacedBy: string) => void;
   onNotice: (text: string) => void;
 }
 
-export function useRetryReply({ threadId, onSuperseded, onNotice }: UseRetryReplyOptions) {
+/**
+ * Sends a retry. The conversation store applies what comes back (a superseded reply, a rollback record, an
+ * outcome); this hook only starts the retry and refreshes the feedback and trace queries when those change.
+ */
+export function useRetryReply({ threadId, onNotice }: UseRetryReplyOptions) {
   const queryClient = useQueryClient();
+  const thread = useThread(threadId);
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const isThinking = useWsStore((s) => s.thinkingThreads[threadId] ?? false);
-  const setThreadThinking = useWsStore((s) => s.setThreadThinking);
-  // The shared thinking flag also covers ordinary turns and drops on disconnect.
-  const retrying = pendingId !== null && isThinking;
+  const phase = thread.turn.phase;
+  const running = phase === "awaiting" || phase === "thinking" || phase === "speaking";
+  const retrying = pendingId !== null && running;
 
-  function refresh() {
+  useEffect(() => {
+    if (!running && pendingId !== null) setPendingId(null);
+  }, [running, pendingId]);
+
+  const changes = thread.messages.map((m) => `${m.id}:${m.replaced_by ?? ""}:${m.rollback?.state ?? ""}`).join("|") + `#${thread.lastOutcome?.kind ?? ""}`;
+  const seen = useRef(changes);
+  useEffect(() => {
+    if (seen.current === changes) return;
+    seen.current = changes;
     void queryClient.invalidateQueries({ queryKey: queryKeys.messageFeedbackAll });
     void queryClient.invalidateQueries({ queryKey: ["message-trace"] });
     void queryClient.invalidateQueries({ queryKey: ["message-traces"] });
-  }
+  }, [changes, queryClient]);
 
   function retry(messageId: string, confirmedPlan?: string[]): boolean {
-    if (isThinking) return false;
+    if (running) return false;
     const frame: Extract<WsOutboundFrame, { type: "retry" }> = {
       type: "retry",
       message_id: messageId,
@@ -42,46 +51,10 @@ export function useRetryReply({ threadId, onSuperseded, onNotice }: UseRetryRepl
       onNotice(NOT_CONNECTED_NOTICE);
       return false;
     }
+    useConversation.getState().apply({ type: "retry_sent", threadId, messageId }, { activeThreadId: useSession.getState().threadId });
     setPendingId(messageId);
-    setThreadThinking(threadId, true);
     return true;
   }
 
-  useFrame("message_superseded", (frame) => {
-    if (frame.thread_id && frame.thread_id !== threadId) return;
-    setPendingId(null);
-    onSuperseded(frame.message_id, frame.replaced_by);
-    refresh();
-  });
-
-  useFrame("message_rollback", (frame) => {
-    if (frame.thread_id && frame.thread_id !== threadId) return;
-    // A denied or expired paused retry ends here with no error frame.
-    if (pendingId === frame.message_id && frame.rollback.state === "rolled_back_retry_failed") {
-      setPendingId(null);
-      setThreadThinking(threadId, false);
-    }
-    refresh();
-  });
-
-  useFrame("error", (frame) => {
-    if (!pendingId || (frame.thread_id && frame.thread_id !== threadId)) return;
-    if (frame.code === "retry_unavailable") {
-      onNotice(frame.reason_text ?? "Ze cannot retry this reply.");
-      refresh();
-    } else if (frame.code === "busy") {
-      onNotice(frame.detail);
-    } else if (frame.code === "retry_partial") {
-      onNotice(frame.detail || PARTIAL_NOTICE);
-      refresh();
-    } else if (frame.code === "retry_failed" && frame.rolled_back) {
-      onNotice(frame.detail || ROLLED_BACK_FAILED_NOTICE);
-      refresh();
-    } else {
-      onNotice(RETRY_FAILED_NOTICE);
-    }
-    setPendingId(null);
-  });
-
-  return { retry, retrying, retryingId: retrying ? pendingId : null };
+  return { retry, retrying, retryingId: retrying ? pendingId : null, outcome: thread.lastOutcome };
 }
