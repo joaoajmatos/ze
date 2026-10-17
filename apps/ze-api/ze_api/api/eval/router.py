@@ -197,5 +197,6 @@ def _turn_response(session_id: str, outcome) -> EvalChatResponse:
         pending_confirmation=outcome.interrupted,
         error=final_state.get("error"),
         tool_calls=tool_calls,
+        components=final_state.get("components") or [],
         tokens_used=sum(result.tokens_used or 0 for result in results),
     )

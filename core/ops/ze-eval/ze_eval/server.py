@@ -176,6 +176,7 @@ async def ze_run_scenario(scenario_id: str) -> str:
       - result: Ze's response(s) and routing metadata
       - matches_expected_agent: true if Ze used the expected agent (null if no expectation set)
       - tool_calls: list of tools invoked during execution (name, args, duration_ms, success)
+      - components: render_* component trees shown to the user (the judge reads them)
       - tokens_used: total tokens consumed
 
     You (the evaluator) should read the criteria and judge whether Ze's response passes.

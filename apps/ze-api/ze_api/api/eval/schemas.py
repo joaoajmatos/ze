@@ -60,6 +60,7 @@ class EvalChatResponse(BaseModel):
     pending_confirmation: bool
     error: str | None
     tool_calls: list[EvalToolCall] = []
+    components: list[dict[str, Any]] = []
     tokens_used: int = 0
 
 
