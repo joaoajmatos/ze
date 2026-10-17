@@ -49,7 +49,7 @@ The user taps the "What's slipping?" preset. The reply carries a dot-matrix head
 
 **Why this priority**: It is the demo moment of the overhaul and the first thing W3 renders.
 
-**Independent Test**: With fake stores (two drifting loops, one active loop due in three days, one stuck goal, one suspected loop), call `WorldComposer.compose_slipping()`: the headline reads `3 SLIPPING · 1 AT RISK`; the timeline has four entries; there are four cards with `slipped` true on the three slipped ones; the suspected loop is absent; every card's `claim` equals the store values. Through the graph with `context.compose = "slipping"`: the turn is routed to companion, `components` starts with the composition, and the composer is not called again by a tool.
+**Independent Test**: With fake stores (two drifting loops, one active loop due in three days, one stuck goal, one suspected loop), call `WorldComposer.compose_slipping()`: the headline reads `3 SLIPPING · 1 AT RISK`; the timeline has three entries (the three loops; goals are cards, not timeline entries); there are four cards with `slipped` true on the three slipped ones; the suspected loop is absent; every card's `claim` equals the store values. Through the graph with `context.compose = "slipping"`: the turn is routed to companion, `components` starts with the composition, and the composer is not called again by a tool.
 
 **Acceptance Scenarios**:
 
