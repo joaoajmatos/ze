@@ -108,6 +108,8 @@ def _trace_to_response(trace) -> MessageTraceResponse:
                 "undo_tool": t.undo_tool,
                 "gate": t.gate,
                 "effect_phrase": t.effect_phrase,
+                "agent": t.agent,
+                "call_index": t.call_index,
             }
             for t in trace.tool_calls
         ],

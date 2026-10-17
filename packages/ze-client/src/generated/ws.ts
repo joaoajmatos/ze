@@ -134,6 +134,8 @@ export type Gate =
   | "expired"
   | "duplicate";
 export type EffectPhrase3 = string | null;
+export type Agent2 = string | null;
+export type CallIndex = number;
 export type ToolCalls = ToolCallTraceResponse[];
 export type TotalDurationMs = number;
 export type SkillId = string;
@@ -163,7 +165,7 @@ export type ConductorHint =
       [k: string]: string;
     }[]
   | null;
-export type Agent2 = string;
+export type Agent3 = string;
 export type Status1 = string;
 export type RequestId = string | null;
 export type ConductorLedger = ConductorLedgerEntryResponse[];
@@ -187,7 +189,7 @@ export type EffectsKnown = boolean;
 export type RequestId1 = string;
 export type Round1 = number;
 export type ItemId1 = string;
-export type Agent3 = string;
+export type Agent4 = string;
 export type Tool3 = string | null;
 export type Effect = string | null;
 export type Summary1 = string;
@@ -195,7 +197,7 @@ export type Outcome1 = "approved" | "edited" | "pre_approved" | "denied" | "time
 export type WriteConfirmations = WriteConfirmationOutcomeResponse[];
 export type Replaces1 = string;
 export type Entries1 = RollbackEntryResponse[];
-export type Agent4 = string;
+export type Agent5 = string;
 export type Tier = "simple" | "full";
 export type DecidedBy = string;
 export type Model1 = string;
@@ -550,6 +552,8 @@ export interface ToolCallTraceResponse {
   undo_tool?: UndoTool;
   gate?: Gate;
   effect_phrase?: EffectPhrase3;
+  agent?: Agent2;
+  call_index?: CallIndex;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -607,7 +611,7 @@ export interface ProcedureUsageTraceResponse {
  * via the `definition` "ConductorLedgerEntryResponse".
  */
 export interface ConductorLedgerEntryResponse {
-  agent: Agent2;
+  agent: Agent3;
   status: Status1;
   request_id?: RequestId;
 }
@@ -643,7 +647,7 @@ export interface WriteConfirmationOutcomeResponse {
   request_id: RequestId1;
   round: Round1;
   item_id: ItemId1;
-  agent: Agent3;
+  agent: Agent4;
   tool?: Tool3;
   effect?: Effect;
   summary?: Summary1;
@@ -662,7 +666,7 @@ export interface RollbackTraceResponse {
  * via the `definition` "TierTraceResponse".
  */
 export interface TierTraceResponse {
-  agent: Agent4;
+  agent: Agent5;
   tier: Tier;
   decided_by: DecidedBy;
   model: Model1;
