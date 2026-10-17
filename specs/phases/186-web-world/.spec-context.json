@@ -3,7 +3,7 @@
   "specName": "World (W2)",
   "branch": "186-web-world",
   "currentStep": "implement",
-  "currentTask": "T029",
+  "currentTask": "T033",
   "status": "implementing",
   "task_summaries": {
     "T002": {
@@ -117,6 +117,18 @@
     "T029": {
       "status": "DONE",
       "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T031": {
+      "status": "DONE",
+      "did": "docs: frontend, native-interface, features, architecture, worldstate README, calendar README, AGENTS, specs index"
+    },
+    "T032": {
+      "status": "DONE",
+      "did": "docs: frontend, native-interface, features, architecture, worldstate README, calendar README, AGENTS, specs index"
+    },
+    "T033": {
+      "status": "DONE",
+      "did": "docs: frontend, native-interface, features, architecture, worldstate README, calendar README, AGENTS, specs index"
     }
   },
   "history": [
@@ -343,6 +355,30 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-10-17T22:39:05.757Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:45:04.401Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:45:04.638Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:45:04.863Z"
     }
   ]
 }

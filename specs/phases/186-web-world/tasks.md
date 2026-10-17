@@ -83,9 +83,9 @@
 
 ## Phase 10: Docs [DOCS]
 
-- [ ] T031 [DOCS] Update every doc in plan.md "Docs touched".
-- [ ] T032 [DOCS] `AGENTS.md` phase row 186 and the nav facts line; `specs/README.md` row 186 → Implemented; spec status.
-- [ ] T033 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; record in the Handoffs note.
+- [x] T031 [DOCS] Update every doc in plan.md "Docs touched".
+- [x] T032 [DOCS] `AGENTS.md` phase row 186 and the nav facts line; `specs/README.md` row 186 → Implemented; spec status.
+- [x] T033 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; record in the Handoffs note.
 
 ---
 
