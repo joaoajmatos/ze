@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime, time, timezone
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ze_api.api.deps import (
     get_interruption_settings_store,
@@ -12,9 +13,11 @@ from ze_api.api.deps import (
 )
 from ze_api.api.v0.notifications.schemas import (
     AttentionBudgetResponse,
+    DeliveryLiteral,
     MarkAllReadResponse,
     NotificationItem,
     NotificationListResponse,
+    PushClassLiteral,
     QuietHoursResponse,
     QuietHoursUpdate,
     UnreadCountResponse,
@@ -40,7 +43,8 @@ router = APIRouter(
     description=(
         "Reverse-chronological, cursor-paginated notification history. "
         "Set mark_read=true to atomically mark the returned page as read "
-        "(used by the panel-open fetch)."
+        "(used by the panel-open fetch). Filter by delivery outcome, push class, "
+        "or since a time to answer what Ze sent, held or suppressed."
     ),
 )
 async def list_notifications(
@@ -48,6 +52,22 @@ async def list_notifications(
     limit: int = 20,
     unread_only: bool = False,
     mark_read: bool = False,
+    delivery: Annotated[
+        list[DeliveryLiteral] | None,
+        Query(description="Only these delivery outcomes (repeatable)."),
+    ] = None,
+    push_class: Annotated[
+        PushClassLiteral | None, Query(description="Only this push class.")
+    ] = None,
+    since: Annotated[
+        datetime | None,
+        Query(
+            description=(
+                "Only notifications delivered or created after this time "
+                "(delivered_at when present, else created_at)."
+            )
+        ),
+    ] = None,
     notification_store=Depends(get_notification_store),
 ) -> NotificationListResponse:
     try:
@@ -56,6 +76,9 @@ async def list_notifications(
             limit=limit,
             unread_only=unread_only,
             mark_read=mark_read,
+            delivery=delivery,
+            push_class=push_class,
+            since=since,
         )
     except InvalidCursorError:
         raise HTTPException(status_code=400, detail="Invalid cursor")

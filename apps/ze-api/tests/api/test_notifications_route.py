@@ -113,8 +113,86 @@ async def test_list_notifications_passes_query_params():
 
     assert resp.status_code == 200
     store.list_page.assert_awaited_once_with(
-        cursor=None, limit=5, unread_only=True, mark_read=True
+        cursor=None,
+        limit=5,
+        unread_only=True,
+        mark_read=True,
+        delivery=None,
+        push_class=None,
+        since=None,
     )
+
+
+@pytest.mark.asyncio
+async def test_list_notifications_passes_outcome_filters():
+    store = AsyncMock()
+    store.list_page = AsyncMock(return_value=([], None))
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            "/api/v0/notifications",
+            params=[
+                ("delivery", "held"),
+                ("delivery", "suppressed"),
+                ("push_class", "discretionary"),
+                ("since", "2026-10-17T08:00:00+00:00"),
+            ],
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 200
+    kwargs = store.list_page.await_args.kwargs
+    assert kwargs["delivery"] == ["held", "suppressed"]
+    assert kwargs["push_class"] == "discretionary"
+    assert kwargs["since"].isoformat() == "2026-10-17T08:00:00+00:00"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "params", [{"delivery": "bogus"}, {"push_class": "bogus"}, {"since": "not-a-date"}]
+)
+async def test_list_notifications_rejects_unknown_filter_values(params):
+    store = AsyncMock()
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            "/api/v0/notifications",
+            params=params,
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 422
+    store.list_page.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_list_notifications_items_carry_urgency_and_delivered_at():
+    delivered = datetime(2026, 10, 17, 9, tzinfo=timezone.utc)
+    store = AsyncMock()
+    store.list_page = AsyncMock(
+        return_value=(
+            [_notification(urgency="high", delivery="released", delivered_at=delivered)],
+            None,
+        )
+    )
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            "/api/v0/notifications", headers={"Authorization": f"Bearer {API_KEY}"}
+        )
+
+    item = resp.json()["items"][0]
+    assert item["urgency"] == "high"
+    assert datetime.fromisoformat(item["delivered_at"]) == delivered
 
 
 @pytest.mark.asyncio

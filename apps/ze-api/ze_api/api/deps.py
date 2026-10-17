@@ -68,6 +68,10 @@ def get_interruption_settings_store(request: Request):
     return request.app.state.container.interruption_settings_store
 
 
+def get_job_run_store(request: Request):
+    return request.app.state.container.job_run_store
+
+
 def get_notifier(request: Request):
     return request.app.state.container.notifier
 

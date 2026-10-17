@@ -10,6 +10,7 @@ from ze_api.api.v0.memory.router import router as memory_router
 from ze_api.api.v0.messages.router import router as messages_router
 from ze_api.api.v0.notifications.router import router as notifications_router
 from ze_api.api.v0.priority.router import router as priority_router
+from ze_api.api.v0.proactive.router import router as proactive_router
 from ze_api.api.v0.procedures.router import router as procedures_router
 from ze_api.api.v0.sessions.router import router as sessions_router
 from ze_api.api.v0.skills.router import router as skills_router
@@ -36,6 +37,7 @@ for _domain_router in (
     notifications_router,
     loops_router,
     priority_router,
+    proactive_router,
     procedures_router,
     skills_router,
     workspace_router,

@@ -78,6 +78,7 @@ from ze_onboarding import (
 )
 from ze_plugin.bootstrap import discover_and_instantiate_plugins
 from ze_communication.registry import ChannelRegistry
+from ze_proactive.job_run_store import JobRunStore
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
@@ -273,6 +274,7 @@ class ZeContainer(CoreContainer):
     webhook_dispatcher: Any | None
     ui_manifest: Any
     loop_store: LoopStore
+    job_run_store: JobRunStore
     loop_graph_store: Any
     loop_entity_resolver: Any
     loop_surfacer: Any
@@ -678,6 +680,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         procedure_admission=stores.procedure_admission,
         procedure_discovery=stores.procedure_discovery,
         procedure_activator=stores.procedure_activator,
+        job_run_store=stores.job_run_store,
     )
 
     webhook_dispatcher._container = container

@@ -1518,11 +1518,19 @@ export type NotificationItem = {
     /**
      * Push Class
      */
-    push_class: string;
+    push_class: 'requested' | 'accountability' | 'discretionary';
+    /**
+     * Urgency
+     */
+    urgency: string;
     /**
      * Delivery
      */
-    delivery: string;
+    delivery: 'delivered' | 'held' | 'released' | 'suppressed' | 'failed';
+    /**
+     * Delivered At
+     */
+    delivered_at: string | null;
 };
 
 /**
@@ -1658,6 +1666,28 @@ export type PrioritySnapshotResponse = {
      * Sources Failed
      */
     sources_failed: Array<'loop' | 'goal' | 'hypothesis' | 'relationship'>;
+};
+
+/**
+ * ProactiveJobRunItem
+ */
+export type ProactiveJobRunItem = {
+    /**
+     * Job Id
+     */
+    job_id: string;
+    /**
+     * Last Started At
+     */
+    last_started_at: string;
+    /**
+     * Last Finished At
+     */
+    last_finished_at: string | null;
+    /**
+     * Last Status
+     */
+    last_status: 'running' | 'ok' | 'error';
 };
 
 /**
@@ -4418,6 +4448,24 @@ export type ListNotificationsData = {
          * Mark Read
          */
         mark_read?: boolean;
+        /**
+         * Delivery
+         *
+         * Only these delivery outcomes (repeatable).
+         */
+        delivery?: Array<'delivered' | 'held' | 'released' | 'suppressed' | 'failed'> | null;
+        /**
+         * Push Class
+         *
+         * Only this push class.
+         */
+        push_class?: 'requested' | 'accountability' | 'discretionary' | null;
+        /**
+         * Since
+         *
+         * Only notifications delivered or created after this time (delivered_at when present, else created_at).
+         */
+        since?: string | null;
     };
     url: '/api/v0/notifications';
 };
@@ -4751,6 +4799,40 @@ export type UnpinPriorityOverrideResponses = {
 };
 
 export type UnpinPriorityOverrideResponse = UnpinPriorityOverrideResponses[keyof UnpinPriorityOverrideResponses];
+
+export type ListProactiveJobRunsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Since
+         *
+         * Only jobs whose last run started at or after this time.
+         */
+        since?: string | null;
+    };
+    url: '/api/v0/proactive/job-runs';
+};
+
+export type ListProactiveJobRunsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListProactiveJobRunsError = ListProactiveJobRunsErrors[keyof ListProactiveJobRunsErrors];
+
+export type ListProactiveJobRunsResponses = {
+    /**
+     * Response Listproactivejobruns
+     *
+     * Successful Response
+     */
+    200: Array<ProactiveJobRunItem>;
+};
+
+export type ListProactiveJobRunsResponse = ListProactiveJobRunsResponses[keyof ListProactiveJobRunsResponses];
 
 export type ListProcedureCandidatesData = {
     body?: never;

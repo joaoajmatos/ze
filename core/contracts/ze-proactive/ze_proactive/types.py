@@ -112,3 +112,4 @@ class Notification:
     urgency: str = "normal"
     delivery: str = "delivered"
     target_parent_id: str | None = None
+    delivered_at: datetime | None = None

@@ -401,3 +401,60 @@ async def test_list_page_returns_push_class_and_delivery():
     assert items[0].push_class == "discretionary"
     assert items[0].delivery == "suppressed"
     assert "push_class" in conn.fetch.call_args.args[0]
+
+
+async def test_list_page_filters_build_one_parameterized_where():
+    store, conn = make_store(make_conn([]))
+    since = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+    await store.list_page(
+        delivery=["held", "suppressed"], push_class="discretionary", since=since
+    )
+
+    sql = conn.fetch.call_args.args[0]
+    params = conn.fetch.call_args.args[1:]
+    assert sql.count("WHERE") == 1
+    assert "delivery = ANY(" in sql
+    assert "push_class = $" in sql
+    assert "COALESCE(delivered_at, created_at) > $" in sql
+    assert ["held", "suppressed"] in params
+    assert "discretionary" in params
+    assert since in params
+
+
+async def test_list_page_filters_combine_with_cursor_and_unread():
+    store, conn = make_store(make_conn([]))
+    from ze_proactive.notification_store import _encode_cursor
+
+    cursor = _encode_cursor(datetime.now(timezone.utc), str(uuid4()))
+
+    await store.list_page(cursor=cursor, unread_only=True, delivery=["held"])
+
+    sql = conn.fetch.call_args.args[0]
+    assert sql.count("WHERE") == 1
+    assert "read_at IS NULL" in sql
+    assert "(created_at, id) <" in sql
+    assert "delivery = ANY(" in sql
+
+
+async def test_list_page_without_filters_has_no_filter_conditions():
+    store, conn = make_store(make_conn([]))
+
+    await store.list_page()
+
+    sql = conn.fetch.call_args.args[0]
+    assert "WHERE" not in sql
+    assert "COALESCE" not in sql
+
+
+async def test_list_page_returns_urgency_and_delivered_at():
+    delivered = datetime(2026, 1, 1, 9, tzinfo=timezone.utc)
+    row = _make_row(delivery="released")
+    row["delivered_at"] = delivered
+    row["urgency"] = "high"
+    store, _ = make_store(make_conn([row]))
+
+    items, _ = await store.list_page()
+
+    assert items[0].urgency == "high"
+    assert items[0].delivered_at == delivered
