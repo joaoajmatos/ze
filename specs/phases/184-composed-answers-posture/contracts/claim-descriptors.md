@@ -6,8 +6,8 @@ Normative for FR-001 to FR-006 and FR-019. Python dataclasses in `ze_components`
 
 | Field | Type | Rule |
 |---|---|---|
-| `kind` | `"identity" \| "fact" \| "inference" \| "suspicion" \| "priority" \| "action_record" \| "feedback_record"` | The `ClaimKind` value of the owning record (`OpenLoop.claim_kind`, `Hypothesis.claim_kind`; goals, workflows and held writes use `priority`, matching `PriorityView` scoring). |
-| `subject` | `"loop" \| "goal" \| "workflow" \| "hypothesis" \| "person" \| "held_write" \| "fact"` | What the record is. The client picks the glyph from `subject` + `kind` (goal → hollow diamond; `suspicion` → dashed; `inference` → half; otherwise filled). |
+| `kind` | `"identity" \| "fact" \| "inference" \| "suspicion" \| "priority" \| "action_record" \| "feedback_record" \| None` | The `ClaimKind` value the owning record carries: `OpenLoop.claim_kind`, `Hypothesis.claim_kind`, `ClaimKind.PRIORITY` for goals and relationship items (what `PriorityView` scoring assigns them). `None` for subjects that are not claims (`workflow`, `held_write`): they are actions and decisions, and no claim record stands behind them. |
+| `subject` | `"loop" \| "goal" \| "workflow" \| "hypothesis" \| "person" \| "held_write" \| "fact"` | What the record is. The client picks the glyph from `subject` + `kind` (goal → hollow diamond; `suspicion` → dashed; `inference` → half; `kind` null → no claim glyph, the subject's own mark; otherwise filled). |
 | `ref_id` | `str` | The record id (UUID string; held writes use `request_id`). |
 | `confidence` | `float \| None` | 0..1 from the record. `None` when the record has none (workflow, held write). |
 | `confidence_from` | `float \| None` | The value before decay. Omitted until a store exposes it (phase 185 for loops). Never derived by guessing. |
@@ -56,7 +56,7 @@ Client mapping of intents (FR-019, phase 187 keeps it): `confirm_loop` → `conf
 
 1. `claim.slipped` → `hot`.
 2. `needs_user` (held write, open gate) → `cream`.
-3. `claim.kind in (suspicion, inference)` → `dotted`.
+3. `claim.kind in (suspicion, inference)` → `dotted` (a null kind never matches).
 4. otherwise `default`.
 
 A suspected loop in a decisions answer is `dotted` (rule 3 before nothing else applies; `needs_user` is false for suspicions because the One Alarm Rule and DESIGN.md show a suspicion as a question in a dashed frame). Coral never marks a gate, a held write or a suspicion.

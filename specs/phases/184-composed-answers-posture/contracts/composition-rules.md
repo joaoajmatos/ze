@@ -38,18 +38,20 @@ Normative for FR-007 to FR-010. Every rule is a pure function over records the c
 
 - Embed `topic` once (`encode_passage`); for each candidate title compute cosine; keep `≥ MATCH_FLOOR`.
 - Candidates: open loops (suspected/active/drifting), goals from `list_progress()` (title + objective, max of the two cosines), workflows (name + description), hypotheses from the priority ranking.
-- Cards: loops (as in slipping/decisions, by cosine), goals (`span=8`, progress, next milestone line), workflows (`subject="workflow"`, `kind="priority"`, `state` from the last execution: `ok` / `failed` (`slipped=True`) / `never_run`, or `off` when disabled; readout last run "N h ago" and next run; line `failure_summary` when failed), hypotheses (`kind` from the hypothesis, dotted). Cap per kind 6.
+- Cards: loops (as in slipping/decisions, by cosine), goals (`span=8`, progress, next milestone line), workflows (`subject="workflow"`, `kind=None`, `state` from the last execution: `ok` / `failed` (`slipped=True`) / `never_run`, or `off` when disabled; readout last run "N h ago" and next run; line `failure_summary` when failed), hypotheses (`kind` from the hypothesis, dotted). Cap per kind 6.
 - Headline `<TOPIC> · N SLIPPED · M WORKFLOWS` with `<TOPIC>` from `headline_text(topic)` truncated so the whole line fits 40 characters; nothing matched → `NOTHING ON <TOPIC>`.
 - No embedder → empty composition, summary "I can't match topics right now."
 
 ## Preset path (`fetch_context`, FR-008)
 
 1. Read `screen_context.compose`; valid values `slipping`, `decisions`, `topic` (requires non-empty `screen_context.topic`, ≤ 120 chars).
-2. If the envelope is single-agent, not forced and not companion, replace it with the companion envelope built the way `_open_query_envelope` builds it (`routing_method="preset"`, full model).
+2. Set `agent_context.preset` to the preset name. If the envelope is single-agent, not forced and not companion, replace it with the companion envelope built the way `_open_query_envelope` builds it (`routing_method="preset"`, full model).
 3. Call the composer (2 s timeout; on timeout or error: no preset components, a warning, and normal routing continues with the reroute already applied).
-4. Return `preset_components` and append to the companion system note: `[Composed answer for "<preset>" — the modules are already on screen. Write one or two sentences from this only, and offer one next step if it helps:\n<summary>]`.
+4. Return `preset_components` (reset to `[]` per turn in `make_graph_input`) and append to the companion system note: `[Composed answer for "<preset>" — the modules are already on screen. Write one or two sentences from this only, and offer one next step if it helps:\n<summary>]`.
 5. The trace records `routing_method="preset"` (existing `RoutingTrace` field) so the trace panel can say why companion answered.
 
 ## Tools (FR-009)
 
-`show_slipping()`, `show_decisions()`, `show_topic(topic: str)` — `ToolAccess.READ`, injected `world_composer`. Each appends the composition's components via `ze_components.context.append` (one call per component, in order) and returns `{"summary": str, "sources_failed": list[str]}`. A preset turn where the model also calls the tool for the same preset gets the components once: the tool returns the summary without appending when `preset_components` for that preset already exist in the turn (`ctx.extensions["preset"]`).
+`show_slipping()`, `show_decisions()`, `show_topic(topic: str)` — `ToolAccess.READ`, in `ze_priority/compose/tools.py`, registered by adding the module to `ze_priority._AGENT_MODULE_PATHS` (before `ze_priority.agent`). Injected deps: `world_composer` and `preset: str | None`. Each returns `{"summary": str, "sources_failed": list[str]}` and appends the composition's components via `ze_components.context.append` (one call per component, in order) **unless** `preset` equals the tool's own preset name (`slipping`, `decisions`, `topic`), in which case the components are already at the head of the turn and only the summary is returned.
+
+`preset` reaches the tool this way: `fetch_context` sets `agent_context.preset`; both `AgentContext` constructors in `nodes/execution.py` copy `preset` from the base context (they copy fields one by one and do not carry `extensions`); companion's `run()` passes `deps={**self.tool_deps(), "preset": ctx.preset}` to `agentic_loop`. `BaseAgent.tool_deps()` keeps its no-argument signature.

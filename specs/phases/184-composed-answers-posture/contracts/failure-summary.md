@@ -14,7 +14,8 @@ Normative for FR-012 and FR-013. Pure; no I/O; no model call.
   - `"Step {r.step_index + 1} of {n}, “{task}”, failed: {reason}{attempts}."` (drop " of {n}" when unknown).
   - `task` = `r.task` collapsed to one line, cut at 60 characters with "…".
   - `attempts` = `" after {r.attempt_count} attempts"` when `attempt_count > 1`, else empty.
-- Else if `error` is set: `"The run stopped before its first step: {reason}."`
+- Else if `error` is set and `step_results` is empty: `"The run stopped before its first step: {reason}."`
+- Else if `error` is set (steps ran and all succeeded, then the execution failed: cancellation between steps, spend-budget pause, deletion while held, a declined or expired write): `"The run stopped after step {k} of {n}: {reason}."` with `k = max(step_index) + 1` over the successful results (drop " of {n}" when unknown).
 - Else: `"The run failed without saying why."`
 
 ## `reason` (first match wins, case-insensitive, over the failed step's `error` or the execution's `error`)
@@ -30,7 +31,7 @@ Normative for FR-012 and FR-013. Pure; no I/O; no model call.
 | `no results`, or `r.no_results` | `it found nothing to work with` |
 | anything else | `it hit an error` |
 
-The raw `error` string never appears in the output (test: for every fixture, `error not in failure_summary(ex)` and no substring longer than 12 characters of `error` appears).
+The raw `error` string never appears in the output (fixtures include each execution-level reason after successful steps; test: for every fixture, `error not in failure_summary(ex)` and no substring longer than 12 characters of `error` appears).
 
 ## Consumers
 

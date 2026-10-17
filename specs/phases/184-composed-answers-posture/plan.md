@@ -51,10 +51,13 @@ Add claim posture to the server-driven UI contract and let the backend compose t
 | `describe_components` (new names) | ze-core `nodes/memory.py` `write_memory` L261; ze-api `interface/native.py` `_send_message` L229; tests `test_summary.py` |
 | `surface_loops` / `_build_component` (loop surfacing; hard cut) | ze-core `orchestration/nodes/__init__.py`, `graph.py` L60; tests `test_loop_surfacing.py` (11 tests incl. `test_component_is_json_serializable…`), `test_context.py` `test_whats_open_does_not_also_append_inline_mentions`, `test_graph_no_plan_sequential.py`, `test_loop_admission_node.py`, `test_nodes.py`, `test_retry_mode.py` |
 | `TurnSurfacing` (+ `mention_cards`) | ze-priority `turn.py`, `__init__.py`; ze-api `wiring/container.py` `build_container` L514; tests `ze-priority/tests/test_turn.py`, `ze-api/tests/pg/test_loop_confirmation_pg.py` |
-| `fetch_context` (preset path) / `AgentState` (+ `preset_components`) | ze-core `nodes/context.py` (+ `_open_query_envelope` sibling), `state.py`, `nodes/execution.py` `execute_tool` L438 (prepend); readers of `AgentState` in `edges.py`, `judgment_state.py`, `graph.py` (no change); tests `test_context.py` (≈30 tests; new class for presets), `test_state_extensions.py` |
-| `execute_tool` components (prepend presets) | ze-core `nodes/execution.py`; compound path `nodes/routing.py`/synthesis (check `subtask` component merge at T001) |
-| `CompanionAgent` (ctor `world_composer`, tools, instructions) | ze-personal `agents/companion/agent.py`, `plugin.py` (`agent_module_paths` adds `ze_priority.compose.tools` before the companion module); ze-api `wiring/agents.py` `build_dep_map` (adds `WorldComposer`); tests `ze-api/tests/agents/test_bootstrap.py` `test_bootstrap_registers_companion_and_research`, `ze-personal/tests/agents/companion/*` |
-| `PostgresGoalStore.list_for_display` (deleted) → `list_progress` | ze-automation `goals/store.py` Protocol L36, `goals/postgres.py` L189; ze-api `api/v0/goals/router.py` L54; tests `apps/ze-api/tests/api/test_web_routes.py`, `test_goal_learnings.py` (fake stores implementing `list_for_display`) |
+| `fetch_context` (preset path) / `AgentState` (+ `preset_components`) / `make_graph_input` (reset) / `AgentContext` (+ `preset`) | ze-core `nodes/context.py` (+ `_open_query_envelope` sibling), `state.py`, `conversation/turn.py` `make_graph_input` L41-70 (per-turn reset), ze-agents `types.py` `AgentContext`, both `AgentContext` constructors in `nodes/execution.py` (L388-410, L494), `nodes/execution.py` `execute_tool` L438 (prepend); readers of `AgentState` in `edges.py`, `judgment_state.py`, `graph.py` (no change); tests `test_context.py` (≈30 tests; new class for presets), `test_state_extensions.py` |
+| `execute_tool` components (prepend presets) | ze-core `nodes/execution.py`: single-agent path sets `components` from `pop_components` (L433-440); the compound/subtask path returns no `components` key today, so it returns `components = preset_components` |
+| `WsScreenContext` (+ `compose`, `topic`) | ze-api `api/ws/schemas.py` L204-217; `tests/api/test_ws_conformance.py`; generated WS types in `@myguyze/ze-client` |
+| `EvalChatRequest` (+ `context`) | ze-api `api/eval/schemas.py` L24-27, `api/eval/router.py` L58 (`config_extra`); `core/ops/ze-eval` runner and scenario schema; `docs/eval.md` |
+| `ze_priority._AGENT_MODULE_PATHS` (+ `ze_priority.compose.tools`) | ze-priority `__init__.py` L25-35 `import_agent_modules()`, called by ze-api `wiring/agents.py` `bootstrap_agent_layer` before `bootstrap_agents` |
+| `CompanionAgent` (ctor `world_composer`, tools, instructions) | ze-personal `agents/companion/agent.py` (tool names, ctor, `run()` deps); ze-api `wiring/agents.py` `build_dep_map` (adds `WorldComposer`); tests `ze-api/tests/agents/test_bootstrap.py` `test_bootstrap_registers_companion_and_research`, `ze-personal/tests/agents/companion/*` |
+| `PostgresGoalStore.list_for_display` (deleted) → `list_progress` | ze-automation `goals/store.py` Protocol L36, `goals/postgres.py` L189; ze-api `api/v0/goals/router.py` L54; tests `apps/ze-api/tests/api/test_web_routes.py`, `test_goal_learnings.py` (fake stores implementing `list_for_display`), `core/automation/ze-automation/tests/goal_engine/test_postgres_goal_store.py` L229-236 (`test_list_for_display_includes_planning_and_paused`) |
 | `GoalListItem` (+ 8 fields) | ze-api `api/v0/goals/schemas.py`, `router.py` `list_goals`, `api/v0/__init__.py` re-export; tests `test_web_routes.py`, `test_goal_learnings.py`; `@myguyze/ze-client`; ze-web `entities/goal`, `widgets/goals-overview` |
 | `jobs/stuck_goals.py` literal → `STUCK_IDLE_DAYS` | ze-automation `jobs/stuck_goals.py` L31; ze-api `wiring/jobs.py` (job construction); tests `apps/ze-api/tests/pg/test_stuck_goals.py` |
 | `WorkflowExecution` readers (+ derived `failure_summary`) | ze-automation `rest.py` `list_workflow_executions`/`get_workflow_execution`, `agents/workflow/tools.py` `_serialize_execution` (called by `get_workflow`, `list_workflow_executions` tools), `bootstrap.py` `_workflow_failure_handler`; ze-api `api/v0/workflows/{router,schemas}.py` `WorkflowExecutionResponse`; tests `apps/ze-api/tests/api/test_workflows_route.py` (7 tests), `ze-automation/tests/workflow_agent/test_tools.py`; ze-web `widgets/workflow-executions` |
@@ -90,9 +93,9 @@ No `ze_sdk` signature change (companion imports `WorldComposer` from `ze_priorit
 
 ### `ze-core`
 
-- `state.py`: `preset_components: list[dict]` (default absent → `[]`).
-- `nodes/context.py`: `_preset_envelope()` mirroring `_open_query_envelope` with `routing_method="preset"`; `_compose_preset(config)` reads `screen_context.compose/topic`, calls `configurable["world_composer"]` with a 2 s timeout; returns `preset_components` and appends the note to `agent_context.screen_context_note` (the same channel `_build_screen_context_note` uses); records `extensions["preset"]`.
-- `nodes/execution.py`: `components = list(state.get("preset_components") or []) + popped` on the single-agent path; the compound path prepends once at the merge point (verify at T001).
+- `state.py`: `preset_components: list[dict]`; `conversation/turn.py` `make_graph_input` resets it to `[]` with the other per-turn keys (a checkpointed thread must not carry a preset into the next turn). ze-agents `types.py`: `AgentContext.preset: str | None = None`.
+- `nodes/context.py`: `_preset_envelope()` mirroring `_open_query_envelope` with `routing_method="preset"`; `_compose_preset(config)` reads `screen_context.compose/topic`, calls `configurable["world_composer"]` with a 2 s timeout; returns `preset_components`, sets `agent_context.preset`, and appends the note to `agent_context.screen_context_note` (the same channel `_build_screen_context_note` uses).
+- `nodes/execution.py`: both `AgentContext` constructors copy `preset` (next to the prompt-note kwargs); `components = list(state.get("preset_components") or []) + popped` on the single-agent path; the compound branch's return adds `"components": list(state.get("preset_components") or [])` (synthesis unchanged).
 - `nodes/loop_surfacing.py`: `component = surfacer.mention_cards(mentions)` (list) appended with `extend`; delete `_build_component`.
 
 ### `ze-automation`
@@ -113,13 +116,18 @@ No `ze_sdk` signature change (companion imports `WorldComposer` from `ze_priorit
 - `api/v0/goals/{schemas,router}.py`: fields + `list_progress`.
 - `api/v0/workflows/schemas.py`: `failure_summary: str | None`.
 - `api/v0/notifications/schemas.py`: `target_parent_id`.
-- `api/ws/schemas.py` inbound `message.context`: document `compose`/`topic` (the context dict is already passed through as `screen_context`, `api/ws/turns.py` L98).
+- `api/ws/schemas.py` `WsScreenContext`: `compose: Literal["slipping", "decisions", "topic"] | None = None`, `topic: str | None = Field(None, max_length=120)` (the context dict is already passed through as `screen_context`, `api/ws/turns.py` L98); conformance test.
+- `api/eval/schemas.py` `EvalChatRequest.context: dict | None`; `api/eval/router.py` passes it as `config_extra["screen_context"]`.
 - `interface/native.py`: frame key.
 
 ### `ze-personal`
 
-- `agents/companion/agent.py`: tools `show_slipping`, `show_decisions`, `show_topic`; ctor `world_composer: WorldComposer | None = None`; `tool_deps` adds it; instructions block (contract wording): "What's slipping / late / drifting → show_slipping. What needs me / what should I decide → show_decisions. How is <project> going → show_topic. The modules are shown to the user; write one or two sentences from the returned summary only, never list every card, never add items it does not contain. If sources_failed is not empty, say which part you could not read."
-- `plugin.py`: `agent_module_paths` adds `ze_priority.compose.tools` before the companion module.
+- `agents/companion/agent.py`: tools `show_slipping`, `show_decisions`, `show_topic`; ctor `world_composer: WorldComposer | None = None`; `run()` passes `deps={**self.tool_deps(), "world_composer": self._world_composer, "preset": ctx.preset}` (no `BaseAgent.tool_deps` signature change); instructions block (contract wording): "What's slipping / late / drifting → show_slipping. What needs me / what should I decide → show_decisions. How is <project> going → show_topic. The modules are shown to the user; write one or two sentences from the returned summary only, never list every card, never add items it does not contain. If sources_failed is not empty, say which part you could not read."
+- `plugin.py`: unchanged (registration lives in `ze_priority._AGENT_MODULE_PATHS`).
+
+### `ze-priority` registration
+
+- `__init__.py`: `_AGENT_MODULE_PATHS = ["ze_priority.tools", "ze_priority.compose.tools", "ze_priority.agent"]`.
 
 ### Web (minimal, interim)
 
@@ -128,11 +136,11 @@ No `ze_sdk` signature change (companion imports `WorldComposer` from `ze_priorit
 - `features/primitive-tree/ui/ConnectedPrimitiveTree.tsx`: map intents to existing mutations (`confirmLoop`, `dropLoop`, `decideHeldWrite`) and the `action` frame for `approve_gate`; `open` navigates per `notificationHref`-style mapping.
 - `widgets/workflow-executions`: show `failure_summary`; stop parsing `error`.
 - `widgets/goals-overview`: show done/total, next milestone, gate open since, stuck since.
-- `widgets/app-shell/lib/notification-format.ts`: `notificationHref(n)` from the contract table.
+- `widgets/app-shell/lib/notification-format.ts`: owned by phase 183 (`notificationHref`); this phase adds `target_parent_id` to the generated type and extends its table tests. If 184 lands first, implement `notificationHref` here and 183 re-points it.
 
 ### Eval
 
-`eval/scenarios/composed_answers.yaml`: six scenarios (slipping, decisions, topic × EN/PT) sent with `context.compose` (the eval runner's message payload accepts `context`; verify at T001, extend `ze-eval` runner if it does not) asserting `expected_agent: companion`, component types present, and judge criteria "names only items present in the composition; does not list every card; offers at most one next step".
+`eval/scenarios/composed_answers.yaml`: six scenarios (slipping, decisions, topic × EN/PT) sent with a scenario-level `context:` key that the `ze-eval` runner forwards to `EvalChatRequest.context` (new), asserting `expected_agent: companion` (a preset reroute records `routing_method="preset"`, not a forced route), component types present, and judge criteria "names only items present in the composition; does not list every card; offers at most one next step".
 
 ## Project Structure
 
@@ -155,11 +163,12 @@ specs/phases/184-composed-answers-posture/
 ```
 core/kernel/ze-components/ze_components/{claims.py,organisms/{headline,claim_card,claim_timeline}.py,schema.py,tools.py,serialize.py,summary.py,__init__.py}
 core/arbitration/ze-priority/{pyproject.toml,ze_priority/{matching.py,tools.py,turn.py,__init__.py,compose/{types,rules,composer,tools}.py}}
-core/engine/ze-core/ze_core/orchestration/{state.py,nodes/{context,execution,loop_surfacing}.py}
+core/engine/ze-core/ze_core/{orchestration/{state.py,nodes/{context,execution,loop_surfacing}.py},conversation/turn.py}; core/contracts/ze-agents/ze_agents/types.py
 core/automation/ze-automation/ze_automation/{goals/{types,postgres,store,__init__,executor}.py,jobs/stuck_goals.py,workflow/failure.py,rest.py,agents/workflow/tools.py,bootstrap.py}
 core/contracts/ze-proactive/ze_proactive/{types,notification_store,notifier}.py + migrations/versions/zpro005_notification_parent.py
 apps/ze-api/ze_api/{wiring/{container,agents}.py,api/v0/{goals,workflows,notifications}/*.py,api/ws/schemas.py,interface/native.py}
-plugins/ze-personal/ze_personal/{agents/companion/agent.py,plugin.py}
+plugins/ze-personal/ze_personal/agents/companion/agent.py
+apps/ze-api/ze_api/api/eval/{schemas,router}.py; core/ops/ze-eval/ (runner forwards scenario context); docs/eval.md
 packages/ze-ui/src/{generated/*,react/PrimitiveRenderer.tsx}; packages/ze-client/src/generated/*
 apps/ze-web/src/{features/primitive-tree,widgets/{workflow-executions,goals-overview,app-shell/lib}}
 eval/scenarios/composed_answers.yaml
@@ -177,6 +186,6 @@ eval/scenarios/composed_answers.yaml
 
 | Item | Why | Simpler alternative rejected |
 |---|---|---|
-| Preset intent on `context.compose` | A chip is an explicit user choice; routing it by text would need new routing criteria and a paid calibration, and "what am I still sitting with?" already routes to loops | Routing-only (OQ-1 alternative) |
+| Preset intent on `context.compose` | A chip is an explicit user choice; routing it by text would need new routing criteria and a paid calibration, and "what am I still sitting with?" already routes to loops | Routing-only (OQ-1a alternative) |
 | `claim` on every primitive | Gap 2 asks for posture on every descriptor so later phases (W3, W5) can attach it to any module without another contract change | Posture only on the new card (forces another schema break when the canvas renders a chart or table about one claim) |
 | Derived `failure_summary` (no column) | Pure function of fields already stored; works for old rows; no migration | Stored column written at finish time (two writers, backfill) |

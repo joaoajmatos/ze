@@ -6,13 +6,13 @@
 
 ## Summary
 
-Make the Jarvis direction the app's frame without rebuilding any place. Move `jarvis.css` to `shared/styles/ze.css` at `:root`, move the HUD primitives to `shared/ui/hud` and the orb to `widgets/presence`, replace `AppShell` with the HUD chrome (top bar with five places, strip, Presence, sticky Ask bar, phone bottom bar), drive the orb from a pure presence reducer over real WS signals, replace `nav-routes.ts` with `places.ts` plus a redirect table, and mount the old pages as interim sections inside their places. Delete the organ nav, the floating launcher and its overlay, and the prototype's private copies.
+Make the Jarvis direction the app's frame without rebuilding any place. Move `jarvis.css` to `shared/styles/ze.css` at `:root`, move the HUD primitives and the props-only orb/presence components to `shared/ui/hud`, replace `AppShell` with the HUD chrome (top bar with five places, strip, Presence, sticky Ask bar, phone bottom bar), drive the orb from a pure presence reducer over real WS signals, replace `nav-routes.ts` with `places.ts` plus a redirect table, and mount the old pages as interim sections inside their places. Delete the organ nav, the floating launcher and its overlay, and the prototype's private copies.
 
 ## Technical Context
 
 **Language/Version**: TypeScript 5.9, React 19.2, react-router-dom 7.18, Vite, Tailwind 4 (kept only for interim pages), zustand 5.
 
-**Primary Dependencies**: existing only. No new npm dependency. Fonts from Google Fonts (Saira, Michroma, JetBrains Mono).
+**Primary Dependencies**: existing only. No new npm dependency. Fonts self-hosted as woff2 under `apps/ze-web/public/fonts/` (Saira, Michroma, JetBrains Mono, latin subset, OFL licence files beside them).
 
 **Storage**: browser `localStorage` key `ze.palette` (try/catch on every access).
 
@@ -45,12 +45,15 @@ ze-web has no graphify AST coverage worth trusting for TS; the radius below is f
 
 | Symbol changed | Importers |
 |---|---|
-| `shared/config` `navRoutes`, `settingsNavRoute`, `getRoute`, `getRouteLabel`, `settingsDataPath`, group arrays (replaced by `places.ts`) | `app/router/routes.ts`, `widgets/app-shell/ui/{AppShell,TopBar,NotificationBell}.tsx`, `widgets/app-shell/lib/notification-format.ts` (+ test), `features/open-context-overlay/model/resolve-screen.ts`, `features/{export,import,delete}-user-data/api/*.ts`, `widgets/settings-workspace/ui/SettingsWorkspace.tsx`, `widgets/data-overview/ui/DataOverview.tsx`, `widgets/costs-overview/ui/{DayDetailPopover,HeatmapLegend}.tsx`, `shared/config/index.ts`, `shared/config/nav-routes.test.ts` |
-| `features/open-context-overlay` (deleted) | `widgets/goals-overview/ui/GoalsOverview.tsx`, `widgets/workflows-overview/ui/WorkflowsOverview.tsx`, `widgets/costs-overview/ui/CostsOverview.tsx` (+ test), `widgets/plugin-screen/ui/PluginScreen.tsx` (+ test) — `FloatingButton`; `pages/workflow-detail/ui/WorkflowDetailPage.tsx` (+ test) — `useOverlayStore.openForExecution`; `widgets/chat-workspace/ui/ContextOverlay.tsx`; `widgets/app-shell/ui/AppShell.tsx` — `useOverlay` |
+| `shared/config` `navRoutes`, `settingsNavRoute`, `getRoute`, `getRouteLabel`, `settingsDataPath`, `settingsDataSectionId`, group arrays and icons (replaced by `places.ts`) | `git grep` 2026-10-17: `app/router/routes.ts`, `shared/config/index.ts`, `shared/config/nav-routes.ts` (+ test), `widgets/app-shell/ui/{AppShell,TopBar}.tsx`, `widgets/data-overview/ui/DataOverview.tsx`, `widgets/settings-workspace/ui/SettingsWorkspace.tsx`; `features/open-context-overlay/model/resolve-screen.ts` (moves to ask-bar) |
+| `redirectHintPath` / hash deep links | `shared/lib/redirect-hint.ts`, `shared/ui/layout/RedirectHintTarget.tsx`, `shared/config/nav-routes.ts` |
+| Old-path literals and `navigate("/")` meaning chat (FR-014) | `entities/goal/ui/GoalCard.tsx`, `entities/workflow/ui/WorkflowCard.tsx`, `pages/goal-detail/ui/GoalDetailPage.tsx`, `pages/workflow-detail/ui/WorkflowDetailPage.tsx`, `widgets/app-shell/ui/NotificationBell.tsx`, `widgets/app-shell/lib/notification-format.ts` (+ test), `pages/plugin-page/ui/PluginPage.tsx`, `shared/ui/layout/ZeErrorFallback.tsx`, `pages/jarvis/model/world.ts`, `pages/jarvis/hud/Cards.tsx` |
+| `features/open-context-overlay` (deleted) | `widgets/goals-overview/ui/GoalsOverview.tsx`, `widgets/workflows-overview/ui/WorkflowsOverview.tsx`, `widgets/costs-overview/ui/CostsOverview.tsx` (+ test), `widgets/plugin-screen/ui/PluginScreen.tsx` (+ test) — `FloatingButton`; `pages/workflow-detail/ui/WorkflowDetailPage.tsx` (+ test) — `useOverlayStore.openForExecution`; `widgets/chat-workspace/ui/ContextOverlay.tsx` (+ `ContextOverlay.test.tsx`); `widgets/app-shell/ui/AppShell.tsx` — `useOverlay` |
 | `ContextOverlay` (deleted) | `app/router/index.tsx`, `widgets/chat-workspace/index.ts` |
 | `AppShell` (rewritten; `overlay` prop removed) | `app/router/index.tsx`, `widgets/app-shell/ui/AppShell.test.tsx` |
 | `entities/ui-manifest` `mergeMobileNavRoutes` (deleted), `pluginNavRoutes` (kept for the `/:pluginPath` route) | `widgets/app-shell/ui/AppShell.tsx`, `entities/ui-manifest/model/merge-nav-routes.ts` (+ test if any) |
-| `pages/jarvis/hud/*` (moved) | `pages/jarvis/{JarvisShell,views/WorldView,views/AssembleView,hud/Cards,hud/FieldChart}.tsx` |
+| `pages/jarvis/hud/*` (moved) and the `/jarvis/*` route (nested under the shell) | `pages/jarvis/{JarvisApp,JarvisShell,views/WorldView,views/AssembleView,hud/Cards,hud/FieldChart}.tsx`, `app/router/index.tsx` |
+| Cross-floor files shared with phase 184 | `widgets/app-shell/lib/notification-format.ts` (owned here: `notificationHref`), `widgets/goals-overview/ui/GoalsOverview.tsx` (183 T012 removes `FloatingButton` before 184 T026 adds progress fields), docs `AGENTS.md`, `specs/README.md`, `docs/native-interface.md` (one Docs Steward pass for both floors, merge order set by the Maestro) |
 | `app/styles/globals.css` `@theme` (remapped) | every Tailwind class in interim pages (visual only; no API) |
 
 No Python, REST, WS or generated-client change. `make codegen` is not run.
@@ -65,13 +68,13 @@ Copy `pages/jarvis/jarvis.css` verbatim, then: replace the `.jarvis` scope by `:
 
 One file per component from `pages/jarvis/hud/Frame.tsx` and `DotMatrix.tsx`: `Glyph`, `Spark`, `Decode`, `Corners`, `Module`, `Meter`, `Dots`, `CountUp`, `DotMatrix`, plus new thin wrappers that encode the `.ctl` rules: `Control` (`as="button" | "link"`, `pressed`, `current`, `primary`), `CommandChip` (index, label, key hint; keys 1–3 handled by the caller), `Chip` (`solid` | `dotted`). `Decode` and `CountUp` take `reducedMotion` from a `useReducedMotion()` hook in `shared/lib` (moved from `JarvisShell`). `Module`'s `index` prop stays, documented as Assemble-only.
 
-### `widgets/presence/`
+### `shared/ui/hud/presence/`
 
-`Orb.tsx` (unchanged algorithm; colours read from computed `--main/--cream/--coral/--dim` on the root at mount and on palette change via a `MutationObserver` on `data-palette`), `LeaderLine.tsx`, `noise.ts`, `Presence.tsx` (props: `state`, `phrase`, `compact`; the session clock moves with it). The `statePhrase(state, world)` prototype helper is replaced by the phrase from `usePresence()`.
+Props-only, so it lives in `shared` (FSD forbids `widgets/app-shell` importing another widget). `Orb.tsx` (unchanged algorithm; colours read from computed `--main/--cream/--coral/--dim` on the root at mount and on palette change via a `MutationObserver` on `data-palette`), `LeaderLine.tsx`, `noise.ts`, `Presence.tsx` (props: `state`, `phrase`, `compact`; the session clock moves with it). The `statePhrase(state, world)` prototype helper is replaced by the phrase from `usePresence()`.
 
 ### `entities/presence/`
 
-`model/presence.ts`: `type PresenceEvent`, `nextPresence(state, event, now)` pure; `done` carries `until` and the hook moves it to `idle` with one timeout. `model/usePresence.ts`: subscribes to `useWsStore` status and `useFrame("typing" | "token" | "message" | "error")`, plus `ask_*` events dispatched by `features/ask-bar` through `presenceActions`. Frame field names follow the existing `WsInboundFrame` types from `@myguyze/ze-client`.
+`model/presence.ts`: `type PresenceEvent`, `nextPresence(state, event, now)` pure; `done` carries `until` and the hook moves it to `idle` with one timeout. `model/usePresence.ts`: derives `turn_*` events from the **active thread's** entries in `useWsStore` (`thinkingThreads`, `typingTextThreads`, `interruptedThreads`, the streaming flag for that thread) and the connection status; it ignores replayed unread messages, proactive messages, notifications and other threads. The active thread id comes from the session store `useChatWorkspace` reads (`widgets/chat-workspace/model/useChatWorkspace.ts`); if that state lives in the widget, lift the active-thread id into `entities/session` first (no widget import from an entity). `ask_*` events are dispatched by `features/ask-bar` through `presenceActions`.
 
 ### `features/ask-bar/`
 
@@ -83,7 +86,7 @@ One file per component from `pages/jarvis/hud/Frame.tsx` and `DotMatrix.tsx`: `G
 
 ### Router (`app/router/`)
 
-`routes.ts` builds children from `places.ts`: `index` → `WorldInterim`; `world/priority`; `ask`, `ask/:threadId`; `doing` (+ `goals`, `goals/:goalId`, `workflows`, `workflows/:workflowId`, `skills`, `procedures`, `workspace`); `mind` (+ `graph`); `governance` (+ `data`, `settings`); `/:pluginPath`. Redirects are `loader: ({ params, request }) => redirect(target(params) + url.search + url.hash)` generated from the table in `places.ts`. `/jarvis/*` stays (FR-015 note). `ask/:threadId` selects that thread in `ChatWorkspace` if it supports a thread param today; otherwise it is declared and mapped to `/ask` with the thread preselected through the session store (decide at T001 from the code; report the choice).
+`routes.ts` builds children from `places.ts`: `index` → `WorldInterim`; `world/priority`; `ask`, `ask/:threadId`; `doing` (+ `goals`, `goals/:goalId`, `workflows`, `workflows/:workflowId`, `skills`, `procedures`, `workspace`); `mind` (+ `graph`); `governance` (+ `data`, `settings`); `/:pluginPath`. Redirects are element routes generated from the table in `places.ts`: `{ path: from, element: <RedirectTo to={target} /> }`, where `RedirectTo` (in `app/router/`) reads `useParams()` and `useLocation()` and renders `<Navigate replace to={target(params) + location.search + location.hash} />`. Not loaders: react-router 7.18 strips the hash from a client loader's request URL. `jarvis/*` is a child of the shell route (no longer top-level). `ask/:threadId` passes `threadId` to `ChatWorkspace` (`useChatWorkspace` already accepts an override).
 
 ### Interim places (`pages/<place>/`)
 
@@ -110,10 +113,12 @@ apps/ze-web/src/
 ├── shared/config/places.ts (+ test)           # NEW, replaces nav-routes.ts
 ├── shared/lib/{use-reduced-motion,use-narrow}.ts  # NEW (moved hooks)
 ├── shared/ui/hud/*.tsx (+ tests)              # NEW (moved primitives)
+├── shared/ui/hud/presence/                    # NEW (Orb, Presence, LeaderLine, noise)
+├── public/fonts/                              # NEW (self-hosted woff2 + OFL)
+├── main.tsx                                   # palette applied before createRoot
 ├── entities/presence/                         # NEW
 ├── features/ask-bar/                          # NEW (resolve-screen moved here)
 ├── features/choose-palette/                   # NEW
-├── widgets/presence/                          # NEW (Orb, Presence, LeaderLine, noise)
 ├── widgets/app-shell/                         # rewritten
 ├── pages/{world,ask,doing,mind,governance}/   # NEW interim places
 └── pages/jarvis/                              # re-pointed at shared/ui; css + hud copies deleted
