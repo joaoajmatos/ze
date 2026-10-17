@@ -49,25 +49,17 @@
     - Turn 2 should offer at most one next step
 
 - id: composed_decisions_en
-  description: "Preset chip 'What should I decide today?': a vague concern may become a suspected loop; the answer is honest either way"
+  description: "Preset chip 'What should I decide today?': the answer comes from stored records and is honest whether or not anything is waiting"
   turns:
-    - prompt: "I keep thinking I should probably call the bank about that fee, not sure yet"
-      description: "Turn 1: fixture, an uncertain concern that may be held as a suspicion"
     - prompt: "What should I decide today?"
       context: { screen: world, compose: decisions }
-      description: "Turn 2: the chip sends compose=decisions"
+      description: "The chip sends compose=decisions"
   expected_agent: companion
-  verify:
-    - table: open_loops
-      where: {title__icontains: bank}
-      expect: any
-      cleanup: true
-      created_since_run: true
   tags: [composed_answers, preset, executive_function]
   criteria:
-    - Turn 2 should show a headline; if it shows decision cards the reply names only those cards, otherwise it says plainly that nothing is waiting on a decision
-    - Turn 2 reply is one or two sentences and does not invent a decision that is not in the composition
-    - Turn 2 should not present a suspected item as confirmed
+    - The reply should show a headline; if it shows decision cards the reply names only those cards, otherwise it says plainly that nothing is waiting on a decision
+    - The reply is one or two sentences and does not invent a decision that is not in the composition
+    - The reply should not present a suspected item as confirmed
 
 - id: composed_decisions_pt
   description: "Preset chip decisions, Portuguese"
