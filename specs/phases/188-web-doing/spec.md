@@ -54,4 +54,4 @@ Doing answers what runs without the user, what it did, and what it waits for, at
 
 ## Owning packages
 
-ze-web only; no backend, no migration.
+ze-web; plus one small backend task: `fetch_context` builds a goal screen note from `screen_context.goal_id` (like the workflow note in `ze_core/orchestration/nodes/context.py`), so asking from a goal page lets Ze answer about "this goal" (raised in the 183 review: the Ask overlay already sends `goal_id`). No migration.
