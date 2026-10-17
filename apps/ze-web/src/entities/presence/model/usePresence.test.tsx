@@ -88,6 +88,22 @@ describe("usePresence", () => {
     expect(result.current.orb).toBe("thinking");
   });
 
+  it("goes idle when the thread stops being busy with no closing frame (a confirmation is waiting)", () => {
+    const { result } = renderHook(() => usePresence("t1"));
+    act(() => useWsStore.setState({ thinkingThreads: { t1: true } }));
+    expect(result.current.orb).toBe("thinking");
+    act(() => useWsStore.setState({ thinkingThreads: { t1: false } }));
+    expect(result.current.orb).toBe("idle");
+  });
+
+  it("keeps the done bloom when the busy flag falls after the message frame", () => {
+    const { result } = renderHook(() => usePresence("t1"));
+    act(() => useWsStore.setState({ thinkingThreads: { t1: true } }));
+    emit(assistant("t1"));
+    act(() => useWsStore.setState({ thinkingThreads: { t1: false } }));
+    expect(result.current.orb).toBe("done");
+  });
+
   it("an error frame for the thread returns to idle", () => {
     const { result } = renderHook(() => usePresence("t1"));
     emit({ type: "typing", thread_id: "t1" });

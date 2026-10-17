@@ -181,6 +181,70 @@ describe("AskOverlay", () => {
     expect(mocks.send).toHaveBeenCalledWith(expect.objectContaining({ type: "confirm", id: "req-1", choice: "approve", thread_id: "t1" }));
   });
 
+  it("shows what is waiting and why, and sends it once the turn ends", async () => {
+    useWsStore.setState({ thinkingThreads: { t1: true } });
+    setup();
+    act(() => void useAskOverlay.getState().submit("hold this", ROUTE));
+    const row = await screen.findByText(/Waiting to send · Ze is answering/);
+    expect(row.closest("p")).toHaveTextContent("hold this");
+    act(() => useWsStore.setState({ thinkingThreads: { t1: false } }));
+    await waitFor(() => expect(screen.queryByText(/Waiting to send/)).not.toBeInTheDocument());
+  });
+
+  it("puts an unsent message back in the bar when closed", async () => {
+    useWsStore.setState({ isConnected: false });
+    setup();
+    act(() => void useAskOverlay.getState().submit("do not lose me", ROUTE));
+    await screen.findByText(/Waiting to send · Offline/);
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(useAskOverlay.getState()).toMatchObject({ open: false, outbox: null, draft: "do not lose me" });
+  });
+
+  it("does not send into a thread whose history is still loading, and hides that history", async () => {
+    mocks.history = [msg("old-1", "assistant", "ancient answer")];
+    let release!: () => void;
+    const { listMessages } = await import("@myguyze/ze-client");
+    vi.mocked(listMessages).mockImplementationOnce(
+      () => new Promise((resolve) => { release = () => resolve({ data: mocks.history } as never); }) as never,
+    );
+    setup();
+    act(() => void useAskOverlay.getState().submit("slow", ROUTE));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 3000));
+    });
+    expect(sentMessages()).toHaveLength(0);
+    await screen.findByText(/Waiting to send/);
+    act(() => release());
+    await waitFor(() => expect(sentMessages()).toHaveLength(1));
+    expect(screen.queryByText("ancient answer")).not.toBeInTheDocument();
+  }, 10_000);
+
+  it("renders the components of a reply", async () => {
+    setup();
+    act(() => void useAskOverlay.getState().submit("show me", ROUTE));
+    await waitFor(() => expect(sentMessages()).toHaveLength(1));
+    emit({
+      type: "message",
+      message: {
+        ...msg("a-2", "assistant", "Here you go."),
+        components: [{ type: "metric", props: { label: "Open loops", value: "3" } }],
+      },
+    });
+    expect(await screen.findByText("Here you go.")).toBeInTheDocument();
+  });
+
+  it("is a named dialog and returns focus to the Ask bar on Esc", async () => {
+    const field = document.createElement("input");
+    field.setAttribute("data-ask-input", "");
+    document.body.appendChild(field);
+    setup();
+    act(() => void useAskOverlay.getState().submit("hi", ROUTE));
+    expect(await screen.findByRole("dialog", { name: "Ask" })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(field).toHaveFocus();
+    field.remove();
+  });
+
   it("Open in Ask goes to the thread and closes", async () => {
     setup();
     act(() => void useAskOverlay.getState().submit("hi", ROUTE));

@@ -73,6 +73,7 @@ export function useMessages(threadId: string) {
       return history;
     } catch {
       loadedThreadRef.current = null;
+      setHistoryLoaded(true);
       return null;
     }
   }, [threadId]);

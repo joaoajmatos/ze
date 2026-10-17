@@ -1,6 +1,7 @@
 import { useEffect, useRef, type FormEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { presenceActions, usePresenceStore } from "@/entities/presence";
+import { useSendNotice } from "@/shared/lib";
 import { Control } from "@/shared/ui";
 import { useAskOverlay } from "../model/ask-overlay";
 import { resolveScreenContext } from "../model/resolve-screen";
@@ -36,7 +37,9 @@ export function AskBar() {
     e.preventDefault();
     const trimmed = text.trim();
     if (!trimmed || offline) return;
-    submit(trimmed, resolveScreenContext(pathname, search));
+    if (!submit(trimmed, resolveScreenContext(pathname, search))) {
+      useSendNotice.getState().showNotice("Ze has not sent your last message yet. Wait for it, then send this one.");
+    }
   }
 
   const label = offline ? "Ask Ze — Ze is offline" : "Ask Ze";

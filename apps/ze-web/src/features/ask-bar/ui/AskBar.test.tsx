@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
+import { useSendNotice } from "@/shared/lib";
 import { INITIAL_PRESENCE, usePresenceStore } from "@/entities/presence";
 import { askAbout, useAskOverlay } from "../model/ask-overlay";
 import { AskBar } from "./AskBar";
@@ -55,6 +56,15 @@ describe("AskBar", () => {
     submit();
     expect(useAskOverlay.getState().outbox?.text).toBe("one");
     expect(input()).toHaveValue("two");
+  });
+
+  it("says so when a second message is refused", () => {
+    renderAt("/");
+    type("one");
+    submit();
+    type("two");
+    submit();
+    expect(useSendNotice.getState().notice).toMatch(/not sent your last message/);
   });
 
   it("is prefilled by askAbout without queueing", () => {

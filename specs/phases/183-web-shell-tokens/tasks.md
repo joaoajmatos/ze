@@ -63,16 +63,16 @@
 
 ## Phase 7: Polish and gates [ENG]
 
-- [ ] T018 [ENG] [WEB] Reduced-motion and keyboard pass: tab order top bar → presence → hero → Ask bar → bottom bar; focus ring per DESIGN.md on every control; `/` shortcut; no `requestAnimationFrame` loop under reduced motion (SC-006).
-- [ ] T019 [ENG] [WEB] Captures at 1440×900 and 390×844 of `/`, `/ask`, `/doing`, `/doing/goals/<seeded id>`, `/mind`, `/governance`, `/governance/settings` on `make dev-full` with seed data: zero console errors, `scrollWidth ≤ innerWidth`, every interactive element ≥ 44×44 (script the check in the capture run), plus a recorded clip of the idle orb's curious-pet behaviour (US7). Run the impeccable detector on `shared/ui/hud`, `widgets/app-shell`, `features/ask-bar` (0 findings) and an impeccable critique of the shell (≥ T001 baseline). Attach results to the Handoffs note.
-- [ ] T020 [ENG] [PLATFORM] Gates: `make test-web`, `make typecheck-web`, `make web-build`, `cd apps/ze-web && bun run lint`. Record command, result and commit in the Handoffs note.
+- [x] T018 [ENG] [WEB] Reduced-motion and keyboard pass: tab order top bar → presence → hero → Ask bar → bottom bar; focus ring per DESIGN.md on every control; `/` shortcut; no `requestAnimationFrame` loop under reduced motion (SC-006).
+- [x] T019 [ENG] [WEB] Captures at 1440×900 and 390×844 of `/`, `/ask`, `/doing`, `/doing/goals/<seeded id>`, `/mind`, `/governance`, `/governance/settings` on `make dev-full` with seed data: zero console errors, `scrollWidth ≤ innerWidth`, every interactive element ≥ 44×44 (script the check in the capture run), plus a recorded clip of the idle orb's curious-pet behaviour (US7). Run the impeccable detector on `shared/ui/hud`, `widgets/app-shell`, `features/ask-bar` (0 findings) and an impeccable critique of the shell (≥ T001 baseline). Attach results to the Handoffs note.
+- [x] T020 [ENG] [PLATFORM] Gates: `make test-web`, `make typecheck-web`, `make web-build`, `cd apps/ze-web && bun run lint`. Record command, result and commit in the Handoffs note.
 
 ## Phase 8: Docs [DOCS]
 
-- [ ] T021 [P] [DOCS] `docs/frontend.md`: shell, five places, `shared/styles/ze.css`, `shared/ui/hud`, presence states and their signals, redirect table, interim places and which phase replaces each. Follow the `doc-style` skill.
-- [ ] T022 [P] [DOCS] `DESIGN.md` "The orb" section: idle row gains the curious-pet gaze (follow, peer, glance, startle, blink, doze; idle only; reduced motion off), the gaze spring is the one under-damped spring, and the Overview principle notes the idle gaze is the one decoration (never carries a fact, never overrides a state). `apps/ze-web/README.md` (routes, `DESIGN.md` pointer); `docs/native-interface.md` (floating launcher removed; the Ask bar opens the contextual overlay, which sends on the thread selected in Ask with `context.screen` and route ids; the exchange is an ordinary Ask thread); `DESIGN.md` Navigation section (five places, phone bottom bar, no prototype group).
-- [ ] T023 [DOCS] `AGENTS.md`: Learned Workspace Facts line on web nav groups → five places; phase table row 183; `specs/README.md` index row 183. Set this spec's status to Implemented only after T020 passes.
-- [ ] T024 [DOCS] Coverage check: `git diff main...HEAD --stat`; every changed public surface (routes, shell, tokens path) is reflected in the docs above; list any gap in the Handoffs note.
+- [x] T021 [P] [DOCS] `docs/frontend.md`: shell, five places, `shared/styles/ze.css`, `shared/ui/hud`, presence states and their signals, redirect table, interim places and which phase replaces each. Follow the `doc-style` skill.
+- [x] T022 [P] [DOCS] `DESIGN.md` "The orb" section: idle row gains the curious-pet gaze (follow, peer, glance, startle, blink, doze; idle only; reduced motion off), the gaze spring is the one under-damped spring, and the Overview principle notes the idle gaze is the one decoration (never carries a fact, never overrides a state). `apps/ze-web/README.md` (routes, `DESIGN.md` pointer); `docs/native-interface.md` (floating launcher removed; the Ask bar opens the contextual overlay, which sends on the thread selected in Ask with `context.screen` and route ids; the exchange is an ordinary Ask thread); `DESIGN.md` Navigation section (five places, phone bottom bar, no prototype group).
+- [x] T023 [DOCS] `AGENTS.md`: Learned Workspace Facts line on web nav groups → five places; phase table row 183; `specs/README.md` index row 183. Set this spec's status to Implemented only after T020 passes.
+- [x] T024 [DOCS] Coverage check: `git diff main...HEAD --stat`; every changed public surface (routes, shell, tokens path) is reflected in the docs above; list any gap in the Handoffs note.
 
 ---
 

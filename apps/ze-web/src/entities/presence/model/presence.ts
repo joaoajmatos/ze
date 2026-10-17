@@ -13,6 +13,7 @@ export type PresenceEvent =
   | { type: "turn_message" }
   | { type: "turn_error" }
   | { type: "turn_reset" }
+  | { type: "turn_end" }
   | { type: "settle" }
   | { type: "set_world_signal"; orb: "attention" | "acting" | "assembling" | null };
 
@@ -98,6 +99,11 @@ export function nextPresence(state: PresenceState, event: PresenceEvent, now: nu
     case "turn_message":
       if (base.turn === "none") return state;
       next = { ...base, turn: "none", turnPhrase: null, doneUntil: now + DONE_BLOOM_MS };
+      break;
+    case "turn_end":
+      // The thread stopped being busy with no closing frame (a confirmation, a timeout). A bloom in progress stays.
+      if (base.turn === "none") return state;
+      next = { ...base, turn: "none", turnPhrase: null };
       break;
     case "turn_error":
     case "turn_reset":

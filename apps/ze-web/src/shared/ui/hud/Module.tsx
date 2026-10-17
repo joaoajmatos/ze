@@ -19,7 +19,7 @@ interface ModuleProps {
 export function Module({ label, index, tone = "default", children, className = "", style, as = "section", headless = false, tools }: ModuleProps) {
   const Tag = as;
   return (
-    <Tag className={`mod ${tone === "hot" ? "hot" : tone === "dotted" ? "dotted" : tone === "cream" ? "cream" : ""} ${headless ? "headless" : ""} ${tools ? "has-tools" : ""} ${className}`} style={style} aria-label={label}>
+    <Tag className={`mod ${tone === "hot" ? "hot" : tone === "dotted" ? "dotted" : tone === "cream" ? "cream" : ""} ${headless ? "headless" : ""} ${tools ? "has-tools" : ""} ${className}`} style={style} aria-label={label} role={as === "div" ? "group" : undefined}>
       <Corners />
       <header className="mod-head">
         <h2 className={`lbl ${tone === "hot" ? "hot" : tone === "cream" ? "ink" : ""}`}>{label}</h2>

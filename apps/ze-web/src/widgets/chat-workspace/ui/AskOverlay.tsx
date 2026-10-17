@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAskOverlay } from "@/features/ask-bar";
 import { ConfirmationCard } from "@/features/respond-to-confirmation";
@@ -7,9 +7,6 @@ import { askPath, placeOf } from "@/shared/config";
 import { Control, Module } from "@/shared/ui";
 import { useChatWorkspace } from "../model/useChatWorkspace";
 import { ChatMessageList } from "./ChatMessageList";
-
-/** How long to wait for the thread's history before sending anyway. */
-const HISTORY_GRACE_MS = 2500;
 
 /**
  * The contextual overlay behind the Ask bar. It is an ordinary Ask thread: the thread selected in
@@ -25,12 +22,7 @@ function AskOverlayPanel() {
   const chat = useChatWorkspace({ active: true, context: outbox?.context, threadId });
   const { historyLoaded, isConnected, isThinking, sendMessage, messages } = chat;
 
-  const [waited, setWaited] = useState(false);
-  useEffect(() => {
-    const id = window.setTimeout(() => setWaited(true), HISTORY_GRACE_MS);
-    return () => window.clearTimeout(id);
-  }, [threadId]);
-  const ready = historyLoaded || waited;
+  const ready = historyLoaded;
 
   // Messages already in the thread when the overlay opened stay in Ask; the baseline resets on New chat
   // because the thread changes and this component keys on it.
@@ -46,20 +38,28 @@ function AskOverlayPanel() {
     if (sendMessage(item.text)) useAskOverlay.getState().ack(item.id);
   }, [outbox, ready, isConnected, isThinking, sendMessage]);
 
+  // The Ask bar stays the input, so focus stays there while the overlay is open and returns there on close.
+  const dismiss = useCallback(() => {
+    close();
+    document.querySelector<HTMLElement>("[data-ask-input]")?.focus();
+  }, [close]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") dismiss();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [close]);
+  }, [dismiss]);
+
+  const waitingFor = !outbox ? null : !isConnected ? "Offline" : isThinking ? "Ze is answering" : !ready ? "Loading the conversation" : null;
 
   return (
-    <div className="ask-overlay">
+    <div className="ask-overlay" role="dialog" aria-label="Ask">
       <Module
         label="Ask"
         tools={
-          <Control aria-label="Close" onClick={close}>
+          <Control aria-label="Close" onClick={dismiss}>
             ✕
           </Control>
         }
@@ -90,6 +90,12 @@ function AskOverlayPanel() {
           onRetry={chat.retry}
           className="ask-overlay-list"
         />
+        {outbox && waitingFor && (
+          <p className="ask-overlay-queued" role="status">
+            <span className="lbl">Waiting to send · {waitingFor}</span>
+            {outbox.text}
+          </p>
+        )}
         {chat.pendingConfirms.map((pending) => (
           <ConfirmationCard
             key={pending.id}

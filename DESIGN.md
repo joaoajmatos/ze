@@ -159,9 +159,9 @@ components:
 # Design System: Ze
 
 Source of truth for the web app (`apps/ze-web`). The reference implementation is the Jarvis
-surface at `apps/ze-web/src/pages/jarvis/` (`jarvis.css` holds every token below as a CSS custom
-property on `.jarvis`). Build from this file and that CSS; when they disagree, this file wins and the
-CSS gets fixed.
+surface at `apps/ze-web/src/pages/jarvis/` (route `/jarvis`). Every token below is a CSS custom
+property on `:root` in `apps/ze-web/src/shared/styles/ze.css`. Build from this file and that CSS;
+when they disagree, this file wins and the CSS gets fixed.
 
 ## Overview
 
@@ -193,7 +193,7 @@ the home screen.
 - Hairline frames with bracketed corners; zero radius everywhere
 - Dot-matrix display type for the big moments, Michroma micro-labels, Saira body, JetBrains Mono readouts
 - Honesty visuals travel with every claim: filled told, half inferred, dashed suspected, hollow goal, coral slipped, dotted trail for decayed confidence
-- The orb is the presence: nine states, continuous spring morphs, a heartbeat that the rest of the page can sync to
+- The orb is the presence: nine states, continuous spring morphs, a heartbeat that the rest of the page can sync to. Its idle gaze is the one decoration: it never carries a fact and never overrides a state
 
 ## Colors
 
@@ -287,7 +287,7 @@ Left-aligned command rows for questions and navigation: a mono index ("01"), the
 ### Chips (`.chip`)
 Michroma 0.5625rem / 0.16em uppercase, dim, 1px hair border, 4px 7px padding. `.solid` for a stated source, `.dotted` (dashed border) for an inference ("asked, not stated", "risk is Ze's read"). Chips carry provenance and posture only; no decorative badges.
 
-### Modules (`.mod`, `hud/Frame.tsx` `Module`)
+### Modules (`.mod`, `shared/ui/hud/Module.tsx`)
 - **Head:** `h2.lbl` label (orchid; cream for `tone="cream"`, coral for `tone="hot"`), right slot with tools (pin, dismiss, 44px). Instrument ids (01, 02 …) appear only on the Assemble canvas, where the index is the component's position in the answer (user decision 2026-10-17); World, Doing, Mind and Governance modules carry no coordinate. Label never wraps (ellipsis); the right slot never shrinks.
 - **Body:** rows (`.row`: 1fr auto grid, 7px padding, 14% hairline between), `.rule` dividers that draw on (scaleX, 700ms), meters, sparklines, chips, actions.
 - **Tones:** default; `cream` (needs the user: gates, confirmations); `hot` (slipped, failed); `dotted` (suspected: dashed frame).
@@ -303,16 +303,16 @@ Title in cream with a claim glyph (`.glyph`: filled told, half inferred, dashed 
 Zero radius, 1px `--hair-strong` border, transparent background, Saira body text in cream, placeholder dim, 44px height, focus ring 1px cream offset 3px (global `:focus-visible`). Caret, selection and scrollbars are themed from `--main`.
 
 ### Navigation
-Top bar: dot-matrix "ZE" brand, view tabs (World, Assemble), then the prototype group (palette, orb state, ambience) behind a `Proto` label. Phone: tabs stay, the prototype group collapses into `<details>`.
+Top bar: dot-matrix "ZE" brand, the five places as tabs (World, Ask, Doing, Mind, Governance), the notification bell and a connection dot. No prototype controls: the palette is a Governance setting. Phone (1023px and below): the tabs leave the top bar and a fixed bottom bar shows the five places as icon and label, each a 44px target. The Ask bar sits directly above it. Inside a place, sections are a row of tabs (`SectionTabs`).
 
 ### Presence module (signature)
 A framed module at the top of the left rail: "● Online" and the dot-matrix session clock in the head, the orb (184px; 150px compact) with no waveform strip under it (speaking shows through the orb's own pulse), and a footer with a `presence` label and the state phrase ("2 promises slipping", "composing", "assembling the answer") with `aria-live` only for attention, done and error.
 
-### The orb (`hud/Orb.tsx`, signature)
+### The orb (`shared/ui/hud/presence/Orb.tsx`, signature)
 A dot-matrix sphere on a 29-dot grid drawn on canvas: denser and brighter toward a lit cream core, a drifting key light, a limb rim. Every dot keeps its grid home and springs (K=110, critically damped) toward where the current state wants it. A state change reaches the rim 320ms after the core (`stagger = (0.75·r + 0.25·seed) × 320ms`), so every transition is one continuous morph, never a cut or crossfade. Colours mix in oklab; coral drains back at a quarter of the normal rate.
 
 States and their life:
-- **idle:** breath (±1.8% radius at 0.9 Hz), a ripple crossing the sphere, a limb wobble from simplex noise.
+- **idle:** breath (±1.8% radius at 0.9 Hz), a ripple crossing the sphere, a limb wobble from simplex noise. The orb also acts like a curious pet (`gaze.ts`, tuned only by `GAZE_PERSONALITY`). Its dense core and lit centre shift toward the pointer or the keyboard-focused element as a parallax offset (at most 18% of the radius, the outline stays round) with a lean of at most 3%. It moves on one under-damped spring, the only spring in the HUD that overshoots. It glances rather than locks: after 2 to 4 seconds on one spot it loses interest and drifts back to centre. After about a second on a spot it peers (a little further, slightly brighter). A new notification or an opening overlay makes it glance there. A fast flick startles it (the sphere widens for 250ms). A jump to a far target makes it double-blink. After 60 seconds without input it dozes: slower breath, up to 20% dimmer, never coral, never jittering, and the phrase does not change, so dozing never reads as offline. Any input wakes it with a small perk-up. The gaze runs in the idle state only and never in another state. Reduced motion turns it off.
 - **listening:** gathers 7% and leans toward the Ask field; a cream ring runs inward; tones run Ultraviolet at the limb to Orchid at the core.
 - **thinking:** slow internal swirl (core one way, mid-depth the other) under a scanning light; the three tones swirl.
 - **speaking:** pulses with the voice amplitude; a cream-cored waveform crosses the equator; ripples carry the tones.
@@ -323,8 +323,8 @@ States and their life:
 - **error:** dim, flickering, jittering, a coral limb.
 Reduced motion: one still frame of the sphere (attention = a faint static ember), the loop stops. The canvas pauses when off-screen or when the tab is hidden.
 
-### Attention line (`hud/LeaderLine.tsx`)
-When something has slipped on the world view, a 1px coral line (35% base plus a 2px flowing dash, 2.2 s) runs from the orb core to the centre of the slipped mark (never its label), with a pulsing cap on the mark. It lives in a fixed SVG inside the `.jarvis` root, is measured with `getBoundingClientRect` and updated through refs inside rAF on scroll, resize and layout change (no React render). The mark and its label pulse in sync through `--beat-offset` (the orb's absolute clock). Desktop only; phones pulse the row instead.
+### Attention line (`shared/ui/hud/presence/LeaderLine.tsx`)
+When something has slipped on the world view, a 1px coral line (35% base plus a 2px flowing dash, 2.2 s) runs from the orb core to the centre of the slipped mark (never its label), with a pulsing cap on the mark. It lives in a fixed SVG on the document body, is measured with `getBoundingClientRect` and updated through refs inside rAF on scroll, resize and layout change (no React render). The mark and its label pulse in sync through `--beat-offset` (the orb's absolute clock). Desktop only; phones pulse the row instead.
 
 ### The field chart (`hud/FieldChart.tsx`, signature)
 "Time left × how sure." x = time left in bands: Slipped (−7d..now, coral hatch), a glowing NOW line, This week (0..7d), Later (7..30d, log), No deadline (a column at the right). y = confidence 0..1. Mark = claim kind (filled told/evidenced, half inferred, dashed suspected, hollow diamond goal); colour = state (coral slipped, dim suspected). A dotted trail above a mark shows where confidence stood before evidence aged. Labels are px-true, placed right or left with collision avoidance and a 1px leader when displaced. Hover or focus shows a callout (title, state · kind · posture, sure · age · deadline); click or Enter selects and opens the readout below the chart. Legend under the chart: told · evidenced, inferred, suspected, goal, slipped, "dotted trail = sureness decayed as evidence aged".

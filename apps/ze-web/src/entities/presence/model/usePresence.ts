@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useFrame, useWsStore } from "@/shared/api";
 import { usePresenceStore } from "./store";
 
@@ -21,6 +21,14 @@ export function usePresence(activeThreadId: string | null) {
   useEffect(() => {
     dispatch({ type: "turn_reset" });
   }, [activeThreadId, dispatch]);
+
+  // Busy flag fell with no message or error frame (a confirmation is waiting, the watchdog fired,
+  // a retry failed): the turn is over as far as Ze is concerned. A bloom from a message frame stays.
+  const wasThinking = useRef(false);
+  useEffect(() => {
+    if (wasThinking.current && !thinking) dispatch({ type: "turn_end" });
+    wasThinking.current = thinking;
+  }, [thinking, dispatch]);
 
   useEffect(() => {
     if (thinking && isConnected) dispatch({ type: "turn_thinking", text: typingText });

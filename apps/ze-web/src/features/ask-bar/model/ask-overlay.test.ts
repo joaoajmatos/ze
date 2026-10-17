@@ -77,12 +77,12 @@ describe("ask overlay store", () => {
     expect(useAskOverlay.getState().draft).toBe("two");
   });
 
-  it("close drops the queue and explicit context but not the typed draft", () => {
+  it("close puts an unsent message back in the draft instead of losing it", () => {
     askAbout({ text: "x", context: { screen: "mind" } });
     useAskOverlay.getState().submit("y", route);
     useAskOverlay.getState().setDraft("keep me");
     useAskOverlay.getState().close();
     const s = useAskOverlay.getState();
-    expect(s).toMatchObject({ open: false, outbox: null, explicitContext: null, draft: "keep me" });
+    expect(s).toMatchObject({ open: false, outbox: null, explicitContext: null, draft: "y keep me" });
   });
 });

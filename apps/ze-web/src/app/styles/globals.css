@@ -53,6 +53,12 @@
   --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Interim pages set text-foreground on a main-coloured fill; cream on orchid fails contrast, so the fill takes the field colour. */
+.bg-plum-voltage,
+.bg-primary {
+  color: var(--field);
+}
+
 * {
   box-sizing: border-box;
 }

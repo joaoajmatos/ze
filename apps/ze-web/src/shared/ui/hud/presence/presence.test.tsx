@@ -68,7 +68,10 @@ describe("Presence", () => {
   ])("%s announces %s", (state, live) => {
     mm = mockMatchMedia({});
     render(<Presence state={state} phrase="the phrase" />);
-    expect(screen.getByText("the phrase")).toHaveAttribute("aria-live", live);
+    const region = screen.getByRole("status");
+    expect(region).toHaveAttribute("aria-live", "polite");
+    expect(region).toHaveTextContent(live === "polite" ? "the phrase" : "");
+    expect(screen.getByText("the phrase", { selector: ".t" })).not.toHaveAttribute("aria-live");
   });
 
   it("shows Offline in the head only for error", () => {

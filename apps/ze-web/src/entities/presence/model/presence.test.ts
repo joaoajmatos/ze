@@ -70,6 +70,16 @@ describe("nextPresence", () => {
     expect(s.phrase).toBe("ready");
   });
 
+  it("turn_end clears a turn that ended with no closing frame", () => {
+    expect(run([{ type: "turn_thinking" }, { type: "turn_end" }], online).orb).toBe("idle");
+    expect(run([{ type: "turn_thinking" }, { type: "turn_token" }, { type: "turn_end" }], online).orb).toBe("idle");
+  });
+
+  it("turn_end keeps a bloom in progress", () => {
+    const s = run([{ type: "turn_thinking" }, [{ type: "turn_message" }, T0], [{ type: "turn_end" }, T0 + 10]], online);
+    expect(s.orb).toBe("done");
+  });
+
   it("turn_reset drops an in-flight turn", () => {
     expect(run([{ type: "turn_thinking" }, { type: "turn_reset" }], online).orb).toBe("idle");
   });

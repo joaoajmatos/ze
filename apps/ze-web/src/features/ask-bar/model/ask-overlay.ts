@@ -45,7 +45,9 @@ export const useAskOverlay = create<AskOverlayState>((set, get) => ({
   openWith: (prefill, context) =>
     set((s) => ({ open: true, draft: prefill ?? s.draft, focusTick: s.focusTick + 1, explicitContext: context })),
   ack: (id) => set((s) => (s.outbox?.id === id ? { outbox: null, explicitContext: null } : s)),
-  close: () => set({ ...INITIAL }),
+  // An unsent message goes back into the bar rather than vanishing.
+  close: () =>
+    set((s) => ({ ...INITIAL, draft: s.outbox ? [s.outbox.text, s.draft].filter(Boolean).join(" ") : s.draft })),
   reset: () => set({ ...INITIAL, draft: "", focusTick: 0 }),
 }));
 

@@ -51,8 +51,10 @@ export const Presence = forwardRef<PresenceHandle, PresenceProps>(function Prese
       </div>
       <footer className="presence-foot">
         <span className="lbl">presence</span>
-        <span className={`t ${state === "attention" ? "hot" : ""}`} aria-live={LIVE_STATES.includes(state) ? "polite" : "off"}>
-          {phrase}
+        <span className={`t ${state === "attention" ? "hot" : ""}`}>{phrase}</span>
+        {/* The live region stays mounted so a screen reader hears its text change. */}
+        <span className="sr-only" role="status" aria-live="polite">
+          {LIVE_STATES.includes(state) ? phrase : ""}
         </span>
       </footer>
     </section>

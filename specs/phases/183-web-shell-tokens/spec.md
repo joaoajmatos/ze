@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Ready to implement (approved by the Floor Reviewer Gauge, c9639732; user answers recorded 2026-10-17, OQ-2 amended — re-check pending)
+**Status**: Implemented (gates green; reviewed by Gauge)
 
 **Input**: Maestro brief 2026-10-17: "turn the plan into speckit phases … 183 W1 Shell and tokens." Source: `apps/ze-web/.impeccable/plan/overhaul-plan.md` section e, Phase W1, with the user's decisions in section f ("go with the recommendations", all nine accepted). Design system: `DESIGN.md` (repo root). Product truth: `PRODUCT.md`. Reference build: `apps/ze-web/src/pages/jarvis/` (route `/jarvis`).
 
