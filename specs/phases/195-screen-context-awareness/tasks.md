@@ -69,13 +69,13 @@ Each task: tests first with a fake store (ok, missing, posture fields, summary p
 ## Phase 7: Eval harness, evals, calibration tooling [US1, US7, US8]
 
 - [x] T022 [ENG] [BACKEND] `ze-eval` runner: scenario `setup:` (rows created through the REST API where one exists, otherwise inserted through the verifier's DB connection only into tables the verifier already touches, with every NOT NULL and linked row filled; bound to names, deleted after the scenario; each kind's insert covered by a runner test against the real schema, `@pytest.mark.pg`), `{{name.field}}` substitution in `context:` and `turns`, the judge's turn description includes the context; tests in `core/ops/ze-eval/tests`; `docs/eval.md`.
-- [ ] T023 [JR] [BACKEND] `eval/scenarios/screen_context.yaml` per FR-020 and FR-025 using `setup:`; Governance case tagged skip until 190. Run on `make dev-eval`; record results in the Handoffs note.
+- [x] T023 [JR] [BACKEND] `eval/scenarios/screen_context.yaml` per FR-020 and FR-025 using `setup:`; Governance case tagged skip until 190. Run on `make dev-eval`; record results in the Handoffs note.
 - [x] T024 [ENG] [BACKEND] `eval/calibration/routing.py`: `--check-sets` (schema and per-language row counts; no network; mirrors the other calibration scripts) and a per-row `screen` column appended to the state's `context` exactly as `build_judgment_state` does with `screen_hint` on; `Makefile`: change the `calibrate-routing` recipe to `uv run python eval/calibration/routing.py $(ARGS)` (it ignores `ARGS` today, so the gate would run live) and add the help line; a test that parses the Makefile and asserts the recipe contains `$(ARGS)`; tests in `core/engine/ze-core/tests/routing/test_calibration_script.py`. Never run `make calibrate-routing` (or the script without `--check-sets`) before this task lands.
 - [x] T025 [JR] [BACKEND] `eval/calibration/routing_screen.jsonl` (EN + PT rows: prompt asked from a screen, `screen` subject line, gold agent); `make calibrate-routing ARGS=--check-sets` passes offline. No live run.
 
 ## Phase 8: Gates [ENG]
 
-- [ ] T026 [ENG] [PLATFORM] `make test-py`, `make test-pg`, `make lint`, `make test-web`, `make typecheck-web`, `make web-build`, `make calibrate-routing ARGS=--check-sets` (only after T024 lands); SC-004 greps; capture of "Chat about this" on the interim goal page at 1440 and 390 (hover, keyboard Tab, touch emulation): DEFERRED to phase 193 (polish) by the Maestro, 2026-10-17; the chip's hover, focus and touch rules are covered by vitest. Gate results are in the Handoffs note.
+- [x] T026 [ENG] [PLATFORM] `make test-py`, `make test-pg`, `make lint`, `make test-web`, `make typecheck-web`, `make web-build`, `make calibrate-routing ARGS=--check-sets` (only after T024 lands); SC-004 greps; capture of "Chat about this" on the interim goal page at 1440 and 390 (hover, keyboard Tab, touch emulation): DEFERRED to phase 193 (polish) by the Maestro, 2026-10-17; the chip's hover, focus and touch rules are covered by vitest. Gate results are in the Handoffs note.
 
 ## Phase 9: Docs [DOCS]
 
