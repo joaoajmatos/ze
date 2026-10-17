@@ -154,6 +154,10 @@ def _canonical_openrouter_tool_name(name: str) -> str:
     return name
 
 
+def _rendered_ok(calls: list[ToolCall]) -> bool:
+    return any(c.tool_name.startswith("render_") and c.success for c in calls)
+
+
 class BaseAgent(ABC):
     name: str
     display_name: str = ""
@@ -832,6 +836,23 @@ class BaseAgent(ABC):
                     ),
                 )
                 return text, accumulated
+
+            if tool_calls is None and _rendered_ok(accumulated):
+                # The render is the answer: some models end a turn after a render
+                # with no closing text. The components still reach the user.
+                log.info(
+                    "agentic_loop_done_after_render",
+                    agent=self.name,
+                    iterations=iteration + 1,
+                )
+                await _dispatch_loop_hooks(
+                    hooks,
+                    "on_loop_end",
+                    LoopEndEvent(
+                        self.name, ctx, accumulated, iterations_used=iteration + 1
+                    ),
+                )
+                return "", accumulated
 
             if tool_calls is None:
                 raise AgentError(

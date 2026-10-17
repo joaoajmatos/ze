@@ -428,6 +428,61 @@ class TestAgenticLoop:
         with pytest.raises(AgentError):
             await a.agentic_loop(_ctx(), client, messages, system="s")
 
+    async def test_empty_reply_after_a_successful_render_ends_the_loop(self):
+        @tool(access=ToolAccess.READ, description="t")
+        async def render_metric(label: str) -> str:
+            return "Rendered metric"
+
+        a = _agent()
+        a.tools = ["render_metric"]
+        client = self._client(
+            [
+                (None, [{"id": "c1", "name": "render_metric", "arguments": {"label": "x"}}]),
+                (None, None),
+            ]
+        )
+        text, calls = await a.agentic_loop(
+            _ctx(), client, [{"role": "user", "content": "q"}], system="s"
+        )
+        assert text == ""
+        assert [c.tool_name for c in calls] == ["render_metric"]
+
+    async def test_empty_reply_after_a_failed_render_still_raises(self):
+        @tool(access=ToolAccess.READ, description="t")
+        async def render_metric(label: str) -> str:
+            raise RuntimeError("boom")
+
+        a = _agent()
+        a.tools = ["render_metric"]
+        client = self._client(
+            [
+                (None, [{"id": "c1", "name": "render_metric", "arguments": {"label": "x"}}]),
+                (None, None),
+            ]
+        )
+        with pytest.raises(AgentError):
+            await a.agentic_loop(
+                _ctx(), client, [{"role": "user", "content": "q"}], system="s"
+            )
+
+    async def test_empty_reply_after_a_non_render_tool_still_raises(self):
+        @tool(access=ToolAccess.READ, description="t")
+        async def lookup(x: str) -> str:
+            return x
+
+        a = _agent()
+        a.tools = ["lookup"]
+        client = self._client(
+            [
+                (None, [{"id": "c1", "name": "lookup", "arguments": {"x": "1"}}]),
+                (None, None),
+            ]
+        )
+        with pytest.raises(AgentError):
+            await a.agentic_loop(
+                _ctx(), client, [{"role": "user", "content": "q"}], system="s"
+            )
+
     async def test_multiple_tool_calls_in_one_round(self):
         @tool(access=ToolAccess.READ, description="t")
         async def tool_a(x: str) -> str:

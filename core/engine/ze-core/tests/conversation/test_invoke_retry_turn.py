@@ -82,6 +82,14 @@ async def test_empty_reply_restores_and_fails():
     assert graph.aupdate_state.await_args.args[1] == {"messages": HISTORY}
 
 
+async def test_components_only_reply_is_a_valid_retry():
+    c, _, _ = _container(
+        {"final_response": "", "error": None, "components": [{"type": "table"}]}
+    )
+    result = await invoke_retry_turn(c, "t1", "q", replaces=_OLD)
+    assert result.final_state["components"] == [{"type": "table"}]
+
+
 async def test_config_carries_the_retry_identity():
     c, _, seen = _container({"final_response": "new", "error": None})
     await invoke_retry_turn(c, "t1", "q", replaces=_OLD)

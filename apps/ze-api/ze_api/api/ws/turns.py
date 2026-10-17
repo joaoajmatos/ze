@@ -134,7 +134,7 @@ async def handle_message(
             confirmation_store=confirmation_store,
         )
 
-    if outcome.response:
+    if outcome.response or outcome.final_state.get("components"):
         effective_thread_id = extract_thread_id(outcome.config) or thread_id or ""
         if confirmation_store is not None and effective_thread_id:
             # This turn completed with a direct response, superseding any gate(s)

@@ -308,7 +308,8 @@ async def invoke_retry_turn(
         raise RetryFailedError(str(exc)) from exc
     if result.interrupted and not result.error:
         return result
-    if result.error or not result.response:
+    rendered = bool((result.final_state or {}).get("components"))
+    if result.error or not (result.response or rendered):
         await restore_messages(container.graph, config, original)
         raise RetryFailedError(result.error or "empty reply")
     return result
