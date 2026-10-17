@@ -3,7 +3,7 @@
   "specName": "World (W2)",
   "branch": "186-web-world",
   "currentStep": "implement",
-  "currentTask": "T015",
+  "currentTask": "T017",
   "status": "implementing",
   "task_summaries": {
     "T002": {
@@ -61,6 +61,14 @@
     "T015": {
       "status": "DONE",
       "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "answer-gate feature, HeldWriteCard, NeedsYou"
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "answer-gate feature, HeldWriteCard, NeedsYou"
     }
   },
   "history": [
@@ -175,6 +183,22 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-10-17T22:00:02.797Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:06:31.086Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:06:31.372Z"
     }
   ]
 }

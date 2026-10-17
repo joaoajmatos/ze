@@ -12,3 +12,5 @@
 {"step": "implement", "substep": null, "task": "T013", "kind": "complete", "by": "ai", "at": "2026-10-17T22:00:02.469Z", "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"}
 {"step": "implement", "substep": null, "task": "T014", "kind": "complete", "by": "ai", "at": "2026-10-17T22:00:02.628Z", "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"}
 {"step": "implement", "substep": null, "task": "T015", "kind": "complete", "by": "ai", "at": "2026-10-17T22:00:02.797Z", "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"}
+{"step": "implement", "substep": null, "task": "T016", "kind": "complete", "by": "ai", "at": "2026-10-17T22:06:31.086Z", "did": "answer-gate feature, HeldWriteCard, NeedsYou"}
+{"step": "implement", "substep": null, "task": "T017", "kind": "complete", "by": "ai", "at": "2026-10-17T22:06:31.372Z", "did": "answer-gate feature, HeldWriteCard, NeedsYou"}
