@@ -2,7 +2,7 @@
 
 **Input**: [spec.md](./spec.md), [plan.md](./plan.md), [contracts/screen-context.md](./contracts/screen-context.md).
 
-**Build gate**: 183 and 184 landed (184's `_compose_preset`/`_preset_envelope`, `failure_summary`, `list_progress`, `zpro005`, T037). The Maestro has reserved migration `zc039`. The user answers OQ-1 (routing hint calibration) and OQ-2 (store context for Retry); tasks follow the recommendations. Spec Architect (Lintel) on call.
+**Build gate**: 183 and 184 landed (184's `_compose_preset`/`_preset_envelope`, `failure_summary`, `list_progress`, `zpro005`, T037). The Maestro reserved migration `zc039`. The user answered on 2026-10-17: OQ-1 routing hint built off behind the flag, enabled only after a user-approved live calibration; OQ-2 store the context for Retry. Spec Architect (Lintel) on call.
 
 **Tests**: required (constitution V). **Fail-first**. Fakes and `AsyncMock` pools; `@pytest.mark.pg` for new SQL; no OpenRouter or System One call in default suites; **no live calibration run** in this phase.
 
