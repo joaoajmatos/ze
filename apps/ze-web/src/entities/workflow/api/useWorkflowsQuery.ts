@@ -7,7 +7,8 @@ export function useWorkflowsQuery() {
   return useQuery<WorkflowResponse[]>({
     queryKey: queryKeys.workflows,
     queryFn: async () => {
-      const { data } = await listWorkflows();
+      const { data, error } = await listWorkflows();
+      if (error) throw error;
       return data ?? [];
     },
   });

@@ -83,6 +83,7 @@ export function buildConcerns({ snapshot, loops, goals, hypotheses, reminders }:
         const linked = l.reminder_id ? reminderById.get(l.reminder_id) : undefined;
         if (l.reminder_id) linkedReminders.add(l.reminder_id);
         const rem = linked && isOpenReminder(linked) ? date(linked.fire_at) : null;
+        if (linked?.status === "overdue") c.slipped = true;
         if (drift && rem) {
           c.due = rem < drift ? rem : drift;
           c.dueLabel = rem < drift ? "reminder" : "drift deadline";
@@ -119,8 +120,8 @@ export function buildConcerns({ snapshot, loops, goals, hypotheses, reminders }:
     out.push(c);
   }
 
-  // Loops outside the snapshot still own their reminders, so those are not repeated below.
-  for (const l of loops) if (l.reminder_id) linkedReminders.add(l.reminder_id);
+  // Open loops outside the snapshot still own their reminders; a suspected loop is on no mark, so its reminder stays one.
+  for (const l of loops) if (l.reminder_id && (l.state === "active" || l.state === "drifting")) linkedReminders.add(l.reminder_id);
 
   for (const r of reminders) {
     if (!isOpenReminder(r) || linkedReminders.has(r.id)) continue;

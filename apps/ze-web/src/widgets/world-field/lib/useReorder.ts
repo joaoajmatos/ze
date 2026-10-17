@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Concern } from "@/shared/lib";
 
@@ -20,7 +20,7 @@ interface Held {
  * Reorder the ranked concerns by keyboard (Space lifts, arrows move the drop point, Space drops,
  * Escape cancels) or by dragging one mark onto another. Reminders have no rank and cannot move.
  */
-export function useReorder(concerns: Concern[], onDrop: (move: Move) => void) {
+export function useReorder(concerns: Concern[], onDrop: (move: Move) => Promise<unknown> | void, options: { disabled?: boolean } = {}) {
   const ranked = useMemo(() => concerns.filter((c) => c.rank != null && c.kind !== "reminder").sort((a, b) => a.rank! - b.rank!), [concerns]);
   const [held, setHeld] = useState<Held | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -30,9 +30,11 @@ export function useReorder(concerns: Concern[], onDrop: (move: Move) => void) {
   const suppressClick = useRef(false);
   const rankedRef = useRef(ranked);
   const onDropRef = useRef(onDrop);
+  const disabledRef = useRef(options.disabled ?? false);
   useEffect(() => {
     rankedRef.current = ranked;
     onDropRef.current = onDrop;
+    disabledRef.current = options.disabled ?? false;
   });
 
   const set = useCallback((next: Held | null) => {
@@ -48,8 +50,11 @@ export function useReorder(concerns: Concern[], onDrop: (move: Move) => void) {
       const anchor = list.find((c) => c.key === h?.target);
       if (item && anchor && item.key !== anchor.key) {
         const relation = list.indexOf(anchor) < list.indexOf(item) ? "above" : "below";
-        onDropRef.current({ item, anchor, relation });
-        setAnnouncement(`Moved ${item.title} ${relation} ${anchor.title}.`);
+        // Announce only what actually happened.
+        Promise.resolve(onDropRef.current({ item, anchor, relation })).then(
+          () => setAnnouncement(`Moved ${item.title} ${relation} ${anchor.title}.`),
+          () => setAnnouncement(`Couldn't move ${item.title}.`),
+        );
       }
       set(null);
     },
@@ -70,16 +75,33 @@ export function useReorder(concerns: Concern[], onDrop: (move: Move) => void) {
       setTimeout(() => (suppressClick.current = false), 0);
       finish(h);
     };
+    // A cancelled pointer or Escape ends a drag without moving anything.
+    const onCancel = () => {
+      pressRef.current = null;
+      if (heldRef.current?.mode === "pointer") {
+        suppressClick.current = true;
+        setTimeout(() => (suppressClick.current = false), 0);
+        set(null);
+        setAnnouncement("Move cancelled.");
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && heldRef.current?.mode === "pointer") onCancel();
+    };
     document.addEventListener("pointermove", onMove);
     document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onCancel);
+    document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onCancel);
+      document.removeEventListener("keydown", onKey);
     };
   }, [finish, set]);
 
   const markProps = (key: string) => ({
-    onKeyDown: (e: KeyboardEvent) => {
+    onKeyDown: (e: ReactKeyboardEvent) => {
       const list = rankedRef.current;
       const h = heldRef.current;
       if (e.key === " ") {
@@ -87,6 +109,10 @@ export function useReorder(concerns: Concern[], onDrop: (move: Move) => void) {
         if (!h) {
           const item = list.find((c) => c.key === key);
           if (!item) return;
+          if (disabledRef.current) {
+            setAnnouncement("Ze is offline. Moves wait until it reconnects.");
+            return;
+          }
           set({ key, target: key, mode: "key" });
           setAnnouncement(`Lifted ${item.title}. Arrow keys move it, Space drops it, Escape cancels.`);
         } else if (h.mode === "key") finish(h);
@@ -112,12 +138,16 @@ export function useReorder(concerns: Concern[], onDrop: (move: Move) => void) {
       setAnnouncement(next.key === mover.key ? `${mover.title} stays where it is.` : `${mover.title} would go ${rel} ${next.title}. Space to drop.`);
     },
     onPointerDown: (e: { button: number; clientX: number; clientY: number }) => {
-      if (e.button !== 0 || !rankedRef.current.some((c) => c.key === key)) return;
+      if (e.button !== 0 || disabledRef.current || !rankedRef.current.some((c) => c.key === key)) return;
       pressRef.current = { key, x: e.clientX, y: e.clientY };
     },
     onPointerEnter: () => {
       const h = heldRef.current;
       if (h?.mode === "pointer" && h.key !== key && rankedRef.current.some((c) => c.key === key)) set({ ...h, target: key });
+    },
+    onPointerLeave: () => {
+      const h = heldRef.current;
+      if (h?.mode === "pointer" && h.target === key) set({ ...h, target: null });
     },
   });
 

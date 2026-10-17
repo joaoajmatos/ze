@@ -1,6 +1,6 @@
 import { chipLabelOf, concernStateWords, glyphOf, pct, postureOf, useReducedMotion, type Concern } from "@/shared/lib";
 import { Glyph } from "@/shared/ui";
-import { BANDS, bandOf, shortTitle } from "../lib/placement";
+import { BANDS, bandOfConcern, shortTitle } from "../lib/placement";
 
 interface Props {
   concerns: Concern[];
@@ -12,11 +12,10 @@ interface Props {
 /** The phone's field: the same concerns, ranked, grouped by band, with the same posture vocabulary. */
 export function FieldList({ concerns, now, selected, onSelect }: Props) {
   const reduced = useReducedMotion();
-  const DAY = 86_400_000;
   const groups = BANDS.map((b) => ({
     band: b,
     items: concerns
-      .filter((c) => bandOf(c.due ? (c.due.getTime() - now.getTime()) / DAY : null) === b.id)
+      .filter((c) => bandOfConcern(c, now) === b.id)
       .sort((x, y) => (x.rank ?? Infinity) - (y.rank ?? Infinity)),
   })).filter((g) => g.items.length > 0);
 

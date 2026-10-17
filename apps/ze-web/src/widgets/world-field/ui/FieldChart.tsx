@@ -219,7 +219,10 @@ export function FieldChart({ concerns, now, selected, onSelect, reorder }: Props
                   props.onPointerEnter();
                   setHover(key);
                 }}
-                onMouseLeave={() => setHover(null)}
+                onPointerLeave={() => {
+                  props.onPointerLeave();
+                  setHover(null);
+                }}
                 onFocus={() => setHover(key)}
                 onBlur={() => setHover(null)}
               >

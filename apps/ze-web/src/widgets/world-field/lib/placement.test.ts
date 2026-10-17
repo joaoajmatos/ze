@@ -85,6 +85,23 @@ describe("layoutMarks", () => {
     expect(b.box.w).toBeCloseTo(a.box.w * 2);
   });
 
+  it("puts a slipped concern in the Slipped band whatever its deadline says", () => {
+    const marks = layoutMarks(
+      [
+        concern("goal", { kind: "goal", key: "goal:g", slipped: true, confidence: null, due: null, rank: 1 }),
+        concern("future", { slipped: true, due: day(4), confidence: 0.6, rank: 2 }),
+        concern("past", { slipped: true, due: day(-3), confidence: 0.6, rank: 3 }),
+        concern("calm", { due: day(4), confidence: 0.6, rank: 4 }),
+      ],
+      now,
+      1,
+    );
+    expect(marks.map((m) => m.band)).toEqual(["slipped", "slipped", "slipped", "week"]);
+    const slippedEdge = ML + PW * 0.2;
+    for (const m of marks.slice(0, 3)) expect(m.x).toBeLessThanOrEqual(slippedEdge);
+    expect(marks[0].y).toBe(NOT_A_CLAIM_Y);
+  });
+
   it("numbers marks in order", () => {
     const marks = layoutMarks([concern("a"), concern("b")], now, 1);
     expect(marks.map((m) => m.n)).toEqual([1, 2]);

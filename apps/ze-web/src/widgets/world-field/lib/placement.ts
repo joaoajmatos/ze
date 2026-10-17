@@ -31,6 +31,18 @@ export function bandOf(days: number | null): BandId {
   return "later";
 }
 
+const DAY = 86_400_000;
+
+/** Days until the deadline, negative once past, null with none. */
+export function daysLeft(c: Pick<Concern, "due">, now: Date): number | null {
+  return c.due ? (c.due.getTime() - now.getTime()) / DAY : null;
+}
+
+/** A slipped concern is in the Slipped band whatever its deadline says; otherwise the deadline decides. */
+export function bandOfConcern(c: Pick<Concern, "due" | "slipped">, now: Date): BandId {
+  return c.slipped ? "slipped" : bandOf(daysLeft(c, now));
+}
+
 export function xOfDays(d: number): number {
   if (d <= 0) return ML + PW * (0.2 * (1 - Math.min(7, -d) / 7));
   if (d <= 7) return ML + PW * (0.2 + 0.32 * (d / 7));
@@ -100,27 +112,30 @@ export interface Mark {
   box: Box;
 }
 
-const DAY = 86_400_000;
-
 /**
- * Place every concern: x is time left, y is how sure. Concerns with no deadline sit in lanes by rank;
- * concerns with no confidence sit in the not-a-claim lane. `k` converts CSS px to viewBox units so label
- * boxes are px-true.
+ * Place every concern: x is time left, y is how sure. Slipped concerns sit in the Slipped band even without a
+ * past deadline (spread across it by rank); other concerns with no deadline sit in lanes by rank; concerns with
+ * no confidence sit in the not-a-claim lane. `k` converts CSS px to viewBox units so label boxes are px-true.
  */
 export function layoutMarks(concerns: Concern[], now: Date, k: number): Mark[] {
   const placed: Box[] = [];
   const lineH = 15 * k;
-  const daysOf = (c: Concern) => (c.due ? (c.due.getTime() - now.getTime()) / DAY : null);
-  const none = concerns
-    .filter((c) => daysOf(c) == null)
-    .sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity));
+  const byRank = (a: Concern, b: Concern) => (a.rank ?? Infinity) - (b.rank ?? Infinity);
+  const undatedSlipped = concerns.filter((c) => c.slipped && (c.due == null || daysLeft(c, now)! >= 0)).sort(byRank);
+  const none = concerns.filter((c) => !c.slipped && c.due == null).sort(byRank);
   const lanes = new Map<BandId, number>();
 
   return concerns.map((c, i) => {
-    const days = daysOf(c);
-    const band = bandOf(days);
-    const noneIndex = days == null ? none.indexOf(c) : -1;
-    const x = days == null ? ML + PW * (0.8 + (0.18 * (noneIndex + 0.5)) / Math.max(1, none.length)) : xOfDays(days);
+    const days = daysLeft(c, now);
+    const band = bandOfConcern(c, now);
+    const noneIndex = none.indexOf(c);
+    const slipIndex = undatedSlipped.indexOf(c);
+    const x =
+      slipIndex >= 0
+        ? ML + PW * (0.03 + (0.14 * (slipIndex + 0.5)) / undatedSlipped.length)
+        : days == null
+          ? ML + PW * (0.8 + (0.18 * (noneIndex + 0.5)) / Math.max(1, none.length))
+          : xOfDays(days);
 
     let y: number;
     if (noneIndex >= 0) y = Y0 + 52 + noneIndex * Math.max(lineH + 6, 22);

@@ -62,6 +62,31 @@ describe("useWorld", () => {
     expect(result.current.loops.error).toBe(false);
   });
 
+  it.each([
+    ["snapshot", "getPrioritySnapshot", "field"],
+    ["goals", "listGoals", "doing"],
+    ["loops", "listLoops", "loops"],
+  ] as const)("a failing %s query is an error, never an empty all-clear", async (_n, fn, part) => {
+    api[fn].mockResolvedValue({ error: { detail: "boom" } });
+    const { result } = setup();
+    await waitFor(() => expect(result.current[part].error).toBe(true));
+    if (part === "field") expect(result.current.field.data).toEqual([]);
+    expect(result.current.away.error).toBe(false);
+  });
+
+  it("waits for every record before the field stops loading, and names a failed record source", async () => {
+    let release: (v: unknown) => void = () => {};
+    api.listHypotheses.mockReturnValue(new Promise((r) => (release = r)));
+    const { result } = setup();
+    await waitFor(() => expect(result.current.recordsFailed).toEqual([]));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.field.loading).toBe(true);
+    release({ error: { detail: "boom" } });
+    await waitFor(() => expect(result.current.field.loading).toBe(false));
+    expect(result.current.recordsFailed).toEqual(["hypotheses"]);
+    expect(result.current.field.error).toBe(false);
+  });
+
   it("a failing away source blanks only away", async () => {
     api.listProactiveJobRuns.mockResolvedValue({ error: { detail: "boom" } });
     const { result } = setup();

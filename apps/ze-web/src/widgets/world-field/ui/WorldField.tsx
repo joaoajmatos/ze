@@ -14,6 +14,8 @@ interface Props {
   now: Date;
   loading: boolean;
   error: boolean;
+  /** Record sources that failed to load; the marks they back are shown hollow. */
+  recordsFailed?: string[];
   narrow: boolean;
   offline: boolean;
   selected: string | null;
@@ -21,34 +23,39 @@ interface Props {
   onChatAbout?: (ref: WsScreenRef, element?: Element | null) => void;
 }
 
+/** Kinds a screen resolver owns; a relationship has none, so it is never published. */
+const PUBLISHED_KINDS = new Set(["loop", "goal", "hypothesis", "reminder"]);
+
 type RankedKind = PriorityOverrideRequestSchema["source_kind"];
 
 /** The hero: the field (desktop) or the ranked list (phone), its legend, and the selected item's readout. */
-export function WorldField({ concerns, now, loading, error, narrow, offline, selected, onSelect, onChatAbout }: Props) {
+export function WorldField({ concerns, now, loading, error, recordsFailed = [], narrow, offline, selected, onSelect, onChatAbout }: Props) {
   const reprioritize = useReprioritizeMutation();
   const unpin = useUnpinPriorityOverrideMutation();
   const transition = useLoopTransitionMutation();
   const [pinOnDrop, setPinOnDrop] = useState(false);
 
-  const reorder = useReorder(concerns, (m: Move) => {
-    if (offline) return;
-    reprioritize.mutate({
+  const reorder = useReorder(
+    concerns,
+    (m: Move) =>
+      reprioritize.mutateAsync({
       source_kind: m.item.kind as RankedKind,
       source_id: m.item.id,
       anchor_source_kind: m.anchor.kind as RankedKind,
       anchor_source_id: m.anchor.id,
       relation: m.relation,
       pinned: pinOnDrop,
-    });
-  });
+    }),
+    { disabled: offline },
+  );
 
   const sel = concerns.find((c) => c.key === selected) ?? null;
   const shown = loading ? [] : concerns;
 
   useScreenPublisher({
     focused_module: "world-field",
-    ...(sel ? { subject: [{ kind: sel.kind, id: sel.id, label: sel.title } as WsScreenRef], selection: [{ kind: sel.kind, id: sel.id } as WsScreenRef] } : {}),
-    visible: shown.slice(0, 20).map((c) => ({ kind: c.kind, id: c.id }) as WsScreenRef),
+    ...(sel && PUBLISHED_KINDS.has(sel.kind) ? { subject: [{ kind: sel.kind, id: sel.id, label: sel.title } as WsScreenRef], selection: [{ kind: sel.kind, id: sel.id } as WsScreenRef] } : {}),
+    visible: shown.filter((c) => PUBLISHED_KINDS.has(c.kind)).slice(0, 20).map((c) => ({ kind: c.kind, id: c.id }) as WsScreenRef),
   });
 
   return (
@@ -63,6 +70,11 @@ export function WorldField({ concerns, now, loading, error, narrow, offline, sel
         ) : (
           <FieldChart concerns={shown} now={now} selected={selected} onSelect={onSelect} reorder={reorder} />
         )}
+        {!error && recordsFailed.length > 0 && (
+          <p className="hot field-note" role="status">
+            Couldn't read {recordsFailed.join(", ")}. Marks without details are drawn hollow.
+          </p>
+        )}
         {!error && loading && <p className="muted field-note">Reading the world-state…</p>}
         {!error && !loading && concerns.length === 0 && <p className="muted field-note">Nothing tracked yet. Tell me what you are working on.</p>}
       </div>
@@ -73,7 +85,7 @@ export function WorldField({ concerns, now, loading, error, narrow, offline, sel
           <span><i className="mark dashed" /> suspected</span>
           <span><i className="mark" /> goal</span>
           <span><i className="mark hot" /> slipped</span>
-          <span>dotted trail = sureness decayed as evidence aged</span>
+          <span>dotted trail = where sureness stood before it last changed</span>
         </p>
       )}
       {sel && (

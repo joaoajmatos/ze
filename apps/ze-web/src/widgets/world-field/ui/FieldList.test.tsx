@@ -12,10 +12,10 @@ const concerns = [
 ];
 
 describe("FieldList", () => {
-  it("groups by band: Slipped, This week, Later, No deadline", () => {
+  it("groups by band: Slipped (a stuck goal with no deadline included), This week, Later, No deadline", () => {
     render(<FieldList concerns={concerns} now={NOW} selected={null} onSelect={() => {}} />);
     const names = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
-    expect(names).toEqual(["Slipped · 1", "This week · 1", "Later · 1", "No deadline · 2"]);
+    expect(names).toEqual(["Slipped · 2", "This week · 1", "Later · 1", "No deadline · 1"]);
   });
 
   it("ranks within a band and shows the posture vocabulary, never a raw enum or a made-up confidence", () => {

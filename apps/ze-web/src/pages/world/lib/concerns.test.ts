@@ -170,6 +170,27 @@ describe("buildConcerns", () => {
     expect(cs.map((c) => c.kind)).toEqual(["loop"]);
   });
 
+  it("marks a loop slipped when its linked reminder is overdue", () => {
+    const [c] = buildConcerns({
+      ...empty,
+      snapshot: [item("loop", "l1", 1)],
+      loops: [loop("l1", { reminder_id: "r1" })],
+      reminders: [reminder("r1", "2026-10-15T09:00:00Z", "overdue")],
+    });
+    expect(c.slipped).toBe(true);
+    expect(c.due).toEqual(new Date("2026-10-15T09:00:00Z"));
+  });
+
+  it("keeps the reminder of a suspected loop as its own mark", () => {
+    const cs = buildConcerns({
+      ...empty,
+      snapshot: [],
+      loops: [loop("l1", { state: "suspected", reminder_id: "r1" })],
+      reminders: [reminder("r1", "2026-10-19T09:00:00Z")],
+    });
+    expect(cs.map((c) => [c.kind, c.id])).toEqual([["reminder", "r1"]]);
+  });
+
   it("draws a trail only when confidence_prior is present", () => {
     const [a, b] = buildConcerns({
       ...empty,

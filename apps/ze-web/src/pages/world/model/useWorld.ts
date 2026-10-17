@@ -29,6 +29,8 @@ export interface WorldModel {
   /** Priority sources that failed to read, named by the snapshot. */
   sourcesFailed: string[];
   field: Part<Concern[]>;
+  /** Record sources the field joins that failed to load; their marks stay hollow with details unavailable. */
+  recordsFailed: string[];
   decisions: Part<Decision[]>;
   loops: Part<LoopListItem[]>;
   doing: Part<{ goals: GoalListItem[]; workflows: WorkflowResponse[]; executions: Record<string, WorkflowExecutionResponse[]> }>;
@@ -106,7 +108,18 @@ export function useWorld(): WorldModel {
   const running = latestRuns.some((r) => r.status === "running");
   const failedRun = latestRuns.some((r) => r.status === "failed");
 
-  const field: Part<Concern[]> = { data: concerns, loading: snapshot.isPending, error: snapshot.isError };
+  // Until every record has loaded the join is incomplete, so the field waits rather than plot partial marks.
+  const field: Part<Concern[]> = {
+    data: concerns,
+    loading: snapshot.isPending || loopsQ.isPending || goalsQ.isPending || hypothesesQ.isPending || remindersQ.isPending,
+    error: snapshot.isError,
+  };
+  const recordsFailed = [
+    loopsQ.isError && "loops",
+    goalsQ.isError && "goals",
+    hypothesesQ.isError && "hypotheses",
+    remindersQ.isError && "reminders",
+  ].filter((x): x is string => typeof x === "string");
   const decisionsPart: Part<Decision[]> = { data: decisions, loading: heldQ.isPending || goalsQ.isPending, error: heldQ.isError || goalsQ.isError };
   const loopsPart: Part<LoopListItem[]> = { data: loops, loading: loopsQ.isPending, error: loopsQ.isError };
   const doing: WorldModel["doing"] = {
@@ -131,6 +144,7 @@ export function useWorld(): WorldModel {
     since,
     sourcesFailed: snapshot.data?.sourcesFailed ?? NONE,
     field,
+    recordsFailed,
     decisions: decisionsPart,
     loops: loopsPart,
     doing,

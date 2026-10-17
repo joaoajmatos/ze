@@ -12,7 +12,8 @@ export function usePrioritySnapshotQuery() {
   return useQuery<PrioritySnapshotData>({
     queryKey: queryKeys.prioritySnapshot(),
     queryFn: async () => {
-      const { data } = await getPrioritySnapshot();
+      const { data, error } = await getPrioritySnapshot();
+      if (error) throw error;
       return {
         items: data?.items ?? [],
         sourcesFailed: data?.sources_failed ?? [],

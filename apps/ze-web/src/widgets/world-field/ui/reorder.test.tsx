@@ -124,3 +124,55 @@ describe("reorder", () => {
     expect(region.textContent).toContain("Ze computed #3");
   });
 });
+
+describe("reorder: pointer safety", () => {
+  beforeEach(() => {
+    api.submitPriorityOverride.mockReset().mockResolvedValue({ data: {} });
+  });
+
+  it("releasing over empty space moves nothing", () => {
+    setup();
+    fireEvent.pointerDown(mark(/Alpha/), { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(document, { clientX: 50, clientY: 50 });
+    fireEvent.pointerEnter(mark(/Bravo/));
+    fireEvent.pointerLeave(mark(/Bravo/));
+    fireEvent.pointerUp(document);
+    expect(api.submitPriorityOverride).not.toHaveBeenCalled();
+  });
+
+  it("a cancelled pointer ends the drag, and the next release elsewhere submits nothing", () => {
+    setup();
+    fireEvent.pointerDown(mark(/Alpha/), { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(document, { clientX: 50, clientY: 50 });
+    fireEvent.pointerEnter(mark(/Bravo/));
+    fireEvent.pointerCancel(document);
+    fireEvent.pointerUp(document);
+    expect(api.submitPriorityOverride).not.toHaveBeenCalled();
+  });
+
+  it("Escape cancels a pointer drag", () => {
+    setup();
+    fireEvent.pointerDown(mark(/Alpha/), { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(document, { clientX: 50, clientY: 50 });
+    fireEvent.pointerEnter(mark(/Bravo/));
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.pointerUp(document);
+    expect(api.submitPriorityOverride).not.toHaveBeenCalled();
+  });
+
+  it("refuses to lift offline and says why", () => {
+    setup(items, { offline: true });
+    fireEvent.keyDown(mark(/Alpha/), { key: " " });
+    expect(screen.getByRole("status").textContent).toContain("offline");
+  });
+
+  it("announces the move only after it succeeded, and the failure when it did not", async () => {
+    api.submitPriorityOverride.mockResolvedValue({ error: { detail: "boom" } });
+    setup();
+    const alpha = mark(/Alpha/);
+    fireEvent.keyDown(alpha, { key: " " });
+    fireEvent.keyDown(alpha, { key: "ArrowDown" });
+    fireEvent.keyDown(alpha, { key: " " });
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("Couldn't move Alpha"));
+  });
+});

@@ -8,11 +8,14 @@ export interface PostureInput {
   state?: string | null;
   claimKind?: string | null;
   provenance?: string | null;
-  /** A hypothesis the user confirmed. */
+  /** A hypothesis the user confirmed: evidenced, not told (they confirmed Ze's inference, they did not declare it). */
   confirmed?: boolean;
+  /** The record behind the item did not load: nothing is claimed about it. */
+  partial?: boolean;
 }
 
 export function postureOf(c: PostureInput): Posture {
+  if (c.partial) return "plain";
   switch (c.kind) {
     case "goal":
       return "goal";
@@ -20,7 +23,7 @@ export function postureOf(c: PostureInput): Posture {
     case "reminder":
       return "plain";
     case "hypothesis":
-      if (c.confirmed) return "told";
+      if (c.confirmed) return "evidenced";
       return c.claimKind === "suspicion" ? "suspected" : "inferred";
     case "loop":
       if (c.state === "suspected" || c.claimKind === "suspicion") return "suspected";
