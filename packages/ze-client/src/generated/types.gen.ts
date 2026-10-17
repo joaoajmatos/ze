@@ -2177,6 +2177,32 @@ export type QuietHoursUpdate = {
 };
 
 /**
+ * ReminderItem
+ */
+export type ReminderItem = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Fire At
+     */
+    fire_at: string;
+    /**
+     * Sent At
+     */
+    sent_at: string | null;
+    /**
+     * Status
+     */
+    status: 'upcoming' | 'overdue' | 'fired';
+};
+
+/**
  * RetryEligibilityResponse
  */
 export type RetryEligibilityResponse = {
@@ -5799,3 +5825,39 @@ export type GetRemindersPageResponses = {
 };
 
 export type GetRemindersPageResponse = GetRemindersPageResponses[keyof GetRemindersPageResponses];
+
+export type ListRemindersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Status
+         */
+        status?: 'upcoming' | 'overdue' | 'fired' | 'all';
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v0/reminders';
+};
+
+export type ListRemindersErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListRemindersError = ListRemindersErrors[keyof ListRemindersErrors];
+
+export type ListRemindersResponses = {
+    /**
+     * Response Listreminders
+     *
+     * Successful Response
+     */
+    200: Array<ReminderItem>;
+};
+
+export type ListRemindersResponse = ListRemindersResponses[keyof ListRemindersResponses];
