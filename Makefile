@@ -65,7 +65,7 @@ help:
 	@echo "    eval-diff        Compare last two eval runs (regression detection)"
 	@echo "    eval-server      Start MCP eval server (for Claude Code / Cursor / Codex)"
 	@echo "    calibrate-commitment-intake  LIVE System One + old-pipeline baseline over eval/calibration/commitment_intake.jsonl; costs credits (needs OPENROUTER_API_KEY); --check-sets is offline"
-	@echo "    calibrate-routing  LIVE System One run over eval/calibration/routing.jsonl; costs credits (needs OPENROUTER_API_KEY)"
+	@echo "    calibrate-routing  LIVE System One run over eval/calibration/routing.jsonl; costs credits (needs OPENROUTER_API_KEY); --check-sets is offline"
 	@echo "    calibrate-skills   LIVE System One run over eval/calibration/skills.jsonl; costs credits (needs OPENROUTER_API_KEY); --recall is offline"
 	@echo "    calibrate-loop-gate  LIVE System One + Haiku baseline over eval/calibration/loop_gate.jsonl; costs credits (needs OPENROUTER_API_KEY); --check-sets is offline"
 	@echo "    calibrate-corroboration  LIVE System One + E5 baseline over eval/calibration/corroboration.jsonl; costs credits"
@@ -258,7 +258,7 @@ calibrate-commitment-intake:
 	uv run python eval/calibration/commitment_intake.py $(ARGS)
 
 calibrate-routing:
-	uv run python eval/calibration/routing.py
+	uv run python eval/calibration/routing.py $(ARGS)
 
 calibrate-skills:
 	uv run python eval/calibration/skills.py

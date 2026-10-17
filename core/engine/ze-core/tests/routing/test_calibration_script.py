@@ -224,3 +224,43 @@ def test_load_roster_returns_descriptions_and_criteria(calib):
     assert set(descriptions) == set(criteria)
     assert "explain X" not in descriptions["companion"]
     assert criteria["research"] != descriptions["research"]
+
+
+def test_check_sets_passes_on_the_shipped_sets_and_prints_counts_only(calib, capsys):
+    assert calib.check_sets() == 0
+    out = capsys.readouterr().out
+    assert "routing_screen" in out and "en=" in out and "pt=" in out
+    assert "summarize this" not in out
+
+
+def test_check_sets_reports_schema_problems(calib, tmp_path, capsys):
+    bad = tmp_path / "bad.jsonl"
+    bad.write_text(
+        '{"id": "a", "lang": "xx", "prompt": "p", "gold_agent": "x", "gold_multi": 1, "mystery": 1}\n'
+        '{"id": "a", "lang": "en", "prompt": "p", "gold_agent": "x", "gold_multi": false, "screen": " "}\n',
+        encoding="utf-8",
+    )
+    assert calib.check_sets((bad,)) == 1
+    err = capsys.readouterr().err
+    assert "lang must be" in err and "gold_multi" in err
+    assert "unknown keys" in err and "duplicate id" in err and "screen must be" in err
+
+
+def test_screen_column_is_appended_to_context_like_production(calib):
+    from ze_core.orchestration.judgment_state import build_judgment_state
+
+    row = calib.load_rows(_SCRIPT.with_name("routing_screen.jsonl"))[0]
+    assert row.screen
+    prod = build_judgment_state(
+        {"prompt": row.prompt, "routing_hints": None}, row.screen
+    )
+    ours = calib.build_state(
+        row.prompt, None, calib.with_screen_line(None, row.screen)
+    )
+    assert ours["context"] == prod["context"] == row.screen
+
+
+def test_calibrate_routing_recipe_forwards_args():
+    makefile = (_SCRIPT.parents[2] / "Makefile").read_text(encoding="utf-8")
+    recipe = makefile.split("\ncalibrate-routing:\n", 1)[1].split("\n\n", 1)[0]
+    assert "$(ARGS)" in recipe

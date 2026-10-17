@@ -52,6 +52,15 @@ def history_hint(state: AgentState) -> str | None:
     return "[Recent conversation]\n" + "\n".join(lines)
 
 
+def with_screen_line(context: str | None, screen_line: str | None) -> str | None:
+    """``context`` with one capped screen line appended, inside ``CONTEXT_CAP``."""
+    context = (context or "").strip()
+    line = (screen_line or "").strip()[:SCREEN_LINE_CAP]
+    if line:
+        context = f"{context[: max(0, CONTEXT_CAP - len(line) - 1)]}\n{line}".strip()
+    return context or None
+
+
 def build_judgment_state(
     state: AgentState, screen_line: str | None = None
 ) -> dict[str, str]:
@@ -60,14 +69,10 @@ def build_judgment_state(
     ``screen_line`` (one capped line) is appended to ``context``; only the routing node passes it,
     and only when ``screen_hint`` is on. The skills and tier states never get it.
     """
-    context = (state.get("routing_hints") or "").strip()
-    line = (screen_line or "").strip()[:SCREEN_LINE_CAP]
-    if line:
-        context = f"{context[: max(0, CONTEXT_CAP - len(line) - 1)]}\n{line}".strip()
     return build_state(
         user=state.get("image_caption") or state["prompt"],
         history=history_hint(state),
-        context=context or None,
+        context=with_screen_line(state.get("routing_hints"), screen_line),
     )
 
 

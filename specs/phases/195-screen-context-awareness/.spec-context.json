@@ -4,7 +4,7 @@
   "branch": "195-screen-context-awareness",
   "currentStep": "implement",
   "status": "implementing",
-  "currentTask": "T022",
+  "currentTask": "T025",
   "history": [
     {
       "step": "implement",
@@ -181,6 +181,22 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-17T19:06:23.726Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "Mortise",
+      "at": "2026-10-17T19:09:53.160Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "Mortise",
+      "at": "2026-10-17T19:09:53.354Z"
     }
   ],
   "task_summaries": {
@@ -271,6 +287,12 @@
     "T022": {
       "status": "DONE",
       "did": "setup block"
+    },
+    "T024": {
+      "status": "DONE"
+    },
+    "T025": {
+      "status": "DONE"
     }
   }
 }

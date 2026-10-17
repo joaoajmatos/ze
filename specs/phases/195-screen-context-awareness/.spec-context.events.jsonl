@@ -1,0 +1,24 @@
+{"step": "implement", "substep": null, "task": "T001", "kind": "complete", "by": "extension", "at": "2026-10-17T17:03:28.193Z", "did": "T001 done"}
+{"step": "implement", "substep": null, "task": "T002", "kind": "complete", "by": "extension", "at": "2026-10-17T17:03:28.369Z", "did": "T002 done"}
+{"step": "implement", "substep": null, "task": "T003", "kind": "complete", "by": "extension", "at": "2026-10-17T17:06:07.059Z", "did": "WsScreenContext reshaped"}
+{"step": "implement", "substep": null, "task": "T004", "kind": "complete", "by": "extension", "at": "2026-10-17T17:10:08.916Z", "did": "zc039 + Message.screen_context"}
+{"step": "implement", "substep": null, "task": "T005", "kind": "complete", "by": "extension", "at": "2026-10-17T18:13:58.351Z", "did": "registry + note builder"}
+{"step": "implement", "substep": null, "task": "T006", "kind": "complete", "by": "extension", "at": "2026-10-17T18:29:14.485Z", "did": "resolve_screen node, state, graph, judgment_state, preset_note, screen_hint"}
+{"step": "implement", "substep": null, "task": "T007", "kind": "complete", "by": "extension", "at": "2026-10-17T18:40:16.295Z", "did": "T007 done"}
+{"step": "implement", "substep": null, "task": "T008", "kind": "complete", "by": "extension", "at": "2026-10-17T18:40:16.564Z", "did": "T008 done"}
+{"step": "implement", "substep": null, "task": "T009", "kind": "complete", "by": "extension", "at": "2026-10-17T18:40:16.769Z", "did": "T009 done"}
+{"step": "implement", "substep": null, "task": "T010", "kind": "complete", "by": "extension", "at": "2026-10-17T18:40:16.973Z", "did": "T010 done"}
+{"step": "implement", "substep": null, "task": "T011", "kind": "complete", "by": "extension", "at": "2026-10-17T18:40:17.272Z", "did": "T011 done"}
+{"step": "implement", "substep": null, "task": "T014", "kind": "complete", "by": "extension", "at": "2026-10-17T18:40:17.602Z", "did": "T014 done"}
+{"step": "implement", "substep": null, "task": "T012", "kind": "complete", "by": "extension", "at": "2026-10-17T18:43:27.333Z", "did": "T012 done"}
+{"step": "implement", "substep": null, "task": "T013", "kind": "complete", "by": "extension", "at": "2026-10-17T18:43:27.523Z", "did": "T013 done"}
+{"step": "implement", "substep": null, "task": "T015", "kind": "complete", "by": "extension", "at": "2026-10-17T18:46:23.553Z", "did": "ScreenTrace on MessageTrace"}
+{"step": "implement", "substep": null, "task": "T016", "kind": "complete", "by": "extension", "at": "2026-10-17T19:03:02.522Z", "did": "T016 done"}
+{"step": "implement", "substep": null, "task": "T017", "kind": "complete", "by": "extension", "at": "2026-10-17T19:03:03.125Z", "did": "T017 done"}
+{"step": "implement", "substep": null, "task": "T018", "kind": "complete", "by": "extension", "at": "2026-10-17T19:03:03.821Z", "did": "T018 done"}
+{"step": "implement", "substep": null, "task": "T019", "kind": "complete", "by": "extension", "at": "2026-10-17T19:03:04.390Z", "did": "T019 done"}
+{"step": "implement", "substep": null, "task": "T020", "kind": "complete", "by": "extension", "at": "2026-10-17T19:03:04.823Z", "did": "T020 done"}
+{"step": "implement", "substep": null, "task": "T021", "kind": "complete", "by": "extension", "at": "2026-10-17T19:03:05.281Z", "did": "T021 done"}
+{"step": "implement", "substep": null, "task": "T022", "kind": "complete", "by": "extension", "at": "2026-10-17T19:06:23.726Z", "did": "setup block"}
+{"step": "implement", "substep": null, "task": "T024", "kind": "complete", "by": "Mortise", "at": "2026-10-17T19:09:53.160Z"}
+{"step": "implement", "substep": null, "task": "T025", "kind": "complete", "by": "Mortise", "at": "2026-10-17T19:09:53.354Z"}

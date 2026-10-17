@@ -37,6 +37,7 @@ import yaml
 from ze_agents.defaults import ROUTING_GAP_THRESHOLD, ROUTING_THRESHOLD
 from ze_agents.registry import get_enabled_agents
 from ze_agents.system_one import SystemOneResult
+from ze_core.orchestration.judgment_state import with_screen_line
 from ze_core.openrouter.system_one import DEFAULT_MODEL, OpenRouterSystemOneClient
 from ze_core.routing.judge import (
     DEFAULT_SHORTLIST_K,
@@ -66,6 +67,7 @@ class Row:
     gold_agent: str
     gold_multi: bool
     history: str | None = None
+    screen: str | None = None
 
 
 @dataclass
@@ -99,6 +101,7 @@ def load_rows(path: Path) -> list[Row]:
             gold_agent=raw["gold_agent"],
             gold_multi=raw["gold_multi"],
             history=raw.get("history"),
+            screen=raw.get("screen"),
         )
         for raw in (
             json.loads(line)
@@ -234,7 +237,9 @@ async def run_rows(
         questions = shuffled_questions(
             criteria, names, random.Random(seed * 100003 + index)
         )
-        state = build_state(row.prompt, row.history, None)
+        state = build_state(
+            row.prompt, row.history, with_screen_line(None, row.screen)
+        )
         async with sem:
             result = await client.evaluate(state, questions, max_attempts=1)
         return Outcome(row, names, ranked[0][1], ranked[0][1] - ranked[1][1], result)
@@ -500,6 +505,67 @@ def report(outcomes: list[Outcome], quiet: bool = False) -> dict[str, float | No
     return suggestion
 
 
+SET_PATHS = (
+    DATASET,
+    DATASET.with_name("routing_holdout.jsonl"),
+    DATASET.with_name("routing_holdout2.jsonl"),
+    DATASET.with_name("routing_screen.jsonl"),
+)
+REQUIRED_KEYS = {"id", "lang", "prompt", "gold_agent", "gold_multi"}
+OPTIONAL_KEYS = {"history", "screen"}
+LANGS = ("en", "pt")
+
+
+def set_problems(name: str, raws: list[dict]) -> list[str]:
+    problems: list[str] = []
+    ids: set[str] = set()
+    for i, raw in enumerate(raws, 1):
+        where = f"{name} row {i}"
+        keys = set(raw)
+        if missing := REQUIRED_KEYS - keys:
+            problems.append(f"{where}: missing {sorted(missing)}")
+        if extra := keys - REQUIRED_KEYS - OPTIONAL_KEYS:
+            problems.append(f"{where}: unknown keys {sorted(extra)}")
+        if raw.get("lang") not in LANGS:
+            problems.append(f"{where}: lang must be one of {LANGS}")
+        for key in ("id", "prompt", "gold_agent"):
+            if not isinstance(raw.get(key), str) or not raw.get(key):
+                problems.append(f"{where}: {key} must be a non-empty string")
+        if not isinstance(raw.get("gold_multi"), bool):
+            problems.append(f"{where}: gold_multi must be a bool")
+        for key in OPTIONAL_KEYS & keys:
+            if not isinstance(raw[key], str) or not raw[key].strip():
+                problems.append(f"{where}: {key} must be a non-empty string")
+        if raw.get("id") in ids:
+            problems.append(f"{where}: duplicate id")
+        ids.add(raw.get("id"))
+    return problems
+
+
+def check_sets(paths: tuple[Path, ...] = SET_PATHS) -> int:
+    """Offline: schema and per-language row counts. No network, no row text printed."""
+    problems: list[str] = []
+    for path in paths:
+        if not path.exists():
+            problems.append(f"{path.name}: missing")
+            continue
+        raws = [
+            json.loads(line)
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        counts = Counter(r.get("lang") for r in raws)
+        shown = " ".join(f"{lang}={counts.get(lang, 0)}" for lang in LANGS)
+        print(f"{path.stem}: {len(raws)} rows ({shown})")
+        problems += set_problems(path.stem, raws)
+        for lang in LANGS:
+            if not counts.get(lang):
+                problems.append(f"{path.stem}: no {lang} rows")
+    for problem in problems:
+        print(f"PROBLEM {problem}", file=sys.stderr)
+    return 1 if problems else 0
+
+
 def system_one_config() -> dict:
     return (yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}).get(
         "system_one"
@@ -588,12 +654,19 @@ def main() -> None:
         help="offline E5 shortlist recall only; no OpenRouter call, no credits",
     )
     parser.add_argument(
+        "--check-sets",
+        action="store_true",
+        help="offline: validate every routing set (schema, per-language counts); no network",
+    )
+    parser.add_argument(
         "--k",
         type=int,
         default=None,
         help="shortlist size; defaults to system_one.surfaces.routing.shortlist_k",
     )
     args = parser.parse_args()
+    if args.check_sets:
+        raise SystemExit(check_sets())
     args.dataset = args.dataset or [DATASET]
     if args.k is None:
         block = (system_one_config().get("surfaces") or {}).get("routing") or {}
