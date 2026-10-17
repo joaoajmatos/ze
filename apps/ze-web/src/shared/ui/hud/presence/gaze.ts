@@ -1,6 +1,6 @@
 /**
  * The idle orb's curious-pet gaze. Pure: `nextGaze` maps (state, input, now) to a new state and the
- * output the orb applies in its idle state only. The orb owns the clock, the randomness (`input.rand`)
+ * output the orb applies in its idle state only. The gaze moves the monad (the white point) itself. The orb owns the clock, the randomness (`input.rand`)
  * and the spring; nothing here reads the DOM.
  */
 
@@ -13,14 +13,16 @@ export interface Point {
 export const GAZE_PERSONALITY = {
   /** 0..1: share of the pointer's distance (in orb radii) turned into offset before the clamp. */
   FOLLOW_STRENGTH: 0.8,
-  /** Fraction of the orb radius the dense core may shift. */
-  MAX_OFFSET: 0.18,
+  /** Fraction of the orb radius the monad travels at full follow. */
+  POINT_REACH: 0.42,
+  /** Fraction of the radius the monad leans further while peering; reach + lean stays inside POINT_MAX. */
+  PEER_LEAN: 0.08,
+  /** Hard clamp, as a fraction of the radius: the monad never leaves the sphere. */
+  POINT_MAX: 0.5,
   /** ms the orb watches one spot before losing interest; chosen per glance from `input.rand`. */
   ATTENTION_SPAN_MS: { min: 2000, max: 4000 },
   /** ms on one spot before it peers. */
   PEER_DELAY_MS: 1000,
-  /** Fraction of the radius added to the offset while peering. */
-  PEER_LEAN: 0.05,
   /** 0..1 added to core brightness while peering or perking up (kept at or below 0.1). */
   PEER_BRIGHTEN: 0.08,
   /** Pointer speed, CSS px per second, above which a flick startles it. */
@@ -55,7 +57,7 @@ export const GAZE_PERSONALITY = {
   LEAN_SCALE: 0.03,
   /** 1/s: how fast breath rate and brightness follow the gaze output. */
   RATE_EASE: 2,
-  /** Under-damped spring (dampingRatio < 1) for the gaze offset: a small overshoot. */
+  /** Under-damped spring (dampingRatio < 1) for the monad: a small overshoot (the orb clamps it inside the sphere). */
   GAZE_SPRING: { stiffness: 90, dampingRatio: 0.6 },
 } as const;
 
@@ -100,8 +102,8 @@ export interface GazeState {
 }
 
 export interface GazeOutput {
-  /** Target offset of the dense core, as a fraction of the orb radius. */
-  offset: Point;
+  /** Target position of the monad, as a fraction of the orb radius from the sphere's center. */
+  point: Point;
   /** Direction of the lean, scaled 0..1; the orb stretches ≤ 3% along it. */
   lean: Point;
   /** Added to core brightness (multiplier is 1 + brightness). */
@@ -131,7 +133,7 @@ export function initialGaze(now: number): GazeState {
   };
 }
 
-const NEUTRAL: GazeOutput = { offset: ZERO, lean: ZERO, brightness: 0, breathRate: 1, blink: false, startle: false };
+const NEUTRAL: GazeOutput = { point: ZERO, lean: ZERO, brightness: 0, breathRate: 1, blink: false, startle: false };
 
 function spanFor(rand: number): number {
   const { min, max } = GAZE_PERSONALITY.ATTENTION_SPAN_MS;
@@ -242,22 +244,22 @@ function outputFor(s: GazeState, input: GazeInput, blink: boolean, startle: bool
     case "peering": {
       if (!s.spot) return base;
       const { dir, distance } = direction(input.orbCenter, s.spot);
-      const magnitude = P.MAX_OFFSET * Math.min(1, (P.FOLLOW_STRENGTH * distance) / input.orbRadius);
+      const magnitude = P.POINT_REACH * Math.min(1, (P.FOLLOW_STRENGTH * distance) / input.orbRadius);
       const peer = s.phase === "peering";
       const perk = s.phase === "waking";
       const mag = magnitude + (peer ? P.PEER_LEAN : 0);
       const lean = peer ? 1 : P.FOLLOW_LEAN;
       return {
         ...base,
-        offset: { x: dir.x * mag, y: dir.y * mag },
-        lean: { x: dir.x * lean * (magnitude / P.MAX_OFFSET), y: dir.y * lean * (magnitude / P.MAX_OFFSET) },
+        point: { x: dir.x * mag, y: dir.y * mag },
+        lean: { x: dir.x * lean * (magnitude / P.POINT_REACH), y: dir.y * lean * (magnitude / P.POINT_REACH) },
         brightness: peer || perk ? P.PEER_BRIGHTEN : 0,
       };
     }
   }
 }
 
-/** One semi-implicit Euler step of the gaze spring (stiffness k, damping ratio ζ). */
+/** One semi-implicit Euler step of the monad's gaze spring (stiffness k, damping ratio ζ). */
 export function stepSpring(
   pos: number,
   vel: number,

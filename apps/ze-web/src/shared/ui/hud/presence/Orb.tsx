@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { GAZE_PERSONALITY, initialGaze, nextGaze, stepSpring, type GazeInput, type GazeState, type Point, type PointerKind } from "./gaze";
+import { GAZE_PERSONALITY, initialGaze, nextGaze, stepSpring, type GazeInput, type GazePhase, type GazeState, type Point, type PointerKind } from "./gaze";
+import { MONAD, deform, easeEye, eyeBase, inEye, monadPosition, clampPoint, originRadius, withReflexes, OPEN_EYE, type Eye } from "./monad";
 import { simplex2 } from "./noise";
 import type { OrbColors, OrbState, PresenceHandle } from "./types";
 
@@ -31,14 +32,14 @@ export function heartbeat(tAbs: number): number {
   return Math.exp(-b * 6) + (b > 0.28 ? 0.5 * Math.exp(-(b - 0.28) * 6) : 0);
 }
 
-/** How long after the core a dot at normalized radius r (0..1) with seed (0..1) follows a state change. */
+/** How long after the monad a dot at normalized distance r (0..1) from it, with seed (0..1), follows a state change. */
 export function staggerDelay(r: number, seed: number): number {
   return (r * 0.75 + seed * 0.25) * STAGGER_MS;
 }
 
 type RGB = [number, number, number];
 type Lab = [number, number, number];
-/** color: 0 main, 1 cream, 2 coral, 3 dim. g (0..2) instead blends ultraviolet → amethyst → orchid. */
+/** color: 0 main, 1 cream, 2 coral, 3 dim. The monad's own dots are lit by the frame loop, not by a program. g (0..2) instead blends ultraviolet → amethyst → orchid. */
 type Target = { dx: number; dy: number; v: number; color: 0 | 1 | 2 | 3; g?: number };
 
 // sRGB ↔ oklab (Björn Ottosson), so tone blends never pass through muddy mid-greys.
@@ -109,32 +110,36 @@ function wave(i: number, t: number): number {
  * The lit dotted sphere is the home shape in every state. Each program returns where this dot wants
  * to be (a displacement from its grid home), how bright, and which colour; springs do the rest.
  */
-function program(s: OrbState, d: Dot, shade: number, rim: number, t: number, age: number, tAbs: number, lean: Lean): Target {
+function program(s: OrbState, d: Dot, shade: number, rim: number, t: number, age: number, tAbs: number, lean: Lean, m: Point): Target {
   const { x, y, r, ang, z, seed } = d;
-  // Life shared by every state: a slow breath, a ripple that crosses the sphere, and a limb that wobbles.
+  // Every motion is measured from the monad: rx, ry point from it to this dot, pr is the distance (0..1).
+  const rx = x - m.x;
+  const ry = y - m.y;
+  const pr = Math.min(1, Math.hypot(rx, ry));
+  const pang = Math.atan2(ry, rx);
+  // Life shared by every state: a slow breath and a ripple that spread from the monad, and a limb that wobbles.
   const breath = 0.018 * Math.sin(t * 0.9 + r * 1.2);
-  const ripple = 0.014 * Math.sin(r * 8.5 - t * 1.6) * (1 - 0.5 * r);
+  const ripple = 0.014 * Math.sin(pr * 8.5 - t * 1.6) * (1 - 0.5 * pr);
   const wobble = r > 0.72 ? 0.05 * (r - 0.72) / 0.28 * simplex2(Math.cos(ang) * 1.3 + 7, Math.sin(ang) * 1.3 + t * 0.45) : 0;
-  const radial = breath + ripple + wobble;
-  let dx = x * radial;
-  let dy = y * radial;
+  let dx = rx * (breath + ripple) + x * wobble;
+  let dy = ry * (breath + ripple) + y * wobble;
   const base = shade * 0.8 + rim;
   switch (s) {
     case "idle":
-      return { dx, dy, v: base, color: shade > 0.965 ? 1 : 0 };
+      return { dx, dy, v: base, color: 0 };
     case "listening": {
       // Gathers a little and leans toward the Ask field below; a ring runs inward like it is drawing breath.
-      const ring = Math.pow(Math.max(0, Math.sin((r + t * 0.9) * 9)), 10);
-      dx += x * -0.07;
-      dy += y * -0.05 + 0.05;
+      const ring = Math.pow(Math.max(0, Math.sin((pr + t * 0.9) * 9)), 10);
+      dx += rx * -0.07;
+      dy += ry * -0.05 + 0.05;
       // Tones run edge to core: ultraviolet at the limb, orchid at the centre.
-      return { dx, dy, v: shade * 0.45 + rim * 0.6 + ring * 0.9, color: ring > 0.5 ? 1 : 0, g: ring > 0.5 ? undefined : (1 - r) * 2 };
+      return { dx, dy, v: shade * 0.45 + rim * 0.6 + ring * 0.9, color: ring > 0.5 ? 1 : 0, g: ring > 0.5 ? undefined : (1 - pr) * 2 };
     }
     case "thinking": {
       // Slow internal swirl: the core turns one way, the mid-depth the other, the limb stays put.
-      const swirl = 0.16 * (1 - r) * Math.sin(t * 0.55 + seed * 2) * (r < 0.45 ? 1 : -0.6);
-      dx += -y * swirl;
-      dy += x * swirl;
+      const swirl = 0.16 * (1 - pr) * Math.sin(t * 0.55 + seed * 2) * (pr < 0.45 ? 1 : -0.6);
+      dx += -ry * swirl;
+      dy += rx * swirl;
       const scan = Math.pow(Math.max(0, Math.cos(ang - t * 2.2)), 14);
       // The three tones swirl slowly with the dots.
       const g = 1 + Math.sin(ang * 2 + r * 3.5 - t * 0.7);
@@ -144,25 +149,25 @@ function program(s: OrbState, d: Dot, shade: number, rim: number, t: number, age
       // The sphere pulses with the voice; the waveform crosses its equator.
       const a = wave(d.col, t);
       const pulse = 0.05 * a;
-      dx += x * pulse;
-      dy += y * pulse;
+      dx += rx * pulse;
+      dy += ry * pulse;
       const amp = 0.12 + 0.62 * a * Math.sqrt(Math.max(0, 1 - x * x));
       const inBand = Math.abs(y) <= amp;
       // The ripples that cross the sphere carry the tones; the voice band's core stays cream.
       const coreBand = inBand && Math.abs(y) < amp * 0.35;
-      return { dx, dy, v: shade * 0.42 + (inBand ? 0.92 : 0), color: coreBand ? 1 : 0, g: coreBand ? undefined : 1 + Math.sin(r * 8.5 - t * 1.6) };
+      return { dx, dy, v: shade * 0.42 + (inBand ? 0.92 : 0), color: coreBand ? 1 : 0, g: coreBand ? undefined : 1 + Math.sin(pr * 8.5 - t * 1.6) };
     }
     case "assembling": {
       // A few dots are thrown outward along their own spoke and pulled back; the rest tighten.
-      const thrown = seed < 0.09 && r > 0.35;
+      const thrown = seed < 0.09 && pr > 0.35;
       if (thrown) {
         const phase = Math.max(0, Math.sin(t * 1.6 + seed * 70));
         const out = 0.9 * Math.pow(phase, 1.5);
-        return { dx: Math.cos(ang) * out + dx, dy: Math.sin(ang) * out + dy, v: 0.55 + 0.45 * phase, color: phase > 0.6 ? 1 : 0 };
+        return { dx: Math.cos(pang) * out + dx, dy: Math.sin(pang) * out + dy, v: 0.55 + 0.45 * phase, color: phase > 0.6 ? 1 : 0 };
       }
       const squeeze = -0.06 + 0.03 * Math.sin(t * 2.4);
-      dx += x * squeeze;
-      dy += y * squeeze;
+      dx += rx * squeeze;
+      dy += ry * squeeze;
       return { dx, dy, v: shade * 0.6 + rim * 0.8, color: 0 };
     }
     case "attention": {
@@ -170,22 +175,21 @@ function program(s: OrbState, d: Dot, shade: number, rim: number, t: number, age
       // core on a calm heartbeat, leaning toward the slipping item with a stream of dots to it.
       const onset = Math.exp(-age * 1.8);
       const ringR = age * 1.5;
-      const ring = age < 1.3 ? Math.exp(-Math.pow((r - ringR) / 0.13, 2)) : 0;
+      const ring = age < 1.3 ? Math.exp(-Math.pow((pr - ringR) / 0.13, 2)) : 0;
       const b = heartbeat(tAbs);
       const radialA = 0.022 * b + 0.07 * ring + 0.03 * onset;
-      dx += x * radialA + lean.x * (0.05 + 0.02 * b);
-      dy += y * radialA + lean.y * (0.05 + 0.02 * b);
-      if (seed < 0.045 && r > 0.5 && (lean.x || lean.y)) {
+      dx += rx * radialA + lean.x * (0.05 + 0.02 * b);
+      dy += ry * radialA + lean.y * (0.05 + 0.02 * b);
+      if (seed < 0.045 && pr > 0.5 && (lean.x || lean.y)) {
         // Dots leave the core on the beat and stay dark until they have sprung home at wrap.
         const ph = (tAbs / BEAT_S + seed * 40) % 1;
         const reach = 0.95 + ph * 1.5;
-        return { dx: lean.x * reach - x, dy: lean.y * reach - y, v: 0.75 * Math.min(1, ph * 6) * (1 - ph) * (1 - 0.5 * onset), color: 2 };
+        return { dx: m.x + lean.x * reach - x, dy: m.y + lean.y * reach - y, v: 0.75 * Math.min(1, ph * 6) * (1 - ph) * (1 - 0.5 * onset), color: 2 };
       }
-      const core = Math.max(0, 1 - r * 1.9);
+      const core = Math.max(0, 1 - pr * 1.9);
       const v = shade * 0.75 + rim * 0.6 + ring * 0.9 + core * (0.6 * onset + 0.12 + 0.18 * b);
-      // Coral floods the core at onset and shrinks to a faint ember (r < 0.17) that breathes with the beat.
-      const coral = ring > 0.3 || r < 0.17 + 0.3 * onset + 0.05 * b;
-      return { dx, dy, v, color: coral ? 2 : 0 };
+      // The monad's dots flood coral at onset and stay a faint ember on the beat; the shockwave ring is coral too.
+      return { dx, dy, v, color: ring > 0.3 ? 2 : 0 };
     }
     case "acting": {
       // A working arc orbits the equator; it never claims a percentage.
@@ -196,9 +200,9 @@ function program(s: OrbState, d: Dot, shade: number, rim: number, t: number, age
     case "done": {
       // One bloom outward that settles back over about a second.
       const bloom = Math.exp(-age * 2.2);
-      dx += x * 0.1 * bloom;
-      dy += y * 0.1 * bloom;
-      return { dx, dy, v: base + bloom * (1 - r * 0.6), color: bloom * (1 - r) > 0.35 || shade > 0.965 ? 1 : 0 };
+      dx += rx * 0.1 * bloom;
+      dy += ry * 0.1 * bloom;
+      return { dx, dy, v: base + bloom * (1 - pr * 0.6), color: bloom * (1 - pr) > 0.35 ? 1 : 0 };
     }
     case "error": {
       const flicker = 0.85 + 0.15 * Math.sin(t * 37) * Math.sin(t * 5.3);
@@ -348,6 +352,9 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
     let blinkAt = -Infinity;
     let startleAt = -Infinity;
     let rect = { at: -Infinity, cx: 0, cy: 0 };
+    let gazePhase: GazePhase = "centered";
+    let eye: Eye = OPEN_EYE;
+    let monadKey = "";
 
     const t0 = performance.now();
     let raf = 0;
@@ -401,10 +408,11 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
         const res = nextGaze(gazeState.current, gin, now);
         if (res.state.phase !== gazeState.current.phase) canvas!.dataset.gaze = res.state.phase;
         gazeState.current = res.state;
+        gazePhase = res.state.phase;
         if (res.out.blink) blinkAt = now;
         if (res.out.startle) startleAt = now;
-        const sx = stepSpring(spring.x, spring.vx, res.out.offset.x, dt);
-        const sy = stepSpring(spring.y, spring.vy, res.out.offset.y, dt);
+        const sx = stepSpring(spring.x, spring.vx, res.out.point.x, dt);
+        const sy = stepSpring(spring.y, spring.vy, res.out.point.y, dt);
         spring.x = sx.pos;
         spring.vx = sx.vel;
         spring.y = sy.pos;
@@ -444,6 +452,19 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
       lean.x += (wantLean.x - lean.x) * Math.min(1, 2.5 * dt);
       lean.y += (wantLean.y - lean.y) * Math.min(1, 2.5 * dt);
 
+      // The monad: the gaze spring's position (clamped inside the sphere), plus a look toward the flagged item.
+      const m = reducedMotion ? { x: 0, y: 0 } : monadPosition(clampPoint({ x: spring.x, y: spring.y }), lean);
+      const target = eyeBase(cur.state, gazePhase, age, reducedMotion ? 0.1 : tAbs);
+      eye = reducedMotion ? target : easeEye(eye, target, Math.min(1, MONAD.EYE_EASE * dt));
+      const lids = withReflexes(eye, blink, startleEnv);
+      const eyeCoral = lids.coral > 0.5 ? 2 : 1;
+      // The attention line starts at the monad: publish its offset from the canvas centre when it moves.
+      const key = `${Math.round(m.x * R * 2)} ${Math.round(m.y * R * 2)}`;
+      if (key !== monadKey) {
+        monadKey = key;
+        canvas!.dataset.monad = `${(m.x * R).toFixed(1)} ${(m.y * R).toFixed(1)}`;
+      }
+
       // A drifting key light, so the shading is never static even at rest.
       const lx = Math.cos(t * 0.35) * 0.55;
       const ly = Math.sin(t * 0.28) * 0.35 - 0.35;
@@ -452,13 +473,20 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
 
       for (const d of dots) {
         if (d.following !== cur.state) {
-          if (d.switchAt < cur.since) d.switchAt = cur.since + staggerDelay(d.r, d.seed);
+          if (d.switchAt < cur.since) d.switchAt = cur.since + staggerDelay(originRadius(d, m), d.seed);
           if (now >= d.switchAt) d.following = cur.state;
         }
         let shade = Math.max(0, d.x * L[0] + d.y * L[1] + d.z * L[2]);
         shade = Math.pow(shade, 2.2);
         const rim = Math.pow(1 - d.z, 4) * 0.5;
-        const want = program(reducedMotion ? (cur.state === "attention" ? "attention" : "idle") : d.following, d, shade, rim, t, reducedMotion ? 3 : age, reducedMotion ? 0.1 : tAbs, lean);
+        const want = program(reducedMotion ? (cur.state === "attention" ? "attention" : "idle") : d.following, d, shade, rim, t, reducedMotion ? 3 : age, reducedMotion ? 0.1 : tAbs, lean, m);
+        // The monad is whichever grid dots the eye covers now: lit at once, ahead of the dots that follow.
+        const inMonad = inEye(d, m, lids);
+        if (inMonad) {
+          want.color = eyeCoral;
+          want.g = undefined;
+          want.v = Math.max(want.v, 1) * lids.alpha;
+        }
         const targetLab = want.g != null ? toneAt(want.g) : paletteLab[want.color];
         if (reducedMotion) {
           d.dx = 0;
@@ -473,16 +501,16 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
           d.vv += ((want.v - d.v) * K * 1.2 - d.vv * damp * 1.1) * dt;
           d.v += d.vv * dt;
           // Coral drains back slowly; every other colour change is quick. Mixed in oklab.
-          const m = Math.min(1, (d.lastColor === 2 && want.color !== 2 ? 1.6 : 7) * dt);
-          d.lab = [d.lab[0] + (targetLab[0] - d.lab[0]) * m, d.lab[1] + (targetLab[1] - d.lab[1]) * m, d.lab[2] + (targetLab[2] - d.lab[2]) * m];
+          const mix = Math.min(1, (d.lastColor === 2 && want.color !== 2 ? 1.6 : 7) * dt);
+          d.lab = [d.lab[0] + (targetLab[0] - d.lab[0]) * mix, d.lab[1] + (targetLab[1] - d.lab[1]) * mix, d.lab[2] + (targetLab[2] - d.lab[2]) * mix];
           if (Math.abs(targetLab[0] - d.lab[0]) < 0.02 && Math.abs(targetLab[1] - d.lab[1]) < 0.02) d.lastColor = want.g != null ? 0 : want.color;
         }
-        const v = Math.max(0, d.v) * (1 + eased.brightness);
+        // Gaze deformation: the dots gather, bulge and brighten around the monad, so it sits at its center.
+        const def = deform({ x: d.x + d.dx, y: d.y + d.dy }, m);
+        const v = (Math.max(0, d.v) + def.lift) * (1 + eased.brightness);
         if (v <= 0.02) continue;
-        // Parallax: the dense core shifts more than the limb, so the outline stays round.
-        const depth = 1 - d.r;
-        let gx = d.x + d.dx + depth * spring.x;
-        let gy = d.y + d.dy + depth * spring.y;
+        let gx = d.x + d.dx + def.dx;
+        let gy = d.y + d.dy + def.dy;
         const along = gx * gazeLean.x + gy * gazeLean.y;
         gx += gazeLean.x * along * LEAN_SCALE;
         gy += gazeLean.y * along * LEAN_SCALE;
@@ -513,8 +541,8 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
             const a = (q / 48) * Math.PI * 2 + t * speed;
             const ox = Math.cos(a) * rr;
             const oy = Math.sin(a) * rr * 0.22;
-            const px = center + ox * Math.cos(tilt) - oy * Math.sin(tilt);
-            const py = center + ox * Math.sin(tilt) + oy * Math.cos(tilt);
+            const px = center + m.x * R + ox * Math.cos(tilt) - oy * Math.sin(tilt);
+            const py = center + m.y * R + ox * Math.sin(tilt) + oy * Math.cos(tilt);
             const front = Math.sin(a) > 0;
             ctx!.globalAlpha = ringMix * (front ? 0.28 : 0.09);
             ctx!.beginPath();
@@ -534,6 +562,7 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
     return () => {
       teardownGaze();
       delete canvas.dataset.gaze;
+      delete canvas.dataset.monad;
       cancelAnimationFrame(raf);
       io.disconnect();
       document.removeEventListener("visibilitychange", onVis);

@@ -37,21 +37,21 @@ describe("gaze timeline", () => {
   it("starts centered with a neutral output", () => {
     const { state, out } = at(initialGaze(0), 10);
     expect(state.phase).toBe("centered");
-    expect(out.offset).toEqual({ x: 0, y: 0 });
+    expect(out.point).toEqual({ x: 0, y: 0 });
     expect(out.breathRate).toBe(1);
   });
 
-  it("follows the pointer and clamps the offset to MAX_OFFSET", () => {
+  it("follows the pointer and clamps the point to MAX_OFFSET", () => {
     const { state, out } = at(initialGaze(0), 100, pointAt(1200, 200, 100));
     expect(state.phase).toBe("following");
-    expect(out.offset.x).toBeGreaterThan(0);
-    expect(mag(out.offset)).toBeLessThanOrEqual(P.MAX_OFFSET + 1e-9);
-    expect(mag(out.offset)).toBeCloseTo(P.MAX_OFFSET, 5);
+    expect(out.point.x).toBeGreaterThan(0);
+    expect(mag(out.point)).toBeLessThanOrEqual(P.POINT_REACH + 1e-9);
+    expect(mag(out.point)).toBeCloseTo(P.POINT_REACH, 5);
   });
 
-  it("a near pointer gives a smaller offset than a far one", () => {
+  it("a near pointer gives a smaller point offset than a far one", () => {
     const near = at(initialGaze(0), 100, pointAt(CENTER.x + R * 0.5, CENTER.y, 100));
-    expect(mag(near.out.offset)).toBeLessThan(P.MAX_OFFSET);
+    expect(mag(near.out.point)).toBeLessThan(P.POINT_REACH);
   });
 
   it("peers after PEER_DELAY_MS on the same spot", () => {
@@ -62,8 +62,8 @@ describe("gaze timeline", () => {
     expect(r.state.phase).toBe("peering");
     expect(r.out.brightness).toBeGreaterThan(0);
     expect(r.out.brightness).toBeLessThanOrEqual(0.1);
-    expect(mag(r.out.offset)).toBeGreaterThan(P.MAX_OFFSET - 1e-9);
-    expect(mag(r.out.offset)).toBeLessThanOrEqual(P.MAX_OFFSET + P.PEER_LEAN + 1e-9);
+    expect(mag(r.out.point)).toBeGreaterThan(P.POINT_REACH - 1e-9);
+    expect(mag(r.out.point)).toBeLessThanOrEqual(P.POINT_REACH + P.PEER_LEAN + 1e-9);
   });
 
   it("loses interest after the shortest span (rand 0) and the longest (rand 1), then returns to centre", () => {
@@ -76,7 +76,7 @@ describe("gaze timeline", () => {
       expect(r.state.phase, `rand ${rand} before span`).not.toBe("returning");
       r = at(r.state, 100 + span, pointAt(500, 200, 100, { rand }));
       expect(r.state.phase, `rand ${rand} at span`).toBe("returning");
-      expect(r.out.offset).toEqual({ x: 0, y: 0 });
+      expect(r.out.point).toEqual({ x: 0, y: 0 });
       r = at(r.state, 100 + span + P.RETURN_MS, pointAt(500, 200, 100, { rand }));
       expect(r.state.phase).toBe("centered");
     }
@@ -127,8 +127,12 @@ describe("gaze timeline", () => {
     expect(r.state.phase).toBe("dozing");
     expect(r.out.breathRate).toBe(P.DOZE_BREATH);
     expect(1 + r.out.brightness).toBeGreaterThanOrEqual(0.8);
-    expect(r.out.offset).toEqual({ x: 0, y: 0 });
-    expect(Object.keys(r.out).sort()).toEqual(["blink", "breathRate", "brightness", "lean", "offset", "startle"]);
+    expect(r.out.point).toEqual({ x: 0, y: 0 });
+    expect(Object.keys(r.out).sort()).toEqual(["blink", "breathRate", "brightness", "lean", "point", "startle"]);
+  });
+
+  it("keeps the monad inside the sphere even when peering", () => {
+    expect(P.POINT_REACH + P.PEER_LEAN).toBeLessThanOrEqual(P.POINT_MAX);
   });
 
   it("keeps dozing inside the personality limits", () => {
@@ -149,12 +153,12 @@ describe("gaze timeline", () => {
   it("glance(point) makes it look at that point", () => {
     const r = at(initialGaze(0), 100, { glance: { x: 600, y: 200 }, glanceAt: 100 });
     expect(r.state.phase).toBe("following");
-    expect(r.out.offset.x).toBeGreaterThan(0);
+    expect(r.out.point.x).toBeGreaterThan(0);
   });
 
   it("follows keyboard focus", () => {
     const r = at(initialGaze(0), 100, { focus: { x: 200, y: 600 }, focusAt: 100 });
-    expect(r.out.offset.y).toBeGreaterThan(0);
+    expect(r.out.point.y).toBeGreaterThan(0);
   });
 
   it("touch glances at the tap, never peers, then returns", () => {
@@ -168,7 +172,7 @@ describe("gaze timeline", () => {
   it("is neutral when the orb is not idle, and ignores input that arrived meanwhile", () => {
     let r = at(initialGaze(0), 100, pointAt(500, 200, 100));
     r = at(r.state, 200, { ...pointAt(700, 200, 200), idle: false });
-    expect(r.out.offset).toEqual({ x: 0, y: 0 });
+    expect(r.out.point).toEqual({ x: 0, y: 0 });
     expect(r.out.blink).toBe(false);
     expect(r.state.phase).toBe("centered");
     // idle again with the same stale pointer event: nothing new, stays centred

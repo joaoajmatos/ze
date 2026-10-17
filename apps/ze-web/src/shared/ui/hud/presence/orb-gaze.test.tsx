@@ -73,6 +73,25 @@ describe("Orb gaze wiring", () => {
     expect(canvas(container).dataset.gaze).toBe("following");
   });
 
+  it("moves the monad toward the pointer, inside the sphere, and back to centre when the orb is busy", () => {
+    const { container, rerender } = render(<Orb state="idle" size={184} colors={colors} reducedMotion={false} />);
+    step(1);
+    pointer("pointermove", 900, 0);
+    step(40);
+    const [x] = canvas(container).dataset.monad!.split(" ").map(Number);
+    expect(x).toBeGreaterThan(10);
+    expect(x).toBeLessThanOrEqual(P.POINT_MAX * 92 + 0.1);
+    rerender(<Orb state="thinking" size={184} colors={colors} reducedMotion={false} />);
+    step(120);
+    expect(Math.abs(Number(canvas(container).dataset.monad!.split(" ")[0]))).toBeLessThan(1);
+  });
+
+  it("keeps the monad centred under reduced motion", () => {
+    const { container } = render(<Orb state="idle" size={184} colors={colors} reducedMotion />);
+    step(2);
+    expect(canvas(container).dataset.monad).toBe("0.0 0.0");
+  });
+
   it("registers no gaze listeners under reduced motion", () => {
     const add = vi.spyOn(window, "addEventListener");
     render(<Orb state="idle" size={184} colors={colors} reducedMotion />);
