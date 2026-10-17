@@ -493,7 +493,7 @@ Kinds by class:
 | `accountability` | `confirmation_request`, `confirmation_timeout`, `workspace_run_completed`, `workflow_failure`, `goal_plan_proposed`, `goal_attention_needed`, `goal_plan_adapted`, `goal_milestone_done`, `goal_completed`, `goal_gate`, `cost_anomaly`, `accountability_narrative`, `goal_narrative`, `morning_brief`, `calendar_reminders_scheduled`, `quiet_hours_summary` |
 | `discretionary` | `loop_drift`, `hypothesis`, `stuck_goal`, `goal_suggestion`, `goal_overlap`, `goal_reuse`, `dream_review`, `insight`, `contact_review`, `finance_stale_nudge`, `finance_recurring_new`, `finance_price_change`, `inbound_message` |
 
-`proactive.budget.max_pushes_per_day` (default 5) is one shared budget for every discretionary push. Accountability and requested pushes never claim it. A discretionary push must carry a budget key; a repeat of the same key is a `duplicate` and goes no further.
+`proactive.budget.max_pushes_per_day` (default 5) is one shared budget for every discretionary push. It counts claims in a rolling 24-hour window. `GET /api/v0/notifications/budget` reports the count and when the next slot opens, and `GET /api/v0/proactive/job-runs` lists the last run of each job. Accountability and requested pushes never claim it. A discretionary push must carry a budget key; a repeat of the same key is a `duplicate` and goes no further.
 
 ### Quiet hours and release
 

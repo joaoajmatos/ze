@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -21,6 +22,10 @@ def _source_inflows(sources: list[LoopSource]) -> list[str]:
     return list(dict.fromkeys(source.key.inflow for source in sources))
 
 
+def _iso(value: datetime | None) -> str | None:
+    return value.isoformat() if value else None
+
+
 def _loop_to_list_item(loop: OpenLoop, sources: list[LoopSource]) -> dict:
     return {
         "id": loop.id,
@@ -32,6 +37,10 @@ def _loop_to_list_item(loop: OpenLoop, sources: list[LoopSource]) -> dict:
         "drift_rationale": loop.drift_rationale,
         "goal_id": loop.goal_id,
         "reminder_id": loop.reminder_id,
+        "confidence_prior": loop.confidence_prior,
+        "confidence_changed_at": _iso(loop.confidence_changed_at),
+        "drift_deadline": _iso(loop.drift_deadline),
+        "confirmed_at": _iso(loop.confirmed_at),
         "created_at": loop.created_at.isoformat() if loop.created_at else None,
         "updated_at": loop.updated_at.isoformat() if loop.updated_at else None,
         "promoted": _is_promoted(sources),

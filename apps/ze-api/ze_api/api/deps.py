@@ -1,9 +1,12 @@
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from ze_logging import get_logger
 from ze_core.conversation.messages import PostgresMessageStore as MessageStore
 from ze_api.settings import Settings, get_settings as _get_settings
 
+
+log = get_logger(__name__)
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -66,6 +69,31 @@ def get_notification_store(request: Request):
 
 def get_interruption_settings_store(request: Request):
     return request.app.state.container.interruption_settings_store
+
+
+def get_hypothesis_store(request: Request):
+    return request.app.state.container.hypothesis_store
+
+
+def get_entity_names(request: Request):
+    """Adapter handed to ze-correlation: entity ids to canonical names. The method
+    lives on the concrete memory store, not the MemoryStore Protocol."""
+    memory_store = request.app.state.container.memory_store
+
+    async def entity_names(ids):
+        try:
+            entities = await memory_store.get_entities_by_ids(list(ids))
+        except Exception as exc:
+            # Names are decoration; a memory failure must not hide the hypotheses.
+            log.warning("hypothesis_entity_names_failed", error=str(exc))
+            return {}
+        return {e.id: e.canonical_name for e in entities}
+
+    return entity_names
+
+
+def get_job_run_store(request: Request):
+    return request.app.state.container.job_run_store
 
 
 def get_notifier(request: Request):

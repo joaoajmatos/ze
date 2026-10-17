@@ -1,19 +1,37 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
+import pytest
+
 from ze_proactive.attention_budget import (
     ATTENTION_PUSH_EVENT_KEY,
+    budget_status,
     release_shared,
     try_claim_shared,
     within_budget,
 )
 
 
-def _push_log(*, count: int = 0, claim_result: bool = True) -> MagicMock:
+NOW = datetime(2026, 1, 2, 12, tzinfo=timezone.utc)
+
+
+def _stamps(hours_ago: list[float]) -> list[datetime]:
+    return sorted(NOW - timedelta(hours=h) for h in hours_ago)
+
+
+def _push_log(
+    *, count: int = 0, claim_result: bool = True, hours_ago: list[float] | None = None
+) -> MagicMock:
     push_log = MagicMock()
-    push_log.count_sent_within_hours = AsyncMock(return_value=count)
+    stamps = (
+        _stamps(hours_ago)
+        if hours_ago is not None
+        else _stamps([float(i + 1) for i in range(count)])
+    )
+    push_log.window_sent_at = AsyncMock(return_value=stamps)
     push_log.try_claim = AsyncMock(return_value=claim_result)
     push_log.release_claim = AsyncMock()
     return push_log
@@ -22,9 +40,7 @@ def _push_log(*, count: int = 0, claim_result: bool = True) -> MagicMock:
 async def test_within_budget_true_when_under_max():
     push_log = _push_log(count=1)
     assert await within_budget(push_log, 3) is True
-    push_log.count_sent_within_hours.assert_awaited_once_with(
-        ATTENTION_PUSH_EVENT_KEY, 24.0
-    )
+    push_log.window_sent_at.assert_awaited_once_with(ATTENTION_PUSH_EVENT_KEY, 24.0)
 
 
 async def test_within_budget_false_when_at_max():
@@ -34,7 +50,7 @@ async def test_within_budget_false_when_at_max():
 
 async def test_within_budget_permissive_on_store_failure():
     push_log = MagicMock()
-    push_log.count_sent_within_hours = AsyncMock(side_effect=RuntimeError("db down"))
+    push_log.window_sent_at = AsyncMock(side_effect=RuntimeError("db down"))
     assert await within_budget(push_log, 3) is True
 
 
@@ -94,8 +110,8 @@ async def test_three_hypothesis_claims_exhaust_the_shared_budget_for_a_loop_clai
     mechanisms share one counter, not two independent ones (User Story 3)."""
     sent_count = 0
 
-    async def count_sent_within_hours(_event_type: str, _hours: float) -> int:
-        return sent_count
+    async def window_sent_at(_event_type: str, _hours: float) -> list[datetime]:
+        return _stamps([float(i + 1) for i in range(sent_count)])
 
     async def try_claim(
         _event_type: str, *, idempotency_key: str, payload=None
@@ -105,10 +121,40 @@ async def test_three_hypothesis_claims_exhaust_the_shared_budget_for_a_loop_clai
         return True
 
     push_log = MagicMock()
-    push_log.count_sent_within_hours = AsyncMock(side_effect=count_sent_within_hours)
+    push_log.window_sent_at = AsyncMock(side_effect=window_sent_at)
     push_log.try_claim = AsyncMock(side_effect=try_claim)
 
     for _ in range(3):
         assert await try_claim_shared(push_log, f"hypothesis:{uuid4()}", 3) is True
 
     assert await try_claim_shared(push_log, f"loop:{uuid4()}", 3) is False
+
+
+async def test_budget_status_used_and_remaining():
+    status = await budget_status(_push_log(hours_ago=[5, 2]), 3)
+    assert (status.used, status.remaining, status.max_per_day) == (2, 1, 3)
+    assert status.next_slot_at is None
+
+
+async def test_budget_status_next_slot_is_oldest_plus_window_when_full():
+    status = await budget_status(_push_log(hours_ago=[20, 10, 2]), 3)
+    assert status.remaining == 0
+    assert status.next_slot_at == NOW - timedelta(hours=20) + timedelta(hours=24)
+
+
+async def test_budget_status_next_slot_when_used_exceeds_max():
+    status = await budget_status(_push_log(hours_ago=[22, 20, 10, 2]), 3)
+    assert status.used == 4
+    assert status.next_slot_at == NOW - timedelta(hours=20) + timedelta(hours=24)
+
+
+async def test_budget_status_no_slot_when_max_zero():
+    status = await budget_status(_push_log(hours_ago=[]), 0)
+    assert status.remaining == 0 and status.next_slot_at is None
+
+
+async def test_budget_status_raises_on_store_failure():
+    push_log = MagicMock()
+    push_log.window_sent_at = AsyncMock(side_effect=RuntimeError("db down"))
+    with pytest.raises(RuntimeError):
+        await budget_status(push_log, 3)

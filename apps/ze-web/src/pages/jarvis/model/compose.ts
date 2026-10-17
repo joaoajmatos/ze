@@ -129,7 +129,7 @@ function composeDecide(world: World): Composition {
     s.push("Everything else I can carry without you.");
   }
   components.push({ id: "sentence", kind: "sentence", span: 12, sentence: s.join(" "), offer: null, target: null });
-  return { kind: "decide", headline: `${n} TO DECIDE · ${world.budget.max - world.budget.spent} PUSHES LEFT`, components };
+  return { kind: "decide", headline: `${n} TO DECIDE${world.budget.max !== null && world.budget.spent !== null ? ` · ${world.budget.max - world.budget.spent} PUSHES LEFT` : ""}`, components };
 }
 
 function cap(s: string): string {

@@ -103,7 +103,7 @@ Depends on `ze-agents` only.
 | `quiet_hours.py` | `is_active` window check, `InterruptionSettingsStore` |
 | `catchup.py` | `missed_fire_time` — the most recent missed cron fire time |
 | `job_run_store.py` | `JobRunStore` — the last start and finish of each job |
-| `push_log_store.py` | `PushLogStore`, `PushLogEntry` — delivery audit log |
+| `push_log_store.py` | `PushLogStore`, `PushLogEntry` — budget claim log; `window_sent_at` is the one window query behind `budget_status` |
 
 ---
 

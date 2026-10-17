@@ -210,8 +210,9 @@ export type TargetId = string | null;
 export type TargetParentId = string | null;
 export type CreatedAt1 = string;
 export type Read1 = boolean;
-export type PushClass = string;
-export type Delivery = string;
+export type PushClass = "requested" | "accountability" | "discretionary";
+export type Urgency = "low" | "normal" | "high";
+export type Delivery = "delivered" | "held" | "released" | "suppressed" | "failed";
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "WsOutboundFrame".
@@ -653,6 +654,7 @@ export interface WsNotificationFrame {
   created_at: CreatedAt1;
   read?: Read1;
   push_class: PushClass;
+  urgency: Urgency;
   delivery: Delivery;
 }
 /**

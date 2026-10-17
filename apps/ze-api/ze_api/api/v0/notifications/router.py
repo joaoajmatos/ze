@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime, time, timezone
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ze_api.api.deps import (
     get_interruption_settings_store,
@@ -11,15 +12,21 @@ from ze_api.api.deps import (
     require_api_key,
 )
 from ze_api.api.v0.notifications.schemas import (
+    AttentionBudgetResponse,
+    DeliveryLiteral,
     MarkAllReadResponse,
     NotificationItem,
     NotificationListResponse,
+    PushClassLiteral,
     QuietHoursResponse,
     QuietHoursUpdate,
     UnreadCountResponse,
 )
+from ze_logging import get_logger
 from ze_proactive.notification_store import InvalidCursorError
 from ze_proactive.quiet_hours import is_active
+
+log = get_logger(__name__)
 
 router = APIRouter(
     prefix="/notifications",
@@ -36,7 +43,8 @@ router = APIRouter(
     description=(
         "Reverse-chronological, cursor-paginated notification history. "
         "Set mark_read=true to atomically mark the returned page as read "
-        "(used by the panel-open fetch)."
+        "(used by the panel-open fetch). Filter by delivery outcome, push class, "
+        "or since a time to answer what Ze sent, held or suppressed."
     ),
 )
 async def list_notifications(
@@ -44,14 +52,35 @@ async def list_notifications(
     limit: int = 20,
     unread_only: bool = False,
     mark_read: bool = False,
+    delivery: Annotated[
+        list[DeliveryLiteral] | None,
+        Query(description="Only these delivery outcomes (repeatable)."),
+    ] = None,
+    push_class: Annotated[
+        PushClassLiteral | None, Query(description="Only this push class.")
+    ] = None,
+    since: Annotated[
+        datetime | None,
+        Query(
+            description=(
+                "Only notifications delivered or created after this time "
+                "(delivered_at when present, else created_at)."
+            )
+        ),
+    ] = None,
     notification_store=Depends(get_notification_store),
 ) -> NotificationListResponse:
+    if since is not None and since.tzinfo is None:
+        raise HTTPException(status_code=422, detail="since needs a UTC offset")
     try:
         items, next_cursor = await notification_store.list_page(
             cursor=cursor,
             limit=limit,
             unread_only=unread_only,
             mark_read=mark_read,
+            delivery=delivery,
+            push_class=push_class,
+            since=since,
         )
     except InvalidCursorError:
         raise HTTPException(status_code=400, detail="Invalid cursor")
@@ -80,17 +109,50 @@ def _parse_quiet_time(value: str | None) -> time | None:
     return time.fromisoformat(value) if value else None
 
 
-async def _quiet_hours_response(
-    setting, notification_store, notifier
-) -> QuietHoursResponse:
+def _quiet_hours_response(setting) -> QuietHoursResponse:
     return QuietHoursResponse(
         enabled=setting.enabled,
         start=setting.start.strftime("%H:%M") if setting.start else None,
         end=setting.end.strftime("%H:%M") if setting.end else None,
         timezone=setting.timezone,
         active_now=is_active(setting, datetime.now(timezone.utc)),
-        held_count=await notification_store.count_held(),
-        max_discretionary_per_day=notifier.max_discretionary_per_day,
+    )
+
+
+@router.get(
+    "/budget",
+    response_model=AttentionBudgetResponse,
+    operation_id="getAttentionBudget",
+    summary="Get the attention budget",
+    description=(
+        "How many unprompted pushes the rolling 24-hour window has used, when the "
+        "next slot opens (only when none is free), how many pushes quiet hours are "
+        "holding, and whether quiet hours are active now. Returns 503 when the push "
+        "log cannot be read; it never reports a guessed count."
+    ),
+)
+async def get_attention_budget(
+    notifier=Depends(get_notifier),
+    settings_store=Depends(get_interruption_settings_store),
+    notification_store=Depends(get_notification_store),
+) -> AttentionBudgetResponse:
+    try:
+        status = await notifier.budget_status()
+        setting = await settings_store.get()
+        held_count = await notification_store.count_held()
+    except Exception as exc:
+        log.warning("attention_budget_unavailable", error=str(exc))
+        raise HTTPException(
+            status_code=503, detail="Attention budget unavailable"
+        ) from exc
+    return AttentionBudgetResponse(
+        used=status.used,
+        max_per_day=status.max_per_day,
+        remaining=status.remaining,
+        window_hours=status.window_hours,
+        next_slot_at=status.next_slot_at,
+        held_count=held_count,
+        quiet_hours_active=is_active(setting, datetime.now(timezone.utc)),
     )
 
 
@@ -100,17 +162,15 @@ async def _quiet_hours_response(
     operation_id="getQuietHours",
     summary="Get quiet hours",
     description=(
-        "The user's quiet-hours setting, whether it is active now, how many pushes "
-        "are held, and the daily budget for unprompted pushes."
+        "The user's quiet-hours setting and whether it is active now. The push "
+        "budget and held count are on the attention budget route."
     ),
 )
 async def get_quiet_hours(
     settings_store=Depends(get_interruption_settings_store),
-    notification_store=Depends(get_notification_store),
-    notifier=Depends(get_notifier),
 ) -> QuietHoursResponse:
     setting = await settings_store.get()
-    return await _quiet_hours_response(setting, notification_store, notifier)
+    return _quiet_hours_response(setting)
 
 
 @router.put(
@@ -126,8 +186,6 @@ async def get_quiet_hours(
 async def update_quiet_hours(
     body: QuietHoursUpdate,
     settings_store=Depends(get_interruption_settings_store),
-    notification_store=Depends(get_notification_store),
-    notifier=Depends(get_notifier),
 ) -> QuietHoursResponse:
     setting = await settings_store.upsert(
         body.enabled,
@@ -135,7 +193,7 @@ async def update_quiet_hours(
         _parse_quiet_time(body.end),
         body.timezone,
     )
-    return await _quiet_hours_response(setting, notification_store, notifier)
+    return _quiet_hours_response(setting)
 
 
 @router.post(

@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Ready to implement once 184 is on `main` (plan and tasks written against `main` at fd79e51d plus the 184 floor at 9ca300d8; Gauge review fixes 2026-10-17)
+**Status**: Implemented
 
 **Input**: Maestro brief 2026-10-17, backend floor B2: overhaul plan section d, gaps 3, 4, 6, 12. Planned in full on 2026-10-17 at the user's "keep going".
 

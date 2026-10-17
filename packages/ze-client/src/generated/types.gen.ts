@@ -67,6 +67,40 @@ export type AgentDayCount = {
 };
 
 /**
+ * AttentionBudgetResponse
+ */
+export type AttentionBudgetResponse = {
+    /**
+     * Used
+     */
+    used: number;
+    /**
+     * Max Per Day
+     */
+    max_per_day: number;
+    /**
+     * Remaining
+     */
+    remaining: number;
+    /**
+     * Window Hours
+     */
+    window_hours: number;
+    /**
+     * Next Slot At
+     */
+    next_slot_at: string | null;
+    /**
+     * Held Count
+     */
+    held_count: number;
+    /**
+     * Quiet Hours Active
+     */
+    quiet_hours_active: boolean;
+};
+
+/**
  * Body_importData
  */
 export type BodyImportData = {
@@ -873,6 +907,102 @@ export type HeldWriteOut = {
 export type HeldWriteStatus = 'open' | 'approved' | 'denied' | 'expired';
 
 /**
+ * HypothesisEntityItem
+ */
+export type HypothesisEntityItem = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string | null;
+};
+
+/**
+ * HypothesisEvidenceItem
+ */
+export type HypothesisEvidenceItem = {
+    /**
+     * Kind
+     */
+    kind: 'fact' | 'episode' | 'signal';
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+};
+
+/**
+ * HypothesisFeedbackRequest
+ */
+export type HypothesisFeedbackRequest = {
+    /**
+     * Feedback
+     */
+    feedback: 'useful' | 'not_relevant' | 'muted' | null;
+};
+
+/**
+ * HypothesisItem
+ */
+export type HypothesisItem = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Narrative
+     */
+    narrative: string;
+    /**
+     * Relation
+     */
+    relation: 'pattern' | 'causal_guess' | 'tension' | 'convergence';
+    /**
+     * Confidence
+     */
+    confidence: number;
+    /**
+     * Claim Kind
+     */
+    claim_kind: 'inference' | 'suspicion';
+    /**
+     * Evidence
+     */
+    evidence: Array<HypothesisEvidenceItem>;
+    /**
+     * Entities
+     */
+    entities: Array<HypothesisEntityItem>;
+    /**
+     * Surfaced
+     */
+    surfaced: boolean;
+    /**
+     * Feedback
+     */
+    feedback: 'useful' | 'not_relevant' | 'muted' | null;
+    /**
+     * Confirmed
+     */
+    confirmed: boolean;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
  * ImportResponse
  */
 export type ImportResponse = {
@@ -1040,6 +1170,22 @@ export type LoopListItem = {
      * Reminder Id
      */
     reminder_id: string | null;
+    /**
+     * Confidence Prior
+     */
+    confidence_prior: number | null;
+    /**
+     * Confidence Changed At
+     */
+    confidence_changed_at: string | null;
+    /**
+     * Drift Deadline
+     */
+    drift_deadline: string | null;
+    /**
+     * Confirmed At
+     */
+    confirmed_at: string | null;
     /**
      * Created At
      */
@@ -1484,11 +1630,19 @@ export type NotificationItem = {
     /**
      * Push Class
      */
-    push_class: string;
+    push_class: 'requested' | 'accountability' | 'discretionary';
+    /**
+     * Urgency
+     */
+    urgency: 'low' | 'normal' | 'high';
     /**
      * Delivery
      */
-    delivery: string;
+    delivery: 'delivered' | 'held' | 'released' | 'suppressed' | 'failed';
+    /**
+     * Delivered At
+     */
+    delivered_at: string | null;
 };
 
 /**
@@ -1624,6 +1778,28 @@ export type PrioritySnapshotResponse = {
      * Sources Failed
      */
     sources_failed: Array<'loop' | 'goal' | 'hypothesis' | 'relationship'>;
+};
+
+/**
+ * ProactiveJobRunItem
+ */
+export type ProactiveJobRunItem = {
+    /**
+     * Job Id
+     */
+    job_id: string;
+    /**
+     * Last Started At
+     */
+    last_started_at: string;
+    /**
+     * Last Finished At
+     */
+    last_finished_at: string | null;
+    /**
+     * Last Status
+     */
+    last_status: 'running' | 'ok' | 'error';
 };
 
 /**
@@ -1976,14 +2152,6 @@ export type QuietHoursResponse = {
      * Active Now
      */
     active_now: boolean;
-    /**
-     * Held Count
-     */
-    held_count: number;
-    /**
-     * Max Discretionary Per Day
-     */
-    max_discretionary_per_day: number;
 };
 
 /**
@@ -2006,6 +2174,32 @@ export type QuietHoursUpdate = {
      * Timezone
      */
     timezone?: string | null;
+};
+
+/**
+ * ReminderItem
+ */
+export type ReminderItem = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Fire At
+     */
+    fire_at: string;
+    /**
+     * Sent At
+     */
+    sent_at: string | null;
+    /**
+     * Status
+     */
+    status: 'upcoming' | 'overdue' | 'fired';
 };
 
 /**
@@ -4022,6 +4216,78 @@ export type DecideHeldWriteResponses = {
 
 export type DecideHeldWriteResponse = DecideHeldWriteResponses[keyof DecideHeldWriteResponses];
 
+export type ListHypothesesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Entity Id
+         *
+         * Only hypotheses about this entity.
+         */
+        entity_id?: string | null;
+        /**
+         * State
+         */
+        state?: 'open' | 'confirmed' | 'dismissed' | 'all';
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v0/hypotheses';
+};
+
+export type ListHypothesesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListHypothesesError = ListHypothesesErrors[keyof ListHypothesesErrors];
+
+export type ListHypothesesResponses = {
+    /**
+     * Response Listhypotheses
+     *
+     * Successful Response
+     */
+    200: Array<HypothesisItem>;
+};
+
+export type ListHypothesesResponse = ListHypothesesResponses[keyof ListHypothesesResponses];
+
+export type SetHypothesisFeedbackData = {
+    body: HypothesisFeedbackRequest;
+    path: {
+        /**
+         * Hypothesis Id
+         */
+        hypothesis_id: string;
+    };
+    query?: never;
+    url: '/api/v0/hypotheses/{hypothesis_id}/feedback';
+};
+
+export type SetHypothesisFeedbackErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetHypothesisFeedbackError = SetHypothesisFeedbackErrors[keyof SetHypothesisFeedbackErrors];
+
+export type SetHypothesisFeedbackResponses = {
+    /**
+     * Successful Response
+     */
+    200: HypothesisItem;
+};
+
+export type SetHypothesisFeedbackResponse = SetHypothesisFeedbackResponses[keyof SetHypothesisFeedbackResponses];
+
 export type ListSessionsData = {
     body?: never;
     path?: never;
@@ -4392,6 +4658,24 @@ export type ListNotificationsData = {
          * Mark Read
          */
         mark_read?: boolean;
+        /**
+         * Delivery
+         *
+         * Only these delivery outcomes (repeatable).
+         */
+        delivery?: Array<'delivered' | 'held' | 'released' | 'suppressed' | 'failed'> | null;
+        /**
+         * Push Class
+         *
+         * Only this push class.
+         */
+        push_class?: 'requested' | 'accountability' | 'discretionary' | null;
+        /**
+         * Since
+         *
+         * Only notifications delivered or created after this time (delivered_at when present, else created_at).
+         */
+        since?: string | null;
     };
     url: '/api/v0/notifications';
 };
@@ -4429,6 +4713,22 @@ export type GetUnreadNotificationCountResponses = {
 };
 
 export type GetUnreadNotificationCountResponse = GetUnreadNotificationCountResponses[keyof GetUnreadNotificationCountResponses];
+
+export type GetAttentionBudgetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/notifications/budget';
+};
+
+export type GetAttentionBudgetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttentionBudgetResponse;
+};
+
+export type GetAttentionBudgetResponse = GetAttentionBudgetResponses[keyof GetAttentionBudgetResponses];
 
 export type GetQuietHoursData = {
     body?: never;
@@ -4709,6 +5009,40 @@ export type UnpinPriorityOverrideResponses = {
 };
 
 export type UnpinPriorityOverrideResponse = UnpinPriorityOverrideResponses[keyof UnpinPriorityOverrideResponses];
+
+export type ListProactiveJobRunsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Since
+         *
+         * Only jobs whose last run started at or after this time.
+         */
+        since?: string | null;
+    };
+    url: '/api/v0/proactive/job-runs';
+};
+
+export type ListProactiveJobRunsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListProactiveJobRunsError = ListProactiveJobRunsErrors[keyof ListProactiveJobRunsErrors];
+
+export type ListProactiveJobRunsResponses = {
+    /**
+     * Response Listproactivejobruns
+     *
+     * Successful Response
+     */
+    200: Array<ProactiveJobRunItem>;
+};
+
+export type ListProactiveJobRunsResponse = ListProactiveJobRunsResponses[keyof ListProactiveJobRunsResponses];
 
 export type ListProcedureCandidatesData = {
     body?: never;
@@ -5491,3 +5825,39 @@ export type GetRemindersPageResponses = {
 };
 
 export type GetRemindersPageResponse = GetRemindersPageResponses[keyof GetRemindersPageResponses];
+
+export type ListRemindersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Status
+         */
+        status?: 'upcoming' | 'overdue' | 'fired' | 'all';
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v0/reminders';
+};
+
+export type ListRemindersErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListRemindersError = ListRemindersErrors[keyof ListRemindersErrors];
+
+export type ListRemindersResponses = {
+    /**
+     * Response Listreminders
+     *
+     * Successful Response
+     */
+    200: Array<ReminderItem>;
+};
+
+export type ListRemindersResponse = ListRemindersResponses[keyof ListRemindersResponses];

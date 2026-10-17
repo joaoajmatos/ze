@@ -83,6 +83,22 @@ async def test_slipping_serializes_components_with_the_shared_serializer():
     assert composition.sources_failed == []
 
 
+async def test_loop_card_carries_confidence_from_when_the_prior_is_stored():
+    drifting = make_loop(
+        title="Reply to Ana",
+        state=LoopState.DRIFTING,
+        drift_deadline=NOW - timedelta(days=2),
+        updated_at=NOW - timedelta(days=1),
+        confidence_prior=0.7,
+    )
+    composer, *_ = _composer(loops=[drifting])
+
+    composition = await composer.compose_slipping()
+
+    card = composition.components[2]
+    assert card["claim"]["confidence_from"] == 0.7
+
+
 async def test_sources_are_read_in_parallel():
     barrier = asyncio.Barrier(3)
 

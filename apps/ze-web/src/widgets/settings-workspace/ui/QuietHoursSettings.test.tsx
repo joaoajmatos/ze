@@ -2,7 +2,8 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { QuietHoursSettings } from "./QuietHoursSettings";
 
-const { useQuietHoursQuery, useUpdateQuietHoursMutation } = vi.hoisted(() => ({
+const { useQuietHoursQuery, useUpdateQuietHoursMutation, useAttentionBudgetQuery } = vi.hoisted(() => ({
+  useAttentionBudgetQuery: vi.fn(),
   useQuietHoursQuery: vi.fn(),
   useUpdateQuietHoursMutation: vi.fn(),
 }));
@@ -12,6 +13,8 @@ vi.mock("@/entities/quiet-hours", () => ({
   useUpdateQuietHoursMutation,
 }));
 
+vi.mock("@/entities/notification", () => ({ useAttentionBudgetQuery }));
+
 const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const base = {
@@ -20,8 +23,6 @@ const base = {
   end: null as string | null,
   timezone: null as string | null,
   active_now: false,
-  held_count: 0,
-  max_discretionary_per_day: 5,
 };
 
 function setup({ data = base, mutationError = null }: {
@@ -29,6 +30,9 @@ function setup({ data = base, mutationError = null }: {
   mutationError?: unknown;
 } = {}) {
   useQuietHoursQuery.mockReturnValue({ data });
+  useAttentionBudgetQuery.mockReturnValue({
+    data: { max_per_day: 5, held_count: 2 },
+  });
   const mutate = vi.fn();
   useUpdateQuietHoursMutation.mockReturnValue({
     mutate,
@@ -44,6 +48,14 @@ describe("QuietHoursSettings", () => {
     render(<QuietHoursSettings />);
 
     expect(screen.getByLabelText("Timezone")).toHaveValue(browserZone);
+  });
+
+  it("reads the nudge cap and held count from the attention budget", () => {
+    setup({ data: { ...base, enabled: true, active_now: true } });
+    render(<QuietHoursSettings />);
+
+    expect(screen.getByText(/at most 5 unprompted nudges/)).toBeInTheDocument();
+    expect(screen.getByText("Quiet hours are on now · 2 held")).toBeInTheDocument();
   });
 
   it("saves the entered values", () => {

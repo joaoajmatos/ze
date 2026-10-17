@@ -40,6 +40,8 @@ Most of what someone means to follow up on is smaller than a goal: a promise mad
 
 Goals and open loops are Ze's two hands of executive function: one heavyweight and declared, one lightweight and ambient. Together they're the shipped first slice of what the doctrine calls **active concerns** — the fourth face of Ze's world-state, the model of you the rest of the system attaches to. See [the doctrine](../specs/arch/ze-doctrine.md) and [cognitive architecture](cognitive-architecture.md).
 
+Hypotheses Ze forms from cross-domain evidence are listed over REST, and you can dismiss one (not relevant, or muted). A dismissed hypothesis is no longer pushed, ranked or offered in conversation, and clearing the dismissal brings it back. Dismissal applies to that one hypothesis: if Ze later forms the same connection again, it is a new hypothesis. A confirmed hypothesis stays listed as confirmed whatever its feedback. Reminders are listed over REST as upcoming, overdue or fired. Confidence values are stored in single precision and only the last change is kept, so clients should round and compare with a tolerance.
+
 ## Memory
 
 Ze extracts facts and episodes after each turn, consolidates them nightly, and synthesizes a profile weekly. `pgvector` handles retrieval. Several rules keep the store honest:
@@ -74,7 +76,7 @@ Every domain plugin also declares a `DataDomain` — an export, import, and dele
 
 ## Proactive surface
 
-Ze doesn't wait to be asked. Morning briefings, calendar reminders, weekly insights, goal suggestions, stuck-goal alerts, news fetch — all background jobs, configurable in `config.yaml`. Every push declares a class: reminders you set always fire, reports you switched on are never budgeted, and only discretionary nudges claim one shared daily budget. Quiet hours hold everything but reminders, then release it as a batch. After downtime, a job that missed its time runs once. Offline push goes through ntfy; the in-app notification center (REST + WebSocket) surfaces the same events while you're in ze-web.
+Ze doesn't wait to be asked. Morning briefings, calendar reminders, weekly insights, goal suggestions, stuck-goal alerts, news fetch — all background jobs, configurable in `config.yaml`. Every push declares a class: reminders you set always fire, reports you switched on are never budgeted, and only discretionary nudges claim one shared budget, counted over a rolling 24 hours. The budget, the next free slot and what each job last ran are visible over REST. Quiet hours hold everything but reminders, then release it as a batch. After downtime, a job that missed its time runs once. Offline push goes through ntfy; the in-app notification center (REST + WebSocket) surfaces the same events while you're in ze-web.
 
 ## Agents
 

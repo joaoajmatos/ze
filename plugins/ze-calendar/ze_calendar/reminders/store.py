@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 import asyncpg
@@ -11,6 +12,16 @@ from ze_logging import get_logger
 from ze_sdk.proactive import ProactiveNotifier
 
 log = get_logger(__name__)
+
+
+ReminderFilter = Literal["upcoming", "overdue", "fired", "all"]
+
+_STATUS_SQL: dict[str, tuple[str, str]] = {
+    "upcoming": (" WHERE sent = false AND fire_at > NOW()", "ORDER BY fire_at ASC"),
+    "overdue": (" WHERE sent = false AND fire_at <= NOW()", "ORDER BY fire_at ASC"),
+    "fired": (" WHERE sent = true", "ORDER BY sent_at DESC NULLS LAST"),
+    "all": ("", "ORDER BY fire_at DESC"),
+}
 
 
 @dataclass
@@ -44,6 +55,20 @@ class ReminderStore:
                 "FROM user_reminders WHERE sent = false AND fire_at > NOW() ORDER BY fire_at"
             )
         return [_to_reminder(r) for r in rows]
+
+    async def list_by_status(
+        self, status: ReminderFilter, limit: int
+    ) -> list[tuple[Reminder, bool]]:
+        """Reminders with `due` (`fire_at <= NOW()`), read in the same query so the
+        database clock decides. `overdue` is an unsent reminder whose time passed."""
+        where, order = _STATUS_SQL[status]
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT id, label, fire_at, created_at, sent, sent_at, "
+                f"fire_at <= NOW() AS due FROM user_reminders{where} {order} LIMIT $1",
+                limit,
+            )
+        return [(_to_reminder(r), bool(r["due"])) for r in rows]
 
     async def list_all_unsent(self) -> list[Reminder]:
         """Return all unsent reminders regardless of fire_at — used for startup replay."""

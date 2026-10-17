@@ -82,6 +82,7 @@ def _loop_posture(loop: OpenLoop) -> ClaimPosture:
         as_of=_iso(loop.updated_at or loop.confirmed_at or loop.created_at),
         state=loop.state.value,
         slipped=loop.state == LoopState.DRIFTING,
+        confidence_from=loop.confidence_prior,
     )
 
 
@@ -608,6 +609,7 @@ def _loop_card_from_item(item: PriorityItem, now: datetime) -> ClaimCard:
         subject="loop",
         ref_id=str(item.source_id),
         confidence=signal.confidence,
+        confidence_from=signal.confidence_prior,
         as_of=_iso(item.activity_at),
         state=signal.state.value,
         slipped=drifting,

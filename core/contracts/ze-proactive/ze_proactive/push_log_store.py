@@ -31,15 +31,16 @@ class PushLogStore:
             )
         return row is not None
 
-    async def count_sent_within_hours(self, event_type: str, hours: float) -> int:
+    async def window_sent_at(self, event_type: str, hours: float) -> list[datetime]:
         async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                "SELECT COUNT(*) FROM push_log WHERE event_type = $1 "
-                "AND sent_at > NOW() - ($2 * INTERVAL '1 hour')",
+            rows = await conn.fetch(
+                "SELECT sent_at FROM push_log WHERE event_type = $1 "
+                "AND sent_at > NOW() - ($2 * INTERVAL '1 hour') "
+                "ORDER BY sent_at ASC",
                 event_type,
                 hours,
             )
-        return int(row[0]) if row else 0
+        return [r["sent_at"] for r in rows]
 
     async def log(self, event_type: str, payload: str | None = None) -> None:
         async with self._pool.acquire() as conn:

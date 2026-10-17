@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApproveSkillData, ApproveSkillErrors, ApproveSkillExecutablesData, ApproveSkillExecutablesErrors, ApproveSkillExecutablesResponses, ApproveSkillResponses, CancelWorkflowExecutionData, CancelWorkflowExecutionErrors, CancelWorkflowExecutionResponses, CancelWorkspaceRunData, CancelWorkspaceRunErrors, CancelWorkspaceRunResponses, CloseLoopData, CloseLoopErrors, CloseLoopResponses, ConfirmLoopData, ConfirmLoopErrors, ConfirmLoopResponses, CreateDeleteIntentData, CreateDeleteIntentResponses, DecideHeldWriteData, DecideHeldWriteErrors, DecideHeldWriteResponses, DeleteDataData, DeleteDataErrors, DeleteDataResponses, DeleteSkillData, DeleteSkillErrors, DeleteSkillResponses, DeleteWorkspaceFileData, DeleteWorkspaceFileErrors, DeleteWorkspaceFileResponses, DisableProcedureData, DisableProcedureErrors, DisableProcedureResponses, DisableSkillData, DisableSkillErrors, DisableSkillResponses, DropLoopData, DropLoopErrors, DropLoopResponses, EditProcedureData, EditProcedureErrors, EditProcedureResponses, EnableSkillData, EnableSkillErrors, EnableSkillResponses, ExportDataData, ExportDataResponses, GetActivityHeatmapData, GetActivityHeatmapErrors, GetActivityHeatmapResponses, GetContactsPageData, GetContactsPageResponses, GetCostAnomaliesData, GetCostAnomaliesErrors, GetCostAnomaliesResponses, GetCostSummaryData, GetCostSummaryResponses, GetEntityDetailData, GetEntityDetailErrors, GetEntityDetailResponses, GetGoalDetailData, GetGoalDetailErrors, GetGoalDetailResponses, GetMemoryActivityData, GetMemoryActivityErrors, GetMemoryActivityResponses, GetMemoryFeedData, GetMemoryFeedErrors, GetMemoryFeedResponses, GetMemoryGraphData, GetMemoryGraphErrors, GetMemoryGraphResponses, GetMemoryTimelineBoundsData, GetMemoryTimelineBoundsResponses, GetMessageFeedbackData, GetMessageFeedbackErrors, GetMessageFeedbackResponses, GetMessageTraceData, GetMessageTraceErrors, GetMessageTraceResponses, GetMessageTracesData, GetMessageTracesErrors, GetMessageTracesResponses, GetNewsPageData, GetNewsPageErrors, GetNewsPageResponses, GetNewsSettingsData, GetNewsSettingsResponses, GetPrioritySnapshotData, GetPrioritySnapshotResponses, GetProcedureData, GetProcedureErrors, GetProcedureResponses, GetQuietHoursData, GetQuietHoursResponses, GetRemindersPageData, GetRemindersPageResponses, GetUiManifestData, GetUiManifestResponses, GetUnreadNotificationCountData, GetUnreadNotificationCountResponses, GetVersionData, GetVersionResponses, GetWorkflowData, GetWorkflowErrors, GetWorkflowExecutionData, GetWorkflowExecutionErrors, GetWorkflowExecutionResponses, GetWorkflowResponses, GetWorkspaceData, GetWorkspaceFileData, GetWorkspaceFileErrors, GetWorkspaceFileResponses, GetWorkspaceResponses, HealthCheckData, HealthCheckResponses, ImportDataData, ImportDataErrors, ImportDataResponses, ImportSkillData, ImportSkillErrors, ImportSkillResponses, ListActiveProceduresData, ListActiveProceduresResponses, ListDataDomainsData, ListDataDomainsResponses, ListGoalsData, ListGoalsResponses, ListGoalTracesData, ListGoalTracesErrors, ListGoalTracesResponses, ListHeldWritesData, ListHeldWritesErrors, ListHeldWritesResponses, ListLoopsData, ListLoopsErrors, ListLoopsResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListProcedureCandidatesData, ListProcedureCandidatesErrors, ListProcedureCandidatesResponses, ListProcedureLibraryData, ListProcedureLibraryResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListSkillsData, ListSkillsErrors, ListSkillsResponses, ListWorkflowExecutionsData, ListWorkflowExecutionsErrors, ListWorkflowExecutionsResponses, ListWorkflowRevisionsData, ListWorkflowRevisionsErrors, ListWorkflowRevisionsResponses, ListWorkflowsData, ListWorkflowsResponses, ListWorkspaceFilesData, ListWorkspaceFilesErrors, ListWorkspaceFilesResponses, ListWorkspaceRunsData, ListWorkspaceRunsErrors, ListWorkspaceRunsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, ReceiveWebhookData, ReceiveWebhookErrors, ReceiveWebhookResponses, RejectSkillData, RejectSkillErrors, RejectSkillResponses, ReviewFactsData, ReviewFactsErrors, ReviewFactsResponses, ReviewGoalLearningData, ReviewGoalLearningErrors, ReviewGoalLearningResponses, ReviewProcedureCandidateData, ReviewProcedureCandidateErrors, ReviewProcedureCandidateResponses, SearchSessionsData, SearchSessionsErrors, SearchSessionsResponses, SetMessageFeedbackData, SetMessageFeedbackErrors, SetMessageFeedbackResponses, StartGoalData, StartGoalErrors, StartGoalResponses, SubmitPriorityOverrideData, SubmitPriorityOverrideErrors, SubmitPriorityOverrideResponses, TriggerWorkflowData, TriggerWorkflowErrors, TriggerWorkflowResponses, UnpinPriorityOverrideData, UnpinPriorityOverrideErrors, UnpinPriorityOverrideResponses, UpdateQuietHoursData, UpdateQuietHoursErrors, UpdateQuietHoursResponses, UploadWorkspaceFileData, UploadWorkspaceFileErrors, UploadWorkspaceFileResponses, WatchWorkspaceRunEventsData, WatchWorkspaceRunEventsErrors, WatchWorkspaceRunEventsResponses } from './types.gen';
+import type { ApproveSkillData, ApproveSkillErrors, ApproveSkillExecutablesData, ApproveSkillExecutablesErrors, ApproveSkillExecutablesResponses, ApproveSkillResponses, CancelWorkflowExecutionData, CancelWorkflowExecutionErrors, CancelWorkflowExecutionResponses, CancelWorkspaceRunData, CancelWorkspaceRunErrors, CancelWorkspaceRunResponses, CloseLoopData, CloseLoopErrors, CloseLoopResponses, ConfirmLoopData, ConfirmLoopErrors, ConfirmLoopResponses, CreateDeleteIntentData, CreateDeleteIntentResponses, DecideHeldWriteData, DecideHeldWriteErrors, DecideHeldWriteResponses, DeleteDataData, DeleteDataErrors, DeleteDataResponses, DeleteSkillData, DeleteSkillErrors, DeleteSkillResponses, DeleteWorkspaceFileData, DeleteWorkspaceFileErrors, DeleteWorkspaceFileResponses, DisableProcedureData, DisableProcedureErrors, DisableProcedureResponses, DisableSkillData, DisableSkillErrors, DisableSkillResponses, DropLoopData, DropLoopErrors, DropLoopResponses, EditProcedureData, EditProcedureErrors, EditProcedureResponses, EnableSkillData, EnableSkillErrors, EnableSkillResponses, ExportDataData, ExportDataResponses, GetActivityHeatmapData, GetActivityHeatmapErrors, GetActivityHeatmapResponses, GetAttentionBudgetData, GetAttentionBudgetResponses, GetContactsPageData, GetContactsPageResponses, GetCostAnomaliesData, GetCostAnomaliesErrors, GetCostAnomaliesResponses, GetCostSummaryData, GetCostSummaryResponses, GetEntityDetailData, GetEntityDetailErrors, GetEntityDetailResponses, GetGoalDetailData, GetGoalDetailErrors, GetGoalDetailResponses, GetMemoryActivityData, GetMemoryActivityErrors, GetMemoryActivityResponses, GetMemoryFeedData, GetMemoryFeedErrors, GetMemoryFeedResponses, GetMemoryGraphData, GetMemoryGraphErrors, GetMemoryGraphResponses, GetMemoryTimelineBoundsData, GetMemoryTimelineBoundsResponses, GetMessageFeedbackData, GetMessageFeedbackErrors, GetMessageFeedbackResponses, GetMessageTraceData, GetMessageTraceErrors, GetMessageTraceResponses, GetMessageTracesData, GetMessageTracesErrors, GetMessageTracesResponses, GetNewsPageData, GetNewsPageErrors, GetNewsPageResponses, GetNewsSettingsData, GetNewsSettingsResponses, GetPrioritySnapshotData, GetPrioritySnapshotResponses, GetProcedureData, GetProcedureErrors, GetProcedureResponses, GetQuietHoursData, GetQuietHoursResponses, GetRemindersPageData, GetRemindersPageResponses, GetUiManifestData, GetUiManifestResponses, GetUnreadNotificationCountData, GetUnreadNotificationCountResponses, GetVersionData, GetVersionResponses, GetWorkflowData, GetWorkflowErrors, GetWorkflowExecutionData, GetWorkflowExecutionErrors, GetWorkflowExecutionResponses, GetWorkflowResponses, GetWorkspaceData, GetWorkspaceFileData, GetWorkspaceFileErrors, GetWorkspaceFileResponses, GetWorkspaceResponses, HealthCheckData, HealthCheckResponses, ImportDataData, ImportDataErrors, ImportDataResponses, ImportSkillData, ImportSkillErrors, ImportSkillResponses, ListActiveProceduresData, ListActiveProceduresResponses, ListDataDomainsData, ListDataDomainsResponses, ListGoalsData, ListGoalsResponses, ListGoalTracesData, ListGoalTracesErrors, ListGoalTracesResponses, ListHeldWritesData, ListHeldWritesErrors, ListHeldWritesResponses, ListHypothesesData, ListHypothesesErrors, ListHypothesesResponses, ListLoopsData, ListLoopsErrors, ListLoopsResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListProactiveJobRunsData, ListProactiveJobRunsErrors, ListProactiveJobRunsResponses, ListProcedureCandidatesData, ListProcedureCandidatesErrors, ListProcedureCandidatesResponses, ListProcedureLibraryData, ListProcedureLibraryResponses, ListRemindersData, ListRemindersErrors, ListRemindersResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListSkillsData, ListSkillsErrors, ListSkillsResponses, ListWorkflowExecutionsData, ListWorkflowExecutionsErrors, ListWorkflowExecutionsResponses, ListWorkflowRevisionsData, ListWorkflowRevisionsErrors, ListWorkflowRevisionsResponses, ListWorkflowsData, ListWorkflowsResponses, ListWorkspaceFilesData, ListWorkspaceFilesErrors, ListWorkspaceFilesResponses, ListWorkspaceRunsData, ListWorkspaceRunsErrors, ListWorkspaceRunsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, ReceiveWebhookData, ReceiveWebhookErrors, ReceiveWebhookResponses, RejectSkillData, RejectSkillErrors, RejectSkillResponses, ReviewFactsData, ReviewFactsErrors, ReviewFactsResponses, ReviewGoalLearningData, ReviewGoalLearningErrors, ReviewGoalLearningResponses, ReviewProcedureCandidateData, ReviewProcedureCandidateErrors, ReviewProcedureCandidateResponses, SearchSessionsData, SearchSessionsErrors, SearchSessionsResponses, SetHypothesisFeedbackData, SetHypothesisFeedbackErrors, SetHypothesisFeedbackResponses, SetMessageFeedbackData, SetMessageFeedbackErrors, SetMessageFeedbackResponses, StartGoalData, StartGoalErrors, StartGoalResponses, SubmitPriorityOverrideData, SubmitPriorityOverrideErrors, SubmitPriorityOverrideResponses, TriggerWorkflowData, TriggerWorkflowErrors, TriggerWorkflowResponses, UnpinPriorityOverrideData, UnpinPriorityOverrideErrors, UnpinPriorityOverrideResponses, UpdateQuietHoursData, UpdateQuietHoursErrors, UpdateQuietHoursResponses, UploadWorkspaceFileData, UploadWorkspaceFileErrors, UploadWorkspaceFileResponses, WatchWorkspaceRunEventsData, WatchWorkspaceRunEventsErrors, WatchWorkspaceRunEventsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -298,6 +298,32 @@ export const decideHeldWrite = <ThrowOnError extends boolean = false>(options: O
 });
 
 /**
+ * List correlation hypotheses
+ *
+ * Hypotheses Ze has formed from cross-domain evidence, newest first, each with confidence, relation, evidence and the entities it concerns. state is open (not confirmed and not dismissed), confirmed, dismissed (marked not_relevant or muted) or all. claim_kind is inference or suspicion, never fact.
+ */
+export const listHypotheses = <ThrowOnError extends boolean = false>(options?: Options<ListHypothesesData, ThrowOnError>): RequestResult<ListHypothesesResponses, ListHypothesesErrors, ThrowOnError> => (options?.client ?? client).get<ListHypothesesResponses, ListHypothesesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/hypotheses',
+    ...options
+});
+
+/**
+ * Record feedback on a hypothesis
+ *
+ * Record useful, not_relevant or muted. A not_relevant or muted hypothesis is no longer pushed, ranked or offered in conversation. Send null to clear the feedback, which undoes a dismissal.
+ */
+export const setHypothesisFeedback = <ThrowOnError extends boolean = false>(options: Options<SetHypothesisFeedbackData, ThrowOnError>): RequestResult<SetHypothesisFeedbackResponses, SetHypothesisFeedbackErrors, ThrowOnError> => (options.client ?? client).post<SetHypothesisFeedbackResponses, SetHypothesisFeedbackErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/hypotheses/{hypothesis_id}/feedback',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * List chat sessions
  *
  * Returns chat sessions ordered by most recently active, cursor-paginated via `before`.
@@ -445,7 +471,7 @@ export const deleteData = <ThrowOnError extends boolean = false>(options: Option
 /**
  * List notifications
  *
- * Reverse-chronological, cursor-paginated notification history. Set mark_read=true to atomically mark the returned page as read (used by the panel-open fetch).
+ * Reverse-chronological, cursor-paginated notification history. Set mark_read=true to atomically mark the returned page as read (used by the panel-open fetch). Filter by delivery outcome, push class, or since a time to answer what Ze sent, held or suppressed.
  */
 export const listNotifications = <ThrowOnError extends boolean = false>(options?: Options<ListNotificationsData, ThrowOnError>): RequestResult<ListNotificationsResponses, ListNotificationsErrors, ThrowOnError> => (options?.client ?? client).get<ListNotificationsResponses, ListNotificationsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -465,9 +491,20 @@ export const getUnreadNotificationCount = <ThrowOnError extends boolean = false>
 });
 
 /**
+ * Get the attention budget
+ *
+ * How many unprompted pushes the rolling 24-hour window has used, when the next slot opens (only when none is free), how many pushes quiet hours are holding, and whether quiet hours are active now. Returns 503 when the push log cannot be read; it never reports a guessed count.
+ */
+export const getAttentionBudget = <ThrowOnError extends boolean = false>(options?: Options<GetAttentionBudgetData, ThrowOnError>): RequestResult<GetAttentionBudgetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetAttentionBudgetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/notifications/budget',
+    ...options
+});
+
+/**
  * Get quiet hours
  *
- * The user's quiet-hours setting, whether it is active now, how many pushes are held, and the daily budget for unprompted pushes.
+ * The user's quiet-hours setting and whether it is active now. The push budget and held count are on the attention budget route.
  */
 export const getQuietHours = <ThrowOnError extends boolean = false>(options?: Options<GetQuietHoursData, ThrowOnError>): RequestResult<GetQuietHoursResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetQuietHoursResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -590,6 +627,17 @@ export const submitPriorityOverride = <ThrowOnError extends boolean = false>(opt
 export const unpinPriorityOverride = <ThrowOnError extends boolean = false>(options: Options<UnpinPriorityOverrideData, ThrowOnError>): RequestResult<UnpinPriorityOverrideResponses, UnpinPriorityOverrideErrors, ThrowOnError> => (options.client ?? client).post<UnpinPriorityOverrideResponses, UnpinPriorityOverrideErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/priority/override/{override_id}/unpin',
+    ...options
+});
+
+/**
+ * List the last run of each proactive job
+ *
+ * One row per proactive job with its last start, finish and status (running, ok or error), newest first. This is the last run only, not a history. Use since to keep jobs that started at or after a time. Returns 503 when the run store cannot be read.
+ */
+export const listProactiveJobRuns = <ThrowOnError extends boolean = false>(options?: Options<ListProactiveJobRunsData, ThrowOnError>): RequestResult<ListProactiveJobRunsResponses, ListProactiveJobRunsErrors, ThrowOnError> => (options?.client ?? client).get<ListProactiveJobRunsResponses, ListProactiveJobRunsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/proactive/job-runs',
     ...options
 });
 
@@ -926,5 +974,16 @@ export const getContactsPage = <ThrowOnError extends boolean = false>(options?: 
 export const getRemindersPage = <ThrowOnError extends boolean = false>(options?: Options<GetRemindersPageData, ThrowOnError>): RequestResult<GetRemindersPageResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetRemindersPageResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/reminders/page',
+    ...options
+});
+
+/**
+ * List reminders
+ *
+ * Reminders the user set. status upcoming is unsent and still in the future; overdue is unsent with a time that has passed (missed while Ze was down); fired is sent; all is every reminder. Timestamps carry a UTC offset. Returns 503 when the reminder store is not available.
+ */
+export const listReminders = <ThrowOnError extends boolean = false>(options?: Options<ListRemindersData, ThrowOnError>): RequestResult<ListRemindersResponses, ListRemindersErrors, ThrowOnError> => (options?.client ?? client).get<ListRemindersResponses, ListRemindersErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/reminders',
     ...options
 });

@@ -19,6 +19,7 @@ import { useLoopsQuery } from "@/entities/loop";
 import { useMemoryFeedQuery } from "@/entities/memory-feed-item";
 import { useMemoryGraphQuery } from "@/entities/memory-graph";
 import { useNotificationsQuery } from "@/entities/notification";
+import { useAttentionBudgetQuery } from "@/entities/notification";
 import { usePrioritySnapshotQuery } from "@/entities/priority-item";
 import { useQuietHoursQuery } from "@/entities/quiet-hours";
 import { useWorkflowsQuery } from "@/entities/workflow";
@@ -135,7 +136,7 @@ export interface World {
   noticed: MemoryFeedItem[];
   facts: MemoryFeedItem[];
   people: { id: string; name: string; type: string; role: string | null; degree: number }[];
-  budget: { max: number; spent: number; spentSynthetic: boolean; quietEnabled: boolean; quietNow: boolean; held: number };
+  budget: { max: number | null; spent: number | null; spentSynthetic: boolean; quietEnabled: boolean; quietNow: boolean; held: number | null };
   sourcesFailed: string[];
 }
 
@@ -176,6 +177,7 @@ export function useWorld(): World {
   const notes = useNotificationsQuery();
   const feed = useMemoryFeedQuery({ type: "fact" });
   const quiet = useQuietHoursQuery();
+  const attention = useAttentionBudgetQuery();
   const wfQ = useWorkflowsQuery();
   const graph = useMemoryGraphQuery({ limit: 40 });
 
@@ -364,11 +366,6 @@ export function useWorld(): World {
     origin: n.source,
   }));
 
-  // API gap 5: pushes spent today. Derived from today's delivered notifications that rang the bell.
-  const today = now.toDateString();
-  const spent = notifications.filter(
-    (n) => new Date(n.created_at).toDateString() === today && n.delivery === "delivered" && n.push_class === "discretionary",
-  ).length;
 
   return {
     loading: open.isLoading || snapshot.isLoading || goalsQ.isLoading,
@@ -393,12 +390,12 @@ export function useWorld(): World {
         degree: n.degree,
       })),
     budget: {
-      max: quiet.data?.max_discretionary_per_day ?? 5,
-      spent,
+      max: attention.data?.max_per_day ?? null,
+      spent: attention.data?.used ?? null,
       spentSynthetic: false,
       quietEnabled: quiet.data?.enabled ?? false,
       quietNow: quiet.data?.active_now ?? false,
-      held: quiet.data?.held_count ?? 0,
+      held: attention.data?.held_count ?? null,
     },
     sourcesFailed: snap?.sourcesFailed ?? [],
   };

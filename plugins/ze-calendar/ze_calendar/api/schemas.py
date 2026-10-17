@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
+from datetime import datetime
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -8,3 +9,11 @@ from pydantic import BaseModel
 class PluginPageResponse(BaseModel):
     title: str
     tree: list[dict[str, Any]]
+
+
+class ReminderItem(BaseModel):
+    id: str
+    label: str
+    fire_at: datetime
+    sent_at: datetime | None
+    status: Literal["upcoming", "overdue", "fired"]

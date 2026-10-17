@@ -73,3 +73,103 @@ async def test_get_reminders_page_returns_tree():
     assert isinstance(data["tree"], list)
     _assert_valid_tree(data["tree"])
     store.list_all.assert_awaited_once()
+
+
+def _reminder(label, *, sent=False, sent_at=None, fire_hours=1):
+    from datetime import datetime, timedelta, timezone
+    from uuid import uuid4
+
+    from ze_calendar.reminders.store import Reminder
+
+    fire = datetime(2026, 10, 17, 9, tzinfo=timezone.utc) + timedelta(hours=fire_hours)
+    return Reminder(
+        id=uuid4(),
+        label=label,
+        fire_at=fire,
+        created_at=fire - timedelta(days=1),
+        sent=sent,
+        sent_at=sent_at,
+    )
+
+
+async def _get_reminders(store, **params):
+    app = _make_app(store)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        return await client.get(
+            "/api/v0/reminders",
+            params=params,
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+
+@pytest.mark.asyncio
+async def test_list_reminders_maps_status_from_sent_and_due():
+    from datetime import datetime, timezone
+
+    sent_at = datetime(2026, 10, 17, 8, tzinfo=timezone.utc)
+    store = AsyncMock()
+    store.list_by_status = AsyncMock(
+        return_value=[
+            (_reminder("future"), False),
+            (_reminder("missed", fire_hours=-5), True),
+            (_reminder("done", sent=True, sent_at=sent_at, fire_hours=-3), True),
+        ]
+    )
+
+    resp = await _get_reminders(store, status="all")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert [(r["label"], r["status"]) for r in body] == [
+        ("future", "upcoming"),
+        ("missed", "overdue"),
+        ("done", "fired"),
+    ]
+    assert body[0]["sent_at"] is None
+    assert datetime.fromisoformat(body[2]["sent_at"]) == sent_at
+    assert body[0]["fire_at"].endswith(("Z", "+00:00"))
+    assert set(body[0]) == {"id", "label", "fire_at", "sent_at", "status"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", ["upcoming", "overdue", "fired", "all"])
+async def test_status_filter_and_limit_reach_the_store(status):
+    store = AsyncMock()
+    store.list_by_status = AsyncMock(return_value=[])
+
+    await _get_reminders(store, status=status, limit=999)
+
+    store.list_by_status.assert_awaited_once_with(status, 200)
+
+
+@pytest.mark.asyncio
+async def test_defaults_to_upcoming_with_limit_fifty():
+    store = AsyncMock()
+    store.list_by_status = AsyncMock(return_value=[])
+    await _get_reminders(store)
+    store.list_by_status.assert_awaited_once_with("upcoming", 50)
+
+
+@pytest.mark.asyncio
+async def test_unknown_status_is_422():
+    resp = await _get_reminders(AsyncMock(), status="weird")
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_missing_store_is_503_not_an_empty_list():
+    resp = await _get_reminders(None)
+    assert resp.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_list_reminders_requires_api_key():
+    app = _make_app(AsyncMock())
+    app.dependency_overrides.clear()
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get("/api/v0/reminders")
+    assert resp.status_code in (401, 403)

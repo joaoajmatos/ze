@@ -414,3 +414,10 @@ async def test_passes_grounding_rejects_below_threshold():
     nli.grounding_score = MagicMock(return_value=0.1)
     result = await passes_grounding("summary", ["label"], nli, 0.3)
     assert result is False
+
+
+async def test_push_sweep_reads_candidates_through_list_unsurfaced():
+    """list_unsurfaced carries the dismissed-feedback predicate (pinned in test_store)."""
+    source, mocks = _make_candidate_source()
+    await source.eligible_candidates()
+    mocks["hypothesis_store"].list_unsurfaced.assert_awaited()

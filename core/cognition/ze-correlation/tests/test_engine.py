@@ -7,10 +7,13 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+
+import pytest
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
 
+from ze_agents.claims import ClaimKind
 from ze_correlation.engine import CorrelationEngine
 from ze_correlation.store import PostgresHypothesisStore
 from ze_correlation.types import Hypothesis
@@ -134,6 +137,7 @@ def _make_engine(
 
     hyp_store = MagicMock(spec=PostgresHypothesisStore)
     hyp_store.save = AsyncMock()
+    hyp_store.list_by_entities = AsyncMock(return_value=[])
 
     engine = CorrelationEngine(
         memory_store=memory_store,
@@ -263,6 +267,58 @@ async def test_all_cited_evidence_tagged_graph_recall():
     assert len(results) == 1
     for ev in results[0].evidence:
         assert ev.origin == "graph_recall", f"Expected graph_recall, got {ev.origin}"
+
+
+async def _correlate_with_existing(existing_for_seeds):
+    sig_id, sig2_id = uuid4(), uuid4()
+    sig, ing = _make_signal(sig_id, title="Signal A")
+    sig2, ing2 = _make_signal(sig2_id, title="Signal B")
+    engine, _, hyp_store = _make_engine(
+        expansion=_make_expansion(signal_ids=[sig_id, sig2_id]),
+        signals=[(sig, ing), (sig2, ing2)],
+        llm_response=_make_llm_response(evidence_ids=[str(sig_id), str(sig2_id)]),
+    )
+    seeds = [uuid4()]
+    hyp_store.list_by_entities = AsyncMock(
+        return_value=existing_for_seeds(seeds)
+    )
+    results = await engine.correlate(seeds, mode="inline")
+    return results, hyp_store
+
+
+def _existing(seeds, feedback):
+    from ze_correlation.types import Hypothesis
+
+    return [
+        Hypothesis(
+            id=uuid4(), summary="s", narrative="n", relation="pattern",
+            confidence=0.5, relevance=0.5, evidence=[], entities=list(seeds),
+            created_at=datetime.now(timezone.utc), claim_kind=ClaimKind.SUSPICION,
+            feedback=feedback,
+        )
+    ]
+
+
+@pytest.mark.parametrize("feedback", ["not_relevant", "muted"])
+async def test_dismissed_hypothesis_with_same_entities_blocks_reforming(feedback):
+    results, hyp_store = await _correlate_with_existing(
+        lambda seeds: _existing(seeds, feedback)
+    )
+    assert results == []
+    hyp_store.save.assert_not_awaited()
+    assert hyp_store.list_by_entities.await_args.kwargs == {"include_dismissed": True}
+
+
+async def test_useful_or_unrated_hypothesis_does_not_block_forming():
+    results, _ = await _correlate_with_existing(lambda seeds: _existing(seeds, "useful"))
+    assert len(results) == 1
+
+
+async def test_dismissed_hypothesis_on_different_entities_does_not_block():
+    results, _ = await _correlate_with_existing(
+        lambda seeds: _existing([uuid4()], "muted")
+    )
+    assert len(results) == 1
 
 
 async def test_recall_guarantee_fewer_than_two_items():
