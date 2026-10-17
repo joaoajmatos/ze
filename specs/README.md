@@ -228,7 +228,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 184 | [Composed Answers and Claim Posture (B1)](phases/184-composed-answers-posture/spec.md) | 🔲 Ready to implement |
 | 185 | [World Data Gaps (B2)](phases/185-world-data-gaps/spec.md) | 🔲 Ready to implement (after 184) |
 | 186 | [World (W2)](phases/186-web-world/spec.md) | 🔲 Ready to implement (after 184, 185, 195) |
-| 187 | [Ask / Assemble (W3)](phases/187-web-ask-assemble/spec.md) | 🔲 Draft |
+| 187 | [Ask / Assemble (W3)](phases/187-web-ask-assemble/spec.md) | 🔲 Ready to implement (after 184, 195, 186) |
 | 188 | [Doing (W4)](phases/188-web-doing/spec.md) | 🔲 Draft |
 | 189 | [Mind (W5)](phases/189-web-mind/spec.md) | 🔲 Draft |
 | 190 | [Governance (W6)](phases/190-web-governance/spec.md) | 🔲 Draft |
