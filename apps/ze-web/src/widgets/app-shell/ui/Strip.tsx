@@ -16,7 +16,7 @@ export function Strip() {
   const now = useClock();
   return (
     <div className="strip">
-      <div className="coords" role="note" aria-label="Legend: solid means told, dotted means inferred or suspected, coral means slipping">
+      <div className="coords" title="Filled marks are told by you, half-filled are inferred, dashed are suspected. Coral means something is slipping." role="note" aria-label="Legend: solid means told, dotted means inferred or suspected, coral means slipping">
         <span className="lbl">claims · filled told · half inferred · dashed suspected</span>
         <span className="lbl hot">coral slipping</span>
       </div>

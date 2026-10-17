@@ -1660,3 +1660,25 @@ h2.lbl {
   display: block;
   margin-bottom: 2px;
 }
+
+.strip .lbl {
+  font-size: 0.6875rem;
+  color: var(--ink-2);
+}
+.strip .lbl.hot {
+  color: var(--coral);
+}
+.conn {
+  gap: 8px;
+  padding: 0 4px;
+}
+@media (max-width: 1023px) {
+  .section-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .section-tabs .ctl {
+    flex: none;
+  }
+}
