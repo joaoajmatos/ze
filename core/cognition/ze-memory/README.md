@@ -21,6 +21,8 @@ Memory is how Ze remembers the user across conversations. Facts and episodes are
 
 Plugins emit candidate signals via `SignalSource` (defined in `ze-plugin`, type in `ze_memory.types`). The admission gate scores each signal for relevance; admitted signals are written to the memory graph and become seeds for `ze-correlation`.
 
+`screen_resolvers.py` registers screen resolvers for `entity`, `fact` and `procedure`. A fact line carries its stored claim kind, source and confidence.
+
 ## Responsibilities
 
 | Module | What it provides |

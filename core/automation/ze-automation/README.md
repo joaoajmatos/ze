@@ -22,6 +22,8 @@ It also owns accountability: the weekly narrative and cost-anomaly detection tha
 
 `ze-api`'s container calls into `bootstrap.py` to construct the goal and workflow stacks, register their proactive jobs, and wire `GoalAgent` / `WorkflowAgent` into the routing graph — this package is wired directly by `ze-api`, not through the `ZePlugin` discovery path (it is core infrastructure, not a domain plugin). `ze-personal`, `ze-calendar`, and other plugins depend on `ze-automation` for goal/workflow types via `ze_sdk.automation`, never by importing `ze_automation` directly from plugin code.
 
+`screen_resolvers.py` registers screen resolvers for `goal`, `goal_gate`, `workflow`, `workflow_execution` and `held_write`, so "this" on a Doing page means that record.
+
 ## Responsibilities
 
 | Module | What it provides |

@@ -22,6 +22,8 @@ Entry point `ze_calendar`. Depends on `ze-google` for Calendar API access and `z
 from ze_calendar.plugin import CalendarPlugin
 ```
 
+`screen_resolvers.py` registers the `reminder` screen resolver.
+
 ## Responsibilities
 
 | Module | What it provides |

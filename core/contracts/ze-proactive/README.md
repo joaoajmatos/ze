@@ -20,6 +20,8 @@ Proactive Ze runs on a schedule — morning briefings, calendar reminders, news 
 
 Plugins register jobs in `ZePlugin.register_proactive_jobs()`. `ze-api` starts the scheduler after all plugins have started. Re-exported to plugin authors via `ze_sdk.proactive`.
 
+`screen_resolvers.py` registers the `notification` screen resolver. It follows the notification's target one hop. `NotificationStore.get` reads one row.
+
 ## Interruption governor
 
 `ProactiveNotifier.notify(kind, title, body, ...)` is the only proactive send path. Each `PushKind` names an event type and fixes its class, urgency, and source:

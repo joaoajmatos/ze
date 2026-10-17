@@ -23,6 +23,8 @@ Entry point `ze_news`. Contributes `NewsAgent`, `NewsFetchJob`, `NewsOnboardingP
 from ze_news.plugin import NewsPlugin
 ```
 
+`screen_resolvers.py` registers the `news_article` screen resolver. A ref id is `article_ref_id(url)` (`refs.py`), the hex md5 of the URL, and the store looks it up with `NewsStore.get_by_ref`. Nothing in the web app emits `news_article` refs yet.
+
 ## Responsibilities
 
 | Module | What it provides |

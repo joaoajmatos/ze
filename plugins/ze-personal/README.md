@@ -23,6 +23,8 @@ Discovered via entry point `ze_personal`. `PersonalPlugin` is a dependency for m
 from ze_personal.plugin import PersonalPlugin
 ```
 
+`contacts/screen_resolvers.py` registers the `contact` screen resolver.
+
 ## Responsibilities
 
 | Module | What it provides |

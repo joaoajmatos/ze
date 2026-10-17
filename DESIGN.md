@@ -293,6 +293,9 @@ Michroma 0.5625rem / 0.16em uppercase, dim, 1px hair border, 4px 7px padding. `.
 - **Tones:** default; `cream` (needs the user: gates, confirmations); `hot` (slipped, failed); `dotted` (suspected: dashed frame).
 - **Hover / focus-within:** frame and brackets brighten as in Elevation.
 
+### Chat about this (`.chat-about`, `shared/ui/hud/ChatAboutChip.tsx`)
+A bracketed chip (`.ctl.cmd` family, 44px target) in a module head's right slot, labelled "Chat about this". With a hover-capable pointer it stays visually hidden (opacity and transform) but present and focusable, and shows on hover or focus-within. On touch it is always visible. `c`, with no modifiers and outside an input, triggers it while focus is inside the module. Components without a `Module` frame use the chip directly with the same rules. Pressing it opens the Ask overlay on that record, and the orb glances at the element.
+
 ### Rows (`.row`, `.row.loop`)
 Title in cream with a claim glyph (`.glyph`: filled told, half inferred, dashed suspected, rotated hollow goal; coral when slipped), a 1px state tick on the left (orchid active, coral drifting, dim suspected or awaiting gate), a confidence sparkline (`Spark`: from the value when last evidenced to the decayed value now; dashed when inferred or suspected) over a mono readout "0.74 ▾0.05", and a dim second line "Drifting · chat · 3d ago".
 

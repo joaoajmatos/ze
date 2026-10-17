@@ -20,13 +20,20 @@ async def test_each_kind_round_trips(pg_pool, pg_dsn, kind):
             **({"parent": "parent"} if kind in PARENTS else {}),
         }
     )
+    async with pg_pool.acquire() as conn:
+        before = {
+            i["kind"]: await conn.fetchval(
+                f"SELECT COUNT(*) FROM {KINDS[i['kind']].table}"
+            )
+            for i in items
+        }
     fixtures = await Fixtures.create(items, db_url=pg_dsn)
     try:
         assert fixtures.bindings["row"]["id"]
         table = KINDS[kind].table
         async with pg_pool.acquire() as conn:
             count = await conn.fetchval(f"SELECT COUNT(*) FROM {table}")
-        assert count >= 1
+        assert count == before[kind] + 1
     finally:
         await fixtures.delete()
     async with pg_pool.acquire() as conn:
@@ -34,7 +41,7 @@ async def test_each_kind_round_trips(pg_pool, pg_dsn, kind):
             left = await conn.fetchval(
                 f"SELECT COUNT(*) FROM {KINDS[item['kind']].table}"
             )
-            assert left == 0, item["kind"]
+            assert left == before[item["kind"]], item["kind"]
 
 
 async def test_a_failed_setup_leaves_nothing_behind(pg_pool, pg_dsn):

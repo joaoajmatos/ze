@@ -79,10 +79,10 @@ Each task: tests first with a fake store (ok, missing, posture fields, summary p
 
 ## Phase 9: Docs [DOCS]
 
-- [ ] T027 [P] [DOCS] `docs/native-interface.md`, `docs/architecture.md`, `docs/extending-ze.md`, `docs/sdk.md`, `docs/frontend.md`, `docs/system-one.md` (screen hint flag; tier judge unchanged), `docs/eval.md` (setup block) per plan.md. `doc-style` skill.
-- [ ] T028 [P] [DOCS] `DESIGN.md` Components: the "Chat about this" chip (bracketed chip, reveal on hover/focus while focusable, visible on touch, `c` key). Package READMEs: ze-core, ze-automation, ze-worldstate, ze-memory, ze-skills, ze-workspace, ze-proactive, ze-correlation, ze-personal, ze-calendar, ze-news.
-- [ ] T029 [DOCS] `AGENTS.md` (graph flow with `resolve_screen`, migration table `zc039` messages.screen_context, layout note `ze_core/screen/`, phase row 195), `specs/README.md` row; status Implemented after T026.
-- [ ] T030 [DOCS] Coverage check against `git diff main...HEAD --stat`.
+- [x] T027 [P] [DOCS] `docs/native-interface.md`, `docs/architecture.md`, `docs/extending-ze.md`, `docs/sdk.md`, `docs/frontend.md`, `docs/system-one.md` (screen hint flag; tier judge unchanged), `docs/eval.md` (setup block) per plan.md. `doc-style` skill.
+- [x] T028 [P] [DOCS] `DESIGN.md` Components: the "Chat about this" chip (bracketed chip, reveal on hover/focus while focusable, visible on touch, `c` key). Package READMEs: ze-core, ze-automation, ze-worldstate, ze-memory, ze-skills, ze-workspace, ze-proactive, ze-correlation, ze-personal, ze-calendar, ze-news.
+- [x] T029 [DOCS] `AGENTS.md` (graph flow with `resolve_screen`, migration table `zc039` messages.screen_context, layout note `ze_core/screen/`, phase row 195), `specs/README.md` row; status Implemented after T026.
+- [x] T030 [DOCS] Coverage check against `git diff main...HEAD --stat`.
 
 ---
 

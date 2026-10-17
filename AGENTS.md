@@ -33,6 +33,7 @@ ze/                           # monorepo root
 │   │   │       ├── llm_json.py  # parse_llm_json — tolerant JSON parse of LLM replies (fences, prose), raises LLMJsonParseError
 │   │   │       ├── registry.py  # @agent decorator + module-level agent registry
 │   │   │       ├── settings.py  # Settings dataclass
+│   │   │       ├── screen.py    # ScreenContext/ScreenRef wire types (from_wire never raises), ScreenResolver protocol, sanitize_text
 │   │   │       ├── system_one.py # SystemOneClient Protocol — typed judgments (noul / choice / score)
 │   │   │       ├── park.py      # Parked writes, loops and subtasks; WriteConfirmation
 │   │   │       ├── effects.py   # effect_imperative, ensure_declined_lines
@@ -56,6 +57,7 @@ ze/                           # monorepo root
 │   │           ├── conversation/# invoke_raw_turn (turn.py) — streamed graph turn entry point; retry.py (Retry eligibility), rewind.py, rollback.py (run_rollback — undo a reply's actions before a retry)
 │   │           ├── openrouter/  # OpenRouterClient, System One client (engine internal — plugins use the Protocols)
 │   │           ├── orchestration/# graph_builder, graph nodes, AgentState, edges, judgment_state (shared System One state)
+│   │           ├── screen/      # Screen resolver registry + build_screen_note (the 1,200-character screen note built before routing)
 │   │           ├── routing/     # EmbeddingRouter, tier.py (System One model tier), fallback, store
 │   │           ├── telemetry/   # CostTracker, CostReconciler, PostgresCostStore, ContextVar
 │   │           ├── container.py # Base Container with DI wiring and invoke/resume entry points
@@ -279,7 +281,7 @@ make format          # ruff format + fix across all Python packages
 make dev-eval        # backend for evals — no dev seed data, PUBLIC_URL cleared (background jobs still start)
 make eval-server     # start MCP eval server (requires dev-eval running; see docs/eval.md)
 make calibrate-commitment-intake  # LIVE System One + old-pipeline baseline over eval/calibration/commitment_intake.jsonl; costs credits (--set holdout3 gave the one verdict on 2026-10-16 and is spent; --check-sets offline)
-make calibrate-routing     # LIVE System One run over eval/calibration/routing.jsonl; costs credits
+make calibrate-routing     # LIVE System One run over eval/calibration/routing.jsonl; costs credits (--check-sets is offline)
 make calibrate-skills      # LIVE System One run over eval/calibration/skills.jsonl; costs credits (--recall: offline shortlist recall)
 make calibrate-open-query # Local, free: open-query detector sweep over eval/calibration/open_query*.jsonl (--check-sets offline; one held-out verdict)
 make calibrate-loop-gate  # LIVE System One + Haiku baseline over eval/calibration/loop_gate.jsonl; costs credits (--set holdout = the one verdict run; --check-sets offline)
@@ -454,7 +456,7 @@ and runs them against a single `alembic_version` table.
 
 | Package | Branch prefix | Tables |
 |---|---|---|
-| ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, LangGraph checkpoints, messages, sessions, pending_confirmations, messages.rollback (`zc032`); capability_overrides dropped (`zc034`); routing_log.complexity and routing_log.model_selected dropped (`zc035`, phase 182) |
+| ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, LangGraph checkpoints, messages, sessions, pending_confirmations, messages.rollback (`zc032`), messages.screen_context (`zc039`); capability_overrides dropped (`zc034`); routing_log.complexity and routing_log.model_selected dropped (`zc035`, phase 182) |
 | ze-automation | `zc` (continues ze-core chain) | held_writes (`zc033`), goal_execution_traces, goal_suggestions (stuck goals col, reuse hint col), workflows, workflow_executions, workflow_revisions, accountability_anomalies, goal_learning_* (`zc030`; drops the old goal_learnings) |
 | ze-personal | `zc` (continues ze-automation chain) | contacts, contact_channels, contact_sources, insights, episodes.contacts_extracted, user_channels, user_channel_watermarks, thread_channel_map (contact_relationships dropped in `zc029`) |
 | ze-memory | `zm` | memory_entities, memory_facts, memory_episodes, memory_events, memory_task_state, memory_profile_facets, memory_relationships, memory_signals, memory_session_summaries, memory_retrieval_cache, memory_dream_*, memory_episode_metadata, action_records, procedure_* (`zm022`–`zm023`; replace memory_procedures), feedback_records (`zm024`) |
@@ -491,7 +493,7 @@ and runs them against a single `alembic_version` table.
 
 ```
 preprocess (voice → transcript, image → caption) → [inject_routing_context, when a plugin adds a pre_route_node]
-  → embed_route → (compound?) → decompose → fetch_context → match_skills → choose_tier → preflight
+  → resolve_screen (screen context → screen note, before routing) → embed_route → (compound?) → decompose → fetch_context → match_skills → choose_tier → preflight
                 ↘ fetch_context ↗
 
 preflight → blocked (disabled agent) → END
@@ -652,6 +654,7 @@ preflight → blocked (disabled agent) → END
 | 182 | Complexity Routing — routing always assigns the agent's full model; the `choose_tier` node runs after `match_skills` and asks one System One Noul (`needs_deep_reasoning`, `ze_core/routing/tier.py`) only for a single-agent turn whose agent declares a different `model_simple`; `model_simple` runs only when the answer is at or below `simple_max`; the complexity Score, `complexity_lookup_max`, the word-count classifier and `RoutingEnvelope.complexity` are removed; the surface is enabled at `simple_max` 0.40 (`system_one.surfaces.complexity`) after a held-out ENABLE in English and Portuguese on 2026-10-16; the code default without the config block is off; `MessageTrace.tier` (`TierTrace`: agent, tier, decided_by, model) reaches REST, the `trace_update` frame and the trace panel's Routing section; `routing_log.complexity` and `model_selected` are dropped (`zc035`); `make calibrate-complexity` runs the tuned and held-out calibration | Implemented |
 | 183 | Web Shell and Tokens (W1) — the Jarvis HUD becomes the app frame: tokens in `shared/styles/ze.css` (self-hosted Saira, Michroma, JetBrains Mono), HUD primitives in `shared/ui/hud`, five places (World, Ask, Doing, Mind, Governance) in `shared/config/places.ts` with a redirect table for the old routes, a top bar, strip, Presence module and sticky Ask bar, a phone bottom bar; the orb follows real signals for the Ask thread through `entities/presence` (pure `nextPresence`) and acts like a curious pet while idle (`gaze.ts`); the Ask bar opens a contextual overlay that sends on the thread selected in Ask; old pages render as interim sections of their place; palette is a Governance setting; floating launcher, organ nav and `nav-routes.ts` deleted; no backend change | Implemented |
 | 184 | Composed Answers and Claim Posture (B1) — `ClaimPosture` on every primitive, set only by code from the stored record (a model-supplied `claim` is dropped); new `headline`, `claim_card`, `claim_timeline` primitives; `ze_priority/compose/` `WorldComposer` builds slipping, decisions and topic answers from stored records (parallel read, per-source failure named); preset chips send `context.compose`/`topic` and `fetch_context` reroutes to companion under a 2 s timeout, typed questions use `show_slipping`/`show_decisions`/`show_topic`; topic matching keeps an item that shares a topic word or has E5 cosine ≥ 0.90; derived `failure_summary` on workflow runs; goal list progress fields and `STUCK_IDLE_DAYS`; `notifications.target_parent_id` (`zpro005`) and notification deep links; inline loop mentions are claim cards (`open_items` removed) | Implemented |
+| 195 | Screen Context Awareness — the web app sends a typed `ScreenContext` (place, route, `subject`/`selection`/`visible` refs, focused module, canvas, `captured_at`; `ze_agents/screen.py`, `from_wire` never raises) and a `resolve_screen` node runs before `embed_route` on both pre-route branches (and the workflow graph). `ZePlugin.screen_resolvers()` registers one resolver per ref kind (`ze_core/screen/registry.py`, a duplicate kind fails startup; 16 kinds across automation, worldstate, memory, skills, workspace, correlation, proactive, personal, calendar, news); `build_screen_note` writes one honest note of at most 1,200 characters (300 ms per resolver, 800 ms total, first subject never cut, `missing`/`changed`/`failed`/`timeout`/`cut` stated) that `fetch_context` hands to the agent as `screen_context_note` (184's preset summary moved to `preset_note`). The context is stored on each user message (`messages.screen_context`, `zc039`) so Retry replays it; `MessageTrace.screen` reaches REST, the `trace_update` frame and the trace panel. The routing judge reads one subject line only when `system_one.surfaces.routing.screen_hint` is true (ships off). Web: `entities/screen-context` store and `useScreenPublisher`, one send path in `useChatWorkspace`, the "Chat about this" chip (`Module.onChatAbout`, `c` key, `claim_card`) opening the overlay with suggestions and a curious-pet orb glance. Old `screen`/`goal_id`/`workflow_id`/`execution_id` fields and `_build_screen_context_note` deleted. Eval: scenario `setup:` rows and `{{name.field}}` substitution (`ze_eval/fixtures.py`), `eval/scenarios/screen_context.yaml`, `make calibrate-routing ARGS=--check-sets` and `eval/calibration/routing_screen.jsonl` (offline; no live calibration run) | Implemented |
 
 ## graphify
 
