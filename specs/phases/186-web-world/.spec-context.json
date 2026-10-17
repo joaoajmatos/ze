@@ -3,8 +3,8 @@
   "specName": "World (W2)",
   "branch": "186-web-world",
   "currentStep": "implement",
-  "currentTask": "T033",
-  "status": "implementing",
+  "currentTask": "T030",
+  "status": "implemented",
   "task_summaries": {
     "T002": {
       "status": "DONE",
@@ -129,6 +129,14 @@
     "T033": {
       "status": "DONE",
       "did": "docs: frontend, native-interface, features, architecture, worldstate README, calendar README, AGENTS, specs index"
+    },
+    "T001": {
+      "status": "DONE",
+      "did": "gate, baseline critique 22/40 vs World 31/40, captures, SC-001/SC-002 in handoffs"
+    },
+    "T030": {
+      "status": "DONE",
+      "did": "gate, baseline critique 22/40 vs World 31/40, captures, SC-001/SC-002 in handoffs"
     }
   },
   "history": [
@@ -379,6 +387,29 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-10-17T22:45:04.863Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T23:05:48.630Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T23:05:48.841Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T23:05:49.273Z"
     }
   ]
 }
