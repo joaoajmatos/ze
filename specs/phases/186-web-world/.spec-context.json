@@ -1,0 +1,132 @@
+{
+  "workflow": "speckit",
+  "specName": "World (W2)",
+  "branch": "186-web-world",
+  "currentStep": "implement",
+  "currentTask": "T011",
+  "status": "implementing",
+  "task_summaries": {
+    "T002": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "page model libs and useWorld"
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "page model libs and useWorld"
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "page model libs and useWorld"
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "page model libs and useWorld"
+    }
+  },
+  "history": [
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:38.689Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:38.966Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:39.234Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:39.498Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:39.772Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:40.010Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:53:22.013Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:53:22.173Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:53:22.356Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:53:22.537Z"
+    }
+  ]
+}
