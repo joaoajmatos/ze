@@ -117,6 +117,14 @@ class ZePlugin(ABC):
         """
         return []
 
+    def screen_resolvers(self) -> list[Any]:
+        """Resolvers for the screen kinds this plugin owns (phase 195).
+
+        Each is a `ze_sdk.screen.ScreenResolver`: it loads records by id for its `kinds` and
+        returns one `ScreenLine` per ref. A kind claimed twice fails startup. Default: none.
+        """
+        return []
+
     def agent_deps(self, accumulated: dict[type, Any]) -> dict[type, Any]:
         """Return types this plugin contributes to the agent dep-map.
 

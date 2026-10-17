@@ -265,6 +265,11 @@ class PersonalPlugin(ZePlugin):
 
         return [router]
 
+    def screen_resolvers(self) -> list[Any]:
+        from ze_personal.contacts.screen_resolvers import build_screen_resolvers
+
+        return build_screen_resolvers(person_store=self.person_store)
+
     def configurable_services(self) -> dict[str, Any]:
         from ze_personal.persona.identity import build_identity_block
         from ze_personal.graph.memory_hooks import contact_proposal_hook

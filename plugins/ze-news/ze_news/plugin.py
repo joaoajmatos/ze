@@ -105,6 +105,13 @@ class NewsPlugin(ZePlugin):
     def migrations_path(cls) -> Path | None:
         return Path(__file__).parent / "migrations"
 
+    def screen_resolvers(self) -> list[Any]:
+        if self._store is None:
+            return []
+        from ze_news.screen_resolvers import build_screen_resolvers
+
+        return build_screen_resolvers(news_store=self._store)
+
     def rest_stores(self) -> dict[str, Any]:
         if self._store is None:
             return {}

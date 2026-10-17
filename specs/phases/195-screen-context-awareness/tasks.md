@@ -49,8 +49,8 @@ Each task: tests first with a fake store (ok, missing, posture fields, summary p
 
 ## Phase 4: Plugins and wiring [US2, US5, US6]
 
-- [ ] T012 [ENG] [BACKEND] `ZePlugin.screen_resolvers()` (default `[]`) + test; ze-api `wiring/container.py` builds `ScreenResolverRegistry` from every core factory (T007–T011) and every plugin's `screen_resolvers()` into `configurable["screen_resolvers"]`; duplicate kind fails startup (test).
-- [ ] T013 [P] [JR] [BACKEND] Plugins: ze-personal `contact`, ze-calendar `reminder`, ze-news `news_article` resolvers via `ze_sdk.screen`, returned from `screen_resolvers()`; tests per plugin; `packages/ze-sdk/tests/test_plugin_boundaries.py` passes.
+- [x] T012 [ENG] [BACKEND] `ZePlugin.screen_resolvers()` (default `[]`) + test; ze-api `wiring/container.py` builds `ScreenResolverRegistry` from every core factory (T007–T011) and every plugin's `screen_resolvers()` into `configurable["screen_resolvers"]`; duplicate kind fails startup (test).
+- [x] T013 [P] [JR] [BACKEND] Plugins: ze-personal `contact`, ze-calendar `reminder`, ze-news `news_article` resolvers via `ze_sdk.screen`, returned from `screen_resolvers()`; tests per plugin; `packages/ze-sdk/tests/test_plugin_boundaries.py` passes.
 - [x] T014 [ENG] [BACKEND] `api/ws/turns.py`: `from_wire` (warnings → `screen_context_invalid` for the trace), store on the user message, `config_extra["screen_context"]`; retry passes the stored context (OQ-2). Tests: stores and passes; invalid context → turn proceeds with warnings traced; retry passes the stored one; retry of a stored ref whose record changed since → `changed`; no context → none. The eval router passes `context` through `from_wire` too.
 
 ## Phase 5: Trace [US4]
