@@ -118,7 +118,7 @@ confidence            = {new}
 
 ### ze-calendar: reminders route
 
-`ReminderStore.list_by_status(status: Literal["upcoming","overdue","fired","all"], limit: int) -> list[Reminder]`: upcoming = `NOT sent AND fire_at > NOW() ORDER BY fire_at ASC` (as `list_pending`); overdue = `NOT sent AND fire_at <= NOW() ORDER BY fire_at ASC`; fired = `sent ORDER BY sent_at DESC NULLS LAST`; all = `ORDER BY fire_at DESC`. The route derives `status` per row with the same rule (now from the database clock in the query: select `fire_at <= NOW() AS due`). `api/routes.py` adds `GET /api/v0/reminders` (`listReminders`) → `list[ReminderItem { id, label, fire_at, sent_at, status }]`, store from `request.app.state.container._plugin_stores["reminder_store"]` as `get_reminders_page` does; store missing → empty list; `limit` defaults to 50 and is clamped 1..200.
+`ReminderStore.list_by_status(status: Literal["upcoming","overdue","fired","all"], limit: int) -> list[Reminder]`: upcoming = `NOT sent AND fire_at > NOW() ORDER BY fire_at ASC` (as `list_pending`); overdue = `NOT sent AND fire_at <= NOW() ORDER BY fire_at ASC`; fired = `sent ORDER BY sent_at DESC NULLS LAST`; all = `ORDER BY fire_at DESC`. `list_by_status` returns `list[tuple[Reminder, bool]]`: each reminder with `due` (`fire_at <= NOW()`, selected in the same query so the database clock decides). The route maps `sent` → `fired`, else `due` → `overdue`, else `upcoming`. `api/routes.py` adds `GET /api/v0/reminders` (`listReminders`) → `list[ReminderItem { id, label, fire_at, sent_at, status }]`, store from `request.app.state.container._plugin_stores["reminder_store"]` as `get_reminders_page` does; store missing → empty list; `limit` defaults to 50 and is clamped 1..200.
 
 ### Web (hard-cut follow-up only)
 

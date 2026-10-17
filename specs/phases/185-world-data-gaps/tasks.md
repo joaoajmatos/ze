@@ -60,7 +60,7 @@
 
 ## Phase 6: Reminders [US5]
 
-- [ ] T019 [JR] [BACKEND] Tests first in `plugins/ze-calendar/tests/test_reminder_store.py`: `list_by_status` SQL and order for `upcoming`, `overdue`, `fired`, `all`; limit. Implement `ReminderStore.list_by_status`.
+- [ ] T019 [JR] [BACKEND] Tests first in `plugins/ze-calendar/tests/test_reminder_store.py`: `list_by_status` SQL and order for `upcoming`, `overdue`, `fired`, `all`; limit; returns `(Reminder, due)` pairs with `due` read from the `fire_at <= NOW() AS due` column. Implement `ReminderStore.list_by_status`.
 - [ ] T020 [JR] [BACKEND] Tests first in `plugins/ze-calendar/tests/test_api_routes.py`: `upcoming` / `overdue` / `fired` / `all`; an unsent reminder whose `fire_at` passed has `status: overdue`; missing store → `[]`; ISO with offset; no API key → 401. (ENG regenerates the client after merge.) Implement `GET /api/v0/reminders` (`listReminders`) and `ReminderItem` in `ze_calendar/api/{routes,schemas}.py`. Run `packages/ze-sdk/tests/test_plugin_boundaries.py`.
 
 ## Phase 7: Client and gates [ENG]

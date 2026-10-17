@@ -68,7 +68,7 @@ Loop rows gain `confidence_prior` (the value before the last confidence change) 
 
 ### User Story 5 - Reminders have REST (Priority: P1)
 
-`GET /api/v0/reminders?status=upcoming|fired|all&limit=` (`listReminders`) returns `{ id, label, fire_at, sent_at, status }` with `status` one of `upcoming` (not sent, `fire_at` in the future), `overdue` (not sent, `fire_at` passed: missed while Ze was down, replay not yet run) or `fired` (sent); the filter accepts `upcoming | overdue | fired | all`; ISO timestamps with offset. Owned by `ze-calendar` (plugin `rest_routes()`). The client joins a reminder to its loop through `LoopListItem.reminder_id`. The plugin page (`getRemindersPage`) is deleted in phase 186 when World renders reminders, not here.
+`GET /api/v0/reminders?status=upcoming|overdue|fired|all&limit=` (`listReminders`) returns `{ id, label, fire_at, sent_at, status }` with `status` one of `upcoming` (not sent, `fire_at` in the future), `overdue` (not sent, `fire_at` passed: missed while Ze was down, replay not yet run) or `fired` (sent); the filter accepts `upcoming | overdue | fired | all`; ISO timestamps with offset. Owned by `ze-calendar` (plugin `rest_routes()`). The client joins a reminder to its loop through `LoopListItem.reminder_id`. The plugin page (`getRemindersPage`) is deleted in phase 186 when World renders reminders, not here.
 
 **Independent Test**: plugin route test with a fake reminder store: `upcoming` returns unsent future reminders ordered by `fire_at`; an unsent reminder whose time passed is `overdue`, never `upcoming`; `fired` returns sent ones newest first.
 
