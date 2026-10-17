@@ -23,7 +23,6 @@ const N = 29; // dots across the sphere's diameter
 const PAD = 7; // extra dot columns of room around the sphere for thrown dots and orbit rings
 const STAGGER_MS = 320; // a state change reaches the rim this long after the core
 const K = 110; // spring stiffness; damping is critical, so dots never ring
-const EYE_R = 0.13; // home radius of the eye: the monad every white animation springs from
 const BEAT_S = 2.2; // calm heartbeat period, shared with the mark's CSS pulse
 
 /** Two-beat heart on an absolute clock, so the field mark can pulse in sync. */
@@ -111,17 +110,6 @@ function wave(i: number, t: number): number {
  * to be (a displacement from its grid home), how bright, and which colour; springs do the rest.
  */
 function program(s: OrbState, d: Dot, shade: number, rim: number, t: number, age: number, tAbs: number, lean: Lean): Target {
-  const target = programFor(s, d, shade, rim, t, age, tAbs, lean);
-  // The eye is the dense core. It moves with the gaze parallax and stays lit and white through every
-  // state but attention (it turns coral) and error (it goes dim), so each white animation reads as
-  // coming out of it.
-  if (d.r < EYE_R && s !== "attention" && s !== "error") {
-    return { dx: target.dx, dy: target.dy, v: Math.max(target.v, 1 - 0.3 * (d.r / EYE_R)), color: 1 };
-  }
-  return target;
-}
-
-function programFor(s: OrbState, d: Dot, shade: number, rim: number, t: number, age: number, tAbs: number, lean: Lean): Target {
   const { x, y, r, ang, z, seed } = d;
   // Life shared by every state: a slow breath, a ripple that crosses the sphere, and a limb that wobbles.
   const breath = 0.018 * Math.sin(t * 0.9 + r * 1.2);
@@ -133,7 +121,7 @@ function programFor(s: OrbState, d: Dot, shade: number, rim: number, t: number, 
   const base = shade * 0.8 + rim;
   switch (s) {
     case "idle":
-      return { dx, dy, v: base, color: 0 };
+      return { dx, dy, v: base, color: shade > 0.965 ? 1 : 0 };
     case "listening": {
       // Gathers a little and leans toward the Ask field below; a ring runs inward like it is drawing breath.
       const ring = Math.pow(Math.max(0, Math.sin((r + t * 0.9) * 9)), 10);
@@ -147,7 +135,7 @@ function programFor(s: OrbState, d: Dot, shade: number, rim: number, t: number, 
       const swirl = 0.16 * (1 - r) * Math.sin(t * 0.55 + seed * 2) * (r < 0.45 ? 1 : -0.6);
       dx += -y * swirl;
       dy += x * swirl;
-      const scan = Math.pow(Math.max(0, Math.cos(ang - t * 2.2 - r * 3.2)), 14) * (1 - 0.35 * r);
+      const scan = Math.pow(Math.max(0, Math.cos(ang - t * 2.2)), 14);
       // The three tones swirl slowly with the dots.
       const g = 1 + Math.sin(ang * 2 + r * 3.5 - t * 0.7);
       return { dx, dy, v: shade * 0.4 + rim * 0.5 + scan * 0.95 * z, color: scan > 0.6 ? 1 : 0, g: scan > 0.6 ? undefined : g };
@@ -161,7 +149,7 @@ function programFor(s: OrbState, d: Dot, shade: number, rim: number, t: number, 
       const amp = 0.12 + 0.62 * a * Math.sqrt(Math.max(0, 1 - x * x));
       const inBand = Math.abs(y) <= amp;
       // The ripples that cross the sphere carry the tones; the voice band's core stays cream.
-      const coreBand = inBand && Math.abs(y) < amp * 0.35 && Math.abs(x) < 0.25 + 0.75 * a;
+      const coreBand = inBand && Math.abs(y) < amp * 0.35;
       return { dx, dy, v: shade * 0.42 + (inBand ? 0.92 : 0), color: coreBand ? 1 : 0, g: coreBand ? undefined : 1 + Math.sin(r * 8.5 - t * 1.6) };
     }
     case "assembling": {
@@ -203,16 +191,14 @@ function programFor(s: OrbState, d: Dot, shade: number, rim: number, t: number, 
       // A working arc orbits the equator; it never claims a percentage.
       const onBelt = Math.abs(r - 0.92) < 0.07;
       const arc = onBelt ? Math.pow(Math.max(0, Math.cos(ang - t * 3.1)), 3) : 0;
-      // A spoke runs from the eye to the arc's head, so the arc reads as sent out by the eye.
-      const spoke = r < 0.92 ? Math.pow(Math.max(0, Math.cos(ang - t * 3.1)), 60) * (1 - r) : 0;
-      return { dx, dy, v: shade * 0.55 + rim * 0.4 + Math.max(arc, spoke * 0.8), color: arc > 0.5 || spoke > 0.3 ? 1 : 0 };
+      return { dx, dy, v: shade * 0.55 + rim * 0.4 + arc, color: arc > 0.5 ? 1 : 0 };
     }
     case "done": {
       // One bloom outward that settles back over about a second.
       const bloom = Math.exp(-age * 2.2);
       dx += x * 0.1 * bloom;
       dy += y * 0.1 * bloom;
-      return { dx, dy, v: base + bloom * (1 - r * 0.6), color: bloom * (1 - r) > 0.35 ? 1 : 0 };
+      return { dx, dy, v: base + bloom * (1 - r * 0.6), color: bloom * (1 - r) > 0.35 || shade > 0.965 ? 1 : 0 };
     }
     case "error": {
       const flicker = 0.85 + 0.15 * Math.sin(t * 37) * Math.sin(t * 5.3);
@@ -458,11 +444,11 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
       lean.x += (wantLean.x - lean.x) * Math.min(1, 2.5 * dt);
       lean.y += (wantLean.y - lean.y) * Math.min(1, 2.5 * dt);
 
-      // A key light that sits in front and only drifts a hair, so the highlight is the eye at the core and moves with it.
-      const lx = Math.cos(t * 0.35) * 0.1;
-      const ly = Math.sin(t * 0.28) * 0.08;
-      const ll = Math.hypot(lx, ly, 1);
-      const L = [lx / ll, ly / ll, 1 / ll];
+      // A drifting key light, so the shading is never static even at rest.
+      const lx = Math.cos(t * 0.35) * 0.55;
+      const ly = Math.sin(t * 0.28) * 0.35 - 0.35;
+      const ll = Math.hypot(lx, ly, 0.8);
+      const L = [lx / ll, ly / ll, 0.8 / ll];
 
       for (const d of dots) {
         if (d.following !== cur.state) {
