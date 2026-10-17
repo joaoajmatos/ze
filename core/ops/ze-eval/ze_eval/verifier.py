@@ -11,7 +11,7 @@ Scenario YAML format:
         where:
           label__icontains: dentist   # case-insensitive substring
           sent: false                 # exact match
-        expect: exists                # 'exists' or 'not_exists'
+        expect: exists                # 'exists', 'not_exists' or 'any' (cleanup only)
         cleanup: true                 # delete matching rows after check (default: true)
 
 Requires DATABASE_URL env var (same as Ze).
@@ -66,6 +66,8 @@ async def _check(conn: asyncpg.Connection, check: dict) -> VerifyResult:
         passed = count > 0
     elif expect == "not_exists":
         passed = count == 0
+    elif expect == "any":
+        passed = True
     else:
         passed = False
 

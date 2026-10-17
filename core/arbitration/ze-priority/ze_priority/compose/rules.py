@@ -25,7 +25,7 @@ from ze_components import (
 from ze_worldstate.types import LoopState, OpenLoop
 
 from ze_priority.compose.types import Draft, SourceSnapshot, WorkflowDigest
-from ze_priority.matching import MATCH_FLOOR, cosine
+from ze_priority.matching import TOPIC_FLOOR, cosine, shared_words, topic_words
 from ze_priority.types import (
     GoalSignal,
     LoopSignal,
@@ -303,7 +303,13 @@ def slipping(snapshot: SourceSnapshot, now: datetime) -> Draft:
         else:
             label = "at risk"
         lines.append(f"{label}: {card.title} ({_timing_text(card)})")
-    lines.append(f"watching: {_watching(snapshot)} open concerns")
+    unlisted = _watching(snapshot) - sum(
+        1 for card in cards if card.claim.subject == "loop"
+    )
+    if not cards:
+        lines.append(f"watching: {max(unlisted, 0)} open concerns")
+    elif unlisted > 0:
+        lines.append(f"also watching: {unlisted} other open concerns")
     return Draft(head.text, components, _summary(lines, snapshot), _failed(snapshot))
 
 
@@ -440,19 +446,23 @@ def _encode(embedder: Any, texts: list[str]) -> list[Any]:
 
 def _matches(
     items: list[_T],
+    topic: str,
     topic_vec: Any,
     embedder: Any,
     texts: Callable[[_T], list[str]],
 ) -> list[_T]:
+    """Items that share a word with the topic or are nearly identical to it, best first."""
+    words = topic_words(topic)
     per_item = [[t for t in texts(item) if t] for item in items]
     vectors = iter(_encode(embedder, [t for group in per_item for t in group]))
     scored = []
     for item, group in zip(items, per_item):
-        score = max((cosine(topic_vec, next(vectors)) for _ in group), default=0.0)
-        if score >= MATCH_FLOOR:
-            scored.append((score, item))
-    scored.sort(key=lambda pair: -pair[0])
-    return [item for _, item in scored[:LIST_CAP]]
+        similarity = max((cosine(topic_vec, next(vectors)) for _ in group), default=0.0)
+        shared = max((shared_words(words, t) for t in group), default=0)
+        if shared or similarity >= TOPIC_FLOOR:
+            scored.append((shared, similarity, item))
+    scored.sort(key=lambda row: (-row[0], -row[1]))
+    return [item for _, _, item in scored[:LIST_CAP]]
 
 
 def match_workflows(
@@ -463,6 +473,7 @@ def match_workflows(
         return []
     return _matches(
         workflows,
+        topic,
         _encode(embedder, [topic])[0],
         embedder,
         lambda w: [f"{w.name} {w.description}".strip()],
@@ -518,8 +529,13 @@ def _hypothesis_card(item: PriorityItem) -> ClaimCard:
 
 def _topic_headline(topic: str, slipped: int, workflows: int) -> str:
     suffix = f" · {slipped} SLIPPED · {workflows} WORKFLOWS"
-    room = HEADLINE_MAX - len(suffix)
-    return f"{headline_text(topic)[: max(room, 0)].rstrip()}{suffix}"
+    room = max(HEADLINE_MAX - len(suffix), 0)
+    text = headline_text(topic)
+    if len(text) > room:
+        cut = text[:room]
+        whole = cut.rsplit(" ", 1)[0] if text[room : room + 1] != " " and " " in cut else cut
+        text = whole.rstrip()
+    return f"{text}{suffix}"
 
 
 def topic(snapshot: SourceSnapshot, topic: str, embedder: Any, now: datetime) -> Draft:
@@ -534,9 +550,10 @@ def topic(snapshot: SourceSnapshot, topic: str, embedder: Any, now: datetime) ->
         return Draft(empty.text, [empty], _NO_EMBEDDER, _failed(snapshot))
 
     vec = _encode(embedder, [topic])[0]
-    loops = _matches(snapshot.loops or [], vec, embedder, lambda lp: [lp.title])
+    loops = _matches(snapshot.loops or [], topic, vec, embedder, lambda lp: [lp.title])
     goals = _matches(
         snapshot.goals or [],
+        topic,
         vec,
         embedder,
         lambda g: [g.goal.title, g.goal.objective],
@@ -547,6 +564,7 @@ def topic(snapshot: SourceSnapshot, topic: str, embedder: Any, now: datetime) ->
             for i in (snapshot.ranking.items if snapshot.ranking else [])
             if i.source_kind == "hypothesis"
         ],
+        topic,
         vec,
         embedder,
         lambda i: [i.match_text or i.title, i.title],

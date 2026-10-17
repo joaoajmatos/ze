@@ -3,7 +3,7 @@
   "specName": "Composed Answers and Claim Posture (B1)",
   "branch": "184-composed-answers-posture",
   "currentStep": "implement",
-  "currentTask": "T029",
+  "currentTask": "T031",
   "status": "implementing",
   "task_summaries": {
     "T001": {
@@ -94,6 +94,12 @@
       "status": "DONE"
     },
     "T028": {
+      "status": "DONE"
+    },
+    "T029": {
+      "status": "DONE"
+    },
+    "T030": {
       "status": "DONE"
     }
   },
@@ -337,6 +343,22 @@
       "kind": "complete",
       "by": "claude",
       "at": "2026-10-17T15:34:12.446Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:48:22.397Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-17T15:48:22.653Z"
     }
   ]
 }

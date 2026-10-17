@@ -82,8 +82,8 @@
 
 ## Phase 9: Eval and gates [ENG]
 
-- [ ] T029 [ENG] [BACKEND] `eval/scenarios/composed_answers.yaml`: six scenarios (slipping, decisions, topic; EN and PT) sending a scenario `context:` with `compose` (T037), `expected_agent: companion`, criteria per plan.md Eval. Run against `make dev-eval` with seeded fixtures for loops, goals and held writes; record results in the Handoffs note.
-- [ ] T030 [ENG] [BACKEND] SC-001 spot check on `make dev` seed data: 10 cards across the three presets compared with their rows; SC-003 query over failed executions. Record in the Handoffs note.
+- [x] T029 [ENG] [BACKEND] `eval/scenarios/composed_answers.yaml`: six scenarios (slipping, decisions, topic; EN and PT) sending a scenario `context:` with `compose` (T037), `expected_agent: companion`, criteria per plan.md Eval. Run against `make dev-eval` with seeded fixtures for loops, goals and held writes; record results in the Handoffs note.
+- [x] T030 [ENG] [BACKEND] SC-001 spot check on `make dev` seed data: 10 cards across the three presets compared with their rows; SC-003 query over failed executions. Record in the Handoffs note.
 - [ ] T031 [ENG] [PLATFORM] Gates: `make test-py`, `make test-pg`, `make lint`, `make test-web`, `make typecheck-web`. Record command, result and commit.
 
 ## Phase 10: Docs [DOCS]

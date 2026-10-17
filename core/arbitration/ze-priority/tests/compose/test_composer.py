@@ -197,7 +197,7 @@ async def test_topic_reads_executions_only_for_matched_workflows():
     cards = [c for c in composition.components if c["type"] == "claim_card"]
     assert [c["title"] for c in cards] == ["LedgerLite launch checklist"]
     assert cards[0]["claim"]["state"] == "failed"
-    assert composition.headline == "LEDGERLITE LAU · 1 SLIPPED · 1 WORKFLOWS"
+    assert composition.headline == "LEDGERLITE · 1 SLIPPED · 1 WORKFLOWS"
 
 
 async def test_topic_without_an_embedder_is_empty():

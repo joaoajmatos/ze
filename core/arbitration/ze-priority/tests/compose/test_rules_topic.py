@@ -192,7 +192,7 @@ def test_headline_counts_slipped_and_workflows():
     drifting = make_loop(title="LedgerLite launch reply", state=LoopState.DRIFTING)
     wf = WorkflowDigest(_workflow(), _execution("failed", error="boom"))
     draft = _topic(_snapshot([drifting], workflows=[wf]))
-    assert draft.components[0].text == "LEDGERLITE LAU · 2 SLIPPED · 1 WORKFLOWS"
+    assert draft.components[0].text == "LEDGERLITE · 2 SLIPPED · 1 WORKFLOWS"
 
 
 def test_headline_topic_is_truncated_so_the_whole_line_fits_forty():
@@ -234,3 +234,49 @@ def test_match_workflows_filters_and_caps():
     assert len(matched) == 6
     assert all("LedgerLite" in w.name for w in matched)
     assert rules.match_workflows(flows, "ledgerlite", None) == []
+
+
+class _NoisyEmbedder:
+    """Mimics real E5: every text is fairly close to every other (cosine 0.85)."""
+
+    def encode_passage(self, text):
+        if isinstance(text, list):
+            return np.array([self.encode_passage(t) for t in text])
+        if text.startswith("topic:"):
+            return np.array([1.0, 0.0])
+        return np.array([0.85, (1 - 0.85**2) ** 0.5])
+
+
+def test_unrelated_items_do_not_match_on_noisy_similarity_alone():
+    unrelated = make_loop(title="Call the bank about the fee", state=LoopState.ACTIVE)
+    draft = rules.topic(_snapshot([unrelated]), "topic: LedgerLite launch", _NoisyEmbedder(), NOW)
+    assert _cards(draft) == []
+    assert draft.components[0].text.startswith("NOTHING ON")
+
+
+def test_a_shared_word_matches_even_when_the_embedding_is_noisy():
+    related = make_loop(title="Finish the LedgerLite plan", state=LoopState.ACTIVE)
+    other = make_loop(title="Call the bank", state=LoopState.ACTIVE)
+    draft = rules.topic(
+        _snapshot([other, related]), "topic: LedgerLite launch", _NoisyEmbedder(), NOW
+    )
+    assert [c.title for c in _cards(draft)] == ["Finish the LedgerLite plan"]
+
+
+def test_shared_words_fold_case_and_diacritics():
+    loop = make_loop(title="Planear o lançamento", state=LoopState.ACTIVE)
+    draft = rules.topic(_snapshot([loop]), "topic: LANCAMENTO", _NoisyEmbedder(), NOW)
+    assert [c.title for c in _cards(draft)] == ["Planear o lançamento"]
+
+
+def test_short_words_do_not_count_as_shared():
+    loop = make_loop(title="Pay the tax for me", state=LoopState.ACTIVE)
+    draft = rules.topic(_snapshot([loop]), "topic: the me tax", _NoisyEmbedder(), NOW)
+    assert _cards(draft) == []
+
+
+def test_headline_truncates_at_a_word_boundary():
+    from ze_priority.compose.rules import _topic_headline
+
+    assert _topic_headline("lançamento do LedgerLite", 0, 0) == "LANCAMENTO DO · 0 SLIPPED · 0 WORKFLOWS"
+    assert _topic_headline("a" * 60, 1, 1) == ("A" * 14) + " · 1 SLIPPED · 1 WORKFLOWS"

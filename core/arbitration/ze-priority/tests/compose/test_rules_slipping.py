@@ -273,5 +273,12 @@ def test_summary_lists_each_card_and_stays_short():
     assert "slipped: Reply to Ana (slipped 2 d ago)" in draft.summary
     assert "stuck: Ship the report (no progress for 9 d)" in draft.summary
     assert "at risk: Renew passport (due in 3 d)" in draft.summary
-    assert "watching: 2 open concerns" in draft.summary
+    assert "watching" not in draft.summary  # both loops are cards already
     assert len(draft.summary) <= 800
+
+
+def test_summary_counts_only_concerns_that_are_not_cards():
+    shown = _loop(state=LoopState.DRIFTING, drift_deadline=NOW - timedelta(days=1))
+    quiet = [_loop(state=LoopState.ACTIVE, drift_deadline=None) for _ in range(3)]
+    draft = rules.slipping(_snapshot([shown, *quiet]), NOW)
+    assert "also watching: 3 other open concerns" in draft.summary

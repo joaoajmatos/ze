@@ -1,0 +1,125 @@
+# Phase 184: the three composed answers, sent the way a preset chip sends them
+# (context.compose). Fixtures are built by a first turn in each scenario, because
+# make dev-eval runs with no seed data; verify rows are removed after the run.
+# Decisions cannot be seeded from chat (held writes need an unattended run), so
+# its criteria accept an honest "nothing to decide" as well as listed cards.
+
+- id: composed_slipping_en
+  description: "Preset chip 'What's slipping?': one first turn creates a tracked concern, then the chip asks for the composed answer"
+  turns:
+    - prompt: "I haven't decided about the Porto move yet, keep it on my radar"
+      description: "Turn 1: fixture, a declared loop with a 7-day window"
+    - prompt: "What's slipping?"
+      context: { screen: world, compose: slipping }
+      description: "Turn 2: the chip sends compose=slipping"
+  expected_agent: companion
+  verify:
+    - table: open_loops
+      where: {title__icontains: porto}
+      expect: exists
+      cleanup: true
+  tags: [composed_answers, preset, executive_function]
+  criteria:
+    - Turn 2 should show a headline and at least one claim card, and the Porto move should appear only as a card, not recited twice in prose
+    - Turn 2 reply is one or two sentences and names only items present in the composition
+    - Turn 2 reply does not list every card and offers at most one next step
+    - Turn 2 should not claim a confidence, source or age that is not on the cards
+
+- id: composed_slipping_pt
+  description: "Preset chip in Portuguese: the sentence follows the user's language, the modules are the same"
+  turns:
+    - prompt: "ainda não decidi a mudança para o Porto, mantém isso no radar"
+      description: "Turn 1: fixture"
+    - prompt: "O que está a escorregar?"
+      context: { screen: world, compose: slipping }
+      description: "Turn 2: the chip sends compose=slipping"
+  expected_agent: companion
+  verify:
+    - table: open_loops
+      where: {title__icontains: porto}
+      expect: exists
+      cleanup: true
+  tags: [composed_answers, preset, executive_function, pt]
+  criteria:
+    - Turn 2 reply is in Portuguese and is one or two sentences
+    - Turn 2 should name only items present in the composition and not list every card
+    - Turn 2 should offer at most one next step
+
+- id: composed_decisions_en
+  description: "Preset chip 'What should I decide today?': a vague concern may become a suspected loop; the answer is honest either way"
+  turns:
+    - prompt: "I keep thinking I should probably call the bank about that fee, not sure yet"
+      description: "Turn 1: fixture, an uncertain concern that may be held as a suspicion"
+    - prompt: "What should I decide today?"
+      context: { screen: world, compose: decisions }
+      description: "Turn 2: the chip sends compose=decisions"
+  expected_agent: companion
+  verify:
+    - table: open_loops
+      where: {title__icontains: bank}
+      expect: any
+      cleanup: true
+  tags: [composed_answers, preset, executive_function]
+  criteria:
+    - Turn 2 should show a headline; if it shows decision cards the reply names only those cards, otherwise it says plainly that nothing is waiting on a decision
+    - Turn 2 reply is one or two sentences and does not invent a decision that is not in the composition
+    - Turn 2 should not present a suspected item as confirmed
+
+- id: composed_decisions_pt
+  description: "Preset chip decisions, Portuguese"
+  turns:
+    - prompt: "Se calhar devia ligar ao banco por causa daquela comissão, ainda não sei"
+      description: "Turn 1: fixture"
+    - prompt: "O que tenho de decidir hoje?"
+      context: { screen: world, compose: decisions }
+      description: "Turn 2: the chip sends compose=decisions"
+  expected_agent: companion
+  verify:
+    - table: open_loops
+      where: {title__icontains: banco}
+      expect: any
+      cleanup: true
+  tags: [composed_answers, preset, executive_function, pt]
+  criteria:
+    - Turn 2 reply is in Portuguese and is one or two sentences
+    - Turn 2 names only items present in the composition, or says plainly that nothing waits on a decision
+    - Turn 2 does not present a suspected item as confirmed
+
+- id: composed_topic_en
+  description: "Preset chip 'How is X going?': the composer gathers one topic across the stores"
+  turns:
+    - prompt: "I haven't finished planning the LedgerLite launch, keep it on my radar"
+      description: "Turn 1: fixture, a loop about the topic"
+    - prompt: "How is the LedgerLite launch going?"
+      context: { screen: world, compose: topic, topic: "LedgerLite launch" }
+      description: "Turn 2: the chip sends compose=topic with the topic"
+  expected_agent: companion
+  verify:
+    - table: open_loops
+      where: {title__icontains: ledgerlite}
+      expect: exists
+      cleanup: true
+  tags: [composed_answers, preset, executive_function]
+  criteria:
+    - Turn 2 should show a headline naming the topic and a card for the LedgerLite launch concern
+    - Turn 2 reply is one or two sentences and only talks about items present in the composition
+    - Turn 2 should not say how many workflows or goals exist unless the cards show them
+
+- id: composed_topic_pt
+  description: "Preset chip topic, Portuguese"
+  turns:
+    - prompt: "ainda não acabei de planear o lançamento do LedgerLite, mantém isso no radar"
+      description: "Turn 1: fixture"
+    - prompt: "Como vai o lançamento do LedgerLite?"
+      context: { screen: world, compose: topic, topic: "lançamento do LedgerLite" }
+      description: "Turn 2: the chip sends compose=topic with the topic"
+  expected_agent: companion
+  verify:
+    - table: open_loops
+      where: {title__icontains: ledgerlite}
+      expect: exists
+      cleanup: true
+  tags: [composed_answers, preset, executive_function, pt]
+  criteria:
+    - Turn 2 reply is in Portuguese and is one or two sentences
+    - Turn 2 should only talk about items present in the composition

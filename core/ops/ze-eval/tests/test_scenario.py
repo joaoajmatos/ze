@@ -110,3 +110,22 @@ def test_companion_render_scenarios_cover_every_render_tool_and_two_negatives() 
         assert s["expected_agent"] == "companion"
         assert all(t["count"] == 0 for t in s["expected_tools"])
         assert all(t["name"].startswith("render_") for t in s["expected_tools"])
+
+
+def test_composed_answers_scenarios_send_a_valid_preset_on_their_last_turn() -> None:
+    from ze_eval.scenario import turn_contexts
+
+    scenarios = [s for s in load_scenarios() if "composed_answers" in s.get("tags", [])]
+    assert len(scenarios) == 6
+    kinds = {s["id"].rsplit("_", 1)[0] for s in scenarios}
+    assert kinds == {"composed_slipping", "composed_decisions", "composed_topic"}
+    assert {s["id"].rsplit("_", 1)[1] for s in scenarios} == {"en", "pt"}
+    for scenario in scenarios:
+        contexts = turn_contexts(scenario)
+        assert contexts[-1] is not None and contexts[-1]["compose"] in (
+            "slipping",
+            "decisions",
+            "topic",
+        )
+        assert all(c is None for c in contexts[:-1])
+        assert scenario["expected_agent"] == "companion"
