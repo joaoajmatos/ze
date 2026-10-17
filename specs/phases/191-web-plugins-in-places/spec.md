@@ -29,7 +29,7 @@ Plugins declare nav entries and pages in the UI manifest. After the five places 
 
 ## Requirements *(mandatory)*
 
-- **FR-001**: `ze_plugin` UI contribution type gains `place` (required for nav entries; validated at manifest build; a plugin without it fails startup with a typed error). Contributions for News, Contacts and Reminders (the three plugins with `ui_contributions()` today) updated in their plugins (`ui_contributions()`).
+- **FR-001**: `ze_plugin` UI contribution type gains `place` (required for nav entries; validated at manifest build; a plugin without it fails startup with a typed error). The News contribution is updated in its plugin. (Reminders and Contacts no longer contribute nav entries: 186 renders reminders in World and deletes the Reminders page, 189 renders contacts in Mind › People and deletes the Contacts entry.)
 - **FR-002**: Manifest REST (`getUiManifest`) carries `place`; `make codegen`.
 - **FR-003**: Optional `preset` contribution kind (label + `context` payload, e.g. `compose` values or a plain prompt) rendered as Ask Try chips; News uses it.
 - **FR-004**: Hard cuts: `entities/ui-manifest` `pluginNavRoutes` top-level mapping, the `/:pluginPath` top-level route (redirect only), any remaining plugin nav code; the News page descriptor if replaced by the preset.
@@ -46,4 +46,4 @@ Plugins declare nav entries and pages in the UI manifest. After the five places 
 
 ## Owning packages
 
-ze-plugin (contribution type), ze-api (manifest), plugins ze-news, ze-personal (contacts), ze-calendar (contributions), ze-web; no migration.
+ze-plugin (contribution type), ze-api (manifest), plugin ze-news, ze-web; no migration.
