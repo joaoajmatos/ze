@@ -2,11 +2,11 @@
 
 **Branch**: `187-web-ask-assemble` | **Date**: 2026-10-17 | **Spec**: [spec.md](./spec.md)
 
-**Input**: spec.md (Clarifications 2026-10-17 are binding; revised after Gauge's review A-1..A-10), `main` at b9e62e7b, 184 floor at 9ca300d8 (claim primitives, preset send, `useCardActions`), the 195 plan (screen-context store, single send path, `chatAbout`), the 186 plan (posture table, Needs-you rows). DESIGN.md "Canvas", "Cascade", "Trace".
+**Input**: spec.md (Clarifications 2026-10-17 and 2026-10-18 are binding; revised after Gauge's review A-1..A-10, then for the user's trace-instruments request and the displaced window on 2026-10-18), `main` at b9e62e7b, 184 floor at 9ca300d8 (claim primitives, preset send, `useCardActions`), the 195 plan (screen-context store, single send path, `chatAbout`), the 186 plan (posture table, Needs-you rows). DESIGN.md "Canvas", "Cascade", "Trace".
 
 ## Summary
 
-Ask becomes the Assemble canvas. The core change is structural. Conversation state moves out of the per-instance `useChatWorkspace` hook into one per-thread store (`entities/conversation`) with a pure reducer. One frame handler mounted in the shell feeds it (`features/turn-stream`), so `/ask` and the overlay show the same thread, and every chat frame is parsed once. On top of that store, `widgets/assemble` renders each reply as a Sentence module plus one module per top-level component, cascading from the orb. It shows the trace as a module and places confirmations in place, in both `/ask` and the overlay. `@myguyze/ze-ui` atoms are restyled to the HUD system. `widgets/chat-workspace`, the side panel, the starfield and the `/jarvis` composition are deleted.
+Ask becomes the Assemble canvas. The core change is structural. Conversation state moves out of the per-instance `useChatWorkspace` hook into one per-thread store (`entities/conversation`) with a pure reducer. One frame handler mounted in the shell feeds it (`features/turn-stream`), so `/ask` and the overlay show the same thread, and every chat frame is parsed once. On top of that store, `widgets/assemble` renders each reply as a Sentence module plus one module per top-level component, cascading from the orb. It shows the trace as a module and places confirmations in place, in both `/ask` and the overlay. `@myguyze/ze-ui` atoms are restyled to the HUD system. The trace is drawn as a rail of HUD instruments (US8) from the data the client already receives, and a window displaced by another shows "Use here". `widgets/chat-workspace`, the side panel, the starfield and the `/jarvis` composition are deleted.
 
 ## Technical Context
 
@@ -40,7 +40,10 @@ Ask becomes the Assemble canvas. The core change is structural. Conversation sta
 | `useMessages` | `useChatWorkspace` only | Moves to `entities/conversation/api/useThreadHistory.ts` writing the store. |
 | `useRetryReply` | `ChatWorkspace.tsx` | Frame subscriptions removed (the reducer applies `message_superseded`, `message_rollback`, retry `error`); keeps `retry()`, plan consent, notices read from the store's `lastOutcome`. |
 | `usePresence` (grep: `entities/presence/model/usePresence.ts`) | `AppShell` presence wiring | Its `useFrame` handlers for `typing`/`token`/`message`/`error` are removed; `features/turn-stream` dispatches the same presence events for the active thread (an entity cannot read another entity). `assembling` is dispatched by the canvas during a cascade. |
-| `useTraceStore`, `useSessionTraces`, `useTraceSocket` | chat-workspace side panel, `MessageBubble`, `TraceContent` | Kept; read by `widgets/assemble` `TraceModule`. |
+| `useTraceStore`, `useSessionTraces`, `useTraceSocket` | chat-workspace side panel, `MessageBubble`, `TraceContent` | Kept; read by `widgets/assemble` `TraceModule`. `mergePartialTrace` also stamps each partial's client arrival time by stage (`pendingArrivals`), moved to `arrivalsByMessage[message_id]` on commit; history traces have none. |
+| `chat-workspace/ui/trace-panel/*` (Routing, Memory, Tools, Judgments, Rollback, Skills, Workspace, Conductor, Confirmations, Feedback, TraceContent, TraceEntry) | the side panel, `MessageBubble` | Routing, Memory, Tools, Judgments and Rollback become instruments; the rest are ported as readout rows into `widgets/assemble/ui/trace/`; the folder is deleted with `chat-workspace`. |
+| `useWsStore.displaced`, `takeOverIfDisplaced` (`shared/api/ws-client.ts`, f75e6848) | ws-client only | New exports `takeOver()` (clears `displaced`, connects now, ignores visibility) and `connectionState()` (`online | displaced | offline`). |
+| `usePresence` `ws_closed` (`entities/presence/model/usePresence.ts:18`), `ConnectionDot`, "Ze is offline" strings (World, Ask bar, overlay) | presence, top bar, write controls | Read `connectionState`: displaced dispatches nothing (orb idle); the dot reads "Open in another window"; write controls use the displaced line. |
 | `ConnectedPrimitiveTree` | `MessageBubble`, `ChatMessageList` (deleted), `PluginScreen`, `PluginSettingsSection` | Used by the canvas per top-level component; plugin screens keep using it (they get the restyle too). |
 | `PrimitiveRenderer` (ze-ui) | `ConnectedPrimitiveTree`, `usePrimitiveRendererActions`, `usePluginScreenActions`, `PluginScreen`, `PluginSettingsSection` | Restyle only; props unchanged. Plugin screens change look, not behaviour. |
 | `useConfirmation`, `ConfirmationCard` | `useChatWorkspace`, `AskOverlay`, `NotificationBell` (186 removes), 186 Needs you | Kept; placed by `widgets/assemble`. |
@@ -81,6 +84,25 @@ Ask becomes the Assemble canvas. The core change is structural. Conversation sta
 - `model/useAssemble.ts`: joins the conversation store, trace store and feedback for one thread.
 - Screen context (195): the canvas publishes `canvas` refs (`index`, `type`, `ref` from `claim`) and `focused_module`; every module with a `claim` gets `ChatAboutChip`; `onChatAbout` comes in by prop.
 
+### Trace instruments (US8)
+
+Sources: the committed `WsTraceUpdateFrame` for the reply (REST hydration or the final frame) and, while streaming, the thread's `pendingTrace` plus `pendingArrivals`. Each instrument has a pure layout function in `widgets/assemble/lib/instruments/` (tested without the DOM) and a view in `widgets/assemble/ui/trace/`. Views use `shared/ui/hud` (`Meter`, `DotMatrix`, `Spark`, `Corners`) and SVG with ze.css tokens. Every value is also given as text (`aria-label` or a visible readout).
+
+- `lib/instruments/signal.ts`: `stagesFor(trace, pending, arrivals, sentAt)` returns only the stages that arrived, in pipeline order (screen, route, memory, tier, tools), each lit with its own arrival offset, plus the reply as the pending end while streaming. Screen appears only when `screen` is set, memory only with chunks (with the count), tier only when `tier` is set, and tools with the call count. No "waiting" stage is returned, because memory and tier may never arrive. `sentAt` comes from the conversation store (`lastSent.at`, added in T002). Settled: every drawn stage is lit, plus `total_duration_ms`. `SignalPath.tsx`: a hairline strip that starts at a cream origin point (the monad) and has one tick per stage, with a mono "+1.2 s" under each lit tick. While streaming, light sweeps to the newest lit tick (off with reduced motion). Settled, it shows the dot-matrix total.
+- `lib/instruments/routing.ts`: `barFor(trace)` labels the bar by its source (spec Clarifications 2026-10-18). `embedding` with the `agent` judgment absent or not consumed gives "E5 score" plus a runner-up ghost (`confidence − score_gap`, clamped at 0). `embedding` with `agent` consumed gives "Choice confidence" and no ghost. `screen`, `preset`, `forced` and `open_query` give "fixed", with no bar. `haiku` gives "E5 score of the pick" (the E5 score of Haiku's choice, not Haiku's confidence) with no ghost. `fallback` gives no bar. Method words (`embedding`, `haiku`, `fallback`, `screen`, `open_query`, `preset`, `forced`); the routing judgment's option probabilities, sorted; the tier row. `RoutingInstrument.tsx`: the bar with its ghost runner-up, needles per option with the chosen one cream, the tier line ("full · System One · <model>"), and the coordinate readout "Asked from · Doing › goal" / "Asked about · <subject>".
+- `lib/instruments/memory.ts` (committed trace only; live memory partials carry no confidence): points `{x: score, y: extraction_confidence ?? null, glyph by source, text}`, ranked by `score × (confidence ?? 0.5)` for the list. `MemoryConstellation.tsx`: a 0–1 by 0–1 SVG plot, null-confidence points on a dashed floor line, hover or focus shows the text, arrow keys move between points. Phones get the ranked list.
+- `lib/instruments/tools.ts`: lanes by `agent` (null → the reply's agent, listed first), calls in `call_index` order. Each lane has its own axis: `x` = cumulative duration of the earlier calls in the same lane, `w` = `duration_ms` (minimum width for 0 ms). Lanes share no x and are never scaled against `total_duration_ms`. `delegate_to_agent` calls are flagged "includes the delegate's calls". Marks: `reversibility == irreversible`, the per-call `gate` tick, failure. Write confirmations are not placed on the line (no `call_index`); they stay in the Confirmations row. Partial calls (from `pendingTrace`) have no width and read "returned". `ToolsTimeline.tsx`: lanes with the caption "order and duration per lane; start times not recorded".
+- `lib/instruments/judgments.ts`: a closed map from question id to `{surface, label}` (`agent`, `multi_specialist` → routing; `needs_deep_reasoning` → tier; `skill`, `needs_skill` → skills; `commitment`, `family`, `biography`, `is_open_concern`, `explicit_declaration`, `resolves_existing` → intake); rows grouped by surface; `intake_outcome` handled first (no probabilities); Choice → sorted probabilities with the answer; Noul → yes probability; Score → value; consumed, or skipped with the reason in words; `intake_outcome` parsed as `kind:reason[:link]` into words (the seven `OutcomeKind` values in `ze_worldstate/commitment_judge.py`; unknown reasons such as `forget_not_created` humanised). `JudgmentGauges.tsx`.
+- `lib/instruments/readouts.ts`: total ms; main model (`tier.model`, else "not recorded"); "System One: N requests, X ms, Y input tokens", counting one request per surface group (each batch copies its request's latency, model and tokens onto every row) and skipping `intake_outcome`; compaction span; resume recap. `Readouts.tsx` uses `DotMatrix` for the total.
+- `ReversalTrack.tsx`: `rollback.entries` in reverse `call_index` order, each with its effect phrase, undo tool and outcome in words, plus the message's rollback state.
+- `TraceModule.tsx`: the rail. Head: "trace", feedback thumbs, coordinate readout. Body: `SignalPath`, then one collapsed line per instrument (its main readout), expanding on hover, focus or click; then the readout rows (Skills, Sources, Workspace, Conductor, Confirmations, Screen resolvers). `TraceSheet.tsx` puts the same rail in the HUD `Dialog` for the overlay's "Why?" and for phones.
+
+### Displaced window
+
+- `shared/api/ws-client.ts`: export `takeOver()`, which sets `displaced: false`, resets the retry delay and connects even when the document is hidden, and `useConnectionState()` (`online | displaced | offline`). The focus takeover stays: it fires on focus, so "Use here" mainly serves a visible but unfocused window.
+- `widgets/app-shell/ui/DisplacedNotice.tsx`, shown by `AppShell` on every place while displaced: "Ze is open in another window" and a "Use here" `.ctl` calling `takeOver()`. The Ask bar takes a `disabledReason` prop, which `AppShell` sets to that line while displaced.
+- `entities/presence/model/usePresence.ts`: on `displaced`, dispatch nothing (orb idle, no "Offline"); `ws_closed` only for `offline`. The `ConnectionDot` reads "Open in another window". The "Ze is offline" wording in World, the Ask bar and the overlay reads the state and uses the displaced line when displaced.
+
 ### `widgets/sessions-rail`, `widgets/try-chips`
 
 - Sessions: `listSessions`, `searchSessions` (port of `SessionList`), thinking/attention dots from `useWsStore`, select → `useSession.setThread`, New chat → `newSession()`.
@@ -114,7 +136,8 @@ specs/phases/187-web-ask-assemble/
 ```
 apps/ze-web/src/entities/conversation/{model/{store,reducer}.ts,api/useThreadHistory.ts,index.ts}
 apps/ze-web/src/features/turn-stream/{ui/TurnFrameHandler.tsx,model/watchdog.ts,api/useSendTurn.ts,index.ts}
-apps/ze-web/src/widgets/assemble/{ui/{Canvas,TraceModule,WhyLink,ConfirmationPlacement,RetryControl,AskOverlay}.tsx,ui/trace/*,lib/why.ts,model/useAssemble.ts,index.ts}
+apps/ze-web/src/widgets/assemble/{ui/{Canvas,TraceModule,TraceSheet,WhyLink,ConfirmationPlacement,RetryControl,AskOverlay}.tsx,ui/trace/{SignalPath,RoutingInstrument,MemoryConstellation,ToolsTimeline,JudgmentGauges,Readouts,ReversalTrack,rows/*}.tsx,lib/{why.ts,instruments/*.ts},model/useAssemble.ts,index.ts}
+apps/ze-web/src/features/trace-state/model/useTraceStore.ts ; shared/api/ws-client.ts ; widgets/app-shell/ui/DisplacedNotice.tsx
 apps/ze-web/src/widgets/{sessions-rail,try-chips}/
 apps/ze-web/src/pages/ask/{ui/AskPage.tsx,index.ts}
 apps/ze-web/src/entities/presence/model/usePresence.ts ; features/ask-bar/{ui/AskBar.tsx,model/ask-overlay.ts} ; widgets/app-shell/ui/AppShell.tsx ; app/router/routes.tsx ; widgets/onboarding-wizard/ui/OnboardingWizard.tsx
@@ -126,7 +149,8 @@ packages/ze-ui/src/react/{PrimitiveRenderer.tsx,context.tsx}
 - `docs/frontend.md`: Ask/Assemble, conversation store and reducer, turn-stream handler, deleted chat workspace and side panel.
 - `docs/native-interface.md`: which client slice handles each WS frame; confirmation placement; retry flow in the canvas.
 - `packages/ze-ui/README.md`: `classNames` map and `renderHeadline` slot.
-- `docs/features.md`: Ask as an assembled answer with its trace.
+- `docs/features.md`: Ask as an assembled answer with its trace instruments; the displaced-window line.
+- `DESIGN.md`: a "Trace instruments" entry under Components (rail, calm by default, what each instrument encodes, the no-invented-data rule).
 - `docs/component-schema.json` unchanged (no wire change).
 - `AGENTS.md`: phase row 187; Learned User Preferences line on chat chrome ("trace" panel → trace module); `specs/README.md` row 187.
 
@@ -135,4 +159,18 @@ packages/ze-ui/src/react/{PrimitiveRenderer.tsx,context.tsx}
 | Item | Why |
 |---|---|
 | New per-thread store replacing hook state | The overlay and `/ask` must show one thread; per-instance state made frames parse twice and threads diverge (spec Clarifications). |
+| Trace instruments in this phase | The user asked for them on the Ask screen. They are drawn from data already on the client, so they need no backend. Each is a pure layout function plus a view, which keeps the JR lane parallel to the ENG store and canvas work. |
 | `classNames` map in ze-ui | Keeps app CSS out of the shared renderer while plugin screens and chat share one look. |
+
+## Proposed follow-up: 187b Trace telemetry (not in this phase)
+
+The instruments draw only what the trace carries. These backend gaps (ze-core `MessageTrace`, `turn.py`, ze-api schemas) block the richer readings the user described. They are proposed as phase 187b: backend first, then the instrument upgrades.
+
+| Gap | Today | 187b change | Instrument upgrade |
+|---|---|---|---|
+| Stage progress | partial frames only after `embed_route`, `resolve_screen`, `fetch_context` (when chunks exist), `choose_tier`, tool ends | one `stage` partial per graph node end with server ms since turn start | full signal path (preprocess … memory write) with server ms |
+| E5 shortlist | `RoutingEnvelope.raw_scores` in `routing_log` only | top-k `shortlist` `[{agent, score}]` on the trace and route partial | ranked bar fan with names |
+| Calibrated bars | not on `JudgmentTrace` | `surface` and `bar` (the threshold `decide()` compared against) per judgment | needle past a threshold line; tier against `simple_max` |
+| Main-model cost | `llm_cost_log` keyed by session | per-turn `cost {prompt_tokens, completion_tokens, cost_usd, calls}` from the cost ContextVar | tokens and cost dot-matrix readouts |
+| Context fill | compaction span only | `context {tokens_used, window}` from the 112 check | context-window meter with the compaction mark |
+| Tool timing | `duration_ms` only; live partial tools send `0` and `success: true` | `started_ms` offset per call; real duration and success on the partial | true gantt with parallel fan-out overlap |
