@@ -3,12 +3,12 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EntityNeighbourhood } from "./EntityNeighbourhood";
 
-const { useNarrow, mutate } = vi.hoisted(() => ({ useNarrow: vi.fn(), mutate: vi.fn() }));
+const { useNarrow, mutate, reviewState } = vi.hoisted(() => ({ useNarrow: vi.fn(), mutate: vi.fn(), reviewState: { isError: false } }));
 
 vi.mock("@/shared/lib", async (orig) => ({ ...(await orig<typeof import("@/shared/lib")>()), useNarrow }));
 vi.mock("@/entities/memory-feed-item", async (orig) => ({
   ...(await orig<typeof import("@/entities/memory-feed-item")>()),
-  useReviewFactMutation: () => ({ mutate, isPending: false }),
+  useReviewFactMutation: () => ({ mutate, isPending: false, isError: reviewState.isError }),
 }));
 vi.mock("@myguyze/ze-ui/charts", () => ({
   LineChart: ({ title }: { title?: string }) => <div data-testid="activity-chart">{title}</div>,
@@ -29,7 +29,7 @@ const detail = (over: Partial<EntityDetailResponse> = {}): EntityDetailResponse 
       confidence: 0.7,
       reviewed: false,
       contradicted: false,
-      provenance: "raw",
+      provenance: "prompt_supplied",
     },
   ],
   episodes: [],
@@ -46,6 +46,7 @@ describe("EntityNeighbourhood", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useNarrow.mockReturnValue(false);
+    reviewState.isError = false;
   });
 
   it("draws the centre and focusable neighbour marks that open the entity", () => {
@@ -54,7 +55,7 @@ describe("EntityNeighbourhood", () => {
     const mark = screen.getByRole("link", { name: /open bob, works with/i });
     fireEvent.keyDown(mark, { key: "Enter" });
     expect(onSelect).toHaveBeenCalledWith("a");
-    expect(screen.getByRole("img", { name: /ada and 2 neighbours/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /ada and 2 neighbours/i })).toBeInTheDocument();
   });
 
   it("caps the field and says how many more there are", () => {
@@ -79,7 +80,7 @@ describe("EntityNeighbourhood", () => {
   it("renders a grouped list instead of the field on a phone", () => {
     useNarrow.mockReturnValue(true);
     render(<EntityNeighbourhood detail={detail()} onSelectEntity={vi.fn()} />);
-    expect(screen.queryByRole("img", { name: /neighbours/i })).toBeNull();
+    expect(screen.queryByRole("group", { name: /neighbours/i })).toBeNull();
     const group = screen.getByRole("group", { name: "Works with" });
     fireEvent.click(within(group).getByRole("button", { name: "Bob" }));
   });
@@ -93,6 +94,12 @@ describe("EntityNeighbourhood", () => {
     expect(onChatAbout).toHaveBeenLastCalledWith({ kind: "entity", id: "a", label: "Bob", component: "entity_module" }, expect.any(Element));
     fireEvent.click(screen.getByRole("button", { name: "Chat about this belief" }));
     expect(onChatAbout).toHaveBeenLastCalledWith({ kind: "fact", id: "f1", label: "Works at Acme", component: "belief_row" }, expect.any(Element));
+  });
+
+  it("says so when a review fails", () => {
+    reviewState.isError = true;
+    render(<EntityNeighbourhood detail={detail()} onSelectEntity={vi.fn()} />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/could not save/i);
   });
 
   it("says so when nothing is connected", () => {

@@ -29,7 +29,7 @@ const fact: MemoryFeedItem = {
   confidence: 0.8,
   reviewed: false,
   contradicted: false,
-  provenance: "raw",
+  provenance: "prompt_supplied",
   claim_kind: "identity",
   summary: null,
   prompt_snippet: null,
@@ -78,6 +78,13 @@ describe("BeliefsFeed", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /new value/i }), { target: { value: "Globex" } });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
     expect(mutate).toHaveBeenCalledWith({ actions: [{ id: "f1", action: "edit", value: "Globex" }] });
+  });
+
+  it("says so when a review fails", () => {
+    useReviewFactMutation.mockReturnValue({ mutate, isPending: false, isError: true });
+    feed([fact]);
+    render(<BeliefsFeed />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/could not save/i);
   });
 
   it("pages by the cursor", () => {

@@ -32,7 +32,6 @@ export function sinceLabel(iso: string, now: Date = new Date()): string {
 }
 
 const PROVENANCE: Record<string, string> = {
-  raw: "you told me",
   synthesized: "I worked it out",
   graph_recall: "from what I already knew",
   live_search: "from a web search",

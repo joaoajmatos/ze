@@ -13,13 +13,14 @@ export function useMemoryGraphQuery(filters: MemoryGraphFilters = {}) {
   return useQuery({
     queryKey: queryKeys.memoryGraph(filters.entityType, filters.seedId),
     queryFn: async () => {
-      const { data } = await getMemoryGraph({
+      const { data, error } = await getMemoryGraph({
         query: {
           limit: filters.limit ?? 50,
           entity_type: filters.entityType ?? undefined,
           seed_id: filters.seedId ?? undefined,
         },
       });
+      if (error) throw error;
       return data as MemoryGraphResponse;
     },
   });

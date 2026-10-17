@@ -11,7 +11,7 @@ const fact = (over: Partial<MemoryFeedItem> = {}): MemoryFeedItem => ({
   confidence: 0.74,
   reviewed: false,
   contradicted: false,
-  provenance: "raw",
+  provenance: "prompt_supplied",
   claim_kind: "identity",
   summary: null,
   prompt_snippet: null,
@@ -28,7 +28,7 @@ describe("BeliefRow", () => {
     expect(screen.getByText("Works at Acme")).toBeInTheDocument();
     expect(screen.getByText("told")).toBeInTheDocument();
     expect(screen.getByText("0.74")).toBeInTheDocument();
-    expect(screen.getByText(/you told me, via companion/)).toBeInTheDocument();
+    expect(screen.getByText(/from what you gave me, via companion/)).toBeInTheDocument();
     expect(screen.getByText(/since 3 days ago/)).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/works_at/);
     expect(container.querySelector(".glyph")).not.toBeNull();
@@ -58,6 +58,15 @@ describe("BeliefRow", () => {
     fireEvent.change(input, { target: { value: "Globex" } });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
     expect(h.onEdit).toHaveBeenCalledWith("Globex");
+  });
+
+  it("puts the stored value back when an edit is cancelled", () => {
+    render(<ul><BeliefRow item={fact()} {...handlers()} /></ul>);
+    fireEvent.click(screen.getByRole("button", { name: /edit this/i }));
+    fireEvent.change(screen.getByRole("textbox", { name: /new value/i }), { target: { value: "Globex" } });
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit this/i }));
+    expect(screen.getByRole("textbox", { name: /new value/i })).toHaveValue("Acme");
   });
 
   it("gives every control the 44 px control class", () => {

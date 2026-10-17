@@ -41,7 +41,7 @@ describe("sinceLabel", () => {
 
 describe("sourceWords", () => {
   it("names provenance and agent in words", () => {
-    expect(sourceWords("raw", "companion")).toBe("you told me, via companion");
+    expect(sourceWords("prompt_supplied", "companion")).toBe("from what you gave me, via companion");
     expect(sourceWords("synthesized", "dream_memory")).toBe("I worked it out, via dream memory");
     expect(sourceWords(null, "messenger")).toBe("via messenger");
     expect(sourceWords("live_search", null)).toBe("from a web search");

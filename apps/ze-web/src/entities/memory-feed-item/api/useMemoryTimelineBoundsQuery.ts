@@ -6,7 +6,8 @@ export function useMemoryTimelineBoundsQuery() {
   return useQuery({
     queryKey: ["memory-timeline-bounds"],
     queryFn: async () => {
-      const { data } = await getMemoryTimelineBounds({});
+      const { data, error } = await getMemoryTimelineBounds({});
+      if (error) throw error;
       return data as TimelineBoundsResponse;
     },
     staleTime: 60_000,

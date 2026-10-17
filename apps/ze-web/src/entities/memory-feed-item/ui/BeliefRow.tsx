@@ -26,6 +26,11 @@ export function BeliefRow({ item, onKeep, onDrop, onEdit, busy = false, now, sel
   const sentence = beliefSentence(item.key, item.value);
   const dotted = posture === "inferred" || posture === "suspected";
 
+  function cancel() {
+    setDraft(item.value ?? "");
+    setEditing(false);
+  }
+
   function save() {
     onEdit(draft.trim());
     setEditing(false);
@@ -59,12 +64,12 @@ export function BeliefRow({ item, onKeep, onDrop, onEdit, busy = false, now, sel
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") save();
-              if (e.key === "Escape") setEditing(false);
+              if (e.key === "Escape") cancel();
             }}
             autoFocus
           />
           <Control disabled={busy || !draft.trim()} onClick={save} aria-label="Save the new value">Save</Control>
-          <Control onClick={() => setEditing(false)} aria-label="Cancel the edit">Cancel</Control>
+          <Control onClick={cancel} aria-label="Cancel the edit">Cancel</Control>
         </span>
       ) : (
         <span className="belief-actions">

@@ -70,3 +70,16 @@ async def test_entity_detail_caps_neighbours_in_degree_then_name_order(pg_pool):
     assert detail["neighbour_total"] == 25
     assert names[0] == "N24"
     assert names[1:] == [f"N{i:02d}" for i in range(19)]
+
+
+async def test_neighbour_with_two_edges_to_the_centre_counts_each_edge_once(pg_pool):
+    async with pg_pool.acquire() as conn:
+        centre = await _entity(conn, "Centre")
+        other = await _entity(conn, "Other")
+        await _edge(conn, centre, other, "knows")
+        await _edge(conn, centre, other, "works_with")
+
+    detail = await get_entity_detail(pg_pool, centre)
+
+    assert [n["canonical_name"] for n in detail["neighbours"]] == ["Other"]
+    assert detail["neighbours"][0]["degree"] == 2

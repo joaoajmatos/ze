@@ -7,7 +7,8 @@ export function useContactsPageQuery() {
   return useQuery<PluginPageResponse | undefined>({
     queryKey: queryKeys.contactsPage,
     queryFn: async () => {
-      const { data } = await getContactsPage();
+      const { data, error } = await getContactsPage();
+      if (error) throw error;
       return data;
     },
     staleTime: 60_000,

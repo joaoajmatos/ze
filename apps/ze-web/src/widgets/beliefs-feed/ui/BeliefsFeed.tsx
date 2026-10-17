@@ -88,6 +88,8 @@ export function BeliefsFeed({ onChatAbout }: { onChatAbout?: (ref: WsScreenRef, 
       )}
       {!feed.isLoading && !feed.isError && items.length === 0 && <p className="note">{EMPTY}</p>}
 
+      {review.isError && <p role="alert" className="note">Could not save that change. Try again.</p>}
+
       {items.length > 0 && (
         <>
           {totals?.total_facts != null && totals.total_episodes != null && (

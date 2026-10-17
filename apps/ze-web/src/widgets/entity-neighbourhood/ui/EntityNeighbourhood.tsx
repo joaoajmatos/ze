@@ -68,7 +68,7 @@ export function EntityNeighbourhood({ detail, onSelectEntity, onChatAbout }: Ent
         <svg
           className="hood-field"
           viewBox={`0 0 ${layout.size} ${layout.size}`}
-          role="img"
+          role="group"
           aria-label={`${name} and ${layout.shown} neighbours`}
         >
           {layout.groups.flatMap((g) =>
@@ -113,6 +113,8 @@ export function EntityNeighbourhood({ detail, onSelectEntity, onChatAbout }: Ent
           yLabel="items"
         />
       )}
+
+      {review.isError && <p role="alert" className="note">Could not save that change. Try again.</p>}
 
       {detail.facts.length > 0 && (
         <ul className="belief-list">

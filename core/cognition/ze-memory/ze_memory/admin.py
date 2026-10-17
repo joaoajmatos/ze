@@ -440,7 +440,7 @@ async def get_entity_detail(pool: Any, entity_id: Any) -> dict | None:
         neighbour_rows = await conn.fetch(
             """
             SELECT DISTINCT e.id, e.entity_type, e.canonical_name, e.aliases, e.attrs,
-                   COUNT(r2.id) AS degree
+                   COUNT(DISTINCT r2.id) AS degree
             FROM memory_relationships r
             JOIN memory_entities e
               ON (r.target_id = e.id AND r.source_id = $1)

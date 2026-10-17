@@ -13,7 +13,8 @@ export function useHypothesesQuery({ state = "open", entityId, limit }: Hypothes
   return useQuery<HypothesisItem[]>({
     queryKey: queryKeys.hypotheses(state, entityId),
     queryFn: async () => {
-      const { data } = await listHypotheses({ query: { state, entity_id: entityId, limit } });
+      const { data, error } = await listHypotheses({ query: { state, entity_id: entityId, limit } });
+      if (error) throw error;
       return data ?? [];
     },
   });

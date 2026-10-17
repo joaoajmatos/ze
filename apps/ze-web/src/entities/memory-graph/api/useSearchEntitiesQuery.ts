@@ -8,7 +8,8 @@ export function useSearchEntitiesQuery(q: string, entityType?: string) {
   return useQuery<GraphEntityNode[]>({
     queryKey: queryKeys.entitySearch(text, entityType),
     queryFn: async () => {
-      const { data } = await searchEntities({ query: { q: text, entity_type: entityType, limit: 20 } });
+      const { data, error } = await searchEntities({ query: { q: text, entity_type: entityType, limit: 20 } });
+      if (error) throw error;
       return data ?? [];
     },
     enabled: text.length >= 1,
