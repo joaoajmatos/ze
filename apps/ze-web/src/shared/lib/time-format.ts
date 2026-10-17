@@ -33,3 +33,11 @@ export function ago(d: Date | null, now: Date): string {
 export function pct(c: number | null): string {
   return c == null ? "—" : `${Math.round(c * 100)}%`;
 }
+
+/** "just now", "5 m ago", "3 h ago", "2 d ago". */
+export function agoPhrase(d: Date | null, now: Date): string {
+  const short = ago(d, now);
+  if (short === "—") return short;
+  if (short === "now") return "just now";
+  return `${short.slice(0, -1)} ${short.slice(-1)} ago`;
+}

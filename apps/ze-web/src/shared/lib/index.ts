@@ -23,4 +23,4 @@ export { notificationHref, focusHref } from "./notification-href";
 export type { FocusKind } from "./notification-href";
 export { concernStateWords } from "./concern";
 export type { Concern } from "./concern";
-export { ago, dayDiff, pct, relDay } from "./time-format";
+export { ago, agoPhrase, dayDiff, pct, relDay } from "./time-format";

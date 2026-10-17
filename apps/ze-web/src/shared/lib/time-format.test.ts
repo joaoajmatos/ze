@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ago, dayDiff, pct, relDay } from "./time-format";
+import { ago, agoPhrase, dayDiff, pct, relDay } from "./time-format";
 
 const now = new Date(2026, 9, 17, 12, 0);
 
@@ -18,6 +18,12 @@ describe("time-format", () => {
     expect(ago(new Date(now.getTime() - 5 * 60_000), now)).toBe("5m");
     expect(ago(new Date(now.getTime() - 3 * 3_600_000), now)).toBe("3h");
     expect(ago(new Date(now.getTime() - 50 * 3_600_000), now)).toBe("2d");
+  });
+  it("agoPhrase reads as a phrase", () => {
+    expect(agoPhrase(new Date(now.getTime() - 20_000), now)).toBe("just now");
+    expect(agoPhrase(new Date(now.getTime() - 3 * 86_400_000), now)).toBe("3 d ago");
+    expect(agoPhrase(new Date(now.getTime() - 5 * 60_000), now)).toBe("5 m ago");
+    expect(agoPhrase(null, now)).toBe("—");
   });
   it("pct rounds and dashes null", () => {
     expect(pct(0.624)).toBe("62%");
