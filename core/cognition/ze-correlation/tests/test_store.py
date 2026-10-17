@@ -174,7 +174,15 @@ class TestEvidenceRoundTrip:
 
         stored = json.loads(conn.execute.await_args.args[7])
         assert [set(e) for e in stored] == [
-            {"kind", "id", "label", "external_ref", "origin", "retrieved_at", "ingested_at"}
+            {
+                "kind",
+                "id",
+                "label",
+                "external_ref",
+                "origin",
+                "retrieved_at",
+                "ingested_at",
+            }
         ] * 2
 
         row = _row(hyp.id) | {"evidence": json.dumps(stored)}
@@ -189,11 +197,14 @@ _DISMISSED_PREDICATE = "feedback IS NULL OR feedback = 'useful'"
 
 
 class TestFeedbackFiltering:
-    @pytest.mark.parametrize("method,args", [
-        ("list_unsurfaced", ()),
-        ("list_recent", (30,)),
-        ("list_by_entities", ([uuid4()],)),
-    ])
+    @pytest.mark.parametrize(
+        "method,args",
+        [
+            ("list_unsurfaced", ()),
+            ("list_recent", (30,)),
+            ("list_by_entities", ([uuid4()],)),
+        ],
+    )
     async def test_default_listings_skip_dismissed(self, method, args):
         pool, conn = _make_pool()
         await getattr(PostgresHypothesisStore(pool=pool), method)(*args)
@@ -259,3 +270,10 @@ class TestListForDisplay:
         eid = uuid4()
         sql, *params = await self._sql(entity_id=eid, state="all", limit=5)
         assert "entities ?" in sql and params == [str(eid), 5]
+
+
+def test_jsonb_columns_decoded_by_the_api_pool_codec_are_accepted():
+    from ze_correlation.store import _jsonb
+
+    assert _jsonb("[]") == []
+    assert _jsonb([{"kind": "fact"}]) == [{"kind": "fact"}]

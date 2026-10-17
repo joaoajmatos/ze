@@ -255,8 +255,13 @@ class HypothesisNotFoundError(ZeError):
     pass
 
 
+def _jsonb(value: object) -> list:
+    """The API pool registers a jsonb codec and hands back a list; a plain connection hands back text."""
+    return json.loads(value) if isinstance(value, str) else value  # type: ignore[return-value]
+
+
 def _row_to_hypothesis(row: object) -> Hypothesis:
-    evidence_raw = json.loads(row["evidence"])  # type: ignore[index]
+    evidence_raw = _jsonb(row["evidence"])  # type: ignore[index]
     evidence = [
         HypothesisEvidence(
             kind=e["kind"],
@@ -271,7 +276,7 @@ def _row_to_hypothesis(row: object) -> Hypothesis:
         )
         for e in evidence_raw
     ]
-    entities_raw = json.loads(row["entities"])  # type: ignore[index]
+    entities_raw = _jsonb(row["entities"])  # type: ignore[index]
     return Hypothesis(
         id=row["id"],  # type: ignore[index]
         summary=row["summary"],  # type: ignore[index]

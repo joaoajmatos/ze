@@ -338,7 +338,7 @@
         id: '{{s.id}}'
         label: Reply to Ana about the contract
         component: loop_row
-  expected_agent: companion
+  expected_agent: loops
   tags:
   - screen_context
   - chat_about
@@ -364,7 +364,7 @@
         id: '{{s.id}}'
         label: Responder à Ana sobre o contrato
         component: loop_row
-  expected_agent: companion
+  expected_agent: loops
   tags:
   - screen_context
   - chat_about

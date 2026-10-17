@@ -639,7 +639,8 @@ class PostgresMemoryStore:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
                 "SELECT id, subject_id, predicate, object_text, object_id, value,"
-                "       confidence, reviewed, contradicted, source_episode_id, source_refs"
+                "       confidence, reviewed, contradicted, source_episode_id, source_refs,"
+                "       provenance, claim_kind, created_at"
                 " FROM memory_facts WHERE id = ANY($1::uuid[]) AND contradicted = false",
                 ids,
             )
