@@ -5869,22 +5869,6 @@ export type GetContactsPageResponses = {
 
 export type GetContactsPageResponse = GetContactsPageResponses[keyof GetContactsPageResponses];
 
-export type GetRemindersPageData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/reminders/page';
-};
-
-export type GetRemindersPageResponses = {
-    /**
-     * Successful Response
-     */
-    200: PluginPageResponse;
-};
-
-export type GetRemindersPageResponse = GetRemindersPageResponses[keyof GetRemindersPageResponses];
-
 export type ListRemindersData = {
     body?: never;
     path?: never;

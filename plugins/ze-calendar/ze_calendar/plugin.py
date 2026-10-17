@@ -9,7 +9,6 @@ import asyncpg
 from ze_agents.client import LLMClient
 from ze_logging import get_logger
 from ze_sdk import ZePlugin
-from ze_sdk.ui import UiContribution
 from ze_agents.settings import Settings as CoreSettings
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
@@ -108,20 +107,6 @@ class CalendarPlugin(ZePlugin):
 
     def rest_stores(self) -> dict[str, Any]:
         return {"reminder_store": self.reminder_store}
-
-    def ui_contributions(self) -> list[UiContribution]:
-        return [
-            UiContribution(
-                id="ze_calendar.reminders.overview",
-                plugin="ze_calendar",
-                kind="nav",
-                label="Reminders",
-                icon="bell",
-                path="reminders",
-                page_operation_id="getRemindersPage",
-                show_in_mobile_nav=True,
-            ),
-        ]
 
     def rest_routes(self) -> list:
         from ze_calendar.api.routes import router
