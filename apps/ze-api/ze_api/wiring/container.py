@@ -121,6 +121,7 @@ from ze_api.wiring.hooks import (
 from ze_api.wiring.stores import build_stores
 from ze_api.wiring.workflow_graph import begin_workflow_turn, build_workflow_graph
 from ze_agents.registry import get_registered_agents
+from ze_correlation.store import PostgresHypothesisStore
 from ze_correlation.bootstrap import (
     build_correlation_push_candidate_source,
     build_correlation_stack,
@@ -275,6 +276,7 @@ class ZeContainer(CoreContainer):
     ui_manifest: Any
     loop_store: LoopStore
     job_run_store: JobRunStore
+    hypothesis_store: PostgresHypothesisStore
     loop_graph_store: Any
     loop_entity_resolver: Any
     loop_surfacer: Any
@@ -681,6 +683,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         procedure_discovery=stores.procedure_discovery,
         procedure_activator=stores.procedure_activator,
         job_run_store=stores.job_run_store,
+        hypothesis_store=correlation.hypothesis_store,
     )
 
     webhook_dispatcher._container = container

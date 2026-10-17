@@ -64,6 +64,8 @@ class TestWhoIsOnProjectHedged:
         assert len(result.result["hedged_candidates"]) == 1
         assert result.result["hedged_candidates"][0]["person_name"] == "Alice"
         assert result.result["hedged_candidates"][0]["evidence_summaries"]
+        # Default call: dismissed (not_relevant / muted) hypotheses are not offered.
+        assert hypothesis_store.list_by_entities.await_args.kwargs == {}
 
     async def test_promoted_hypothesis_excluded_from_hedged(self):
         project_id, person_id = uuid4(), uuid4()

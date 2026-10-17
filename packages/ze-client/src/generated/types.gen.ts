@@ -907,6 +907,102 @@ export type HeldWriteOut = {
 export type HeldWriteStatus = 'open' | 'approved' | 'denied' | 'expired';
 
 /**
+ * HypothesisEntityItem
+ */
+export type HypothesisEntityItem = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string | null;
+};
+
+/**
+ * HypothesisEvidenceItem
+ */
+export type HypothesisEvidenceItem = {
+    /**
+     * Kind
+     */
+    kind: 'fact' | 'episode' | 'signal';
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+};
+
+/**
+ * HypothesisFeedbackRequest
+ */
+export type HypothesisFeedbackRequest = {
+    /**
+     * Feedback
+     */
+    feedback: 'useful' | 'not_relevant' | 'muted' | null;
+};
+
+/**
+ * HypothesisItem
+ */
+export type HypothesisItem = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Narrative
+     */
+    narrative: string;
+    /**
+     * Relation
+     */
+    relation: 'pattern' | 'causal_guess' | 'tension' | 'convergence';
+    /**
+     * Confidence
+     */
+    confidence: number;
+    /**
+     * Claim Kind
+     */
+    claim_kind: 'inference' | 'suspicion';
+    /**
+     * Evidence
+     */
+    evidence: Array<HypothesisEvidenceItem>;
+    /**
+     * Entities
+     */
+    entities: Array<HypothesisEntityItem>;
+    /**
+     * Surfaced
+     */
+    surfaced: boolean;
+    /**
+     * Feedback
+     */
+    feedback: 'useful' | 'not_relevant' | 'muted' | null;
+    /**
+     * Confirmed
+     */
+    confirmed: boolean;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
  * ImportResponse
  */
 export type ImportResponse = {
@@ -4093,6 +4189,78 @@ export type DecideHeldWriteResponses = {
 };
 
 export type DecideHeldWriteResponse = DecideHeldWriteResponses[keyof DecideHeldWriteResponses];
+
+export type ListHypothesesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Entity Id
+         *
+         * Only hypotheses about this entity.
+         */
+        entity_id?: string | null;
+        /**
+         * State
+         */
+        state?: 'open' | 'confirmed' | 'dismissed' | 'all';
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v0/hypotheses';
+};
+
+export type ListHypothesesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListHypothesesError = ListHypothesesErrors[keyof ListHypothesesErrors];
+
+export type ListHypothesesResponses = {
+    /**
+     * Response Listhypotheses
+     *
+     * Successful Response
+     */
+    200: Array<HypothesisItem>;
+};
+
+export type ListHypothesesResponse = ListHypothesesResponses[keyof ListHypothesesResponses];
+
+export type SetHypothesisFeedbackData = {
+    body: HypothesisFeedbackRequest;
+    path: {
+        /**
+         * Hypothesis Id
+         */
+        hypothesis_id: string;
+    };
+    query?: never;
+    url: '/api/v0/hypotheses/{hypothesis_id}/feedback';
+};
+
+export type SetHypothesisFeedbackErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetHypothesisFeedbackError = SetHypothesisFeedbackErrors[keyof SetHypothesisFeedbackErrors];
+
+export type SetHypothesisFeedbackResponses = {
+    /**
+     * Successful Response
+     */
+    200: HypothesisItem;
+};
+
+export type SetHypothesisFeedbackResponse = SetHypothesisFeedbackResponses[keyof SetHypothesisFeedbackResponses];
 
 export type ListSessionsData = {
     body?: never;

@@ -68,6 +68,22 @@ def get_interruption_settings_store(request: Request):
     return request.app.state.container.interruption_settings_store
 
 
+def get_hypothesis_store(request: Request):
+    return request.app.state.container.hypothesis_store
+
+
+def get_entity_names(request: Request):
+    """Adapter handed to ze-correlation: entity ids to canonical names. The method
+    lives on the concrete memory store, not the MemoryStore Protocol."""
+    memory_store = request.app.state.container.memory_store
+
+    async def entity_names(ids):
+        entities = await memory_store.get_entities_by_ids(list(ids))
+        return {e.id: e.canonical_name for e in entities}
+
+    return entity_names
+
+
 def get_job_run_store(request: Request):
     return request.app.state.container.job_run_store
 

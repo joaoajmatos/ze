@@ -5,6 +5,7 @@ from ze_api.api.v0.costs.router import router as costs_router
 from ze_api.api.v0.data.router import router as data_router
 from ze_api.api.v0.goals.router import router as goals_router
 from ze_api.api.v0.held_writes.router import router as held_writes_router
+from ze_api.api.v0.hypotheses.router import router as hypotheses_router
 from ze_api.api.v0.loops.router import router as loops_router
 from ze_api.api.v0.memory.router import router as memory_router
 from ze_api.api.v0.messages.router import router as messages_router
@@ -31,6 +32,7 @@ for _domain_router in (
     costs_router,
     goals_router,
     held_writes_router,
+    hypotheses_router,
     sessions_router,
     messages_router,
     data_router,
