@@ -275,8 +275,6 @@ class WsCommandFrame(BaseModel):
         "costs",
         "status",
         "onboarding",
-        "reset",
-        "reset_preview",
     ]
 
 

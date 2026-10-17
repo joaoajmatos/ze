@@ -2,7 +2,7 @@ import { lazy, Suspense, type ComponentType } from "react";
 import { type RouteObject } from "react-router-dom";
 import { AskInterim } from "@/pages/ask";
 import { DoingInterim } from "@/pages/doing";
-import { GovernanceInterim } from "@/pages/governance";
+import { GovernancePage } from "@/pages/governance";
 import { MindInterim } from "@/pages/mind";
 import { WorldInterim } from "@/pages/world";
 import { AppShell } from "@/widgets/app-shell";
@@ -31,16 +31,10 @@ const doingLoaders = {
   workflows: () => import("@/pages/workflows").then((m) => ({ default: m.WorkflowsPage })),
   skills: () => import("@/pages/skills").then((m) => ({ default: m.SkillsPage })),
   procedures: () => import("@/pages/procedures").then((m) => ({ default: m.ProceduresPage })),
-  workspace: () => import("@/pages/workspace").then((m) => ({ default: m.WorkspacePage })),
 };
 const mindLoaders = {
   memory: () => import("@/pages/brain-memory").then((m) => ({ default: m.BrainMemoryPage })),
   graph: () => import("@/pages/brain-graph").then((m) => ({ default: m.BrainGraphPage })),
-};
-const governanceLoaders = {
-  usage: () => import("@/pages/costs").then((m) => ({ default: m.CostsPage })),
-  data: () => import("@/pages/data").then((m) => ({ default: m.DataPage })),
-  settings: () => import("@/pages/settings").then((m) => ({ default: m.SettingsPage })),
 };
 
 const notFound = <ZeErrorFallback error={new Error("Nothing lives at this address.")} />;
@@ -65,12 +59,13 @@ export const routes: RouteObject[] = [
       },
       { path: "doing/*", element: <DoingInterim loaders={doingLoaders} fallback={notFound} /> },
       { path: "mind/*", element: <MindInterim loaders={mindLoaders} fallback={notFound} /> },
-      { path: "governance/*", element: <GovernanceInterim loaders={governanceLoaders} fallback={notFound} /> },
+      { path: "governance", element: <GovernancePage /> },
+      { path: "governance/*", element: notFound },
       {
         path: "jarvis/*",
         element: lazyPage(() => import("@/pages/jarvis").then((m) => ({ default: m.JarvisApp }))),
       },
-      ...redirects.map((r) => ({ path: r.from.slice(1), element: <RedirectTo to={r.to} /> })),
+      ...redirects.map((r) => ({ path: r.from.slice(1), element: <RedirectTo to={r.to} hint={r.hint} hintMap={r.hintMap} /> })),
       { path: ":pluginPath", element: lazyPage(() => import("@/pages/plugin-page").then((m) => ({ default: m.PluginPage }))) },
       { path: "*", element: notFound },
     ],

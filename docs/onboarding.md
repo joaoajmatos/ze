@@ -163,8 +163,11 @@ submission for compatibility.
 
 ## Reset Scopes
 
-`ResetService` supports previewing and executing scoped resets. Execution requires
-`confirm: "RESET"`. Expose execution only through high-friction UI.
+`ResetService` previews and runs scoped resets. Only the developer script
+`scripts/reset_personal_state.py` uses it. The WebSocket `reset_preview` and `reset`
+commands are gone, and the web app has no reset control. Delete all data in
+Governance › Data is the one destructive action in the app. Execution requires
+`confirm: "RESET"`.
 
 - `memory`: memory entities, facts, episodes, events, relationships, task state, profile facets, and the procedure tables.
 - `personal_state`: memory plus messages, pending confirmations, prospecting campaigns and outreach,
@@ -172,22 +175,5 @@ submission for compatibility.
   news cache, checkpoints, and onboarding tables.
 - `full_dev`: reserved for external database recreate tooling; not executed through
   `ResetService`.
-
-Preview over WebSocket:
-
-```json
-{ "type": "command", "name": "reset_preview", "scope": "personal_state" }
-```
-
-Execute over WebSocket:
-
-```json
-{
-  "type": "command",
-  "name": "reset",
-  "scope": "personal_state",
-  "confirm": "RESET"
-}
-```
 
 Do not log raw onboarding submissions; they may contain sensitive user data.

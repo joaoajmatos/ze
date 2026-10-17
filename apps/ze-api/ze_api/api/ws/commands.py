@@ -89,50 +89,5 @@ async def handle_command(
             )
         return
 
-    if name == "reset_preview":
-        scope = data.get("scope", "memory")
-        try:
-            preview = await container.reset_service.preview(scope)
-            lines = [f"{table}: {count}" for table, count in preview.counts.items()]
-            text = "Reset preview:\n" + (
-                "\n".join(lines) if lines else "Nothing to delete."
-            )
-            await conn_mgr.send_frame(
-                {
-                    "type": "message",
-                    "message": ephemeral_assistant_message(text),
-                }
-            )
-        except Exception as exc:
-            log.warning("ws_reset_preview_failed", error=str(exc))
-            await conn_mgr.send_frame(
-                {"type": "error", "detail": "Could not preview reset."},
-                data.get("thread_id") or None,
-            )
-        return
-
-    if name == "reset":
-        scope = data.get("scope", "memory")
-        confirm = data.get("confirm", "")
-        try:
-            result = await container.reset_service.reset(scope, confirm=confirm)
-            lines = [f"{table}: {count}" for table, count in result.deleted.items()]
-            text = "Reset complete:\n" + (
-                "\n".join(lines) if lines else "Nothing was deleted."
-            )
-            await conn_mgr.send_frame(
-                {
-                    "type": "message",
-                    "message": ephemeral_assistant_message(text),
-                }
-            )
-        except Exception as exc:
-            log.warning("ws_reset_failed", error=str(exc))
-            await conn_mgr.send_frame(
-                {"type": "error", "detail": "Could not reset state."},
-                data.get("thread_id") or None,
-            )
-        return
-
     log.warning("ws_unknown_command", name=name)
     return

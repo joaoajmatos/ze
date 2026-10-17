@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 
-from ze_api.api.v0.activity.router import router as activity_router
 from ze_api.api.v0.costs.router import router as costs_router
 from ze_api.api.v0.data.router import router as data_router
 from ze_api.api.v0.goals.router import router as goals_router
@@ -26,7 +25,6 @@ API_V0_PREFIX = "/api/v0"
 router = APIRouter(prefix=API_V0_PREFIX)
 for _domain_router in (
     system_router,
-    activity_router,
     memory_router,
     workflows_router,
     costs_router,
