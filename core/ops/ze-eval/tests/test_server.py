@@ -53,7 +53,7 @@ def test_scenario_context_reaches_the_final_prompt_turn(monkeypatch):
         return {"agent_used": "companion"}
 
     monkeypatch.setattr(server, "_do_chat", fake_chat)
-    context = {"screen": "world", "compose": "slipping"}
+    context = {"place": "world", "compose": "slipping"}
     scenario = {"context": context, "turns": [{"prompt": "setup"}, {"prompt": "What's slipping?"}]}
 
     asyncio.run(server._run_scenario_turns(scenario, "eval-s"))

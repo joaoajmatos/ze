@@ -57,10 +57,11 @@ _COMPOSE_VALUES = ("slipping", "decisions", "topic")
 
 
 def validate_context(context: object) -> dict:
-    """A scenario `context:` is the inbound screen context: a dict with `screen`;
-    `compose` must be one of the preset intents and `topic` needs a topic."""
-    if not isinstance(context, dict) or not context.get("screen"):
-        raise ValueError(f"context must be a mapping with a screen: {context!r}")
+    """A scenario `context:` is the inbound screen context (phase 195): a non-empty mapping with
+    `place`, `subject`, `selection`, `visible`, ... `compose` must be one of the preset intents and
+    `topic` needs a topic."""
+    if not isinstance(context, dict) or not context:
+        raise ValueError(f"context must be a non-empty mapping: {context!r}")
     compose = context.get("compose")
     if compose is not None and compose not in _COMPOSE_VALUES:
         raise ValueError(f"context.compose must be one of {_COMPOSE_VALUES}: {compose!r}")
@@ -89,3 +90,24 @@ def turn_contexts(scenario: dict) -> list[dict | None]:
         else:
             contexts.append(None)
     return contexts
+
+
+def describe_context(context: dict | None) -> str:
+    """One line for the judge: where the person was and what they pointed at."""
+    if not context:
+        return "none"
+    parts = []
+    if context.get("place"):
+        parts.append(f"place {context['place']}")
+    if context.get("origin") == "chat_about":
+        parts.append('started from "Chat about this"')
+    for slot in ("subject", "selection", "visible"):
+        refs = context.get(slot) or []
+        if refs:
+            names = ", ".join(f"{r.get('kind')} \"{r.get('label') or r.get('id')}\"" for r in refs)
+            parts.append(f"{slot}: {names}")
+    if context.get("focused_module"):
+        parts.append(f"focused module {context['focused_module']}")
+    if context.get("compose"):
+        parts.append(f"preset {context['compose']}")
+    return "; ".join(parts) or "none"

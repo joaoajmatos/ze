@@ -30,7 +30,8 @@ import httpx
 
 from ze_eval.judge import DEFAULT_JUDGE_MODEL, judge
 from ze_eval.metrics import fetch_session_metrics
-from ze_eval.scenario import is_runnable, load_scenarios, turn_contexts
+from ze_eval.fixtures import Fixtures, substitute
+from ze_eval.scenario import describe_context, is_runnable, load_scenarios, turn_contexts
 from ze_eval.scoring import outcome_correct, routing_correct, tools_correct
 from ze_eval.verifier import run_verification
 
@@ -110,6 +111,15 @@ def _validate_turn(turn: dict) -> None:
         raise ValueError(f"confirm must be approve or deny, got {choice!r}")
     if has_prompt and "edits" in turn:
         raise ValueError(f"edits only belong on a confirm step: {turn!r}")
+
+
+def _with_bindings(scenario: dict, bindings: dict) -> dict:
+    """The scenario with `{{name.field}}` filled in `context` and `turns` (the other keys are left alone)."""
+    out = dict(scenario)
+    for key in ("context", "turns", "prompt"):
+        if key in out:
+            out[key] = substitute(out[key], bindings)
+    return out
 
 
 async def _run_turns(scenario: dict, session_id: str, ze_url: str, ze_key: str) -> dict:
@@ -396,11 +406,18 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
 
         t_start = time.monotonic()
         started_at = datetime.now(UTC)
+        fixtures: Fixtures | None = None
         try:
+            if scenario.get("setup"):
+                fixtures = await Fixtures.create(scenario["setup"])
+                scenario = _with_bindings(scenario, fixtures.bindings)
             ze_result = await _run_turns(scenario, session_id, ze_url, ze_key)
             error = ze_result.get("error")
         except Exception as exc:
             error = str(exc)
+        finally:
+            if fixtures is not None:
+                await fixtures.delete()
         latency_ms = int((time.monotonic() - t_start) * 1000)
 
         agent_used = ze_result.get("agent_used") if not error else None
@@ -441,6 +458,7 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
                 }
 
             if use_judge and scenario.get("criteria"):
+                contexts_for_judge = turn_contexts(scenario)
                 turns = ze_result.get("turns")
                 if turns:
                     prompt_for_judge = " → ".join(turn_label(t) for t in turns)
@@ -470,6 +488,12 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
                         tool_calls=tool_calls_for_judge,
                         components=components_for_judge,
                         pending_confirmation=pending_confirmation_for_judge,
+                        screen_context="; ".join(
+                            f"[turn {i}] {describe_context(c)}" if len(contexts_for_judge) > 1 else describe_context(c)
+                            for i, c in enumerate(contexts_for_judge, start=1)
+                            if c
+                        )
+                        or None,
                         model=args.judge_model,
                         api_key=or_key,
                     )
