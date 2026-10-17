@@ -17,6 +17,10 @@ class LoopListItem(BaseModel):
     drift_rationale: str | None
     goal_id: UUIDType | None
     reminder_id: UUIDType | None
+    confidence_prior: float | None
+    confidence_changed_at: str | None
+    drift_deadline: str | None
+    confirmed_at: str | None
     created_at: str | None
     updated_at: str | None
     promoted: bool

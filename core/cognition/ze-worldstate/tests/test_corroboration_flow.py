@@ -69,6 +69,8 @@ class FakeLoopStore:
         self.sources: dict[UUID, list[LoopSource]] = {}
         self.corroboration_recorded: list[UUID] = []
         self.deleted_sources = 0
+        self.calls: list[str] = []
+        self.promote_returns_none = False
 
     async def create(self, loop):
         loop = replace(loop, id=uuid4())
@@ -98,6 +100,7 @@ class FakeLoopStore:
         return list(self.evidence.get(loop_id, []))
 
     async def set_confidence(self, loop_id, confidence):
+        self.calls.append("set_confidence")
         self.loops[loop_id].confidence = confidence
 
     async def set_drift_deadline(self, loop_id, deadline):
@@ -125,6 +128,9 @@ class FakeLoopStore:
         return list(self.sources.get(loop_id, []))
 
     async def promote(self, loop_id, *, confidence, window_days):
+        self.calls.append("promote")
+        if self.promote_returns_none:
+            return None
         loop = self.loops[loop_id]
         if loop.state is not LoopState.SUSPECTED:
             return None
@@ -281,6 +287,35 @@ async def test_independent_email_promotes_a_suspected_loop():
     ]
     assert len(h.client.same_calls) == 1
     assert h.client.same_calls[0]["loop"] == TITLE
+
+
+async def test_promote_decision_writes_confidence_once_through_promote():
+    h = Harness(same=0.93)
+    await h.chat()
+    h.store.calls.clear()
+    await h.inbound("email", "G1")
+
+    assert h.store.calls == ["promote"]
+
+
+async def test_promote_that_finds_the_loop_gone_falls_back_to_set_confidence():
+    h = Harness(same=0.93)
+    await h.chat()
+    h.store.calls.clear()
+    h.store.promote_returns_none = True
+    await h.inbound("email", "G1")
+
+    assert h.store.calls == ["promote", "set_confidence"]
+    assert h.loop.state is LoopState.SUSPECTED
+
+
+async def test_corroborate_decision_only_sets_confidence():
+    h = Harness(same=0.7)
+    await h.chat()
+    h.store.calls.clear()
+    await h.inbound("email", "G1")
+
+    assert h.store.calls == ["set_confidence"]
 
 
 async def test_corroborate_band_raises_confidence_and_stays_suspected():

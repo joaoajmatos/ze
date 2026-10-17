@@ -1075,6 +1075,22 @@ export type LoopListItem = {
      */
     reminder_id: string | null;
     /**
+     * Confidence Prior
+     */
+    confidence_prior: number | null;
+    /**
+     * Confidence Changed At
+     */
+    confidence_changed_at: string | null;
+    /**
+     * Drift Deadline
+     */
+    drift_deadline: string | null;
+    /**
+     * Confirmed At
+     */
+    confirmed_at: string | null;
+    /**
      * Created At
      */
     created_at: string | null;
