@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { useParams, useNavigate } from "react-router-dom";
 import { WorkflowExecutionsList } from "@/widgets/workflow-executions";
 import { WorkflowGraph, WorkflowDefinitionNotice, type WorkflowDefinitionNoticeMode } from "@/widgets/workflow-graph";
-import { useOverlayStore } from "@/features/open-context-overlay";
+import { askAbout } from "@/features/ask-bar";
 import { useSession } from "@/entities/session";
 import {
   useWorkflowDetailQuery,
@@ -18,6 +18,7 @@ import {
   averageSuccessfulRunDuration,
   stepsDifferFromSnapshot,
 } from "@/entities/workflow";
+import { askPath, workflowsPath } from "@/shared/config";
 import { useSetBreadcrumbTitle } from "@/shared/lib";
 import { ListSkeleton, ErrorState, Button, PageShell, SectionPanel } from "@/shared/ui";
 
@@ -96,7 +97,7 @@ export function WorkflowDetailPage() {
       <div>
         <button
           className="flex items-center gap-1.5 text-xs text-smoke hover:text-foreground transition-colors mb-6"
-          onClick={() => navigate("/workflows")}
+          onClick={() => navigate(workflowsPath())}
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Workflows
@@ -282,7 +283,6 @@ interface ChatAboutRunButtonProps {
 }
 
 function ChatAboutRunButton({ execution, workflowName }: ChatAboutRunButtonProps) {
-  const openForExecution = useOverlayStore((s) => s.openForExecution);
   const date = execution.started_at ? formatTimestamp(execution.started_at) : "unknown date";
   const duration = formatDuration(execution.started_at, execution.completed_at);
   const stepCount = execution.step_results.length;
@@ -295,7 +295,12 @@ function ChatAboutRunButton({ execution, workflowName }: ChatAboutRunButtonProps
     <button
       className="flex items-center gap-1.5 text-xs text-smoke hover:text-foreground transition-colors"
       title="Chat about this run"
-      onClick={() => openForExecution({ screen: "workflow run", entityId: execution.id, prefillMessage })}
+      onClick={() =>
+        askAbout({
+          text: prefillMessage,
+          context: { screen: "doing.workflows", workflow_id: execution.workflow_id, execution_id: execution.id },
+        })
+      }
     >
       <MessageCircle className="w-3.5 h-3.5" />
       Ask Ze
@@ -477,7 +482,7 @@ function WorkflowRevisionRow({ revision }: { revision: WorkflowRevisionResponse 
     }
     useSession.getState().selectSession(revision.actor_session_id);
     useSession.getState().setHighlightMessage(revision.actor_user_message_id ?? null);
-    navigate("/");
+    navigate(askPath(revision.actor_session_id));
   }
 
   return (

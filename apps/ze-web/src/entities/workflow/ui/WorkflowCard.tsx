@@ -1,6 +1,7 @@
 import type { WorkflowResponse } from "@myguyze/ze-client";
 import { Workflow } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { workflowPath } from "@/shared/config";
 import { humanizeIdentifier } from "@/shared/lib";
 import { Button } from "@/shared/ui";
 import { useTriggerWorkflowMutation } from "../api/useTriggerWorkflowMutation";
@@ -32,7 +33,7 @@ export function WorkflowCard({ workflow, variant = "row" }: WorkflowCardProps) {
     return (
       <div
         className="group relative flex flex-col gap-3 p-5 rounded-pill bg-foreground/[0.02] border border-foreground/10 hover:bg-foreground/[0.04] hover:border-foreground/20 transition-all cursor-pointer overflow-hidden"
-        onClick={() => navigate(`/workflows/${workflow.id}`)}
+        onClick={() => navigate(workflowPath(workflow.id))}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-plum-voltage/[0.06] to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-pill" />
 
@@ -87,7 +88,7 @@ export function WorkflowCard({ workflow, variant = "row" }: WorkflowCardProps) {
   return (
     <div
       className="group flex items-center gap-4 px-5 py-4 rounded-pill bg-foreground/[0.02] border border-foreground/10 hover:bg-foreground/[0.035] hover:border-foreground/20 transition-colors cursor-pointer"
-      onClick={() => navigate(`/workflows/${workflow.id}`)}
+      onClick={() => navigate(workflowPath(workflow.id))}
     >
       <div className="flex items-center justify-center size-8 rounded-full bg-plum-voltage/10 border border-plum-voltage/15 shrink-0">
         <Workflow className="size-3.5 text-plum-voltage/80" />

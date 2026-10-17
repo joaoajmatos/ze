@@ -1,170 +1,83 @@
-import { Settings, Puzzle } from "lucide-react";
-import { useEffect, useMemo, type ReactNode } from "react";
-import { Outlet, NavLink } from "react-router-dom";
+import { useEffect, useRef, type ReactNode } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { AskBar, useAskOverlay, useAskShortcut } from "@/features/ask-bar";
 import { RefreshHandler } from "@/features/invalidate-on-ws-refresh";
-import { useOverlay } from "@/features/open-context-overlay";
 import { ConfirmationFrameHandler } from "@/features/respond-to-confirmation";
-import { mergeMobileNavRoutes, pluginNavRoutes, useUiManifestQuery } from "@/entities/ui-manifest";
-import { AutomationIcon, KnowledgeIcon, SystemIcon, automationNavRoutes, knowledgeNavRoutes, systemNavRoutes, navRoutes, settingsNavRoute } from "@/shared/config";
-import { BreadcrumbProvider, PageHeaderProvider, TopBarActionsProvider } from "@/shared/lib";
-import { cn } from "@/shared/lib/cn";
-import { NoticeBanner } from "@/shared/ui";
-import { ChatNavGroup } from "./ChatNavGroup";
-import { NavGroup } from "./NavGroup";
+import { usePresence } from "@/entities/presence";
+import { useSession } from "@/entities/session";
+import { useFrame } from "@/shared/api";
+import { placeOf } from "@/shared/config";
+import { BreadcrumbProvider, PageHeaderProvider, TopBarActionsProvider, useNarrow } from "@/shared/lib";
+import { useTopBarActions } from "@/shared/lib/top-bar-actions";
+import { NoticeBanner, Presence, type PresenceHandle } from "@/shared/ui";
+import { BottomBar } from "./BottomBar";
+import { Strip } from "./Strip";
 import { TopBar } from "./TopBar";
 
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    "flex items-center gap-3 px-3 py-2 rounded-pill text-sm transition-colors",
-    isActive ? "bg-plum-voltage/15 text-foreground" : "text-smoke hover:text-foreground hover:bg-secondary",
-  );
+/** Interim pages still register quick actions; show them above their content until their place replaces them. */
+function InterimActions() {
+  const { quickActions } = useTopBarActions();
+  if (!quickActions) return null;
+  return <div className="interim-actions">{quickActions}</div>;
+}
 
-const childNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    "flex items-center gap-2.5 px-3 py-1.5 rounded-pill text-xs w-full transition-colors",
-    isActive ? "bg-plum-voltage/15 text-foreground" : "text-smoke hover:text-foreground hover:bg-secondary",
-  );
+function Shell({ overlay }: { overlay?: ReactNode }) {
+  const narrow = useNarrow();
+  const { pathname } = useLocation();
+  const onAsk = placeOf(pathname)?.id === "ask";
+  const threadId = useSession((s) => s.threadId);
+  const { orb, phrase } = usePresence(threadId);
+  const overlayOpen = useAskOverlay((s) => s.open);
 
-const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    "flex-1 min-w-0 flex flex-col items-center py-3 gap-1 text-[11px] tracking-tighter whitespace-nowrap transition-colors",
-    isActive ? "text-foreground" : "text-smoke",
-  );
+  const presenceRef = useRef<PresenceHandle>(null);
+  const bellRef = useRef<HTMLDivElement>(null);
+  useAskShortcut();
 
-export function AppShell({ overlay }: { overlay?: ReactNode }) {
-  const { data: uiManifest } = useUiManifestQuery();
-
-  const mobileNavRoutes = useMemo(
-    () => mergeMobileNavRoutes(navRoutes, settingsNavRoute, uiManifest?.nav),
-    [uiManifest?.nav],
-  );
-
-  const pluginRoutes = useMemo(
-    () => pluginNavRoutes(uiManifest?.nav ?? []),
-    [uiManifest?.nav],
-  );
+  useFrame("notification", () => {
+    if (bellRef.current) presenceRef.current?.glance(bellRef.current);
+  });
 
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        useOverlay.getState().toggle();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    if (!overlayOpen) return;
+    // The panel mounts on the next commit; look at it once it is there.
+    const id = requestAnimationFrame(() => {
+      const panel = document.querySelector(".ask-overlay");
+      if (panel) presenceRef.current?.glance(panel);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [overlayOpen]);
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      <nav className="hidden md:flex flex-col w-14 lg:w-52 border-r border-border flex-shrink-0">
-        <div className="px-4 py-5 border-b border-border flex items-center gap-3">
-          <div className="w-6 h-6 rounded-full bg-plum-voltage flex-shrink-0" />
-          <span className="hidden lg:block text-sm font-display font-semibold text-foreground">Ze</span>
+    <div className={`shell ${onAsk ? "on-ask" : ""}`}>
+      <TopBar ref={bellRef} showTabs={!narrow} />
+      <Strip />
+      <NoticeBanner />
+      <main className="main main-places">
+        <aside className="rail" aria-label="Ze status">
+          <Presence ref={presenceRef} state={orb} phrase={phrase} compact={narrow} />
+        </aside>
+        <div className="place">
+          <InterimActions />
+          <Outlet />
         </div>
-
-        <div className="flex-1 py-4 space-y-0.5 px-2 overflow-y-auto">
-          {/* Chat + recent sessions */}
-          <ChatNavGroup />
-
-          {/* Automation group: Goals, Priority, Workflows, Skills */}
-          <NavGroup
-            icon={AutomationIcon}
-            label="Automation"
-            childPaths={automationNavRoutes.map((r) => r.path)}
-          >
-            {automationNavRoutes.map(({ path, icon: Icon, label }) => (
-              <NavLink key={path} to={path} className={childNavLinkClass}>
-                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>{label}</span>
-              </NavLink>
-            ))}
-          </NavGroup>
-
-          {/* Knowledge group: Memory, Graph, Procedures */}
-          <NavGroup
-            icon={KnowledgeIcon}
-            label="Knowledge"
-            childPaths={knowledgeNavRoutes.map((r) => r.path)}
-          >
-            {knowledgeNavRoutes.map(({ path, icon: Icon, label }) => (
-              <NavLink key={path} to={path} className={childNavLinkClass}>
-                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>{label}</span>
-              </NavLink>
-            ))}
-          </NavGroup>
-
-          {/* System group: Usage, Data, Workspace */}
-          <NavGroup
-            icon={SystemIcon}
-            label="System"
-            childPaths={systemNavRoutes.map((r) => r.path)}
-          >
-            {systemNavRoutes.map(({ path, icon: Icon, label }) => (
-              <NavLink key={path} to={path} className={childNavLinkClass}>
-                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>{label}</span>
-              </NavLink>
-            ))}
-          </NavGroup>
-
-          {/* Plugins group */}
-          {pluginRoutes.length > 0 && (
-            <NavGroup
-              icon={Puzzle}
-              label="Plugins"
-              childPaths={pluginRoutes.map((r) => r.path)}
-            >
-              {pluginRoutes.map(({ path, icon: Icon, label }) => (
-                <NavLink key={path} to={path} className={childNavLinkClass}>
-                  <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>{label}</span>
-                </NavLink>
-              ))}
-            </NavGroup>
-          )}
-        </div>
-
-        <div className="p-2 border-t border-border">
-          <NavLink
-            to={`/${settingsNavRoute.path}`}
-            aria-label={settingsNavRoute.label}
-            title={settingsNavRoute.label}
-            className={navLinkClass}
-          >
-            <Settings className="w-4 h-4 flex-shrink-0" />
-            <span className="hidden lg:block">{settingsNavRoute.label}</span>
-          </NavLink>
-        </div>
-      </nav>
-
-      <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
-        <BreadcrumbProvider>
-          <PageHeaderProvider>
-            <TopBarActionsProvider>
-              <TopBar />
-              <NoticeBanner />
-              <div className="flex-1 overflow-y-auto pb-32 md:pb-0">
-                <Outlet />
-              </div>
-            </TopBarActionsProvider>
-          </PageHeaderProvider>
-        </BreadcrumbProvider>
       </main>
-
-      <nav className="md:hidden fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-background/90 backdrop-blur-sm">
-        {mobileNavRoutes.map(({ path, icon: Icon, label, index }) => (
-          <NavLink key={path} to={path} end={index} className={mobileNavLinkClass}>
-            <Icon className="w-5 h-5" />
-            {label}
-          </NavLink>
-        ))}
-      </nav>
-
+      {!onAsk && <AskBar />}
+      {narrow && <BottomBar />}
       <RefreshHandler />
       <ConfirmationFrameHandler />
       {overlay}
     </div>
+  );
+}
+
+export function AppShell({ overlay }: { overlay?: ReactNode }) {
+  return (
+    <BreadcrumbProvider>
+      <PageHeaderProvider>
+        <TopBarActionsProvider>
+          <Shell overlay={overlay} />
+        </TopBarActionsProvider>
+      </PageHeaderProvider>
+    </BreadcrumbProvider>
   );
 }

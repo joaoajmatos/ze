@@ -17,10 +17,6 @@ vi.mock("./ActivityHeatmapPanel", () => ({
   ActivityHeatmapPanel: () => <div data-testid="heatmap" />,
 }));
 
-vi.mock("@/features/open-context-overlay", () => ({
-  FloatingButton: () => null,
-}));
-
 vi.mock("@myguyze/ze-ui/charts", () => ({
   HeatmapChart: ({ data, title }: { data: { x: string; y: number }[]; title?: string }) => (
     <div data-testid="spend-chart" data-title={title} data-count={data.length}>

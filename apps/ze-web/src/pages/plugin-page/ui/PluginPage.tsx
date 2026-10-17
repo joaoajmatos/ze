@@ -1,7 +1,7 @@
 import { Navigate, useParams } from "react-router-dom";
 import { PluginScreen } from "@/widgets/plugin-screen";
 import { useUiManifestQuery } from "@/entities/ui-manifest";
-import { ErrorState } from "@/shared/ui";
+import { ErrorState, ZeErrorFallback } from "@/shared/ui";
 
 export function PluginPage() {
   const { pluginPath } = useParams<{ pluginPath: string }>();
@@ -27,7 +27,7 @@ export function PluginPage() {
 
   const entry = manifest?.nav.find((item) => item.path === pluginPath);
   if (!entry) {
-    return <Navigate to="/" replace />;
+    return <ZeErrorFallback error={new Error(`Nothing lives at /${pluginPath}.`)} />;
   }
 
   return <PluginScreen entry={entry} />;

@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useLoopTransitionMutation } from "@/entities/loop";
+import { CountUp, Corners, Dots, Glyph, LeaderLine, Meter, Module, Spark } from "@/shared/ui";
 import { FieldChart } from "../hud/FieldChart";
-import { CountUp, Corners, Dots, Glyph, Meter, Module, Spark } from "../hud/Frame";
-import { LeaderLine } from "../hud/LeaderLine";
-import { Presence } from "../hud/Presence";
 import { useJarvis } from "../JarvisShell";
 import { ago, hhmm, pct, relDay, sourceLabel, staleness, stateLabel } from "../model/format";
 import { daysSince, decisionsFor, kindLabelOf, postureOf, short, slipsOf, worldSentence } from "../model/hud";
@@ -26,7 +24,7 @@ function humanFailure(body: string): string {
 
 export function WorldView() {
   const world = useWorld();
-  const { orb, setOrb, colors, reducedMotion, narrow } = useJarvis();
+  const { orb, setOrb, reducedMotion, narrow } = useJarvis();
   const [selected, setSelected] = useState<string | null>(null);
   const readoutRef = useRef<HTMLDivElement>(null);
   const transition = useLoopTransitionMutation();
@@ -77,7 +75,6 @@ export function WorldView() {
   return (
     <main className="main">
       <aside className="rail" aria-label="Ze status">
-        <Presence leanTo={narrow ? undefined : ".pt.hot rect"} state={orb} world={world} colors={colors} reducedMotion={reducedMotion} compact />
 
 
         <Module label="Needs you" index="A·02" tone={decisions.length ? "cream" : "default"} className="mod-needs">

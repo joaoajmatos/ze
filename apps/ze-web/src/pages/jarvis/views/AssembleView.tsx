@@ -2,10 +2,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useLoopTransitionMutation } from "@/entities/loop";
+import { Corners, DotMatrix } from "@/shared/ui";
 import { Card } from "../hud/Cards";
-import { DotMatrix } from "../hud/DotMatrix";
-import { Corners } from "../hud/Frame";
-import { Presence } from "../hud/Presence";
 import { useJarvis } from "../JarvisShell";
 import { compose, PRESETS, type Component } from "../model/compose";
 import { useWorld } from "../model/world";
@@ -19,7 +17,7 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 /** Assemble: Ze picks the components a question needs and lays them out on the canvas, launched from its presence module. */
 export function AssembleView() {
   const world = useWorld();
-  const { orb, setOrb, colors, reducedMotion, narrow } = useJarvis();
+  const { setOrb, reducedMotion, narrow } = useJarvis();
   const [params] = useSearchParams();
   const [phase, setPhase] = useState<Phase>("ready");
   const [query, setQuery] = useState(params.get("q") ?? DEFAULT_Q);
@@ -147,7 +145,6 @@ export function AssembleView() {
   return (
     <main className="main assemble-main">
       <aside className="rail" aria-label="Ze's presence">
-        <Presence state={orb} world={world} colors={colors} reducedMotion={reducedMotion} compact={narrow} />
         <nav className="presets" aria-label="Questions to try">
           <span className="lbl">try · keys 1–3</span>
           {PRESETS.map((p, i) => (

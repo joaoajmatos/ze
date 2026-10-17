@@ -22,6 +22,7 @@ import { useNotificationsQuery } from "@/entities/notification";
 import { usePrioritySnapshotQuery } from "@/entities/priority-item";
 import { useQuietHoursQuery } from "@/entities/quiet-hours";
 import { useWorkflowsQuery } from "@/entities/workflow";
+import { goalPath } from "@/shared/config";
 
 // API gap 1: LoopListItem has no drift_deadline. Values copied from open_loops in ze_e2e_web.
 const DRIFT_DEADLINES: Record<string, string> = {
@@ -277,7 +278,7 @@ export function useWorld(): World {
         expiresAt: null,
         confidence: null,
         proposedText: null,
-        href: `/goals/${g.id}`,
+        href: goalPath(g.id),
       });
     }
   }
@@ -308,7 +309,7 @@ export function useWorld(): World {
       expiresAt: null,
       confidence: f.confidence,
       proposedText: null,
-      href: "/brain-memory",
+      href: "/mind",
     });
   }
 

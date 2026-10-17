@@ -459,6 +459,12 @@ The `message` frame accepts an optional `context` object for screen-aware respon
 The context is passed as `screen_context` in the graph config's `configurable` dict,
 making it available to agents via `ctx.config`.
 
+### Ask from any screen
+
+The web app has no floating launcher. A sticky Ask bar sits on every screen except Ask. When the user submits text there, the app opens an overlay over the current screen and sends a `message` frame on the thread selected in Ask. The frame carries `context.screen` and the ids from the route. Examples are `doing.workflows` with `workflow_id` and `execution_id`, or `doing.goals` with `goal_id`.
+
+The exchange is an ordinary Ask thread. It appears in Ask and in Sessions. "Open in Ask" goes to `/ask/<thread>`. "New chat" selects a fresh thread. A page can open the overlay with text prefilled and its own context, as the workflow run page does for "Ask Ze".
+
 ---
 
 ## Connection manager

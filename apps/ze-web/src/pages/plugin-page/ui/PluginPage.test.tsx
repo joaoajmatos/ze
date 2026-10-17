@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import type { UiContribution, UiManifest } from "@/entities/ui-manifest";
 import { PluginPage } from "./PluginPage";
@@ -63,7 +64,7 @@ describe("PluginPage", () => {
     expect(screen.getByTestId("plugin-screen")).toHaveTextContent("News");
   });
 
-  it("redirects when manifest path is unknown", () => {
+  it("shows a way back to the world when the manifest path is unknown", () => {
     useParams.mockReturnValue({ pluginPath: "missing" });
     useUiManifestQuery.mockReturnValue({
       data: manifest,
@@ -72,9 +73,13 @@ describe("PluginPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<PluginPage />);
+    render(
+      <MemoryRouter>
+        <PluginPage />
+      </MemoryRouter>,
+    );
 
-    expect(screen.getByTestId("navigate")).toHaveTextContent("/");
+    expect(screen.getByRole("link", { name: /Back to the world/ })).toHaveAttribute("href", "/");
   });
 
   it("shows error when manifest query fails", () => {
