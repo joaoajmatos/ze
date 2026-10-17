@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Ready to implement on `main` with 183 and 184 (the user answered Q-1 and Q-2 on 2026-10-18) (plan and tasks written 2026-10-17 against `main` b5fdc1c1). The budget readout waits for 185 and the screen-context publishing for 195 (split task phases); the rest starts now, alongside 186 and 189.
+**Status**: Implemented (backend cuts, shared, widgets, page, router, budget readout and screen context; per-row chat chips wait for 194)
 
 **Input**: Maestro brief 2026-10-17, phase W6; overhaul plan sections a (Governance), b.5, e (Phase W6). User decision 5: palette is a Governance setting.
 

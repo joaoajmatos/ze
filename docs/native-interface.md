@@ -71,8 +71,6 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "command", "name": "costs"}` | Introspection | Returns a 7-day cost summary message |
 | `{"type": "command", "name": "status", "period_days": 1}` | Accountability | Returns an activity narrative (default: past 24 h; set `period_days: 7` for the weekly view) |
 | `{"type": "command", "name": "onboarding"}` | Setup | Starts or resumes onboarding |
-| `{"type": "command", "name": "reset_preview", "scope": "memory"}` | Reset preview | Returns counts for a reset scope |
-| `{"type": "command", "name": "reset", "scope": "memory", "confirm": "RESET"}` | Reset | Executes a scoped reset; requires explicit confirmation |
 | `{"type": "component_submit", "session_id": "...", "step_id": "...", "component_id": "...", "values": {...}}` | Interactive component | Submits structured onboarding form/button values |
 
 ### Server → Client

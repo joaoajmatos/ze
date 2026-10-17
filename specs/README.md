@@ -230,8 +230,8 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 186 | [World (W2)](phases/186-web-world/spec.md) | 🔲 Ready to implement (after 184, 185, 195) |
 | 187 | [Ask / Assemble (W3)](phases/187-web-ask-assemble/spec.md) | 🔲 Ready to implement (after 184, 195, 186) |
 | 188 | [Doing (W4)](phases/188-web-doing/spec.md) | 🔲 Ready to implement (with 183 + 184; reminders after 185, screen context after 195) |
-| 189 | [Mind (W5)](phases/189-web-mind/spec.md) | 🔲 Ready to implement (with 183, 184; split phases after 185, 195) |
-| 190 | [Governance (W6)](phases/190-web-governance/spec.md) | 🔲 Ready to implement (with 183, 184; split phases after 185, 195) |
+| 189 | [Mind (W5)](phases/189-web-mind/spec.md) | ✅ Implemented |
+| 190 | [Governance (W6)](phases/190-web-governance/spec.md) | ✅ Implemented |
 | 191 | [Plugins in Places (W7)](phases/191-web-plugins-in-places/spec.md) | 🔲 Draft |
 | 192 | [Voice Input Transport (B3)](phases/192-voice-transport/spec.md) | 🔲 Draft |
 | 193 | [Voice and Polish (W8)](phases/193-web-voice-polish/spec.md) | 🔲 Draft |

@@ -3,8 +3,8 @@
   "specName": "Governance (W6)",
   "branch": "190-web-governance",
   "currentStep": "implement",
-  "currentTask": "T019",
-  "status": "implementing",
+  "currentTask": "T022",
+  "status": "implemented",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -58,6 +58,18 @@
       "status": "DONE"
     },
     "T018": {
+      "status": "DONE"
+    },
+    "T019": {
+      "status": "DONE"
+    },
+    "T020": {
+      "status": "DONE"
+    },
+    "T021": {
+      "status": "DONE"
+    },
+    "T022": {
       "status": "DONE"
     }
   },
@@ -205,6 +217,45 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-17T21:03:27.811Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T21:09:00.233Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T21:09:00.740Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T21:09:01.205Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T21:09:01.685Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T21:09:04.170Z"
     }
   ]
 }

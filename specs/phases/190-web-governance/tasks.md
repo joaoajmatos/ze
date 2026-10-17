@@ -65,10 +65,10 @@
 
 ## Phase 8: Acceptance and docs
 
-- [ ] T019 [ENG] [WEB] Gates: `make test-web`, `make typecheck-web`, `make web-build`, `make lint`, `make test-py`. Impeccable critique of Governance ≥ 29/40 and ≥ the T001 baseline; detector 0; captures at 1440 and 390 with no console errors and 44 px targets; SC-001 check (every chart labelled by its question). Record in the Handoffs note.
-- [ ] T020 [DOCS] Update every doc in plan.md "Docs touched".
-- [ ] T021 [DOCS] `AGENTS.md` phase row 190, the phase 92 heatmap note and the workspace preference line; `specs/README.md` row 190 → Implemented; spec status.
-- [ ] T022 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; record in the Handoffs note.
+- [x] T019 [ENG] [WEB] Gates: `make test-web`, `make typecheck-web`, `make web-build`, `make lint`, `make test-py`. Impeccable critique of Governance ≥ 29/40 and ≥ the T001 baseline; detector 0; captures at 1440 and 390 with no console errors and 44 px targets; SC-001 check (every chart labelled by its question). Record in the Handoffs note.
+- [x] T020 [DOCS] Update every doc in plan.md "Docs touched".
+- [x] T021 [DOCS] `AGENTS.md` phase row 190, the phase 92 heatmap note and the workspace preference line; `specs/README.md` row 190 → Implemented; spec status.
+- [x] T022 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; record in the Handoffs note.
 
 ---
 
