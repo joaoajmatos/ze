@@ -240,6 +240,8 @@ While Ze is idle, the orb watches what the user does. Its dense core and bright 
 - **SC-002**: At 1440×900 and 390×844, every place renders with zero console errors, no horizontal scroll, and every interactive element ≥ 44×44 px. jsdom cannot measure, so the capture run (T019) is the gate for sizes and scroll; unit tests assert the class-level contract (every shell control, tab and bottom-bar link carries `ctl`, whose CSS sets the 44 px minimum).
 - **SC-003**: The impeccable detector reports 0 findings on `shared/ui/hud`, `widgets/app-shell`, `features/ask-bar`.
 - **SC-004**: An impeccable critique of the shell (top bar, strip, presence, Ask bar, phone bar) scores at or above the `/jarvis` reference shell's score recorded at the start of the floor.
+
+  *Result (2026-10-17, accepted by the Maestri):* the first recorded baseline (29/40) came from a different scorer and cannot be compared. With one scorer and one method (impeccable critique, Assessment A on shell-only captures, interim pages excluded), the old prototype shell scored 22/40 and the new shell scored 28, 27 and 26 (4 runs, one invalid). The new shell is +4 to +6 over the old one, so SC-004 is met. Assessment B (detector and measurements): 0 detector findings, no contrast, shell touch-target or overlap failures. Deferred to phases 187 and 193: keyboard-shortcut hints and a help affordance. Phone Presence stays at 150 px (FR-009).
 - **SC-005**: `make test-web`, `make typecheck-web`, `make web-build` and `bun run lint` (FSD boundaries) pass.
 - **SC-006**: With reduced motion, no `requestAnimationFrame` callback is scheduled by the orb after its first frame.
 
