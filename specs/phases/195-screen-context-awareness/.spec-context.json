@@ -4,7 +4,7 @@
   "branch": "195-screen-context-awareness",
   "currentStep": "implement",
   "status": "implementing",
-  "currentTask": "T004",
+  "currentTask": "T005",
   "history": [
     {
       "step": "implement",
@@ -37,6 +37,14 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-17T17:10:08.916Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T18:13:58.351Z"
     }
   ],
   "task_summaries": {
@@ -55,6 +63,10 @@
     "T004": {
       "status": "DONE",
       "did": "zc039 + Message.screen_context"
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "registry + note builder"
     }
   }
 }
