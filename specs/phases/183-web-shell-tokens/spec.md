@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Ready to implement (pending review by the Floor Reviewer and the user's answer to the open questions in Clarifications)
+**Status**: Ready to implement (approved by the Floor Reviewer Gauge, c9639732; user answers recorded 2026-10-17, OQ-2 amended — re-check pending)
 
 **Input**: Maestro brief 2026-10-17: "turn the plan into speckit phases … 183 W1 Shell and tokens." Source: `apps/ze-web/.impeccable/plan/overhaul-plan.md` section e, Phase W1, with the user's decisions in section f ("go with the recommendations", all nine accepted). Design system: `DESIGN.md` (repo root). Product truth: `PRODUCT.md`. Reference build: `apps/ze-web/src/pages/jarvis/` (route `/jarvis`).
 
@@ -22,7 +22,7 @@
 
 ze-web today is a left nav of 13 routes grouped by organ (Automation, Knowledge, System, Plugins), a chat as the home screen, a floating "Ze" launcher that opens a contextual chat overlay on every page, and a generic dark Tailwind theme (Space Grotesk, Inter, purple pills on rounded cards). The design direction the user chose on 2026-10-17 (GMUNK HUD + Nothing OS dot matrix, purple-led, the orb as Ze's presence) exists only as a prototype at `/jarvis`, with its tokens scoped to `.jarvis` and its components under `pages/jarvis/hud/`.
 
-This phase makes that direction the app's frame. It moves the tokens to the app stylesheet, moves the HUD building blocks to `shared/ui`, and replaces the shell with the HUD chrome: a top bar with the five places (World, Ask, Doing, Mind, Governance), a one-line strip, the Presence module with the orb, a sticky Ask bar on every screen, and a five-icon bottom bar on phones. The router gains the five place routes and every old route redirects into its place.
+This phase makes that direction the app's frame. It moves the tokens to the app stylesheet, moves the HUD building blocks to `shared/ui`, and replaces the shell with the HUD chrome: a top bar with the five places (World, Ask, Doing, Mind, Governance), a one-line strip, the Presence module with the orb, a sticky Ask bar on every screen that opens a contextual overlay where the answer arrives without leaving the screen (the exchange is a real Ask thread), and a five-icon bottom bar on phones. The router gains the five place routes and every old route redirects into its place.
 
 The five places do not get their new content here. Each place mounts the existing pages it will absorb as interim sections (World hosts Open loops and Priority, Doing hosts Goals, Workflows, Skills, Procedures and Workspace, and so on), restyled only through the shared tokens, until its own phase replaces them. That keeps the app usable on every commit while the places are rebuilt one floor at a time.
 
@@ -40,10 +40,10 @@ The five places do not get their new content here. Each place mounts the existin
 
 - Redirects use `<Navigate>` element routes (loaders lose the hash in react-router 7.18). Presence components live in `shared/ui/hud/presence` (FSD forbids widget → widget). The orb follows the active thread's per-thread WS state only. `/jarvis/*` nests under the shell. Fonts are self-hosted. `notificationHref` is owned by this phase, built from the 184 target table. The palette applies before first render in `main.tsx`. `ask/:threadId` passes the thread to `ChatWorkspace`.
 
-### Open questions for the user (Spec Architect's recommendation in bold; tasks follow the recommendation)
+### Session 2026-10-17 (user answers, relayed by the Maestro)
 
-- OQ-1: Between this phase and each place's own phase, what renders inside a place? → **Recommended: the existing pages, mounted as interim sections of their place under the final URL scheme (FR-012), restyled only by the shared tokens.** Alternative: keep the old routes and the old shell until each place lands (no visible change until W2; contradicts decision 1 for weeks). Alternative: empty places with one sentence until each phase lands (the app loses features in between).
-- OQ-2: What does the Ask bar do on a screen other than Ask, before W3 lands? → **Recommended: it opens `/ask` and sends the text as a `message` with `context.screen` naming the screen it came from (the contract today's floating overlay uses); on `/ask` itself the bar hides and the existing chat composer stays until W3.** Alternative: a contextual overlay on the current screen (the launcher this phase deletes).
+- Q (OQ-1): Between this phase and each place's own phase, what renders inside a place? → A: **(user)** the existing pages, mounted as interim sections of their place under the final URL scheme (FR-012), restyled only by the shared tokens (the Spec Architect's recommendation).
+- Q (OQ-2): What does the Ask bar do on a screen other than Ask? → A: **(user, changed from the recommendation)** "contextual overlay but also creates a chat in ask". Typing in the Ask bar on a non-Ask screen opens a contextual overlay over the current screen, where the answer arrives and the user stays in place. The exchange is a real chat thread in Ask (same `thread_id`, each message carrying `context.screen`), so it shows in Ask's sessions and can be reopened there. Split decided by the Spec Architect: **this phase** builds the overlay shell and the thread behaviour (open/close, send on the thread, streamed reply text, the reply's components through the existing renderer, "Open in Ask", "New chat"); **phase 187** gives the overlay the full assembly (the same canvas as `/ask`: cascade from the orb, module frames, trace chip, confirmation card in place, Retry). FR-008, FR-008a, FR-015 and US6 encode it.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -59,7 +59,7 @@ The user opens Ze. The page is the near-black plum field with the dot-matrix "ZE
 
 1. **Given** a configured client, **When** the user opens `/`, **Then** the World tab is current and the Presence module and Ask bar are visible.
 2. **Given** any place, **When** the user presses `/` outside a text field, **Then** focus moves to the Ask bar input (on `/ask`, to the chat composer).
-3. **Given** the codebase, **When** searched, **Then** `NavGroup`, `ChatNavGroup`, the organ group arrays (`automationNavRoutes`, `knowledgeNavRoutes`, `systemNavRoutes`), `FloatingButton` and `ContextOverlay` no longer exist.
+3. **Given** the codebase, **When** searched, **Then** `NavGroup`, `ChatNavGroup`, the organ group arrays (`automationNavRoutes`, `knowledgeNavRoutes`, `systemNavRoutes`), `FloatingButton`, `ContextOverlay`, `features/open-context-overlay` and the Cmd-K overlay shortcut no longer exist (the overlay is rebuilt as `AskOverlay`, FR-008a).
 
 ---
 
@@ -126,6 +126,21 @@ The palette switcher (Orchid, Ultraviolet, Amethyst) lives in Governance. Choosi
 
 ---
 
+### User Story 6 - Ask from anywhere without leaving the screen (Priority: P1)
+
+On `/doing/goals/7f…` the user types "why is this stuck?" in the Ask bar and presses Enter. A contextual overlay opens over the current screen (desktop: a framed module anchored above the Ask bar on the right of the hero; phone: a sheet above the Ask bar and bottom bar, at most 65% of the height). The message is sent on the thread selected in Ask with `context.screen` and `goal_id`; the reply streams into the overlay with its components below it. The Ask bar stays the input for follow-ups. "Open in Ask" goes to `/ask/<thread>` where the same exchange is in the thread and in Sessions. "New chat" starts a fresh thread (selected in Ask too). Esc or Close dismisses the overlay; the page underneath never navigated.
+
+**Why this priority**: The user's decision (OQ-2): ask in place, keep the exchange in Ask.
+
+**Independent Test**: Render the shell at `/doing/goals/g1` with a fake WS: submitting "why?" opens `AskOverlay`, sends exactly one `message` frame with the selected thread id and `context: { screen: "doing.goals", goal_id: "g1" }`, and the location is unchanged; a `token` then `message` frame for that thread render in the overlay; "Open in Ask" navigates to `/ask/<thread>`; "New chat" switches the selected session to a new id and the next submit uses it.
+
+**Acceptance Scenarios**:
+
+1. **Given** no thread selected in Ask, **When** the user asks from any place, **Then** a new thread id is created, selected in the session store, and used for the message.
+2. **Given** the overlay is open, **When** the user navigates to another place, **Then** the overlay stays open on the same thread and the next message carries the new screen's context.
+3. **Given** a `confirm_request` for the overlay's thread, **When** it arrives, **Then** the existing confirmation card renders (restyled by tokens; its in-overlay placement is phase 187).
+4. **Given** `/ask`, **When** it renders, **Then** neither the Ask bar nor the overlay is shown (the old chat page owns input until 187).
+
 ### Edge Cases
 
 - Not configured (no server URL or API key): the existing first-run setup screen (`OnboardingWizard`) renders before the router, unchanged in behaviour, restyled only through tokens. Conversational onboarding (`command: onboarding`) is phase 187.
@@ -154,7 +169,8 @@ The palette switcher (Orchid, Ultraviolet, Amethyst) lives in Governance. Choosi
 **Shell**
 
 - **FR-007**: `widgets/app-shell` MUST become the HUD chrome: top bar (dot-matrix "ZE", five place tabs as `Control` tabs with `aria-current`, the existing `NotificationBell`, a connection dot with an accessible name), the strip (claim legend; date; dot-matrix clock), a desktop grid `264px minmax(0,1fr)` with the Presence module at the top of the left rail and the place's content in the hero column, and the sticky Ask bar. No page title is duplicated below the top bar (`PAGE_HEADER` providers stay only for interim pages that still read them).
-- **FR-008**: The Ask bar (`features/ask-bar`) MUST be a 44 px input with an Ask control and a disabled mic control labelled "Voice input arrives later" (voice is phase 193). On submit from any place except Ask it navigates to `/ask` and sends a `message` frame on the active thread with `context.screen` resolved from the origin route (the logic of today's `features/open-context-overlay/resolve-screen.ts`, moved and re-keyed to the new paths). On `/ask` the bar is not rendered. `/` focuses it outside text fields. It is disabled while offline (FR-006 `error`).
+- **FR-008**: The Ask bar (`features/ask-bar`) MUST be a 44 px input with an Ask control and a disabled mic control labelled "Voice input arrives later" (voice is phase 193). On submit from any place except Ask it opens the overlay (FR-008a) and sends the text as a `message` frame on the overlay thread with `context` resolved from the current route: `screen` (from today's `features/open-context-overlay/model/resolve-screen.ts`, moved and re-keyed to place ids such as `world`, `doing.goals`, `doing.workflows`, `mind`, `governance`) plus `goal_id` / `workflow_id` / `execution_id` from the route params. On `/ask` the bar is not rendered. `/` focuses it outside text fields. It is disabled while offline (FR-006 `error`). `askAbout({ text?, context })` opens the overlay with the bar prefilled (not sent) and the given context (used by workflow detail's "Ask about this run").
+- **FR-008a**: The overlay MUST be `AskOverlay` in `widgets/chat-workspace/ui/` (rewritten from `ContextOverlay`, which it replaces), passed to `AppShell` through its `overlay` prop from `app/router` (so no widget imports another widget). Its state (`open`, `context`, `prefill`) lives in `features/ask-bar/model/ask-overlay.ts`. Thread: the overlay uses the thread selected in the session store (`useSession`), which is the thread Ask shows; with none selected, the first submit creates `ze-<uuid>`, selects it and uses it. "New chat" creates and selects a new thread. The separate `ze_overlay_thread_id` localStorage thread is deleted. Content in this phase: the thread's messages from the moment the overlay opened (earlier history stays in Ask), streamed reply text, typing phrase, each reply's components through the existing `PrimitiveRenderer` path the chat uses today, "Open in Ask" (`askPath(thread)`), "New chat", Close (button and Esc). HUD styling from `ze.css` (module frame, corners, no backdrop blur, no drag handle). The presence orb follows the overlay's thread (it is the selected thread). Full assembly in the overlay is phase 187.
 - **FR-009**: At ≤ 1023 px the shell MUST be one column with 16 px gutters, `overflow-x: clip` on the root, the Presence module first and compact (150 px), the top tabs hidden, and a fixed bottom bar with five icon+label links (44 px targets). The Ask bar sits above the bottom bar. No backdrop blur (DESIGN.md).
 - **FR-010**: The palette control MUST live in Governance (interim: a section at the top of `/governance/settings`). It writes `data-palette` on `document.documentElement` and stores the choice under `ze.palette` in `localStorage`, every access wrapped in try/catch; default `orchid`. The stored palette is applied synchronously in `main.tsx` before `createRoot` (no flash of the default palette). The prototype's `jarvis.palette.v2` key is not read.
 
@@ -188,12 +204,13 @@ The palette switcher (Orchid, Ultraviolet, Amethyst) lives in Governance. Choosi
 
 **Hard cuts (pre-v1, nothing behind a flag)**
 
-- **FR-015**: Deleted in this phase: `widgets/app-shell/ui/NavGroup.tsx` (+ test), `ChatNavGroup.tsx`, the desktop `<nav>` sidebar and the old mobile nav in `AppShell.tsx`; `features/open-context-overlay` (overlay store and `ui/FloatingButton.tsx`; `model/resolve-screen.ts` moves to `features/ask-bar` per FR-008), with its callers updated in the same change: the `FloatingButton` usages in `GoalsOverview`, `WorkflowsOverview`, `CostsOverview` and `PluginScreen` are removed, and `WorkflowDetailPage`'s `openForExecution` becomes `askAbout({ text, context })` from `features/ask-bar`, which opens `/ask` and sends the message with the execution in `context`; `widgets/chat-workspace/ui/ContextOverlay.tsx` (+ test); the `overlay` prop of `AppShell` and the Cmd-K overlay shortcut; `shared/config/nav-routes.ts` (+ test, replaced per FR-013); `entities/ui-manifest` `mergeMobileNavRoutes` (the bottom bar is fixed at five places; plugin entries stay reachable by path and in phase 191 move into places); `pages/jarvis/jarvis.css`, `pages/jarvis/hud/{Frame,DotMatrix,Orb,Presence,LeaderLine,noise}.tsx|ts` (moved); the prototype top-bar group (palette, orb select, ambience) in `JarvisShell`, which now uses the real shell.
+- **FR-015**: Deleted in this phase: `widgets/app-shell/ui/NavGroup.tsx` (+ test), `ChatNavGroup.tsx`, the desktop `<nav>` sidebar and the old mobile nav in `AppShell.tsx`; `features/open-context-overlay` (overlay store with its own `ze_overlay_thread_id` thread, and `ui/FloatingButton.tsx`; `model/resolve-screen.ts` moves to `features/ask-bar` per FR-008), with its callers updated in the same change: the `FloatingButton` usages in `GoalsOverview`, `WorkflowsOverview`, `CostsOverview` and `PluginScreen` are removed, and `WorkflowDetailPage`'s `openForExecution` becomes `askAbout({ text, context })` from `features/ask-bar` (opens the overlay prefilled, with the execution in `context`); `widgets/chat-workspace/ui/ContextOverlay.tsx` (+ test), replaced by `AskOverlay` (FR-008a); the Cmd-K overlay shortcut and the overlay's drag handle and own input; `shared/config/nav-routes.ts` (+ test, replaced per FR-013); `entities/ui-manifest` `mergeMobileNavRoutes` (the bottom bar is fixed at five places; plugin entries stay reachable by path and in phase 191 move into places); `pages/jarvis/jarvis.css`, `pages/jarvis/hud/{Frame,DotMatrix,Orb,Presence,LeaderLine,noise}.tsx|ts` (moved); the prototype top-bar group (palette, orb select, ambience) in `JarvisShell`, which now uses the real shell.
 - **FR-016**: Not deleted here (their place's phase deletes them): every interim page and its widgets, `ConfirmationFrameHandler`, `NotificationBell`, `widgets/chat-workspace` except the overlay files, `shared/effects/*`, `pages/jarvis` views and model.
 
 ### Key Entities
 
 - **Place**: `{ id: "world" | "ask" | "doing" | "mind" | "governance"; path; label; icon }`. Five, fixed, in that order.
+- **Overlay thread**: the session-store selected thread; one thread at a time; messages carry `context.screen` per message.
 - **PresenceState**: `{ orb: OrbState; phrase: string; offline: boolean }`, where `OrbState` is the nine-state union from DESIGN.md.
 - **Redirect**: `{ from: string; to: string }` with `:param` segments carried across.
 

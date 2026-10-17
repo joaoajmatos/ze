@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Ready to implement (pending review by the Floor Reviewer and the user's answers to the open questions in Clarifications)
+**Status**: Ready to implement (reviewed and approved by the Floor Reviewer Gauge, c9639732; user answers recorded 2026-10-17)
 
 **Input**: Maestro brief 2026-10-17: "184 B1 composed answers + claim posture on render_* descriptors + workflow failure_summary + goal progress fields + notification deep links (backend gaps 1, 2, 9, 10, 14)." Source: `apps/ze-web/.impeccable/plan/overhaul-plan.md` section d (gaps 1, 2, 9, 10, 14), section c (assembly), decision 7 ("B1 runs before W3; W3 does not ship client-side compositions").
 
@@ -40,11 +40,11 @@ This phase adds four things and fixes one:
 
 - `preset_components` is reset in `make_graph_input`; the preset reaches tools through a new `AgentContext.preset` (fetch_context's `extensions` never reach the agent); the compound path returns the preset components itself; `WsScreenContext` gains `compose`/`topic`; a retry answers from normal routing; the compose tools register through `ze_priority._AGENT_MODULE_PATHS`; failure lines say "after step k" when steps ran; the eval API gains `context`; `kind` is null for workflow and held-write subjects; OQ-1 is split and OQ-2 is a confirmation.
 
-### Open questions for the user (Spec Architect's recommendation in bold; tasks follow the recommendation)
+### Session 2026-10-17 (user answers, relayed by the Maestro)
 
-- OQ-1a: Does a preset chip send an explicit intent? → **Recommended: yes. The chip sends its text with `context.compose` (`slipping` | `decisions` | `topic` + `topic`); the engine routes that turn to companion, runs the composer before the agent, and the model writes the sentence from the composer's summary.** Alternative: rely on routing alone (needs new routing criteria and a live `make calibrate-routing` re-run, which costs credits, and "what am I still sitting with?" routes to the loops agent today). Alternative: answer presets with no model call at all (no sentence in Ze's voice).
-- OQ-1b: May a typed question reach the same composer? → **Recommended: yes, through three READ tools on companion (`show_slipping`, `show_decisions`, `show_topic`) when routing gives companion the turn.** Alternative: presets only; typed questions answer as today. (Independent of OQ-1a; the user may accept one and not the other.)
-- OQ-2 (confirmation, not a choice): posture is set only by code from the owning record; the `claim` field is excluded from every `render_*` schema and stripped if the model sends it. This follows `specs/arch/claim-topology.md` (a model-written confidence is a fabricated claim). Deferred, not proposed: letting the model pass a reference (`subject`, `id`) that the server resolves to posture.
+- Q (OQ-1a): Does a preset chip send an explicit intent? → A: **(user)** yes: `context.compose`, routed to companion, composition prepended (recommendation accepted).
+- Q (OQ-1b): May a typed question reach the same composer? → A: **(user)** yes, through `show_slipping`, `show_decisions`, `show_topic` on companion (recommendation accepted).
+- Q (OQ-2, confirmation): posture only from code reading the record? → A: **(user)** confirmed; the model never authors posture.
 
 ## User Scenarios & Testing *(mandatory)*
 

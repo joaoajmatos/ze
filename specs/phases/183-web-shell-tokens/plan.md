@@ -49,8 +49,8 @@ ze-web has no graphify AST coverage worth trusting for TS; the radius below is f
 | `redirectHintPath` / hash deep links | `shared/lib/redirect-hint.ts`, `shared/ui/layout/RedirectHintTarget.tsx`, `shared/config/nav-routes.ts` |
 | Old-path literals and `navigate("/")` meaning chat (FR-014) | `entities/goal/ui/GoalCard.tsx`, `entities/workflow/ui/WorkflowCard.tsx`, `pages/goal-detail/ui/GoalDetailPage.tsx`, `pages/workflow-detail/ui/WorkflowDetailPage.tsx`, `widgets/app-shell/ui/NotificationBell.tsx`, `widgets/app-shell/lib/notification-format.ts` (+ test), `pages/plugin-page/ui/PluginPage.tsx`, `shared/ui/layout/ZeErrorFallback.tsx`, `pages/jarvis/model/world.ts`, `pages/jarvis/hud/Cards.tsx` |
 | `features/open-context-overlay` (deleted) | `widgets/goals-overview/ui/GoalsOverview.tsx`, `widgets/workflows-overview/ui/WorkflowsOverview.tsx`, `widgets/costs-overview/ui/CostsOverview.tsx` (+ test), `widgets/plugin-screen/ui/PluginScreen.tsx` (+ test) — `FloatingButton`; `pages/workflow-detail/ui/WorkflowDetailPage.tsx` (+ test) — `useOverlayStore.openForExecution`; `widgets/chat-workspace/ui/ContextOverlay.tsx` (+ `ContextOverlay.test.tsx`); `widgets/app-shell/ui/AppShell.tsx` — `useOverlay` |
-| `ContextOverlay` (deleted) | `app/router/index.tsx`, `widgets/chat-workspace/index.ts` |
-| `AppShell` (rewritten; `overlay` prop removed) | `app/router/index.tsx`, `widgets/app-shell/ui/AppShell.test.tsx` |
+| `ContextOverlay` (replaced by `AskOverlay`, same slice) | `app/router/index.tsx` (passes it as `AppShell`'s `overlay`), `widgets/chat-workspace/index.ts`; `useChatWorkspace({ active, context, threadId })` reused unchanged; `entities/session` `useSession` (`selectSession`, selected thread) |
+| `AppShell` (rewritten; `overlay` prop kept, now `AskOverlay`) | `app/router/index.tsx`, `widgets/app-shell/ui/AppShell.test.tsx` |
 | `entities/ui-manifest` `mergeMobileNavRoutes` (deleted), `pluginNavRoutes` (kept for the `/:pluginPath` route) | `widgets/app-shell/ui/AppShell.tsx`, `entities/ui-manifest/model/merge-nav-routes.ts` (+ test if any) |
 | `pages/jarvis/hud/*` (moved) and the `/jarvis/*` route (nested under the shell) | `pages/jarvis/{JarvisApp,JarvisShell,views/WorldView,views/AssembleView,hud/Cards,hud/FieldChart}.tsx`, `app/router/index.tsx` |
 | Cross-floor files shared with phase 184 | `widgets/app-shell/lib/notification-format.ts` (owned here: `notificationHref`), `widgets/goals-overview/ui/GoalsOverview.tsx` (183 T012 removes `FloatingButton` before 184 T026 adds progress fields), docs `AGENTS.md`, `specs/README.md`, `docs/native-interface.md` (one Docs Steward pass for both floors, merge order set by the Maestro) |
@@ -78,7 +78,11 @@ Props-only, so it lives in `shared` (FSD forbids `widgets/app-shell` importing a
 
 ### `features/ask-bar/`
 
-`ui/AskBar.tsx`, `model/resolve-screen.ts` (moved, keyed on `placeOf`), `model/pending-ask.ts` (zustand: `{ text, context } | null`), `askAbout({ text, context })`. Submit on a non-Ask place: set `pendingAsk`, `navigate("/ask")`. `widgets/chat-workspace` consumes `pendingAsk` once on mount (send through its existing send path on the active thread, then clear). That consumer is the only edit inside `chat-workspace` besides the overlay deletion.
+`ui/AskBar.tsx`, `model/resolve-screen.ts` (moved, keyed on `placeOf`, returns `{ screen, goal_id?, workflow_id?, execution_id? }` from the route), `model/ask-overlay.ts` (zustand: `open`, `context`, `prefill`, `outbox: { text, context } | null`, actions `submit(text)`, `openWith(prefill, context)`, `close()`, `newChat()`), `askAbout({ text?, context })` = `openWith`. Submit on a non-Ask place: `submit(text)` opens the overlay and queues the outbox; the bar clears. The feature never sends frames itself (it has no thread state); `AskOverlay` drains the outbox.
+
+### `widgets/chat-workspace/ui/AskOverlay.tsx` (replaces `ContextOverlay.tsx`)
+
+Reads `features/ask-bar` overlay state and `useSession` (selected thread). On an outbox item: ensure a thread (create `ze-${crypto.randomUUID()}` and `selectSession` it when none), then `useChatWorkspace({ active: open, context, threadId })`'s `sendMessage(text)` with the item's context, and clear the outbox. Renders the messages since `openedAt` (filter by timestamp), streamed text and typing phrase, and each reply's components through the existing `ChatMessageList` path (restyled only by tokens; 187 replaces it with the canvas). Head: label "Ask", "New chat" (`newChat()` → new thread selected), "Open in Ask" (`navigate(askPath(thread))`, close), Close (Esc). Layout: desktop a `Module` anchored bottom-right of the hero above the Ask bar (420 px wide, max 60vh, scrolls inside); phone a sheet above the Ask bar and bottom bar (max 65vh). No drag handle, no own input (the Ask bar is the input), no backdrop blur. Hidden on `/ask`. Stays open across navigation (the next submit carries the new route's context).
 
 ### `widgets/app-shell/`
 
@@ -117,7 +121,8 @@ apps/ze-web/src/
 ├── public/fonts/                              # NEW (self-hosted woff2 + OFL)
 ├── main.tsx                                   # palette applied before createRoot
 ├── entities/presence/                         # NEW
-├── features/ask-bar/                          # NEW (resolve-screen moved here)
+├── features/ask-bar/                          # NEW (resolve-screen moved here; overlay state)
+├── widgets/chat-workspace/ui/AskOverlay.tsx   # NEW, replaces ContextOverlay.tsx
 ├── features/choose-palette/                   # NEW
 ├── widgets/app-shell/                         # rewritten
 ├── pages/{world,ask,doing,mind,governance}/   # NEW interim places
@@ -128,7 +133,7 @@ apps/ze-web/src/
 
 - `docs/frontend.md`: shell, five places, tokens location (`shared/styles/ze.css`), `shared/ui/hud`, presence states, redirect table, interim places.
 - `apps/ze-web/README.md`: routes, design system pointer (`DESIGN.md`).
-- `docs/native-interface.md`: the contextual chat overlay is gone; the Ask bar sends `context.screen` (and `workflow_id`/`execution_id` from workflow detail).
+- `docs/native-interface.md`: the floating launcher is gone; the Ask bar opens the contextual overlay, which sends on the thread selected in Ask with `context.screen` and route ids (`goal_id`, `workflow_id`, `execution_id`); the exchange is an ordinary Ask thread.
 - `DESIGN.md` Navigation section: top bar is five places, no prototype group; phone bottom bar.
 - `AGENTS.md` (Learned facts: web nav groups line is now five places; phase table row 183) and `specs/README.md` index row.
 - Coverage check against `git diff main...HEAD --stat`.
