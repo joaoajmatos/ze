@@ -9,8 +9,8 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from ze_api.api.dependencies import get_message_store, require_api_key
-from ze_api.api.messages import router
+from ze_api.api.deps import get_message_store, require_api_key
+from ze_api.api.v0.messages.router import router
 from ze_core.conversation.messages.types import (
     MemoryChunkTrace,
     MessageTrace,

@@ -4,8 +4,8 @@ from uuid import uuid4
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from ze_api.api import dependencies
-from ze_api.api.routes import procedures
+from ze_api.api import deps
+from ze_api.api.v0.procedures import router as procedures
 from ze_agents.claims import Provenance
 from ze_memory.procedures.admission import ProcedureAdmissionService
 from ze_memory.procedures.store import InMemoryProcedureStore
@@ -17,7 +17,7 @@ def _client(service):
     app = FastAPI()
     app.state.container = SimpleNamespace(procedure_admission=service)
     app.include_router(procedures.router, prefix="/api/v0")
-    app.dependency_overrides[dependencies.require_api_key] = lambda: None
+    app.dependency_overrides[deps.require_api_key] = lambda: None
     return TestClient(app)
 
 

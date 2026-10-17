@@ -5,8 +5,8 @@ from uuid import uuid4
 
 import pytest
 
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.goal_actions import handle_action
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.goal_actions import handle_action
 from ze_automation.goals.types import Goal, GoalStatus, GateStatus, VerificationGate
 
 

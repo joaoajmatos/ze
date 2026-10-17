@@ -12,8 +12,8 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile
 
-from ze_api.api.dependencies import require_api_key
-from ze_api.api.routes.priority import router
+from ze_api.api.deps import require_api_key
+from ze_api.api.v0.priority.router import router
 from ze_priority.errors import PriorityOverrideNotFoundError
 from ze_priority.types import PriorityItem, PriorityRanking, RelationshipSignal
 

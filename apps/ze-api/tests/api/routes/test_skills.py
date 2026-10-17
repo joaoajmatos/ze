@@ -11,8 +11,8 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from ze_api.api.dependencies import require_api_key
-from ze_api.api.routes.skills import router
+from ze_api.api.deps import require_api_key
+from ze_api.api.v0.skills.router import router
 from ze_skills.errors import SkillParseError
 from ze_skills.importer import FetchedReferenceFile, FetchedSkill
 from ze_skills.parser import ParsedSkill

@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from ze_api import migrate as ze_migrate
+from ze_api.cli import migrate as ze_migrate
 from ze_api.errors import MigrationReadinessError
 
 

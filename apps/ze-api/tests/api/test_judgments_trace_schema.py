@@ -3,12 +3,12 @@
 import pytest
 from pydantic import ValidationError
 
-from ze_api.api.schemas import (
+from ze_api.api.v0.messages.schemas import (
     MessageTraceEntry,
     MessageTraceResponse,
     TierTraceResponse,
-    WsTraceUpdateFrame,
 )
+from ze_api.api.ws.schemas import WsTraceUpdateFrame
 
 
 def test_ws_trace_update_schema_includes_tier():

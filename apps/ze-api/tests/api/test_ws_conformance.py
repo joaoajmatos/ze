@@ -16,9 +16,9 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.onboarding import send_onboarding_view
-from ze_api.api.websocket.serializers import message_to_dict
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.onboarding import send_onboarding_view
+from ze_api.api.ws.serializers import message_to_dict
 from ze_core.conversation.messages import Message
 
 
@@ -140,8 +140,8 @@ class TestConfirmRequestFrameConformance:
     """confirm_request frames from both builders validate against WsConfirmRequestFrame."""
 
     def test_write_confirmation_frame_matches_the_schema(self):
-        from ze_api.api.schemas import WsConfirmRequestFrame
-        from ze_api.api.websocket.frames import build_confirm_frame
+        from ze_api.api.ws.schemas import WsConfirmRequestFrame
+        from ze_api.api.ws.frames import build_confirm_frame
 
         frame = build_confirm_frame(
             request_id=str(uuid4()),
@@ -162,8 +162,8 @@ class TestConfirmRequestFrameConformance:
         WsConfirmRequestFrame.model_validate(frame)
 
     def test_prompt_frame_matches_the_schema(self):
-        from ze_api.api.schemas import WsConfirmRequestFrame
-        from ze_api.api.websocket.frames import build_prompt_frame
+        from ze_api.api.ws.schemas import WsConfirmRequestFrame
+        from ze_api.api.ws.frames import build_prompt_frame
 
         frame = build_prompt_frame(
             request_id=str(uuid4()),
@@ -307,8 +307,8 @@ class TestErrorFrameSchemaConformance:
         return mgr, ws
 
     async def test_turn_error_frames_validate_and_carry_thread_id(self):
-        from ze_api.api.schemas import WsErrorFrame
-        from ze_api.api.websocket.turns import handle_message
+        from ze_api.api.ws.schemas import WsErrorFrame
+        from ze_api.api.ws.turns import handle_message
 
         mgr, ws = await self._connected()
         container = MagicMock()
@@ -323,7 +323,7 @@ class TestErrorFrameSchemaConformance:
             None,
         )
         container.invoke_raw_turn = AsyncMock(
-            return_value=MagicMock(interrupted=False, response=None, config={})
+            return_value=MagicMock(interrupted=False, response=None, config={}, final_state={})
         )
         await handle_message(
             ws,
@@ -344,8 +344,8 @@ class TestErrorFrameSchemaConformance:
         assert [f.get("thread_id") for f in errors] == ["t1", "t2", None]
 
     async def test_component_submit_error_carries_thread_id(self):
-        from ze_api.api.schemas import WsErrorFrame
-        from ze_api.api.websocket.component_submit import handle_component_submit
+        from ze_api.api.ws.schemas import WsErrorFrame
+        from ze_api.api.ws.component_submit import handle_component_submit
 
         mgr, ws = await self._connected()
         await handle_component_submit(
@@ -354,3 +354,62 @@ class TestErrorFrameSchemaConformance:
         frame = _frames_sent(ws)[0]
         WsErrorFrame.model_validate(frame)
         assert frame["thread_id"] == "t3"
+
+
+class TestComponentsOnlyTurn:
+    async def test_a_reply_that_is_only_components_is_delivered_not_an_error(self):
+        from ze_api.api.ws.turns import handle_message
+
+        mgr = ConnectionManager()
+        ws = _make_ws()
+        await mgr.connect(ws, _make_msg_store([]))
+        ws.send_json.reset_mock()
+        table = {"type": "table"}
+        container = MagicMock()
+        container.translations = None
+        container.interface = AsyncMock()
+        container.invoke_raw_turn = AsyncMock(
+            return_value=MagicMock(
+                interrupted=False,
+                response="",
+                config={"configurable": {"thread_id": "t1"}},
+                final_state={"components": [table]},
+                message_id=None,
+            )
+        )
+        await handle_message(
+            ws,
+            {"type": "message", "text": "hi", "thread_id": "t1"},
+            container,
+            AsyncMock(),
+            mgr,
+            None,
+        )
+        container.interface.send_with_thread.assert_awaited_once()
+        assert container.interface.send_with_thread.await_args.kwargs["components"] == [
+            table
+        ]
+        assert all(f.get("type") != "error" for f in _frames_sent(ws))
+
+
+class TestResumedComponentsOnlyReply:
+    async def test_resumed_components_only_reply_is_delivered(self):
+        from ze_api.api.ws.confirmation import _deliver_outcome
+        from ze_core.conversation.turn import TurnResult
+
+        mgr = ConnectionManager()
+        ws = _make_ws()
+        await mgr.connect(ws, _make_msg_store([]))
+        container = MagicMock()
+        container.message_store = None
+        container.interface = AsyncMock()
+        outcome = TurnResult(
+            final_state={"components": [{"type": "table"}]},
+            config={},
+            interrupted=False,
+            response="",
+        )
+        await _deliver_outcome(
+            outcome, container, mgr, "t1", confirmation_store=None
+        )
+        container.interface.send_with_thread.assert_awaited_once()

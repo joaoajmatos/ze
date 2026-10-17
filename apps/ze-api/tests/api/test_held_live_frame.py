@@ -9,8 +9,8 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 from ze_agents.interface.types import Notification
-from ze_api.api.schemas import WsConfirmRequestFrame
-from ze_api.api.websocket.held import held_frame, held_push_frame
+from ze_api.api.ws.schemas import WsConfirmRequestFrame
+from ze_api.api.ws.held import held_frame, held_push_frame
 from ze_api.interface.native import NativeAppInterface
 from ze_automation.holds.types import HeldWrite, HeldWriteStatus
 from ze_automation.push_kinds import WRITE_APPROVAL_HELD

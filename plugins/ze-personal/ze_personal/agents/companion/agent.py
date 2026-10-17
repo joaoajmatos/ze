@@ -1,11 +1,10 @@
 import re
 from typing import AsyncIterator
 
-import asyncpg
-
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
 from ze_agents.types import AgentContext, AgentResult, ToolCall
+from ze_personal.agents.companion.outreach_log import OutreachLog
 from ze_personal.contacts.store import PersonStore
 from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
@@ -83,6 +82,10 @@ render_connections for patterns you found across the user's history.
 - render_form, render_choice_group, render_consent, render_connect_account and \
 render_review only while the user is setting something up or choosing between \
 options. Never for casual chat or emotional check-ins.
+- When the user asks what access you would need before connecting an account, call \
+render_consent with one scope per permission (id, label, description), then \
+render_connect_account for the account. Both calls, every time; never describe the \
+scopes in prose instead of render_consent.
 - Never render numbers you do not have. Delegate to get the data first, or say you \
 lack it.
 - Never narrate the tool call ("I'll render a chart") and never repeat the \
@@ -158,13 +161,13 @@ class CompanionAgent(BaseAgent):
         openrouter_client: LLMClient,
         settings: Settings,
         person_store: PersonStore,
-        pool: asyncpg.Pool,
         memory_store: PostgresMemoryStore,
+        outreach_log: OutreachLog | None = None,
     ) -> None:
         self._settings = settings
         self._client = openrouter_client
         self._person_store = person_store
-        self._pool = pool
+        self._outreach_log = outreach_log
         self._memory_store = memory_store
 
     def tool_deps(self) -> dict:
@@ -201,6 +204,8 @@ class CompanionAgent(BaseAgent):
         yield result.response
 
     async def _attempt_log_outreach(self, ctx: AgentContext) -> ToolCall | None:
+        if self._outreach_log is None:
+            return None
         event = _detect_outreach_event(ctx.prompt)
         if event is None:
             return None
@@ -211,7 +216,7 @@ class CompanionAgent(BaseAgent):
             event_type=event["event_type"],
             channel=event["channel"],
             notes=ctx.prompt,
-            pool=self._pool,
+            campaign_store=self._outreach_log,
             person_store=self._person_store,
         )
 

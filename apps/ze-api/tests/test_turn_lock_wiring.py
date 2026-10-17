@@ -12,10 +12,10 @@ import inspect
 
 import pytest
 
-import ze_api.api.routes.eval as eval_route
-import ze_api.api.websocket.confirmation as confirmation_module
-import ze_api.api.websocket.turns as turns_module
-import ze_api.container as container_module
+import ze_api.api.eval.router as eval_route
+import ze_api.api.ws.confirmation as confirmation_module
+import ze_api.api.ws.turns as turns_module
+import ze_api.wiring.container as container_module
 from ze_agents.interface.types import RawInput
 from ze_workspace.turn_lock import ThreadTurnLock
 

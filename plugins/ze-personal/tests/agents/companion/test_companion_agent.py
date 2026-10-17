@@ -65,12 +65,12 @@ def make_person_store():
     return store
 
 
-def make_agent(client=None) -> CompanionAgent:
+def make_agent(client=None, person_store=None, outreach_log=None) -> CompanionAgent:
     return CompanionAgent(
         openrouter_client=client or make_client(),
         settings=make_settings(),
-        person_store=make_person_store(),
-        pool=make_pool(),
+        person_store=person_store or make_person_store(),
+        outreach_log=outreach_log or AsyncMock(),
         memory_store=AsyncMock(),
     )
 
@@ -113,6 +113,23 @@ async def test_run_outreach_for_non_prospect_returns_no_tool_calls():
     agent = make_agent()
     result = await agent.run(make_ctx("I sent an email to Carlos and he didn't reply"))
     assert result.tool_calls == []
+
+
+async def test_run_logs_outreach_for_a_prospect_through_the_outreach_log():
+    person = MagicMock()
+    person.id = "person-1"
+    person.name = "Carlos Mendes"
+    person_store = make_person_store()
+    person_store.get_by_name = AsyncMock(return_value=[person])
+    outreach_log = AsyncMock()
+    outreach_log.get_latest_outreach_id = AsyncMock(return_value="outreach-1")
+    agent = make_agent(person_store=person_store, outreach_log=outreach_log)
+
+    result = await agent.run(make_ctx("I sent an email to Carlos Mendes yesterday"))
+
+    outreach_log.log_outreach_event.assert_awaited_once()
+    assert [tc.tool_name for tc in result.tool_calls] == ["log_outreach_event"]
+    assert result.tool_calls[0].success
 
 
 async def test_run_sends_prompt_as_user_message():
@@ -338,3 +355,46 @@ def test_agent_context_defaults():
     ctx = AgentContext(session_id="x", prompt="hi", )
     assert ctx.tool_calls == []
     assert ctx.memory is None
+
+
+async def test_run_without_an_outreach_log_skips_logging():
+    agent = CompanionAgent(
+        openrouter_client=make_client(),
+        settings=make_settings(),
+        person_store=make_person_store(),
+        outreach_log=None,
+        memory_store=AsyncMock(),
+    )
+    result = await agent.run(make_ctx("I sent an email to Carlos Mendes yesterday"))
+    assert result.tool_calls == []
+
+
+def _companion_dep_map(extra=None):
+    from ze_agents.client import LLMClient
+    from ze_agents.settings import Settings
+    from ze_personal.contacts.store import PersonStore
+    from ze_sdk.memory import PostgresMemoryStore
+
+    return {
+        LLMClient: AsyncMock(),
+        Settings: make_settings(),
+        PersonStore: make_person_store(),
+        PostgresMemoryStore: AsyncMock(),
+        **(extra or {}),
+    }
+
+
+def test_bootstrap_resolver_builds_the_companion_without_an_outreach_log():
+    from ze_agents.bootstrap import _resolve
+
+    agent = _resolve(CompanionAgent, _companion_dep_map())
+    assert agent._outreach_log is None
+
+
+def test_bootstrap_resolver_injects_the_outreach_log_when_registered():
+    from ze_agents.bootstrap import _resolve
+    from ze_personal.agents.companion.outreach_log import OutreachLog
+
+    log = AsyncMock()
+    agent = _resolve(CompanionAgent, _companion_dep_map({OutreachLog: log}))
+    assert agent._outreach_log is log

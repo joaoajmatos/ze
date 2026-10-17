@@ -11,7 +11,7 @@ import pytest
 from ze_agents.claims import ClaimKind
 from ze_agents.errors import AgentConfigError
 from ze_memory.types import EntityRef, Signal
-from ze_api.container import collect_plugin_signal_sources
+from ze_api.wiring.agents import collect_plugin_signal_sources
 
 
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)

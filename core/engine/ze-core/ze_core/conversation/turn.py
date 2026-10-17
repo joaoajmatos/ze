@@ -85,6 +85,18 @@ def extract_response(state: dict) -> str:
     return ""
 
 
+def turn_has_reply(outcome: Any) -> bool:
+    """True when a turn produced text or rendered components for the user.
+
+    Every entry point that delivers a turn asks this, so a reply that is only
+    components is never mistaken for an empty one.
+    """
+    if getattr(outcome, "response", None):
+        return True
+    state = getattr(outcome, "final_state", None)
+    return isinstance(state, dict) and bool(state.get("components"))
+
+
 @dataclass
 class TurnResult:
     """Outcome of one main-graph invocation (may pause for the user's confirmation)."""
@@ -96,6 +108,10 @@ class TurnResult:
     error: str | None = None
     response: str | None = None
     message_id: str = ""
+
+    @property
+    def has_reply(self) -> bool:
+        return turn_has_reply(self)
 
 
 def open_confirmation(graph_state_obj: Any) -> WriteConfirmation | None:
@@ -308,7 +324,7 @@ async def invoke_retry_turn(
         raise RetryFailedError(str(exc)) from exc
     if result.interrupted and not result.error:
         return result
-    if result.error or not result.response:
+    if result.error or not result.has_reply:
         await restore_messages(container.graph, config, original)
         raise RetryFailedError(result.error or "empty reply")
     return result

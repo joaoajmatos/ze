@@ -51,6 +51,8 @@
 # ── render_* tools (CF-02 U-01) ──────────────────────────────────────────────
 # Every prompt carries its own data, so the companion needs no memory or specialist
 # to answer. expected_tools proves the render call ran; the criteria judge the prose.
+# Table, metric, timeline and form route to the specialist that owns the domain
+# (research, finance, calendar); each of those agents has the matching render tool.
 
 - id: companion_render_chart
   prompt: "Chart my running distance this week in km: Mon 5, Tue 0, Wed 8, Thu 5, Fri 0, Sat 12, Sun 6."
@@ -66,8 +68,8 @@
 
 - id: companion_render_table
   prompt: "Compare three laptops side by side — Aero 14, 16 GB RAM, 1.2 kg, 1,099 EUR; Bolt 15, 32 GB RAM, 1.8 kg, 1,399 EUR; Core 13, 8 GB RAM, 1.0 kg, 799 EUR."
-  description: Rows with several columns — the companion should render a table
-  expected_agent: companion
+  description: Rows with several columns — the research specialist should render a table
+  expected_agent: research
   expected_tools: [render_table]
   tags: [companion, render]
   criteria:
@@ -77,8 +79,8 @@
 
 - id: companion_render_metric
   prompt: "My savings are at 12,480 EUR, up 4.2% on last month. Show that as a headline figure."
-  description: One headline number with a change — the companion should render a metric
-  expected_agent: companion
+  description: One headline number with a change — the finance specialist should render a metric
+  expected_agent: finance
   expected_tools: [render_metric]
   tags: [companion, render]
   criteria:
@@ -87,18 +89,19 @@
 
 - id: companion_render_timeline
   prompt: "Lay my trip out as a timeline: 3 March flight to Berlin, 5 March conference day, 9 March train home."
-  description: Dated events in order — the companion should render a timeline
-  expected_agent: companion
+  description: Dated events in order — the calendar specialist should render a timeline, not create events
+  expected_agent: calendar
   expected_tools: [render_timeline]
   tags: [companion, render]
   criteria:
     - Should list the three events in date order
     - Should not add events the user did not give
+    - Should not create calendar events; the user only asked to see the trip laid out
 
 - id: companion_render_form
   prompt: "I want a weekly check-in with you. Give me a small form to enter the day, the time and the topic."
-  description: Structured input the user asked for — the companion should render a form
-  expected_agent: companion
+  description: Structured input the user asked for — the calendar specialist should render a form
+  expected_agent: calendar
   expected_tools: [render_form]
   tags: [companion, render]
   criteria:

@@ -264,9 +264,9 @@ def test_row5_created_goal_links_as_goal():
     assert (out.kind, out.link_kind) == ("link", "goal")
 
 
-def test_row5_both_created_prefers_reminder():
+def test_row5_both_created_records_both_kinds():
     out = _d(make("loop"), created=TurnCreation(reminder_id="r1", goal_id="g1"))
-    assert out.link_kind == "reminder"
+    assert (out.kind, out.link_kind) == ("link", "reminder+goal")
 
 
 def test_row5_created_beats_fact_label_and_persists_no_fact():

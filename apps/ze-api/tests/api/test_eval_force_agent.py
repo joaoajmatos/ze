@@ -12,7 +12,7 @@ from httpx import ASGITransport, AsyncClient
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent, clear_registry
 from ze_agents.types import AgentContext, AgentResult
-from ze_api.api.routes.eval import router
+from ze_api.api.eval.router import router
 
 KEY = "k"
 

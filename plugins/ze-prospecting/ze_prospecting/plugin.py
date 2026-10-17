@@ -6,6 +6,7 @@ from typing import Any
 import asyncpg
 
 from ze_logging import get_logger
+from ze_personal.agents.companion.outreach_log import OutreachLog
 from ze_sdk import ZePlugin
 from ze_agents.settings import Settings as CoreSettings
 from ze_sdk.proactive import ProactiveScheduler
@@ -91,6 +92,7 @@ class ProspectingPlugin(ZePlugin):
     def agent_deps(self, accumulated: dict) -> dict:
         return {
             ProspectCampaignStore: self.campaign_store,
+            OutreachLog: self.campaign_store,
             ProspectingSettings: self._prospecting_settings,
         }
 

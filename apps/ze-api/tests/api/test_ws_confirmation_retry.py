@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 from tests.api.test_ws_retry import _msg, _trace
-from ze_api.api.websocket import confirmation
-from ze_api.api.websocket.confirmation import (
+from ze_api.api.ws import confirmation
+from ze_api.api.ws.confirmation import (
     confirmation_timeout,
     handle_confirm,
     send_confirmation_request,

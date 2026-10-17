@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 
 from ze_agents.interface.types import Action, ConfirmationRequest, Notification
-from ze_api.api.schemas import WsConfirmRequestFrame
+from ze_api.api.ws.schemas import WsConfirmRequestFrame
 from ze_api.interface.native import NativeAppInterface
 
 

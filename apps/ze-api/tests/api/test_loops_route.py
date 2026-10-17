@@ -11,8 +11,8 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from ze_api.api.dependencies import require_api_key
-from ze_api.api.routes.loops import router
+from ze_api.api.deps import require_api_key
+from ze_api.api.v0.loops.router import router
 from ze_plugin.contribution import EvidenceRef
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.types import (
@@ -233,7 +233,8 @@ async def test_confidence_decay_reflected_on_next_list():
     loop's stored confidence (unit-tested directly in test_decay.py), the next
     GET /api/v0/loops must reflect the new value — not a cached one.
     """
-    from ze_worldstate.decay import CONFIDENCE_FLOOR, cascade_from_evidence
+    from ze_agents.claims import CONFIDENCE_FLOOR
+    from ze_worldstate.decay import cascade_from_evidence
 
     loop = _loop(confidence=0.6)
     store = AsyncMock()

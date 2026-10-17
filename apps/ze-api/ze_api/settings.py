@@ -83,10 +83,6 @@ class ZeApiSettings(BaseSettings):
     # ── Derived config (loaded from YAML, not env) ────────────────────────────
 
     @property
-    def capabilities_path(self) -> Path:
-        return self.config_dir / "config.yaml"
-
-    @property
     def config(self) -> dict[str, Any]:
         base = _load_yaml(self.config_dir / "config.yaml")
         if not self.ze_profile:
@@ -100,7 +96,7 @@ class ZeApiSettings(BaseSettings):
 
     @property
     def consolidation_config(self) -> dict[str, Any]:
-        """Legacy YAML overrides; thresholds default in ze-core."""
+        """Optional YAML overrides; thresholds default in ze-core."""
         return self.config.get("memory", {}).get("consolidation", {})
 
     @property
@@ -110,10 +106,6 @@ class ZeApiSettings(BaseSettings):
     @property
     def contacts_config(self) -> dict[str, Any]:
         return self.config.get("contacts", {})
-
-    @property
-    def profile_config(self) -> dict[str, Any]:
-        return self.config.get("memory", {}).get("profile", {})
 
     @property
     def memory_insights_config(self) -> dict[str, Any]:
@@ -134,44 +126,7 @@ class ZeApiSettings(BaseSettings):
 
     @property
     def persona_config(self) -> dict[str, Any]:
-        if self.persona_path.exists():
-            return _load_yaml(self.persona_path)
-        # Legacy: persona block embedded in config.yaml
-        cfg = self.config.get("persona", {})
-        if cfg:
-            return cfg
-        return {
-            "profile": "default",
-            "locale": "en",
-            "profiles": {
-                "default": {
-                    "traits": ["direct", "warm", "concise"],
-                    "verbosity": "concise",
-                    "custom_instructions": "",
-                    "dials": {
-                        "humor": 0.3,
-                        "directness": 0.9,
-                        "formality": 0.2,
-                        "depth": 0.5,
-                    },
-                }
-            },
-        }
-
-    def active_profile(self) -> dict[str, Any]:
-        """Return the YAML-default active profile dict (no DB override)."""
-        cfg = self.persona_config
-        profiles = cfg.get("profiles", {})
-        if profiles:
-            name = cfg.get("profile", "default")
-            return profiles.get(name) or next(iter(profiles.values()))
-        # Legacy flat format: wrap as a profile dict.
-        return {
-            "traits": cfg.get("traits", ["direct", "warm", "concise"]),
-            "verbosity": cfg.get("verbosity", "concise"),
-            "custom_instructions": cfg.get("custom_instructions", ""),
-            "dials": {},
-        }
+        return _load_yaml(self.persona_path)
 
     def to_core_settings(self) -> CoreSettings:
         """Map to ze-core Settings for framework container helpers."""

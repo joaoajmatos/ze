@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-from ze_api.api.websocket.connection import ConnectionManager
+from ze_api.api.ws.connection import ConnectionManager
 from ze_api.interface.native import NativeAppInterface
 from ze_core.conversation.messages import Message
 from ze_core.conversation.messages.types import MessageTrace
@@ -86,7 +86,7 @@ async def test_push_transport_error_clears_socket():
 async def test_replay_serialization_error_keeps_socket():
     from unittest.mock import patch
 
-    from ze_api.api.websocket import connection as connection_module
+    from ze_api.api.ws import connection as connection_module
 
     ws = _make_ws()
     mgr = ConnectionManager()
@@ -144,3 +144,16 @@ async def test_reply_delivered_after_failed_trace_update_frame():
     assert mgr.connected
     types = [c.args[0]["type"] for c in ws.send_json.call_args_list]
     assert "message" in types
+
+
+async def test_ntfy_body_for_a_components_only_reply_names_what_was_shown():
+    mgr = ConnectionManager()
+    notifier = AsyncMock()
+    iface = NativeAppInterface(
+        message_store=AsyncMock(), connection_manager=mgr, notifier=notifier
+    )
+
+    await iface.send_with_thread("", thread_id="t1", components=[{"type": "table"}])
+
+    notifier.push.assert_awaited_once()
+    assert notifier.push.await_args.args[0].body == "Showed a table."

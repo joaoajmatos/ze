@@ -119,7 +119,7 @@ class SkillMatcher:
                     if similarity is not None:
                         scored.append((skill, similarity))
 
-        legacy = explicit + [
+        e5_matches = explicit + [
             SkillMatch(
                 skill=skill, trigger=SkillTrigger.AUTOMATIC, similarity=similarity
             )
@@ -128,15 +128,15 @@ class SkillMatcher:
         ]
 
         if judgment_state is None or self._system_one is None or not scored:
-            return SkillMatchOutcome(matches=legacy)
+            return SkillMatchOutcome(matches=e5_matches)
         if not self._surface.calibrated:
             if self._surface.enabled:
                 log.warning("skills_surface_uncalibrated")
-            return SkillMatchOutcome(matches=legacy)
+            return SkillMatchOutcome(matches=e5_matches)
 
         candidates = shortlist(scored, floor=self._floor, k=self._surface.shortlist_k)
         if not candidates:
-            return SkillMatchOutcome(matches=legacy)
+            return SkillMatchOutcome(matches=e5_matches)
 
         keys = skill_keys([skill for skill, _ in candidates])
         similarities = {str(skill.id): sim for skill, sim in candidates}
@@ -176,7 +176,7 @@ class SkillMatcher:
         elif decision.kind == "drop":
             matches = explicit
         else:
-            matches = legacy
+            matches = e5_matches
         return SkillMatchOutcome(matches=matches, judgment=judgment)
 
     def _similarity(self, skill: Skill, query_vec: Any) -> float | None:

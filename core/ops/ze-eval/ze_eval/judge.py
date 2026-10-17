@@ -46,8 +46,10 @@ Actual agent used: {agent_used}
 Today's date: {today}. Your own knowledge may be older; do not mark a date or version wrong only because you do not know it.
 Tool calls:
 {tool_calls}
+Components shown to the user below the reply:
+{components}
 Waiting for the user's confirmation: {pending_confirmation}
-Notes: a call marked "parked" waits for the user's approval; it counts as invoking the tool. A call marked "denied", "refused", "expired" or "refused_over_cap" did not run. A call marked "ok (approved)" ran after the user approved it. A call prefixed "[turn N]" was made during turn N of a multi-turn scenario. Web search runs on the server and never appears in the tool call list.
+Notes: a call marked "parked" waits for the user's approval; it counts as invoking the tool. A call marked "denied", "refused", "expired" or "refused_over_cap" did not run. A call marked "ok (approved)" ran after the user approved it. A call prefixed "[turn N]" was made during turn N of a multi-turn scenario. A rendered component is a card, table, chart or form the user sees beside the reply; judge its content as part of the answer. Web search runs on the server and never appears in the tool call list.
 
 ## Criteria
 {criteria}
@@ -86,6 +88,39 @@ def format_tool_calls(tool_calls: list[dict] | None) -> str:
     return "\n".join(lines)
 
 
+_PRESENTATION_KEYS = frozenset(
+    {"color", "gap", "style", "variant", "size", "align", "padding", "id"}
+)
+_COMPONENT_CHARS = 700
+_MAX_COMPONENTS = 8
+
+
+def _strip_presentation(node):
+    # Top level only: nested keys such as "color" or "id" are often data fields.
+    if isinstance(node, dict):
+        return {k: v for k, v in node.items() if k not in _PRESENTATION_KEYS}
+    return node
+
+
+def format_components(components: list[dict] | None) -> str:
+    """One line per rendered component: its kind and its data, minus styling."""
+    if not components:
+        return "- none"
+    lines = []
+    for component in components[:_MAX_COMPONENTS]:
+        turn = component.get("turn") if isinstance(component, dict) else None
+        body = component.get("component", component) if turn else component
+        kind = body.get("type", "?") if isinstance(body, dict) else "?"
+        data = json.dumps(_strip_presentation(body), ensure_ascii=False)
+        if len(data) > _COMPONENT_CHARS:
+            data = data[:_COMPONENT_CHARS] + "…"
+        turn_prefix = f"[turn {turn}] " if turn else ""
+        lines.append(f"- {turn_prefix}{kind}: {data}")
+    if len(components) > _MAX_COMPONENTS:
+        lines.append(f"- … and {len(components) - _MAX_COMPONENTS} more not shown")
+    return "\n".join(lines)
+
+
 def build_prompt(
     *,
     description: str,
@@ -95,6 +130,7 @@ def build_prompt(
     agent_used: str | None,
     criteria: list[str],
     tool_calls: list[dict] | None = None,
+    components: list[dict] | None = None,
     pending_confirmation: bool = False,
     today: date | None = None,
 ) -> str:
@@ -106,6 +142,7 @@ def build_prompt(
         agent_used=agent_used or "unknown",
         criteria="\n".join(f"- {c}" for c in criteria),
         tool_calls=format_tool_calls(tool_calls),
+        components=format_components(components),
         pending_confirmation="yes" if pending_confirmation else "no",
         today=(today or date.today()).isoformat(),
     )
@@ -120,6 +157,7 @@ async def judge(
     agent_used: str | None,
     criteria: list[str],
     tool_calls: list[dict] | None = None,
+    components: list[dict] | None = None,
     pending_confirmation: bool = False,
     model: str = DEFAULT_JUDGE_MODEL,
     api_key: str | None = None,
@@ -133,6 +171,7 @@ async def judge(
         agent_used=agent_used,
         criteria=criteria,
         tool_calls=tool_calls,
+        components=components,
         pending_confirmation=pending_confirmation,
     )
 

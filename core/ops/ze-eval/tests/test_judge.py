@@ -110,3 +110,50 @@ def test_a_duplicate_call_is_shown_as_not_run():
         [{"tool_name": "cancel_reminder", "success": True, "gate": "duplicate"}]
     )
     assert text == "- cancel_reminder (duplicate)"
+
+
+def test_prompt_shows_the_kind_and_data_of_a_rendered_component():
+    table = {
+        "type": "table",
+        "headers": ["Laptop", "RAM"],
+        "rows": [["Aero 14", "16 GB"]],
+        "title": "Laptops",
+    }
+    text = _prompt(components=[table])
+    assert "- table:" in text
+    assert "Aero 14" in text and "16 GB" in text
+
+
+def test_prompt_drops_styling_keys_and_truncates_long_components():
+    from ze_eval.judge import format_components
+
+    shown = format_components([{"type": "text", "content": "Hi", "color": "red"}])
+    assert "Hi" in shown and "red" not in shown
+    long = format_components([{"type": "table", "rows": [["x" * 50]] * 100}])
+    assert long.endswith("…")
+
+
+def test_prompt_labels_the_turn_a_component_came_from_and_lists_none():
+    from ze_eval.judge import format_components
+
+    assert format_components(None) == "- none"
+    text = format_components([{"turn": 2, "component": {"type": "chart"}}])
+    assert text.startswith("- [turn 2] chart:")
+
+
+def test_nested_data_fields_named_like_styling_keys_are_kept():
+    from ze_eval.judge import format_components
+
+    shown = format_components(
+        [{"type": "table", "color": "x", "rows": [{"color": "red", "id": "r1"}]}]
+    )
+    assert '"color": "red"' in shown and '"id": "r1"' in shown
+    assert '"color": "x"' not in shown
+
+
+def test_component_count_is_capped():
+    from ze_eval.judge import format_components
+
+    shown = format_components([{"type": "metric"}] * 12)
+    assert shown.count("- metric:") == 8
+    assert shown.endswith("and 4 more not shown")

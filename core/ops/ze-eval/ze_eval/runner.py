@@ -318,6 +318,16 @@ def collect_tool_calls(turns: list[dict]) -> list[dict]:
     return calls
 
 
+def collect_components(turns: list[dict]) -> list[dict]:
+    """Rendered components from every turn, each wrapped with its 1-based turn."""
+    found: list[dict] = []
+    for idx, turn in enumerate(turns, start=1):
+        result = turn.get("result") or {}
+        for component in result.get("components") or []:
+            found.append({"turn": turn.get("turn", idx), "component": component})
+    return found
+
+
 async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict:
     ze_url = args.ze_url or os.environ.get("ZE_EVAL_URL", "http://localhost:8000")
     ze_key = args.ze_key or os.environ.get("ZE_API_KEY", "")
@@ -423,6 +433,7 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
                     prompt_for_judge = " → ".join(turn_label(t) for t in turns)
                     response_for_judge = turns[-1]["result"].get("response", "")
                     tool_calls_for_judge = collect_tool_calls(turns)
+                    components_for_judge = collect_components(turns)
                     pending_confirmation_for_judge = bool(
                         turns[-1]["result"].get("pending_confirmation")
                     )
@@ -430,6 +441,7 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
                     prompt_for_judge = scenario.get("prompt", "")
                     response_for_judge = ze_result.get("response", "")
                     tool_calls_for_judge = ze_result.get("tool_calls")
+                    components_for_judge = ze_result.get("components")
                     pending_confirmation_for_judge = bool(
                         ze_result.get("pending_confirmation")
                     )
@@ -443,6 +455,7 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
                         agent_used=agent_used,
                         criteria=scenario["criteria"],
                         tool_calls=tool_calls_for_judge,
+                        components=components_for_judge,
                         pending_confirmation=pending_confirmation_for_judge,
                         model=args.judge_model,
                         api_key=or_key,

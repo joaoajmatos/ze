@@ -318,3 +318,62 @@ def test_mixed_cancel_and_invented_forget_is_dropped():
     assert "forgotten" not in gated.lower()
     assert "cancelled" not in gated.lower()
     assert gated == COULD_NOT_FORGET
+
+
+def test_render_success_keeps_a_promise_to_remember_the_pick():
+    text = "Pick one below and I'll remember it."
+    gated = enforce_memory_confirmations(
+        text, [_call("render_choice_group", "Rendered choice_group")]
+    )
+    assert gated == text
+
+
+def test_render_success_does_not_license_a_past_tense_save_claim():
+    gated = enforce_memory_confirmations(
+        "I've saved your choice.",
+        [_call("render_choice_group", "Rendered choice_group")],
+    )
+    assert gated == COULD_NOT_STORE
+
+
+def test_failed_render_does_not_license_a_promise():
+    gated = enforce_memory_confirmations(
+        "I'll remember it.",
+        [_call("render_choice_group", "boom", success=False)],
+    )
+    assert gated == COULD_NOT_STORE
+
+
+def test_promise_without_any_render_is_still_stripped():
+    assert enforce_memory_confirmations("I'll remember it.", []) == COULD_NOT_STORE
+
+
+def test_data_only_renders_do_not_license_a_promise():
+    for tool in ("render_table", "render_chart", "render_metric", "render_timeline"):
+        gated = enforce_memory_confirmations(
+            "I will remember that you prefer the Aero 14.",
+            [_call(tool, f"Rendered {tool}")],
+        )
+        assert gated == COULD_NOT_STORE, tool
+
+
+def test_renders_that_wait_for_the_user_keep_the_promise():
+    for tool in ("render_form", "render_consent", "render_review"):
+        text = "Fill it in and I'll remember it."
+        gated = enforce_memory_confirmations(text, [_call(tool, f"Rendered {tool}")])
+        assert gated == text, tool
+
+
+def test_a_delegated_choice_group_keeps_the_promise():
+    nested = _call("render_choice_group", "Rendered choice_group")
+    delegate = _call("delegate_to_agent", {"ok": True, "tool_calls": [nested]})
+    text = "Pick one and I will remember it."
+    assert enforce_memory_confirmations(text, [delegate]) == text
+
+
+def test_will_store_is_never_licensed_by_a_render():
+    gated = enforce_memory_confirmations(
+        "I will store your pick.",
+        [_call("render_choice_group", "Rendered choice_group")],
+    )
+    assert gated == COULD_NOT_STORE

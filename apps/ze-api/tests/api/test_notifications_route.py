@@ -10,8 +10,8 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from ze_api.api.dependencies import require_api_key
-from ze_api.api.routes.notifications import router
+from ze_api.api.deps import require_api_key
+from ze_api.api.v0.notifications.router import router
 from ze_proactive.notification_store import InvalidCursorError
 from ze_proactive.types import Notification
 

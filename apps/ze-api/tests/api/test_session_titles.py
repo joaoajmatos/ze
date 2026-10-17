@@ -3,7 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from ze_api.api.websocket.session_titles import _title_generator
+from ze_api.api.ws.session_titles import _title_generator
 
 
 def _container(config: dict) -> SimpleNamespace:
@@ -54,7 +54,7 @@ class TestTitleOnlyUntilItExists:
     async def _run(self, session):
         from unittest.mock import AsyncMock, patch
 
-        from ze_api.api.websocket import session_titles
+        from ze_api.api.ws import session_titles
 
         store = MagicMock()
         store.get = AsyncMock(return_value=session)
@@ -99,7 +99,7 @@ class TestTitleOnlyUntilItExists:
 
         from unittest.mock import AsyncMock, patch
 
-        from ze_api.api.websocket import session_titles
+        from ze_api.api.ws import session_titles
 
         store = MagicMock()
         store.get = AsyncMock(return_value=self._session())

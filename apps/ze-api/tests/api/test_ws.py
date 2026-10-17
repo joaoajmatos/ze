@@ -6,11 +6,11 @@ from uuid import uuid4
 
 
 from ze_agents.errors import OnboardingError
-from ze_api.api.websocket.component_submit import handle_component_submit
-from ze_api.api.websocket.confirmation import handle_confirm, send_confirmation_request
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.onboarding import send_onboarding_view
-from ze_api.api.websocket.serializers import message_to_dict
+from ze_api.api.ws.component_submit import handle_component_submit
+from ze_api.api.ws.confirmation import handle_confirm, send_confirmation_request
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.onboarding import send_onboarding_view
+from ze_api.api.ws.serializers import message_to_dict
 from ze_onboarding import OnboardingView
 from ze_core.conversation.messages import Message
 
@@ -365,7 +365,7 @@ async def test_component_submit_uses_onboarding_coordinator():
     container.onboarding_coordinator.submit = AsyncMock(return_value=view)
 
     with patch(
-        "ze_api.api.websocket.component_submit.send_onboarding_view", new=AsyncMock()
+        "ze_api.api.ws.component_submit.send_onboarding_view", new=AsyncMock()
     ) as mock_send_view:
         await handle_component_submit(
             ws,
@@ -399,7 +399,7 @@ async def test_component_submit_falls_back_to_graph_on_unknown_session():
     )
 
     with patch(
-        "ze_api.api.websocket.component_submit.handle_message",
+        "ze_api.api.ws.component_submit.handle_message",
         new=AsyncMock(return_value=None),
     ) as mock_handle:
         await handle_component_submit(
@@ -528,7 +528,7 @@ def _turn_container(outcome):
 
 
 async def test_empty_response_sends_terminal_error_and_frees_slot():
-    from ze_api.api.websocket.endpoint import _run_message_task
+    from ze_api.api.ws.endpoint import _run_message_task
 
     ws = _make_ws()
     mgr = ConnectionManager()
@@ -563,7 +563,7 @@ async def test_empty_response_sends_terminal_error_and_frees_slot():
 
 
 async def test_message_without_thread_id_yields_error_frame():
-    from ze_api.api.websocket.turns import handle_message
+    from ze_api.api.ws.turns import handle_message
 
     ws = _make_ws()
     mgr = ConnectionManager()
@@ -581,7 +581,7 @@ async def test_message_without_thread_id_yields_error_frame():
 
 
 async def test_invoke_failure_error_frame_carries_thread_id():
-    from ze_api.api.websocket.turns import handle_message
+    from ze_api.api.ws.turns import handle_message
 
     ws = _make_ws()
     mgr = ConnectionManager()

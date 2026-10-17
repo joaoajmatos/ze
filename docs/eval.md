@@ -435,6 +435,7 @@ Available tags: `companion`, `routing`, `persona`, `research`, `reminders`,
 | `routing` | object | confidence, routing_method, is_compound, score_gap, raw_scores |
 | `pending_confirmation` | bool | True if Ze paused for user approval |
 | `tool_calls` | array | Tools invoked: name, args, duration_ms, success, error, gate, parked, turn. Judge remember/forget from `remember_fact` / `forget_fact`. |
+| `components` | array | Rendered component trees (`render_*` tools). The judge reads their kind and data. |
 | `tokens_used` | int | Total tokens consumed by the agent |
 | `error` | string | Error message if the graph failed |
 

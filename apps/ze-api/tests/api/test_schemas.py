@@ -3,9 +3,7 @@ import uuid
 import pytest
 from pydantic import ValidationError
 
-from ze_api.api.schemas import (
-    FactReviewRequest,
-)
+from ze_api.api.v0.memory.schemas import FactReviewRequest
 from ze_logging import configure_logging
 
 

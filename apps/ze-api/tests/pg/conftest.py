@@ -35,7 +35,7 @@ def pytest_collection_modifyitems(config, items):
 def pg_dsn():
     if os.environ.get("ZE_TEST_PG") != "1":
         pytest.skip("pg tests disabled")
-    from ze_api import migrate
+    from ze_api.cli import migrate
 
     url = os.environ.get("ZE_TEST_PG_URL")
     handle = None

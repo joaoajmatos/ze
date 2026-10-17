@@ -38,6 +38,27 @@ _REMEMBER_CLAIM = re.compile(
     re.IGNORECASE,
 )
 
+_REMEMBER_PROMISE = re.compile(
+    r"("
+    r"i['’]ll remember|"
+    r"i will remember|"
+    r"vou lembrar"
+    r")",
+    re.IGNORECASE,
+)
+
+# Renders that wait for the user's answer; table, chart, metric and the like only show data.
+_AWAITING_RENDERS = frozenset(
+    {
+        "render_choice_group",
+        "render_form",
+        "render_consent",
+        "render_confirm",
+        "render_review",
+        "render_connect_account",
+    }
+)
+
 _FORGET_CLAIM = re.compile(
     r"("
     r"i['’]ve forgotten|"
@@ -176,6 +197,12 @@ def _earned(tool_calls: list[ToolCall], name: str) -> bool:
     return any(call.tool_name == name and _ok_true(call.result) for call in tool_calls)
 
 
+def _rendered(tool_calls: list[ToolCall]) -> bool:
+    return any(
+        call.tool_name in _AWAITING_RENDERS and call.success for call in tool_calls
+    )
+
+
 def _earned_veto(tool_calls: list[ToolCall]) -> bool:
     for call in tool_calls:
         payload = _tool_payload(call.result)
@@ -215,6 +242,13 @@ async def publish_honest_reply(
     return gated
 
 
+def _is_pending_promise(sentence: str) -> bool:
+    # A shown render awaits the user's reply; "I'll remember your pick" promises the
+    # later write, while "I've saved it" would claim one that never happened.
+    claims = [m.group(0) for m in _REMEMBER_CLAIM.finditer(sentence)]
+    return bool(claims) and all(_REMEMBER_PROMISE.fullmatch(c) for c in claims)
+
+
 def _asked_recall(user_text: str | None) -> bool:
     if not user_text:
         return False
@@ -239,6 +273,7 @@ def enforce_memory_confirmations(
     earned_remember = _earned(calls, "remember_fact")
     earned_forget = _earned(calls, "forget_fact")
     earned_veto = _earned_veto(calls)
+    rendered = _rendered(calls)
     earned_cancel = cancel_reminder_earned(calls)
     earned_close = loop_review_earned(calls)
     earned_abandon = abandon_goal_earned(calls)
@@ -275,6 +310,14 @@ def enforce_memory_confirmations(
             )
         )
         drop_remember = has_remember and (not earned_remember or mixed)
+        if (
+            drop_remember
+            and rendered
+            and not earned_remember
+            and not mixed
+            and _is_pending_promise(sentence)
+        ):
+            drop_remember = False
         drop_file_whole = (
             has_remember and _INGEST_FILE_WHOLE.search(sentence) is not None
         )

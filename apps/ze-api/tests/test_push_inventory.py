@@ -13,7 +13,7 @@ from ze_proactive.push_kinds import registered_push_kinds
 REPO = Path(__file__).resolve().parents[3]
 
 KIND_MODULES = [
-    "ze_api.push_kinds",
+    "ze_api.wiring.push_kinds",
     "ze_automation.push_kinds",
     "ze_worldstate.push_kinds",
     "ze_correlation.push_kinds",
@@ -22,6 +22,7 @@ KIND_MODULES = [
     "ze_finance.push_kinds",
     "ze_messenger.push_kinds",
     "ze_calendar.push_kinds",
+    "ze_workspace.push_kinds",
 ]
 
 R, A, D = "requested", "accountability", "discretionary"

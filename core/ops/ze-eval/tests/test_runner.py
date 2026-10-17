@@ -197,3 +197,17 @@ def test_bad_turns_are_rejected_before_any_request(ze_http, turn):
 def test_turn_label_names_the_confirm_step():
     assert turn_label({"turn": 2, "prompt": None, "confirm": "deny"}) == "[confirm: deny]"
     assert turn_label({"turn": 1, "prompt": "hello"}) == "hello"
+
+
+def test_collect_components_tags_each_with_its_turn():
+    from ze_eval.runner import collect_components
+
+    turns = [
+        {"turn": 1, "result": {"components": [{"type": "table"}]}},
+        {"turn": 2, "result": {}},
+        {"turn": 3, "result": {"components": [{"type": "chart"}]}},
+    ]
+    assert collect_components(turns) == [
+        {"turn": 1, "component": {"type": "table"}},
+        {"turn": 3, "component": {"type": "chart"}},
+    ]

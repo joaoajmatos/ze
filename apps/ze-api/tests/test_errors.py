@@ -1,9 +1,4 @@
-from ze_api.errors import (
-    ZeError,
-    CapabilityError,
-    CapabilityConfigError,
-    MemoryError,
-)
+from ze_api.errors import ZeError
 from ze_agents.errors import (
     AgentError,
     AgentTimeoutError,
@@ -24,15 +19,6 @@ def test_hierarchy_agent():
     assert issubclass(AgentTimeoutError, AgentError)
     assert issubclass(UnknownAgentError, AgentError)
     assert issubclass(AgentError, ZeError)
-
-
-def test_hierarchy_capability():
-    assert issubclass(CapabilityConfigError, CapabilityError)
-    assert issubclass(CapabilityError, ZeError)
-
-
-def test_hierarchy_memory():
-    assert issubclass(MemoryError, ZeError)
 
 
 def test_hierarchy_openrouter():
@@ -57,8 +43,6 @@ def test_all_are_catchable_as_ze_error():
         AgentTimeoutError("timed out"),
         UnknownAgentError("no agent"),
         AgentError("tool failed"),
-        CapabilityConfigError("bad yaml"),
-        MemoryError("db error"),
         RateLimitError("429", status_code=429),
     ]
     for err in errors:

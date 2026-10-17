@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ze_api.errors import OnboardingError
+from ze_agents.errors import OnboardingError
 from ze_onboarding import ResetService
 
 

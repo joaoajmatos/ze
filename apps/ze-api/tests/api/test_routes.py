@@ -6,8 +6,9 @@ from unittest.mock import AsyncMock, MagicMock
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from ze_api.api import dependencies
-from ze_api.api.routes import memory, routing
+from ze_api.api import deps
+from ze_api.api.v0.memory import router as memory
+from ze_api.api.eval import routing as routing
 from ze_logging import configure_logging
 from ze_api.settings import Settings, get_settings
 
@@ -54,12 +55,12 @@ def client(mock_pool, config_dir):
 
     app = FastAPI()
     app.state.container = container
-    app.include_router(memory.router, prefix="/memory")
-    app.include_router(routing.router, prefix="/routing")
+    app.include_router(memory.router)
+    app.include_router(routing.router)
 
-    app.dependency_overrides[dependencies.get_container] = lambda: container
-    app.dependency_overrides[dependencies.get_settings] = lambda: settings
-    app.dependency_overrides[dependencies.require_api_key] = lambda: None
+    app.dependency_overrides[deps.get_container] = lambda: container
+    app.dependency_overrides[deps.get_settings] = lambda: settings
+    app.dependency_overrides[deps.require_api_key] = lambda: None
 
     with TestClient(app) as c:
         yield c, conn

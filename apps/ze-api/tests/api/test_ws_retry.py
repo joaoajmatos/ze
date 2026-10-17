@@ -11,7 +11,7 @@ from uuid import uuid4
 import pytest
 
 from ze_agents.errors import RetryFailedError
-from ze_api.api.websocket.turns import handle_retry
+from ze_api.api.ws.turns import handle_retry
 from ze_core.conversation.messages.types import Message, MessageTrace, ToolCallTrace
 from ze_memory.feedback_records import FeedbackKind
 

@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from ze_agents.errors import FeedbackRecordIdempotencyConflictError
-from ze_api.api.dependencies import (
+from ze_api.api.deps import (
     get_confirmation_store,
     get_connection_manager,
     get_feedback_store,
@@ -19,7 +19,7 @@ from ze_api.api.dependencies import (
     get_turn_lock,
     require_api_key,
 )
-from ze_api.api.routes.feedback import router
+from ze_api.api.v0.messages.router import router
 from ze_core.conversation.messages.types import Message, MessageTrace
 from ze_memory.feedback_records import FeedbackKind, FeedbackRecord
 from ze_agents.claims import Confidence, DecayProfile, Provenance

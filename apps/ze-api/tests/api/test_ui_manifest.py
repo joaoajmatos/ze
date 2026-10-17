@@ -8,8 +8,8 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from ze_api.api.dependencies import require_api_key
-from ze_api.api.routes.ui import router
+from ze_api.api.deps import require_api_key
+from ze_api.api.v0.system.ui import ui_router as router
 from ze_plugin.ui import UiContribution, UiManifest
 
 API_KEY = "test-key"
@@ -34,7 +34,7 @@ def _make_app(manifest: UiManifest | None = None) -> FastAPI:
     )
     app.state.settings = app.state.container.settings
     app.dependency_overrides[require_api_key] = lambda: None
-    app.include_router(router)
+    app.include_router(router, prefix="/api/v0")
     return app
 
 

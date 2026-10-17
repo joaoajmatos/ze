@@ -3,13 +3,15 @@
 from types import SimpleNamespace
 from uuid import uuid4
 
-from ze_api.api.messages import _trace_to_response
-from ze_api.api.schemas import (
+from ze_api.api.v0.messages.router import _trace_to_response
+from ze_api.api.shared_schemas import RollbackRecordResponse
+from ze_api.api.v0.messages.schemas import (
     FeedbackView,
     MessageSchema,
     MessageTraceResponse,
     RetryEligibilityResponse,
-    RollbackRecordResponse,
+)
+from ze_api.api.ws.schemas import (
     WsErrorFrame,
     WsInboundFrame,
     WsMessageRollbackFrame,

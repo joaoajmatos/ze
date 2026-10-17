@@ -465,6 +465,6 @@ async def test_a_push_not_shown_in_chat_saves_no_message_but_buzzes_and_rings():
 
 
 def test_a_confirmation_request_push_is_not_a_chat_message():
-    from ze_api.push_kinds import CONFIRMATION_REQUEST
+    from ze_api.wiring.push_kinds import CONFIRMATION_REQUEST
 
     assert CONFIRMATION_REQUEST.in_chat is False

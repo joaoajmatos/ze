@@ -6,13 +6,13 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 from ze_agents.park import ConfirmItem, WriteConfirmation
-from ze_api.api.websocket.confirmation import (
+from ze_api.api.ws.confirmation import (
     confirmation_timeout,
     handle_confirm,
     send_confirmation_request,
 )
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.frames import confirmation_payload
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.frames import confirmation_payload
 from ze_core.conversation.turn import NO_PENDING_CONFIRMATION
 
 CONFIG = {"configurable": {"thread_id": "t1"}}

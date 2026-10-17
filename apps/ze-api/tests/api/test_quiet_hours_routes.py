@@ -10,13 +10,13 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from ze_api.api.dependencies import (
+from ze_api.api.deps import (
     get_interruption_settings_store,
     get_notification_store,
     get_notifier,
     require_api_key,
 )
-from ze_api.api.routes.notifications import router
+from ze_api.api.v0.notifications.router import router
 from ze_proactive.types import Notification, QuietHoursSetting
 
 API_KEY = "test-key"
@@ -262,7 +262,7 @@ def test_ze_container_exposes_notifier_and_interruption_settings_store():
     """
     import inspect
 
-    from ze_api.container import ZeContainer
+    from ze_api.wiring.container import ZeContainer
 
     params = inspect.signature(ZeContainer).parameters
     assert "notifier" in params
