@@ -42,7 +42,7 @@ Governance answers "is Ze behaving?" at `/governance`: spend, attention budget a
 
 - **FR-001**: `pages/governance`; widgets `spend`, `attention-budget`, `data`, `connections`, `files`, `reset`.
 - **FR-002**: Hard cuts: `pages/{costs,data,settings}`, `pages/workspace` (files part; the page is gone once 188 took runs), `widgets/{costs-overview,data-overview,settings-workspace,workspace-management}`, the activity heatmap and every pie/heatmap chart in `@myguyze/ze-ui/charts` that no screen uses after this phase (`pie-chart`, `pie-slice`, `pie-context`, `heatmap-chart`, `heatmap-data` and their tests) plus `@uiw/react-heat-map` if present, `shared/lib/optional-charts.ts` and `ChartsToggle` if unused, `pages/governance/ui/GovernanceInterim.tsx`, and, if this is the last interim page standing, the Tailwind `@theme` remap from 183 FR-003.
-- **FR-002a**: Screen context (phase 195): Governance publishes the selected anomaly, data domain or file as `subject` and wires "Chat about this" on spend anomalies, data domains and file rows (and enables the Governance case in `eval/scenarios/screen_context.yaml`).
+- **FR-002a**: Screen context (phase 195): Governance publishes the selected anomaly, data domain or file as `subject` and wires "Chat about this" (callbacks passed down by props from widgets, 195 FR-024) on spend anomalies, data domains and file rows (and enables the Governance case in `eval/scenarios/screen_context.yaml`).
 - **FR-003**: Acceptance: critique ≥ 29/40; detector 0; captures.
 
 ## Success Criteria *(mandatory)*

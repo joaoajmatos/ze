@@ -41,7 +41,7 @@ Doing answers what runs without the user, what it did, and what it waits for, at
 - **FR-002**: Goal row derivations from `listGoals` only (no per-row detail fetch); detail from `getGoalDetail` + `listGoalTraces`.
 - **FR-003**: Gate actions use the `action` frame (`goal:approve:<gate_id>` and the existing stop/redirect payloads); held writes use `decideHeldWrite`.
 - **FR-004**: Hard cuts: `pages/{goals,goal-detail,workflows,workflow-detail,skills}`, `pages/procedures` (candidates part; the library moves to 189), `pages/workspace` (runs part; files move to 190), `widgets/{goals-overview,workflows-overview,gate-status,goal-learnings,milestone-timeline,workflow-executions,skill-management,procedure-candidates}` as they are, `pages/doing/ui/DoingInterim.tsx`, the "Current definition" banner, `shared/lib/format-cron.ts` if replaced by a schedule-in-words helper in the workflow slice (keep `cronstrue` usage in one place).
-- **FR-004a**: Screen context (phase 195): the index publishes visible goals, workflows and runs; detail pages publish their subject (`goal`, `workflow`, `workflow_execution`); every module and row (goal, workflow, run, skill, procedure candidate, gate, held write) wires "Chat about this", with a test per kind.
+- **FR-004a**: Screen context (phase 195): the index publishes visible goals, workflows and runs; detail pages publish their subject (`goal`, `workflow`, `workflow_execution`); every module and row (goal, workflow, run, skill, procedure candidate, gate, held write) wires "Chat about this" (callbacks passed down by props from widgets, 195 FR-024), with a test per kind.
 - **FR-005**: Acceptance: critique ≥ 29/40 on index and both details; detector 0; captures at 1440 and 390.
 
 ## Success Criteria *(mandatory)*

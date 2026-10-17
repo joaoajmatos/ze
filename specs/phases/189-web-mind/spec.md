@@ -42,7 +42,7 @@ States: empty beliefs → "I have not learned anything yet. Tell me about yourse
 - **FR-001**: `pages/mind`, `pages/mind-entity`; widgets `beliefs-feed`, `people`, `entity-neighbourhood`, `procedure-library`.
 - **FR-002**: The neighbourhood layout is deterministic (radial by relation type) and capped (one hop, ≤ 24 nodes, "+N more" readout).
 - **FR-003**: Hard cuts: `pages/{brain-memory,brain-graph}`, `widgets/{memory-feed,memory-graph,timeline-scrubber,procedure-management}`, the memory-growth chart, `react-force-graph-3d`, `three`, `three-spritetext` and `@types/three` dependencies if no other slice uses them, the Contacts plugin page route (rendered in People), `pages/mind/ui/MindInterim.tsx`, the procedures library part of `pages/procedures`.
-- **FR-003a**: Screen context (phase 195): Beliefs publishes the selected beliefs as `selection` and the visible rows; the entity page publishes the entity as `subject`; every belief, person, entity and procedure module or row wires "Chat about this", with a test per kind.
+- **FR-003a**: Screen context (phase 195): Beliefs publishes the selected beliefs as `selection` and the visible rows; the entity page publishes the entity as `subject`; every belief, person, entity and procedure module or row wires "Chat about this" (callbacks passed down by props from widgets, 195 FR-024), with a test per kind.
 - **FR-004**: Acceptance: critique ≥ 29/40; detector 0; captures.
 
 ## Success Criteria *(mandatory)*
