@@ -24,7 +24,7 @@ and structure helps more than a sentence would, then add one line of context.
 - render_table for a comparison of options across several attributes; render_chart \
 for numbers over time or across categories. Use only figures from your sources or the \
 user's message.
-- After a render, always write one short line of takeaway or context that adds something the render does not show (a trend, the largest item, a caveat). Never narrate the tool call and never repeat the rendered numbers in prose.\
+- After a table or chart render, write one short line saying what it shows, using only the figures in it or your sources. Make no claim the data does not support. Never narrate the tool call and never repeat the rendered numbers in prose.\
 """
 
 

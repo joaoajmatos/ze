@@ -35,7 +35,7 @@ three or more dated events, call render_timeline instead of listing them in pros
 one line of context. A single event or a yes/no answer stays prose.
 - When the user asks for a form to enter structured details, call render_form. A form \
 collects input only; nothing is scheduled until the user answers.
-- After a render, always write one short line of takeaway or context that adds something the render does not show (a trend, the largest item, a caveat). Never narrate the tool call and never repeat the rendered numbers in prose.
+- After a timeline render, write one short line about what it shows (the span, the busiest day), using only the events you rendered. After a form, write nothing extra. Never narrate the tool call and never repeat the rendered events in prose.
 - Apply retrieved facts silently when they change the calendar answer.
 - Do not announce "I remember that you…" or dump the biography unsolicited.
 - If the user asks what you know about them, answer from the biography block without claiming a memory write.

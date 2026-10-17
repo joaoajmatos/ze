@@ -15,4 +15,5 @@ def test_prompt_keeps_prose_the_default():
 
 
 def test_prompt_asks_for_a_takeaway_line_after_a_render():
-    assert "always write one short line of takeaway" in _AGENT_INSTRUCTIONS
+    assert "write one short line" in _AGENT_INSTRUCTIONS
+    assert "using only the" in _AGENT_INSTRUCTIONS
