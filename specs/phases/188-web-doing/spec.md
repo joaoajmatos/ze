@@ -18,11 +18,11 @@
 
 ## Overview
 
-Doing answers what runs without the user, what it did, and what it waits for, at `/doing`, `/doing/goals/:id`, `/doing/workflows/:id`. It replaces the interim Doing sections from 183 (Goals, Workflows, Skills, Procedures candidates, Workspace runs).
+Doing answers what runs without the user, what it did, and what it waits for, at `/doing`, `/doing/goals/:id`, `/doing/workflows/:id`. It replaces the interim Doing sections from 183 (Goals, Workflows, Skills). Procedures (candidates and library) move to Mind (189) and the workspace file map to Governance › Files (190), decided 2026-10-17 so the floors build in parallel.
 
 ## Modules
 
-- **Index**: Needs you (gates and held writes only, the 187 card); Goals (one row per goal from `listGoals` progress fields: done/total meter, next milestone, gate open since, age; stuck goals coral per the One Alarm Rule); Workflows (schedule in words, next run, last result with `failure_summary`, failures coral, Run now); Runs (workspace runs with live output via `watchWorkspaceRunEvents`, busy rule, cancel; "Workspace is off" error state when the sidecar is down, nothing else affected); Skills (review queue first, then on/off); Procedure candidates (review).
+- **Index**: Needs you (gates and held writes only, the 187 card); Goals (one row per goal from `listGoals` progress fields: done/total meter, next milestone, gate open since, age; stuck goals coral per the One Alarm Rule); Workflows (schedule in words, next run, last result with `failure_summary`, failures coral, Run now); Runs (workspace runs with live output via `watchWorkspaceRunEvents`, busy rule, cancel; "Workspace is off" error state when the sidecar is down, nothing else affected); Skills (review queue first, then on/off).
 - **Goal detail**: gate module first (cream, the one action), milestone timeline as a field (x = time, marks by state), learnings with evidence and review (`reviewGoalLearning`), traces as a readout list (no "Show tool calls" toggle), linked loops and reminders.
 - **Workflow detail**: flowchart kept (`widgets/workflow-graph`, `@xyflow/react`, restyled, nodes sized to fit), executions with outputs and the human failure line, revisions with diff summary and "View conversation", Run now / Cancel. The "Current definition" banner is deleted.
 
@@ -32,16 +32,16 @@ Doing answers what runs without the user, what it did, and what it waits for, at
 2. **A workflow can be run and cancelled (P1)**; a failed execution row shows `failure_summary`, Run now, Open.
 3. **A workflow with no executions says "Never run" (P1).**
 4. **A live workspace run streams and can be cancelled (P2)**; a second run while busy shows the busy refusal.
-5. **Skills and procedure candidates can be reviewed (P2)** with their existing calls.
+5. **Skills can be reviewed (P2)** with their existing calls.
 6. **Phone (P1)**: Needs you → Goals → Workflows → Runs → Skills; detail pages single column with the gate first.
 
 ## Requirements *(mandatory)*
 
-- **FR-001**: `pages/doing`, `pages/doing-goal`, `pages/doing-workflow`; widgets `goals-board`, `workflows-board`, `runs`, `skills-queue`, `procedure-candidates` (rebuilt), `workflow-graph` (restyled, kept).
+- **FR-001**: `pages/doing`, `pages/doing-goal`, `pages/doing-workflow`; widgets `goals-board`, `workflows-board`, `runs`, `skills-queue`, `workflow-graph` (restyled, kept).
 - **FR-002**: Goal row derivations from `listGoals` only (no per-row detail fetch); detail from `getGoalDetail` + `listGoalTraces`.
 - **FR-003**: Gate actions use the `action` frame (`goal:approve:<gate_id>` and the existing stop/redirect payloads); held writes use `decideHeldWrite`.
-- **FR-004**: Hard cuts: `pages/{goals,goal-detail,workflows,workflow-detail,skills}`, `pages/procedures` (candidates part; the library moves to 189), `pages/workspace` (runs part; files move to 190), `widgets/{goals-overview,workflows-overview,gate-status,goal-learnings,milestone-timeline,workflow-executions,skill-management,procedure-candidates}` as they are, `pages/doing/ui/DoingInterim.tsx`, the "Current definition" banner, `shared/lib/format-cron.ts` if replaced by a schedule-in-words helper in the workflow slice (keep `cronstrue` usage in one place).
-- **FR-004a**: Screen context (phase 195): the index publishes visible goals, workflows and runs; detail pages publish their subject (`goal`, `workflow`, `workflow_execution`); every module and row (goal, workflow, run, skill, procedure candidate, gate, held write) wires "Chat about this" (callbacks passed down by props from widgets, 195 FR-024), with a test per kind.
+- **FR-004**: Hard cuts: `pages/{goals,goal-detail,workflows,workflow-detail,skills}`, `widgets/{goals-overview,workflows-overview,gate-status,goal-learnings,milestone-timeline,workflow-executions,skill-management}` as they are (`pages/procedures` and `widgets/procedure-candidates` are deleted by 189; `pages/workspace` by 190), `pages/doing/ui/DoingInterim.tsx`, the "Current definition" banner, `shared/lib/format-cron.ts` if replaced by a schedule-in-words helper in the workflow slice (keep `cronstrue` usage in one place).
+- **FR-004a**: Screen context (phase 195): the index publishes visible goals, workflows and runs; detail pages publish their subject (`goal`, `workflow`, `workflow_execution`); every module and row (goal, workflow, run, skill, gate, held write) wires "Chat about this" (callbacks passed down by props from widgets, 195 FR-024), with a test per kind.
 - **FR-005**: Acceptance: critique ≥ 29/40 on index and both details; detector 0; captures at 1440 and 390.
 
 ## Success Criteria *(mandatory)*

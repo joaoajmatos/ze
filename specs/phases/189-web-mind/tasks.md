@@ -27,33 +27,33 @@
 
 ## Phase 1: Backend reads [US1, US3]
 
-- [ ] T002 [ENG] [BACKEND] Tests first in a new `core/cognition/ze-memory/tests/test_admin_feed.py` (no test covers `get_memory_feed` today): fact rows carry `claim_kind`, episode rows `None`. Implement in `ze_memory/admin.py::get_memory_feed`; add `claim_kind: str | None` to `MemoryFeedItem` (`apps/ze-api/ze_api/api/v0/memory/schemas.py`); extend `apps/ze-api/tests/api/test_routes.py`. `make codegen`; commit the generated files with this task.
-- [ ] T003 [ENG] [BACKEND] Tests first in `core/cognition/ze-memory/tests/test_admin_graph.py`: `search_entities` SQL (name or alias match, `%`/`_` escaped, optional type, degree then name order, limit) with a mock pool; `apps/ze-api/tests/pg/test_entity_search_pg.py` (`@pytest.mark.pg`): seeded entities return by alias, by partial name, by type, and none for no match; route test for `GET /api/v0/memory/entities` (`q` length 1..80 → 422 outside, `limit` 1..50, 401 without key). Implement `ze_memory/admin.py::search_entities` and the `searchEntities` route (response_model, summary, description). `make codegen`; commit.
+- [ ] T002 [ENG] [BACKEND] Tests first in a new `core/cognition/ze-memory/tests/test_admin_feed.py` (no test covers `get_memory_feed` today; mock-pool pattern from `test_admin_activity.py`): fact rows carry `claim_kind`, episode rows `None`; `get_entity_detail` facts carry `claim_kind`, `confidence`, `reviewed`, `contradicted`, `provenance`; the neighbours query orders by degree DESC then name and the result has `neighbour_total`. Implement in `ze_memory/admin.py`; add the fields to `MemoryFeedItem`, `FactDigestItem`, `EntityDetailResponse.neighbour_total` (`apps/ze-api/ze_api/api/v0/memory/schemas.py`); extend `apps/ze-api/tests/api/test_routes.py`; a `@pytest.mark.pg` case in `apps/ze-api/tests/pg/test_entity_search_pg.py` (T003's file) with 25 neighbours returns 20 in degree-then-name order and `neighbour_total` 25. `make codegen`; commit the generated files with this task.
+- [ ] T003 [ENG] [BACKEND] Tests first in `core/cognition/ze-memory/tests/test_admin_graph.py`: `search_entities` SQL (name match, alias match through `jsonb_array_elements_text`, `%`/`_`/`\\` escaped with `ESCAPE`, optional type, degree then name order, limit) with a mock pool; `apps/ze-api/tests/pg/test_entity_search_pg.py` (`@pytest.mark.pg`): seeded entities return by alias, by partial name, by type, and none for no match; route test for `GET /api/v0/memory/entities` (`q` length 1..80 → 422 outside, `limit` 1..50, 401 without key). Implement `ze_memory/admin.py::search_entities` and the `searchEntities` route (response_model, summary, description). `make codegen`; commit.
 - [ ] T004 [JR] [BACKEND] Tests first in `plugins/ze-personal/tests/test_api_routes.py`: `PersonalPlugin().ui_contributions() == []` and `GET /api/v0/contacts/page` still returns the tree. Remove the override and unused imports in `ze_personal/plugin.py`.
 
 ## Phase 2: Shared and entities [US1, US3]
 
 - [ ] T005 [ENG] [WEB] Tests first `shared/lib/claim-posture.test.ts` (skip creating it if 186 landed it first; then extend its table with memory-fact kinds `fact`, `identity`, `inference`, `suspicion`): glyph, chip label and plain words per kind; no raw enum output. Implement `shared/lib/claim-posture.ts`, export from `shared/lib`.
-- [ ] T006 [P] [JR] [WEB] Tests first `entities/memory-feed-item/lib/belief.test.ts`: `beliefSentence` never contains the raw `key` (fixtures `exercise_habit` / `works_at`), empty value → "A fact Ze holds"; `sinceLabel`; source words for `provenance` and `agent`. Implement `lib/belief.ts`, export.
-- [ ] T007 [P] [JR] [WEB] Tests first: `entities/memory-feed-item/api/useSearchEntitiesQuery.ts` (disabled under 1 char; key `["entity-search", q, type]`) and `entities/contact/{api/useContactsPageQuery.ts,index.ts}`. Implement.
+- [ ] T006 [ENG] [WEB] Tests first `entities/memory-feed-item/lib/belief.test.ts`: a sentence value (3+ words, from the conversation value writer) renders as is; a short value joins the humanised predicate (`works_at` + "Acme" → "Works at Acme"; `exercise_habit` + "runs" → "Exercise habit runs"); empty value → "A fact Ze holds"; no output contains an underscore key; `sinceLabel`; source words for `provenance` and `agent`. Then `entities/memory-feed-item/ui/BeliefRow.test.tsx`: glyph from `claim_kind` via `shared/lib/claim-posture`, sentence, confidence, source, since, reviewed/contradicted marks, Keep/Drop/Edit call their props, targets ≥ 44 px. Implement `lib/belief.ts` and `ui/BeliefRow.tsx`, export both.
+- [ ] T007 [P] [JR] [WEB] Tests first: `entities/memory-graph/api/useSearchEntitiesQuery.ts` (disabled under 1 char; key `queryKeys.entitySearch(q, type)` = `["entity-search", q, type]`) and `entities/contact/{api/useContactsPageQuery.ts,index.ts}` (key `queryKeys.contactsPage` = `["contacts-page"]`); add both keys to `shared/lib/query-keys.ts`. Implement.
 
 ## Phase 3: Beliefs and People [US1, US2, US4]
 
-- [ ] T008 [ENG] [WEB] Tests first `widgets/beliefs-feed/ui/BeliefsFeed.test.tsx`: rows show glyph from `claim_kind`, sentence, confidence readout, source, since; facts and episodes look different; no row contains a raw key; Keep/Drop call `useReviewFactMutation` with `confirm`/`reject` and the row updates; paging by `next_before`; as-of control changes the query and prints the date as a readout; empty state text from spec. Implement `widgets/beliefs-feed`.
+- [ ] T008 [ENG] [WEB] Tests first `widgets/beliefs-feed/ui/BeliefsFeed.test.tsx`: fact rows are `BeliefRow`s and episodes look different; no row contains a raw key; Keep/Drop/Edit call `useReviewFactMutation` with `confirm`/`reject`/`edit` (edit sends the new value) and the row updates; paging by `next_before`; as-of control changes the query and prints the date as a readout with "kinds and confidence as of now"; empty state text from spec. Implement `widgets/beliefs-feed`.
 - [ ] T009 [P] [JR] [WEB] Tests first `widgets/people/ui/People.test.tsx`: the Contacts tree renders inside a `Module` through `ConnectedPrimitiveTree`; loading, error and empty states. Implement `widgets/people`.
 
 ## Phase 4: Entity search and neighbourhood [US3, US5]
 
-- [ ] T010 [ENG] [WEB] Tests first `widgets/entity-neighbourhood/lib/radial.test.ts`: same input → same positions; neighbours grouped by predicate in a fixed order and sorted by name; cap 24 with "+N more"; empty neighbourhood. Implement `lib/radial.ts`; move `entityActivitySeries.ts` (+ test) here.
-- [ ] T011 [ENG] [WEB] Tests first `widgets/entity-neighbourhood/ui/EntityNeighbourhood.test.tsx`: field with the centre and capped neighbours (each mark focusable with an accessible name), activity sparkline, facts as belief rows; phone renders a grouped list instead of the field. Implement.
+- [ ] T010 [ENG] [WEB] Tests first `widgets/entity-neighbourhood/lib/radial.test.ts`: same input → same positions; neighbours grouped by predicate in a fixed order and sorted by name; at most 20 shown and "+N more" = `neighbour_total` − shown; empty neighbourhood. Implement `lib/radial.ts`; move `entityActivitySeries.ts` (+ test) here.
+- [ ] T011 [ENG] [WEB] Tests first `widgets/entity-neighbourhood/ui/EntityNeighbourhood.test.tsx`: field with the centre and capped neighbours (each mark focusable with an accessible name), activity sparkline labelled "last 20 facts and 10 episodes", facts as `BeliefRow`s with Keep/Drop/Edit; phone renders a grouped list instead of the field. Implement.
 - [ ] T012 [P] [JR] [WEB] Tests first `widgets/entity-search/ui/EntitySearch.test.tsx`: debounced query; result rows (type, name, degree); "No entity named X" keeps the text; select calls `onSelect(id)`. Implement.
 
 ## Phase 5: Procedures, page, router, cuts [US1–US5]
 
 - [ ] T013 [JR] [WEB] Tests first `widgets/procedures/ui/Procedures.test.tsx`: candidates first with review actions (`features/review-procedure`), then library rows (status in words, version, last invoked) opening detail with `features/procedure-review` controls. Implement `widgets/procedures`.
 - [ ] T014 [ENG] [WEB] Tests first `pages/mind/ui/MindPage.test.tsx` and `pages/mind-entity/ui/MindEntityPage.test.tsx`: desktop layout and phone order (Beliefs → People → Entity search → Procedures); entity page loads `getEntityDetail`, 404 shows "No entity here" with the search; non-UUID path is not found. Implement both pages.
-- [ ] T015 [ENG] [WEB] Tests first `app/router/routes.test.tsx`, `shared/config/places.test.ts`, `widgets/app-shell/ui/AppShell.test.tsx`: `/mind` → `MindPage`; `/mind/<uuid>` → `MindEntityPage`; `/mind/graph`, `/brain-graph`, `/doing/procedures`, `/contacts` → `/mind`; `/brain-memory` → `/mind`. Update `routes.tsx` (delete `mindLoaders`, remove the `procedures` loader), `places.ts`, and `pages/doing/ui/DoingInterim.tsx` (drop the Procedures section).
-- [ ] T016 [ENG] [WEB] Delete `pages/{brain-memory,brain-graph,procedures}`, `widgets/{memory-feed,memory-graph,timeline-scrubber,procedure-management,procedure-candidates}`, `pages/mind/ui/MindInterim.tsx` (+ tests), the memory-growth chart; remove `react-force-graph-3d`, `three`, `three-spritetext`, `@types/three` from `apps/ze-web/package.json` and the lockfile (`make web-install`). `rtk proxy grep -rn "brain-memory\|brain-graph\|memory-graph\|MindInterim\|from \"three\|react-force-graph" apps/ze-web/src` returns only `/jarvis` hits if any; `make web-build` output has no three chunk.
+- [ ] T015 [ENG] [WEB] Tests first `app/router/routes.test.tsx`, `shared/config/places.test.ts`, `widgets/app-shell/ui/AppShell.test.tsx`: `/mind` → `MindPage`; `/mind/<uuid>` → `MindEntityPage`; `/mind/graph`, `/brain-graph`, `/doing/procedures`, `/procedures`, `/contacts` → `/mind` in one hop; `/brain-memory` → `/mind`. Update `routes.tsx` (delete `mindLoaders`, remove the `procedures` loader), `places.ts` (change `/procedures` to `/mind`), and `pages/doing/ui/DoingInterim.tsx` (drop the Procedures section; a no-op if 188 already deleted the file).
+- [ ] T016 [ENG] [WEB] Delete `pages/{brain-memory,brain-graph,procedures}`, `widgets/{memory-feed,memory-graph,timeline-scrubber,procedure-management,procedure-candidates}`, `pages/mind/ui/MindInterim.tsx` (+ tests); remove `react-force-graph-3d`, `three`, `three-spritetext`, `@types/three` from `apps/ze-web/package.json` and the lockfile (`make web-install`). `rtk proxy grep -rn "brain-memory\|brain-graph\|memory-graph\|MindInterim\|from \"three\|react-force-graph" apps/ze-web/src` returns only `/jarvis` hits if any; `make web-build` output has no three chunk.
 
 ## Phase 6: Hypotheses (needs 185 on main) [US3]
 
@@ -62,7 +62,7 @@
 ## Phase 7: Screen context (needs 195 on main) [US1, US3]
 
 - [ ] T018 [ENG] [WEB] Tests first: Beliefs publishes `selection` (selected rows) and `visible`; `MindEntityPage` publishes `subject` (`entity`). Implement with `useScreenPublisher`.
-- [ ] T019 [JR] [WEB] Tests first, one per kind (195 FR-025): `ChatAboutChip` on belief rows (`fact`), entity search rows and the entity page header (`entity`), neighbour marks (`entity`), procedure rows (`procedure`), hypothesis rows (`hypothesis`, if Phase 6 landed); every Mind `Module` gets `onChatAbout`. Callbacks by props from the pages.
+- [ ] T019 [JR] [WEB] Tests first, one per kind (195 FR-025): `ChatAboutChip` on `BeliefRow` (`fact`, via its `onChatAbout` prop), entity search rows and the entity page header (`entity`), neighbour marks (`entity`), procedure rows (`procedure`), hypothesis rows (`hypothesis`, if Phase 6 landed); every Mind `Module` gets `onChatAbout`. Callbacks by props from the pages.
 
 ## Phase 8: Acceptance and docs
 
@@ -76,7 +76,7 @@
 ## Dependencies
 
 - T001 first. T002, T003, T004 independent. T005–T007 independent (T007 after T003's codegen).
-- T008 after T002, T005, T006. T009 after T007. T010 → T011. T012 after T007. T013 independent. T014 after T008, T009, T011, T012, T013. T015 after T014. T016 after T015.
+- T006 after T005. T008 after T002, T006. T009 after T007. T010 → T011; T011 after T002, T006. T012 after T007. T013 independent. T014 after T008, T009, T011, T012, T013. T015 after T014. T016 after T015.
 - T017 after 185 on `main` and T011. T018, T019 after 195 on `main` and T014.
 - T020 after all code that has landed; T021–T023 last.
 
@@ -84,11 +84,11 @@
 
 ### Lane ENG (Claude Sonnet, lane lead)
 
-T001–T003, T005, T008, T010, T011, T014–T018, T020. Owns `packages/ze-client/src/generated/*`, `app/router/*`, `shared/config/places.ts`.
+T001–T003, T005, T006, T008, T010, T011, T014–T018, T020. Owns `packages/ze-client/src/generated/*`, `app/router/*`, `shared/config/places.ts`.
 
 ### Lane JR (OpenCode junior)
 
-T004, T006, T007, T009, T012, T013, T019.
+T004, T007, T009, T012, T013, T019.
 
 ### Docs (Docs Steward)
 

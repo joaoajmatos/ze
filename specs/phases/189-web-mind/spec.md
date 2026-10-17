@@ -20,10 +20,13 @@
 
 ### Session 2026-10-17 (planning against the code, parallel build)
 
-- **Mind owns procedures, library and candidates.** Today the candidates review sits on the Mind interim page (`BrainMemoryPage`) and the library under Doing (`/doing/procedures`). Procedures are what Ze learned how to do (reflection), so Mind's Procedures module holds both, and 188 drops "procedure candidates" from Doing. This also removes the only overlap between the 189 and 188 floors.
-- **The memory feed does not expose claim kind.** `memory_facts.claim_kind` exists (zm016) but `getMemoryFeed` does not return it. This phase adds `claim_kind` to `MemoryFeedItem` (one column in `ze_memory.admin` and the ze-api schema; no migration). Facts carry no prior confidence, so belief rows show no sparkline (DESIGN.md: draw it only when the API gives both ends).
+- **Mind owns procedures, library and candidates.** Today the candidates review sits on the Mind interim page (`BrainMemoryPage`) and the library under Doing (`/doing/procedures`). Procedures are what Ze learned how to do (reflection), so Mind's Procedures module holds both, and 188 drops "procedure candidates" from Doing. 188's spec is updated accordingly (2026-10-17). Both floors still edit `pages/doing/ui/DoingInterim.tsx` and `doingLoaders`: if 188 lands first and has deleted `DoingInterim`, 189's edit there is a no-op.
+- **Neither the feed nor the entity detail exposes claim kind.** `memory_facts.claim_kind` exists (zm016, NOT NULL) but `getMemoryFeed` does not return it, and `getEntityDetail` facts carry only id, key, value, agent, created_at. This phase adds `claim_kind` to `MemoryFeedItem`, and `claim_kind`, `confidence`, `reviewed`, `contradicted`, `provenance` to the detail's facts (`FactDigestItem`), so entity facts render as belief rows with Keep/Drop/Edit (no migration).
+- **The entity detail neighbours are an arbitrary 20** (`LIMIT 20`, no order, no total). The query gains `ORDER BY degree DESC, canonical_name`, the response gains `neighbour_total`, and the field caps at 20 with "+N more" from the total. Facts (20) and episodes (10) stay capped, so the activity sparkline is labelled "last 20 facts and 10 episodes".
+- **Belief rows keep Edit.** Keep, Drop and Edit (`reviewFacts` `confirm`/`reject`/`edit`) all stay, at 44 px.
+- **The as-of control filters by `created_at`**; kind, confidence and review state are current values, and the readout says "kinds and confidence as of now". Facts carry no prior confidence, so belief rows show no sparkline (DESIGN.md: draw it only when the API gives both ends).
 - **Entity search is client-side over the top 50 graph nodes today.** "Search first" needs a server search: `GET /api/v0/memory/entities?q=&entity_type=&limit=` (`searchEntities`), name and alias match ordered by degree, in `ze_memory.admin` + the ze-api memory router. No migration.
-- **People renders the Contacts plugin page inside the People module** (`getContactsPage`, the server-driven tree that holds contact details). Its separate nav entry is removed (`ze-personal` `ui_contributions`), and `/contacts` redirects to `/mind`. A person entity opens in the entity view from search.
+- **People renders the Contacts plugin page inside the People module** (`getContactsPage`, the server-driven tree that holds contact details). Its separate nav entry is removed (`ze-personal` `ui_contributions`), and `/contacts` redirects to `/mind`. A person entity opens in the entity view from search. The contact cards carry no ids, so People has no per-row "Chat about this" (191's spec is updated: News is the only remaining plugin nav entry).
 - **The claim posture table moves to `shared/lib/claim-posture.ts`**, shared with 186 World (whichever lands first creates it).
 
 ## Overview
@@ -49,11 +52,11 @@ States: empty beliefs → "I have not learned anything yet. Tell me about yourse
 
 ## Requirements *(mandatory)*
 
-- **FR-001**: `pages/mind`, `pages/mind-entity`; widgets `beliefs-feed`, `people`, `entity-neighbourhood`, `procedure-library`.
-- **FR-002**: The neighbourhood layout is deterministic (radial by relation type) and capped (one hop, ≤ 24 nodes, "+N more" readout).
-- **FR-003**: Hard cuts: `pages/{brain-memory,brain-graph,procedures}`, `widgets/{memory-feed,memory-graph,timeline-scrubber,procedure-management,procedure-candidates}`, the memory-growth chart, `react-force-graph-3d`, `three`, `three-spritetext` and `@types/three` (only `widgets/memory-graph` uses them), the Contacts nav entry (`ze-personal` `ui_contributions`; the `getContactsPage` route stays, People renders it), `pages/mind/ui/MindInterim.tsx`, the Doing interim's Procedures section (`/doing/procedures` redirects to `/mind`).
-- **FR-003b**: Backend (additive, no migration): `MemoryFeedItem.claim_kind`; `searchEntities`.
-- **FR-003a**: Screen context (phase 195): Beliefs publishes the selected beliefs as `selection` and the visible rows; the entity page publishes the entity as `subject`; every belief, person, entity and procedure module or row wires "Chat about this" (callbacks passed down by props from widgets, 195 FR-024), with a test per kind.
+- **FR-001**: `pages/mind`, `pages/mind-entity`; widgets `beliefs-feed`, `people`, `entity-search`, `entity-neighbourhood`, `procedures`; `BeliefRow` in `entities/memory-feed-item/ui`.
+- **FR-002**: The neighbourhood layout is deterministic (radial by relation type) and capped (one hop, ≤ 20 nodes from the ordered detail query, "+N more" from `neighbour_total`).
+- **FR-003**: Hard cuts: `pages/{brain-memory,brain-graph,procedures}`, `widgets/{memory-feed,memory-graph,timeline-scrubber,procedure-management,procedure-candidates}`, `react-force-graph-3d`, `three`, `three-spritetext` and `@types/three` (only `widgets/memory-graph` uses them), the Contacts nav entry (`ze-personal` `ui_contributions`; the `getContactsPage` route stays, People renders it), `pages/mind/ui/MindInterim.tsx`, the Doing interim's Procedures section (`/doing/procedures` redirects to `/mind`).
+- **FR-003b**: Backend (additive, no migration): `MemoryFeedItem.claim_kind`; `FactDigestItem` claim fields; ordered neighbours and `neighbour_total` on `getEntityDetail`; `searchEntities`.
+- **FR-003a**: Screen context (phase 195): Beliefs publishes the selected beliefs as `selection` and the visible rows; the entity page publishes the entity as `subject`; every belief, entity and procedure module or row wires "Chat about this" (People's contact cards have no ids) (callbacks passed down by props from widgets, 195 FR-024), with a test per kind.
 - **FR-004**: Acceptance: critique ≥ 29/40; detector 0; captures.
 
 ## Success Criteria *(mandatory)*
@@ -63,7 +66,7 @@ States: empty beliefs → "I have not learned anything yet. Tell me about yourse
 
 ## Out of Scope
 
-- Editing facts beyond keep/drop and the existing forget path; new memory APIs.
+- Editing facts beyond keep, drop, edit and the existing forget path; memory APIs beyond the additive reads in FR-003b.
 
 ## Owning packages
 
