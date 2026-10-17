@@ -11,7 +11,6 @@ import { PieChart as BklitPieChart } from "./pie-chart";
 import { PieSlice } from "./pie-slice";
 import { ChartTooltip } from "./tooltip";
 import { XAxis } from "./x-axis";
-import { HeatmapChart } from "./heatmap-chart";
 
 /**
  * Ze's chart data contract — mirrors core/kernel/ze-components' `ChartPoint` dataclass
@@ -285,9 +284,6 @@ export function PieChart({
     </ChartFrame>
   );
 }
-
-export { HeatmapChart };
-export type { HeatmapCell } from "./heatmap-data";
 
 function Legend({
   names,

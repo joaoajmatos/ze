@@ -77,7 +77,7 @@ What no neighboring product can truthfully copy:
   confidence and linked reminders/goals; goals with milestones, gates, traces and learnings;
   workflows with executions and revisions; held writes; notifications and quiet hours; memory
   feed, timeline bounds, activity, graph and entity detail; procedures and candidates; skills;
-  workspace files and runs; costs summary and anomalies; activity heatmap; data domains,
+  workspace files and runs; costs summary and anomalies; data domains,
   export/import/delete.
 - Not exposed over REST today (would need a backend ask): correlation hypotheses as a list (only
   inside the priority snapshot), the action-record ledger, contribution collisions, routing log,

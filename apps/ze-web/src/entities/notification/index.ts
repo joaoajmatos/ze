@@ -4,3 +4,4 @@ export { useMarkReadMutation } from "./api/useMarkReadMutation";
 export { useMarkAllReadMutation } from "./api/useMarkAllReadMutation";
 export { useAttentionBudgetQuery } from "./api/useAttentionBudgetQuery";
 export { useNotificationsSinceQuery } from "./api/useNotificationsSinceQuery";
+export { useNotificationOutcomesQuery } from "./api/useNotificationOutcomesQuery";

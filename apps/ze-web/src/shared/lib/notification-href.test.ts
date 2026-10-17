@@ -16,7 +16,7 @@ describe("notificationHref", () => {
     ["goal_suggestion", "s-1", undefined, "/doing"],
     ["workflow_execution", "e-1", "w-1", "/doing/workflows/w-1?execution=e-1"],
     ["held_write", "r-1", undefined, "/?focus=held_write:r-1"],
-    ["workspace_run", "run-1", undefined, "/doing/workspace"],
+    ["workspace_run", "run-1", undefined, "/governance#files"],
     ["chat_thread", "t-1", undefined, "/ask/t-1"],
     ["reminder", "rem-1", undefined, "/?focus=reminder:rem-1"],
     ["person", "c-1", undefined, "/mind"],

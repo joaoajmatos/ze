@@ -14,11 +14,11 @@ This is **not** a browsing session. Web pages stay in the [browser sidecar](brow
 |---|---|---|
 | Sidecar service | `sidecar/workspace/` | FastAPI — files, runs (start, status, event stream, cancel), reset |
 | Python package | `core/ops/ze-workspace/` | Client, gate, tools, store, REST |
-| Web UI | `apps/ze-web` System `/workspace` | Tree, occupancy, and the live run banner |
+| Web UI | `apps/ze-web` Governance › Files (`/governance#files`) | Read-only tree and occupancy |
 
 If the sidecar is unreachable, workspace tools return an error the agent can skip.
-Chat attachments still place files through the API. The System page lists the tree;
-it does not start commands or reset. It can show and cancel a running command.
+Chat attachments still place files through the API. Governance › Files lists the tree;
+it is read-only. It does not start commands, upload, delete or reset.
 
 See [configuration.md](configuration.md#workspace-sidecar) for env vars.
 
