@@ -7,6 +7,7 @@ from typing import Any
 from langchain_core.runnables import RunnableConfig
 
 from ze_agents.claims import Provenance
+from ze_components.summary import describe_components
 from ze_logging import get_logger
 from ze_agents.defaults import MODEL_SYNTHESIS
 from ze_agents.model_resolution import resolve_model
@@ -253,10 +254,18 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     else:
         user_content = ctx.prompt
 
+    # A components-only reply must not put empty content in history: providers
+    # reject an empty non-final message on the next turn.
+    history_reply = reply or (
+        f"[{described}]"
+        if (described := describe_components(state.get("components")))
+        else reply
+    )
+
     current = list(state.get("messages") or [])
     updated = current + [
         {"role": "user", "content": user_content},
-        {"role": "assistant", "content": reply},
+        {"role": "assistant", "content": history_reply},
     ]
 
     older_span = (

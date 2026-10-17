@@ -323,7 +323,7 @@ class TestErrorFrameSchemaConformance:
             None,
         )
         container.invoke_raw_turn = AsyncMock(
-            return_value=MagicMock(interrupted=False, response=None, config={})
+            return_value=MagicMock(interrupted=False, response=None, config={}, final_state={})
         )
         await handle_message(
             ws,
@@ -354,3 +354,62 @@ class TestErrorFrameSchemaConformance:
         frame = _frames_sent(ws)[0]
         WsErrorFrame.model_validate(frame)
         assert frame["thread_id"] == "t3"
+
+
+class TestComponentsOnlyTurn:
+    async def test_a_reply_that_is_only_components_is_delivered_not_an_error(self):
+        from ze_api.api.ws.turns import handle_message
+
+        mgr = ConnectionManager()
+        ws = _make_ws()
+        await mgr.connect(ws, _make_msg_store([]))
+        ws.send_json.reset_mock()
+        table = {"type": "table"}
+        container = MagicMock()
+        container.translations = None
+        container.interface = AsyncMock()
+        container.invoke_raw_turn = AsyncMock(
+            return_value=MagicMock(
+                interrupted=False,
+                response="",
+                config={"configurable": {"thread_id": "t1"}},
+                final_state={"components": [table]},
+                message_id=None,
+            )
+        )
+        await handle_message(
+            ws,
+            {"type": "message", "text": "hi", "thread_id": "t1"},
+            container,
+            AsyncMock(),
+            mgr,
+            None,
+        )
+        container.interface.send_with_thread.assert_awaited_once()
+        assert container.interface.send_with_thread.await_args.kwargs["components"] == [
+            table
+        ]
+        assert all(f.get("type") != "error" for f in _frames_sent(ws))
+
+
+class TestResumedComponentsOnlyReply:
+    async def test_resumed_components_only_reply_is_delivered(self):
+        from ze_api.api.ws.confirmation import _deliver_outcome
+        from ze_core.conversation.turn import TurnResult
+
+        mgr = ConnectionManager()
+        ws = _make_ws()
+        await mgr.connect(ws, _make_msg_store([]))
+        container = MagicMock()
+        container.message_store = None
+        container.interface = AsyncMock()
+        outcome = TurnResult(
+            final_state={"components": [{"type": "table"}]},
+            config={},
+            interrupted=False,
+            response="",
+        )
+        await _deliver_outcome(
+            outcome, container, mgr, "t1", confirmation_store=None
+        )
+        container.interface.send_with_thread.assert_awaited_once()

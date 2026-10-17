@@ -468,3 +468,30 @@ class TestSynthesize:
         await synthesize(state, _config(client=client, settings=settings))
         call_args = client.complete.call_args
         assert call_args[1]["model"] == "pinned-model"
+
+
+class TestComponentsOnlyReply:
+    def _state(self, messages, prompt):
+        return {
+            "session_id": "s1",
+            "agent_context": _ctx(prompt),
+            "agent_result": AgentResult(agent="finance", response=""),
+            "components": [{"type": "col"}],
+            "subtask_results": [],
+            "messages": messages,
+            "input_modality": "text",
+        }
+
+    async def test_history_gets_a_placeholder_never_empty_content(self):
+        first = await write_memory(self._state([], "show savings"), _config())
+        assert first["messages"][-1] == {
+            "role": "assistant",
+            "content": "[Showed a card.]",
+        }
+
+    async def test_a_second_turn_carries_no_empty_message(self):
+        first = await write_memory(self._state([], "show savings"), _config())
+        second = await write_memory(
+            self._state(first["messages"], "and last month?"), _config()
+        )
+        assert all(m["content"] for m in second["messages"])

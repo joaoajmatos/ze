@@ -9,6 +9,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 from uuid import UUID, uuid4
 
+from ze_components.summary import describe_components
 from ze_agents.interface.types import (
     Action,
     ConfirmationRequest,
@@ -224,7 +225,12 @@ class NativeAppInterface:
         except Exception as exc:
             log.warning("native_interface_push_failed", error=str(exc))
 
-        await self._ntfy(text, ntfy_priority, buzz=buzz, respect_quiet=respect_quiet)
+        await self._ntfy(
+            text or describe_components(components) or "Ze sent you something.",
+            ntfy_priority,
+            buzz=buzz,
+            respect_quiet=respect_quiet,
+        )
         return True
 
     async def _ntfy(

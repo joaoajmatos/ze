@@ -29,6 +29,7 @@ from ze_agents.errors import RetryError
 from ze_core.conversation.messages import Message
 from ze_core.conversation.messages.types import RollbackRecord
 from ze_core.conversation.rollback import run_rollback
+from ze_core.conversation.turn import turn_has_reply
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -134,7 +135,7 @@ async def handle_message(
             confirmation_store=confirmation_store,
         )
 
-    if outcome.response or outcome.final_state.get("components"):
+    if turn_has_reply(outcome):
         effective_thread_id = extract_thread_id(outcome.config) or thread_id or ""
         if confirmation_store is not None and effective_thread_id:
             # This turn completed with a direct response, superseding any gate(s)

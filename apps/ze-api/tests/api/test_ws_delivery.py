@@ -144,3 +144,16 @@ async def test_reply_delivered_after_failed_trace_update_frame():
     assert mgr.connected
     types = [c.args[0]["type"] for c in ws.send_json.call_args_list]
     assert "message" in types
+
+
+async def test_ntfy_body_for_a_components_only_reply_names_what_was_shown():
+    mgr = ConnectionManager()
+    notifier = AsyncMock()
+    iface = NativeAppInterface(
+        message_store=AsyncMock(), connection_manager=mgr, notifier=notifier
+    )
+
+    await iface.send_with_thread("", thread_id="t1", components=[{"type": "table"}])
+
+    notifier.push.assert_awaited_once()
+    assert notifier.push.await_args.args[0].body == "Showed a table."

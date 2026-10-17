@@ -22,6 +22,7 @@ from uuid import uuid4
 
 import pytest
 
+
 import ze_workspace.bootstrap as bootstrap
 import ze_workspace.tools as tools
 from ze_workspace.followthrough import RunWatcher
@@ -318,6 +319,7 @@ class _FakeTurnOutcome:
         self.final_state = {"components": [], "message_trace": None}
 
 
+
 class _LockAwareFakeContainer:
     """Stand-in for ZeContainer.invoke_raw_turn: real ThreadTurnLock acquisition
     (mirrors container._locked_invoke_raw_turn) around a fake raw invoke, so
@@ -497,3 +499,23 @@ async def test_us2_in_turn_completion_produces_no_followup_or_push():
     interface.send_with_thread.assert_not_awaited()
     assert not notification_store.created
     ntfy.push.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_components_only_followup_turn_is_delivered():
+    push_sender, *_ = _real_push_stack(connected=True)
+    interface = SimpleNamespace(send_with_thread=AsyncMock())
+    turn_starter = _ContainerTurnStarter()
+
+    async def raw_invoke(thread_id, raw):
+        outcome = _FakeTurnOutcome(response="")
+        outcome.final_state["components"] = [{"type": "table"}]
+        return outcome
+
+    turn_starter.bind(_LockAwareFakeContainer(ThreadTurnLock(), raw_invoke, interface))
+    await turn_starter.invoke_raw_turn("t1", "run finished")
+
+    interface.send_with_thread.assert_awaited_once()
+    assert interface.send_with_thread.await_args.kwargs["components"] == [
+        {"type": "table"}
+    ]

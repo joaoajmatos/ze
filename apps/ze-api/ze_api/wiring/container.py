@@ -59,6 +59,7 @@ from ze_core.conversation import (
 from ze_core.conversation.confirmations import PendingConfirmationStore
 from ze_core.conversation.messages import PostgresMessageStore
 from ze_core.conversation.rewind import history_rewindable
+from ze_core.conversation.turn import turn_has_reply
 from ze_core.conversation.sessions import PostgresSessionStore
 from ze_core.orchestration.graph import build_graph
 from ze_priority.view import PriorityView
@@ -151,7 +152,7 @@ class _ContainerTurnStarter:
         outcome = await self._container.invoke_raw_turn(
             thread_id, RawInput(text=prompt)
         )
-        if outcome.interrupted or not outcome.response:
+        if outcome.interrupted or not turn_has_reply(outcome):
             return
         await self._container.interface.send_with_thread(
             outcome.response,

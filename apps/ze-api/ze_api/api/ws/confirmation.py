@@ -21,7 +21,7 @@ from ze_api.api.ws.serializers import extract_thread_id
 from ze_api.api.ws.session_titles import schedule_session_title_from_thread
 from ze_logging import get_logger
 from ze_api.api.ws.frames import build_confirm_frame, confirmation_payload
-from ze_core.conversation.turn import NO_PENDING_CONFIRMATION
+from ze_core.conversation.turn import NO_PENDING_CONFIRMATION, turn_has_reply
 from ze_api.api.ws.held import handle_held_confirm
 
 log = get_logger(__name__)
@@ -229,15 +229,15 @@ async def _deliver_outcome(
     `old_id` is the reply a paused retry replaces: the resumed reply supersedes it,
     and a resume with no reply leaves it (the undo stands).
     """
-    if outcome.response:
+    if turn_has_reply(outcome):
         if session_store is not None and thread_id:
-            preview = outcome.response[:120].strip()
+            preview = outcome.response[:120].strip() if outcome.response else None
             try:
                 await session_store.upsert(thread_id, preview=preview)
             except Exception as exc:
                 log.warning("ws_session_preview_update_failed", error=str(exc))
 
-            if msg_store is not None:
+            if msg_store is not None and outcome.response:
                 await schedule_session_title_from_thread(
                     container,
                     session_store,
@@ -265,7 +265,7 @@ async def _deliver_outcome(
             thread_id,
             confirmation_store=confirmation_store,
         )
-    if not outcome.response:
+    if not turn_has_reply(outcome):
         await _retry_without_reply(container, msg_store, conn_mgr, thread_id, old_id)
     return None
 
