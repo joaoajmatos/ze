@@ -29,6 +29,7 @@ export const queryKeys = {
   notifications: (unreadOnly: boolean) => ["notifications", unreadOnly] as const,
   unreadNotificationCount: ["unread-notification-count"] as const,
   quietHours: ["quiet-hours"] as const,
+  attentionBudget: ["attention-budget"] as const,
   heldWrites: ["held-writes"] as const,
   loops: (state?: string) => ["loops", state ?? ""] as const,
   loopDetail: (loopId: string) => ["loop-detail", loopId] as const,

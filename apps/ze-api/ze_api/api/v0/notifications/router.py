@@ -11,6 +11,7 @@ from ze_api.api.deps import (
     require_api_key,
 )
 from ze_api.api.v0.notifications.schemas import (
+    AttentionBudgetResponse,
     MarkAllReadResponse,
     NotificationItem,
     NotificationListResponse,
@@ -18,8 +19,11 @@ from ze_api.api.v0.notifications.schemas import (
     QuietHoursUpdate,
     UnreadCountResponse,
 )
+from ze_logging import get_logger
 from ze_proactive.notification_store import InvalidCursorError
 from ze_proactive.quiet_hours import is_active
+
+log = get_logger(__name__)
 
 router = APIRouter(
     prefix="/notifications",
@@ -80,17 +84,49 @@ def _parse_quiet_time(value: str | None) -> time | None:
     return time.fromisoformat(value) if value else None
 
 
-async def _quiet_hours_response(
-    setting, notification_store, notifier
-) -> QuietHoursResponse:
+def _quiet_hours_response(setting) -> QuietHoursResponse:
     return QuietHoursResponse(
         enabled=setting.enabled,
         start=setting.start.strftime("%H:%M") if setting.start else None,
         end=setting.end.strftime("%H:%M") if setting.end else None,
         timezone=setting.timezone,
         active_now=is_active(setting, datetime.now(timezone.utc)),
+    )
+
+
+@router.get(
+    "/budget",
+    response_model=AttentionBudgetResponse,
+    operation_id="getAttentionBudget",
+    summary="Get the attention budget",
+    description=(
+        "How many unprompted pushes the rolling 24-hour window has used, when the "
+        "next slot opens (only when none is free), how many pushes quiet hours are "
+        "holding, and whether quiet hours are active now. Returns 503 when the push "
+        "log cannot be read; it never reports a guessed count."
+    ),
+)
+async def get_attention_budget(
+    notifier=Depends(get_notifier),
+    settings_store=Depends(get_interruption_settings_store),
+    notification_store=Depends(get_notification_store),
+) -> AttentionBudgetResponse:
+    try:
+        status = await notifier.budget_status()
+    except Exception as exc:
+        log.warning("attention_budget_unavailable", error=str(exc))
+        raise HTTPException(
+            status_code=503, detail="Attention budget unavailable"
+        ) from exc
+    setting = await settings_store.get()
+    return AttentionBudgetResponse(
+        used=status.used,
+        max_per_day=status.max_per_day,
+        remaining=status.remaining,
+        window_hours=status.window_hours,
+        next_slot_at=status.next_slot_at,
         held_count=await notification_store.count_held(),
-        max_discretionary_per_day=notifier.max_discretionary_per_day,
+        quiet_hours_active=is_active(setting, datetime.now(timezone.utc)),
     )
 
 
@@ -100,17 +136,15 @@ async def _quiet_hours_response(
     operation_id="getQuietHours",
     summary="Get quiet hours",
     description=(
-        "The user's quiet-hours setting, whether it is active now, how many pushes "
-        "are held, and the daily budget for unprompted pushes."
+        "The user's quiet-hours setting and whether it is active now. The push "
+        "budget and held count are on the attention budget route."
     ),
 )
 async def get_quiet_hours(
     settings_store=Depends(get_interruption_settings_store),
-    notification_store=Depends(get_notification_store),
-    notifier=Depends(get_notifier),
 ) -> QuietHoursResponse:
     setting = await settings_store.get()
-    return await _quiet_hours_response(setting, notification_store, notifier)
+    return _quiet_hours_response(setting)
 
 
 @router.put(
@@ -126,8 +160,6 @@ async def get_quiet_hours(
 async def update_quiet_hours(
     body: QuietHoursUpdate,
     settings_store=Depends(get_interruption_settings_store),
-    notification_store=Depends(get_notification_store),
-    notifier=Depends(get_notifier),
 ) -> QuietHoursResponse:
     setting = await settings_store.upsert(
         body.enabled,
@@ -135,7 +167,7 @@ async def update_quiet_hours(
         _parse_quiet_time(body.end),
         body.timezone,
     )
-    return await _quiet_hours_response(setting, notification_store, notifier)
+    return _quiet_hours_response(setting)
 
 
 @router.post(

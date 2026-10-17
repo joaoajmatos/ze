@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from ze_agents.interface.types import Action
 from ze_proactive.attention_budget import ATTENTION_PUSH_EVENT_KEY
-from ze_proactive.errors import PushPolicyError
+from ze_proactive.errors import BudgetUnavailableError, PushPolicyError
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_kinds import QUIET_HOURS_SUMMARY
 from ze_proactive.types import NotificationRow, PushKind, QuietHoursSetting
@@ -52,9 +52,14 @@ def _store(held=None):
     return store
 
 
+def _stamps(count):
+    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    return [base + timedelta(minutes=i) for i in range(count)]
+
+
 def _push_log(count=0, claim=True):
     pl = MagicMock()
-    pl.count_sent_within_hours = AsyncMock(return_value=count)
+    pl.window_sent_at = AsyncMock(return_value=_stamps(count))
     pl.try_claim = AsyncMock(return_value=claim)
     pl.release_claim = AsyncMock()
     return pl
@@ -200,7 +205,7 @@ async def test_remaining_budget_math_and_floor():
 
 async def test_remaining_budget_fails_open():
     pl = _push_log()
-    pl.count_sent_within_hours = AsyncMock(side_effect=RuntimeError("db"))
+    pl.window_sent_at = AsyncMock(side_effect=RuntimeError("db"))
     n, _, _ = _make(push_log=pl)
     assert await n.remaining_budget() == 5
 
@@ -301,10 +306,18 @@ async def test_target_parent_id_defaults_to_none():
 async def test_held_notification_keeps_its_parent_through_quiet_hours_release():
     n, iface, store = _make(setting=QUIET, now=NIGHT)
     await n.notify(
-        ACC, "t", "b", target_type="goal_gate", target_id="g1", target_parent_id="goal-1"
+        ACC,
+        "t",
+        "b",
+        target_type="goal_gate",
+        target_id="g1",
+        target_parent_id="goal-1",
     )
     held_row = _row(
-        target_type="goal_gate", target_id="g1", target_parent_id="goal-1", delivery="held"
+        target_type="goal_gate",
+        target_id="g1",
+        target_parent_id="goal-1",
+        delivery="held",
     )
 
     released, released_iface, _ = _make(store=_store(held=[held_row]), now=NOON)
@@ -329,3 +342,23 @@ async def test_dedup_key_ignores_the_parent():
     )
     kwargs = store.exists_recent.call_args.kwargs
     assert set(kwargs) == {"event_type", "target_type", "target_id", "hours"}
+
+
+async def test_budget_status_raises_without_push_log():
+    n, _, _ = _make(push_log=None)
+    with pytest.raises(BudgetUnavailableError):
+        await n.budget_status()
+
+
+async def test_budget_status_propagates_store_failure():
+    pl = _push_log()
+    pl.window_sent_at = AsyncMock(side_effect=RuntimeError("db"))
+    n, _, _ = _make(push_log=pl)
+    with pytest.raises(RuntimeError):
+        await n.budget_status()
+
+
+async def test_budget_status_reports_used_and_max():
+    n, _, _ = _make(push_log=_push_log(count=2))
+    status = await n.budget_status()
+    assert (status.used, status.max_per_day, status.remaining) == (2, 5, 3)

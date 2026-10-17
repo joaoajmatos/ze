@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -17,7 +17,8 @@ from ze_api.api.deps import (
     require_api_key,
 )
 from ze_api.api.v0.notifications.router import router
-from ze_proactive.types import Notification, QuietHoursSetting
+from ze_proactive.errors import BudgetUnavailableError
+from ze_proactive.types import BudgetStatus, Notification, QuietHoursSetting
 
 API_KEY = "test-key"
 
@@ -53,6 +54,17 @@ def _notification(**overrides) -> Notification:
     return Notification(**defaults)
 
 
+NOW = datetime.now(timezone.utc)
+
+
+def _status(max_per_day, hours_ago):
+    return BudgetStatus(
+        max_per_day,
+        24.0,
+        tuple(sorted(NOW - timedelta(hours=h) for h in hours_ago)),
+    )
+
+
 class _Env:
     def __init__(self, setting=None, *, held=0, max_per_day=5, upsert_result=None):
         self.settings = AsyncMock()
@@ -61,7 +73,10 @@ class _Env:
         self.notifications = AsyncMock()
         self.notifications.count_held = AsyncMock(return_value=held)
         self.notifications.list_page = AsyncMock(return_value=([], None))
-        self.notifier = SimpleNamespace(max_discretionary_per_day=max_per_day)
+        self.notifier = SimpleNamespace(
+            max_discretionary_per_day=max_per_day,
+            budget_status=AsyncMock(return_value=_status(max_per_day, [])),
+        )
 
     def client(self) -> AsyncClient:
         app = FastAPI()
@@ -85,8 +100,6 @@ async def test_get_with_no_row_returns_defaults():
         "end": None,
         "timezone": None,
         "active_now": False,
-        "held_count": 0,
-        "max_discretionary_per_day": 5,
     }
 
 
@@ -111,8 +124,8 @@ async def test_get_returns_saved_setting():
     assert body["end"] == "08:00"
     assert body["timezone"] == "Europe/Lisbon"
     assert isinstance(body["active_now"], bool)
-    assert body["held_count"] == 2
-    assert body["max_discretionary_per_day"] == 5
+    assert "held_count" not in body
+    assert "max_discretionary_per_day" not in body
 
 
 @pytest.mark.asyncio
@@ -140,7 +153,7 @@ async def test_put_round_trip_saves_window():
     assert body["start"] == "23:00"
     assert body["end"] == "08:00"
     assert body["timezone"] == "Europe/Lisbon"
-    assert body["held_count"] == 1
+    assert "held_count" not in body
     env.settings.upsert.assert_awaited_once_with(
         True, time(23, 0), time(8, 0), "Europe/Lisbon"
     )
@@ -252,6 +265,78 @@ async def test_list_notifications_includes_push_class_and_delivery():
     item = resp.json()["items"][0]
     assert item["push_class"] == "discretionary"
     assert item["delivery"] == "suppressed"
+
+
+@pytest.mark.asyncio
+async def test_budget_full_window_reports_next_slot():
+    env = _Env(held=2)
+    env.notifier.budget_status = AsyncMock(return_value=_status(3, [20, 10, 2]))
+    async with env.client() as c:
+        resp = await c.get("/api/v0/notifications/budget")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["used"] == 3
+    assert body["max_per_day"] == 3
+    assert body["remaining"] == 0
+    assert body["window_hours"] == 24.0
+    assert body["held_count"] == 2
+    assert body["quiet_hours_active"] is False
+    expected = NOW - timedelta(hours=20) + timedelta(hours=24)
+    assert datetime.fromisoformat(body["next_slot_at"]) == expected
+
+
+@pytest.mark.asyncio
+async def test_budget_with_a_free_slot_has_no_next_slot():
+    env = _Env()
+    env.notifier.budget_status = AsyncMock(return_value=_status(3, [10, 2]))
+    async with env.client() as c:
+        body = (await c.get("/api/v0/notifications/budget")).json()
+    assert body["used"] == 2 and body["remaining"] == 1
+    assert body["next_slot_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_budget_over_max_uses_the_slot_that_frees_first():
+    env = _Env()
+    env.notifier.budget_status = AsyncMock(return_value=_status(3, [22, 20, 10, 2]))
+    async with env.client() as c:
+        body = (await c.get("/api/v0/notifications/budget")).json()
+    assert body["used"] == 4
+    expected = NOW - timedelta(hours=20) + timedelta(hours=24)
+    assert datetime.fromisoformat(body["next_slot_at"]) == expected
+
+
+@pytest.mark.asyncio
+async def test_budget_reports_quiet_hours_active():
+    env = _Env(
+        _setting(enabled=True, start=time(0, 0), end=time(23, 59), timezone="UTC")
+    )
+    async with env.client() as c:
+        body = (await c.get("/api/v0/notifications/budget")).json()
+    assert body["quiet_hours_active"] is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("error", [BudgetUnavailableError("no log"), RuntimeError("db")])
+async def test_budget_unavailable_is_503_never_zero(error):
+    env = _Env()
+    env.notifier.budget_status = AsyncMock(side_effect=error)
+    async with env.client() as c:
+        resp = await c.get("/api/v0/notifications/budget")
+    assert resp.status_code == 503
+    assert "used" not in resp.json()
+
+
+@pytest.mark.asyncio
+async def test_budget_without_api_key_is_401():
+    env = _Env()
+    client = env.client()
+    app = client._transport.app
+    app.dependency_overrides.pop(require_api_key)
+    app.state.settings = SimpleNamespace(ze_api_key="secret")
+    async with client as c:
+        resp = await c.get("/api/v0/notifications/budget")
+    assert resp.status_code in (401, 403)
 
 
 def test_ze_container_exposes_notifier_and_interruption_settings_store():

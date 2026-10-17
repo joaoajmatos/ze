@@ -49,8 +49,16 @@ class QuietHoursResponse(BaseModel):
     end: str | None
     timezone: str | None
     active_now: bool
+
+
+class AttentionBudgetResponse(BaseModel):
+    used: int
+    max_per_day: int
+    remaining: int
+    window_hours: float
+    next_slot_at: datetime | None
     held_count: int
-    max_discretionary_per_day: int
+    quiet_hours_active: bool
 
 
 class QuietHoursUpdate(BaseModel):

@@ -19,6 +19,7 @@ import { useLoopsQuery } from "@/entities/loop";
 import { useMemoryFeedQuery } from "@/entities/memory-feed-item";
 import { useMemoryGraphQuery } from "@/entities/memory-graph";
 import { useNotificationsQuery } from "@/entities/notification";
+import { useAttentionBudgetQuery } from "@/entities/notification";
 import { usePrioritySnapshotQuery } from "@/entities/priority-item";
 import { useQuietHoursQuery } from "@/entities/quiet-hours";
 import { useWorkflowsQuery } from "@/entities/workflow";
@@ -176,6 +177,7 @@ export function useWorld(): World {
   const notes = useNotificationsQuery();
   const feed = useMemoryFeedQuery({ type: "fact" });
   const quiet = useQuietHoursQuery();
+  const attention = useAttentionBudgetQuery();
   const wfQ = useWorkflowsQuery();
   const graph = useMemoryGraphQuery({ limit: 40 });
 
@@ -393,12 +395,12 @@ export function useWorld(): World {
         degree: n.degree,
       })),
     budget: {
-      max: quiet.data?.max_discretionary_per_day ?? 5,
+      max: attention.data?.max_per_day ?? 5,
       spent,
       spentSynthetic: false,
       quietEnabled: quiet.data?.enabled ?? false,
       quietNow: quiet.data?.active_now ?? false,
-      held: quiet.data?.held_count ?? 0,
+      held: attention.data?.held_count ?? 0,
     },
     sourcesFailed: snap?.sourcesFailed ?? [],
   };

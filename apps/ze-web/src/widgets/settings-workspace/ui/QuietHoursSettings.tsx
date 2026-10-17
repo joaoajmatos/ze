@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAttentionBudgetQuery } from "@/entities/notification";
 import {
   useQuietHoursQuery,
   useUpdateQuietHoursMutation,
@@ -39,6 +40,7 @@ function fieldMessages(error: unknown): Record<string, string> {
 
 export function QuietHoursSettings() {
   const { data } = useQuietHoursQuery();
+  const { data: budget } = useAttentionBudgetQuery();
   const mutation = useUpdateQuietHoursMutation();
 
   const [enabled, setEnabled] = useState(false);
@@ -56,9 +58,9 @@ export function QuietHoursSettings() {
   }
 
   const errors = fieldMessages(mutation.error);
-  const maxPerDay = data?.max_discretionary_per_day ?? 5;
+  const maxPerDay = budget?.max_per_day;
   const status = data?.active_now
-    ? `Quiet hours are on now · ${data.held_count} held`
+    ? `Quiet hours are on now${budget ? ` · ${budget.held_count} held` : ""}`
     : "Quiet hours are off now";
 
   function handleSave() {
@@ -135,8 +137,10 @@ export function QuietHoursSettings() {
       </div>
 
       <p className="text-xs text-smoke leading-relaxed">
-        Ze sends at most {maxPerDay} unprompted nudges a day. Reminders you set always come
-        through.
+        {maxPerDay !== undefined
+          ? `Ze sends at most ${maxPerDay} unprompted nudges in any 24 hours. `
+          : ""}
+        Reminders you set always come through.
       </p>
       <p className="text-xs text-smoke">{status}</p>
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from typing import Literal
 
 PushClass = Literal["requested", "accountability", "discretionary"]
@@ -28,6 +28,32 @@ class PushKind:
         from ze_proactive.push_kinds import register
 
         register(self)
+
+
+@dataclass(frozen=True)
+class BudgetStatus:
+    """The rolling-window attention budget as the governor counts it."""
+
+    max_per_day: int
+    window_hours: float
+    counted_at: tuple[datetime, ...]  # sent_at of every counted claim, ascending
+
+    @property
+    def used(self) -> int:
+        return len(self.counted_at)
+
+    @property
+    def remaining(self) -> int:
+        return max(0, self.max_per_day - self.used)
+
+    @property
+    def next_slot_at(self) -> datetime | None:
+        # One slot opens when used - max + 1 claims have left the window.
+        if self.remaining > 0 or self.max_per_day == 0:
+            return None
+        return self.counted_at[self.used - self.max_per_day] + timedelta(
+            hours=self.window_hours
+        )
 
 
 @dataclass(frozen=True)

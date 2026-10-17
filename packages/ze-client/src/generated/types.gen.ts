@@ -67,6 +67,40 @@ export type AgentDayCount = {
 };
 
 /**
+ * AttentionBudgetResponse
+ */
+export type AttentionBudgetResponse = {
+    /**
+     * Used
+     */
+    used: number;
+    /**
+     * Max Per Day
+     */
+    max_per_day: number;
+    /**
+     * Remaining
+     */
+    remaining: number;
+    /**
+     * Window Hours
+     */
+    window_hours: number;
+    /**
+     * Next Slot At
+     */
+    next_slot_at: string | null;
+    /**
+     * Held Count
+     */
+    held_count: number;
+    /**
+     * Quiet Hours Active
+     */
+    quiet_hours_active: boolean;
+};
+
+/**
  * Body_importData
  */
 export type BodyImportData = {
@@ -1976,14 +2010,6 @@ export type QuietHoursResponse = {
      * Active Now
      */
     active_now: boolean;
-    /**
-     * Held Count
-     */
-    held_count: number;
-    /**
-     * Max Discretionary Per Day
-     */
-    max_discretionary_per_day: number;
 };
 
 /**
@@ -4429,6 +4455,22 @@ export type GetUnreadNotificationCountResponses = {
 };
 
 export type GetUnreadNotificationCountResponse = GetUnreadNotificationCountResponses[keyof GetUnreadNotificationCountResponses];
+
+export type GetAttentionBudgetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/notifications/budget';
+};
+
+export type GetAttentionBudgetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttentionBudgetResponse;
+};
+
+export type GetAttentionBudgetResponse = GetAttentionBudgetResponses[keyof GetAttentionBudgetResponses];
 
 export type GetQuietHoursData = {
     body?: never;
