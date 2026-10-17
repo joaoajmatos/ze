@@ -31,7 +31,7 @@ from ze_onboarding import (
     PostgresOnboardingStore as OnboardingStore,
 )
 from ze_plugin.ui import collect_ui_contributions, filter_ui_manifest_by_openapi
-from ze_priority import import_agent_modules as import_priority_agents
+from ze_priority import WorldComposer, import_agent_modules as import_priority_agents
 from ze_priority.store import PriorityOverrideStore
 from ze_priority.view import PriorityView
 from ze_proactive.notification_store import NotificationStore
@@ -71,6 +71,7 @@ def build_dep_map(
     priority_view: PriorityView,
     correlation: CorrelationStack,
     loop_tracker: LoopTracker,
+    world_composer: WorldComposer,
 ) -> dict[type, Any]:
     """Constructor-injection map handed to plugins and agents."""
     dep_map = dict(shared.dep_map)
@@ -101,6 +102,7 @@ def build_dep_map(
             PostgresActionRecordStore: stores.action_record_store,
             ProcedureAdmissionService: stores.procedure_admission,
             LoopTracker: loop_tracker,
+            WorldComposer: world_composer,
         }
     )
     return dep_map

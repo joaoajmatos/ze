@@ -4,6 +4,7 @@ from typing import AsyncIterator
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
 from ze_agents.types import AgentContext, AgentResult, ToolCall
+from ze_priority import WorldComposer
 from ze_personal.agents.companion.outreach_log import OutreachLog
 from ze_personal.contacts.store import PersonStore
 from ze_agents.client import LLMClient
@@ -91,6 +92,16 @@ lack it.
 - Never narrate the tool call ("I'll render a chart") and never repeat the \
 rendered content in prose.
 
+Composed answers:
+- What's slipping, late or drifting: call show_slipping.
+- What needs me, what should I decide: call show_decisions.
+- How is <project or topic> going: call show_topic with the user's own words.
+- The modules appear on screen. Write one or two sentences from the returned summary only; \
+never list every card and never add items it does not contain. If sources_failed is not \
+empty, say which part you could not read.
+- When a "Composed answer" note is already in this turn, the modules are on screen \
+already: do not call the tool again, just write the sentence.
+
 Using what you already know:
 - Apply retrieved facts silently when they change the answer (tone, constraints, names).
 - Do not announce "I remember that you…" or dump the biography unsolicited.
@@ -154,6 +165,9 @@ class CompanionAgent(BaseAgent):
         "render_connect_account",
         "render_review",
         "render_connections",
+        "show_slipping",
+        "show_decisions",
+        "show_topic",
     ]
 
     def __init__(
@@ -163,12 +177,14 @@ class CompanionAgent(BaseAgent):
         person_store: PersonStore,
         memory_store: PostgresMemoryStore,
         outreach_log: OutreachLog | None = None,
+        world_composer: WorldComposer | None = None,
     ) -> None:
         self._settings = settings
         self._client = openrouter_client
         self._person_store = person_store
         self._outreach_log = outreach_log
         self._memory_store = memory_store
+        self._world_composer = world_composer
 
     def tool_deps(self) -> dict:
         return {"memory_store": self._memory_store}
@@ -182,7 +198,11 @@ class CompanionAgent(BaseAgent):
                 client=self._client,
                 messages=list(ctx.messages),
                 system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
-                deps=self.tool_deps(),
+                deps={
+                    **self.tool_deps(),
+                    "world_composer": self._world_composer,
+                    "preset": ctx.preset,
+                },
             )
         finally:
             ctx.token_sink = original_sink

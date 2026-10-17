@@ -8,6 +8,7 @@ ALL_AGENT_MODULE_PATHS = [
     "ze_automation.agents.workflow.tools",
     "ze_automation.agents.workflow.agent",
     "ze_priority.tools",
+    "ze_priority.compose.tools",
     "ze_priority.agent",
     "ze_personal.social.tools",
     "ze_personal.agents.research.agent",

@@ -61,6 +61,7 @@ def test_bootstrap_registers_companion_and_research(settings):
     from ze_personal.channels.user_channel_store import UserChannelStore
     from ze_personal.channels.thread_channel_map import ThreadChannelMap
     from sentence_transformers import SentenceTransformer
+    from ze_priority import WorldComposer
     from ze_priority.view import PriorityView
     from ze_priority.store import PriorityOverrideStore
     from ze_collision.store import CollisionLogStore
@@ -77,6 +78,7 @@ def test_bootstrap_registers_companion_and_research(settings):
 
     client = AsyncMock()
     loop_tracker = MM(spec=LoopTracker)
+    world_composer = MM(spec=WorldComposer)
     core_settings = settings.to_core_settings()
     deps = {
         LLMClient: client,
@@ -102,6 +104,7 @@ def test_bootstrap_registers_companion_and_research(settings):
         UserChannelStore: MM(spec=UserChannelStore),
         ThreadChannelMap: MM(spec=ThreadChannelMap),
         PriorityView: MM(spec=PriorityView),
+        WorldComposer: world_composer,
         PriorityOverrideStore: MM(spec=PriorityOverrideStore),
         CollisionLogStore: MM(spec=CollisionLogStore),
         NLIClient: MM(spec=NLIClient),
@@ -114,6 +117,7 @@ def test_bootstrap_registers_companion_and_research(settings):
     bootstrap_agents(deps=deps, plugins=[_AllPathsPlugin()])
 
     assert isinstance(get_agent("companion"), CompanionAgent)
+    assert get_agent("companion")._world_composer is world_composer
     assert isinstance(get_agent("research"), ResearchAgent)
     assert get_agent("loops")._tracker is loop_tracker
 

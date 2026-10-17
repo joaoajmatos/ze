@@ -30,6 +30,7 @@ from ze_skills.bootstrap import (
 from ze_skills.store import SkillStore
 from ze_memory.feedback_records import PostgresFeedbackStore
 from ze_memory.feedback_records.data_domain import feedback_data_domains
+from ze_priority import WorldComposer
 from ze_priority.store import PriorityOverrideStore
 from ze_browser import BrowserClient
 from ze_workspace.bootstrap import build_workspace_stack
@@ -276,6 +277,7 @@ class ZeContainer(CoreContainer):
     loop_entity_resolver: Any
     loop_surfacer: Any
     turn_surfacer: Any
+    world_composer: WorldComposer
     priority_view: PriorityView
     skill_store: SkillStore
     skill_matcher: Any
@@ -316,6 +318,7 @@ class ZeContainer(CoreContainer):
             "loop_entity_resolver": self.loop_entity_resolver,
             "loop_surfacer": self.loop_surfacer,
             "turn_surfacer": self.turn_surfacer,
+            "world_composer": self.world_composer,
             "collision_store": self.collision_store,
             "nli_client": self.nli_client,
             "system_one_client": self.system_one_client,
@@ -519,6 +522,14 @@ async def build_container(settings: Settings) -> ZeContainer:
         embedder=shared.embedder,
         push_log=stores.push_log_store,
     )
+    world_composer = WorldComposer(
+        priority_view=priority_view,
+        loop_store=worldstate.loop_store,
+        goal_store=automation.goal_store,
+        workflow_store=automation.workflow_store,
+        held_write_store=automation.held_write_store,
+        embedder=shared.embedder,
+    )
     correlation_push_source = build_correlation_push_candidate_source(
         correlation, notifier, settings, shared.embedder, shared.nli_client
     )
@@ -533,6 +544,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         priority_view=priority_view,
         correlation=correlation,
         loop_tracker=loop_tracker,
+        world_composer=world_composer,
     )
 
     plugins = discover_and_instantiate_plugins(dep_map, settings)
@@ -652,6 +664,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         loop_entity_resolver=worldstate.entity_resolver,
         loop_surfacer=loop_surfacer,
         turn_surfacer=turn_surfacer,
+        world_composer=world_composer,
         priority_view=priority_view,
         skill_store=skills_stack.skill_store,
         skill_matcher=skill_matcher,
