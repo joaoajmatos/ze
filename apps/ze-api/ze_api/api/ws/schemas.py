@@ -202,11 +202,31 @@ WsInboundFrame = Annotated[
 ]
 
 
+class WsScreenRef(BaseModel):
+    kind: str = Field(max_length=64)
+    id: str = Field(max_length=64)
+    label: str | None = Field(None, max_length=120)
+    component: str | None = Field(None, max_length=40)
+    parent_id: str | None = Field(None, max_length=64)
+    as_of: datetime | None = None
+
+
+class WsCanvasRef(BaseModel):
+    index: int
+    type: str = Field(max_length=40)
+    ref: WsScreenRef | None = None
+
+
 class WsScreenContext(BaseModel):
-    screen: str
-    goal_id: str | None = None
-    workflow_id: str | None = None
-    execution_id: str | None = None
+    place: Literal["world", "ask", "doing", "mind", "governance", "plugin"] | None = None
+    route: str | None = Field(None, max_length=200)
+    origin: Literal["ask_bar", "chat_about", "preset"] | None = None
+    subject: list[WsScreenRef] | None = Field(None, max_length=3)
+    selection: list[WsScreenRef] | None = Field(None, max_length=20)
+    visible: list[WsScreenRef] | None = Field(None, max_length=30)
+    focused_module: str | None = Field(None, max_length=80)
+    canvas: list[WsCanvasRef] | None = Field(None, max_length=12)
+    captured_at: datetime | None = None
     workspace_placed: list["WsWorkspacePlaced"] | None = None
     compose: Literal["slipping", "decisions", "topic"] | None = None
     topic: str | None = Field(None, max_length=120)

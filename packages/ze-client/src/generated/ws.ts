@@ -228,36 +228,317 @@ export type WsOutboundFrame =
 export type Type13 = "message";
 export type Text5 = string;
 export type ThreadId11 = string | null;
-export type Screen1 = string;
-export type GoalId = string | null;
-export type WorkflowId = string | null;
-export type ExecutionId = string | null;
+export type Place = ("world" | "ask" | "doing" | "mind" | "governance" | "plugin") | null;
+export type Route = string | null;
+export type Origin = ("ask_bar" | "chat_about" | "preset") | null;
+export type Subject = [] | [WsScreenRef] | [WsScreenRef, WsScreenRef] | [WsScreenRef, WsScreenRef, WsScreenRef] | null;
+export type Kind3 = string;
+export type Id6 = string;
+export type Label1 = string | null;
+export type Component = string | null;
+export type ParentId = string | null;
+export type AsOf = string | null;
+export type Selection =
+  | []
+  | [WsScreenRef]
+  | [WsScreenRef, WsScreenRef]
+  | [WsScreenRef, WsScreenRef, WsScreenRef]
+  | [WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef]
+  | [WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef]
+  | [WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef]
+  | [WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef]
+  | [WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef, WsScreenRef]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | [
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef,
+      WsScreenRef
+    ]
+  | null;
+export type Visible = WsScreenRef[] | null;
+export type FocusedModule = string | null;
+export type Canvas =
+  | []
+  | [WsCanvasRef]
+  | [WsCanvasRef, WsCanvasRef]
+  | [WsCanvasRef, WsCanvasRef, WsCanvasRef]
+  | [WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef]
+  | [WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef]
+  | [WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef]
+  | [WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef]
+  | [WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef, WsCanvasRef]
+  | [
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef
+    ]
+  | [
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef
+    ]
+  | [
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef
+    ]
+  | [
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef,
+      WsCanvasRef
+    ]
+  | null;
+export type Index = number;
+export type Type14 = string;
+export type CapturedAt = string | null;
 export type WorkspacePlaced = WsWorkspacePlaced[] | null;
 export type Path1 = string;
 export type Size = number;
 export type Compose = ("slipping" | "decisions" | "topic") | null;
 export type Topic = string | null;
-export type Type14 = "ack";
+export type Type15 = "ack";
 export type Ids = string[];
-export type Type15 = "confirm";
-export type Id6 = string;
+export type Type16 = "confirm";
+export type Id7 = string;
 export type ThreadId12 = string;
 export type Choice = "approve" | "deny";
-export type Type16 = "action";
+export type Type17 = "action";
 export type Payload = string;
 export type ThreadId13 = string | null;
-export type Type17 = "command";
+export type Type18 = "command";
 export type ThreadId14 = string | null;
 export type Name3 = "cancel" | "costs" | "status" | "onboarding" | "reset" | "reset_preview";
-export type Type18 = "component_submit";
+export type Type19 = "component_submit";
 export type StepId = string;
 export type SessionId1 = string | null;
 export type ThreadId15 = string | null;
-export type Type19 = "retry";
+export type Type20 = "retry";
 export type MessageId4 = string;
 export type ThreadId16 = string;
 export type ConfirmedPlan = string[] | null;
-export type Type20 = "ping";
+export type Type21 = "ping";
 
 export interface WsProtocol {
   inbound?: WsInboundFrame;
@@ -670,13 +951,39 @@ export interface WsSendMessageFrame {
  * via the `definition` "WsScreenContext".
  */
 export interface WsScreenContext {
-  screen: Screen1;
-  goal_id?: GoalId;
-  workflow_id?: WorkflowId;
-  execution_id?: ExecutionId;
+  place?: Place;
+  route?: Route;
+  origin?: Origin;
+  subject?: Subject;
+  selection?: Selection;
+  visible?: Visible;
+  focused_module?: FocusedModule;
+  canvas?: Canvas;
+  captured_at?: CapturedAt;
   workspace_placed?: WorkspacePlaced;
   compose?: Compose;
   topic?: Topic;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WsScreenRef".
+ */
+export interface WsScreenRef {
+  kind: Kind3;
+  id: Id6;
+  label?: Label1;
+  component?: Component;
+  parent_id?: ParentId;
+  as_of?: AsOf;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WsCanvasRef".
+ */
+export interface WsCanvasRef {
+  index: Index;
+  type: Type14;
+  ref?: WsScreenRef | null;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -691,7 +998,7 @@ export interface WsWorkspacePlaced {
  * via the `definition` "WsAckFrame".
  */
 export interface WsAckFrame {
-  type: Type14;
+  type: Type15;
   ids: Ids;
 }
 /**
@@ -699,8 +1006,8 @@ export interface WsAckFrame {
  * via the `definition` "WsConfirmFrame".
  */
 export interface WsConfirmFrame {
-  type: Type15;
-  id: Id6;
+  type: Type16;
+  id: Id7;
   thread_id: ThreadId12;
   choice: Choice;
   edits?: Edits;
@@ -713,7 +1020,7 @@ export interface Edits {
  * via the `definition` "WsActionFrame".
  */
 export interface WsActionFrame {
-  type: Type16;
+  type: Type17;
   payload: Payload;
   thread_id?: ThreadId13;
 }
@@ -722,7 +1029,7 @@ export interface WsActionFrame {
  * via the `definition` "WsCommandFrame".
  */
 export interface WsCommandFrame {
-  type: Type17;
+  type: Type18;
   thread_id?: ThreadId14;
   name: Name3;
 }
@@ -731,7 +1038,7 @@ export interface WsCommandFrame {
  * via the `definition` "WsComponentSubmitFrame".
  */
 export interface WsComponentSubmitFrame {
-  type: Type18;
+  type: Type19;
   step_id: StepId;
   values: Values;
   session_id?: SessionId1;
@@ -745,7 +1052,7 @@ export interface Values {
  * via the `definition` "WsRetryFrame".
  */
 export interface WsRetryFrame {
-  type: Type19;
+  type: Type20;
   message_id: MessageId4;
   thread_id: ThreadId16;
   confirmed_plan?: ConfirmedPlan;
@@ -755,5 +1062,5 @@ export interface WsRetryFrame {
  * via the `definition` "WsPingFrame".
  */
 export interface WsPingFrame {
-  type: Type20;
+  type: Type21;
 }

@@ -84,6 +84,7 @@ class Message:
     replaces: UUID | None = None
     replaced_by: UUID | None = None
     rollback: RollbackRecord | None = None
+    screen_context: dict[str, Any] | None = None
 
 
 @dataclass

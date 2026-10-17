@@ -1,0 +1,60 @@
+{
+  "workflow": "speckit",
+  "specName": "Screen Context Awareness",
+  "branch": "195-screen-context-awareness",
+  "currentStep": "implement",
+  "status": "implementing",
+  "currentTask": "T004",
+  "history": [
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T17:03:28.193Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T17:03:28.369Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T17:06:07.059Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T17:10:08.916Z"
+    }
+  ],
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "T001 done"
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "T002 done"
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "WsScreenContext reshaped"
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "zc039 + Message.screen_context"
+    }
+  }
+}
