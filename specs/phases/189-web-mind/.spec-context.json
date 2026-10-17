@@ -1,0 +1,60 @@
+{
+  "workflow": "speckit",
+  "specName": "Mind (W5)",
+  "branch": "189-web-mind",
+  "currentStep": "implement",
+  "status": "implementing",
+  "currentTask": "T005",
+  "history": [
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T20:52:57.334Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T20:52:57.552Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T20:52:57.749Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T20:52:57.966Z"
+    }
+  ],
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "done"
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "done"
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "done"
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "done"
+    }
+  }
+}
