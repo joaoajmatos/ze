@@ -3,7 +3,7 @@
   "specName": "World (W2)",
   "branch": "186-web-world",
   "currentStep": "implement",
-  "currentTask": "T020",
+  "currentTask": "T029",
   "status": "implementing",
   "task_summaries": {
     "T002": {
@@ -81,6 +81,42 @@
     "T020": {
       "status": "DONE",
       "did": "rails: loops-rail, doing-now, touched, away"
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T029": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
     }
   },
   "history": [
@@ -235,6 +271,78 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-10-17T22:21:05.410Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:04.180Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:04.378Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:04.559Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:04.748Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:04.926Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:05.146Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:05.358Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:05.565Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:05.757Z"
     }
   ]
 }
