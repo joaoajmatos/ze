@@ -13,7 +13,10 @@ export type ZeUIPrimitives =
   | Form
   | Connections
   | Steps
-  | Chart;
+  | Chart
+  | Headline
+  | ClaimCard
+  | ClaimTimeline;
 export type Primitive =
   | Col
   | Row
@@ -27,47 +30,69 @@ export type Primitive =
   | Form
   | Connections
   | Steps
-  | Chart;
+  | Chart
+  | Headline
+  | ClaimCard
+  | ClaimTimeline;
 
 export interface Col {
   children: Primitive[];
   gap?: "none" | "sm" | "md" | "lg";
   variant?: "default" | "card" | "section";
+  claim?: ClaimPosture;
   type: "col";
 }
 export interface Row {
   children: Primitive[];
   gap?: "none" | "sm" | "md" | "lg";
   align?: "start" | "center" | "end" | "between";
+  claim?: ClaimPosture;
   type: "row";
+}
+export interface ClaimPosture {
+  kind: "identity" | "fact" | "inference" | "suspicion" | "priority" | "action_record" | "feedback_record";
+  subject: "loop" | "goal" | "workflow" | "hypothesis" | "person" | "held_write" | "fact";
+  ref_id: string;
+  confidence?: number;
+  confidence_from?: number;
+  source?: string;
+  as_of?: string;
+  state?: string;
+  slipped?: boolean;
 }
 export interface Text {
   content: string;
   style?: "heading" | "subheading" | "body" | "label" | "caption" | "code";
   color?: "default" | "muted" | "success" | "warning" | "error";
+  claim?: ClaimPosture;
   type: "text";
 }
 export interface Badge {
   label: string;
   color?: "default" | "success" | "warning" | "error" | "info";
+  claim?: ClaimPosture;
   type: "badge";
 }
 export interface Divider {
+  claim?: ClaimPosture;
   type: "divider";
 }
 export interface Spacer {
   size?: "sm" | "md" | "lg";
+  claim?: ClaimPosture;
   type: "spacer";
 }
 export interface Button {
   label: string;
   action: string;
   style?: "primary" | "secondary" | "danger";
+  claim?: ClaimPosture;
   type: "button";
 }
 export interface ProgressBar {
   value: number;
   label?: string;
+  claim?: ClaimPosture;
   type: "progress";
 }
 export interface Table {
@@ -75,12 +100,14 @@ export interface Table {
   rows: string[][];
   title?: string;
   caption?: string;
+  claim?: ClaimPosture;
   type: "table";
 }
 export interface Form {
   id: string;
   title: string;
   fields: FormField[];
+  claim?: ClaimPosture;
   type: "form";
 }
 export interface FormField {
@@ -96,6 +123,7 @@ export interface FormField {
 export interface Connections {
   connections: ConnectionItem[];
   title?: string;
+  claim?: ClaimPosture;
   type: "connections";
 }
 export interface ConnectionItem {
@@ -114,6 +142,7 @@ export interface ConnectionEvidence {
 export interface Steps {
   steps: StepItem[];
   title?: string;
+  claim?: ClaimPosture;
   type: "steps";
 }
 export interface StepItem {
@@ -131,10 +160,52 @@ export interface Chart {
   y_label?: string;
   title?: string;
   legend?: boolean;
+  claim?: ClaimPosture;
   type: "chart";
 }
 export interface ChartPoint {
   x: string;
   y: number;
   series?: string;
+}
+export interface Headline {
+  text: string;
+  claim?: ClaimPosture;
+  type: "headline";
+}
+export interface ClaimCard {
+  title: string;
+  claim: ClaimPosture;
+  span?: 4 | 6 | 8 | 12;
+  lines?: string[];
+  readouts?: Readout[];
+  progress_done?: number;
+  progress_total?: number;
+  actions?: CardAction[];
+  tone?: "default" | "cream" | "hot" | "dotted";
+  type: "claim_card";
+}
+export interface Readout {
+  label: string;
+  value: string;
+  tone?: "default" | "live" | "hot";
+}
+export interface CardAction {
+  label: string;
+  intent: "confirm_loop" | "drop_loop" | "approve_held_write" | "deny_held_write" | "approve_gate" | "open";
+  ref_id: string;
+}
+export interface ClaimTimeline {
+  title: string;
+  entries: TimelineEntry[];
+  days_before?: number;
+  days_after?: number;
+  span?: 4 | 6 | 8 | 12;
+  claim?: ClaimPosture;
+  type: "claim_timeline";
+}
+export interface TimelineEntry {
+  title: string;
+  claim: ClaimPosture;
+  due_at?: string;
 }

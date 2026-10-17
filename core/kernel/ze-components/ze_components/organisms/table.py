@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ze_components.claims import ClaimPosture
+
 
 @dataclass
 class Table:
@@ -10,6 +12,7 @@ class Table:
     rows: list[list[str]]
     title: str | None = None
     caption: str | None = None
+    claim: ClaimPosture | None = None
     type: Literal["table"] = field(default="table", init=False)
 
 

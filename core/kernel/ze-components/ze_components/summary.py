@@ -7,6 +7,9 @@ _NAMES = {
     "badge": "card",
     "steps": "step list",
     "connections": "connection map",
+    "headline": "headline",
+    "claim_card": "card",
+    "claim_timeline": "timeline",
 }
 
 

@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from typing import Literal
 
+from ze_components.claims import ClaimPosture
+
 
 @dataclass
 class ConnectionEvidence:
@@ -26,6 +28,7 @@ class ConnectionItem:
 class Connections:
     connections: list[ConnectionItem]
     title: str = "Connected to your history"
+    claim: ClaimPosture | None = None
     type: Literal["connections"] = dc_field(default="connections", init=False)
 
 

@@ -3,12 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ze_components.claims import ClaimPosture
+
 
 @dataclass
 class Col:
     children: list
     gap: Literal["none", "sm", "md", "lg"] = "sm"
     variant: Literal["default", "card", "section"] = "default"
+    claim: ClaimPosture | None = None
     type: Literal["col"] = field(default="col", init=False)
 
 

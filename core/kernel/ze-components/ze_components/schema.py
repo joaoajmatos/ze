@@ -38,6 +38,10 @@ def _literal_schema(annotation: type) -> dict | None:
     return None
 
 
+# Posture is set by code from the owning record, never by the model.
+_MODEL_OMITTED_FIELDS = frozenset({"claim"})
+
+
 def _field_schema(annotation: type) -> dict:
     """Convert a single type annotation to a JSON schema fragment."""
     literal = _literal_schema(annotation)
@@ -75,7 +79,7 @@ def _dataclass_schema(cls: type) -> dict:
     props: dict = {}
     required: list[str] = []
     for f in dataclasses.fields(cls):
-        if not f.init:
+        if not f.init or f.name in _MODEL_OMITTED_FIELDS:
             continue
         props[f.name] = _field_schema(hints[f.name])
         if (

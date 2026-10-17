@@ -2,6 +2,129 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Ze UI Primitives",
   "$defs": {
+    "ClaimPosture": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "identity",
+            "fact",
+            "inference",
+            "suspicion",
+            "priority",
+            "action_record",
+            "feedback_record"
+          ]
+        },
+        "subject": {
+          "enum": [
+            "loop",
+            "goal",
+            "workflow",
+            "hypothesis",
+            "person",
+            "held_write",
+            "fact"
+          ]
+        },
+        "ref_id": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "confidence_from": {
+          "type": "number"
+        },
+        "source": {
+          "type": "string"
+        },
+        "as_of": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "slipped": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "subject",
+        "ref_id"
+      ]
+    },
+    "Readout": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "tone": {
+          "enum": [
+            "default",
+            "live",
+            "hot"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "value"
+      ]
+    },
+    "CardAction": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "intent": {
+          "enum": [
+            "confirm_loop",
+            "drop_loop",
+            "approve_held_write",
+            "deny_held_write",
+            "approve_gate",
+            "open"
+          ]
+        },
+        "ref_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "intent",
+        "ref_id"
+      ]
+    },
+    "TimelineEntry": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "due_at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "claim"
+      ]
+    },
     "FormField": {
       "type": "object",
       "properties": {
@@ -12,13 +135,25 @@
           "type": "string"
         },
         "field_type": {
-          "type": "string"
+          "enum": [
+            "text",
+            "textarea",
+            "number",
+            "date",
+            "select",
+            "multiselect",
+            "boolean",
+            "chips"
+          ]
         },
         "placeholder": {
           "type": "string"
         },
         "options": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "required": {
           "type": "boolean"
@@ -30,6 +165,7 @@
           "type": "string"
         }
       },
+      "additionalProperties": false,
       "required": [
         "id",
         "label"
@@ -51,6 +187,7 @@
           "type": "string"
         }
       },
+      "additionalProperties": false,
       "required": [
         "label",
         "kind"
@@ -74,28 +211,11 @@
         "evidence": {
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string"
-              },
-              "kind": {
-                "type": "string"
-              },
-              "date": {
-                "type": "string"
-              },
-              "source": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "label",
-              "kind"
-            ]
+            "$ref": "#/$defs/ConnectionEvidence"
           }
         }
       },
+      "additionalProperties": false,
       "required": [
         "summary",
         "narrative",
@@ -103,38 +223,117 @@
         "confidence"
       ]
     },
+    "StepItem": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "status"
+      ]
+    },
+    "ChartPoint": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        },
+        "y": {
+          "type": "number"
+        },
+        "series": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y"
+      ]
+    },
     "Col": {
       "type": "object",
       "properties": {
         "children": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Primitive"
+          }
         },
         "gap": {
-          "type": "string"
+          "enum": [
+            "none",
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         "variant": {
-          "type": "string"
+          "enum": [
+            "default",
+            "card",
+            "section"
+          ]
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "col"
         }
       },
+      "additionalProperties": false,
       "required": [
-        "children"
+        "children",
+        "type"
       ]
     },
     "Row": {
       "type": "object",
       "properties": {
         "children": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Primitive"
+          }
         },
         "gap": {
-          "type": "string"
+          "enum": [
+            "none",
+            "sm",
+            "md",
+            "lg"
+          ]
         },
         "align": {
-          "type": "string"
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "between"
+          ]
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "row"
         }
       },
+      "additionalProperties": false,
       "required": [
-        "children"
+        "children",
+        "type"
       ]
     },
     "Text": {
@@ -144,14 +343,35 @@
           "type": "string"
         },
         "style": {
-          "type": "string"
+          "enum": [
+            "heading",
+            "subheading",
+            "body",
+            "label",
+            "caption",
+            "code"
+          ]
         },
         "color": {
-          "type": "string"
+          "enum": [
+            "default",
+            "muted",
+            "success",
+            "warning",
+            "error"
+          ]
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "text"
         }
       },
+      "additionalProperties": false,
       "required": [
-        "content"
+        "content",
+        "type"
       ]
     },
     "Badge": {
@@ -161,24 +381,63 @@
           "type": "string"
         },
         "color": {
-          "type": "string"
+          "enum": [
+            "default",
+            "success",
+            "warning",
+            "error",
+            "info"
+          ]
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "badge"
         }
       },
+      "additionalProperties": false,
       "required": [
-        "label"
+        "label",
+        "type"
       ]
     },
     "Divider": {
       "type": "object",
-      "properties": {}
+      "properties": {
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "divider"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ]
     },
     "Spacer": {
       "type": "object",
       "properties": {
         "size": {
-          "type": "string"
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "spacer"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ]
     },
     "Button": {
       "type": "object",
@@ -190,12 +449,24 @@
           "type": "string"
         },
         "style": {
-          "type": "string"
+          "enum": [
+            "primary",
+            "secondary",
+            "danger"
+          ]
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "button"
         }
       },
+      "additionalProperties": false,
       "required": [
         "label",
-        "action"
+        "action",
+        "type"
       ]
     },
     "ProgressBar": {
@@ -206,10 +477,18 @@
         },
         "label": {
           "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "progress"
         }
       },
+      "additionalProperties": false,
       "required": [
-        "value"
+        "value",
+        "type"
       ]
     },
     "Table": {
@@ -235,11 +514,19 @@
         },
         "caption": {
           "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "table"
         }
       },
+      "additionalProperties": false,
       "required": [
         "headers",
-        "rows"
+        "rows",
+        "type"
       ]
     },
     "Form": {
@@ -254,44 +541,22 @@
         "fields": {
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "label": {
-                "type": "string"
-              },
-              "field_type": {
-                "type": "string"
-              },
-              "placeholder": {
-                "type": "string"
-              },
-              "options": {
-                "type": "string"
-              },
-              "required": {
-                "type": "boolean"
-              },
-              "help_text": {
-                "type": "string"
-              },
-              "default_value": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "label"
-            ]
+            "$ref": "#/$defs/FormField"
           }
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "form"
         }
       },
+      "additionalProperties": false,
       "required": [
         "id",
         "title",
-        "fields"
+        "fields",
+        "type"
       ]
     },
     "Connections": {
@@ -300,60 +565,297 @@
         "connections": {
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "summary": {
-                "type": "string"
-              },
-              "narrative": {
-                "type": "string"
-              },
-              "relation": {
-                "type": "string"
-              },
-              "confidence": {
-                "type": "number"
-              },
-              "evidence": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "label": {
-                      "type": "string"
-                    },
-                    "kind": {
-                      "type": "string"
-                    },
-                    "date": {
-                      "type": "string"
-                    },
-                    "source": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "label",
-                    "kind"
-                  ]
-                }
-              }
-            },
-            "required": [
-              "summary",
-              "narrative",
-              "relation",
-              "confidence"
-            ]
+            "$ref": "#/$defs/ConnectionItem"
           }
         },
         "title": {
           "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "connections"
         }
       },
+      "additionalProperties": false,
       "required": [
-        "connections"
+        "connections",
+        "type"
       ]
+    },
+    "Steps": {
+      "type": "object",
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StepItem"
+          }
+        },
+        "title": {
+          "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "steps"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "steps",
+        "type"
+      ]
+    },
+    "Chart": {
+      "type": "object",
+      "properties": {
+        "chart_type": {
+          "enum": [
+            "line",
+            "bar",
+            "area",
+            "pie"
+          ]
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ChartPoint"
+          }
+        },
+        "series_labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "x_label": {
+          "type": "string"
+        },
+        "y_label": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "legend": {
+          "type": "boolean"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "chart"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "chart_type",
+        "data",
+        "type"
+      ]
+    },
+    "Headline": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "headline"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "type"
+      ]
+    },
+    "ClaimCard": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "span": {
+          "enum": [
+            4,
+            6,
+            8,
+            12
+          ]
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "readouts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Readout"
+          }
+        },
+        "progress_done": {
+          "type": "integer"
+        },
+        "progress_total": {
+          "type": "integer"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CardAction"
+          }
+        },
+        "tone": {
+          "enum": [
+            "default",
+            "cream",
+            "hot",
+            "dotted"
+          ]
+        },
+        "type": {
+          "const": "claim_card"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "claim",
+        "type"
+      ]
+    },
+    "ClaimTimeline": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimelineEntry"
+          }
+        },
+        "days_before": {
+          "type": "integer"
+        },
+        "days_after": {
+          "type": "integer"
+        },
+        "span": {
+          "enum": [
+            4,
+            6,
+            8,
+            12
+          ]
+        },
+        "claim": {
+          "$ref": "#/$defs/ClaimPosture"
+        },
+        "type": {
+          "const": "claim_timeline"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "entries",
+        "type"
+      ]
+    },
+    "Primitive": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Col"
+        },
+        {
+          "$ref": "#/$defs/Row"
+        },
+        {
+          "$ref": "#/$defs/Text"
+        },
+        {
+          "$ref": "#/$defs/Badge"
+        },
+        {
+          "$ref": "#/$defs/Divider"
+        },
+        {
+          "$ref": "#/$defs/Spacer"
+        },
+        {
+          "$ref": "#/$defs/Button"
+        },
+        {
+          "$ref": "#/$defs/ProgressBar"
+        },
+        {
+          "$ref": "#/$defs/Table"
+        },
+        {
+          "$ref": "#/$defs/Form"
+        },
+        {
+          "$ref": "#/$defs/Connections"
+        },
+        {
+          "$ref": "#/$defs/Steps"
+        },
+        {
+          "$ref": "#/$defs/Chart"
+        },
+        {
+          "$ref": "#/$defs/Headline"
+        },
+        {
+          "$ref": "#/$defs/ClaimCard"
+        },
+        {
+          "$ref": "#/$defs/ClaimTimeline"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "type",
+        "mapping": {
+          "col": "#/$defs/Col",
+          "row": "#/$defs/Row",
+          "text": "#/$defs/Text",
+          "badge": "#/$defs/Badge",
+          "divider": "#/$defs/Divider",
+          "spacer": "#/$defs/Spacer",
+          "button": "#/$defs/Button",
+          "progress": "#/$defs/ProgressBar",
+          "table": "#/$defs/Table",
+          "form": "#/$defs/Form",
+          "connections": "#/$defs/Connections",
+          "steps": "#/$defs/Steps",
+          "chart": "#/$defs/Chart",
+          "headline": "#/$defs/Headline",
+          "claim_card": "#/$defs/ClaimCard",
+          "claim_timeline": "#/$defs/ClaimTimeline"
+        }
+      }
+    },
+    "PrimitiveTree": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Primitive"
+      },
+      "minItems": 1
     }
   },
   "oneOf": [
@@ -389,6 +891,42 @@
     },
     {
       "$ref": "#/$defs/Connections"
+    },
+    {
+      "$ref": "#/$defs/Steps"
+    },
+    {
+      "$ref": "#/$defs/Chart"
+    },
+    {
+      "$ref": "#/$defs/Headline"
+    },
+    {
+      "$ref": "#/$defs/ClaimCard"
+    },
+    {
+      "$ref": "#/$defs/ClaimTimeline"
     }
-  ]
+  ],
+  "discriminator": {
+    "propertyName": "type",
+    "mapping": {
+      "col": "#/$defs/Col",
+      "row": "#/$defs/Row",
+      "text": "#/$defs/Text",
+      "badge": "#/$defs/Badge",
+      "divider": "#/$defs/Divider",
+      "spacer": "#/$defs/Spacer",
+      "button": "#/$defs/Button",
+      "progress": "#/$defs/ProgressBar",
+      "table": "#/$defs/Table",
+      "form": "#/$defs/Form",
+      "connections": "#/$defs/Connections",
+      "steps": "#/$defs/Steps",
+      "chart": "#/$defs/Chart",
+      "headline": "#/$defs/Headline",
+      "claim_card": "#/$defs/ClaimCard",
+      "claim_timeline": "#/$defs/ClaimTimeline"
+    }
+  }
 }

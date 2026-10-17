@@ -1,9 +1,15 @@
 import { createContext, useContext } from "react";
 
+export interface CardActionEvent {
+  intent: string;
+  ref_id: string;
+}
+
 export interface PrimitiveRendererActions {
   onButtonAction?: (action: string) => boolean | void;
   onFormSubmit?: (formId: string, values: Record<string, string>) => boolean | void;
   onDisconnected?: () => void;
+  onCardAction?: (action: CardActionEvent) => void;
 }
 
 const defaultActions: PrimitiveRendererActions = {};

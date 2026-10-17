@@ -43,18 +43,24 @@ from ze_components.molecules import (
 from ze_components.organisms import (
     Chart,
     ChartPoint,
+    ClaimCard,
+    ClaimTimeline,
     ConnectionEvidence,
     ConnectionItem,
     Connections,
     Form,
     FormField,
+    Headline,
     StepItem,
     Steps,
     Table,
     chart,
+    claim_card,
+    claim_timeline,
     connections,
     form,
     form_field,
+    headline,
     steps,
     table,
 )
@@ -74,8 +80,21 @@ from ze_components.patterns import (
     timeline,
 )
 
+from ze_components.claims import (
+    CardAction,
+    ClaimPosture,
+    Readout,
+    TimelineEntry,
+    claim_tone,
+    headline_text,
+)
+
 # ── Registry (for codegen and schema generation) ──────────────────────────────
 PRIMITIVE_SUB_TYPES: list[type] = [
+    ClaimPosture,
+    Readout,
+    CardAction,
+    TimelineEntry,
     FormField,
     ConnectionEvidence,
     ConnectionItem,
@@ -97,6 +116,9 @@ PRIMITIVE_TYPES: list[type] = [
     Connections,
     Steps,
     Chart,
+    Headline,
+    ClaimCard,
+    ClaimTimeline,
 ]
 
 __all__ = [
@@ -140,19 +162,25 @@ __all__ = [
     # Organisms — types
     "Chart",
     "ChartPoint",
+    "ClaimCard",
+    "ClaimTimeline",
     "ConnectionEvidence",
     "ConnectionItem",
     "Connections",
     "Form",
     "FormField",
+    "Headline",
     "StepItem",
     "Steps",
     "Table",
     # Organisms — helpers
     "chart",
+    "claim_card",
+    "claim_timeline",
     "connections",
     "form",
     "form_field",
+    "headline",
     "steps",
     "table",
     # Patterns
@@ -167,6 +195,13 @@ __all__ = [
     "progress_steps",
     "review",
     "timeline",
+    # Claims
+    "CardAction",
+    "ClaimPosture",
+    "Readout",
+    "TimelineEntry",
+    "claim_tone",
+    "headline_text",
     # Registry
     "PRIMITIVE_SUB_TYPES",
     "PRIMITIVE_TYPES",

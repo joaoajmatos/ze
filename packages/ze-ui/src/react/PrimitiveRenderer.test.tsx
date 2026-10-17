@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { PrimitiveRenderer } from "./PrimitiveRenderer";
 
 describe("PrimitiveRenderer", () => {
@@ -180,5 +180,64 @@ describe("PrimitiveRenderer", () => {
     const strong = screen.getByText("conversation");
     expect(strong.tagName).toBe("STRONG");
     expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument();
+  });
+
+  describe("claim primitives", () => {
+    const claim = { kind: "suspicion", subject: "loop", ref_id: "l1", slipped: false } as const;
+
+    it("renders a headline as its text", () => {
+      render(<PrimitiveRenderer node={{ type: "headline", text: "2 SLIPPING" }} />);
+      expect(screen.getByText("2 SLIPPING")).toBeInTheDocument();
+    });
+
+    it("renders a claim card with lines, readouts and one button per action", () => {
+      const onCardAction = vi.fn();
+      render(
+        <PrimitiveRenderer
+          actions={{ onCardAction }}
+          node={{
+            type: "claim_card",
+            title: "Call the bank",
+            claim,
+            lines: ["Seen in email"],
+            readouts: [{ label: "confidence", value: "0.55" }],
+            actions: [
+              { label: "Yes, track it", intent: "confirm_loop", ref_id: "l1" },
+              { label: "Drop", intent: "drop_loop", ref_id: "l1" },
+            ],
+          }}
+        />,
+      );
+      expect(screen.getByText("Call the bank")).toBeInTheDocument();
+      expect(screen.getByText("Seen in email")).toBeInTheDocument();
+      expect(screen.getByText("confidence")).toBeInTheDocument();
+      expect(screen.getByText("0.55")).toBeInTheDocument();
+      expect(screen.getAllByRole("button")).toHaveLength(2);
+      fireEvent.click(screen.getByText("Yes, track it"));
+      expect(onCardAction).toHaveBeenCalledWith({ intent: "confirm_loop", ref_id: "l1" });
+    });
+
+    it("renders claim timeline entries in order", () => {
+      render(
+        <PrimitiveRenderer
+          node={{
+            type: "claim_timeline",
+            title: "Past 7 days to next 7",
+            entries: [
+              { title: "First", claim, due_at: "2026-10-01T00:00:00Z" },
+              { title: "Second", claim },
+            ],
+          }}
+        />,
+      );
+      const items = screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
+      expect(items[0]).toContain("First");
+      expect(items[1]).toContain("Second");
+    });
+
+    it("renders a primitive that carries a claim unchanged", () => {
+      render(<PrimitiveRenderer node={{ type: "text", content: "Plain", claim }} />);
+      expect(screen.getByText("Plain")).toBeInTheDocument();
+    });
   });
 });
