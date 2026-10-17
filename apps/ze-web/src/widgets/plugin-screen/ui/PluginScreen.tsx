@@ -1,6 +1,5 @@
 import { parsePrimitiveTree, type PrimitiveTree } from "@myguyze/ze-ui";
 import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
-import { FloatingButton } from "@/features/open-context-overlay";
 import { usePluginScreenActions } from "@/features/primitive-tree";
 import type { UiContribution } from "@/entities/ui-manifest";
 import { usePluginPageQuery } from "@/entities/ui-manifest";
@@ -49,8 +48,6 @@ export function PluginScreen({ entry }: { entry: UiContribution }) {
       {!isLoading && !isError && data && !nodes && (
         <ErrorState message="This page returned an invalid UI tree." onRetry={() => void refetch()} />
       )}
-
-      <FloatingButton screen={entry.path ?? entry.id} />
     </div>
   );
 }

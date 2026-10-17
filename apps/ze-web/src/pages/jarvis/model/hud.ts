@@ -1,28 +1,6 @@
 import type { Concern, Decision, World } from "./world";
 
-export type PaletteId = "ultraviolet" | "amethyst" | "orchid";
-export type OrbState = "idle" | "listening" | "thinking" | "speaking" | "assembling" | "attention" | "acting" | "done" | "error";
-
-/** The three palettes' leads, ultraviolet → amethyst → orchid; the orb blends them in oklab in some phases. */
-export const TONES: [string, string, string] = ["#9e82ff", "#c08cff", "#b9a3ff"];
-
-export const PALETTES: { id: PaletteId; name: string; note: string }[] = [
-  { id: "orchid", name: "Orchid", note: "pale lavender on warm plum" },
-  { id: "ultraviolet", name: "Ultraviolet", note: "cool violet on near-black indigo" },
-  { id: "amethyst", name: "Amethyst", note: "magenta-leaning purple on violet-black" },
-];
-
-export const ORB_STATES: { id: OrbState; note: string }[] = [
-  { id: "idle", note: "breathing; a ripple crosses the sphere, the limb wobbles" },
-  { id: "listening", note: "gathers and leans toward the Ask field; a ring runs inward" },
-  { id: "thinking", note: "slow internal swirl under a scanning light" },
-  { id: "speaking", note: "pulses with the voice; waveform across the equator" },
-  { id: "assembling", note: "a few dots thrown out along their spokes and pulled back" },
-  { id: "attention", note: "coral flare from the core on a two-beat heart; limb bulges" },
-  { id: "acting", note: "working arc on the belt plus one faint orbit ring per run" },
-  { id: "done", note: "one bloom outward, then settles" },
-  { id: "error", note: "dim, flickering, jittering; coral limb" },
-];
+export type { OrbState } from "@/shared/ui";
 
 /** Claim posture for the honesty visuals: solid = told, dotted = inferred or suspected. */
 export type Posture = "told" | "evidenced" | "inferred" | "suspected";

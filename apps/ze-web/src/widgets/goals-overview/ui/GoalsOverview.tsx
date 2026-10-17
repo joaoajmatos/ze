@@ -1,6 +1,5 @@
 import { Target } from "lucide-react";
 import { useMemo, useState } from "react";
-import { FloatingButton } from "@/features/open-context-overlay";
 import { GoalCard, useGoalsQuery } from "@/entities/goal";
 import { ListPage, SearchBar, FilterChips, ViewToggle, SortSelect } from "@/shared/ui";
 import type { FilterOption, ViewMode, SortOption } from "@/shared/ui";
@@ -102,8 +101,6 @@ export function GoalsOverview() {
           </div>
         )}
       </ListPage>
-
-      <FloatingButton screen="goals" />
     </>
   );
 }

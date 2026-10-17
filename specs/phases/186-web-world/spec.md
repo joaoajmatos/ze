@@ -10,7 +10,7 @@
 
 **Governed by**: `DESIGN.md` (field chart, leader line, honesty visuals, One Alarm Rule), `PRODUCT.md` principles 1–3, `specs/arch/pre-v1-hard-cuts.md`. User decisions 1 (World is home), 3 (priority folded into World, drag to pin), 8 (phone).
 
-**Depends on**: 183 (shell). Uses 184 (claim cards, `failure_summary`, goal progress, notification targets) and 185 (budget, loop decay "from", reminders REST) where available; without 185 the affected values are omitted, never faked.
+**Depends on**: 183 (shell), 195 (screen context and "Chat about this"). Uses 184 (claim cards, `failure_summary`, goal progress, notification targets) and 185 (budget, loop decay "from", reminders REST) where available; without 185 the affected values are omitted, never faked.
 
 **Doctrine functions served**: executive function (what is open, slipping, promised; what needs the user) and governance (decisions in one place, interruption budget visible).
 
@@ -49,6 +49,7 @@ States: loading draws module frames with dim labels and no numbers; empty field 
 - **FR-003**: Presence `attention` and `acting` signals are dispatched from World data through 183's `set_world_signal`.
 - **FR-004**: The WS `notification`, `confirm_request` and `refresh` frames invalidate the right queries (extend `features/invalidate-on-ws-refresh`).
 - **FR-005**: Hard cuts: `pages/loops`, `pages/priority`, `widgets/loop-review`, `widgets/priority-snapshot`, `pages/world/ui/WorldInterim.tsx`, the `/world/priority` route and its redirect target (old `/priority` now redirects to `/`), the Reminders plugin nav/page mapping (plugin page route for reminders resolves to World), the held-writes list inside `NotificationBell` (the bell keeps the unread count and opens World › While you were away), and the Reminders plugin's `ui_contributions` page descriptor plus `getRemindersPage` route in `ze-calendar` once World renders reminders from 185 (backend task in this phase).
+- **FR-005a**: Screen context (phase 195): World publishes into the screen-context store: the field selection (selected marks as `selection` refs), the selected readout item as `subject`, the visible marks and rows as `visible`, and the focused module. Every module and component built here wires "Chat about this" (callbacks passed down by props from widgets, 195 FR-024) (`onChatAbout` on `Module`; `ChatAboutChip` on field marks, loop rows, Needs-you rows and While-you-were-away rows), with a test per kind (195 FR-025).
 - **FR-006**: Acceptance per the plan: impeccable critique ≥ 29/40; detector 0 on touched slices; captures at 1440 and 390 with no console errors and 44 px targets; 60 fps scroll probe on the field.
 
 ## Success Criteria *(mandatory)*

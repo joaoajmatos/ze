@@ -49,8 +49,8 @@ ze-web has no graphify AST coverage worth trusting for TS; the radius below is f
 | `redirectHintPath` / hash deep links | `shared/lib/redirect-hint.ts`, `shared/ui/layout/RedirectHintTarget.tsx`, `shared/config/nav-routes.ts` |
 | Old-path literals and `navigate("/")` meaning chat (FR-014) | `entities/goal/ui/GoalCard.tsx`, `entities/workflow/ui/WorkflowCard.tsx`, `pages/goal-detail/ui/GoalDetailPage.tsx`, `pages/workflow-detail/ui/WorkflowDetailPage.tsx`, `widgets/app-shell/ui/NotificationBell.tsx`, `widgets/app-shell/lib/notification-format.ts` (+ test), `pages/plugin-page/ui/PluginPage.tsx`, `shared/ui/layout/ZeErrorFallback.tsx`, `pages/jarvis/model/world.ts`, `pages/jarvis/hud/Cards.tsx` |
 | `features/open-context-overlay` (deleted) | `widgets/goals-overview/ui/GoalsOverview.tsx`, `widgets/workflows-overview/ui/WorkflowsOverview.tsx`, `widgets/costs-overview/ui/CostsOverview.tsx` (+ test), `widgets/plugin-screen/ui/PluginScreen.tsx` (+ test) — `FloatingButton`; `pages/workflow-detail/ui/WorkflowDetailPage.tsx` (+ test) — `useOverlayStore.openForExecution`; `widgets/chat-workspace/ui/ContextOverlay.tsx` (+ `ContextOverlay.test.tsx`); `widgets/app-shell/ui/AppShell.tsx` — `useOverlay` |
-| `ContextOverlay` (deleted) | `app/router/index.tsx`, `widgets/chat-workspace/index.ts` |
-| `AppShell` (rewritten; `overlay` prop removed) | `app/router/index.tsx`, `widgets/app-shell/ui/AppShell.test.tsx` |
+| `ContextOverlay` (replaced by `AskOverlay`, same slice) | `app/router/index.tsx` (passes it as `AppShell`'s `overlay`), `widgets/chat-workspace/index.ts`; `useChatWorkspace({ active, context, threadId })` reused unchanged; `entities/session` `useSession` (`selectSession`, selected thread) |
+| `AppShell` (rewritten; `overlay` prop kept, now `AskOverlay`) | `app/router/index.tsx`, `widgets/app-shell/ui/AppShell.test.tsx` |
 | `entities/ui-manifest` `mergeMobileNavRoutes` (deleted), `pluginNavRoutes` (kept for the `/:pluginPath` route) | `widgets/app-shell/ui/AppShell.tsx`, `entities/ui-manifest/model/merge-nav-routes.ts` (+ test if any) |
 | `pages/jarvis/hud/*` (moved) and the `/jarvis/*` route (nested under the shell) | `pages/jarvis/{JarvisApp,JarvisShell,views/WorldView,views/AssembleView,hud/Cards,hud/FieldChart}.tsx`, `app/router/index.tsx` |
 | Cross-floor files shared with phase 184 | `widgets/app-shell/lib/notification-format.ts` (owned here: `notificationHref`), `widgets/goals-overview/ui/GoalsOverview.tsx` (183 T012 removes `FloatingButton` before 184 T026 adds progress fields), docs `AGENTS.md`, `specs/README.md`, `docs/native-interface.md` (one Docs Steward pass for both floors, merge order set by the Maestro) |
@@ -72,13 +72,21 @@ One file per component from `pages/jarvis/hud/Frame.tsx` and `DotMatrix.tsx`: `G
 
 Props-only, so it lives in `shared` (FSD forbids `widgets/app-shell` importing another widget). `Orb.tsx` (unchanged algorithm; colours read from computed `--main/--cream/--coral/--dim` on the root at mount and on palette change via a `MutationObserver` on `data-palette`), `LeaderLine.tsx`, `noise.ts`, `Presence.tsx` (props: `state`, `phrase`, `compact`; the session clock moves with it). The `statePhrase(state, world)` prototype helper is replaced by the phrase from `usePresence()`.
 
+### Curious-pet gaze (`shared/ui/hud/presence/gaze.ts`, FR-006a)
+
+Pure: `type GazeState`, `type GazeInput`, `nextGaze(state, input, now) -> { state, out }`, `GAZE_PERSONALITY`. The orb owns a `gazeInputRef` (latest pointer x/y, velocity from the last two samples, pointer type, focused element centre, pending glance) filled by `window` listeners registered once in `Orb` (passive), and a `gazeStateRef`. Each rAF frame: `nextGaze(gazeStateRef.current, snapshot(gazeInputRef), now)`, then the gaze spring integrates the offset; when the orb state is not `idle` the output is neutral and the spring returns to centre. Rendering: dots' depth-weighted offset `(1 - r) * offset` moves the dense core and lit centre more than the limb (parallax); lean scales the sphere ≤ 3% along the target axis; `blink` compresses dot radii for ~120 ms twice; `startle` adds +6% radius for ~250 ms; `dozing` multiplies breath frequency and brightness by `DOZE_BREATH` / `1 - DOZE_DIM`. `useImperativeHandle` exposes `glance(target)`; `Presence` is a `forwardRef` component that passes its `PresenceHandle` ref to the orb. The orb samples `Math.random()` when a glance starts and passes it as `input.rand`, so `nextGaze` stays pure. Units as listed in FR-006a. Dozing keeps brightness ≥ 0.8 of idle, no coral, no jitter. Element targets resolve to their `getBoundingClientRect` centre relative to the orb canvas. All tuning in `GAZE_PERSONALITY`; nothing else hard-codes a feel value.
+
 ### `entities/presence/`
 
 `model/presence.ts`: `type PresenceEvent`, `nextPresence(state, event, now)` pure; `done` carries `until` and the hook moves it to `idle` with one timeout. `model/usePresence.ts`: `usePresence(activeThreadId: string | null)`. Thinking and phrase from `useWsStore` `thinkingThreads[activeThreadId]` / `typingTextThreads[activeThreadId]`; speaking from `useFrame("token")` frames whose `thread_id === activeThreadId` (null `thread_id` ignored); done from a `message` frame for that thread (the generated `WsMessageFrame` has no top-level thread id: read `frame.message.thread_id`, ignore null, and require `message.role === "assistant"`); connection status from `useWsStore`. Replayed unread messages, proactive messages, notifications and other threads are ignored. `widgets/app-shell` passes `useSession()`'s active thread (widgets → entities is allowed; entities/presence never imports entities/session). `ask_*` events are dispatched by `features/ask-bar` through `presenceActions`.
 
 ### `features/ask-bar/`
 
-`ui/AskBar.tsx`, `model/resolve-screen.ts` (moved, keyed on `placeOf`), `model/pending-ask.ts` (zustand: `{ text, context } | null`), `askAbout({ text, context })`. Submit on a non-Ask place: set `pendingAsk`, `navigate("/ask")`. `widgets/chat-workspace` consumes `pendingAsk` once on mount (send through its existing send path on the active thread, then clear). That consumer is the only edit inside `chat-workspace` besides the overlay deletion.
+`ui/AskBar.tsx`, `model/resolve-screen.ts` (moved, keyed on `placeOf`, returns `{ screen, goal_id?, workflow_id?, execution_id? }` from the route), `model/ask-overlay.ts` (zustand: `open`, `context`, `prefill`, `outbox: { text, context } | null`, actions `submit(text)`, `openWith(prefill, context)`, `close()`; "New chat" uses `useSession().newSession()` in the overlay), `askAbout({ text?, context })` = `openWith`. Submit on a non-Ask place: `submit(text)` opens the overlay and queues `{ text, context: { ...routeContext, ...explicitContext } }`; the bar clears only when `submit` accepts (no item already queued). The explicit context from `openWith` survives until sent or `close()`. The feature never sends frames itself (it has no thread state); `AskOverlay` drains the outbox.
+
+### `widgets/chat-workspace/ui/AskOverlay.tsx` (replaces `ContextOverlay.tsx`)
+
+Reads `features/ask-bar` overlay state and `useSession` (selected thread). Drain: `useChatWorkspace({ active: open, context: outbox?.context ?? overlayContext, threadId: useSession().threadId })`; an effect keyed on the outbox item calls `sendMessage(item.text)` only when `!isThinking` and connected, clears the item only on a true return, and re-runs when `isThinking` or the connection changes, so a follow-up typed mid-turn is sent once the turn ends. Renders the messages after the last message id captured when the overlay opened (reset on "New chat"), the `pendingConfirms` from the same hook result through `ConfirmationCard` above the Ask bar (held-write confirms as in Ask), streamed text and typing phrase, and each reply's components through the existing `ChatMessageList` path (restyled only by tokens; 187 replaces it with the canvas). Head: label "Ask", "New chat" (`useSession().newSession()`), "Open in Ask" (`navigate(askPath(thread))`, close), Close (Esc). Layout: desktop a `Module` anchored bottom-right of the hero above the Ask bar (420 px wide, max 60vh, scrolls inside); phone a sheet above the Ask bar and bottom bar (max 65vh). No drag handle, no own input (the Ask bar is the input), no backdrop blur. Hidden on `/ask`. Stays open across navigation (the next submit carries the new route's context).
 
 ### `widgets/app-shell/`
 
@@ -117,7 +125,8 @@ apps/ze-web/src/
 ├── public/fonts/                              # NEW (self-hosted woff2 + OFL)
 ├── main.tsx                                   # palette applied before createRoot
 ├── entities/presence/                         # NEW
-├── features/ask-bar/                          # NEW (resolve-screen moved here)
+├── features/ask-bar/                          # NEW (resolve-screen moved here; overlay state)
+├── widgets/chat-workspace/ui/AskOverlay.tsx   # NEW, replaces ContextOverlay.tsx
 ├── features/choose-palette/                   # NEW
 ├── widgets/app-shell/                         # rewritten
 ├── pages/{world,ask,doing,mind,governance}/   # NEW interim places
@@ -128,8 +137,8 @@ apps/ze-web/src/
 
 - `docs/frontend.md`: shell, five places, tokens location (`shared/styles/ze.css`), `shared/ui/hud`, presence states, redirect table, interim places.
 - `apps/ze-web/README.md`: routes, design system pointer (`DESIGN.md`).
-- `docs/native-interface.md`: the contextual chat overlay is gone; the Ask bar sends `context.screen` (and `workflow_id`/`execution_id` from workflow detail).
-- `DESIGN.md` Navigation section: top bar is five places, no prototype group; phone bottom bar.
+- `docs/native-interface.md`: the floating launcher is gone; the Ask bar opens the contextual overlay, which sends on the thread selected in Ask with `context.screen` and route ids (`goal_id`, `workflow_id`, `execution_id`); the exchange is an ordinary Ask thread.
+- `DESIGN.md` Navigation section (five places, no prototype group, phone bottom bar) and "The orb" section (idle gaze: follow, peer, glance, startle, blink, doze; idle only; reduced motion off; the gaze spring is the one under-damped spring; the principle line notes the gaze is the one decoration and never carries a fact).
 - `AGENTS.md` (Learned facts: web nav groups line is now five places; phase table row 183) and `specs/README.md` index row.
 - Coverage check against `git diff main...HEAD --stat`.
 

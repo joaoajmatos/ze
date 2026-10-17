@@ -19,7 +19,7 @@ import { ChatSidePanelQuickActions } from "./ChatSidePanelQuickActions";
 
 type ConnectionState = "connecting" | "connected" | "disconnected";
 
-export function ChatWorkspace() {
+export function ChatWorkspace({ threadId: threadIdOverride }: { threadId?: string } = {}) {
   const {
     threadId,
     messages,
@@ -34,7 +34,7 @@ export function ChatWorkspace() {
     retry,
     removeMessage,
     respondToConfirm,
-  } = useChatWorkspace();
+  } = useChatWorkspace({ threadId: threadIdOverride });
 
   const [searchParams] = useSearchParams();
   const [input, setInput] = useState("");

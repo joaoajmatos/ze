@@ -171,6 +171,15 @@ async def test_global_open_query_skips_unsolicited_append():
     surfacer.inline_mentions.assert_not_awaited()
 
 
+async def test_preset_turn_skips_inline_mentions():
+    surfacer = _surfacer()
+    state = _state()
+    state["preset_components"] = [{"type": "headline", "text": "1 SLIPPING"}]
+    result = await surface_loops(state, _config(surfacer=surfacer))
+    assert result == {}
+    surfacer.inline_mentions.assert_not_awaited()
+
+
 async def test_card_failure_keeps_the_text_section():
     surfacer = _surfacer()
     surfacer.mention_cards = AsyncMock(side_effect=RuntimeError("boom"))

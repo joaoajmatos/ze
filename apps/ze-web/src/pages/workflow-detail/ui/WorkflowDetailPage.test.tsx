@@ -15,10 +15,9 @@ vi.mock("@/entities/workflow", () => ({
   stepsDifferFromSnapshot: vi.fn((current, snapshot) => current[0]?.task !== snapshot[0]?.task),
 }));
 
-vi.mock("@/features/open-context-overlay", () => ({
-  useOverlayStore: vi.fn((selector: (state: { openForExecution: () => void }) => unknown) =>
-    selector({ openForExecution: vi.fn() }),
-  ),
+const mockAskAbout = vi.fn();
+vi.mock("@/features/ask-bar", () => ({
+  askAbout: (args: unknown) => mockAskAbout(args),
 }));
 
 vi.mock("@/shared/lib", () => ({
@@ -197,6 +196,23 @@ describe("WorkflowDetailPage definition notices", () => {
     expect(screen.getByTestId("definition-notice")).toHaveTextContent("historical-edited-since");
     expect(screen.getByTestId("workflow-graph")).toHaveTextContent("Original step");
     expect(screen.getByTestId("workflow-graph")).not.toHaveTextContent("Current step");
+  });
+
+  it("Ask Ze about a run opens the overlay prefilled with the run as context", () => {
+    mockAskAbout.mockClear();
+    vi.mocked(useWorkflowExecutionsQuery).mockReturnValue({
+      data: [execution({})],
+      isLoading: false,
+    } as never);
+
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: /completed/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Ask Ze/ }));
+
+    expect(mockAskAbout).toHaveBeenCalledWith({
+      text: expect.stringContaining('"Daily check" workflow run'),
+      context: { screen: "doing.workflows", workflow_id: "wf-1", execution_id: "exec-1" },
+    });
   });
 });
 

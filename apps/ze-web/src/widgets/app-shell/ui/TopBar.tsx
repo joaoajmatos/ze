@@ -1,79 +1,33 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { getRoute, navRoutes, settingsNavRoute } from "@/shared/config";
-import { useBreadcrumb } from "@/shared/lib/breadcrumb";
-import { usePageHeader } from "@/shared/lib/page-header";
-import { useTopBarActions } from "@/shared/lib/top-bar-actions";
+import { forwardRef } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { placeOf, places } from "@/shared/config";
+import { Control, DotMatrix } from "@/shared/ui";
+import { ConnectionDot } from "./ConnectionDot";
 import { NotificationBell } from "./NotificationBell";
 
-const allRoutes = [...navRoutes, settingsNavRoute];
-
-const DETAIL_ROUTES: Record<string, { label: string; path: string }> = {
-  goals: { label: "Goals", path: "/goals" },
-  workflows: { label: "Workflows", path: "/workflows" },
-};
-
-function parseDetailRoute(pathname: string) {
-  const match = pathname.match(/^\/(goals|workflows)\/[^/]+/);
-  if (!match) return null;
-  const parent = DETAIL_ROUTES[match[1]];
-  const parentRoute = allRoutes.find((r) => r.path === match[1]);
-  return parent ? { ...parent, Icon: parentRoute?.icon ?? null } : null;
-}
-
-export function TopBar() {
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const { detailTitle } = useBreadcrumb();
-  const { pageHeader } = usePageHeader();
-  const { quickActions } = useTopBarActions();
-
-  const detail = parseDetailRoute(pathname);
-  const currentRoute = detail ? null : getRoute(pathname);
-  const CurrentIcon = pageHeader?.icon ?? currentRoute?.icon ?? null;
-  const currentTitle = pageHeader?.title ?? currentRoute?.label ?? "";
-
+/** Brand, the five places (desktop), the bell and the connection dot. `ref` is the bell's wrapper. */
+export const TopBar = forwardRef<HTMLDivElement, { showTabs: boolean }>(function TopBar({ showTabs }, bellRef) {
+  const current = placeOf(useLocation().pathname);
   return (
-    <div className="flex items-center justify-between px-6 h-14 border-b border-border bg-secondary flex-shrink-0">
-      {/* Left: title / breadcrumb */}
-      <div className="flex items-center gap-2.5 min-w-0">
-        {detail ? (
-          <>
-            <button
-              onClick={() => navigate(detail.path)}
-              className="flex min-h-11 min-w-11 items-center gap-2 py-1.5 px-2 -mx-2 text-smoke hover:text-foreground transition-colors shrink-0"
-            >
-              {detail.Icon && <detail.Icon className="w-4 h-4" />}
-              <span className="text-sm">{detail.label}</span>
-            </button>
-            <span className="text-foreground/20 select-none">/</span>
-            <span className="font-display text-base font-semibold text-foreground truncate">
-              {detailTitle ?? "…"}
-            </span>
-          </>
-        ) : (
-          <div className="flex items-center gap-2.5">
-            {CurrentIcon && (
-              <CurrentIcon className="w-5 h-5 text-plum-voltage shrink-0" />
-            )}
-            <span className="font-display text-base font-semibold text-foreground">{currentTitle}</span>
-          </div>
-        )}
+    <header className="top">
+      <Link to="/" className="brand ctl-text" aria-label="Ze, home">
+        <DotMatrix text="ZE" size={5} color="var(--cream)" title="Ze" />
+      </Link>
+      {showTabs && (
+        <nav className="tabs" aria-label="Places">
+          {places.map(({ id, path, label }) => (
+            <Control key={id} as="link" to={path} current={current?.id === id}>
+              {label}
+            </Control>
+          ))}
+        </nav>
+      )}
+      <div className="top-end">
+        <div ref={bellRef} className="top-bell">
+          <NotificationBell />
+        </div>
+        <ConnectionDot />
       </div>
-
-      {/* Right: quick actions + notifications */}
-      <div className="flex items-center shrink-0">
-        {quickActions && (
-          <>
-            <div className="flex items-center gap-1">{quickActions}</div>
-            <div
-              className="w-px h-5 bg-foreground/10 mx-2"
-              role="separator"
-              aria-orientation="vertical"
-            />
-          </>
-        )}
-        <NotificationBell />
-      </div>
-    </div>
+    </header>
   );
-}
+});

@@ -15,7 +15,7 @@ async def surface_loops(state: AgentState, config: RunnableConfig) -> dict:
     if surfacer is None:
         return {}
 
-    if state.get("open_items_query"):
+    if state.get("open_items_query") or state.get("preset_components"):
         return {}
 
     memory_context = state.get("memory_context")

@@ -10,7 +10,7 @@
 
 **Governed by**: `DESIGN.md` (honesty visuals), `PRODUCT.md` (claims have kinds, provenance, decaying confidence), phases 88/93/94/119/121 (memory feed, as-of, graph, entity activity), 128/130 (social cognition), 138–139 (procedures), 140–149 (memory honesty: silent use, earned confirmations, precise forget).
 
-**Depends on**: 183 (shell). Uses 185 (hypotheses list) for the entity view's "I suspect …" section; without it that section is absent.
+**Depends on**: 183 (shell), 195 (screen context, "Chat about this"). Uses 185 (hypotheses list) for the entity view's "I suspect …" section; without it that section is absent.
 
 **Doctrine functions served**: memory (what Ze believes and since when), social cognition (people and projects), reflection (hypotheses, procedures).
 
@@ -42,6 +42,7 @@ States: empty beliefs → "I have not learned anything yet. Tell me about yourse
 - **FR-001**: `pages/mind`, `pages/mind-entity`; widgets `beliefs-feed`, `people`, `entity-neighbourhood`, `procedure-library`.
 - **FR-002**: The neighbourhood layout is deterministic (radial by relation type) and capped (one hop, ≤ 24 nodes, "+N more" readout).
 - **FR-003**: Hard cuts: `pages/{brain-memory,brain-graph}`, `widgets/{memory-feed,memory-graph,timeline-scrubber,procedure-management}`, the memory-growth chart, `react-force-graph-3d`, `three`, `three-spritetext` and `@types/three` dependencies if no other slice uses them, the Contacts plugin page route (rendered in People), `pages/mind/ui/MindInterim.tsx`, the procedures library part of `pages/procedures`.
+- **FR-003a**: Screen context (phase 195): Beliefs publishes the selected beliefs as `selection` and the visible rows; the entity page publishes the entity as `subject`; every belief, person, entity and procedure module or row wires "Chat about this" (callbacks passed down by props from widgets, 195 FR-024), with a test per kind.
 - **FR-004**: Acceptance: critique ≥ 29/40; detector 0; captures.
 
 ## Success Criteria *(mandatory)*

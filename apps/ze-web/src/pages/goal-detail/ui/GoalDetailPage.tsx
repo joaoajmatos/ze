@@ -5,6 +5,7 @@ import { GoalLearningsList } from "@/widgets/goal-learnings";
 import { MilestoneTimeline } from "@/widgets/milestone-timeline";
 import { ReviewGoalLearning } from "@/features/review-goal-learning";
 import { useGoalDetailQuery } from "@/entities/goal";
+import { goalsPath } from "@/shared/config";
 import { useSetBreadcrumbTitle } from "@/shared/lib";
 import { ListSkeleton, ErrorState, PageShell, SectionPanel } from "@/shared/ui";
 
@@ -51,7 +52,7 @@ export function GoalDetailPage() {
       <div>
         <button
           className="flex items-center gap-1.5 text-xs text-smoke hover:text-foreground transition-colors mb-6"
-          onClick={() => navigate("/goals")}
+          onClick={() => navigate(goalsPath())}
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Goals

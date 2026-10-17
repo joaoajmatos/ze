@@ -12,6 +12,8 @@ function emptyThreadTrace(): ThreadTraceBucket {
   return { traces: [], pending: false, pendingTrace: null, hydrating: false };
 }
 
+const EMPTY_BUCKET: ThreadTraceBucket = Object.freeze(emptyThreadTrace());
+
 export function tracesForThread(
   state: Pick<TraceState, "byThread">,
   threadId: string,
@@ -23,7 +25,8 @@ export function threadTraceBucket(
   state: Pick<TraceState, "byThread">,
   threadId: string,
 ): ThreadTraceBucket {
-  return state.byThread[threadId] ?? emptyThreadTrace();
+  // One shared empty bucket: a selector must return a stable value or React loops.
+  return state.byThread[threadId] ?? EMPTY_BUCKET;
 }
 
 function namedThreadId(value: unknown): string | null {

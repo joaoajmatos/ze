@@ -6,10 +6,12 @@ import { send } from "@/shared/api";
 export function useMessages(threadId: string) {
   const [messages, setMessages] = useState<Map<string, Message>>(new Map());
   const loadedThreadRef = useRef<string | null>(null);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   useEffect(() => {
     if (loadedThreadRef.current !== threadId) {
       setMessages(new Map());
+      setHistoryLoaded(false);
       loadedThreadRef.current = null;
     }
   }, [threadId]);
@@ -57,8 +59,12 @@ export function useMessages(threadId: string) {
       const { data: history } = await listMessages({
         query: { thread_id: threadId, limit: 200 },
       });
-      if (!history) return null;
+      if (!history) {
+        setHistoryLoaded(true);
+        return null;
+      }
       setMessages(new Map(history.map((msg) => [String(msg.id), msg])));
+      setHistoryLoaded(true);
 
       const unread = history
         .filter((m) => m.role === "assistant" && !m.read && m.id)
@@ -67,6 +73,7 @@ export function useMessages(threadId: string) {
       return history;
     } catch {
       loadedThreadRef.current = null;
+      setHistoryLoaded(true);
       return null;
     }
   }, [threadId]);
@@ -84,5 +91,5 @@ export function useMessages(threadId: string) {
     [messages],
   );
 
-  return { messages: sorted, upsert, remove, edit, loadHistory, reload };
+  return { messages: sorted, historyLoaded, upsert, remove, edit, loadHistory, reload };
 }

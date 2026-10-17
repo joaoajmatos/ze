@@ -497,11 +497,17 @@ A notification can carry `target_type`, `target_id`, and `target_parent_id`. The
 
 | `target_type` | `target_id` | `target_parent_id` | Link |
 |---|---|---|---|
-| `goal` | the goal | none | `/goals/{target_id}` |
-| `goal_gate` | the gate | the goal | `/goals/{target_parent_id}` |
-| `workflow_execution` | the execution | the workflow | `/workflows/{target_parent_id}?execution={target_id}` |
+| `goal` | the goal | none | `/doing/goals/{target_id}` |
+| `goal_gate` | the gate | the goal | `/doing/goals/{target_parent_id}` |
+| `workflow_execution` | the execution | the workflow | `/doing/workflows/{target_parent_id}?execution={target_id}` |
 
 A target without a parent, where one is required, has no link.
+
+### Ask from any screen
+
+The web app has no floating launcher. A sticky Ask bar sits on every screen except Ask. When the user submits text there, the app opens an overlay over the current screen and sends a `message` frame on the thread selected in Ask. The frame carries `context.screen` and the ids from the route. Examples are `doing.workflows` with `workflow_id` and `execution_id`, or `doing.goals` with `goal_id`.
+
+The exchange is an ordinary Ask thread. It appears in Ask and in Sessions. "Open in Ask" goes to `/ask/<thread>`. "New chat" selects a fresh thread. A page can open the overlay with text prefilled and its own context, as the workflow run page does for "Ask Ze".
 
 ---
 

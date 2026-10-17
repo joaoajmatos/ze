@@ -57,6 +57,24 @@ async def test_push_points_at_the_execution_inside_its_workflow():
     push_log.log.assert_awaited_once()
 
 
+async def test_a_newer_run_in_flight_does_not_hide_the_failed_one():
+    workflow = _workflow()
+    failed = _failed_execution(workflow.id)
+    running = WorkflowExecution(
+        id=uuid4(),
+        workflow_id=workflow.id,
+        status="running",
+        step_results=[],
+        steps_snapshot=[],
+        created_at=datetime.now(timezone.utc),
+    )
+    handler, notifier, _ = _handler([running, failed])
+
+    await handler(workflow, RuntimeError("boom"))
+
+    assert notifier.notify.await_args.kwargs["target_id"] == str(failed.id)
+
+
 async def test_without_an_execution_the_body_says_it_never_started_and_nothing_is_targeted():
     workflow = _workflow()
     handler, notifier, _ = _handler([])

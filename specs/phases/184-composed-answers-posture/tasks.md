@@ -2,7 +2,7 @@
 
 **Input**: [spec.md](./spec.md), [plan.md](./plan.md), [contracts/](./contracts/).
 
-**Build gate**: the user answers OQ-1a and OQ-1b and confirms OQ-2 (spec Clarifications); tasks follow the recommendations. The Spec Architect (Lintel) stays on call for design questions.
+**Build gate**: open; the user accepted OQ-1a and OQ-1b and confirmed OQ-2 on 2026-10-17 (spec Clarifications). The Spec Architect (Lintel) stays on call for design questions.
 
 **Tests**: required (constitution V). **Fail-first**: write the test, run it, see it fail for the stated reason, then implement. Unit tests use fakes and `AsyncMock` pools; no OpenRouter call in default suites; `@pytest.mark.pg` for real-Postgres checks (`make test-pg`).
 

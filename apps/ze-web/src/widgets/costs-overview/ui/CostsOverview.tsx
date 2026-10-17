@@ -1,6 +1,5 @@
 import type { CostAnomalyItem, DailyCostBucket } from "@myguyze/ze-client";
 import { HeatmapChart, PieChart } from "@myguyze/ze-ui/charts";
-import { FloatingButton } from "@/features/open-context-overlay";
 import {
   formatAgentName,
   formatPluginName,
@@ -283,8 +282,6 @@ export function CostsOverview() {
               </BreakdownPanel>
             </DashboardGridAside>
           </DashboardGrid>
-
-          <FloatingButton screen="costs" />
         </>
       )}
     </DashboardShell>

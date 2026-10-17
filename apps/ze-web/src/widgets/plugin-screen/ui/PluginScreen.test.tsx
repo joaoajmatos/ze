@@ -24,10 +24,6 @@ vi.mock("@/shared/lib", async (importOriginal) => {
   };
 });
 
-vi.mock("@/features/open-context-overlay", () => ({
-  FloatingButton: () => null,
-}));
-
 vi.mock("@/features/primitive-tree", () => ({
   usePluginScreenActions: () => ({
     onButtonAction: vi.fn(),

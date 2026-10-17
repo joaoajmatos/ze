@@ -22,8 +22,11 @@ src/
 
 | Path | What it provides |
 |------|------------------|
-| `app/router/routes.ts` | Route registry — paths, lazy imports, nav meta |
-| `widgets/chat-workspace/` | Main chat UI: thread, bubbles, input, trace panel, and the context overlay |
+| `app/router/routes.tsx` | Route table — the five places, redirects from old paths, plugin pages |
+| `shared/styles/ze.css` | Design tokens and shell classes ([DESIGN.md](../../DESIGN.md) is the design source) |
+| `widgets/app-shell/` | The frame around every place: top bar, strip, Presence, Ask bar, phone bottom bar |
+| `features/ask-bar/` | The Ask bar and the state of the Ask overlay |
+| `widgets/chat-workspace/` | Ask UI: thread, bubbles, input, trace panel, and the Ask overlay |
 | `widgets/*-overview/` | Management list screens |
 | `entities/message-trace/` | Per-message trace query and the trace UI pieces shared by bubbles and the trace panel |
 | `entities/message-feedback/`, `features/reply-feedback/`, `features/retry-reply/` | Thumbs up/down, Retry, and their reasons on assistant replies |

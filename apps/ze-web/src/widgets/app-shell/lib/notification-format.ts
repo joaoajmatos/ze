@@ -1,3 +1,5 @@
+import { askPath, goalPath, goalsPath, workflowPath, workflowsPath } from "@/shared/config";
+
 export function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -8,20 +10,44 @@ export function relativeTime(dateStr: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export interface NotificationTarget {
+interface NotificationTarget {
   target_type: string | null;
   target_id: string | null;
   target_parent_id?: string | null;
 }
 
-/** Route for a notification's deep link target, or null if it has none / isn't navigable. */
+/**
+ * Where a notification opens (the 184 notification-targets table). Until the place phases
+ * land, loops, hypotheses and reminders open World, people and insights open Mind.
+ */
 export function notificationHref(n: NotificationTarget): string | null {
   const { target_type: type, target_id: id, target_parent_id: parent } = n;
   if (!type || !id) return null;
-  if (type === "goal") return `/goals/${id}`;
-  if (type === "goal_gate") return parent ? `/goals/${parent}` : null;
-  if (type === "workflow_execution") {
-    return parent ? `/workflows/${parent}?execution=${id}` : null;
+  switch (type) {
+    case "open_loop":
+    case "hypothesis":
+    case "held_write":
+    case "reminder":
+      return "/";
+    case "goal":
+      return goalPath(id);
+    case "goal_gate":
+      return parent ? goalPath(parent) : goalsPath();
+    case "goal_suggestion":
+      return "/doing";
+    case "workflow_execution":
+      return parent ? workflowPath(parent, id) : workflowsPath();
+    // Until 184 renames it, the backend still sends the workflow id as `workflow_run`.
+    case "workflow_run":
+      return workflowPath(id);
+    case "workspace_run":
+      return "/doing/workspace";
+    case "chat_thread":
+      return askPath(id);
+    case "person":
+    case "insight":
+      return "/mind";
+    default:
+      return null;
   }
-  return null;
 }

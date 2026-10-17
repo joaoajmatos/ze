@@ -1,6 +1,5 @@
 import { Workflow } from "lucide-react";
 import { useMemo, useState } from "react";
-import { FloatingButton } from "@/features/open-context-overlay";
 import { useWorkflowsQuery, WorkflowCard } from "@/entities/workflow";
 import { ListPage, SearchBar, FilterChips, ViewToggle, SortSelect } from "@/shared/ui";
 import type { FilterOption, ViewMode, SortOption } from "@/shared/ui";
@@ -111,8 +110,6 @@ export function WorkflowsOverview() {
           </div>
         )}
       </ListPage>
-
-      <FloatingButton screen="workflows" />
     </>
   );
 }

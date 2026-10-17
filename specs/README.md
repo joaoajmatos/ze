@@ -224,7 +224,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 180 | [Retry Rollback](phases/180-retry-rollback/spec.md) | ✅ Implemented |
 | 181 | [Irreversible Write Confirmation](phases/181-irreversible-write-confirmation/spec.md) | ✅ Implemented |
 | 182 | [Complexity Routing](phases/182-complexity-routing/spec.md) | ✅ Implemented |
-| 183 | [Web Shell and Tokens (W1)](phases/183-web-shell-tokens/spec.md) | 🔲 Ready to implement |
+| 183 | [Web Shell and Tokens (W1)](phases/183-web-shell-tokens/spec.md) | ✅ Implemented |
 | 184 | [Composed Answers and Claim Posture (B1)](phases/184-composed-answers-posture/spec.md) | ✅ Implemented |
 | 185 | [World Data Gaps (B2)](phases/185-world-data-gaps/spec.md) | 🔲 Draft |
 | 186 | [World (W2)](phases/186-web-world/spec.md) | 🔲 Draft |
@@ -236,6 +236,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 192 | [Voice Input Transport (B3)](phases/192-voice-transport/spec.md) | 🔲 Draft |
 | 193 | [Voice and Polish (W8)](phases/193-web-voice-polish/spec.md) | 🔲 Draft |
 | 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | 🔲 Draft |
+| 195 | [Screen Context Awareness](phases/195-screen-context-awareness/spec.md) | 🔲 Ready to implement |
 
 ## Ze Core specs (`core/`)
 

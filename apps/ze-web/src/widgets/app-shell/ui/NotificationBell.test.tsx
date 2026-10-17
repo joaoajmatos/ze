@@ -188,7 +188,7 @@ describe("NotificationBell", () => {
     expect(screen.getByText("abandon a goal")).toBeInTheDocument();
   });
 
-  it("opens the chat on the paused thread for a chat_thread notification", () => {
+  it("opens Ask on the paused thread for a chat_thread notification", () => {
     setup({
       items: [
         {
@@ -207,7 +207,7 @@ describe("NotificationBell", () => {
     fireEvent.click(screen.getByText("Ze needs your approval"));
 
     expect(useSession.getState().threadId).toBe("thread-9");
-    expect(screen.getByTestId("location")).toHaveTextContent(/^\/$/);
+    expect(screen.getByTestId("location")).toHaveTextContent(/^\/ask\/thread-9$/);
   });
 
   it("labels a held item", () => {

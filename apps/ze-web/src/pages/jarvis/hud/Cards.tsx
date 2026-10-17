@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { goalPath, workflowPath } from "@/shared/config";
+import { CountUp, Meter, Module } from "@/shared/ui";
 import type { Component } from "../model/compose";
 import { ago, hhmm, pct, relDay, sourceLabel, stateLabel } from "../model/format";
 import { kindLabelOf, postureOf, short } from "../model/hud";
 import type { Concern, World } from "../model/world";
-import { CountUp, Meter, Module } from "./Frame";
 
 interface CardProps {
   c: Component;
@@ -164,7 +165,7 @@ export function Card(p: CardProps) {
             </p>
           )}
           <div className="actions">
-            <Link to={`/goals/${g.id}`} className={`ctl ${g.openGate ? "primary" : ""}`}>
+            <Link to={goalPath(g.id)} className={`ctl ${g.openGate ? "primary" : ""}`}>
               {g.openGate ? "Open and decide" : "Open goal"}
             </Link>
           </div>
@@ -197,7 +198,7 @@ export function Card(p: CardProps) {
             </span>
           </div>
           <div className="actions">
-            <Link to={`/workflows/${w.id}`} className="ctl">
+            <Link to={workflowPath(w.id)} className="ctl">
               Open workflow
             </Link>
           </div>

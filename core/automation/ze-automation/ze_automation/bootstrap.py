@@ -225,8 +225,8 @@ def make_workflow_failure_handler(
         if await push_log_store.was_sent_within_hours(event_type, cooldown):
             log.info("failure_alert_suppressed_cooldown", workflow=workflow.name)
             return
-        executions = await workflow_store.list_executions(workflow.id, limit=1)
-        execution = executions[0] if executions else None
+        executions = await workflow_store.list_executions(workflow.id, limit=5)
+        execution = next((e for e in executions if e.status == "failed"), None)
         if execution is None:
             body = "The run failed before it started."
             targets: dict[str, str] = {}
