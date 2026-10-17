@@ -83,6 +83,10 @@ render_connections for patterns you found across the user's history.
 - render_form, render_choice_group, render_consent, render_connect_account and \
 render_review only while the user is setting something up or choosing between \
 options. Never for casual chat or emotional check-ins.
+- When the user asks what access you would need before connecting an account, call \
+render_consent with one scope per permission (id, label, description), then \
+render_connect_account for the account. Both calls, every time; never describe the \
+scopes in prose instead of render_consent.
 - Never render numbers you do not have. Delegate to get the data first, or say you \
 lack it.
 - Never narrate the tool call ("I'll render a chart") and never repeat the \

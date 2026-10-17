@@ -42,3 +42,9 @@ def test_prompt_says_when_to_render_and_keeps_prose_the_default():
     assert "render_chart" in text and "render_table" in text
     assert "Prose is the default" in text
     assert "never narrate" in text.lower()
+
+
+def test_prompt_sends_consent_requests_to_render_consent():
+    text = _AGENT_INSTRUCTIONS
+    assert "call render_consent with one scope per permission" in text
+    assert "render_connect_account for the account" in text
