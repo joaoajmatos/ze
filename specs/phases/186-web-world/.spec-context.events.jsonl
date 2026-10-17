@@ -14,3 +14,6 @@
 {"step": "implement", "substep": null, "task": "T015", "kind": "complete", "by": "ai", "at": "2026-10-17T22:00:02.797Z", "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"}
 {"step": "implement", "substep": null, "task": "T016", "kind": "complete", "by": "ai", "at": "2026-10-17T22:06:31.086Z", "did": "answer-gate feature, HeldWriteCard, NeedsYou"}
 {"step": "implement", "substep": null, "task": "T017", "kind": "complete", "by": "ai", "at": "2026-10-17T22:06:31.372Z", "did": "answer-gate feature, HeldWriteCard, NeedsYou"}
+{"step": "implement", "substep": null, "task": "T018", "kind": "complete", "by": "ai", "at": "2026-10-17T22:21:04.085Z", "did": "rails: loops-rail, doing-now, touched, away"}
+{"step": "implement", "substep": null, "task": "T019", "kind": "complete", "by": "ai", "at": "2026-10-17T22:21:04.615Z", "did": "rails: loops-rail, doing-now, touched, away"}
+{"step": "implement", "substep": null, "task": "T020", "kind": "complete", "by": "ai", "at": "2026-10-17T22:21:05.410Z", "did": "rails: loops-rail, doing-now, touched, away"}

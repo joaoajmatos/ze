@@ -55,9 +55,9 @@
 
 ## Phase 5: Rails [US1, US3]
 
-- [ ] T018 [P] [JR] [WEB] Tests first `widgets/loops-rail/ui/LoopsRail.test.tsx`: glyph, state tick, `Spark` only with a prior, mono readout, dim line from the posture table; Close and Drop on active and drifting rows call `onTransition`, none on suspected rows. Implement.
-- [ ] T019 [P] [JR] [WEB] Tests first `widgets/doing-now/ui/DoingNow.test.tsx`: active goals with progress and "stuck since"; next run; week ok/failed counts; running execution; failed run shows `failure_summary`, never raw `error`. Implement.
-- [ ] T020 [P] [JR] [WEB] Tests first `widgets/touched/ui/Touched.test.tsx` (seven-day window applied client-side, closed loops included, older closed loops dropped) and `widgets/away/ui/Away.test.tsx` (notifications with one action via `notificationHref`, only visible job runs with labels, budget readout with `next_slot_at` only when present). Implement both.
+- [x] T018 [P] [JR] [WEB] Tests first `widgets/loops-rail/ui/LoopsRail.test.tsx`: glyph, state tick, `Spark` only with a prior, mono readout, dim line from the posture table; Close and Drop on active and drifting rows call `onTransition`, none on suspected rows. Implement.
+- [x] T019 [P] [JR] [WEB] Tests first `widgets/doing-now/ui/DoingNow.test.tsx`: active goals with progress and "stuck since"; next run; week ok/failed counts; running execution; failed run shows `failure_summary`, never raw `error`. Implement.
+- [x] T020 [P] [JR] [WEB] Tests first `widgets/touched/ui/Touched.test.tsx` (seven-day window applied client-side, closed loops included, older closed loops dropped) and `widgets/away/ui/Away.test.tsx` (notifications with one action via `notificationHref`, only visible job runs with labels, budget readout with `next_slot_at` only when present). Implement both.
 
 ## Phase 6: Page, presence, router [US1–US6]
 

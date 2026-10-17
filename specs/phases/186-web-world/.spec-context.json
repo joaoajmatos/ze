@@ -3,7 +3,7 @@
   "specName": "World (W2)",
   "branch": "186-web-world",
   "currentStep": "implement",
-  "currentTask": "T017",
+  "currentTask": "T020",
   "status": "implementing",
   "task_summaries": {
     "T002": {
@@ -69,6 +69,18 @@
     "T017": {
       "status": "DONE",
       "did": "answer-gate feature, HeldWriteCard, NeedsYou"
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "rails: loops-rail, doing-now, touched, away"
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "rails: loops-rail, doing-now, touched, away"
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "rails: loops-rail, doing-now, touched, away"
     }
   },
   "history": [
@@ -199,6 +211,30 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-10-17T22:06:31.372Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:21:04.085Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:21:04.615Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:21:05.410Z"
     }
   ]
 }
