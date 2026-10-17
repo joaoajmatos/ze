@@ -1,0 +1,148 @@
+/* ---------- governance: forms, readouts and the page grid (phase 190) ---------- */
+.gov {
+  display: grid;
+  gap: 14px;
+  padding: 18px 16px 28px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.gov > * {
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  .gov {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "spend data"
+      "attention connections"
+      "files files";
+    align-items: start;
+  }
+  .gov-spend { grid-area: spend; }
+  .gov-attention { grid-area: attention; }
+  .gov-data { grid-area: data; }
+  .gov-connections { grid-area: connections; }
+  .gov-files { grid-area: files; }
+}
+.gov-stack {
+  display: grid;
+  gap: 14px;
+  margin-top: 10px;
+}
+.gov-field {
+  display: grid;
+  gap: 6px;
+}
+.gov-field .lbl {
+  font-size: 0.5625rem;
+}
+.gov-in {
+  min-height: 44px;
+  padding: 0 12px;
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--hair-strong);
+  border-radius: 0;
+  color: var(--cream);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 300;
+}
+.gov-in::placeholder {
+  color: var(--dim);
+}
+.gov-in[aria-invalid="true"] {
+  border-color: var(--coral);
+}
+.gov-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.gov-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--main);
+}
+.gov-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.gov-err {
+  margin: 0;
+  color: var(--coral);
+  font-size: 0.8125rem;
+}
+.gov-note {
+  margin: 0;
+  color: var(--dim);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+.gov-ok {
+  margin: 0;
+  color: var(--main);
+  font-size: 0.8125rem;
+}
+.gov-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.gov-figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+}
+.gov-rule {
+  height: 1px;
+  background: var(--hair);
+  position: relative;
+  overflow: hidden;
+}
+.gov-rule::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--main);
+  transform-origin: left;
+  animation: gov-draw 1.4s var(--ease-out) infinite;
+}
+@keyframes gov-draw {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gov-rule::after { animation: none; }
+}
+.gov-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in oklab, var(--field) 82%, transparent);
+}
+.gov-dialog-box {
+  width: min(420px, 100%);
+  padding: 18px;
+  border: 1px solid var(--hair-strong);
+  background: var(--wash);
+  display: grid;
+  gap: 14px;
+}
+.gov-dialog-box.hot {
+  border-color: var(--coral);
+}
+.gov-row .s .ro {
+  font-size: 0.6875rem;
+}
+.gov-file-row {
+  grid-template-columns: 1fr auto;
+}
