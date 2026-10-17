@@ -1,6 +1,6 @@
 import { InterimSections, type InterimSection, type PageLoader } from "@/shared/ui";
 
-type Loaders = { goals: PageLoader; workflows: PageLoader; skills: PageLoader; workspace: PageLoader };
+type Loaders = { goals: PageLoader; workflows: PageLoader; skills: PageLoader };
 
 const under = (base: string) => (p: string) => p === base || p.startsWith(`${base}/`);
 
@@ -10,7 +10,6 @@ export function DoingInterim({ loaders, fallback }: { loaders: Loaders; fallback
     { id: "goals", label: "Goals", path: "/doing/goals", owns: (p) => p === "/doing" || under("/doing/goals")(p), load: loaders.goals },
     { id: "workflows", label: "Workflows", path: "/doing/workflows", owns: under("/doing/workflows"), load: loaders.workflows },
     { id: "skills", label: "Skills", path: "/doing/skills", owns: under("/doing/skills"), load: loaders.skills },
-    { id: "workspace", label: "Workspace", path: "/doing/workspace", owns: under("/doing/workspace"), load: loaders.workspace },
   ];
   return <InterimSections label="Doing sections" sections={sections} fallback={fallback} />;
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 interface Props {
-  /** The orb canvas: the line starts at its coral core. */
+  /** The orb canvas: the line starts at its monad (the coral cluster), read from the canvas's `data-monad`. */
   from: string;
   /** The square mark itself (the data point), never its label or group. */
   to: string;
@@ -32,14 +32,15 @@ export function LeaderLine({ from, to, reducedMotion }: Props) {
         return;
       }
       svg.style.display = "";
-      const ax = a.left + a.width / 2;
-      const ay = a.top + a.height / 2;
+      const [mx, my] = ((document.querySelector(from) as HTMLElement | null)?.dataset.monad ?? "0 0").split(" ").map(Number);
+      const ax = a.left + a.width / 2 + (mx || 0);
+      const ay = a.top + a.height / 2 + (my || 0);
       const bx = b.left + b.width / 2;
       const by = b.top + b.height / 2;
       const len = Math.hypot(bx - ax, by - ay) || 1;
       const ux = (bx - ax) / len;
       const uy = (by - ay) / len;
-      // Start inside the coral core and end exactly on the mark's centre.
+      // Start inside the monad and end exactly on the mark's centre.
       const x1 = ax + ux * a.width * 0.05;
       const y1 = ay + uy * a.width * 0.05;
       for (const el of [base.current, flow.current]) {
@@ -61,6 +62,10 @@ export function LeaderLine({ from, to, reducedMotion }: Props) {
     window.addEventListener("resize", schedule);
     const ro = new ResizeObserver(schedule);
     ro.observe(document.body);
+    // The monad drifts a little toward the flagged item as attention begins; follow it.
+    const orb = document.querySelector(from);
+    const mo = new MutationObserver(schedule);
+    if (orb) mo.observe(orb, { attributes: true, attributeFilter: ["data-monad"] });
     const hero = document.querySelector(".hero");
     if (hero) ro.observe(hero);
     return () => {
@@ -69,6 +74,7 @@ export function LeaderLine({ from, to, reducedMotion }: Props) {
       window.removeEventListener("scroll", schedule, true);
       window.removeEventListener("resize", schedule);
       ro.disconnect();
+      mo.disconnect();
     };
   }, [from, to]);
   return createPortal(

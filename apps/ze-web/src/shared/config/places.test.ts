@@ -54,12 +54,15 @@ describe("redirects", () => {
     ["/doing/procedures", "/mind"],
     ["/contacts", "/mind"],
     ["/mind/graph", "/mind"],
-    ["/workspace", "/doing/workspace"],
+    ["/workspace", "/governance"],
+    ["/doing/workspace", "/governance"],
     ["/brain-memory", "/mind"],
     ["/brain-graph", "/mind"],
     ["/costs", "/governance"],
-    ["/data", "/governance/data"],
-    ["/settings", "/governance/settings"],
+    ["/data", "/governance"],
+    ["/governance/data", "/governance"],
+    ["/settings", "/governance"],
+    ["/governance/settings", "/governance"],
   ])("%s -> %s", (from, to) => {
     expect(resolve(from)).toBe(to);
   });
@@ -69,9 +72,21 @@ describe("redirects", () => {
     expect(resolve("/workflows/:workflowId", { workflowId: "w-1" })).toBe("/doing/workflows/w-1");
   });
 
+  it("names the module each old path lands on", () => {
+    const hint = (from: string) => redirects.find((r) => r.from === from)?.hint;
+    expect(hint("/settings")).toBe("connections");
+    expect(hint("/governance/settings")).toBe("connections");
+    expect(hint("/data")).toBe("data");
+    expect(hint("/governance/data")).toBe("data");
+    expect(hint("/workspace")).toBe("files");
+    expect(hint("/doing/workspace")).toBe("files");
+    expect(hint("/costs")).toBeUndefined();
+    expect(redirects.find((r) => r.from === "/settings")?.hintMap).toEqual({ "your-data": "data" });
+  });
+
   it("covers every old core route once", () => {
     expect(new Set(redirects.map((r) => r.from)).size).toBe(redirects.length);
-    expect(redirects).toHaveLength(17);
+    expect(redirects).toHaveLength(20);
   });
 });
 
@@ -89,7 +104,7 @@ describe("path helpers", () => {
     expect(askPath("t-1")).toBe("/ask/t-1");
   });
 
-  it("points the data section at settings", () => {
-    expect(settingsDataPath()).toBe("/governance/settings#your-data");
+  it("points the data section at Governance", () => {
+    expect(settingsDataPath()).toBe("/governance#data");
   });
 });

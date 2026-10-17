@@ -63,9 +63,14 @@ Old paths redirect to their place and keep params, query and hash. The table is 
 | `/priority` | `/world/priority` |
 | `/goals`, `/goals/:id` | `/doing/goals`, `/doing/goals/:id` |
 | `/workflows`, `/workflows/:id` | `/doing/workflows`, `/doing/workflows/:id` |
-| `/skills`, `/workspace` | `/doing/skills`, `/doing/workspace` |
+| `/skills` | `/doing/skills` |
 | `/brain-memory`, `/brain-graph`, `/mind/graph`, `/procedures`, `/doing/procedures`, `/contacts` | `/mind` |
-| `/costs`, `/data`, `/settings` | `/governance`, `/governance/data`, `/governance/settings` |
+| `/costs` | `/governance` |
+| `/data`, `/governance/data` | `/governance#data` |
+| `/settings`, `/governance/settings` | `/governance#connections` |
+| `/workspace`, `/doing/workspace` | `/governance#files` |
+
+A redirect entry can carry a `hint`. `RedirectTo` then replaces the incoming hash with the hint and keeps the query. An entry can also carry a `hintMap`, which lets an old hash win (`#your-data` becomes `#data`).
 
 ### Mind
 
@@ -79,7 +84,23 @@ Mind shows what Ze believes. `/mind` holds four modules: Beliefs, People, Find a
 
 The claim posture table (glyph, chip word, plain words per state) lives in `shared/lib/claim-posture.ts`. Beliefs publish their visible and selected rows to screen context, the entity page publishes its entity as the subject, and rows carry "Chat about this".
 
-Until each place has its own design, it hosts the old pages as sections behind a row of tabs. One file per place holds the sections: `pages/world/ui/WorldInterim.tsx` (phase 186 replaces it), `pages/ask/ui/AskInterim.tsx` (187), `pages/doing/ui/DoingInterim.tsx` (188), `pages/governance/ui/GovernanceInterim.tsx` (190). A page cannot import another page, so `app/router/routes.tsx` passes each interim file the loaders for its sections. Plugin pages still use `/:pluginPath` (phase 191 places them).
+Until each place has its own design, it hosts the old pages as sections behind a row of tabs. One file per place holds the sections: `pages/world/ui/WorldInterim.tsx` (phase 186 replaces it), `pages/ask/ui/AskInterim.tsx` (187), `pages/doing/ui/DoingInterim.tsx` (188). A page cannot import another page, so `app/router/routes.tsx` passes each interim file the loaders for its sections. Plugin pages still use `/:pluginPath` (phase 191 places them).
+
+## Governance
+
+`/governance` answers "is Ze behaving?" on one page (`pages/governance`, phase 190). Each module is a widget, labelled by the question it answers:
+
+| Module | Widget | Shows |
+|--------|--------|-------|
+| Am I spending normally? | `widgets/spend` | Last 7 days' daily average against the 30-day average, the anomaly count, per-flow totals and a `SeriesSpark` over 30 days |
+| What can interrupt me? | `widgets/attention` | Pushes used of the daily maximum, the next slot, held pushes, recent push outcomes and the quiet-hours form |
+| What does Ze hold, and can I take it? | `widgets/data` | Data domains in plain words, export, import and delete-all behind a typed confirmation |
+| How do I reach Ze? | `widgets/connections` | Server URL and key with a test, plugin settings, the palette and "Forget this server" |
+| What is in Ze's workspace? | `widgets/files` | A read-only file tree and the workspace status |
+
+On a phone the modules stack as Attention, Spend, Connections, Data, Files. The page publishes the focused module for screen context. It keeps the last focused module until another takes focus, and a click on plain text does not change it.
+
+Spend averages divide by the days since the first spend inside the 30-day window, up to 30, so a new install does not read as a spike. Today's partial day counts as a whole day. The connection test calls the public `/version` route, then one authenticated route, so it can tell "reachable" from "key rejected". `SeriesSpark` (`shared/ui/hud`) draws a series; `Spark` draws a two-point change.
 
 ## Adding a new screen
 
@@ -95,7 +116,7 @@ To ask Ze about a screen, call `askAbout({ text, context })` from `features/ask-
 
 Each slice exposes a public API through `index.ts`. Internal `ui/`, `api/`, `model/` folders are private to the slice.
 
-Core-owned screens include `/skills` (`pages/skills` + `widgets/skill-management`) and `/workspace` (`pages/workspace`). See [skills.md](skills.md) and [workspace.md](workspace.md).
+Core-owned screens include `/skills` (`pages/skills` + `widgets/skill-management`). The workspace file map lives in Governance. See [skills.md](skills.md) and [workspace.md](workspace.md).
 
 ## Extending an existing domain
 

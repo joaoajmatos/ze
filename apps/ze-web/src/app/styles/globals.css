@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @import "../../shared/styles/ze.css";
+@import "../../shared/styles/governance.css";
 
 @source "../../../../../packages/ze-ui/src";
 

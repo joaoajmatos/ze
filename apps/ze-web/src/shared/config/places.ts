@@ -29,7 +29,16 @@ export function placeOf(pathname: string): Place | null {
 }
 
 /** Old routes (ntfy links, bookmarks) and where they land; `:param` segments carry across. */
-export const redirects: readonly { from: string; to: string }[] = [
+export interface Redirect {
+  from: string;
+  to: string;
+  /** Replaces the incoming hash with this section id. */
+  hint?: string;
+  /** Incoming hashes that win over `hint`. */
+  hintMap?: Record<string, string>;
+}
+
+export const redirects: readonly Redirect[] = [
   { from: "/loops", to: "/" },
   { from: "/priority", to: "/world/priority" },
   { from: "/goals", to: "/doing/goals" },
@@ -41,12 +50,15 @@ export const redirects: readonly { from: string; to: string }[] = [
   { from: "/doing/procedures", to: "/mind" },
   { from: "/contacts", to: "/mind" },
   { from: "/mind/graph", to: "/mind" },
-  { from: "/workspace", to: "/doing/workspace" },
+  { from: "/workspace", to: "/governance", hint: "files" },
+  { from: "/doing/workspace", to: "/governance", hint: "files" },
   { from: "/brain-memory", to: "/mind" },
   { from: "/brain-graph", to: "/mind" },
   { from: "/costs", to: "/governance" },
-  { from: "/data", to: "/governance/data" },
-  { from: "/settings", to: "/governance/settings" },
+  { from: "/data", to: "/governance", hint: "data" },
+  { from: "/governance/data", to: "/governance", hint: "data" },
+  { from: "/settings", to: "/governance", hint: "connections", hintMap: { "your-data": "data" } },
+  { from: "/governance/settings", to: "/governance", hint: "connections", hintMap: { "your-data": "data" } },
 ];
 
 export function goalsPath(): string {
@@ -70,9 +82,9 @@ export function askPath(threadId?: string): string {
   return threadId ? `/ask/${threadId}` : "/ask";
 }
 
-/** Hash target for export/import/delete in Settings. */
-export const settingsDataSectionId = "your-data";
+/** Hash target for export/import/delete in Governance. */
+export const settingsDataSectionId = "data";
 
 export function settingsDataPath(): string {
-  return redirectHintPath("/governance/settings", settingsDataSectionId);
+  return redirectHintPath("/governance", settingsDataSectionId);
 }

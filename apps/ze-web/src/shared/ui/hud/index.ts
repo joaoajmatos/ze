@@ -1,5 +1,6 @@
 export { Glyph } from "./Glyph";
 export { Spark } from "./Spark";
+export { SeriesSpark } from "./SeriesSpark";
 export { Decode } from "./Decode";
 export { Corners } from "./Corners";
 export { Module } from "./Module";
@@ -12,6 +13,7 @@ export { Control } from "./Control";
 export type { ControlProps } from "./Control";
 export { CommandChip } from "./CommandChip";
 export { Chip } from "./Chip";
+export { Dialog } from "./Dialog";
 export * from "./presence";
 export { SectionTabs } from "./SectionTabs";
 export type { SectionTab } from "./SectionTabs";

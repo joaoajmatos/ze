@@ -1,4 +1,4 @@
-// Categorical dataviz palette distinguishing agents in charts (heatmap, cost
+// Categorical dataviz palette distinguishing agents in charts (cost
 // breakdowns) — deliberately separate from the brand's UI-state tokens
 // (success/warning/destructive), which carry meaning, not identity.
 export const AGENT_COLORS: Record<string, string> = {

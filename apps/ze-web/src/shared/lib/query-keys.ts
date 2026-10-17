@@ -20,7 +20,6 @@ export const queryKeys = {
   messageFeedback: (idsKey: string) => ["message-feedback", idsKey] as const,
   messageTraces: (threadId: string, idsKey: string) =>
     ["message-traces", threadId, idsKey] as const,
-  activityHeatmap: (start?: string, end?: string) => ["activity-heatmap", start ?? "", end ?? ""] as const,
   memoryGraph: (entityType?: string, seedId?: string) => ["memory-graph", entityType ?? "", seedId ?? ""] as const,
   entityDetail: (entityId: string) => ["entity-detail", entityId] as const,
   entitySearch: (q: string, type?: string) => ["entity-search", q, type ?? ""] as const,
@@ -30,6 +29,7 @@ export const queryKeys = {
   pluginSettings: (id: string) => ["plugin-settings", id] as const,
   dataDomains: () => ["data-domains"] as const,
   notifications: (unreadOnly: boolean) => ["notifications", unreadOnly] as const,
+  notificationsDelivery: (delivery: string) => ["notifications-delivery", delivery] as const,
   unreadNotificationCount: ["unread-notification-count"] as const,
   quietHours: ["quiet-hours"] as const,
   attentionBudget: ["attention-budget"] as const,

@@ -5,28 +5,6 @@ export type ClientOptions = {
 };
 
 /**
- * ActivityHeatmapResponse
- */
-export type ActivityHeatmapResponse = {
-    /**
-     * Days
-     */
-    days: Array<HeatmapDay>;
-    /**
-     * Agents
-     */
-    agents: Array<string>;
-    /**
-     * Start
-     */
-    start: string;
-    /**
-     * End
-     */
-    end: string;
-};
-
-/**
  * AgentCostBucket
  */
 export type AgentCostBucket = {
@@ -50,20 +28,6 @@ export type AgentCostBucket = {
      * Completion Tokens
      */
     completion_tokens: number;
-};
-
-/**
- * AgentDayCount
- */
-export type AgentDayCount = {
-    /**
-     * Agent
-     */
-    agent: string;
-    /**
-     * Count
-     */
-    count: number;
 };
 
 /**
@@ -841,24 +805,6 @@ export type HealthResponse = {
      * Status
      */
     status: 'ok';
-};
-
-/**
- * HeatmapDay
- */
-export type HeatmapDay = {
-    /**
-     * Date
-     */
-    date: string;
-    /**
-     * Total
-     */
-    total: number;
-    /**
-     * Agents
-     */
-    agents: Array<AgentDayCount>;
 };
 
 /**
@@ -3578,44 +3524,6 @@ export type HealthCheckResponses = {
 };
 
 export type HealthCheckResponse = HealthCheckResponses[keyof HealthCheckResponses];
-
-export type GetActivityHeatmapData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Start
-         *
-         * Start date inclusive (ISO date). Defaults to 12 months ago.
-         */
-        start?: string | null;
-        /**
-         * End
-         *
-         * End date inclusive (ISO date). Defaults to today.
-         */
-        end?: string | null;
-    };
-    url: '/api/v0/activity/heatmap';
-};
-
-export type GetActivityHeatmapErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetActivityHeatmapError = GetActivityHeatmapErrors[keyof GetActivityHeatmapErrors];
-
-export type GetActivityHeatmapResponses = {
-    /**
-     * Successful Response
-     */
-    200: ActivityHeatmapResponse;
-};
-
-export type GetActivityHeatmapResponse = GetActivityHeatmapResponses[keyof GetActivityHeatmapResponses];
 
 export type GetMemoryFeedData = {
     body?: never;

@@ -18,6 +18,7 @@ export function useUpdateQuietHoursMutation() {
         queryKey: queryKeys.attentionBudget,
       });
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      void queryClient.invalidateQueries({ queryKey: ["notifications-delivery"] });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.unreadNotificationCount,
       });
