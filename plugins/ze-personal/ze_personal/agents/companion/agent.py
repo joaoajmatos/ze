@@ -161,8 +161,8 @@ class CompanionAgent(BaseAgent):
         openrouter_client: LLMClient,
         settings: Settings,
         person_store: PersonStore,
-        outreach_log: OutreachLog | None,
         memory_store: PostgresMemoryStore,
+        outreach_log: OutreachLog | None = None,
     ) -> None:
         self._settings = settings
         self._client = openrouter_client

@@ -13,8 +13,7 @@ CF-16 applies these and deletes this file.
   `agent_deps` (the campaign store).
 - Layout, `ze-agents` tree (after the `effects.py` line): add
   `honesty.py   # reply-honesty guards (enforce_memory_confirmations); a successful render that waits for the user (choice group, form, consent, confirm, review, connect account) lets "I'll remember your pick" stand; data renders (table, chart, metric, timeline) and past-tense save claims still strip`.
-- Layout, `ze-core/container.py` line: agent constructor parameters typed `X | None` get `None`
-  when no plugin registers `X` (the companion's `OutreachLog` is the first).
+- The companion's `outreach_log` has a `None` default, so `ze_agents.bootstrap` builds it when ze-prospecting is not loaded; the companion then skips outreach logging.
 
 ## docs/eval.md
 

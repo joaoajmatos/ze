@@ -367,3 +367,34 @@ async def test_run_without_an_outreach_log_skips_logging():
     )
     result = await agent.run(make_ctx("I sent an email to Carlos Mendes yesterday"))
     assert result.tool_calls == []
+
+
+def _companion_dep_map(extra=None):
+    from ze_agents.client import LLMClient
+    from ze_agents.settings import Settings
+    from ze_personal.contacts.store import PersonStore
+    from ze_sdk.memory import PostgresMemoryStore
+
+    return {
+        LLMClient: AsyncMock(),
+        Settings: make_settings(),
+        PersonStore: make_person_store(),
+        PostgresMemoryStore: AsyncMock(),
+        **(extra or {}),
+    }
+
+
+def test_bootstrap_resolver_builds_the_companion_without_an_outreach_log():
+    from ze_agents.bootstrap import _resolve
+
+    agent = _resolve(CompanionAgent, _companion_dep_map())
+    assert agent._outreach_log is None
+
+
+def test_bootstrap_resolver_injects_the_outreach_log_when_registered():
+    from ze_agents.bootstrap import _resolve
+    from ze_personal.agents.companion.outreach_log import OutreachLog
+
+    log = AsyncMock()
+    agent = _resolve(CompanionAgent, _companion_dep_map({OutreachLog: log}))
+    assert agent._outreach_log is log
