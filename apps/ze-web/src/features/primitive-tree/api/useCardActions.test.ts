@@ -2,8 +2,8 @@ import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { loopMutate, heldMutate, navigate, send, showNotice } = vi.hoisted(() => ({
-  loopMutate: vi.fn(),
-  heldMutate: vi.fn(),
+  loopMutate: vi.fn(() => Promise.resolve()),
+  heldMutate: vi.fn(() => Promise.resolve()),
   navigate: vi.fn(),
   send: vi.fn(() => true),
   showNotice: vi.fn(),
@@ -11,10 +11,10 @@ const { loopMutate, heldMutate, navigate, send, showNotice } = vi.hoisted(() => 
 
 vi.mock("react-router-dom", () => ({ useNavigate: () => navigate }));
 vi.mock("@/entities/loop", () => ({
-  useLoopTransitionMutation: () => ({ mutate: loopMutate }),
+  useLoopTransitionMutation: () => ({ mutateAsync: loopMutate }),
 }));
 vi.mock("@/entities/confirmation", () => ({
-  useDecideHeldWriteMutation: () => ({ mutate: heldMutate }),
+  useDecideHeldWriteMutation: () => ({ mutateAsync: heldMutate }),
 }));
 vi.mock("@/entities/session", () => ({
   useSession: (selector: (s: { threadId: string }) => unknown) => selector({ threadId: "t-1" }),
@@ -29,7 +29,7 @@ import { useCardActions } from "./useCardActions";
 
 function run(intent: string, ref_id = "id-1", subject = "loop") {
   const { result } = renderHook(() => useCardActions());
-  result.current({ intent, ref_id, subject });
+  return result.current({ intent, ref_id, subject });
 }
 
 describe("useCardActions", () => {
@@ -61,10 +61,16 @@ describe("useCardActions", () => {
     });
   });
 
-  it("approve_gate tells the user when the socket is down", () => {
+  it("approve_gate tells the user when the socket is down and reports failure", async () => {
     send.mockReturnValueOnce(false);
-    run("approve_gate", "gate-1", "goal");
+    await expect(run("approve_gate", "gate-1", "goal")).resolves.toBe(false);
     expect(showNotice).toHaveBeenCalledWith("Not connected. Retry when Ze reconnects.");
+  });
+
+  it("a rejected mutation reports failure and a resolved one success", async () => {
+    loopMutate.mockRejectedValueOnce(new Error("500"));
+    await expect(run("confirm_loop")).resolves.toBe(false);
+    await expect(run("confirm_loop")).resolves.toBe(true);
   });
 
   it("open navigates to the record's page", () => {

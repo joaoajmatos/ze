@@ -549,6 +549,8 @@ function HeadlineRenderer({ node }: { node: Headline }) {
 function ClaimCardRenderer({ node }: { node: ClaimCard }) {
   const { onCardAction } = usePrimitiveRendererActions();
   const [decided, setDecided] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
   const actions = (node.actions ?? []).filter((a) => !decided || a.intent === "open");
   return (
     <div className={cn("rounded-lg border p-3 flex flex-col gap-1", CARD_TONE[node.tone ?? "default"])}>
@@ -575,21 +577,37 @@ function ClaimCardRenderer({ node }: { node: ClaimCard }) {
         </dl>
       )}
       {decided && <p className="text-xs text-white/50">Sent.</p>}
+      {failed && <p className="text-xs text-ember">Could not send. Try again.</p>}
       {actions.length > 0 && (
         <div className="flex gap-2 pt-1">
           {actions.map((action: CardAction, i) => (
             <button
               key={i}
               type="button"
-              onClick={() => {
-                if (action.intent !== "open") setDecided(true);
-                onCardAction?.({
+              disabled={pending}
+              onClick={async () => {
+                const event = {
                   intent: action.intent,
                   ref_id: action.ref_id,
                   subject: node.claim.subject,
-                });
+                };
+                if (action.intent === "open") {
+                  void onCardAction?.(event);
+                  return;
+                }
+                setPending(true);
+                setFailed(false);
+                let accepted: boolean | void = true;
+                try {
+                  accepted = await onCardAction?.(event);
+                } catch {
+                  accepted = false;
+                }
+                setPending(false);
+                if (accepted === false) setFailed(true);
+                else setDecided(true);
               }}
-              className="px-3 py-1 rounded-pill border border-white/15 text-xs hover:bg-white/5 cursor-pointer"
+              className="px-3 py-1 rounded-pill border border-white/15 text-xs hover:bg-white/5 cursor-pointer disabled:opacity-50 disabled:cursor-default"
             >
               {action.label}
             </button>

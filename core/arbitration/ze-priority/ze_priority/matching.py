@@ -22,7 +22,7 @@ _STEM_LEN = 5
 _TOKEN = re.compile(r"\w+")
 _STOPWORDS = frozenset(
     """
-    about after also been before from have into just more most much only over than that
+    about after also been before doing from going have into just more most much only over than that
     their them then there these they this those very what when where which while will
     with would your
     para como com uma uns umas dos das nos nas pelo pela pelos pelas seu sua seus suas

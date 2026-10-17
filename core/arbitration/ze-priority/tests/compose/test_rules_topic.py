@@ -283,6 +283,13 @@ def test_stopwords_do_not_make_a_match_in_either_language():
         assert _cards(draft) == [], topic
 
 
+def test_going_and_doing_are_stopwords():
+    loop = make_loop(title="Going to the dentist, doing taxes", state=LoopState.ACTIVE)
+    for topic in ("topic: going", "topic: doing"):
+        draft = rules.topic(_snapshot([loop]), topic, _NoisyEmbedder(), NOW)
+        assert _cards(draft) == [], topic
+
+
 def test_five_letter_stems_match_other_forms():
     loop = make_loop(title="Launching the LedgerLite beta", state=LoopState.ACTIVE)
     draft = rules.topic(_snapshot([loop]), "topic: launch", _NoisyEmbedder(), NOW)

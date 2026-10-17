@@ -11,7 +11,8 @@ export interface PrimitiveRendererActions {
   onButtonAction?: (action: string) => boolean | void;
   onFormSubmit?: (formId: string, values: Record<string, string>) => boolean | void;
   onDisconnected?: () => void;
-  onCardAction?: (action: CardActionEvent) => void;
+  /** Resolves false when the action was not accepted, so the card keeps its buttons. */
+  onCardAction?: (action: CardActionEvent) => boolean | void | Promise<boolean | void>;
 }
 
 const defaultActions: PrimitiveRendererActions = {};

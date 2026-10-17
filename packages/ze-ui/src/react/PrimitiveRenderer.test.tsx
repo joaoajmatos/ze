@@ -221,7 +221,7 @@ describe("PrimitiveRenderer", () => {
       });
     });
 
-    it("drops the decision buttons once one is clicked and keeps Open", () => {
+    it("drops the decision buttons once one is accepted and keeps Open", async () => {
       const onCardAction = vi.fn();
       render(
         <PrimitiveRenderer
@@ -238,10 +238,29 @@ describe("PrimitiveRenderer", () => {
         />,
       );
       fireEvent.click(screen.getByText("Approve"));
+      expect(await screen.findByText("Sent.")).toBeInTheDocument();
       expect(screen.queryByText("Approve")).not.toBeInTheDocument();
       expect(screen.getByText("Open")).toBeInTheDocument();
-      expect(screen.getByText("Sent.")).toBeInTheDocument();
       expect(onCardAction).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps the buttons and shows an error when the action is not accepted", async () => {
+      const onCardAction = vi.fn(async () => false);
+      render(
+        <PrimitiveRenderer
+          actions={{ onCardAction }}
+          node={{
+            type: "claim_card",
+            title: "Reach B1",
+            claim: { kind: "priority", subject: "goal", ref_id: "g1", slipped: false },
+            actions: [{ label: "Approve", intent: "approve_gate", ref_id: "g1" }],
+          }}
+        />,
+      );
+      fireEvent.click(screen.getByText("Approve"));
+      expect(await screen.findByText("Could not send. Try again.")).toBeInTheDocument();
+      expect(screen.getByText("Approve")).toBeEnabled();
+      expect(screen.queryByText("Sent.")).not.toBeInTheDocument();
     });
 
     it("shows the claim's posture on a card", () => {
