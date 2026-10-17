@@ -1,1 +1,1 @@
-export { WorldInterim } from "./ui/WorldInterim";
+export { WorldPage } from "./ui/WorldPage";

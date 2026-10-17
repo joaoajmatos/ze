@@ -46,7 +46,9 @@ describe("redirects", () => {
 
   it.each([
     ["/loops", "/"],
-    ["/priority", "/world/priority"],
+    ["/priority", "/"],
+    ["/reminders", "/"],
+    ["/world", "/"],
     ["/goals", "/doing/goals"],
     ["/workflows", "/doing/workflows"],
     ["/skills", "/doing/skills"],
@@ -86,7 +88,7 @@ describe("redirects", () => {
 
   it("covers every old core route once", () => {
     expect(new Set(redirects.map((r) => r.from)).size).toBe(redirects.length);
-    expect(redirects).toHaveLength(20);
+    expect(redirects).toHaveLength(22);
   });
 });
 

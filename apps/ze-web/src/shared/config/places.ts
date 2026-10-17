@@ -40,7 +40,9 @@ export interface Redirect {
 
 export const redirects: readonly Redirect[] = [
   { from: "/loops", to: "/" },
-  { from: "/priority", to: "/world/priority" },
+  { from: "/priority", to: "/" },
+  { from: "/reminders", to: "/" },
+  { from: "/world", to: "/" },
   { from: "/goals", to: "/doing/goals" },
   { from: "/goals/:goalId", to: "/doing/goals/:goalId" },
   { from: "/workflows", to: "/doing/workflows" },

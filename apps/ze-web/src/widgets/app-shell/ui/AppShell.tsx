@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { AnswerGateFrameHandler } from "@/features/answer-gate";
 import { AskBar, useAskOverlay, useAskShortcut } from "@/features/ask-bar";
 import { RefreshHandler } from "@/features/invalidate-on-ws-refresh";
 import { ConfirmationFrameHandler } from "@/features/respond-to-confirmation";
@@ -7,7 +8,7 @@ import { usePresence } from "@/entities/presence";
 import { useSession } from "@/entities/session";
 import { useFrame } from "@/shared/api";
 import { placeOf } from "@/shared/config";
-import { BreadcrumbProvider, PageHeaderProvider, TopBarActionsProvider, useNarrow } from "@/shared/lib";
+import { BreadcrumbProvider, PageHeaderProvider, TopBarActionsProvider, useNarrow, useRailSlot } from "@/shared/lib";
 import { useTopBarActions } from "@/shared/lib/top-bar-actions";
 import { NoticeBanner, Presence, type PresenceHandle } from "@/shared/ui";
 import { BottomBar } from "./BottomBar";
@@ -28,6 +29,7 @@ function Shell({ overlay }: { overlay?: ReactNode }) {
   const threadId = useSession((s) => s.threadId);
   const { orb, phrase } = usePresence(threadId);
   const overlayOpen = useAskOverlay((s) => s.open);
+  const setRailSlot = useRailSlot((s) => s.setElement);
 
   const presenceRef = useRef<PresenceHandle>(null);
   const bellRef = useRef<HTMLDivElement>(null);
@@ -71,6 +73,7 @@ function Shell({ overlay }: { overlay?: ReactNode }) {
       <main className="main main-places">
         <aside className="rail" aria-label="Ze status">
           <Presence ref={presenceRef} state={orb} phrase={phrase} compact={narrow} />
+          <div className="rail-slot" ref={setRailSlot} />
         </aside>
         <div className="place">
           <InterimActions />
@@ -81,6 +84,7 @@ function Shell({ overlay }: { overlay?: ReactNode }) {
       {narrow && <BottomBar />}
       <RefreshHandler />
       <ConfirmationFrameHandler />
+      <AnswerGateFrameHandler />
       {overlay}
     </div>
   );

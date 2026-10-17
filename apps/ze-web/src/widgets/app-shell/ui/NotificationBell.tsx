@@ -1,9 +1,7 @@
 import type { NotificationItem } from "@myguyze/ze-client";
 import { Bell, CheckCheck, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { ConfirmationCard } from "@/features/respond-to-confirmation";
-import { useDecideHeldWriteMutation, useHeldWritesQuery } from "@/entities/confirmation";
+import { useNavigate } from "react-router-dom";
 import {
   useMarkAllReadMutation,
   useMarkReadMutation,
@@ -12,20 +10,14 @@ import {
 } from "@/entities/notification";
 import { useSession } from "@/entities/session";
 import { cn } from "@/shared/lib/cn";
+import { notificationHref } from "@/shared/lib/notification-href";
 import { EmptyState } from "@/shared/ui";
-import { notificationHref, relativeTime } from "../lib/notification-format";
-
-const HELD_ACTIONS = [
-  { label: "Approve all", value: "approve", style: "primary" as const },
-  { label: "Deny all", value: "deny", style: "secondary" as const },
-];
+import { relativeTime } from "../lib/notification-format";
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const confirmId = searchParams.get("confirm");
 
   const { data: unreadCount } = useUnreadCountQuery();
   const {
@@ -37,16 +29,6 @@ export function NotificationBell() {
   } = useNotificationsQuery({ markRead: open });
   const markRead = useMarkReadMutation();
   const markAllRead = useMarkAllReadMutation();
-  const { data: heldWrites = [] } = useHeldWritesQuery();
-  const decideHeldWrite = useDecideHeldWriteMutation();
-  const highlightedId =
-    confirmId && heldWrites.some((h) => h.request_id === confirmId) ? confirmId : null;
-
-  const [seenHighlightedId, setSeenHighlightedId] = useState<string | null>(null);
-  if (seenHighlightedId !== highlightedId) {
-    setSeenHighlightedId(highlightedId);
-    if (highlightedId) setOpen(true);
-  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -60,35 +42,10 @@ export function NotificationBell() {
 
   const items = data?.pages.flatMap((p) => p.items ?? []) ?? [];
 
-  function setConfirmParam(requestId: string | null) {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (requestId) next.set("confirm", requestId);
-        else next.delete("confirm");
-        return next;
-      },
-      { replace: true },
-    );
-  }
-
-  function answerHeldWrite(requestId: string, value: string, edits: Record<string, string>) {
-    decideHeldWrite.mutate({
-      requestId,
-      choice: value === "approve" ? "approve" : "deny",
-      edits,
-    });
-    if (confirmId === requestId) setConfirmParam(null);
-  }
-
   const selectSession = useSession((s) => s.selectSession);
 
   function handleItemClick(item: NotificationItem) {
     if (!item.read) void markRead.mutate(item.id);
-    if (item.target_type === "held_write" && item.target_id) {
-      setConfirmParam(item.target_id);
-      return;
-    }
     if (item.target_type === "chat_thread" && item.target_id) selectSession(item.target_id);
     const href = notificationHref(item);
     if (href) {
@@ -127,36 +84,11 @@ export function NotificationBell() {
           </div>
 
           <div className="overflow-y-auto flex-1">
-            {heldWrites.length > 0 && (
-              <ul aria-label="Writes waiting for your OK" className="px-3 pt-3">
-                {heldWrites.map((held) => (
-                  <li
-                    key={held.request_id}
-                    data-testid={`held-write-${held.request_id}`}
-                    data-highlighted={held.request_id === highlightedId ? "true" : undefined}
-                  >
-                    <ConfirmationCard
-                      title="Waiting for your OK"
-                      items={held.items}
-                      source={{ kind: held.source, name: held.source_name }}
-                      actions={HELD_ACTIONS}
-                      disabled={
-                        decideHeldWrite.isPending &&
-                        decideHeldWrite.variables?.requestId === held.request_id
-                      }
-                      highlighted={held.request_id === highlightedId}
-                      onRespond={(value, edits) => answerHeldWrite(held.request_id, value, edits)}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-
             {isLoading ? (
               <div className="flex items-center justify-center py-10">
                 <Loader2 className="size-4 animate-spin text-smoke" />
               </div>
-            ) : items.length === 0 && heldWrites.length === 0 ? (
+            ) : items.length === 0 ? (
               <EmptyState icon={Bell} message="You're all caught up." />
             ) : (
               <ul>
@@ -207,6 +139,16 @@ export function NotificationBell() {
               </button>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              navigate("/");
+            }}
+            className="w-full py-2.5 text-xs text-smoke hover:text-foreground transition-colors border-t border-foreground/[0.08]"
+          >
+            While you were away
+          </button>
         </div>
       )}
     </div>

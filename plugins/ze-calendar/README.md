@@ -13,6 +13,7 @@ Calendar is one of the most-used agent domains. Users ask about upcoming events,
 - `CalendarReminderJob` — proactive delivery of due reminders via push or WebSocket
 - `world_time` tool — timezone lookups for scheduling across regions
 - Calendar signal source for the correlation engine
+- `GET /api/v0/reminders` (`listReminders`) — the reminders World draws as deadlines. The plugin has no UI page of its own.
 
 ### Integration
 

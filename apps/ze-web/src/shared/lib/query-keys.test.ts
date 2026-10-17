@@ -31,19 +31,14 @@ const manifest = {
 
 describe("refreshKeysForScreen", () => {
   it("returns query keys for core-owned screens", () => {
-    expect(refreshKeysForScreen("goals")).toEqual(["goals"]);
-    expect(refreshKeysForScreen("costs")).toEqual(["costs"]);
+    expect(refreshKeysForScreen("goals")).toEqual([["goals"], ["priority-snapshot"], ["workflow-executions"]]);
+    expect(refreshKeysForScreen("workflows")).toEqual([["workflows"]]);
+    expect(refreshKeysForScreen("costs")).toEqual([["costs"]]);
   });
 
   it("resolves plugin screens from manifest nav path", () => {
-    expect(refreshKeysForScreen("news", manifest)).toEqual([
-      "plugin-page",
-      "ze_news.overview",
-    ]);
-    expect(refreshKeysForScreen("contacts", manifest)).toEqual([
-      "plugin-page",
-      "ze_personal.contacts.overview",
-    ]);
+    expect(refreshKeysForScreen("news", manifest)).toEqual([["plugin-page", "ze_news.overview"]]);
+    expect(refreshKeysForScreen("contacts", manifest)).toEqual([["plugin-page", "ze_personal.contacts.overview"]]);
   });
 
   it("returns undefined for unknown screens", () => {

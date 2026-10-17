@@ -1,14 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel
-
-
-class PluginPageResponse(BaseModel):
-    title: str
-    tree: list[dict[str, Any]]
 
 
 class ReminderItem(BaseModel):

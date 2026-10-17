@@ -7,7 +7,8 @@ export function useLoopsQuery(state?: string) {
   return useQuery<LoopListItem[]>({
     queryKey: queryKeys.loops(state),
     queryFn: async () => {
-      const { data } = await listLoops({ query: state ? { state } : undefined });
+      const { data, error } = await listLoops({ query: state ? { state } : undefined });
+      if (error) throw error;
       return data ?? [];
     },
   });

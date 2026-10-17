@@ -25,7 +25,8 @@ export function useLoopTransitionMutation() {
       return data!;
     },
     onSuccess: (_data, { loopId }) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.loops() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.loopsAll });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.prioritySnapshot() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.loopDetail(loopId) });
     },
   });

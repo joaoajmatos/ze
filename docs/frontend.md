@@ -60,7 +60,7 @@ Old paths redirect to their place and keep params, query and hash. The table is 
 | Old path | New path |
 |----------|----------|
 | `/loops` | `/` |
-| `/priority` | `/world/priority` |
+| `/priority`, `/reminders`, `/world` | `/` |
 | `/goals`, `/goals/:id` | `/doing/goals`, `/doing/goals/:id` |
 | `/workflows`, `/workflows/:id` | `/doing/workflows`, `/doing/workflows/:id` |
 | `/skills` | `/doing/skills` |
@@ -71,6 +71,31 @@ Old paths redirect to their place and keep params, query and hash. The table is 
 | `/workspace`, `/doing/workspace` | `/governance#files` |
 
 A redirect entry can carry a `hint`. `RedirectTo` then replaces the incoming hash with the hint and keeps the query. An entry can also carry a `hintMap`, which lets an old hash win (`#your-data` becomes `#data`).
+
+### World
+
+World is the home at `/` (`pages/world`, phase 186). It shows what Ze holds, what it does about it, and what it needs from you. Every value comes from an API field. A value the API lacks is absent: a goal, a person or a reminder has no confidence, so it never gets a made-up one, and the decay trail draws only from a recorded `confidence_prior`.
+
+`useWorld` (`pages/world/model`) joins the queries the page needs: the priority snapshot, loops (open and closed), goals, workflows with their latest runs, held writes, reminders, hypotheses, notifications and job runs since the last visit, the attention budget, and the confirmations pending in chat. It hands each widget its data by props. A query that fails sets the error state of its own module only. The page prints "N sources down" when the priority snapshot names failed sources.
+
+| Module | Widget | Shows |
+|--------|--------|-------|
+| The Field | `widgets/world-field` | Time left across, how sure up. Marks by claim kind, a coral Slipped band, a NOW line, a dotted trail from the prior confidence, a readout with "Why this order", and drag or keyboard reorder and pin. On a phone it is a ranked list by band. |
+| Needs you | `widgets/needs-you` | Held writes, goal checkpoints (Proceed, Stop, Redirect), suspected loops and confirmations waiting in a chat, each with its action. Cream, never coral. |
+| Doing now | `widgets/doing-now` | Active goals with progress, the next run, runs this week, a running run and a failed run's summary. |
+| Loops · confidence | `widgets/loops-rail` | Open loops with a sparkline, a readout and Close and Drop. |
+| Touched · 7 d | `widgets/touched` | Loops, goals and workflows changed in the last seven days. |
+| While you were away | `widgets/away` | Notifications and job runs since your last visit, and the push budget. |
+
+- **Slipped** wins over the deadline: a drifting loop, a stuck goal, an overdue reminder and a loop whose linked reminder is overdue all sit in the Slipped band. The orb holds `attention` while anything slipped or a run failed, and the leader line ends on the most overdue mark (desktop, motion allowed).
+- **Last visit.** `localStorage` key `ze.world.lastSeenAt` holds the last time World was in front of you. "While you were away" counts from the start of the visit: a hide of five minutes or more starts a new one.
+- **Gates** have no REST route. `features/answer-gate` sends `goal:approve|stop|redirect:<gate_id>` as an `action` frame on the session thread and waits for the goals data to drop the gate, or for an `error` frame within 15 seconds. Another payload family can use the same sender.
+- **Held writes** use one `HeldWriteCard` (`features/respond-to-confirmation`). A write with an editable field opens the full confirmation card.
+- **Links.** `/?focus=<kind>:<id>` selects one item (`loop`, `goal`, `hypothesis`, `reminder`, `held_write`). `focusHref` and `notificationHref` in `shared/lib` build them.
+- **Refresh.** A `message` frame invalidates the World queries. A `notification` frame also invalidates the budget and the key of its target. A `refresh` frame for `goals` invalidates goals, the priority snapshot and workflow executions.
+- **Screen context.** The page publishes the focused module, the selected mark and the visible rows. The selected mark's readout, loop rows, Needs-you rows and Away rows offer "Chat about this". A module has no record of its own, so it carries no chip.
+
+The notification bell no longer lists held writes. A `held_write` notification opens World with the item selected.
 
 ### Mind
 

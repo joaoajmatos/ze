@@ -1,0 +1,415 @@
+{
+  "workflow": "speckit",
+  "specName": "World (W2)",
+  "branch": "186-web-world",
+  "currentStep": "implement",
+  "currentTask": "T030",
+  "status": "implemented",
+  "task_summaries": {
+    "T002": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "entities, claim posture, href helpers (commit 50b13f23)"
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "page model libs and useWorld"
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "page model libs and useWorld"
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "page model libs and useWorld"
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "page model libs and useWorld"
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "answer-gate feature, HeldWriteCard, NeedsYou"
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "answer-gate feature, HeldWriteCard, NeedsYou"
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "rails: loops-rail, doing-now, touched, away"
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "rails: loops-rail, doing-now, touched, away"
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "rails: loops-rail, doing-now, touched, away"
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T029": {
+      "status": "DONE",
+      "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"
+    },
+    "T031": {
+      "status": "DONE",
+      "did": "docs: frontend, native-interface, features, architecture, worldstate README, calendar README, AGENTS, specs index"
+    },
+    "T032": {
+      "status": "DONE",
+      "did": "docs: frontend, native-interface, features, architecture, worldstate README, calendar README, AGENTS, specs index"
+    },
+    "T033": {
+      "status": "DONE",
+      "did": "docs: frontend, native-interface, features, architecture, worldstate README, calendar README, AGENTS, specs index"
+    },
+    "T001": {
+      "status": "DONE",
+      "did": "gate, baseline critique 22/40 vs World 31/40, captures, SC-001/SC-002 in handoffs"
+    },
+    "T030": {
+      "status": "DONE",
+      "did": "gate, baseline critique 22/40 vs World 31/40, captures, SC-001/SC-002 in handoffs"
+    }
+  },
+  "history": [
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:38.689Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:38.966Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:39.234Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:39.498Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:39.772Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:50:40.010Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:53:22.013Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:53:22.173Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:53:22.356Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T21:53:22.537Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:00:02.311Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:00:02.469Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:00:02.628Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:00:02.797Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:06:31.086Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:06:31.372Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:21:04.085Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:21:04.615Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:21:05.410Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:04.180Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:04.378Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:04.559Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:04.748Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:04.926Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:05.146Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:05.358Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:05.565Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:39:05.757Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:45:04.401Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:45:04.638Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T22:45:04.863Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T23:05:48.630Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-17T23:05:48.841Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-17T23:05:49.273Z"
+    }
+  ]
+}

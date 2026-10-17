@@ -1,0 +1,33 @@
+{"step": "implement", "substep": null, "task": "T002", "kind": "complete", "by": "ai", "at": "2026-10-17T21:50:38.689Z", "did": "entities, claim posture, href helpers (commit 50b13f23)"}
+{"step": "implement", "substep": null, "task": "T003", "kind": "complete", "by": "ai", "at": "2026-10-17T21:50:38.966Z", "did": "entities, claim posture, href helpers (commit 50b13f23)"}
+{"step": "implement", "substep": null, "task": "T004", "kind": "complete", "by": "ai", "at": "2026-10-17T21:50:39.234Z", "did": "entities, claim posture, href helpers (commit 50b13f23)"}
+{"step": "implement", "substep": null, "task": "T005", "kind": "complete", "by": "ai", "at": "2026-10-17T21:50:39.498Z", "did": "entities, claim posture, href helpers (commit 50b13f23)"}
+{"step": "implement", "substep": null, "task": "T006", "kind": "complete", "by": "ai", "at": "2026-10-17T21:50:39.772Z", "did": "entities, claim posture, href helpers (commit 50b13f23)"}
+{"step": "implement", "substep": null, "task": "T007", "kind": "complete", "by": "ai", "at": "2026-10-17T21:50:40.010Z", "did": "entities, claim posture, href helpers (commit 50b13f23)"}
+{"step": "implement", "substep": null, "task": "T008", "kind": "complete", "by": "ai", "at": "2026-10-17T21:53:22.013Z", "did": "page model libs and useWorld"}
+{"step": "implement", "substep": null, "task": "T009", "kind": "complete", "by": "ai", "at": "2026-10-17T21:53:22.173Z", "did": "page model libs and useWorld"}
+{"step": "implement", "substep": null, "task": "T010", "kind": "complete", "by": "ai", "at": "2026-10-17T21:53:22.356Z", "did": "page model libs and useWorld"}
+{"step": "implement", "substep": null, "task": "T011", "kind": "complete", "by": "ai", "at": "2026-10-17T21:53:22.537Z", "did": "page model libs and useWorld"}
+{"step": "implement", "substep": null, "task": "T012", "kind": "complete", "by": "ai", "at": "2026-10-17T22:00:02.311Z", "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"}
+{"step": "implement", "substep": null, "task": "T013", "kind": "complete", "by": "ai", "at": "2026-10-17T22:00:02.469Z", "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"}
+{"step": "implement", "substep": null, "task": "T014", "kind": "complete", "by": "ai", "at": "2026-10-17T22:00:02.628Z", "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"}
+{"step": "implement", "substep": null, "task": "T015", "kind": "complete", "by": "ai", "at": "2026-10-17T22:00:02.797Z", "did": "world-field widget: placement, FieldChart, FieldReadout, reorder, FieldList"}
+{"step": "implement", "substep": null, "task": "T016", "kind": "complete", "by": "ai", "at": "2026-10-17T22:06:31.086Z", "did": "answer-gate feature, HeldWriteCard, NeedsYou"}
+{"step": "implement", "substep": null, "task": "T017", "kind": "complete", "by": "ai", "at": "2026-10-17T22:06:31.372Z", "did": "answer-gate feature, HeldWriteCard, NeedsYou"}
+{"step": "implement", "substep": null, "task": "T018", "kind": "complete", "by": "ai", "at": "2026-10-17T22:21:04.085Z", "did": "rails: loops-rail, doing-now, touched, away"}
+{"step": "implement", "substep": null, "task": "T019", "kind": "complete", "by": "ai", "at": "2026-10-17T22:21:04.615Z", "did": "rails: loops-rail, doing-now, touched, away"}
+{"step": "implement", "substep": null, "task": "T020", "kind": "complete", "by": "ai", "at": "2026-10-17T22:21:05.410Z", "did": "rails: loops-rail, doing-now, touched, away"}
+{"step": "implement", "substep": null, "task": "T021", "kind": "complete", "by": "ai", "at": "2026-10-17T22:39:04.180Z", "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"}
+{"step": "implement", "substep": null, "task": "T022", "kind": "complete", "by": "ai", "at": "2026-10-17T22:39:04.378Z", "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"}
+{"step": "implement", "substep": null, "task": "T023", "kind": "complete", "by": "ai", "at": "2026-10-17T22:39:04.559Z", "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"}
+{"step": "implement", "substep": null, "task": "T024", "kind": "complete", "by": "ai", "at": "2026-10-17T22:39:04.748Z", "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"}
+{"step": "implement", "substep": null, "task": "T025", "kind": "complete", "by": "ai", "at": "2026-10-17T22:39:04.926Z", "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"}
+{"step": "implement", "substep": null, "task": "T026", "kind": "complete", "by": "ai", "at": "2026-10-17T22:39:05.146Z", "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"}
+{"step": "implement", "substep": null, "task": "T027", "kind": "complete", "by": "ai", "at": "2026-10-17T22:39:05.358Z", "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"}
+{"step": "implement", "substep": null, "task": "T028", "kind": "complete", "by": "ai", "at": "2026-10-17T22:39:05.565Z", "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"}
+{"step": "implement", "substep": null, "task": "T029", "kind": "complete", "by": "ai", "at": "2026-10-17T22:39:05.757Z", "did": "WorldPage, presence, router, WS invalidation, screen context, hard cuts, calendar cut"}
+{"step": "implement", "substep": null, "task": "T031", "kind": "complete", "by": "ai", "at": "2026-10-17T22:45:04.401Z", "did": "docs: frontend, native-interface, features, architecture, worldstate README, calendar README, AGENTS, specs index"}
+{"step": "implement", "substep": null, "task": "T032", "kind": "complete", "by": "ai", "at": "2026-10-17T22:45:04.638Z", "did": "docs: frontend, native-interface, features, architecture, worldstate README, calendar README, AGENTS, specs index"}
+{"step": "implement", "substep": null, "task": "T033", "kind": "complete", "by": "ai", "at": "2026-10-17T22:45:04.863Z", "did": "docs: frontend, native-interface, features, architecture, worldstate README, calendar README, AGENTS, specs index"}
+{"step": "implement", "substep": null, "task": "T001", "kind": "complete", "by": "ai", "at": "2026-10-17T23:05:48.630Z", "did": "gate, baseline critique 22/40 vs World 31/40, captures, SC-001/SC-002 in handoffs"}
+{"step": "implement", "substep": null, "task": "T030", "kind": "complete", "by": "ai", "at": "2026-10-17T23:05:48.841Z", "did": "gate, baseline critique 22/40 vs World 31/40, captures, SC-001/SC-002 in handoffs"}

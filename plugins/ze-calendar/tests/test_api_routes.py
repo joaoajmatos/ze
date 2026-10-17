@@ -12,36 +12,6 @@ from ze_plugin.api_auth import require_api_key
 
 API_KEY = "test-key"
 
-_PRIMITIVE_TYPE_NAMES = frozenset(
-    {
-        "col",
-        "row",
-        "text",
-        "badge",
-        "divider",
-        "spacer",
-        "button",
-        "progress",
-        "table",
-        "form",
-        "connections",
-    }
-)
-
-
-def _assert_valid_tree(nodes: list) -> None:
-    """Recursively verify every node carries a known primitive type."""
-    for node in nodes:
-        assert isinstance(node, dict), f"tree node must be a dict, got {type(node)}"
-        assert "type" in node, f"tree node missing 'type': {node}"
-        assert node["type"] in _PRIMITIVE_TYPE_NAMES, (
-            f"unknown primitive type {node['type']!r}"
-        )
-        for child_key in ("children", "fields", "connections"):
-            if child_key in node and isinstance(node[child_key], list):
-                _assert_valid_tree(node[child_key])
-
-
 def _make_app(store=None) -> FastAPI:
     app = FastAPI()
     app.state.container = SimpleNamespace(
@@ -55,10 +25,8 @@ def _make_app(store=None) -> FastAPI:
 
 
 @pytest.mark.asyncio
-async def test_get_reminders_page_returns_tree():
-    store = AsyncMock()
-    store.list_all = AsyncMock(return_value=[])
-    app = _make_app(store)
+async def test_reminders_page_route_is_gone():
+    app = _make_app(AsyncMock())
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
@@ -67,12 +35,13 @@ async def test_get_reminders_page_returns_tree():
             "/api/v0/reminders/page", headers={"Authorization": f"Bearer {API_KEY}"}
         )
 
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["title"] == "Upcoming"
-    assert isinstance(data["tree"], list)
-    _assert_valid_tree(data["tree"])
-    store.list_all.assert_awaited_once()
+    assert resp.status_code == 404
+
+
+def test_calendar_plugin_contributes_no_ui_page():
+    from ze_calendar.plugin import CalendarPlugin
+
+    assert CalendarPlugin.ui_contributions(SimpleNamespace()) == []
 
 
 def _reminder(label, *, sent=False, sent_at=None, fire_hours=1):

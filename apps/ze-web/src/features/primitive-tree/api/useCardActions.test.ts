@@ -78,8 +78,13 @@ describe("useCardActions", () => {
     expect(navigate).toHaveBeenCalledWith("/doing/goals/g-1");
   });
 
-  it("open does nothing for a subject without a page", () => {
+  it("open selects a held write on World", () => {
     run("open", "h-1", "held_write");
+    expect(navigate).toHaveBeenCalledWith("/?focus=held_write:h-1");
+  });
+
+  it("open does nothing for a subject without a page", () => {
+    run("open", "p-1", "person");
     expect(navigate).not.toHaveBeenCalled();
   });
 });

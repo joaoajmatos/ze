@@ -447,7 +447,7 @@ Each loop records its sources (`open_loop_sources`, migration `zw003`): its orig
 | Calendar | The event's `external_ref` |
 | Ingestion | The ingestion id |
 
-The `loops` agent, the `GET /api/v0/loops` surface, and the Open loops page expose review. See [cognitive-architecture.md](cognitive-architecture.md) and the [package README](../core/cognition/ze-worldstate/README.md).
+The `loops` agent, the `GET /api/v0/loops` surface, and the World page expose review. See [cognitive-architecture.md](cognitive-architecture.md) and the [package README](../core/cognition/ze-worldstate/README.md).
 
 ---
 

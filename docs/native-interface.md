@@ -538,6 +538,12 @@ A notification can carry `target_type`, `target_id`, and `target_parent_id`. The
 | `goal` | the goal | none | `/doing/goals/{target_id}` |
 | `goal_gate` | the gate | the goal | `/doing/goals/{target_parent_id}` |
 | `workflow_execution` | the execution | the workflow | `/doing/workflows/{target_parent_id}?execution={target_id}` |
+| `open_loop` | the loop | none | `/?focus=loop:{target_id}` |
+| `held_write` | the request | none | `/?focus=held_write:{target_id}` |
+| `reminder` | the reminder | none | `/?focus=reminder:{target_id}` |
+| `hypothesis` | the hypothesis | none | `/?focus=hypothesis:{target_id}` |
+
+A `?focus=` link opens World and selects that item. The bell lists notifications only; it does not decide held writes. It links to World, where "While you were away" and "Needs you" hold the decisions.
 
 A target without a parent, where one is required, has no link.
 

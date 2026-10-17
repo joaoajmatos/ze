@@ -7,7 +7,8 @@ export function useGoalsQuery() {
   return useQuery<GoalListItem[]>({
     queryKey: queryKeys.goals,
     queryFn: async () => {
-      const { data } = await listGoals();
+      const { data, error } = await listGoals();
+      if (error) throw error;
       return data ?? [];
     },
   });

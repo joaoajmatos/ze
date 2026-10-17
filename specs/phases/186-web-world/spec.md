@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Ready to implement once 184, 185 and 195 are on `main` (plan and tasks written 2026-10-17 against `main` b9e62e7b)
+**Status**: Implemented (2026-10-17)
 
 **Input**: Maestro brief 2026-10-17, phase W2; overhaul plan sections a (World), b.1, e (Phase W2). Reserved phase 176 "Today surface" was dropped by the user on 2026-10-17 (relayed by the Maestro: "World covers it"); this phase is where that intent lives. No phase uses the number 176.
 
