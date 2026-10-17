@@ -37,7 +37,7 @@ export function BeliefRow({ item, onKeep, onDrop, onEdit, busy = false, now }: B
         <Chip kind={dotted ? "dotted" : "solid"}>{chipLabelOf(posture)}</Chip>
         {item.reviewed && <Chip>kept</Chip>}
         {item.contradicted && <Chip kind="dotted">contradicted</Chip>}{" "}
-        {[sourceWords(item.provenance, item.agent), sinceLabel(item.created_at, now)].filter(Boolean).join(" · ")}
+        {[sourceWords(item.provenance, item.agent), item.created_at ? sinceLabel(item.created_at, now) : ""].filter(Boolean).join(" · ")}
       </span>
       {editing ? (
         <span className="belief-actions">

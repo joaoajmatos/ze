@@ -39,14 +39,14 @@
 
 ## Phase 3: Beliefs and People [US1, US2, US4]
 
-- [ ] T008 [ENG] [WEB] Tests first `widgets/beliefs-feed/ui/BeliefsFeed.test.tsx`: fact rows are `BeliefRow`s and episodes look different; no row contains a raw key; Keep/Drop/Edit call `useReviewFactMutation` with `confirm`/`reject`/`edit` (edit sends the new value) and the row updates; paging by `next_before`; as-of control changes the query and prints the date as a readout with "kinds and confidence as of now"; empty state text from spec. Implement `widgets/beliefs-feed`.
-- [ ] T009 [P] [JR] [WEB] Tests first `widgets/people/ui/People.test.tsx`: the Contacts tree renders inside a `Module` through `ConnectedPrimitiveTree`; loading, error and empty states. Implement `widgets/people`.
+- [x] T008 [ENG] [WEB] Tests first `widgets/beliefs-feed/ui/BeliefsFeed.test.tsx`: fact rows are `BeliefRow`s and episodes look different; no row contains a raw key; Keep/Drop/Edit call `useReviewFactMutation` with `confirm`/`reject`/`edit` (edit sends the new value) and the row updates; paging by `next_before`; as-of control changes the query and prints the date as a readout with "kinds and confidence as of now"; empty state text from spec. Implement `widgets/beliefs-feed`.
+- [x] T009 [P] [JR] [WEB] Tests first `widgets/people/ui/People.test.tsx`: the Contacts tree renders inside a `Module` through `ConnectedPrimitiveTree`; loading, error and empty states. Implement `widgets/people`.
 
 ## Phase 4: Entity search and neighbourhood [US3, US5]
 
-- [ ] T010 [ENG] [WEB] Tests first `widgets/entity-neighbourhood/lib/radial.test.ts`: same input → same positions; neighbours grouped by predicate in a fixed order and sorted by name; at most 20 shown and "+N more" = `neighbour_total` − shown; empty neighbourhood. Implement `lib/radial.ts`; move `entityActivitySeries.ts` (+ test) here.
-- [ ] T011 [ENG] [WEB] Tests first `widgets/entity-neighbourhood/ui/EntityNeighbourhood.test.tsx`: field with the centre and capped neighbours (each mark focusable with an accessible name), activity sparkline labelled "last 20 facts and 10 episodes", facts as `BeliefRow`s with Keep/Drop/Edit; phone renders a grouped list instead of the field. Implement.
-- [ ] T012 [P] [JR] [WEB] Tests first `widgets/entity-search/ui/EntitySearch.test.tsx`: debounced query; result rows (type, name, degree); "No entity named X" keeps the text; select calls `onSelect(id)`. Implement.
+- [x] T010 [ENG] [WEB] Tests first `widgets/entity-neighbourhood/lib/radial.test.ts`: same input → same positions; neighbours grouped by predicate in a fixed order and sorted by name; at most 20 shown and "+N more" = `neighbour_total` − shown; empty neighbourhood. Implement `lib/radial.ts`; move `entityActivitySeries.ts` (+ test) here.
+- [x] T011 [ENG] [WEB] Tests first `widgets/entity-neighbourhood/ui/EntityNeighbourhood.test.tsx`: field with the centre and capped neighbours (each mark focusable with an accessible name), activity sparkline labelled "last 20 facts and 10 episodes", facts as `BeliefRow`s with Keep/Drop/Edit; phone renders a grouped list instead of the field. Implement.
+- [x] T012 [P] [JR] [WEB] Tests first `widgets/entity-search/ui/EntitySearch.test.tsx`: debounced query; result rows (type, name, degree); "No entity named X" keeps the text; select calls `onSelect(id)`. Implement.
 
 ## Phase 5: Procedures, page, router, cuts [US1–US5]
 

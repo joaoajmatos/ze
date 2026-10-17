@@ -34,6 +34,7 @@ function detail(overrides: Partial<EntityDetailResponse> = {}): EntityDetailResp
     facts: [],
     episodes: [],
     neighbours: [],
+    neighbour_total: 0,
     neighbour_edges: [],
     ...overrides,
   };

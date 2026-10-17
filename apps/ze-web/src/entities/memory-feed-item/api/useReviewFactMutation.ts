@@ -12,6 +12,7 @@ export function useReviewFactMutation(filters: MemoryFeedFilters) {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.memoryFeed(filters.type, filters.agent),
       });
+      void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
     },
   });
 }

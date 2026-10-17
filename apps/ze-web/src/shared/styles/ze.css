@@ -1860,3 +1860,83 @@ h2.lbl {
   outline: 1px solid var(--cream);
   outline-offset: 2px;
 }
+.belief-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.belief-asof {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+.belief-asof .text-field {
+  flex: 0 1 11rem;
+  color-scheme: dark;
+}
+.note {
+  color: var(--dim);
+  font-size: 0.8125rem;
+  margin: 8px 0;
+}
+.row.episode .t {
+  color: var(--dim);
+  font-style: italic;
+}
+.hood-field {
+  display: block;
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+.hood-edge {
+  stroke: var(--hair-strong);
+  stroke-width: 1;
+}
+.hood-centre,
+.hood-dot {
+  fill: var(--main);
+}
+.hood-hit {
+  fill: transparent;
+}
+.hood-node {
+  cursor: pointer;
+}
+.hood-node:hover .hood-dot,
+.hood-node:focus-visible .hood-dot {
+  fill: var(--cream);
+}
+.hood-node:focus-visible {
+  outline: 1px solid var(--cream);
+  outline-offset: 2px;
+}
+.hood-label {
+  fill: var(--l1);
+  font-size: 10px;
+}
+.hood-list ul {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.hood-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink);
+}
+.entity-search-box {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.entity-hit {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  align-content: center;
+  text-align: left;
+}
