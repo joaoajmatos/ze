@@ -50,6 +50,7 @@ def test_bootstrap_registers_companion_and_research(settings):
     from ze_automation.workflow.store import WorkflowStore
     from ze_automation.workflow.planner import WorkflowPlanner
     from ze_automation.workflow.scheduler import WorkflowScheduler
+    from ze_personal.agents.companion.outreach_log import OutreachLog
     from ze_prospecting.store import ProspectCampaignStore
     from ze_prospecting.types import ProspectingSettings
     from ze_core.openrouter.client import OpenRouterClient
@@ -93,6 +94,7 @@ def test_bootstrap_registers_companion_and_research(settings):
         GoalPlanner: MM(spec=GoalPlanner),
         GoalExecutor: MM(spec=GoalExecutor),
         ProspectCampaignStore: MM(spec=ProspectCampaignStore),
+        OutreachLog: MM(spec=ProspectCampaignStore),
         ProspectingSettings: ProspectingSettings(),
         GoogleCredentials: MM(spec=GoogleCredentials),
         ProactiveNotifier: MM(spec=ProactiveNotifier),

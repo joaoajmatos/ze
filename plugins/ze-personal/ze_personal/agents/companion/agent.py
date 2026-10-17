@@ -1,11 +1,10 @@
 import re
 from typing import AsyncIterator
 
-import asyncpg
-
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
 from ze_agents.types import AgentContext, AgentResult, ToolCall
+from ze_personal.agents.companion.outreach_log import OutreachLog
 from ze_personal.contacts.store import PersonStore
 from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
@@ -162,13 +161,13 @@ class CompanionAgent(BaseAgent):
         openrouter_client: LLMClient,
         settings: Settings,
         person_store: PersonStore,
-        pool: asyncpg.Pool,
+        outreach_log: OutreachLog,
         memory_store: PostgresMemoryStore,
     ) -> None:
         self._settings = settings
         self._client = openrouter_client
         self._person_store = person_store
-        self._pool = pool
+        self._outreach_log = outreach_log
         self._memory_store = memory_store
 
     def tool_deps(self) -> dict:
@@ -215,7 +214,7 @@ class CompanionAgent(BaseAgent):
             event_type=event["event_type"],
             channel=event["channel"],
             notes=ctx.prompt,
-            pool=self._pool,
+            campaign_store=self._outreach_log,
             person_store=self._person_store,
         )
 

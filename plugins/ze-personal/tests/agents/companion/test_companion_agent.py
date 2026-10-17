@@ -65,12 +65,12 @@ def make_person_store():
     return store
 
 
-def make_agent(client=None) -> CompanionAgent:
+def make_agent(client=None, person_store=None, outreach_log=None) -> CompanionAgent:
     return CompanionAgent(
         openrouter_client=client or make_client(),
         settings=make_settings(),
-        person_store=make_person_store(),
-        pool=make_pool(),
+        person_store=person_store or make_person_store(),
+        outreach_log=outreach_log or AsyncMock(),
         memory_store=AsyncMock(),
     )
 
@@ -113,6 +113,23 @@ async def test_run_outreach_for_non_prospect_returns_no_tool_calls():
     agent = make_agent()
     result = await agent.run(make_ctx("I sent an email to Carlos and he didn't reply"))
     assert result.tool_calls == []
+
+
+async def test_run_logs_outreach_for_a_prospect_through_the_outreach_log():
+    person = MagicMock()
+    person.id = "person-1"
+    person.name = "Carlos Mendes"
+    person_store = make_person_store()
+    person_store.get_by_name = AsyncMock(return_value=[person])
+    outreach_log = AsyncMock()
+    outreach_log.get_latest_outreach_id = AsyncMock(return_value="outreach-1")
+    agent = make_agent(person_store=person_store, outreach_log=outreach_log)
+
+    result = await agent.run(make_ctx("I sent an email to Carlos Mendes yesterday"))
+
+    outreach_log.log_outreach_event.assert_awaited_once()
+    assert [tc.tool_name for tc in result.tool_calls] == ["log_outreach_event"]
+    assert result.tool_calls[0].success
 
 
 async def test_run_sends_prompt_as_user_message():
