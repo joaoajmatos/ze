@@ -1,5 +1,6 @@
 import type { MessageSchema as Message } from "@myguyze/ze-client";
 import { useEffect, useRef, type ReactNode } from "react";
+import { useChatAbout } from "@/features/ask-bar";
 import { useSession } from "@/entities/session";
 import { ChatErrorBoundary } from "@/shared/ui";
 import { MessageBubble } from "./MessageBubble";
@@ -26,6 +27,7 @@ export function ChatMessageList({
   onRetry,
   renderActions,
 }: ChatMessageListProps) {
+  const chatAbout = useChatAbout();
   const bottomRef = useRef<HTMLDivElement>(null);
   const highlightMessageId = useSession((s) => s.highlightMessageId);
   const setHighlightMessage = useSession((s) => s.setHighlightMessage);
@@ -77,6 +79,7 @@ export function ChatMessageList({
               message={msg}
               highlighted={msg.id === highlightMessageId}
               actions={renderActions?.(msg)}
+              onChatAbout={chatAbout}
             />
           </div>
         </ChatErrorBoundary>

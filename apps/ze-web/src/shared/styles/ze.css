@@ -310,6 +310,80 @@ h2.lbl {
   font-size: var(--label);
   letter-spacing: 0.15em;
 }
+.chat-about {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  color: var(--l2);
+  font-family: var(--font-label);
+  font-size: var(--label);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chat-about:hover,
+.chat-about:focus-visible {
+  color: var(--main);
+}
+/* A pointer can hover, so the chip waits for the module; it stays in the DOM and the tab order. */
+@media (hover: hover) {
+  .chat-about {
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out);
+  }
+  .mod:hover .chat-about,
+  .mod:focus-within .chat-about,
+  .claim-card:hover .chat-about,
+  .claim-card:focus-within .chat-about,
+  .chat-about:focus-visible {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* A finger cannot hover: always shown, with a full touch target. */
+@media (hover: none) {
+  .chat-about {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-about {
+    transition: none;
+    transform: none;
+  }
+}
+.about-panel {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.about-panel .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  max-width: 100%;
+}
+.about-remove {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: var(--l2);
+  cursor: pointer;
+  min-width: 24px;
+  min-height: 24px;
+}
+.about-suggestions {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 .rule {
   height: 1px;
   background: var(--hair);

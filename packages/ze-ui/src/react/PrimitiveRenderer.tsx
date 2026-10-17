@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { cn } from "../lib/cn";
 import type {
   Badge,
@@ -547,14 +547,30 @@ function HeadlineRenderer({ node }: { node: Headline }) {
 }
 
 function ClaimCardRenderer({ node }: { node: ClaimCard }) {
-  const { onCardAction } = usePrimitiveRendererActions();
+  const { onCardAction, onChatAbout } = usePrimitiveRendererActions();
+  const root = useRef<HTMLDivElement>(null);
   const [decided, setDecided] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
   const actions = (node.actions ?? []).filter((a) => !decided || a.intent === "open");
   return (
-    <div className={cn("rounded-lg border p-3 flex flex-col gap-1", CARD_TONE[node.tone ?? "default"])}>
-      <p className="text-sm font-medium">{node.title}</p>
+    <div ref={root} className={cn("claim-card rounded-lg border p-3 flex flex-col gap-1", CARD_TONE[node.tone ?? "default"])}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium">{node.title}</p>
+        {onChatAbout && (
+          <button
+            type="button"
+            className="chat-about"
+            aria-label={`Chat about ${node.title}`}
+            onClick={() =>
+              root.current &&
+              onChatAbout({ subject: node.claim.subject, ref_id: node.claim.ref_id, title: node.title, element: root.current })
+            }
+          >
+            [ chat about this ]
+          </button>
+        )}
+      </div>
       <p className="text-[11px] text-white/45">{postureLine(node.claim)}</p>
       {node.lines?.map((line, i) => (
         <p key={i} className="text-xs text-white/60">

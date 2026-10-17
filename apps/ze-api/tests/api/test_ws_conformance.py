@@ -137,19 +137,6 @@ class TestScreenContextShape:
 
         assert not {"screen", "goal_id", "workflow_id", "execution_id"} & set(WsScreenContext.model_fields)
 
-    def test_list_caps_are_documented(self):
-        import pytest
-        from pydantic import ValidationError
-        from ze_api.api.ws.schemas import WsScreenContext
-
-        ref = {"kind": "goal", "id": "g"}
-        with pytest.raises(ValidationError):
-            WsScreenContext.model_validate({"subject": [ref] * 4})
-        with pytest.raises(ValidationError):
-            WsScreenContext.model_validate({"selection": [ref] * 21})
-        with pytest.raises(ValidationError):
-            WsScreenContext.model_validate({"visible": [ref] * 31})
-
 
 class TestMessageFrameConformance:
     """message frame: {type, message: {id, role, text, components, read, created_at, thread_id}}"""

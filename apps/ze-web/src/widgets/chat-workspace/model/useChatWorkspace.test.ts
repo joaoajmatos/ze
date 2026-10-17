@@ -32,6 +32,7 @@ vi.mock("@/features/respond-to-confirmation", () => ({
   useConfirmation: () => confirmState,
 }));
 
+import { useScreenContextStore } from "@/entities/screen-context";
 import { useWsStore } from "@/shared/api";
 
 const THREAD = "thread-1";
@@ -286,5 +287,77 @@ describe("useChatWorkspace recovery after a dropped socket", () => {
 
     expect(hook.result.current.isThinking).toBe(false);
     expect(hook.result.current.messages.map((m) => m.text)).toEqual(["hi"]);
+  });
+});
+
+describe("useChatWorkspace send path: the screen context", () => {
+  beforeEach(() => {
+    confirmState.pendingConfirms = [];
+    handlers.clear();
+    sendMock.mockClear();
+    sendMock.mockReturnValue(true);
+    listMessagesMock.mockReset();
+    listMessagesMock.mockResolvedValue({ data: [] });
+    useWsStore.setState({ isConnected: true, thinkingThreads: {}, typingTextThreads: {}, attentionThreads: {} });
+    useScreenContextStore.getState().reset();
+    window.history.pushState({}, "", "/doing/goals/g1");
+    useScreenContextStore.getState().publish("page", { subject: [{ kind: "goal", id: "g1", label: "LedgerLite" }] });
+  });
+  afterEach(() => {
+    useScreenContextStore.getState().reset();
+    window.history.pushState({}, "", "/");
+  });
+
+  const sentContext = () => (sendMock.mock.calls.at(-1)?.[0] as { context: Record<string, unknown> }).context;
+
+  it("sends the screen snapshot with every message", async () => {
+    const { result } = setup();
+    await flush();
+    act(() => void result.current.sendMessage("what is blocking this?"));
+    expect(sentContext()).toMatchObject({ place: "doing", route: "/doing/goals/g1", subject: [{ kind: "goal", id: "g1" }] });
+    expect(typeof sentContext().captured_at).toBe("string");
+  });
+
+  it("explicit context goes over the snapshot", async () => {
+    const { result } = setup({ context: { origin: "chat_about", subject: [{ kind: "workflow", id: "w1" }] } });
+    await flush();
+    act(() => void result.current.sendMessage("why?"));
+    expect(sentContext()).toMatchObject({ origin: "chat_about", subject: [{ kind: "workflow", id: "w1" }], place: "doing" });
+  });
+
+  it("a finished snapshot (the overlay's queued item) is sent as it was, not mixed with the screen now", async () => {
+    const queued = { place: "mind" as const, route: "/mind", captured_at: "2026-10-17T14:00:00Z" };
+    const { result } = setup({ context: queued });
+    await flush();
+    act(() => void result.current.sendMessage("x"));
+    expect(sentContext()).toEqual(queued);
+  });
+
+  it("a workspace upload merges workspace_placed into the context", async () => {
+    const { result } = setup();
+    await flush();
+    act(() => void result.current.sendMessage("read this", [{ path: "a.txt", size: 4 }]));
+    expect(sentContext()).toMatchObject({ workspace_placed: [{ path: "a.txt", size: 4 }], place: "doing" });
+  });
+
+  it("a preset context passes through with its origin", async () => {
+    const { result } = setup({ context: { origin: "preset", compose: "slipping" } });
+    await flush();
+    act(() => void result.current.sendMessage("What's slipping?"));
+    expect(sentContext()).toMatchObject({ origin: "preset", compose: "slipping", place: "doing" });
+  });
+
+  it("retry replays the context it sent, not the screen now", async () => {
+    const { result } = setup();
+    await flush();
+    act(() => void result.current.sendMessage("first"));
+    const original = sentContext();
+    act(() => useWsStore.setState({ thinkingThreads: {} }));
+    window.history.pushState({}, "", "/mind");
+    useScreenContextStore.getState().reset();
+    sendMock.mockClear();
+    act(() => void result.current.retry());
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(sentContext()).toEqual(original);
   });
 });

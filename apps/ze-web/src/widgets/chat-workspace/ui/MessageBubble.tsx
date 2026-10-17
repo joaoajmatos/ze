@@ -1,4 +1,4 @@
-import type { MessageSchema as Message, SourceTraceResponse } from "@myguyze/ze-client";
+import type { MessageSchema as Message, SourceTraceResponse, WsScreenRef } from "@myguyze/ze-client";
 import { Info } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
@@ -38,11 +38,14 @@ export function MessageBubble({
   message,
   highlighted = false,
   actions,
+  onChatAbout,
 }: {
   message: Message;
   highlighted?: boolean;
   /** Slot under the reply for hover/focus controls; filled by the widget layer. */
   actions?: ReactNode;
+  /** Called when a claim card's "Chat about this" is used. */
+  onChatAbout?: (ref: WsScreenRef, element: Element) => void;
 }) {
   const isUser = message.role === "user";
   const [traceOpen, setTraceOpen] = useState(false);
@@ -159,7 +162,7 @@ export function MessageBubble({
 
         {message.components.length > 0 && (
           <div className="mt-2 flex w-full min-w-0 flex-col gap-2">
-            <ConnectedPrimitiveTree components={message.components} />
+            <ConnectedPrimitiveTree components={message.components} onChatAbout={onChatAbout} />
           </div>
         )}
 

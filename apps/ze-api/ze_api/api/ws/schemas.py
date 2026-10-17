@@ -223,11 +223,12 @@ class WsScreenContext(BaseModel):
     place: Literal["world", "ask", "doing", "mind", "governance", "plugin"] | None = None
     route: str | None = Field(None, max_length=200)
     origin: Literal["ask_bar", "chat_about", "preset"] | None = None
-    subject: list[WsScreenRef] | None = Field(None, max_length=3)
-    selection: list[WsScreenRef] | None = Field(None, max_length=20)
-    visible: list[WsScreenRef] | None = Field(None, max_length=30)
+    # Caps (3 / 20 / 30 / 12) are applied by ScreenContext.from_wire; a schema limit would turn these into tuple types.
+    subject: list[WsScreenRef] | None = None
+    selection: list[WsScreenRef] | None = None
+    visible: list[WsScreenRef] | None = None
     focused_module: str | None = Field(None, max_length=80)
-    canvas: list[WsCanvasRef] | None = Field(None, max_length=12)
+    canvas: list[WsCanvasRef] | None = None
     captured_at: datetime | None = None
     workspace_placed: list["WsWorkspacePlaced"] | None = None
     compose: Literal["slipping", "decisions", "topic"] | None = None

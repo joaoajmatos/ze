@@ -1,6 +1,7 @@
 import { useMessageTraceQuery } from "../api/useMessageTraceQuery";
 import { MemoryChunkList } from "./MemoryChunkList";
 import { RoutingBadge } from "./RoutingBadge";
+import { ScreenTraceLine } from "./ScreenTraceLine";
 import { ToolCallList } from "./ToolCallList";
 import { TraceSection } from "./TraceSection";
 
@@ -40,6 +41,7 @@ export function MessageTracePanel({ messageId }: MessageTracePanelProps) {
           totalDurationMs={trace.total_duration_ms}
           tier={trace.tier}
         />
+        <ScreenTraceLine screen={trace.screen} />
       </TraceSection>
 
       <TraceSection title="Memory retrieved" count={trace.memory_chunks.length}>

@@ -15,9 +15,9 @@ vi.mock("@/entities/workflow", () => ({
   stepsDifferFromSnapshot: vi.fn((current, snapshot) => current[0]?.task !== snapshot[0]?.task),
 }));
 
-const mockAskAbout = vi.fn();
+const mockChatAbout = vi.fn();
 vi.mock("@/features/ask-bar", () => ({
-  askAbout: (args: unknown) => mockAskAbout(args),
+  useChatAbout: () => mockChatAbout,
 }));
 
 vi.mock("@/shared/lib", () => ({
@@ -198,8 +198,8 @@ describe("WorkflowDetailPage definition notices", () => {
     expect(screen.getByTestId("workflow-graph")).not.toHaveTextContent("Current step");
   });
 
-  it("Ask Ze about a run opens the overlay prefilled with the run as context", () => {
-    mockAskAbout.mockClear();
+  it("Chat about this run starts a chat with the run as the subject", () => {
+    mockChatAbout.mockClear();
     vi.mocked(useWorkflowExecutionsQuery).mockReturnValue({
       data: [execution({})],
       isLoading: false,
@@ -207,12 +207,12 @@ describe("WorkflowDetailPage definition notices", () => {
 
     renderPage();
     fireEvent.click(screen.getByRole("button", { name: /completed/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Ask Ze/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Chat about this run/ }));
 
-    expect(mockAskAbout).toHaveBeenCalledWith({
-      text: expect.stringContaining('"Daily check" workflow run'),
-      context: { screen: "doing.workflows", workflow_id: "wf-1", execution_id: "exec-1" },
-    });
+    expect(mockChatAbout).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "workflow_execution", id: "exec-1", parent_id: "wf-1", component: "execution_row" }),
+      expect.anything(),
+    );
   });
 });
 

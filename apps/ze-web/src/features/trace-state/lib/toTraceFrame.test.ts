@@ -92,4 +92,10 @@ describe("toTraceFrame", () => {
     } as MessageTraceResponse;
     expect(toTraceFrame("msg-3", trace, "t").tier).toEqual(tier);
   });
+
+  it("carries the screen trace", () => {
+    const screen = { origin: "chat_about" as const, place: "doing", subject: ["Workflow · Weekly report"], selection_count: 0, visible_count: 0, canvas_count: 0, note_chars: 40, invalid: [], resolvers: [] };
+    const trace = { agent: "a", routing_method: "embedding", confidence: 1, score_gap: 0, is_compound: false, subtasks: [], memory_chunks: [], tool_calls: [], total_duration_ms: 1, screen } as MessageTraceResponse;
+    expect(toTraceFrame("m", trace, "t").screen).toEqual(screen);
+  });
 });

@@ -1,5 +1,5 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
-import { RoutingBadge } from "@/entities/message-trace";
+import { RoutingBadge, ScreenTraceLine } from "@/entities/message-trace";
 import { TraceSection } from "@/entities/message-trace";
 
 interface RoutingSectionProps {
@@ -20,6 +20,7 @@ export function RoutingSection({ trace, live }: RoutingSectionProps) {
         totalDurationMs={trace.total_duration_ms}
         tier={trace.tier}
       />
+      <ScreenTraceLine screen={trace.screen} />
     </TraceSection>
   );
 }

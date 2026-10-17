@@ -3,6 +3,7 @@ export { Spark } from "./Spark";
 export { Decode } from "./Decode";
 export { Corners } from "./Corners";
 export { Module } from "./Module";
+export { ChatAboutChip } from "./ChatAboutChip";
 export { Meter } from "./Meter";
 export { Dots } from "./Dots";
 export { CountUp } from "./CountUp";

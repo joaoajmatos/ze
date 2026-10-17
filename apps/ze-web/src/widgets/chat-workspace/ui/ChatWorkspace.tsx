@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { AboutPanel, aboutContext, useAskOverlay } from "@/features/ask-bar";
 import { ReplyActions, RollbackNotice } from "@/features/reply-feedback";
 import { ConfirmationCard } from "@/features/respond-to-confirmation";
 import { RetryButton, useRetryReply } from "@/features/retry-reply";
@@ -20,6 +21,7 @@ import { ChatSidePanelQuickActions } from "./ChatSidePanelQuickActions";
 type ConnectionState = "connecting" | "connected" | "disconnected";
 
 export function ChatWorkspace({ threadId: threadIdOverride }: { threadId?: string } = {}) {
+  const aboutSubject = useAskOverlay((s) => s.about);
   const {
     threadId,
     messages,
@@ -34,7 +36,7 @@ export function ChatWorkspace({ threadId: threadIdOverride }: { threadId?: strin
     retry,
     removeMessage,
     respondToConfirm,
-  } = useChatWorkspace({ threadId: threadIdOverride });
+  } = useChatWorkspace({ threadId: threadIdOverride, context: aboutSubject ? aboutContext(aboutSubject) : undefined });
 
   const [searchParams] = useSearchParams();
   const [input, setInput] = useState("");
@@ -104,8 +106,16 @@ export function ChatWorkspace({ threadId: threadIdOverride }: { threadId?: strin
     if (sendMessage(input, attachments.map((a) => ({ path: a.path, size: a.size })))) {
       setInput("");
       setAttachments([]);
+      useAskOverlay.getState().aboutSent();
     }
   }
+
+  const pickSuggestion = useCallback(
+    (text: string) => {
+      if (sendMessage(text)) useAskOverlay.getState().aboutSent();
+    },
+    [sendMessage],
+  );
 
   async function handlePickFile(file: File) {
     setAttaching(true);
@@ -190,6 +200,7 @@ export function ChatWorkspace({ threadId: threadIdOverride }: { threadId?: strin
       ))}
 
       <div className="relative z-10 flex-shrink-0">
+        <AboutPanel inputSelector="[data-ask-input]" onPick={pickSuggestion} />
         <ChatInput
           value={input}
           onChange={setInput}

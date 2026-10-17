@@ -1,11 +1,12 @@
-import type { WorkflowExecutionResponse, WorkflowRevisionResponse, WorkflowStepResponse } from "@myguyze/ze-client";
+import type { WorkflowExecutionResponse, WorkflowRevisionResponse, WorkflowStepResponse, WsScreenRef } from "@myguyze/ze-client";
 import { ArrowLeft, Workflow, Loader2, CheckCircle2, XCircle, MessageCircle, Ban, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { WorkflowExecutionsList } from "@/widgets/workflow-executions";
 import { WorkflowGraph, WorkflowDefinitionNotice, type WorkflowDefinitionNoticeMode } from "@/widgets/workflow-graph";
-import { askAbout } from "@/features/ask-bar";
+import { useChatAbout } from "@/features/ask-bar";
+import { useScreenPublisher } from "@/entities/screen-context";
 import { useSession } from "@/entities/session";
 import {
   useWorkflowDetailQuery,
@@ -49,6 +50,21 @@ export function WorkflowDetailPage() {
   const cancelExecution = useCancelExecutionMutation();
 
   useSetBreadcrumbTitle(detail?.name);
+
+  const chatAbout = useChatAbout();
+  useScreenPublisher(
+    detail
+      ? {
+          subject: [
+            { kind: "workflow", id: detail.id, label: detail.name, component: "workflow_module" },
+            ...(requestedExecution && selectedExecution?.id === requestedExecution
+              ? [executionRef(selectedExecution)]
+              : []),
+          ],
+          focused_module: "Workflows",
+        }
+      : null,
+  );
 
   const avgRunDuration = executions ? averageSuccessfulRunDuration(executions) : null;
 
@@ -188,7 +204,7 @@ export function WorkflowDetailPage() {
                 }}
               />
               {displayExecution && !isRunning && (
-                <ChatAboutRunButton execution={displayExecution} workflowName={detail.name} />
+                <ChatAboutRunButton execution={displayExecution} chatAbout={chatAbout} />
               )}
             </div>
           </div>
@@ -275,46 +291,33 @@ export function WorkflowDetailPage() {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function formatDuration(startedAt: string | null, completedAt: string | null): string {
-  if (!startedAt || !completedAt) return "";
-  const ms = new Date(completedAt).getTime() - new Date(startedAt).getTime();
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
-}
-
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-interface ChatAboutRunButtonProps {
-  execution: WorkflowExecutionResponse;
-  workflowName: string;
+function executionRef(execution: WorkflowExecutionResponse): WsScreenRef {
+  const startedAt = execution.started_at ? formatTimestamp(execution.started_at) : null;
+  return {
+    kind: "workflow_execution",
+    id: execution.id,
+    parent_id: execution.workflow_id ?? undefined,
+    label: startedAt ? `Run of ${startedAt}` : "Workflow run",
+    component: "execution_row",
+    as_of: execution.completed_at ?? execution.started_at ?? execution.created_at,
+  };
 }
 
-function ChatAboutRunButton({ execution, workflowName }: ChatAboutRunButtonProps) {
-  const date = execution.started_at ? formatTimestamp(execution.started_at) : "unknown date";
-  const duration = formatDuration(execution.started_at, execution.completed_at);
-  const stepCount = execution.step_results.length;
-  const status = execution.status === "completed" ? "completed" : "failed";
-  const durationPart = duration ? ` in ${duration}` : "";
-  const errorPart = execution.failure_summary ? `. ${execution.failure_summary}` : "";
-  const prefillMessage = `Tell me about the "${workflowName}" workflow run from ${date}. It ${status}${durationPart} with ${stepCount} step${stepCount !== 1 ? "s" : ""}${errorPart}.`;
-
+function ChatAboutRunButton({ execution, chatAbout }: { execution: WorkflowExecutionResponse; chatAbout: (ref: WsScreenRef, element?: Element) => void }) {
   return (
     <button
       className="flex items-center gap-1.5 text-xs text-smoke hover:text-foreground transition-colors"
       title="Chat about this run"
-      onClick={() =>
-        askAbout({
-          text: prefillMessage,
-          context: { screen: "doing.workflows", workflow_id: execution.workflow_id, execution_id: execution.id },
-        })
-      }
+      onClick={(e) => chatAbout(executionRef(execution), e.currentTarget)}
     >
       <MessageCircle className="w-3.5 h-3.5" />
-      Ask Ze
+      Chat about this run
     </button>
   );
 }
