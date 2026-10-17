@@ -7,7 +7,7 @@ import { MindPage } from "@/pages/mind";
 import { MindEntityPage } from "@/pages/mind-entity";
 import { WorldPage } from "@/pages/world";
 import { AppShell } from "@/widgets/app-shell";
-import { AskOverlay } from "@/widgets/chat-workspace";
+import { AskOverlay } from "@/widgets/assemble";
 import { redirects } from "@/shared/config";
 import { ZeErrorFallback } from "@/shared/ui";
 import { RedirectTo } from "./RedirectTo";
