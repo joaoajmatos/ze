@@ -118,7 +118,7 @@ Three slices serve the thumbs up, thumbs down, and Retry controls on assistant r
 
 ## Quiet hours and the notification bell
 
-`widgets/quiet-hours-settings/` renders the quiet-hours form under Settings › Notifications. It reads `entities/quiet-hours/` (`useQuietHoursQuery`, `useUpdateQuietHoursMutation` over the generated `getQuietHours` / `updateQuietHours`), prefills the timezone from `Intl.DateTimeFormat().resolvedOptions().timeZone` when the server value is null, and places each 422 field error from `detail[].loc` under the matching input.
+`widgets/quiet-hours-settings/` renders the quiet-hours form under Settings › Notifications. It reads `entities/quiet-hours/` (`useQuietHoursQuery`, `useUpdateQuietHoursMutation` over the generated `getQuietHours` / `updateQuietHours`) and the nudge cap and held count from `entities/notification/` (`useAttentionBudgetQuery` over `getAttentionBudget`), prefills the timezone from `Intl.DateTimeFormat().resolvedOptions().timeZone` when the server value is null, and places each 422 field error from `detail[].loc` under the matching input.
 
 `widgets/notification-bell/ui/NotificationBell.tsx` labels a held item "Held for quiet hours" and a suppressed one "Not pushed: daily limit", and shows no label for any other delivery.
 

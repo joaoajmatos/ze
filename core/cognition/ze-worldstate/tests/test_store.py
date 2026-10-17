@@ -31,6 +31,8 @@ def _row(**overrides) -> dict:
         "confidence": 0.3,
         "goal_id": None,
         "reminder_id": None,
+        "confidence_prior": None,
+        "confidence_changed_at": None,
         "dismissed_evidence_fingerprint": None,
         "drift_deadline": None,
         "drift_rationale": None,

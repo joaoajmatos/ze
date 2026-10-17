@@ -3,10 +3,22 @@ from __future__ import annotations
 from typing import Any, Final
 
 from ze_logging import get_logger
+from ze_proactive.types import BudgetStatus
 
 log = get_logger(__name__)
 
 ATTENTION_PUSH_EVENT_KEY: Final[str] = "attention_push"
+
+
+async def budget_status(
+    push_log: Any,
+    max_per_day: int,
+    *,
+    window_hours: float = 24.0,
+) -> BudgetStatus:
+    """The one count of the rolling attention window. Raises on store failure."""
+    stamps = await push_log.window_sent_at(ATTENTION_PUSH_EVENT_KEY, window_hours)
+    return BudgetStatus(max_per_day, window_hours, tuple(stamps))
 
 
 async def within_budget(
@@ -19,10 +31,8 @@ async def within_budget(
     every mechanism now calls, keyed by `ATTENTION_PUSH_EVENT_KEY` instead of a
     per-mechanism event type."""
     try:
-        count = await push_log.count_sent_within_hours(
-            ATTENTION_PUSH_EVENT_KEY, window_hours
-        )
-        return count < max_per_day
+        status = await budget_status(push_log, max_per_day, window_hours=window_hours)
+        return status.remaining > 0
     except Exception as exc:
         log.warning("attention_budget_check_failed", error=str(exc))
         return True

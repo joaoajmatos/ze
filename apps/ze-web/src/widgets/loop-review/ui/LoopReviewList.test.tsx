@@ -31,6 +31,10 @@ const suspectedLoop: LoopListItem = {
   source_inflows: [],
   goal_id: null,
   reminder_id: null,
+  confidence_prior: null,
+  confidence_changed_at: null,
+  drift_deadline: null,
+  confirmed_at: null,
 };
 
 const activeLoop: LoopListItem = {

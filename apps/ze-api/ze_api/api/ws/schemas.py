@@ -180,8 +180,9 @@ class WsNotificationFrame(BaseModel):
     target_parent_id: str | None
     created_at: datetime
     read: bool = False
-    push_class: str
-    delivery: str
+    push_class: Literal["requested", "accountability", "discretionary"]
+    urgency: Literal["low", "normal", "high"]
+    delivery: Literal["delivered", "held", "released", "suppressed", "failed"]
 
 
 WsInboundFrame = Annotated[

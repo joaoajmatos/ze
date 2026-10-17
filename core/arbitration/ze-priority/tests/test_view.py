@@ -266,3 +266,13 @@ async def test_priority_item_round_trips_as_a_priority_claim_shape():
     assert item.title
     assert item.rank == 1
     assert item.activity_at is not None
+
+
+async def test_rank_reads_hypotheses_through_list_recent():
+    """list_recent carries the dismissed-feedback predicate (pinned in ze-correlation)."""
+    hypothesis_store = AsyncMock()
+    hypothesis_store.list_recent.return_value = []
+
+    await _view(AsyncMock(list=AsyncMock(return_value=[])), None, hypothesis_store).rank()
+
+    hypothesis_store.list_recent.assert_awaited_once()

@@ -345,7 +345,7 @@ proactive:
 
 Disable any proactive feature by setting `enabled: false` or toggling the relevant flag.
 
-`proactive.budget.max_pushes_per_day` (default 5) is the one shared daily budget for every discretionary push. Ze sends a discretionary nudge only while a slot remains. Once the budget is spent, further nudges enter the notification bell with delivery `suppressed`. Accountability and requested pushes never claim the budget.
+`proactive.budget.max_pushes_per_day` (default 5) is the one shared budget for every discretionary push, counted over a rolling 24 hours. Ze sends a discretionary nudge only while a slot remains. Once the budget is spent, further nudges enter the notification bell with delivery `suppressed`. Accountability and requested pushes never claim the budget.
 
 `proactive.briefing.catch_up_max_age_hours` (default 6) sets how late a missed briefing may be and still run at startup. After downtime, the scheduler runs each missed cron job once, within this age.
 

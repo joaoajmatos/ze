@@ -337,6 +337,7 @@ class NativeAppInterface:
                     else None,
                     "read": False,
                     "push_class": notification.push_class,
+                    "urgency": notification.urgency,
                     "delivery": notification.delivery,
                 }
             )

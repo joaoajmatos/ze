@@ -157,3 +157,34 @@ async def test_unlinked_loop_has_null_ids():
     loop_store.list_sources_for = AsyncMock(return_value={})
     (item,) = await rest.list_loops(loop_store)
     assert item["reminder_id"] is None and item["goal_id"] is None
+
+
+async def test_list_exposes_confidence_movement_and_timing():
+    changed = NOW + timedelta(hours=1)
+    loop = _loop(
+        confidence_prior=0.4,
+        confidence_changed_at=changed,
+        drift_deadline=NOW + timedelta(days=7),
+        confirmed_at=NOW,
+    )
+    loop_store = AsyncMock()
+    loop_store.list = AsyncMock(return_value=[loop])
+    loop_store.list_sources_for = AsyncMock(return_value={})
+
+    (item,) = await rest.list_loops(loop_store)
+
+    assert item["confidence_prior"] == 0.4
+    assert item["confidence_changed_at"] == changed.isoformat()
+    assert item["drift_deadline"] == (NOW + timedelta(days=7)).isoformat()
+    assert item["confirmed_at"] == NOW.isoformat()
+
+
+async def test_never_changed_loop_has_null_movement():
+    loop_store = AsyncMock()
+    loop_store.list = AsyncMock(return_value=[_loop()])
+    loop_store.list_sources_for = AsyncMock(return_value={})
+
+    (item,) = await rest.list_loops(loop_store)
+
+    for key in ("confidence_prior", "confidence_changed_at", "drift_deadline", "confirmed_at"):
+        assert item[key] is None

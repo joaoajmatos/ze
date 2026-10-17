@@ -183,3 +183,79 @@ class TestEvidenceRoundTrip:
 
         assert loaded is not None
         assert loaded.evidence == evidence
+
+
+_DISMISSED_PREDICATE = "feedback IS NULL OR feedback = 'useful'"
+
+
+class TestFeedbackFiltering:
+    @pytest.mark.parametrize("method,args", [
+        ("list_unsurfaced", ()),
+        ("list_recent", (30,)),
+        ("list_by_entities", ([uuid4()],)),
+    ])
+    async def test_default_listings_skip_dismissed(self, method, args):
+        pool, conn = _make_pool()
+        await getattr(PostgresHypothesisStore(pool=pool), method)(*args)
+        assert _DISMISSED_PREDICATE in conn.fetch.await_args.args[0]
+
+    async def test_include_dismissed_opts_out(self):
+        pool, conn = _make_pool()
+        await PostgresHypothesisStore(pool=pool).list_by_entities(
+            [uuid4()], include_dismissed=True
+        )
+        assert "feedback" not in conn.fetch.await_args.args[0]
+
+
+class TestSetFeedback:
+    async def test_returns_the_row(self):
+        hyp_id = uuid4()
+        row = _row(hyp_id) | {"feedback": "muted"}
+        pool, conn = _make_pool(fetchrow_return=row)
+        result = await PostgresHypothesisStore(pool=pool).set_feedback(hyp_id, "muted")
+        assert result.feedback == "muted"
+        assert conn.fetchrow.await_args.args[1:] == ("muted", hyp_id)
+
+    async def test_none_clears(self):
+        hyp_id = uuid4()
+        pool, conn = _make_pool(fetchrow_return=_row(hyp_id))
+        result = await PostgresHypothesisStore(pool=pool).set_feedback(hyp_id, None)
+        assert result.feedback is None
+        assert conn.fetchrow.await_args.args[1] is None
+
+    async def test_unknown_id_raises_a_ze_error(self):
+        from ze_agents.errors import ZeError
+
+        pool, _ = _make_pool(fetchrow_return=None)
+        with pytest.raises(HypothesisNotFoundError) as exc:
+            await PostgresHypothesisStore(pool=pool).set_feedback(uuid4(), "useful")
+        assert isinstance(exc.value, ZeError)
+
+
+class TestListForDisplay:
+    async def _sql(self, **kw):
+        pool, conn = _make_pool()
+        await PostgresHypothesisStore(pool=pool).list_for_display(**kw)
+        return conn.fetch.await_args.args
+
+    async def test_open(self):
+        sql, *params = await self._sql(entity_id=None, state="open", limit=10)
+        assert "NOT confirmed" in sql and _DISMISSED_PREDICATE in sql
+        assert "ORDER BY created_at DESC" in sql and params == [10]
+
+    async def test_confirmed(self):
+        sql, *_ = await self._sql(entity_id=None, state="confirmed", limit=10)
+        assert "confirmed" in sql and "NOT confirmed" not in sql
+
+    async def test_dismissed_excludes_confirmed(self):
+        sql, *_ = await self._sql(entity_id=None, state="dismissed", limit=10)
+        assert "NOT confirmed" in sql and "feedback IN ('not_relevant', 'muted')" in sql
+
+    async def test_all_has_no_state_clause(self):
+        sql, *_ = await self._sql(entity_id=None, state="all", limit=10)
+        assert "WHERE" not in sql
+
+    async def test_entity_filter(self):
+        eid = uuid4()
+        sql, *params = await self._sql(entity_id=eid, state="all", limit=5)
+        assert "entities ?" in sql and params == [str(eid), 5]

@@ -39,6 +39,17 @@ _USER_ASKED_TRANSITIONS: dict[LoopState, set[LoopState]] = {
 }
 
 
+# Postgres evaluates every SET expression against the old row, so the prior
+# reads the value before this write. Only a real change stamps.
+_CONFIDENCE_STAMP = (
+    "confidence_prior = CASE WHEN confidence IS DISTINCT FROM {new} "
+    "THEN confidence ELSE confidence_prior END, "
+    "confidence_changed_at = CASE WHEN confidence IS DISTINCT FROM {new} "
+    "THEN now() ELSE confidence_changed_at END, "
+    "confidence = {new}"
+)
+
+
 def _loop_from_row(row) -> OpenLoop:
     return OpenLoop(
         id=row["id"],
@@ -49,6 +60,8 @@ def _loop_from_row(row) -> OpenLoop:
         confidence=row["confidence"],
         goal_id=row["goal_id"],
         reminder_id=row["reminder_id"],
+        confidence_prior=row["confidence_prior"],
+        confidence_changed_at=row["confidence_changed_at"],
         dismissed_evidence_fingerprint=row["dismissed_evidence_fingerprint"],
         drift_deadline=row["drift_deadline"],
         drift_rationale=row["drift_rationale"],
@@ -287,7 +300,9 @@ class PostgresLoopStore:
     async def set_confidence(self, loop_id: UUID, confidence: float) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(
-                "UPDATE open_loops SET confidence = $2, updated_at = now() WHERE id = $1",
+                "UPDATE open_loops SET "
+                + _CONFIDENCE_STAMP.format(new="$2")
+                + ", updated_at = now() WHERE id = $1",
                 loop_id,
                 confidence,
             )
@@ -387,7 +402,9 @@ class PostgresLoopStore:
     ) -> None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
-                "UPDATE open_loops SET confidence = $2, drift_deadline = $3,"
+                "UPDATE open_loops SET "
+                + _CONFIDENCE_STAMP.format(new="$2")
+                + ", drift_deadline = $3,"
                 " drift_rationale = NULL, confirmed_at = now(), updated_at = now()"
                 " WHERE id = $1 RETURNING id",
                 loop_id,
@@ -491,9 +508,9 @@ class PostgresLoopStore:
     ) -> OpenLoop | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
-                """
+                f"""
                 UPDATE open_loops
-                SET state = 'active', confidence = GREATEST(confidence, $2),
+                SET state = 'active', {_CONFIDENCE_STAMP.format(new="GREATEST(confidence, $2)")},
                     confirmed_at = now(),
                     drift_deadline = now() + make_interval(days => $3),
                     drift_rationale = NULL, updated_at = now()

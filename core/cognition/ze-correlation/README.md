@@ -47,6 +47,10 @@ Wired into the orchestration graph by `ze-core` (`orchestration/nodes/correlatio
 from ze_correlation import CorrelationEngine, PostgresHypothesisStore
 ```
 
+## REST (phase 185)
+
+`ze_correlation.rest` lists hypotheses (`GET /api/v0/hypotheses`, filtered by entity and state: open, confirmed, dismissed, all) and records feedback (`POST /api/v0/hypotheses/{id}/feedback`: `useful`, `not_relevant`, `muted`, or `null` to clear). A `not_relevant` or `muted` hypothesis is no longer pushed, ranked, or offered by `who_is_on_project`. `SocialCooccurrenceJob` still sees it (`include_dismissed=True`) so it keeps updating the evidence. A confirmed hypothesis lists as confirmed whatever its feedback.
+
 ## Testing
 
 From the repo root:

@@ -172,6 +172,10 @@ class TestPromotesOnCorroboration:
         hypothesis_store.update_evidence.assert_not_awaited()
         hypothesis_store.mark_promoted.assert_not_awaited()
         memory_store.graph_store.upsert_relationship.assert_not_awaited()
+        # The job still sees dismissed hypotheses so it keeps updating their evidence.
+        assert hypothesis_store.list_by_entities.await_args.kwargs == {
+            "include_dismissed": True
+        }
 
 
 class TestExistingEdgeReinforcedNotDuplicated:

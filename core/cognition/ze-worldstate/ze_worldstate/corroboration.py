@@ -179,19 +179,24 @@ async def _corroborate(
         if row is None:
             outcome, reason = "corroborate", "duplicate_source"
         else:
-            await loop_store.set_confidence(
-                existing.id, corroborated_confidence(existing.confidence, decision.score)
+            corroborated = corroborated_confidence(
+                existing.confidence, decision.score
             )
             outcome = "corroborate"
+            promoted = None
             if decision.kind == "promote":
+                # Promote writes confidence itself (0.7 is above the corroboration
+                # cap), so the stamped prior is the value before this one write.
                 promoted = await loop_store.promote(
                     existing.id,
                     confidence=PROMOTED_CONFIDENCE,
                     window_days=PROMOTED_WINDOW_DAYS,
                 )
-                if promoted is not None:
-                    await loop_store.mark_source_promoted(row.id)
-                    outcome = "promote"
+            if promoted is not None:
+                await loop_store.mark_source_promoted(row.id)
+                outcome = "promote"
+            else:
+                await loop_store.set_confidence(existing.id, corroborated)
     else:
         await link()
 

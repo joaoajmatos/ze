@@ -158,7 +158,9 @@ class SocialCooccurrenceJob:
         self, candidate: CoOccurrenceCandidate
     ) -> Hypothesis | None:
         pair = {candidate.source_entity_id, candidate.target_entity_id}
-        hits = await self._hypothesis_store.list_by_entities(list(pair))
+        hits = await self._hypothesis_store.list_by_entities(
+            list(pair), include_dismissed=True
+        )
         for h in hits:
             if set(h.entities) == pair:
                 return h

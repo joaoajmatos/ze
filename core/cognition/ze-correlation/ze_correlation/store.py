@@ -2,16 +2,24 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from typing import Literal
 from uuid import UUID
 
 from ze_logging import get_logger
 
 from ze_agents.claims import ClaimKind, Provenance
+from ze_agents.errors import ZeError
 from ze_correlation.types import HypothesisEvidence, Hypothesis
 
 log = get_logger(__name__)
 
 UTC = timezone.utc
+
+_VISIBLE = "(feedback IS NULL OR feedback = 'useful')"
+_DISMISSED = "feedback IN ('not_relevant', 'muted')"
+
+DisplayState = Literal["open", "confirmed", "dismissed", "all"]
+Feedback = Literal["useful", "not_relevant", "muted"]
 
 
 class PostgresHypothesisStore:
@@ -81,7 +89,7 @@ class PostgresHypothesisStore:
         async with self._pool.acquire() as conn:  # type: ignore[union-attr]
             rows = await conn.fetch(
                 "SELECT * FROM correlation_hypothesis WHERE surfaced = false"
-                " ORDER BY created_at DESC LIMIT $1",
+                f" AND {_VISIBLE} ORDER BY created_at DESC LIMIT $1",
                 limit,
             )
         return [_row_to_hypothesis(r) for r in rows]
@@ -121,7 +129,8 @@ class PostgresHypothesisStore:
         async with self._pool.acquire() as conn:  # type: ignore[union-attr]
             rows = await conn.fetch(
                 "SELECT * FROM correlation_hypothesis"
-                " WHERE created_at >= now() - ($1 || ' days')::interval",
+                " WHERE created_at >= now() - ($1 || ' days')::interval"
+                f" AND {_VISIBLE}",
                 str(window_days),
             )
         return [_row_to_hypothesis(r) for r in rows]
@@ -183,7 +192,9 @@ class PostgresHypothesisStore:
             raise HypothesisNotFoundError(str(hypothesis_id))
         return _row_to_hypothesis(row)
 
-    async def list_by_entities(self, entity_ids: list[UUID]) -> list[Hypothesis]:
+    async def list_by_entities(
+        self, entity_ids: list[UUID], *, include_dismissed: bool = False
+    ) -> list[Hypothesis]:
         """Hypotheses whose `entities` intersects `entity_ids` — used for both
         conversational lookup (`who_is_on_project`) and the job's per-pair
         existing-hypothesis check."""
@@ -192,13 +203,55 @@ class PostgresHypothesisStore:
         entity_strs = [str(e) for e in entity_ids]
         async with self._pool.acquire() as conn:  # type: ignore[union-attr]
             rows = await conn.fetch(
-                "SELECT * FROM correlation_hypothesis WHERE entities ?| $1::text[]",
+                "SELECT * FROM correlation_hypothesis WHERE entities ?| $1::text[]"
+                + ("" if include_dismissed else f" AND {_VISIBLE}"),
                 entity_strs,
             )
         return [_row_to_hypothesis(r) for r in rows]
 
+    async def list_for_display(
+        self, *, entity_id: UUID | None, state: DisplayState, limit: int
+    ) -> list[Hypothesis]:
+        """Newest first. `confirmed` wins over feedback: a confirmed hypothesis
+        lists as confirmed even if it was also dismissed."""
+        conditions: list[str] = []
+        params: list[object] = []
+        if entity_id is not None:
+            params.append(str(entity_id))
+            conditions.append(f"entities ? ${len(params)}")
+        if state == "open":
+            conditions.append(f"NOT confirmed AND {_VISIBLE}")
+        elif state == "confirmed":
+            conditions.append("confirmed")
+        elif state == "dismissed":
+            conditions.append(f"NOT confirmed AND {_DISMISSED}")
+        params.append(limit)
+        where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+        async with self._pool.acquire() as conn:  # type: ignore[union-attr]
+            rows = await conn.fetch(
+                f"SELECT * FROM correlation_hypothesis{where}"
+                f" ORDER BY created_at DESC LIMIT ${len(params)}",
+                *params,
+            )
+        return [_row_to_hypothesis(r) for r in rows]
 
-class HypothesisNotFoundError(Exception):
+    async def set_feedback(
+        self, hypothesis_id: UUID, feedback: Feedback | None
+    ) -> Hypothesis:
+        """Record the user's verdict; `None` clears it (the undo for a dismissal)."""
+        async with self._pool.acquire() as conn:  # type: ignore[union-attr]
+            row = await conn.fetchrow(
+                "UPDATE correlation_hypothesis SET feedback = $1"
+                " WHERE id = $2 RETURNING *",
+                feedback,
+                hypothesis_id,
+            )
+        if row is None:
+            raise HypothesisNotFoundError(str(hypothesis_id))
+        return _row_to_hypothesis(row)
+
+
+class HypothesisNotFoundError(ZeError):
     pass
 
 

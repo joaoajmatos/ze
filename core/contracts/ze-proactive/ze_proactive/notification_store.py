@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -81,6 +82,7 @@ def _row_to_notification(
         push_class=row.push_class,
         urgency=row.urgency,
         delivery=row.delivery,
+        delivered_at=row.delivered_at,
     )
 
 
@@ -177,6 +179,9 @@ class NotificationStore:
         limit: int = 20,
         unread_only: bool = False,
         mark_read: bool = False,
+        delivery: Sequence[str] | None = None,
+        push_class: str | None = None,
+        since: datetime | None = None,
     ) -> tuple[list[Notification], str | None]:
         limit = max(1, min(limit, 100))
         conditions = []
@@ -184,6 +189,18 @@ class NotificationStore:
 
         if unread_only:
             conditions.append("read_at IS NULL")
+
+        if delivery:
+            params.append(list(delivery))
+            conditions.append(f"delivery = ANY(${len(params)}::text[])")
+
+        if push_class is not None:
+            params.append(push_class)
+            conditions.append(f"push_class = ${len(params)}")
+
+        if since is not None:
+            params.append(since)
+            conditions.append(f"COALESCE(delivered_at, created_at) > ${len(params)}")
 
         if cursor is not None:
             created_at, id_ = _decode_cursor(cursor)

@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from ze_proactive.job_run_store import JobRunStore
 
 
@@ -54,3 +56,29 @@ async def test_store_errors_are_swallowed():
     await store.record_start("a")
     await store.record_finish("a", "ok")
     assert await store.get_all() == {}
+
+
+async def test_list_runs_maps_rows():
+    now = datetime(2026, 6, 15, tzinfo=timezone.utc)
+    conn = AsyncMock()
+    conn.fetch = AsyncMock(
+        return_value=[
+            {
+                "job_id": "a",
+                "last_started_at": now,
+                "last_finished_at": now,
+                "last_status": "ok",
+            }
+        ]
+    )
+    runs = await JobRunStore(_pool(conn)).list_runs()
+    assert [(r.job_id, r.last_status, r.last_finished_at) for r in runs] == [
+        ("a", "ok", now)
+    ]
+
+
+async def test_list_runs_raises_on_pool_error():
+    pool = MagicMock()
+    pool.acquire = MagicMock(side_effect=RuntimeError("down"))
+    with pytest.raises(RuntimeError):
+        await JobRunStore(pool).list_runs()

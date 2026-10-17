@@ -37,7 +37,10 @@ export function RefreshHandler() {
           created_at: frame.created_at,
           read: false,
           push_class: frame.push_class,
+          urgency: frame.urgency,
           delivery: frame.delivery,
+          // Unknown until the list refetches; a released push's delivery time is not its creation time.
+          delivered_at: null,
         };
         const updatedFirstPage: NotificationListResponse = firstPage
           ? { ...firstPage, items: [item, ...firstPage.items] }
@@ -46,6 +49,7 @@ export function RefreshHandler() {
       },
     );
 
+    void queryClient.invalidateQueries({ queryKey: queryKeys.attentionBudget });
     queryClient.setQueryData<number>(
       queryKeys.unreadNotificationCount,
       (count) => (count ?? 0) + 1,

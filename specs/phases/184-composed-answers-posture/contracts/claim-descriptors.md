@@ -10,7 +10,7 @@ Normative for FR-001 to FR-006 and FR-019. Python dataclasses in `ze_components`
 | `subject` | `"loop" \| "goal" \| "workflow" \| "hypothesis" \| "person" \| "held_write" \| "fact"` | What the record is. The client picks the glyph from `subject` + `kind` (goal → hollow diamond; `suspicion` → dashed; `inference` → half; `kind` null → no claim glyph, the subject's own mark; otherwise filled). |
 | `ref_id` | `str` | The record id (UUID string; held writes use `request_id`). |
 | `confidence` | `float \| None` | 0..1 from the record. `None` when the record has none (workflow, held write). |
-| `confidence_from` | `float \| None` | The value before decay. Omitted until a store exposes it (phase 185 for loops). Never derived by guessing. |
+| `confidence_from` | `float \| None` | The value before the last change (loops, phase 185: `confidence_prior`). Omitted when the store has none. Never derived by guessing. |
 | `source` | `str \| None` | Plain key of where the claim came from: the loop's inflow (`OpenLoop.provenance`, e.g. `user_declared`, `email`), `goal`, `workflow`, `correlation`. The client maps keys to words; raw keys are never shown. |
 | `as_of` | `str \| None` | ISO 8601 UTC of the last evidence or update (`updated_at`, `confirmed_at`, `last_progress_at`, `fired_at`, `completed_at`). |
 | `state` | `str \| None` | Closed per subject — loop: `suspected`, `active`, `drifting`; goal: `planning`, `active`, `awaiting_gate`, `paused`, `stuck`; workflow: `ok`, `failed`, `never_run`, `off`; held_write: `open`; hypothesis: `open`; person: `stale`; fact: none. |

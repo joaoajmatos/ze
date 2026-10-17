@@ -10,6 +10,15 @@ from ze_proactive.types import JobRun
 log = get_logger(__name__)
 
 
+def _to_run(row: asyncpg.Record) -> JobRun:
+    return JobRun(
+        job_id=row["job_id"],
+        last_started_at=row["last_started_at"],
+        last_finished_at=row["last_finished_at"],
+        last_status=row["last_status"],
+    )
+
+
 class JobRunStore:
     """Best-effort record of each proactive job's last run, for catch-up. Store
     errors are logged and swallowed: a job never fails because its run could
@@ -48,6 +57,15 @@ class JobRunStore:
         except Exception as exc:
             log.warning("job_run_record_finish_failed", job_id=job_id, error=str(exc))
 
+    async def list_runs(self) -> list[JobRun]:
+        """The last run of every job. Unlike `get_all`, a store failure raises."""
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT job_id, last_started_at, last_finished_at, last_status "
+                "FROM proactive_job_runs ORDER BY last_started_at DESC"
+            )
+        return [_to_run(r) for r in rows]
+
     async def get_all(self) -> dict[str, JobRun]:
         try:
             async with self._pool.acquire() as conn:
@@ -58,12 +76,4 @@ class JobRunStore:
         except Exception as exc:
             log.warning("job_run_get_all_failed", error=str(exc))
             return {}
-        return {
-            r["job_id"]: JobRun(
-                job_id=r["job_id"],
-                last_started_at=r["last_started_at"],
-                last_finished_at=r["last_finished_at"],
-                last_status=r["last_status"],
-            )
-            for r in rows
-        }
+        return {r["job_id"]: _to_run(r) for r in rows}

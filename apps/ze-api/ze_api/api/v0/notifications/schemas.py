@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from typing import Literal
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -10,6 +11,10 @@ from pydantic import (
     ValidationInfo,
     field_validator,
 )
+
+
+PushClassLiteral = Literal["requested", "accountability", "discretionary"]
+DeliveryLiteral = Literal["delivered", "held", "released", "suppressed", "failed"]
 
 
 class NotificationItem(BaseModel):
@@ -23,8 +28,10 @@ class NotificationItem(BaseModel):
     target_parent_id: str | None
     created_at: datetime
     read: bool
-    push_class: str
-    delivery: str
+    push_class: PushClassLiteral
+    urgency: Literal["low", "normal", "high"]
+    delivery: DeliveryLiteral
+    delivered_at: datetime | None
 
 
 class NotificationListResponse(BaseModel):
@@ -49,8 +56,16 @@ class QuietHoursResponse(BaseModel):
     end: str | None
     timezone: str | None
     active_now: bool
+
+
+class AttentionBudgetResponse(BaseModel):
+    used: int
+    max_per_day: int
+    remaining: int
+    window_hours: float
+    next_slot_at: datetime | None
     held_count: int
-    max_discretionary_per_day: int
+    quiet_hours_active: bool
 
 
 class QuietHoursUpdate(BaseModel):

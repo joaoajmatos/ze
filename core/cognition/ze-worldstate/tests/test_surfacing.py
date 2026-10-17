@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
@@ -55,7 +56,12 @@ def _push_bar_surfacer(
     push_log = AsyncMock()
     push_log.list_recent_payloads = AsyncMock(return_value=recent_payloads or [])
     push_log.was_sent_within_hours = AsyncMock(return_value=inline_sent)
-    push_log.count_sent_within_hours = AsyncMock(return_value=budget_count)
+    push_log.window_sent_at = AsyncMock(
+        return_value=[
+            datetime(2026, 1, 1, tzinfo=UTC) + timedelta(minutes=i)
+            for i in range(budget_count)
+        ]
+    )
     push_log.log = AsyncMock()
 
     return LoopSurfacer(
@@ -174,6 +180,8 @@ async def test_passes_push_bar_rejects_within_inline_cooldown():
     loop = _loop(confidence=0.8)
     surfacer = _push_bar_surfacer(relevance_value=0.8, inline_sent=True)
     assert await surfacer.passes_push_bar(loop, loop.drift_rationale) is False
+
+
 # ── grounding checks the title (phase 170) ─────────────────────────────────────
 
 
@@ -194,7 +202,13 @@ async def test_grounding_hypothesis_is_the_loop_title_not_the_rationale(monkeypa
     from ze_worldstate import surfacing
 
     async def fake_summaries(pool, loop_store, loop_id):
-        return [{"type": "episode", "id": uuid4(), "summary": "I need to send Maria the contract"}]
+        return [
+            {
+                "type": "episode",
+                "id": uuid4(),
+                "summary": "I need to send Maria the contract",
+            }
+        ]
 
     monkeypatch.setattr(surfacing, "_fetch_evidence_summaries", fake_summaries)
     loop = _loop(confidence=0.8)
@@ -227,5 +241,10 @@ async def test_grounding_fails_when_the_title_is_not_supported(monkeypatch):
 async def test_grounding_passes_without_evidence_labels():
     loop = _loop(confidence=0.8)
     nli = _RecordingNli(score=0.0)
-    assert await _push_bar_surfacer().passes_push_bar(loop, loop.drift_rationale, nli_client=nli) is True
+    assert (
+        await _push_bar_surfacer().passes_push_bar(
+            loop, loop.drift_rationale, nli_client=nli
+        )
+        is True
+    )
     assert nli.pairs == []

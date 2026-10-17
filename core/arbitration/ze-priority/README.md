@@ -52,7 +52,7 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 |---|---|
 | `proactive.attention_arbitration.enabled` | Turn the arbitration job on or off (default on) |
 | `proactive.attention_arbitration.cron` | Job schedule (default `0 */4 * * *`) |
-| `proactive.budget.max_pushes_per_day` | Shared budget for every discretionary push (default 5) |
+| `proactive.budget.max_pushes_per_day` | Shared budget for every discretionary push over a rolling 24 hours (default 5) |
 
 REST routes: `GET /api/v0/priority/snapshot`, `POST /api/v0/priority/override`, `POST /api/v0/priority/override/{override_id}/unpin`.
 

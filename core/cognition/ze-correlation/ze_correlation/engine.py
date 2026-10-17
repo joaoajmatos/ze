@@ -96,6 +96,23 @@ class CorrelationEngine:
                 working_seeds, self._cfg.max_seeds_inline
             )
 
+        # 1b. A dismissal sticks: do not re-form (or pay for) a connection the user
+        # dismissed. Fails open: a store hiccup must not break the correlate node.
+        try:
+            existing = await self._store.list_by_entities(
+                working_seeds, include_dismissed=True
+            )
+        except Exception as exc:
+            log.warning("correlation_dismissed_check_failed", error=str(exc))
+            existing = []
+        if any(
+            h.feedback in ("not_relevant", "muted")
+            and set(h.entities) == set(working_seeds)
+            for h in existing
+        ):
+            log.info("correlation_skipped_dismissed", seeds=len(working_seeds))
+            return []
+
         # 2. Expand neighbourhood
         max_hops = (
             self._cfg.max_hops_inline

@@ -77,6 +77,10 @@ MORNING_BRIEF = PushKind("morning_brief", "accountability", "normal", "personal"
 
 Sites call `await notifier.notify(kind, title, body, budget_key=...)`. Plugins register jobs in `ZePlugin.register_proactive_jobs()`; `ze-api` starts the scheduler at startup.
 
+## Attention budget
+
+`budget_status(push_log, max_per_day)` is the one count of the rolling 24-hour window. `within_budget`, `ProactiveNotifier.remaining_budget` and `ProactiveNotifier.budget_status` all call it, so the claim path and the REST route (`GET /api/v0/notifications/budget`) never disagree. `PushLogStore.window_sent_at` runs the one window query. `JobRunStore.list_runs` lists the last run of each job and raises on a store failure. `NotificationStore.list_page` filters by `delivery`, `push_class` and `since`.
+
 ## Testing
 
 From the repo root:

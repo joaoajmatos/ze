@@ -40,10 +40,10 @@ class FakePushLog:
         self._clock = clock
         self.claims: dict[tuple[str, str], datetime] = {}
 
-    async def count_sent_within_hours(self, event_type: str, hours: float) -> int:
+    async def window_sent_at(self, event_type: str, hours: float) -> list[datetime]:
         since = self._clock() - timedelta(hours=hours)
-        return sum(
-            1 for (et, _), t in self.claims.items() if et == event_type and t > since
+        return sorted(
+            t for (et, _), t in self.claims.items() if et == event_type and t > since
         )
 
     async def try_claim(self, event_type, idempotency_key, payload=None) -> bool:

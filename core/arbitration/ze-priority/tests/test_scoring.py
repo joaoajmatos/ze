@@ -105,6 +105,11 @@ def test_score_relationship_match_text_is_name():
     assert item.match_text == "Maria Silva"
 
 
+def test_score_loop_carries_confidence_prior():
+    assert score_loop(make_loop(confidence_prior=0.7)).signal.confidence_prior == 0.7
+    assert score_loop(make_loop()).signal.confidence_prior is None
+
+
 def test_score_loop_carries_drift_rationale():
     loop = make_loop(drift_rationale="No update since Tuesday.")
     item = score_loop(loop)

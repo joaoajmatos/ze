@@ -7,18 +7,18 @@ from ze_agents.interface.base import AppInterface
 from ze_agents.interface.types import Action, Notification
 from ze_logging import get_logger
 from ze_proactive.attention_budget import (
-    ATTENTION_PUSH_EVENT_KEY,
+    budget_status,
     release_shared,
     try_claim_shared,
     within_budget,
 )
-from ze_proactive.errors import PushPolicyError
+from ze_proactive.errors import BudgetUnavailableError, PushPolicyError
 from ze_proactive.governor import decide
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.push_kinds import QUIET_HOURS_SUMMARY, registered_push_kinds
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
-from ze_proactive.types import NotificationRow, PushKind, PushOutcome
+from ze_proactive.types import BudgetStatus, NotificationRow, PushKind, PushOutcome
 
 log = get_logger(__name__)
 
@@ -60,17 +60,17 @@ class ProactiveNotifier:
             log.warning("quiet_hours_check_failed", error=str(exc))
             return False
 
-    async def remaining_budget(self) -> int:
+    async def budget_status(self) -> BudgetStatus:
         if self._push_log is None:
-            return self._max
+            raise BudgetUnavailableError("notifier has no push log")
+        return await budget_status(self._push_log, self._max)
+
+    async def remaining_budget(self) -> int:
         try:
-            used = await self._push_log.count_sent_within_hours(
-                ATTENTION_PUSH_EVENT_KEY, 24.0
-            )
+            return (await self.budget_status()).remaining
         except Exception as exc:
             log.warning("attention_budget_check_failed", error=str(exc))
             return self._max
-        return max(0, self._max - used)
 
     async def notify(
         self,
