@@ -18,6 +18,7 @@ from ze_core.conversation import make_graph_input
 from ze_core.conversation.turn import open_confirmation
 from ze_core.routing.factory import build_embedding_router, build_tier_judge
 from ze_core.telemetry.context import enter_turn_context
+from ze_core.telemetry.turn import TurnTelemetryRegistry
 
 if TYPE_CHECKING:
     from ze_core.routing.router import EmbeddingRouter
@@ -45,6 +46,7 @@ class Container:
     _abort_tokens: dict = field(default_factory=dict)  # thread_id → AbortToken
     _fact_extractor: Any = None  # ze_memory.extractor.gather_fact_proposals or None
     _turn_extractor: Any = None  # ze_memory.extractor.gather_turn_proposals or None
+    turn_telemetry: TurnTelemetryRegistry = field(default_factory=TurnTelemetryRegistry)
 
     def _build_config(self, thread_id: str, **extra: Any) -> dict:
         """Build the LangGraph configurable dict for a conversation thread."""
