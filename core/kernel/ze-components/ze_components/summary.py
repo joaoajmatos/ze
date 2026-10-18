@@ -10,6 +10,11 @@ _NAMES = {
     "headline": "headline",
     "claim_card": "card",
     "claim_timeline": "timeline",
+    "entity_facet": "fact list",
+    "stat_row": "stat row",
+    "claim_list": "claim list",
+    "sparkline": "sparkline",
+    "card": "card",
 }
 
 
