@@ -52,7 +52,7 @@
   Implement `list_by_subject` in `PostgresActionRecordStore`.
 - [x] T005a [L:ledger] [US1] Tests first `core/automation/ze-automation/tests/test_action_records_workflow.py` (A-1): `finish_execution` runs `UPDATE … RETURNING workflow_id` and calls `emit_workflow_finished(execution_id, status, workflow_id)`; the emitted record's context has both `workflow_id` and `workflow_run_id`; a missing execution row (no row returned) still emits with `workflow_id=None` and logs. Implement in `ze_automation/workflow/postgres.py` (`finish_execution` only) and `ze_automation/action_records.py`.
 - [x] T006 [L:ledger] [US1] `@pytest.mark.pg` test in the same package: seed records for goal G1, goal G2 and workflow run R1, plus one with an empty context. Listing by G1 returns only G1's records, newest first; listing by workflow W returns both its started and finished records. Paging with limit 1 walks all records with no repeat or skip, including two records with the same `occurred_at`. `since` excludes older records.
-- [ ] T007 [L:ledger] [US1] Tests first `apps/ze-api/tests/api/test_actions_route.py`:
+- [x] T007 [L:ledger] [US1] Tests first `apps/ze-api/tests/api/test_actions_route.py`:
   - each subject type maps to the store call;
   - a lone `subject_type` or `subject_id` → 422;
   - a bad cursor → 422;
@@ -142,7 +142,7 @@
 
 ## Phase 9: Polish and cross-cutting
 
-- [ ] T018 [P] [L:ledger] Follow-up note (no code): record in the Handoffs note that calendar, reminder and prospecting producers stamp no goal, workflow or run (spec US1 coverage limit), for a later instrumentation phase.
+- [x] T018 [P] [L:ledger] Follow-up note (no code): record in the Handoffs note that calendar, reminder and prospecting producers stamp no goal, workflow or run (spec US1 coverage limit), for a later instrumentation phase.
 - [ ] T019 [L:lead] Merge the lanes (ledger, reads, channels, jr1); `make codegen` if a schema moved; gates: `make test-py`, `make test-pg`, `make lint`, `make test-web`.
 - [ ] T020 [L:lead] Run [quickstart.md](./quickstart.md) steps 1–6 against `make dev`; record results in the Handoffs note.
 - [ ] T021 [P] [L:docs] `docs/native-interface.md` (five surfaces), `docs/memory.md` (ledger read), `docs/system-one.md` (tier settings route), `docs/architecture.md` (REST table; `zc040`), from the merged diff, doc-style skill.
@@ -181,3 +181,10 @@ After the contract step, four lanes at once:
 - Done early by lead (reads: do not redo): `/api/v0/collisions` removed from `EVAL_ONLY_PATHS` (`test_dev_only_routes.py`) and the "not in paths" assertion in `test_openapi_export.py`. Reads still owns the handler, the 404-on-old-path test and deleting `api/eval/collisions.py`.
 - Stubs: product routes return 501; `PostgresActionRecordStore.list_by_subject`, `ChannelWatermarkStore.record_outcome` and `get_status_many` raise `NotImplementedError`. `subject_context_key()` and `UnknownActionSubjectKindError` are in ze-memory.
 - Not done in T001: `graphify affected` and the ledger `EXPLAIN` (R2). Ledger lane runs the `EXPLAIN` with T005.
+
+**Ledger lane (T005-T007, T018)**
+- `list_by_subject` is built to the plan; `kind` and `subject_id` must come together (typed `StoreError` otherwise). The route fetches `limit + 1` rows to decide `next_cursor`.
+- R2 EXPLAIN (empty throwaway DB): a Seq Scan with a top-N sort on `(occurred_at DESC, id DESC)`. The table is empty so the planner shows nothing about the index; at single-user volume (the plan's goal: 50 rows under 100 ms) no new index is added.
+- Existing tests that mocked `conn.execute` for `finish_execution` now mock `conn.fetchrow` (it returns `workflow_id`).
+- pg tests live in `apps/ze-api/tests/pg/test_action_records_subject_pg.py` (the harness is there). Run against a throwaway DB `ze_ledger_194` on ze-postgres-1; 4 passed.
+- Coverage limit for a later instrumentation phase (T018): calendar, reminder and prospecting producers stamp no goal, workflow or run id in their action context, so what Ze did through those tools during a goal or workflow does not list under that subject.
