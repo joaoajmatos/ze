@@ -5,9 +5,8 @@ from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 
-from ze_agents.defaults import MODEL_VISION_CAPTION, MODEL_WHISPER
+from ze_agents.defaults import MODEL_VISION_CAPTION
 from ze_logging import get_logger
-from ze_core.openrouter.client import _normalise_audio_format
 from ze_core.orchestration.state import AgentState
 
 log = get_logger(__name__)
@@ -16,8 +15,6 @@ log = get_logger(__name__)
 async def preprocess(state: AgentState, config: RunnableConfig) -> dict:
     """Normalise multimodal input before routing.
 
-    - Audio → transcribed to text via openrouter_client.transcribe(); audio bytes
-      are cleared from state so they are not persisted in the checkpoint.
     - Image without prompt → vision caption generated for routing; stored as
       image_caption. image_data is preserved for the execution node.
     - Image with prompt → image_caption is set to the user's prompt text.
@@ -32,23 +29,7 @@ async def preprocess(state: AgentState, config: RunnableConfig) -> dict:
     )
     updates: dict = {}
 
-    if state.get("audio_data"):
-        from ze_core.telemetry.context import set_agent_context, set_flow_context
-
-        set_flow_context("transcription")
-        set_agent_context("whisper")
-
-        model = models.get("whisper", MODEL_WHISPER)
-        fmt = _normalise_audio_format(state.get("audio_mime") or "audio/ogg")
-        text = await client.transcribe(state["audio_data"], fmt, model=model)
-
-        updates["prompt"] = text
-        updates["input_modality"] = "voice"
-        updates["audio_data"] = None
-        updates["audio_mime"] = None
-        log.info("preprocess_transcribed", chars=len(text))
-
-    elif state.get("image_data"):
+    if state.get("image_data"):
         if not state.get("prompt"):
             model = models.get("vision_caption", MODEL_VISION_CAPTION)
             caption = await _vision_caption(

@@ -522,6 +522,8 @@ Synthesis is skipped if fewer than `profile.min_facts` (3 default) reviewed fact
 | `POST /api/v0/memory/facts/review` | Confirm, reject, or edit a proposed fact |
 | `POST /api/v0/memory/consolidate` | Trigger a consolidation run manually |
 
+The action ledger has its own read: `GET /api/v0/actions` lists records newest first, for one goal, workflow, workflow run or workspace run, with keyset paging on `(occurred_at, id)`. A record belongs to a subject when its context holds that subject's id. Goal, workflow and workspace records carry one. The workflow-finished record carries both the workflow id and the run id, so a workflow's list shows each run's outcome. Calendar, reminder and prospecting records do not. See [Accountability surfaces](native-interface.md#accountability-surfaces).
+
 ### Manual consolidation
 
 ```bash

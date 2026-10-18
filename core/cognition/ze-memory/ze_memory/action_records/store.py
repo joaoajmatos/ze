@@ -22,9 +22,11 @@ from ze_memory.action_records.types import (
     ActionOutcome,
     ActionRecord,
     ActionRecordDraft,
+    ActionSubjectKind,
     AuthoritativeRef,
     CausalRef,
     material_tuple,
+    subject_context_key,
     validate_draft,
 )
 from ze_memory.errors import StoreError
@@ -46,6 +48,16 @@ class ActionRecordStore(Protocol):
         limit: int = 100,
     ) -> list[ActionRecord]: ...
 
+    async def list_by_subject(
+        self,
+        *,
+        kind: ActionSubjectKind | None = None,
+        subject_id: UUID | None = None,
+        since: datetime | None = None,
+        cursor: tuple[datetime, UUID] | None = None,
+        limit: int = 50,
+    ) -> list[ActionRecord]: ...
+
 
 def _uuid_str(value: UUID | None) -> str | None:
     return None if value is None else str(value)
@@ -57,32 +69,30 @@ def _parse_uuid(value: str | UUID | None) -> UUID | None:
     return value if isinstance(value, UUID) else UUID(str(value))
 
 
-def _context_to_json(ctx: ActionContext) -> str:
-    return json.dumps(
-        {
-            "request_id": _uuid_str(ctx.request_id),
-            "session_id": _uuid_str(ctx.session_id),
-            "message_id": _uuid_str(ctx.message_id),
-            "thread_id": _uuid_str(ctx.thread_id),
-            "goal_id": _uuid_str(ctx.goal_id),
-            "milestone_id": _uuid_str(ctx.milestone_id),
-            "workflow_id": _uuid_str(ctx.workflow_id),
-            "workflow_run_id": _uuid_str(ctx.workflow_run_id),
-            "workspace_run_id": _uuid_str(ctx.workspace_run_id),
-            "channel_id": _uuid_str(ctx.channel_id),
-            "outreach_id": _uuid_str(ctx.outreach_id),
-            "calendar_ref": ctx.calendar_ref,
-            "reminder_id": _uuid_str(ctx.reminder_id),
-        }
-    )
+def _context_to_json(ctx: ActionContext) -> dict:
+    return {
+        "request_id": _uuid_str(ctx.request_id),
+        "session_id": _uuid_str(ctx.session_id),
+        "message_id": _uuid_str(ctx.message_id),
+        "thread_id": _uuid_str(ctx.thread_id),
+        "goal_id": _uuid_str(ctx.goal_id),
+        "milestone_id": _uuid_str(ctx.milestone_id),
+        "workflow_id": _uuid_str(ctx.workflow_id),
+        "workflow_run_id": _uuid_str(ctx.workflow_run_id),
+        "workspace_run_id": _uuid_str(ctx.workspace_run_id),
+        "channel_id": _uuid_str(ctx.channel_id),
+        "outreach_id": _uuid_str(ctx.outreach_id),
+        "calendar_ref": ctx.calendar_ref,
+        "reminder_id": _uuid_str(ctx.reminder_id),
+    }
 
 
-def _evidence_to_json(evidence: list[EvidenceRef]) -> str:
-    return json.dumps([{"kind": ref.kind, "id": str(ref.id)} for ref in evidence])
+def _evidence_to_json(evidence: list[EvidenceRef]) -> list[dict]:
+    return [{"kind": ref.kind, "id": str(ref.id)} for ref in evidence]
 
 
-def _causal_to_json(refs: list[CausalRef]) -> str:
-    return json.dumps([{"kind": ref.kind, "id": str(ref.id)} for ref in refs])
+def _causal_to_json(refs: list[CausalRef]) -> list[dict]:
+    return [{"kind": ref.kind, "id": str(ref.id)} for ref in refs]
 
 
 def _load_json(raw) -> object:
@@ -295,6 +305,42 @@ class PostgresActionRecordStore:
             )
         return _record_from_row(row) if row is not None else None
 
+    async def list_by_subject(
+        self,
+        *,
+        kind: ActionSubjectKind | None = None,
+        subject_id: UUID | None = None,
+        since: datetime | None = None,
+        cursor: tuple[datetime, UUID] | None = None,
+        limit: int = 50,
+    ) -> list[ActionRecord]:
+        if (kind is None) != (subject_id is None):
+            raise StoreError("kind and subject_id must be given together")
+        clauses: list[str] = []
+        args: list[object] = []
+        if kind is not None:
+            args.append(str(subject_id))
+            clauses.append(
+                f"context->>'{subject_context_key(kind)}' = ${len(args)}::text"
+            )
+        if since is not None:
+            args.append(since)
+            clauses.append(f"occurred_at > ${len(args)}::timestamptz")
+        if cursor is not None:
+            args.extend(cursor)
+            clauses.append(
+                f"(occurred_at, id) < (${len(args) - 1}::timestamptz, ${len(args)}::uuid)"
+            )
+        args.append(max(1, min(limit, 500)))
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        sql = (
+            f"SELECT * FROM action_records {where} "
+            f"ORDER BY occurred_at DESC, id DESC LIMIT ${len(args)}"
+        )
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(sql, *args)
+        return [_record_from_row(row) for row in rows]
+
     async def list(
         self,
         *,
@@ -314,7 +360,7 @@ class PostgresActionRecordStore:
             _add("authoritative_domain = ?", authoritative_ref.domain)
             _add("authoritative_record_id = ?", authoritative_ref.record_id)
         if causal_ref is not None:
-            payload = json.dumps([{"kind": causal_ref.kind, "id": str(causal_ref.id)}])
+            payload = [{"kind": causal_ref.kind, "id": str(causal_ref.id)}]
             _add("causal_refs @> ?::jsonb", payload)
         if before is not None:
             _add("occurred_at < ?", before)

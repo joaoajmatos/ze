@@ -202,6 +202,10 @@ Response 200:
 
 `yt-dlp` must be installed as a system binary or via `uv tool`. If it is not installed or `ze-yt` is not in the dependency tree, video URLs fall back to `WebFetcher` (which will return the page HTML rather than the video audio).
 
+`ffmpeg` and `ffprobe` are system binaries too. The voice input route in `ze-api` uses
+them to measure and convert recordings. The `ze-api` Docker image installs both. See
+[Configuration](configuration.md).
+
 ---
 
 ## Database

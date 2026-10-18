@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 from uuid import UUID
 
 
@@ -13,3 +14,16 @@ class UserChannel:
     is_default_outbound: bool
     poll_enabled: bool
     created_at: datetime
+
+
+class PollOutcome(StrEnum):
+    OK = "ok"
+    AUTH_FAILED = "auth_failed"
+    FAILED = "failed"
+
+
+@dataclass(frozen=True)
+class ChannelPollStatus:
+    watermark: datetime | None
+    last_outcome: PollOutcome | None
+    last_outcome_at: datetime | None

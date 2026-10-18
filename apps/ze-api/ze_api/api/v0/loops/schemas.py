@@ -2,9 +2,14 @@ from __future__ import annotations
 
 from uuid import UUID as UUIDType
 
+from typing import Literal
+
 from pydantic import (
     BaseModel,
 )
+
+
+LoopStateName = Literal["suspected", "active", "drifting", "closed", "dropped"]
 
 
 class LoopListItem(BaseModel):

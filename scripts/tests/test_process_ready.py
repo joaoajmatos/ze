@@ -131,25 +131,30 @@ def test_full_gate_waits_for_a_live_lock_and_cleans_a_stale_one(tmp_path):
     # live holder: a sleeping process; the gate must wait until it exits
     import threading
 
-    holder = subprocess.Popen(["sleep", "2"])
+    # The holder lives until the gate reports it is waiting, so machine load cannot
+    # let it exit before gates.sh first looks at the lock.
+    holder = subprocess.Popen(["sleep", "60"])
     threading.Thread(
         target=holder.wait, daemon=True
     ).start()  # reap it, or kill -0 still sees a zombie
     lock.mkdir()
     (lock / "pid").write_text(str(holder.pid))
-    p = subprocess.run(
+    gate = subprocess.Popen(
         [str(PROCESS / "gates.sh"), "-", "test-py"],
         cwd=repo,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
         env=env,
-        timeout=30,
     )
+    first = gate.stderr.readline()
+    holder.kill()
+    out, rest = gate.communicate(timeout=30)
     assert (
-        "waiting for the full-gate lock" in p.stderr
-        and p.returncode == 0
+        "waiting for the full-gate lock" in first
+        and gate.returncode == 0
         and not lock.exists()
-    )
+    ), first + rest
 
 
 def test_light_gates_ignore_the_lock(tmp_path):

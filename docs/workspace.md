@@ -46,17 +46,20 @@ chooses. Ze records the run in `workspace_runs` before it starts the command.
   names the running command.
 - **Restart.** After `ze-api` restarts, Ze reattaches to runs that are still
   running. If the computer lost a run, Ze marks it failed. It never invents a result.
-- **Live output.** While a command runs, chat and the workspace page show the output
+- **Live output.** While a command runs, chat and Doing › Runs show the output
   so far. The `GET /api/v0/workspace/runs/{run_id}/events` route streams it. A page
   opened mid-run replays the lines already printed.
 - **Cancel.** `POST /api/v0/workspace/runs/{run_id}/cancel` stops a running command.
+- **Doing › Runs.** The web app lists recent runs on Doing (`/doing`). It shows the live output of a running run and a Cancel button. While a run holds the workspace, the list says "busy". The list refreshes every 5 seconds while a run is in progress. A run is coral only when an unattended run failed or timed out. A cancelled run is never coral. If the sidecar is off, Runs says "Workspace is off" and nothing else changes.
+
+The workspace file map is a read-only tree in Governance › Files (`/governance#files`).
 
 ## Skill scripts
 
 Skills are reusable instructions. Their bundled scripts are a workspace concern.
 Approving a skill's instructions does not approve its scripts.
 
-1. Import and approve the skill on `/skills` (instructions become active).
+1. Import and approve the skill in the Skills queue on Doing (`/doing#skills`). The instructions become active.
 2. Approve executables (`POST /api/v0/skills/{id}/approve-executables`).
 3. When the skill matches a turn, the agent may call `workspace_run_skill_script`.
    The sidecar writes the stored bytes under `/workspace` and runs them after

@@ -167,6 +167,7 @@ async def test_list_by_causal_ref() -> None:
     await store.list(causal_ref=causal)
     sql = conn.fetch.await_args.args[0]
     assert "causal_refs @>" in sql
+    assert conn.fetch.await_args.args[1] == [{"kind": "goal", "id": str(causal.id)}]
 
 
 async def test_started_row_has_no_outcome() -> None:

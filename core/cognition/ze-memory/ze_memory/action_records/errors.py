@@ -25,3 +25,7 @@ class InvalidActionRecordStateError(ActionRecordValidationError):
 
 class ActionRecordConflictError(ActionRecordIdempotencyConflictError):
     """Idempotency key reused with a materially different observation."""
+
+
+class UnknownActionSubjectKindError(ActionRecordValidationError):
+    """Subject kind is not in the closed subject map."""

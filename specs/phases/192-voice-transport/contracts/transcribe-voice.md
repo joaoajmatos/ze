@@ -18,7 +18,7 @@
   | 422 | no `file` part, or not multipart | "Send the recording as a file named file." |
 
 - A declared `Content-Length` over the limit is refused with the same 413 before the body is read.
-- WebM and fragmented MP4 (what browsers record) are measured; a progressive MP4 with its index at the end is refused as unreadable (422).
+- WebM, Ogg and MP4 (fragmented or not) are measured; a recording whose length cannot be read is refused as unreadable (422).
 
 ## WS `message` frame: `context.voice`
 ```json

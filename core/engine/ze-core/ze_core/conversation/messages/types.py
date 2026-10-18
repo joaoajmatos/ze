@@ -210,6 +210,15 @@ class ScreenTrace:
 
 
 @dataclass
+class InputTrace:
+    """How a turn's text arrived. Never carries the transcript itself."""
+
+    modality: str  # "voice"
+    duration_s: float | None = None
+    edited: bool | None = None
+
+
+@dataclass
 class SourceTrace:
     url: str
     title: str = ""
@@ -243,3 +252,4 @@ class MessageTrace:
     rollback: RollbackTrace | None = None
     tier: TierTrace | None = None
     screen: ScreenTrace | None = None
+    input: InputTrace | None = None
