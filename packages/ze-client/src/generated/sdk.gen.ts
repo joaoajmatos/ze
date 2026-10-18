@@ -596,7 +596,7 @@ export const markAllNotificationsRead = <ThrowOnError extends boolean = false>(o
 /**
  * List open loops
  *
- * Return open loops, optionally filtered to one lifecycle state. Defaults to non-terminal states (suspected, active, drifting). Each item reports whether the loop was promoted by corroboration and the distinct inflows it was seen in.
+ * Return open loops, optionally filtered to one or more lifecycle states (repeat `state`) and to loops updated after `since`. Defaults to non-terminal states (suspected, active, drifting). Each item reports whether the loop was promoted by corroboration and the distinct inflows it was seen in.
  */
 export const listLoops = <ThrowOnError extends boolean = false>(options?: Options<ListLoopsData, ThrowOnError>): RequestResult<ListLoopsResponses, ListLoopsErrors, ThrowOnError> => (options?.client ?? client).get<ListLoopsResponses, ListLoopsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
