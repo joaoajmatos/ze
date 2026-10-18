@@ -105,8 +105,11 @@ The sidecar needs `NET_ADMIN` for the reject rule. `docker-compose.yml` adds it:
 ```
 
 Without it, `scripts_isolated` is `false`. Ze then reports `sandbox_unavailable` to the model
-and runs no script. `sidecar/workspace/fly.toml` does not set
-`NET_ADMIN`, so scripts stay unavailable on Fly until that changes. Unattended goals and
+and runs no script.
+
+Scripts are not verified on Fly. `sidecar/workspace/fly.toml` sets no `NET_ADMIN`, so the
+sidecar reports scripts unavailable there unless the isolation rule applies. Ze runs locally;
+no Fly check of scripts has been made. Unattended goals and
 workflows get no script runner, so they never run scripts.
 
 ---
