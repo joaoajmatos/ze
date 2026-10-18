@@ -51,6 +51,11 @@ describe("transcribe", () => {
     expect([fmt.kind, fmt.detail]).toEqual(["rerecord", "This recording format isn't supported."]);
   });
 
+  it("404 means this server has no voice route", async () => {
+    const e = await fails(404, { detail: "Not Found" });
+    expect([e.kind, e.detail]).toEqual(["unavailable", "Voice input is not available on this server."]);
+  });
+
   it("503 is unavailable", async () => {
     const e = await fails(503, "gateway");
     expect([e.kind, e.detail]).toEqual(["unavailable", "Voice input is not available on this server."]);

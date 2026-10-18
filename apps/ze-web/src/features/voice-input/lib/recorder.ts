@@ -24,6 +24,7 @@ export async function startRecorder({ mime, onLevel }: { mime: string; onLevel?:
       if (e.data.size > 0) chunks.push(e.data);
     };
     ctx = new AudioContext();
+    void ctx.resume?.();
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 1024;
     ctx.createMediaStreamSource(stream).connect(analyser);

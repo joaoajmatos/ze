@@ -13,6 +13,7 @@ export class VoiceError extends Error {
   }
 }
 
+const UNAVAILABLE = "Voice input is not available on this server.";
 const UNREADABLE = "I couldn't make out the recording.";
 
 function serverLine(error: unknown): string | null {
@@ -24,7 +25,8 @@ function failure(status: number | undefined, error: unknown): VoiceError {
   const line = serverLine(error);
   if (status === 413) return new VoiceError("rerecord", line ?? "The recording is too large. Record a shorter one.");
   if (status === 415) return new VoiceError("rerecord", line ?? "This recording format isn't supported.");
-  if (status === 503) return new VoiceError("unavailable", line ?? "Voice input is not available on this server.");
+  if (status === 404) return new VoiceError("unavailable", UNAVAILABLE);
+  if (status === 503) return new VoiceError("unavailable", line ?? UNAVAILABLE);
   return new VoiceError("retryable", line ?? UNREADABLE);
 }
 
