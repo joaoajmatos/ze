@@ -50,7 +50,7 @@
   - output is identical for the same schemas in any input order (sorted by name), always defines `propose` and `finish`, and imports `_call` and `ToolError` from `ze_tools_base`; the text compiles (`compile(stub, "ze_tools.py", "exec")`);
   - `normalize_source("x = 1  # c\n\n\ny = 'a # b'\n") == "x = 1\ny = 'a # b'"`; `source_hash` ignores comments and blank lines and changes with literals;
   - `tool_signature("finance", ["get_transactions", "get_positions", "get_transactions"])` equals `tool_signature("finance", ["get_transactions", "get_positions"])` and differs from the same names in the other order or for another agent.
-- [ ] T010 [L:harness] [US1] Tests first `core/contracts/ze-agents/tests/test_script_step.py` with a fake `ScriptRunner` that replays requests:
+- [x] T010 [L:harness] [US1] Tests first `core/contracts/ze-agents/tests/test_script_step.py` with a fake `ScriptRunner` that replays requests:
   - (a) the data-read set is the visible tools minus server tools, `delegate_to_agent`, `run_tool_script`, `invoke_procedure`, `workspace_*`, WRITE tools, `produces_ui` tools and `egress` tools (a fake `render_chart`, a fake `show_topic` and a fake `browser_extract` are excluded);
   - (b) skill narrowing to two read tools gives a stub with exactly those two;
   - (c) a request for a read tool runs `call_tool` with a fresh `call_id`, deps merged and `_`-keys stripped;
@@ -62,22 +62,22 @@
   - (i) `source` over 8,000 chars returns `source_too_long` without calling the runner.
 
   Implement `ze_agents/script_step.py` steps 1–5 (plan.md "Loop integration").
-- [ ] T011 [L:harness] [US1] Tests first in `core/contracts/ze-agents/tests/test_base_agent_loop.py`: an agent with a runner in `ctx` and one data read tool sees `run_tool_script` in its request and `SCRIPT_GUIDANCE` in its system prompt; with no runner, or with only UI and write tools (a companion-like tool list), it sees neither; a model that calls the tool once and then answers makes exactly two model calls; the script tool message holds only the capped value; `run_tool_script` survives skill narrowing and procedure narrowing (`procedure_tool_names` set). Implement in `ze_agents/base_agent.py` (`names` addition, schema substitution, guidance appended once before the loop, the narrowing rule beside `invoke_procedure`).
-- [ ] T012 [L:harness] [US1] `execute_tool` (`orchestration/nodes/execution.py`) copies `config["configurable"].get("script_runner")` into each `AgentContext` it builds (single and compound paths), and `run_delegate` (`ze_agents/delegate.py`) copies `ctx.script_runner` into `sub_ctx`; tests for both (`test_delegate.py`).
-- [ ] T013 [L:harness] [US1] Tests first: a script ending `exception`, `bad_request`, `busy`, `unavailable` or `resource_limit` gives the model the structured error JSON from [contracts/scripts.md](./contracts/scripts.md) with `completed`, `stderr_tail` (last 20 lines) and, on `exception`, `last_result_shape` built from the last successful inner result (a list of dicts gives `list[dict] keys: ...`, at most 20 keys); no partial result is shown as success. Implement in `script_step.py`.
+- [x] T011 [L:harness] [US1] Tests first in `core/contracts/ze-agents/tests/test_base_agent_loop.py`: an agent with a runner in `ctx` and one data read tool sees `run_tool_script` in its request and `SCRIPT_GUIDANCE` in its system prompt; with no runner, or with only UI and write tools (a companion-like tool list), it sees neither; a model that calls the tool once and then answers makes exactly two model calls; the script tool message holds only the capped value; `run_tool_script` survives skill narrowing and procedure narrowing (`procedure_tool_names` set). Implement in `ze_agents/base_agent.py` (`names` addition, schema substitution, guidance appended once before the loop, the narrowing rule beside `invoke_procedure`).
+- [x] T012 [L:harness] [US1] `execute_tool` (`orchestration/nodes/execution.py`) copies `config["configurable"].get("script_runner")` into each `AgentContext` it builds (single and compound paths), and `run_delegate` (`ze_agents/delegate.py`) copies `ctx.script_runner` into `sub_ctx`; tests for both (`test_delegate.py`).
+- [x] T013 [L:harness] [US1] Tests first: a script ending `exception`, `bad_request`, `busy`, `unavailable` or `resource_limit` gives the model the structured error JSON from [contracts/scripts.md](./contracts/scripts.md) with `completed`, `stderr_tail` (last 20 lines) and, on `exception`, `last_result_shape` built from the last successful inner result (a list of dicts gives `list[dict] keys: ...`, at most 20 keys); no partial result is shown as success. Implement in `script_step.py`.
 
 ---
 
 ## Phase 4: User Story 2 - Limits stop a runaway script (P1)
 
-- [ ] T014 [L:harness] [US2] Tests first in `test_script_step.py` and `core/contracts/ze-agents/tests/test_tool_cap_hook*.py`: the 21st request replies `limit: inner_calls` with `stop=True` and `script.limit == "inner_calls"`; `ToolCallCapHook` does not count calls made while `in_script_call` is set; a script of 20 inner reads followed by one proposed write with the turn cap at 20 still reaches the write gate (the write is counted, the reads are not); a runner outcome `timeout` sets `limit = "wall_time"`; an inner call whose tool triggers a `CostTracker.record` worth more than the budget makes the next request reply `limit: spend` (the overshooting call itself completes); a value over 4,000 chars is cut with `[truncated]` and `limit = "result_size"`. Implement in `script_step.py` and `ze_agents/tool_cap_hook.py`.
-- [ ] T015 [L:harness] [US2] Tests first `core/engine/ze-core/tests/telemetry/test_tracker_script_budget.py`: `CostTracker.record` inside an active script budget charges the static-price estimate for the model; outside a budget charges nothing; an unknown model charges the table's default price. Implement in `ze_core/telemetry/tracker.py`.
+- [x] T014 [L:harness] [US2] Tests first in `test_script_step.py` and `core/contracts/ze-agents/tests/test_tool_cap_hook*.py`: the 21st request replies `limit: inner_calls` with `stop=True` and `script.limit == "inner_calls"`; `ToolCallCapHook` does not count calls made while `in_script_call` is set; a script of 20 inner reads followed by one proposed write with the turn cap at 20 still reaches the write gate (the write is counted, the reads are not); a runner outcome `timeout` sets `limit = "wall_time"`; an inner call whose tool triggers a `CostTracker.record` worth more than the budget makes the next request reply `limit: spend` (the overshooting call itself completes); a value over 4,000 chars is cut with `[truncated]` and `limit = "result_size"`. Implement in `script_step.py` and `ze_agents/tool_cap_hook.py`.
+- [x] T015 [L:harness] [US2] Tests first `core/engine/ze-core/tests/telemetry/test_tracker_script_budget.py`: `CostTracker.record` inside an active script budget charges the static-price estimate for the model; outside a budget charges nothing; an unknown model charges the table's default price. Implement in `ze_core/telemetry/tracker.py`.
 
 ---
 
 ## Phase 5: User Story 3 - Writes in scripts never skip the gate (P2)
 
-- [ ] T016 [L:harness] [US3] Tests first in `test_base_agent_loop.py` and `test_agentic_loop_park.py`:
+- [x] T016 [L:harness] [US3] Tests first in `test_base_agent_loop.py` and `test_agentic_loop_park.py`:
   - a script finishing with one IRREVERSIBLE and one REVERSIBLE proposed write parks the irreversible one exactly like a direct call (one `ParkedWrite`, `LoopParked` raised) and runs the reversible one with its undo payload; both `ToolCall`s carry `parent_call_id`;
   - the synthetic ids are `<model id>_w0`, `<model id>_w1`, match `^[A-Za-z0-9_-]{1,64}$` (a model id with `:` or 70 chars is sanitized and cut), and appear in `messages[-1]["tool_calls"]` before `LoopParked` is raised, so the checkpointed `ParkedLoop.messages` holds them and resume after approval runs exactly the approved proposal (`_apply_resume` finds it by `call_id`);
   - in `retry_mode` the irreversible proposal is refused; at the round cap proposals are `refused_over_cap`;
@@ -89,7 +89,7 @@
 
 ## Phase 6: User Story 4 - The trace shows the script and every call inside it (P2)
 
-- [ ] T017 [L:harness] [US4] Tests first:
+- [x] T017 [L:harness] [US4] Tests first:
   - `flatten_tool_calls` (ze-agents nested tools test) is depth-first: [delegate call, script step (2 inner), other call] flattens to delegate, step, inner 1, inner 2, other; inner calls get `parent_call_id`; a script step whose result JSON holds a `tool_calls` key, and an inner call whose result does, produce no extra rows;
   - `_extract_tool_calls` (`core/engine/ze-core/tests/orchestration/test_message_trace.py`) gives the step `access == "script"`, copies `parent_call_id` and `script`, keeps the flattened order, and the 187b call ids match;
   - `retry_eligibility` (ze-core retry test) accepts a reply with a script step and inner reads (not `unknown_tool`), and lists a proposed reversible write in the rollback plan.
@@ -150,7 +150,7 @@
   - `invoke_procedure` on a script procedure records the invocation and returns the run-it-with-`run_tool_script` text.
 
   Implement in `procedures/store.py`, `discovery.py`, `validate.py`, `tools.py`.
-- [ ] T026 [L:harness] [US5] Tests first in `test_script_step.py`: `procedure_id` of a READY match with `source_kind == "tool_script"` runs `steps[0]` with a stub built from the agent's current data read tools (a tool in the procedure's limits that the agent no longer has is absent from the stub); a non-script or non-READY match returns `procedure_not_script`. Implement in `script_step.py`.
+- [x] T026 [L:harness] [US5] Tests first in `test_script_step.py`: `procedure_id` of a READY match with `source_kind == "tool_script"` runs `steps[0]` with a stub built from the agent's current data read tools (a tool in the procedure's limits that the agent no longer has is absent from the stub); a non-script or non-READY match returns `procedure_not_script`. Implement in `script_step.py`.
 - [ ] T027 [L:runner] [US1] `WorkspaceStack.script_runner` and `build_workspace_stack(procedure_admission=...)` in `ze_workspace/bootstrap.py`: builds `WorkspaceScriptRunner` (with `ScriptLearning` when the action store and admission service are given) when the sidecar is configured. Test: a runner when configured, `None` otherwise, learning absent without the admission service.
 
 ---

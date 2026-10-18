@@ -723,3 +723,82 @@ class TestConductorStallReplan:
         assert ctx.conductor_delegate_total == 1
         assert "stalled" not in [e["status"] for e in ctx.conductor_ledger]
         assert "ask_user" not in [e["status"] for e in ctx.conductor_ledger]
+
+
+# ── tool scripts (197) ────────────────────────────────────────────────────────
+
+
+async def test_script_runner_reaches_the_specialist_context() -> None:
+    seen: dict = {}
+
+    async def _run_impl(self, ctx: AgentContext) -> AgentResult:
+        seen["runner"] = ctx.script_runner
+        return AgentResult(agent="calendar", response="done")
+
+    cls = type(
+        "_ScriptSpecialist",
+        (BaseAgent,),
+        {
+            "name": "calendar",
+            "description": "calendar",
+            "tools": [],
+            "run": _run_impl,
+        },
+    )
+    agent(cls)
+    register_instance("calendar", cls())
+    runner = object()
+    ctx = _ctx()
+    ctx.script_runner = runner
+    await _run({"agent_name": "calendar", "objective": "x"}, ctx)
+    assert seen["runner"] is runner
+
+
+async def test_nested_rows_keep_the_script_step_and_its_inner_calls() -> None:
+    from ze_agents.nested_tools import flatten_tool_calls
+
+    inner = ToolCall(
+        tool_name="get_rows",
+        args={},
+        result="{}",
+        duration_ms=1,
+        success=True,
+        agent="calendar",
+        parent_call_id="step-1",
+    )
+    step = ToolCall(
+        tool_name="run_tool_script",
+        args={"source_hash": "h"},
+        result='{"n": 1}',
+        duration_ms=5,
+        success=True,
+        agent="calendar",
+        call_id="step-1",
+        inner_calls=[inner],
+        script={"source": "x", "outcome": "ok", "limit": None},
+    )
+
+    async def _run_impl(self, ctx: AgentContext) -> AgentResult:
+        return AgentResult(agent="calendar", response="done", tool_calls=[step])
+
+    cls = type(
+        "_ScriptSpecialist2",
+        (BaseAgent,),
+        {
+            "name": "calendar",
+            "description": "calendar",
+            "tools": [],
+            "run": _run_impl,
+        },
+    )
+    agent(cls)
+    register_instance("calendar", cls())
+    outer = await _run({"agent_name": "calendar", "objective": "x"})
+    flat = flatten_tool_calls([outer])
+    assert [c.tool_name for c in flat] == [
+        "delegate_to_agent",
+        "run_tool_script",
+        "get_rows",
+    ]
+    assert flat[1].script == {"source": "x", "outcome": "ok", "limit": None}
+    assert flat[2].parent_call_id == "step-1"

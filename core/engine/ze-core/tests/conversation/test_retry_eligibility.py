@@ -587,3 +587,24 @@ def test_removed_reason_codes_are_gone() -> None:
     assert "has_reversible_action" not in values
     assert "has_write_action" not in values
     assert {"not_undoable", "undo_failed"} <= values
+
+
+# ── Phase 197: script steps ──────────────────────────────────────────────────
+
+
+def test_script_step_with_inner_reads_is_available() -> None:
+    step = _call("run_tool_script", access="script", call_index=0)
+    inner = _call("get_rows", access="read", call_index=1)
+    result = _check(_trace(step, inner))
+    assert result.available is True
+    assert result.plan == []
+
+
+def test_proposed_reversible_write_is_in_the_plan() -> None:
+    step = _call("run_tool_script", access="script", call_index=0)
+    read = _call("get_rows", access="read", call_index=1)
+    written = _rev(call_index=2)
+    result = _check(_trace(step, read, written))
+    assert result.available is True
+    assert [e.tool for e in result.plan] == ["set_reminder"]
+    assert result.actions == ["set a reminder"]
