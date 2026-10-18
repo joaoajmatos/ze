@@ -46,7 +46,7 @@
   - `emit` raising does not propagate.
 
   Implement `telemetry/turn.py` (stages part; usage in T007).
-- [ ] T006 [L:recorder] [US1] Tests first `tests/orchestration/test_timing.py` and `tests/conversation/test_turn_telemetry_stamp.py` (fake graph with three nodes; interface mocked):
+- [x] T006 [L:recorder] [US1] Tests first `tests/orchestration/test_timing.py` and `tests/conversation/test_turn_telemetry_stamp.py` (fake graph with three nodes; interface mocked):
   - each node sends one partial `{"stages": [{name, start_ms, duration_ms, run}]}` in order;
   - a node that raises `GraphInterrupt` still records its stage;
   - with no recorder set, the wrapper only calls the node;
@@ -67,7 +67,7 @@
 
 ## Phase 4: User Story 2 - Turn total, tokens, cost, context fill (P1)
 
-- [ ] T007 [L:recorder] [US2] Tests first `tests/telemetry/test_turn_usage.py` and `tests/telemetry/test_tracker.py` (extend):
+- [x] T007 [L:recorder] [US2] Tests first `tests/telemetry/test_turn_usage.py` and `tests/telemetry/test_tracker.py` (extend):
   - `CostTracker.record` adds to the current recorder and still writes the cost record;
   - two calls to `anthropic/claude-sonnet-4-6` with prompts 5200 and 3920 and completions 300 and 110 give `calls` 2, `prompt_tokens` 9120, `completion_tokens` 410, `max_prompt_tokens` 5200, `cost_usd` from `estimate_cost_usd`, and `context_fill` 5200/200000;
   - a `typesafe/jev-20260917` call is counted in `system_one_tokens` and is never `main_model`;

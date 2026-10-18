@@ -22,9 +22,9 @@ class FakeClock:
 @pytest.fixture
 def clock(monkeypatch) -> FakeClock:
     fake = FakeClock()
-    monkeypatch.setattr(turn_mod, "_monotonic", fake)
+    monkeypatch.setattr(turn_mod, "monotonic", fake)
     # A wall-clock jump must change nothing.
-    monkeypatch.setattr(turn_mod, "_wall", lambda: 5_000_000.0)
+    monkeypatch.setattr(turn_mod, "wall", lambda: 5_000_000.0)
     return fake
 
 
@@ -55,7 +55,7 @@ def test_record_stage_uses_monotonic_offsets(clock):
 def test_wall_clock_change_changes_nothing(clock, monkeypatch):
     t0 = clock.now
     telemetry = TurnTelemetry()
-    monkeypatch.setattr(turn_mod, "_wall", lambda: 1.0)
+    monkeypatch.setattr(turn_mod, "wall", lambda: 1.0)
     telemetry.record_stage("x", t0 + 1.0, t0 + 1.5)
     assert (telemetry.stages[0].start_ms, telemetry.stages[0].duration_ms) == (
         1000,
@@ -213,7 +213,7 @@ def test_start_replaces_an_entry_for_the_same_thread(clock):
 def test_every_method_swallows_internal_errors(clock, monkeypatch):
     telemetry = TurnTelemetry()
     monkeypatch.setattr(
-        turn_mod, "_monotonic", lambda: (_ for _ in ()).throw(ValueError("boom"))
+        turn_mod, "monotonic", lambda: (_ for _ in ()).throw(ValueError("boom"))
     )
     telemetry.record_stage("a", 1.0, 2.0)
     telemetry.record_call("m", 1, 1)
