@@ -35,7 +35,7 @@
 
 ## Phase 3: User Story 1 - Stage times, live and from history (P1) 🎯 MVP
 
-- [ ] T005 [L:recorder] [US1] Tests first `core/engine/ze-core/tests/telemetry/test_turn_telemetry.py` (fake `time.time` and `perf_counter`):
+- [x] T005 [L:recorder] [US1] Tests first `core/engine/ze-core/tests/telemetry/test_turn_telemetry.py` (fake `time.time` and `perf_counter`):
   - with the monotonic clock faked, `record_stage("fetch_context", started=t0+0.2, ended=t0+0.288)` gives `start_ms` 200, `duration_ms` 88, `run` 1; a wall-clock change (faked `time.time`) changes nothing;
   - `pause()` then `resume` 20 s later returns the same recorder, adds 20000 to `paused_ms` and sets `run` 2; `resume` with none creates one with `partial` true and no send target;
   - after `stamp`, `record_call` and `record_stage` change nothing (frozen);
@@ -46,7 +46,7 @@
   - `emit` raising does not propagate.
 
   Implement `telemetry/turn.py` (stages part; usage in T007).
-- [ ] T006 [L:recorder] [US1] Tests first `tests/orchestration/test_timing.py` and `tests/conversation/test_turn_telemetry_stamp.py` (fake graph with three nodes; interface mocked):
+- [x] T006 [L:recorder] [US1] Tests first `tests/orchestration/test_timing.py` and `tests/conversation/test_turn_telemetry_stamp.py` (fake graph with three nodes; interface mocked):
   - each node sends one partial `{"stages": [{name, start_ms, duration_ms, run}]}` in order;
   - a node that raises `GraphInterrupt` still records its stage;
   - with no recorder set, the wrapper only calls the node;
@@ -67,7 +67,7 @@
 
 ## Phase 4: User Story 2 - Turn total, tokens, cost, context fill (P1)
 
-- [ ] T007 [L:recorder] [US2] Tests first `tests/telemetry/test_turn_usage.py` and `tests/telemetry/test_tracker.py` (extend):
+- [x] T007 [L:recorder] [US2] Tests first `tests/telemetry/test_turn_usage.py` and `tests/telemetry/test_tracker.py` (extend):
   - `CostTracker.record` adds to the current recorder and still writes the cost record;
   - two calls to `anthropic/claude-sonnet-4-6` with prompts 5200 and 3920 and completions 300 and 110 give `calls` 2, `prompt_tokens` 9120, `completion_tokens` 410, `max_prompt_tokens` 5200, `cost_usd` from `estimate_cost_usd`, and `context_fill` 5200/200000;
   - a `typesafe/jev-20260917` call is counted in `system_one_tokens` and is never `main_model`;
@@ -78,7 +78,7 @@
 
   Implement the usage part of `telemetry/turn.py`, `telemetry/tracker.py`, and the main-model choice in the stamp.
 
-- [ ] T007a [L:recorder] [US4] Tests first `tests/conversation/test_tool_sink.py`: ze-core's sink (built in `invoke_raw_turn` and `resume_turn`, put in `config["configurable"]["tool_sink"]`) enqueues `{"tool_calls": [{call_id, name, agent, gate, start_offset_ms, duration_ms, success, result_snippet}]}`, with `start_offset_ms` from the monotonic `started_at`; a failed call reads `success: false` with its measured duration; the `on_tool_end` branch is gone; the embed_route partial carries `routing_scores` (top 9) and `routing_thresholds`; the memory partial carries `extraction_confidence` for fact chunks. Implement in `conversation/turn.py`.
+- [x] T007a [L:recorder] [US4] Tests first `tests/conversation/test_tool_sink.py`: ze-core's sink (built in `invoke_raw_turn` and `resume_turn`, put in `config["configurable"]["tool_sink"]`) enqueues `{"tool_calls": [{call_id, name, agent, gate, start_offset_ms, duration_ms, success, result_snippet}]}`, with `start_offset_ms` from the monotonic `started_at`; a failed call reads `success: false` with its measured duration; the `on_tool_end` branch is gone; the embed_route partial carries `routing_scores` (top 9) and `routing_thresholds`; the memory partial carries `extraction_confidence` for fact chunks. Implement in `conversation/turn.py`.
 
 ---
 

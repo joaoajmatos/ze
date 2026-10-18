@@ -29,6 +29,7 @@ def build_workflow_graph(
     from ze_core.orchestration.edges import after_embed_route
     from ze_core.orchestration.graph import graph_builder
     from ze_core.orchestration.state import build_state_type
+    from ze_core.orchestration.timing import add_timed_node
     from ze_personal.graph.workflow import (
         after_preflight_workflow,
         after_handle_step_failure,
@@ -47,14 +48,14 @@ def build_workflow_graph(
     state_type = build_state_type(plugins or [])
     builder = graph_builder(state_type=state_type, node_overrides=node_overrides)
 
-    builder.add_node("load_workflow_step", load_workflow_step)
-    builder.add_node("verify_step", verify_step)
-    builder.add_node("route_branch", route_branch)
-    builder.add_node("handle_step_failure", handle_step_failure)
-    builder.add_node("retry_step", retry_step)
-    builder.add_node("workflow_synthesize", workflow_synthesize)
-    builder.add_node("workflow_failed", workflow_failed)
-    builder.add_node("workflow_cancelled", workflow_cancelled)
+    add_timed_node(builder, "load_workflow_step", load_workflow_step)
+    add_timed_node(builder, "verify_step", verify_step)
+    add_timed_node(builder, "route_branch", route_branch)
+    add_timed_node(builder, "handle_step_failure", handle_step_failure)
+    add_timed_node(builder, "retry_step", retry_step)
+    add_timed_node(builder, "workflow_synthesize", workflow_synthesize)
+    add_timed_node(builder, "workflow_failed", workflow_failed)
+    add_timed_node(builder, "workflow_cancelled", workflow_cancelled)
 
     builder.set_entry_point("load_workflow_step")
 
@@ -114,7 +115,7 @@ def build_workflow_graph(
 
     for plugin in plugins or []:
         for name, fn in plugin.graph_nodes().items():
-            builder.add_node(name, fn)
+            add_timed_node(builder, name, fn)
         plugin.graph_edges(builder)
 
     return builder.compile(checkpointer=checkpointer)

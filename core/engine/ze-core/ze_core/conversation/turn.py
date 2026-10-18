@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -9,12 +10,23 @@ from uuid import UUID
 from ze_agents.interface.types import RawInput
 
 from ze_agents.park import WriteConfirmation
+from ze_logging import get_logger
 from ze_core.telemetry.context import enter_turn_context
+from ze_core.telemetry.turn import (
+    TurnTelemetry,
+    TurnTelemetryRegistry,
+    current_turn_telemetry,
+    monotonic,
+)
+
+log = get_logger(__name__)
 
 if TYPE_CHECKING:
     from ze_core.container import Container
 
 NO_PENDING_CONFIRMATION = "No pending confirmation."
+
+ROUTING_SCORES_SHOWN = 9  # matches system_one.surfaces.routing.shortlist_k
 
 
 def make_graph_input(
@@ -132,6 +144,117 @@ def open_confirmation(graph_state_obj: Any) -> WriteConfirmation | None:
     return None
 
 
+def _main_model(final_state: dict, config: dict) -> str | None:
+    """The model that wrote the reply: the tier's, else the routed agent's; compound
+    turns use the synthesis model."""
+    try:
+        envelope = final_state.get("envelope")
+        if envelope is not None and getattr(envelope, "is_compound", False):
+            from ze_agents.defaults import MODEL_SYNTHESIS
+            from ze_agents.model_resolution import resolve_model
+
+            cfg = config.get("configurable", {}).get("settings")
+            app_config = (
+                cfg if isinstance(cfg, dict) else getattr(cfg, "config", None) or {}
+            )
+            return resolve_model("synthesis", MODEL_SYNTHESIS, app_config)
+        tier = final_state.get("tier")
+        if tier is not None and getattr(tier, "model", None):
+            return tier.model
+        ctx = final_state.get("agent_context")
+        return getattr(ctx, "model", None)
+    except Exception:
+        return None
+
+
+def _registry(container: Any) -> TurnTelemetryRegistry | None:
+    """The container's recorder registry; test doubles without one run untimed."""
+    registry = getattr(container, "turn_telemetry", None)
+    return registry if isinstance(registry, TurnTelemetryRegistry) else None
+
+
+async def _close(
+    registry: TurnTelemetryRegistry, telemetry: TurnTelemetry | None, thread_id: str
+) -> None:
+    if telemetry is not None:
+        await telemetry.close()
+    registry.finish(thread_id)
+
+
+async def _stamp_telemetry(
+    telemetry: TurnTelemetry, final_state: dict, config: dict
+) -> None:
+    """Stamp the turn's measurements onto the committed trace, after the queued stage
+    frames are out so none can arrive after the committed trace."""
+    trace = final_state.get("message_trace") if isinstance(final_state, dict) else None
+    await telemetry.drain()
+    if trace is None:
+        return
+    final_state["message_trace"] = telemetry.stamp(
+        trace, _main_model(final_state, config)
+    )
+
+
+def _routing_fields(env: Any) -> dict[str, Any]:
+    scores = sorted((env.raw_scores or {}).items(), key=lambda kv: kv[1], reverse=True)[
+        :ROUTING_SCORES_SHOWN
+    ]
+    if len(scores) < 2:
+        scores = []  # a forced or single-score envelope has no shortlist to draw
+    return {
+        "routing_scores": [{"agent": a, "score": v} for a, v in scores],
+        "routing_thresholds": {
+            "threshold": env.threshold,
+            "gap": env.gap_threshold,
+        },
+    }
+
+
+def _tool_sink(telemetry: TurnTelemetry) -> Callable[[Any], None]:
+    """The callable `call_tool` hands every finished ToolCall to: it enqueues one
+    live tool row and returns at once."""
+
+    def sink(call: Any) -> None:
+        try:
+            offset = None
+            started = getattr(call, "started_at", None)
+            if started is not None and not telemetry.partial:
+                ms = round((started - telemetry.started) * 1000)
+                if 0 <= ms <= round((monotonic() - telemetry.started) * 1000):
+                    offset = ms
+            result = getattr(call, "result", "") or ""
+            telemetry.emit(
+                {
+                    "tool_calls": [
+                        {
+                            "call_id": call.call_id,
+                            "name": call.tool_name,
+                            "agent": getattr(call, "agent", None),
+                            "gate": getattr(call, "gate", "none"),
+                            "start_offset_ms": offset,
+                            "duration_ms": call.duration_ms,
+                            "success": call.success,
+                            "result_snippet": str(result)[:200] if result else "",
+                        }
+                    ]
+                }
+            )
+        except Exception as exc:
+            log.warning("turn_telemetry_failed", method="tool_sink", error=str(exc))
+
+    return sink
+
+
+def _with_tool_sink(config: dict, telemetry: TurnTelemetry | None) -> dict:
+    if telemetry is None:
+        return config
+    configurable = {
+        **config.get("configurable", {}),
+        "tool_sink": _tool_sink(telemetry),
+    }
+    return {**config, "configurable": configurable}
+
+
 async def invoke_raw_turn(
     container: Container,
     thread_id: str,
@@ -150,106 +273,109 @@ async def invoke_raw_turn(
     graph_name = getattr(container.graph, "name", "LangGraph")
     pending_message_id = str(uuid4())
 
-    final_state: dict = {}
-    graph_ended = False
+    registry = _registry(container)
+    telemetry = registry.start(thread_id) if registry is not None else None
+    if telemetry is not None and interface is not None:
+        telemetry.set_send(
+            lambda fields: interface.send_trace_partial(
+                pending_message_id, fields, thread_id
+            )
+        )
+    config = _with_tool_sink(config, telemetry)
+    token = current_turn_telemetry.set(telemetry)
+    interrupted = False
+    try:
+        final_state: dict = {}
+        graph_ended = False
 
-    async for event in container.graph.astream_events(
-        graph_input, config, version="v2"
-    ):
-        kind = event["event"]
-        name = event.get("name", "")
-        data = event.get("data", {})
+        async for event in container.graph.astream_events(
+            graph_input, config, version="v2"
+        ):
+            kind = event["event"]
+            name = event.get("name", "")
+            data = event.get("data", {})
 
-        if kind == "on_chain_end" and name == "embed_route":
-            env = (data.get("output") or {}).get("envelope")
-            if env is not None and interface is not None:
-                await interface.send_trace_partial(
-                    pending_message_id,
-                    {
-                        "agent": env.primary_agent,
-                        "routing_method": env.routing_method,
-                        "confidence": env.confidence,
-                        "score_gap": env.score_gap,
-                        "is_compound": env.is_compound,
-                        "subtasks": [s.agent for s in env.subtasks]
-                        if env.is_compound
-                        else [],
-                    },
-                    thread_id,
-                )
-
-        elif kind == "on_chain_end" and name == "resolve_screen":
-            screen = (data.get("output") or {}).get("screen_trace")
-            if screen is not None and interface is not None:
-                await interface.send_trace_partial(
-                    pending_message_id, {"screen": screen}, thread_id
-                )
-
-        elif kind == "on_chain_end" and name == "choose_tier":
-            tier = (data.get("output") or {}).get("tier")
-            if tier is not None and interface is not None:
-                await interface.send_trace_partial(
-                    pending_message_id, {"tier": asdict(tier)}, thread_id
-                )
-
-        elif kind == "on_chain_end" and name == "fetch_context":
-            memory_ctx = (data.get("output") or {}).get("memory_context")
-            if memory_ctx is not None and interface is not None:
-                chunks = extract_memory_chunks(memory_ctx)
-                if chunks:
+            if kind == "on_chain_end" and name == "embed_route":
+                env = (data.get("output") or {}).get("envelope")
+                if env is not None and interface is not None:
                     await interface.send_trace_partial(
                         pending_message_id,
                         {
-                            "memory_chunks": [
-                                {"text": c.text, "score": c.score, "source": c.source}
-                                for c in chunks
-                            ],
+                            "agent": env.primary_agent,
+                            "routing_method": env.routing_method,
+                            "confidence": env.confidence,
+                            "score_gap": env.score_gap,
+                            "is_compound": env.is_compound,
+                            "subtasks": [s.agent for s in env.subtasks]
+                            if env.is_compound
+                            else [],
+                            **_routing_fields(env),
                         },
                         thread_id,
                     )
 
-        elif kind == "on_tool_end":
-            if interface is not None:
-                output = data.get("output")
-                content = (
-                    getattr(output, "content", None) if output is not None else None
-                )
-                if content is None and output is not None:
-                    content = str(output)
-                snippet = str(content)[:200] if content else ""
-                await interface.send_trace_partial(
-                    pending_message_id,
-                    {
-                        "tool_calls": [
+            elif kind == "on_chain_end" and name == "resolve_screen":
+                screen = (data.get("output") or {}).get("screen_trace")
+                if screen is not None and interface is not None:
+                    await interface.send_trace_partial(
+                        pending_message_id, {"screen": screen}, thread_id
+                    )
+
+            elif kind == "on_chain_end" and name == "choose_tier":
+                tier = (data.get("output") or {}).get("tier")
+                if tier is not None and interface is not None:
+                    await interface.send_trace_partial(
+                        pending_message_id, {"tier": asdict(tier)}, thread_id
+                    )
+
+            elif kind == "on_chain_end" and name == "fetch_context":
+                memory_ctx = (data.get("output") or {}).get("memory_context")
+                if memory_ctx is not None and interface is not None:
+                    chunks = extract_memory_chunks(memory_ctx)
+                    if chunks:
+                        await interface.send_trace_partial(
+                            pending_message_id,
                             {
-                                "name": name,
-                                "result_snippet": snippet,
-                                "duration_ms": 0,
-                                "success": True,
-                            }
-                        ],
-                    },
-                    thread_id,
-                )
+                                "memory_chunks": [
+                                    {
+                                        "text": c.text,
+                                        "score": c.score,
+                                        "source": c.source,
+                                        "extraction_confidence": c.extraction_confidence,
+                                    }
+                                    for c in chunks
+                                ],
+                            },
+                            thread_id,
+                        )
 
-        elif kind == "on_chain_end" and name == graph_name:
-            final_state = data.get("output") or {}
-            graph_ended = True
+            elif kind == "on_chain_end" and name == graph_name:
+                final_state = data.get("output") or {}
+                graph_ended = True
 
-    graph_state_obj = await container.graph.aget_state(config)
-    interrupted = bool(graph_state_obj.next) if graph_state_obj else False
-    if not graph_ended and graph_state_obj:
-        final_state = graph_state_obj.values
+        graph_state_obj = await container.graph.aget_state(config)
+        interrupted = bool(graph_state_obj.next) if graph_state_obj else False
+        if not graph_ended and graph_state_obj:
+            final_state = graph_state_obj.values
 
-    return TurnResult(
-        final_state=final_state,
-        config=config,
-        interrupted=interrupted,
-        confirmation=open_confirmation(graph_state_obj),
-        error=final_state.get("error"),
-        response=None if interrupted else extract_response(final_state),
-        message_id=pending_message_id,
-    )
+        if telemetry is not None:
+            if interrupted:
+                telemetry.pause()
+            else:
+                await _stamp_telemetry(telemetry, final_state, config)
+        return TurnResult(
+            final_state=final_state,
+            config=config,
+            interrupted=interrupted,
+            confirmation=open_confirmation(graph_state_obj),
+            error=final_state.get("error"),
+            response=None if interrupted else extract_response(final_state),
+            message_id=pending_message_id,
+        )
+    finally:
+        current_turn_telemetry.reset(token)
+        if registry is not None and not interrupted:
+            await _close(registry, telemetry, thread_id)
 
 
 async def resume_turn(
@@ -272,6 +398,9 @@ async def resume_turn(
     if confirmation is None or (
         request_id is not None and confirmation.request_id != request_id
     ):
+        registry = _registry(container)
+        if confirmation is None and registry is not None:
+            registry.finish(config["configurable"]["thread_id"])
         return TurnResult(
             final_state={},
             config=config,
@@ -279,24 +408,44 @@ async def resume_turn(
             error=NO_PENDING_CONFIRMATION,
         )
     value = resume if resume is not None else {"choice": "approve"}
-    final_state = await container.graph.ainvoke(Command(resume=value), config)
-    new_state = await container.graph.aget_state(config)
-    if new_state and new_state.next:
+    thread_id = config["configurable"]["thread_id"]
+    registry = _registry(container)
+    telemetry = registry.resume(thread_id) if registry is not None else None
+    config = _with_tool_sink(config, telemetry)
+    token = current_turn_telemetry.set(telemetry)
+    interrupted = False
+    try:
+        final_state = await container.graph.ainvoke(Command(resume=value), config)
+        new_state = await container.graph.aget_state(config)
+        if new_state and new_state.next:
+            interrupted = True
+            if telemetry is not None:
+                telemetry.pause()
+            return TurnResult(
+                final_state=new_state.values or final_state,
+                config=config,
+                interrupted=True,
+                confirmation=open_confirmation(new_state),
+                error=(new_state.values or {}).get("error")
+                if new_state.values
+                else None,
+                response=None,
+            )
+        if telemetry is not None and isinstance(final_state, dict):
+            await _stamp_telemetry(telemetry, final_state, config)
         return TurnResult(
-            final_state=new_state.values or final_state,
+            final_state=final_state,
             config=config,
-            interrupted=True,
-            confirmation=open_confirmation(new_state),
-            error=(new_state.values or {}).get("error") if new_state.values else None,
-            response=None,
+            interrupted=False,
+            error=final_state.get("error") if isinstance(final_state, dict) else None,
+            response=extract_response(final_state)
+            if isinstance(final_state, dict)
+            else "",
         )
-    return TurnResult(
-        final_state=final_state,
-        config=config,
-        interrupted=False,
-        error=final_state.get("error") if isinstance(final_state, dict) else None,
-        response=extract_response(final_state) if isinstance(final_state, dict) else "",
-    )
+    finally:
+        current_turn_telemetry.reset(token)
+        if registry is not None and not interrupted:
+            await _close(registry, telemetry, thread_id)
 
 
 async def invoke_retry_turn(
