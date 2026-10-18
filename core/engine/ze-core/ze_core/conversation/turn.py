@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -9,17 +10,23 @@ from uuid import UUID
 from ze_agents.interface.types import RawInput
 
 from ze_agents.park import WriteConfirmation
+from ze_logging import get_logger
 from ze_core.telemetry.context import enter_turn_context
 from ze_core.telemetry.turn import (
     TurnTelemetry,
     TurnTelemetryRegistry,
     current_turn_telemetry,
+    monotonic,
 )
+
+log = get_logger(__name__)
 
 if TYPE_CHECKING:
     from ze_core.container import Container
 
 NO_PENDING_CONFIRMATION = "No pending confirmation."
+
+ROUTING_SCORES_SHOWN = 9  # matches system_one.surfaces.routing.shortlist_k
 
 
 def make_graph_input(
@@ -188,6 +195,66 @@ async def _stamp_telemetry(
     )
 
 
+def _routing_fields(env: Any) -> dict[str, Any]:
+    scores = sorted((env.raw_scores or {}).items(), key=lambda kv: kv[1], reverse=True)[
+        :ROUTING_SCORES_SHOWN
+    ]
+    if len(scores) < 2:
+        scores = []  # a forced or single-score envelope has no shortlist to draw
+    return {
+        "routing_scores": [{"agent": a, "score": v} for a, v in scores],
+        "routing_thresholds": {
+            "threshold": env.threshold,
+            "gap": env.gap_threshold,
+        },
+    }
+
+
+def _tool_sink(telemetry: TurnTelemetry) -> Callable[[Any], None]:
+    """The callable `call_tool` hands every finished ToolCall to: it enqueues one
+    live tool row and returns at once."""
+
+    def sink(call: Any) -> None:
+        try:
+            offset = None
+            started = getattr(call, "started_at", None)
+            if started is not None and not telemetry.partial:
+                ms = round((started - telemetry.started) * 1000)
+                if 0 <= ms <= round((monotonic() - telemetry.started) * 1000):
+                    offset = ms
+            result = getattr(call, "result", "") or ""
+            telemetry.emit(
+                {
+                    "tool_calls": [
+                        {
+                            "call_id": call.call_id,
+                            "name": call.tool_name,
+                            "agent": getattr(call, "agent", None),
+                            "gate": getattr(call, "gate", "none"),
+                            "start_offset_ms": offset,
+                            "duration_ms": call.duration_ms,
+                            "success": call.success,
+                            "result_snippet": str(result)[:200] if result else "",
+                        }
+                    ]
+                }
+            )
+        except Exception as exc:
+            log.warning("turn_telemetry_failed", method="tool_sink", error=str(exc))
+
+    return sink
+
+
+def _with_tool_sink(config: dict, telemetry: TurnTelemetry | None) -> dict:
+    if telemetry is None:
+        return config
+    configurable = {
+        **config.get("configurable", {}),
+        "tool_sink": _tool_sink(telemetry),
+    }
+    return {**config, "configurable": configurable}
+
+
 async def invoke_raw_turn(
     container: Container,
     thread_id: str,
@@ -214,6 +281,7 @@ async def invoke_raw_turn(
                 pending_message_id, fields, thread_id
             )
         )
+    config = _with_tool_sink(config, telemetry)
     token = current_turn_telemetry.set(telemetry)
     interrupted = False
     try:
@@ -241,6 +309,7 @@ async def invoke_raw_turn(
                             "subtasks": [s.agent for s in env.subtasks]
                             if env.is_compound
                             else [],
+                            **_routing_fields(env),
                         },
                         thread_id,
                     )
@@ -272,36 +341,13 @@ async def invoke_raw_turn(
                                         "text": c.text,
                                         "score": c.score,
                                         "source": c.source,
+                                        "extraction_confidence": c.extraction_confidence,
                                     }
                                     for c in chunks
                                 ],
                             },
                             thread_id,
                         )
-
-            elif kind == "on_tool_end":
-                if interface is not None:
-                    output = data.get("output")
-                    content = (
-                        getattr(output, "content", None) if output is not None else None
-                    )
-                    if content is None and output is not None:
-                        content = str(output)
-                    snippet = str(content)[:200] if content else ""
-                    await interface.send_trace_partial(
-                        pending_message_id,
-                        {
-                            "tool_calls": [
-                                {
-                                    "name": name,
-                                    "result_snippet": snippet,
-                                    "duration_ms": 0,
-                                    "success": True,
-                                }
-                            ],
-                        },
-                        thread_id,
-                    )
 
             elif kind == "on_chain_end" and name == graph_name:
                 final_state = data.get("output") or {}
@@ -365,6 +411,7 @@ async def resume_turn(
     thread_id = config["configurable"]["thread_id"]
     registry = _registry(container)
     telemetry = registry.resume(thread_id) if registry is not None else None
+    config = _with_tool_sink(config, telemetry)
     token = current_turn_telemetry.set(telemetry)
     interrupted = False
     try:

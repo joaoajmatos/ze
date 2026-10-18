@@ -9,7 +9,7 @@ import pytest
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.constants import END
 from langgraph.graph import StateGraph
-from langgraph.types import interrupt
+import langgraph.types as lg_types
 from typing_extensions import TypedDict
 
 from ze_agents.interface.types import RawInput
@@ -80,7 +80,7 @@ def _graph(clock: Clock, *, pause: bool = False, fail_after_trace: bool = False)
 
     async def ask(state, config):
         if pause:
-            interrupt(_confirmation())
+            lg_types.interrupt(_confirmation())
         clock.now += 0.2
         return {"seen": ["ask"]}
 
@@ -299,8 +299,6 @@ def test_main_model_prefers_tier_then_agent_then_synthesis():
     )
     override = SimpleNamespace(config={"models": {"overrides": {"synthesis": "x/y"}}})
     assert (
-        _main_model(
-            {"envelope": compound}, {"configurable": {"settings": override}}
-        )
+        _main_model({"envelope": compound}, {"configurable": {"settings": override}})
         == "x/y"
     )

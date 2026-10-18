@@ -7,7 +7,8 @@ import pytest
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.constants import END
 from langgraph.graph import StateGraph
-from langgraph.types import Command, interrupt
+import langgraph.types as lg_types
+from langgraph.types import Command
 
 from ze_agents.registry import clear_registry
 from ze_agents.tool import clear_tool_registry
@@ -75,7 +76,7 @@ async def test_graph_interrupt_still_records_the_stage(recorder):
     telemetry, _ = recorder
 
     async def ask(state, config):
-        answer = interrupt("need you")
+        answer = lg_types.interrupt("need you")
         return {"log": [answer]}
 
     builder = StateGraph(S)

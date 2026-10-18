@@ -78,7 +78,7 @@
 
   Implement the usage part of `telemetry/turn.py`, `telemetry/tracker.py`, and the main-model choice in the stamp.
 
-- [ ] T007a [L:recorder] [US4] Tests first `tests/conversation/test_tool_sink.py`: ze-core's sink (built in `invoke_raw_turn` and `resume_turn`, put in `config["configurable"]["tool_sink"]`) enqueues `{"tool_calls": [{call_id, name, agent, gate, start_offset_ms, duration_ms, success, result_snippet}]}`, with `start_offset_ms` from the monotonic `started_at`; a failed call reads `success: false` with its measured duration; the `on_tool_end` branch is gone; the embed_route partial carries `routing_scores` (top 9) and `routing_thresholds`; the memory partial carries `extraction_confidence` for fact chunks. Implement in `conversation/turn.py`.
+- [x] T007a [L:recorder] [US4] Tests first `tests/conversation/test_tool_sink.py`: ze-core's sink (built in `invoke_raw_turn` and `resume_turn`, put in `config["configurable"]["tool_sink"]`) enqueues `{"tool_calls": [{call_id, name, agent, gate, start_offset_ms, duration_ms, success, result_snippet}]}`, with `start_offset_ms` from the monotonic `started_at`; a failed call reads `success: false` with its measured duration; the `on_tool_end` branch is gone; the embed_route partial carries `routing_scores` (top 9) and `routing_thresholds`; the memory partial carries `extraction_confidence` for fact chunks. Implement in `conversation/turn.py`.
 
 ---
 

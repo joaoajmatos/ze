@@ -5,7 +5,9 @@ from __future__ import annotations
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult
 from functools import partial
 
-from ze_core.conversation.messages.judgments import judgments_from_result as _from_result
+from ze_core.conversation.messages.judgments import (
+    judgments_from_result as _from_result,
+)
 from ze_core.conversation.messages.types import JudgmentBar
 
 _IDS = ("speech_act", "family", "biography")
