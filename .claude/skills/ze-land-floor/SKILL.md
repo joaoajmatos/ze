@@ -12,9 +12,9 @@ Run these steps exactly, in order. Stop at the first failure and report it. Do n
    `make process-land-preflight FLOOR=<floor path>`
    It checks history and merge conflicts, untracked files in the floor and Ground, phase status sync, new files under `specs/arch/`, the gate receipt for the floor HEAD, and the APPROVE review chain. Fix what it names; never edit receipts or review records by hand.
 2. Land: `maestri floor land "<floor>" --into main`.
-3. In Ground, run the full gates and record the receipt:
+3. In Ground, run the full gates and record the receipt with this one command:
    `make process-gates PROFILE=land`
-   It must exit 0.
+   It must exit 0. Run no raw `make test-py`, `test-web` or other gate first: the push accepts only this receipt, and each full gate would run twice.
 4. Post-land, in Ground:
    `scripts/process/land_post.sh`
    It refreshes the graph and pushes main. It skips any step already done, so re-running is safe. The push hook refuses without a green receipt for HEAD.

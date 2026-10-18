@@ -13,6 +13,7 @@ import json
 import subprocess
 import sys
 import time
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -114,8 +115,9 @@ def request(args) -> int:
     path.write_text(json.dumps(record, indent=1) + "\n")
 
     before = handoff.maestri("check", args.reviewer).stdout
+    token = f"rq{uuid.uuid4().hex[:6]}"
     text = (
-        f"Review {start[:8]}..{end[:8]} in {repo} (read-only). When done run, from that directory: "
+        f"[{token}] Review {start[:8]}..{end[:8]} in {repo} (read-only). When done run, from that directory: "
         f"make process-review-verdict RANGE={start[:8]}..{end[:8]} VERDICT=APPROVE|CHANGES FINDINGS=<file>. "
         "That records the verdict and delivers it; do not report it by chat alone."
     )
@@ -125,10 +127,10 @@ def request(args) -> int:
         args.note,
         f"TO {args.reviewer}: review requested {start[:8]}..{end[:8]} ({path.name})",
     )
-    started = _started(args.reviewer, before, text, args.wait)
+    started = _started(args.reviewer, before, token, args.wait)
     if not started:
         print(
-            f"ALERT: {args.reviewer} shows no reply {args.wait:.0f}s after the request; check the terminal",
+            f"ALERT: {args.reviewer} still has the request unsubmitted {args.wait:.0f}s after it was sent; check the terminal",
             file=sys.stderr,
         )
         handoff.maestri(
@@ -145,18 +147,28 @@ def request(args) -> int:
 REPLY_MARK = "\u23fa"
 
 
-def _started(reviewer: str, before: str, text: str, wait: float) -> bool:
-    """The reviewer's terminal shows a new reply marker. A request left in the input box is submitted once."""
+BUSY_MARK = "esc to interrupt"
+
+
+def _working(screen: str, before: str) -> bool:
+    """A new reply marker, or the agent is busy (the ask queues behind its current work)."""
+    return screen.count(REPLY_MARK) > before.count(REPLY_MARK) or BUSY_MARK in screen
+
+
+def _started(reviewer: str, before: str, token: str, wait: float) -> bool:
+    """False only when the request is stuck: the agent is idle and the text still sits under the prompt.
+    One Enter is tried first. `token` is the short unique tag at the start of the ask."""
     time.sleep(wait)
     after = handoff.maestri("check", reviewer).stdout
-    if after.count(REPLY_MARK) > before.count(REPLY_MARK):
+    if _working(after, before):
         return True
-    if text[:40] in after:
-        handoff.maestri("ask", reviewer, "--raw", "\r", timeout=15)
-        time.sleep(min(wait, 15))
-        after = handoff.maestri("check", reviewer).stdout
-        return after.count(REPLY_MARK) > before.count(REPLY_MARK)
-    return False
+    if token not in after:
+        return (
+            True  # idle with nothing in the input box: the ask was taken and answered
+        )
+    handoff.maestri("ask", reviewer, "--raw", "\r", timeout=15)
+    time.sleep(min(wait, 15))
+    return _working(handoff.maestri("check", reviewer).stdout, before)
 
 
 def verdict(args) -> int:
