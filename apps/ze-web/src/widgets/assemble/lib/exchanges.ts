@@ -1,4 +1,4 @@
-import type { MessageSchema as Message } from "@myguyze/ze-client";
+import type { ThreadMessage as Message } from "@/entities/conversation";
 
 export interface Exchange {
   /** The user line, or the first reply's id when Ze spoke unprompted. */

@@ -107,7 +107,7 @@
 
 ## Phase 6: Web host and gallery (US1, US4)
 
-- [ ] T010 [L:web] [US1] Tests first `features/primitive-tree/api/usePrimitiveActions.test.ts`:
+- [x] T010 [L:web] [US1] Tests first `features/primitive-tree/api/usePrimitiveActions.test.ts`:
   - `navigate` to `/governance#connections` navigates to that section;
   - `ask` calls `sendTurn` on the selected thread;
   - `navigate` to `/mind/x` navigates, while a route not starting with `/` or not a place route shows a notice;
@@ -116,8 +116,8 @@
   - a second press while one is pending is ignored.
 
   Implement `usePrimitiveActions.ts`, delete `usePrimitiveRendererActions.ts` and `usePluginScreenActions.ts` (with the `rest:`/`msg:`/goal-regex branches), and switch `ConnectedPrimitiveTree`, `PluginScreen` and `PluginSettingsSection` to it. Route `ui_action_result` frames from the ws client to the pending action.
-- [ ] T011 [L:web] [US4] Tests first `pages/dev-primitives/ui/DevPrimitivesPage.test.tsx` and `app/router/routes.test.tsx` (extend): the page renders one section per primitive type with each fixture state and a 390 px frame; the route exists when `import.meta.env.DEV` is true and is absent otherwise (mock the env). Implement `pages/dev-primitives` and the conditional route. Verify with a production build: `make web-build`, then `rtk proxy grep -rl "dev-primitives\|fixtures/" apps/ze-web/dist` returns nothing.
-- [ ] T012 [L:web] [US2] Tests: `ConnectedPrimitiveTree.test.tsx`, `PluginScreen.test.tsx` and `PluginSettingsSection.test.tsx` (extend) render trees from the shared fixtures with `ui_version`; a stored message with the pre-191a tree (no version) shows its text and the tree in legacy mode; a legacy tree that throws `PrimitiveLegacyError` is replaced by "This older view can't be shown." while the message text renders. Implement the version pass-through from each transport (absent stays absent).
+- [x] T011 [L:web] [US4] Tests first `pages/dev-primitives/ui/DevPrimitivesPage.test.tsx` and `app/router/routes.test.tsx` (extend): the page renders one section per primitive type with each fixture state and a 390 px frame; the route exists when `import.meta.env.DEV` is true and is absent otherwise (mock the env). Implement `pages/dev-primitives` and the conditional route. Verify with a production build: `make web-build`, then `rtk proxy grep -rl "dev-primitives\|fixtures/" apps/ze-web/dist` returns nothing.
+- [x] T012 [L:web] [US2] Tests: `ConnectedPrimitiveTree.test.tsx`, `PluginScreen.test.tsx` and `PluginSettingsSection.test.tsx` (extend) render trees from the shared fixtures with `ui_version`; a stored message with the pre-191a tree (no version) shows its text and the tree in legacy mode; a legacy tree that throws `PrimitiveLegacyError` is replaced by "This older view can't be shown." while the message text renders. Implement the version pass-through from each transport (absent stays absent).
 
 ---
 

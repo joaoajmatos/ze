@@ -2142,16 +2142,6 @@ input[type="checkbox"] {
   padding: 12px 14px;
   min-width: 0;
 }
-.pr-track {
-  height: 3px;
-  width: 100%;
-  background: color-mix(in oklab, var(--main) 18%, transparent);
-}
-.pr-fill {
-  height: 100%;
-  background: var(--main);
-  transition: width 420ms var(--ease-out);
-}
 .pr-label {
   font-family: var(--font-label);
   font-size: var(--label);

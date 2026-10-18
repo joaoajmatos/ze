@@ -1,7 +1,8 @@
-import type { MessageSchema as Message, WsScreenRef, WsTraceUpdateFrame } from "@myguyze/ze-client";
+import type { WsScreenRef, WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { useRef, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { ConnectedPrimitiveTree } from "@/features/primitive-tree";
+import type { ThreadMessage as Message } from "@/entities/conversation";
 import { Module } from "@/shared/ui";
 import { componentType, instrumentId, spanOf } from "../lib/exchanges";
 import type { WhyTarget } from "../lib/why";
@@ -97,7 +98,7 @@ export function ReplyBlock({ message, compact, live, onPlayed, firstNumber, hidd
               onChatAbout={ref && onChatAbout ? (el) => onChatAbout(ref, el) : undefined}
               chatAboutLabel={label}
             >
-              <ConnectedPrimitiveTree components={[component]} />
+              <ConnectedPrimitiveTree components={[component]} uiVersion={message.ui_version} />
             </Module>
           </div>
         );

@@ -1,5 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import legacy from "../../../../../../packages/ze-ui/fixtures/legacy-stored-tree.json";
+import statRow from "../../../../../../packages/ze-ui/fixtures/button.json";
 import type { UiContribution } from "@/entities/ui-manifest";
 import { PluginScreen } from "./PluginScreen";
 
@@ -24,9 +26,10 @@ vi.mock("@/shared/lib", async (importOriginal) => {
   };
 });
 
-vi.mock("@/features/primitive-tree", () => ({
-  usePluginScreenActions: () => ({
-    onButtonAction: vi.fn(),
+vi.mock("@/features/primitive-tree", async (orig) => ({
+  ...(await orig<typeof import("@/features/primitive-tree")>()),
+  usePrimitiveActions: () => ({
+    onAction: vi.fn(),
     onFormSubmit: vi.fn(),
     onDisconnected: vi.fn(),
   }),
@@ -97,7 +100,7 @@ describe("PluginScreen", () => {
 
   it("shows error state for invalid UI tree", () => {
     usePluginPageQuery.mockReturnValue({
-      data: { title: "News", tree: [{ type: "not-a-primitive" }] },
+      data: { title: "News", tree: [{ type: "col" }], ui_version: "2.0" },
       isLoading: false,
       isError: false,
       refetch: vi.fn(),
@@ -106,5 +109,38 @@ describe("PluginScreen", () => {
     render(<PluginScreen entry={entry} />);
 
     expect(screen.getByText("This page returned an invalid UI tree.")).toBeInTheDocument();
+  });
+
+  it("renders a shared fixture under the page's ui_version", () => {
+    usePluginPageQuery.mockReturnValue({
+      data: { title: "News", tree: statRow, ui_version: "2.0" },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    render(<PluginScreen entry={entry} />);
+    expect(screen.getByRole("button", { name: "Ask" })).toBeEnabled();
+  });
+
+  it("renders a page with no version in legacy mode", () => {
+    usePluginPageQuery.mockReturnValue({
+      data: { title: "News", tree: legacy },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    render(<PluginScreen entry={entry} />);
+    expect(screen.getByRole("button", { name: "Yes" })).toBeDisabled();
+  });
+
+  it("shows the older-view note for a legacy page that cannot be parsed", () => {
+    usePluginPageQuery.mockReturnValue({
+      data: { title: "News", tree: [{ type: "col" }] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    render(<PluginScreen entry={entry} />);
+    expect(screen.getByText("This older view can't be shown.")).toBeInTheDocument();
   });
 });

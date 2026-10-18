@@ -4,6 +4,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { AnswerGateFrameHandler } from "@/features/answer-gate";
 import { AskBar, useAskOverlay, useAskShortcut } from "@/features/ask-bar";
 import { RefreshHandler } from "@/features/invalidate-on-ws-refresh";
+import { TurnSenderProvider } from "@/features/primitive-tree";
 import { ConfirmationFrameHandler } from "@/features/respond-to-confirmation";
 import { TraceFrameHandler } from "@/features/trace-state";
 import { sendTurn, TurnFrameHandler } from "@/features/turn-stream";
@@ -110,7 +111,9 @@ export function AppShell({ overlay }: { overlay?: ReactNode }) {
     <BreadcrumbProvider>
       <PageHeaderProvider>
         <TopBarActionsProvider>
-          <Shell overlay={overlay} />
+          <TurnSenderProvider sendTurn={sendTurn}>
+            <Shell overlay={overlay} />
+          </TurnSenderProvider>
         </TopBarActionsProvider>
       </PageHeaderProvider>
     </BreadcrumbProvider>
