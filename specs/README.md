@@ -229,7 +229,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 185 | [World Data Gaps (B2)](phases/185-world-data-gaps/spec.md) | ✅ Implemented |
 | 186 | [World (W2)](phases/186-web-world/spec.md) | ✅ Implemented |
 | 187 | [Ask / Assemble (W3)](phases/187-web-ask-assemble/spec.md) | 🔲 Ready to implement (after 184, 195, 186) |
-| 188 | [Doing (W4)](phases/188-web-doing/spec.md) | 🔲 Ready to implement (with 183 + 184; reminders after 185, screen context after 195) |
+| 188 | [Doing (W4)](phases/188-web-doing/spec.md) | ✅ Implemented |
 | 189 | [Mind (W5)](phases/189-web-mind/spec.md) | ✅ Implemented |
 | 190 | [Governance (W6)](phases/190-web-governance/spec.md) | ✅ Implemented |
 | 191 | [Plugins in Places (W7)](phases/191-web-plugins-in-places/spec.md) | 🔲 Draft |
