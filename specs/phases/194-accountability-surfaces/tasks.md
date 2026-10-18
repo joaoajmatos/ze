@@ -116,7 +116,7 @@
   - `plugins/ze-personal/tests/channels/test_user_channel_store.py`: `ensure` inserts when absent and changes nothing when present; `drop_unkeyed` deletes the watermark row before the channel row, in one transaction, and is a no-op with no rows. One `@pytest.mark.pg` test: fail (bare key), re-auth, succeed → `list_all()` and `GET /channels/status` give one Gmail row, `connected`.
 
   Implement `ze_google/auth_errors.py` (exported from the package), `UserChannelStore.ensure` and `drop_unkeyed` in `ze_personal/channels/user_channel_store.py`, and `ze_messenger/jobs/inbound_poll.py`.
-- [ ] T016 [L:channels] [US5] Tests first `apps/ze-api/tests/api/test_channel_status_route.py`:
+- [x] T016 [L:channels] [US5] Tests first `apps/ze-api/tests/api/test_channel_status_route.py`:
   - the state mapping: `poll_enabled` false → `off`; push → `unknown` with the line "Receives by push; Ze does not monitor it."; `auth_failed` → `needs_reauth`; `failed` → `error`; `ok` → `connected`; no outcome → `unknown`;
   - `last_sync_at` is the watermark only after an `ok` outcome, else null;
   - a registry inbound channel missing from `user_channels` is still listed;

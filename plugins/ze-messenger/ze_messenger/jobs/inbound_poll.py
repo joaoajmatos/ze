@@ -50,7 +50,9 @@ class InboundPollingJob:
                 channel_id=channel.channel_id,
                 error=str(exc),
             )
-            outcome = PollOutcome.AUTH_FAILED if is_auth_failure(exc) else PollOutcome.FAILED
+            outcome = (
+                PollOutcome.AUTH_FAILED if is_auth_failure(exc) else PollOutcome.FAILED
+            )
             await self._record_failure(channel, outcome)
             return
 

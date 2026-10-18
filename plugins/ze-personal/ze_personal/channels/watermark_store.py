@@ -112,10 +112,14 @@ class ChannelWatermarkStore:
         found = {
             r["channel_id"]: ChannelPollStatus(
                 watermark=r["last_polled_at"],
-                last_outcome=PollOutcome(r["last_outcome"]) if r["last_outcome"] else None,
+                last_outcome=PollOutcome(r["last_outcome"])
+                if r["last_outcome"]
+                else None,
                 last_outcome_at=r["last_outcome_at"],
             )
             for r in rows
         }
-        empty = ChannelPollStatus(watermark=None, last_outcome=None, last_outcome_at=None)
+        empty = ChannelPollStatus(
+            watermark=None, last_outcome=None, last_outcome_at=None
+        )
         return {channel_id: found.get(channel_id, empty) for channel_id in channel_ids}
