@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17 (refined through `/speckit-specify` 2026-10-18)
 
-**Status**: Draft
+**Status**: Parked (user 2026-10-18: "We can leave them for now, and tackle this later.")
 
 **Input**: User description: "Plugins in Places (W7)": Maestro brief 2026-10-17, phase W7; overhaul plan sections a (capability map: Contacts → Mind, Reminders → World, News → Ask preset + Governance settings) and e (Phase W7). The capability map was accepted with the overhaul plan ("go with the recommendations").
 
@@ -32,18 +32,18 @@ Plugins declare UI contributions in a manifest the web app reads at runtime: nav
 
 ### User Story 1 - Plugin pages live inside a place (Priority: P1)
 
-A plugin that contributes a page names the place it belongs to. Its page shows as a section of that place, built from HUD modules like the rest of the app, never as its own nav item. Old links to the plugin's top-level path land on the new location.
+A plugin that contributes a page names the place it belongs to. Its page shows as a section of that place, built from HUD modules like the rest of the app, never as its own nav item. There is no top-level plugin route: an old top-level plugin path falls to not-found.
 
 **Why this priority**: it is the rule that keeps the app to five places as plugins grow.
 
-**Independent Test**: with a fixture plugin that contributes a page in Mind, the page renders as a Mind section with one module per top-level element; the old top-level path redirects there; a contribution without a place makes startup fail with a plain error that names the plugin.
+**Independent Test**: with a fixture plugin that contributes a page in Mind, the page renders as a Mind section with one module per top-level element; the old top-level path shows not-found; a contribution without a place makes startup fail with a plain error that names the plugin.
 
 **Acceptance Scenarios**:
 
-1. **Given** a plugin contributing a page with place `mind` and path `p`, **When** the user opens Mind, **Then** a section for it appears and opens at `/mind/p`, rendered as modules.
-2. **Given** that plugin, **When** the user opens `/p`, **Then** they land on `/mind/p` in one hop.
-3. **Given** a plugin page contribution with no place, or a place outside the five, **When** Ze starts, **Then** startup fails with a typed configuration error naming the contribution.
-4. **Given** two contributions with the same place and path, **When** Ze starts, **Then** startup fails as duplicate nav paths do today.
+1. **Given** a plugin contributing a page with place `mind` and path `p`, **When** the user opens Mind, **Then** an entry for it appears in Mind and opens at `/mind/plugin/p`, rendered as modules.
+2. **Given** that plugin, **When** the user opens `/p`, **Then** the not-found page shows (no top-level plugin route; pre-v1 hard cut).
+3. **Given** a plugin page contribution with no place, or a place outside the five, **When** Ze starts, **Then** startup fails with a typed configuration error naming the contribution. The same holds for an unknown contribution kind and for a path that is not a lowercase slug.
+4. **Given** two contributions with the same place and path, **When** Ze starts, **Then** startup fails with a duplicate-path error. The same path in two different places is allowed.
 
 ---
 
@@ -81,18 +81,20 @@ Plugin settings sections render and save from Governance › Connections. Phase 
 - No plugin contributes a page (the state after News moves): the places show no plugin sections, and the place-aware page route is still covered by the fixture plugin's tests.
 - A plugin contributes a preset but no page: only the chip appears.
 - More plugin presets than chip slots: chips beyond the limit are not shown, and the order is stable (contribution priority, then id).
-- An old bookmark to a removed plugin path that no plugin now claims lands on not-found, not a blank page.
+- An old bookmark to a top-level plugin path from before this phase lands on not-found, not a blank page. `/news` alone redirects to Ask.
+- A plugin page path also exists in another place: each place's entry opens its own page; a server refresh for a plugin page names the page id, so only that page reloads.
+- An Ask-place plugin page (`/ask/plugin/<path>`) is not the Ask conversation: the Ask bar opens its contextual overlay there, as on any other place.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: Page contributions MUST declare a place, one of the five (world, ask, doing, mind, governance). Startup MUST fail with a typed configuration error when it is missing or invalid.
+- **FR-001**: Page contributions (the `nav` kind, renamed `page`) MUST declare a place, one of the five (world, ask, doing, mind, governance). Startup MUST fail with a typed configuration error when it is missing or invalid.
 - **FR-002**: The UI manifest MUST carry each page contribution's place and each preset contribution, and the generated web client MUST be regenerated.
-- **FR-003**: A new preset contribution kind MUST carry a label and a prompt. Ask MUST show presets as Try chips after the core chips, at most two plugin chips, in contribution priority order, sending through the single send path with the preset marked.
-- **FR-004**: The web app MUST render each plugin page as a section of its place at `/<place>/<path>`, with one HUD module per top-level element. The old top-level path MUST redirect to it in one hop.
+- **FR-003**: A new preset contribution kind MUST carry a label and a prompt. Ask MUST show presets as Try chips after the core chips, at most two plugin chips, in contribution order (priority, then id), sending through the single send path with the preset marked. Plugin chips continue the visible chip numbering and keyboard keys (after two or three core chips), and follow the chips' disabled state.
+- **FR-004**: The web app MUST render each plugin page inside its place at `/<place>/plugin/<path>` (the `plugin` segment keeps plugin paths clear of `/ask/:threadId`, `/mind/:entityId` and the Doing detail routes), with one HUD module per top-level element, and list the place's plugin pages as entries on that place.
 - **FR-005**: The top-level catch-all plugin route and any plugin nav mapping outside places MUST be removed (pre-v1 hard cut). The News page route, its page descriptor and its nav contribution MUST be removed; `/news` MUST redirect to Ask.
-- **FR-006**: The core reserved nav paths list MUST be updated to the five places and their known section paths, so a plugin cannot claim them.
+- **FR-006**: Plugin page paths MUST match `^[a-z0-9][a-z0-9-]{0,39}$` and be unique within a place. An unknown contribution kind MUST fail startup with the same typed error. The old top-level reserved-paths list MUST be deleted, because plugin paths no longer share the top level with core routes.
 - **FR-007**: Docs MUST describe page contributions with a place and the preset kind (extending-Ze guide, frontend, native interface), and README screenshots MUST be refreshed.
 
 ### Key Entities
