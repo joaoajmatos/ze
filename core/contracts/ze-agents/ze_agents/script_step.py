@@ -462,6 +462,7 @@ async def run_script_step(
         stub=stub,
         limits=limits,
         dispatch=dispatch,
+        procedure_id=procedure_id,
     )
     text, success, error_kind = _model_text(outcome, run, limits, script)
     script["outcome"] = outcome.status

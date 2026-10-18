@@ -59,7 +59,9 @@ class _Runner:
         self.reads = reads
         self.writes = writes
 
-    async def run(self, *, script_id, agent, source, stub, limits, dispatch):
+    async def run(
+        self, *, script_id, agent, source, stub, limits, dispatch, procedure_id=None
+    ):
         for i in range(self.reads):
             await dispatch(ScriptRequest(seq=i, tool="get_rows", args={}))
         return ScriptOutcome(status="ok", value={"n": self.reads}, writes=self.writes)

@@ -53,9 +53,12 @@ class FakeRunner:
         self.replies: list[DispatchReply] = []
         self.runs: list[dict[str, Any]] = []
 
-    async def run(self, *, script_id, agent, source, stub, limits, dispatch):
+    async def run(
+        self, *, script_id, agent, source, stub, limits, dispatch, procedure_id=None
+    ):
         self.runs.append(
             {
+                "procedure_id": procedure_id,
                 "script_id": script_id,
                 "agent": agent,
                 "source": source,
@@ -589,3 +592,16 @@ async def test_unknown_procedure_id_is_not_a_script(names) -> None:
     assert (
         json.loads(result.tool_call.result)["error"]["kind"] == "procedure_not_script"
     )
+
+
+async def test_runner_gets_the_procedure_id_only_for_a_rerun(names) -> None:
+    runner = FakeRunner()
+    await _run(runner, names)
+    assert runner.runs[0]["procedure_id"] is None
+
+    runner = FakeRunner()
+    ctx = _ctx(runner)
+    ctx.procedure_matches = [_match("tool_script")]
+    pid = "aaaaaaaa-1111-2222-3333-444444444444"
+    await _run(runner, names, args={"procedure_id": pid}, ctx=ctx)
+    assert runner.runs[0]["procedure_id"] == pid

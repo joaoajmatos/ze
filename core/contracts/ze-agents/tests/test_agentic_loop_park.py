@@ -178,7 +178,9 @@ class _Runner:
     def __init__(self, writes):
         self.writes = writes
 
-    async def run(self, *, script_id, agent, source, stub, limits, dispatch):
+    async def run(
+        self, *, script_id, agent, source, stub, limits, dispatch, procedure_id=None
+    ):
         from ze_agents.scripts import ScriptOutcome
 
         return ScriptOutcome(status="ok", value={"done": True}, writes=self.writes)
