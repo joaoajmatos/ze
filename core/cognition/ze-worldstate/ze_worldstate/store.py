@@ -95,7 +95,9 @@ class LoopStore(Protocol):
 
     async def get(self, loop_id: UUID) -> OpenLoop | None: ...
 
-    async def list(self, states: list[str] | None = None) -> list[OpenLoop]: ...
+    async def list(
+        self, states: list[str] | None = None, *, since: datetime | None = None
+    ) -> list[OpenLoop]: ...
 
     async def transition(
         self, loop_id: UUID, new_state: str, *, user_asked: bool = False
@@ -196,18 +198,22 @@ class PostgresLoopStore:
             row = await conn.fetchrow("SELECT * FROM open_loops WHERE id = $1", loop_id)
         return _loop_from_row(row) if row else None
 
-    async def list(self, states: list[str] | None = None) -> list[OpenLoop]:
+    async def list(
+        self, states: list[str] | None = None, *, since: datetime | None = None
+    ) -> list[OpenLoop]:
+        clauses: list[str] = []
+        params: list = []
+        if states:
+            params.append(states)
+            clauses.append(f"state = ANY(${len(params)})")
+        if since is not None:
+            params.append(since)
+            clauses.append(f"updated_at > ${len(params)}")
+        where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
         async with self._pool.acquire() as conn:
-            if states:
-                rows = await conn.fetch(
-                    "SELECT * FROM open_loops WHERE state = ANY($1)"
-                    " ORDER BY created_at DESC",
-                    states,
-                )
-            else:
-                rows = await conn.fetch(
-                    "SELECT * FROM open_loops ORDER BY created_at DESC"
-                )
+            rows = await conn.fetch(
+                f"SELECT * FROM open_loops{where} ORDER BY created_at DESC", *params
+            )
         return [_loop_from_row(r) for r in rows]
 
     async def transition(

@@ -19,8 +19,9 @@ router = APIRouter(
     response_model=list[LoopListItem],
     operation_id="listLoops",
     summary="List open loops",
-    description="Return open loops, optionally filtered to one lifecycle state. "
-    "Defaults to non-terminal states (suspected, active, drifting). Each item "
+    description="Return open loops, optionally filtered to one or more lifecycle "
+    "states (repeat `state`) and to loops updated after `since`. Defaults to "
+    "non-terminal states (suspected, active, drifting). Each item "
     "reports whether the loop was promoted by corroboration and the distinct "
     "inflows it was seen in.",
 )
@@ -29,7 +30,7 @@ async def list_loops(
     since: datetime | None = Query(default=None),
     store: LoopStore = Depends(get_loop_store),
 ) -> list[LoopListItem]:
-    loops = await loop_rest.list_loops(store, state or None)
+    loops = await loop_rest.list_loops(store, state or None, since=since)
     return [LoopListItem.model_validate(loop) for loop in loops]
 
 

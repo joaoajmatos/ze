@@ -67,13 +67,13 @@
 
 ## Phase 4: User Story 2 - See disagreements in Governance (P2)
 
-- [ ] T008 [L:reads] [US2] Move `apps/ze-api/tests/api/test_collisions_route.py` to target the product path and update `test_dev_only_routes.py` (collisions no longer dev-only) and `test_openapi_export.py`. Implement the handler body in `api/v0/collisions/router.py` (same filters; an unknown `source_function` → 422, not 500; `limit` 1..200 with 422 outside; `since > until` → empty list). Update `apps/ze-api/README.md` (~36: collisions under `api/v0`). Delete `api/eval/collisions.py`, its `include_router` line in `api/eval/__init__.py`, and `CollisionLogEntrySchema` from `api/eval/schemas.py`. A test asserts the old dev path returns 404 with the dev router mounted.
+- [x] T008 [L:reads] [US2] Move `apps/ze-api/tests/api/test_collisions_route.py` to target the product path and update `test_dev_only_routes.py` (collisions no longer dev-only) and `test_openapi_export.py`. Implement the handler body in `api/v0/collisions/router.py` (same filters; an unknown `source_function` → 422, not 500; `limit` 1..200 with 422 outside; `since > until` → empty list). Update `apps/ze-api/README.md` (~36: collisions under `api/v0`). Delete `api/eval/collisions.py`, its `include_router` line in `api/eval/__init__.py`, and `CollisionLogEntrySchema` from `api/eval/schemas.py`. A test asserts the old dev path returns 404 with the dev router mounted.
 
 ---
 
 ## Phase 5: User Story 3 - Print the configured model tier (P2)
 
-- [ ] T009 [L:reads] [US3] Tests first `apps/ze-api/tests/api/test_model_settings_route.py` (settings fixture copied from the real YAML into `tmp_path`):
+- [x] T009 [L:reads] [US3] Tests first `apps/ze-api/tests/api/test_model_settings_route.py` (settings fixture copied from the real YAML into `tmp_path`):
   - the shipped config → `complexity_enabled: true`, `simple_max: 0.4`;
   - enabled with a null `simple_max` → `complexity_enabled: false` (it uses `ComplexitySurfaceConfig.calibrated`, T-1);
   - agents are sorted by name, each with `model` from `resolve_agent_model(name, "full", cfg)` and `model_simple` only when the agent declares one;
@@ -86,9 +86,9 @@
 
 ## Phase 6: User Story 4 - Closed loops by time (P2)
 
-- [ ] T010 [P] [L:reads] [US4] Tests first `core/cognition/ze-worldstate/tests/test_store_list_since.py` (mocked pool): `list(states=["closed", "dropped"], since=t)` adds `updated_at > $n` and the state set; `since=None` keeps the old SQL; existing callers (positional `states`) are unchanged. Implement in `PostgresLoopStore.list` and the `LoopStore` Protocol.
-- [ ] T011 [L:reads] [US4] `@pytest.mark.pg` test in the same package: loops closed 2, 5 and 20 days ago; `since` = 7 days ago returns the first two.
-- [ ] T012 [L:reads] [US4] Tests first `apps/ze-api/tests/api/test_loops_route.py` (extend): `state` is repeatable (`?state=closed&state=dropped` passes both); `since` is passed through and combines with it; an invalid datetime → 422. Implement in `api/v0/loops/router.py`.
+- [x] T010 [P] [L:reads] [US4] Tests first `core/cognition/ze-worldstate/tests/test_store_list_since.py` (mocked pool): `list(states=["closed", "dropped"], since=t)` adds `updated_at > $n` and the state set; `since=None` keeps the old SQL; existing callers (positional `states`) are unchanged. Implement in `PostgresLoopStore.list` and the `LoopStore` Protocol.
+- [x] T011 [L:reads] [US4] `@pytest.mark.pg` test in the same package: loops closed 2, 5 and 20 days ago; `since` = 7 days ago returns the first two.
+- [x] T012 [L:reads] [US4] Tests first `apps/ze-api/tests/api/test_loops_route.py` (extend): `state` is repeatable (`?state=closed&state=dropped` passes both); `since` is passed through and combines with it; an invalid datetime → 422. Implement in `api/v0/loops/router.py`.
 
 ---
 
