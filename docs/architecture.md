@@ -617,7 +617,7 @@ Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompti
 |---|---|---|
 | Weekly insights | Sunday 7 AM UTC | 1–3 observations from the past week's facts + episodes |
 | Calendar sync | 7:45 AM UTC daily | Pull upcoming events, schedule reminder jobs |
-| Morning briefing | 8 AM UTC daily | Digest: unreviewed facts, upcoming workflows, recent failures. Ze keeps the sent text as a notification. Ask "how did the briefing do?" and the companion reads it with `get_briefing`: when it was sent, whether it was held, whether you opened it, and what it covered. |
+| Morning briefing | 8 AM UTC daily | Digest: unreviewed facts, upcoming workflows, recent failures |
 | Nightly consolidation | 2 AM UTC | Dedup facts, expire stale, archive episodes, re-synthesize profile |
 | Contacts consolidation | 3 AM UTC | Dedup and merge contact records |
 | Contact review suggestions | 8:30 AM UTC daily | Push pending contact review nudges |
@@ -633,6 +633,8 @@ Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompti
 | Calendar reminders | When they fire | Event-specific reminders, interval assessed by Haiku |
 | Goal milestone progress | After each milestone | Short completion line, accountability push via `ProactiveNotifier` |
 | News fetch | Every 30 min | Ingest and embed new RSS articles |
+
+Ze keeps the sent briefing as a notification. Ask "how did the briefing do?" and the companion reads it with `get_briefing`: when it was sent, whether it was held, whether you marked it read in the notification center, and what it covered.
 
 See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full lifecycle and config.
 

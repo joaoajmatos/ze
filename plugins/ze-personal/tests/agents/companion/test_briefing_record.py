@@ -43,6 +43,8 @@ def test_tool_is_a_read_tool_on_the_companion():
 def test_instructions_name_the_tool_and_ban_substituting_news():
     assert "get_briefing" in _AGENT_INSTRUCTIONS
     assert "never fetch news" in _AGENT_INSTRUCTIONS
+    assert "marked read in the notification centre" in _AGENT_INSTRUCTIONS
+    assert "not confirmed as delivered" in _AGENT_INSTRUCTIONS
 
 
 def test_news_no_longer_claims_the_morning_briefing():
@@ -55,15 +57,16 @@ async def test_latest_briefing_reports_what_was_sent_and_not_yet_read():
     b = out["briefings"][0]
     assert b["sent_at"] == SENT.isoformat()
     assert b["delivery"] == "delivered"
-    assert b["opened"] is False and b["opened_at"] is None
+    assert b["marked_read"] is False and b["marked_read_at"] is None
+    assert b["delivery_status"] == f"delivered at {SENT.isoformat()}"
     assert "Unreviewed facts: 9" in b["body"]
 
 
-async def test_read_briefing_carries_the_opened_time():
+async def test_read_briefing_carries_the_marked_read_time():
     read = datetime(2026, 10, 18, 8, 0, tzinfo=timezone.utc)
     out = await get_briefing(notification_store=_store([_row(read_at=read)]))
-    assert out["briefings"][0]["opened"] is True
-    assert out["briefings"][0]["opened_at"] == read.isoformat()
+    assert out["briefings"][0]["marked_read"] is True
+    assert out["briefings"][0]["marked_read_at"] == read.isoformat()
 
 
 async def test_held_briefing_is_not_reported_as_sent():
@@ -72,6 +75,7 @@ async def test_held_briefing_is_not_reported_as_sent():
     )
     b = out["briefings"][0]
     assert b["delivery"] == "held" and b["sent_at"] is None
+    assert b["delivery_status"] == "not confirmed as delivered"
 
 
 async def test_no_briefing_yet_says_so():

@@ -129,7 +129,7 @@ _BRIEFING_EVENT = "morning_brief"
     access=ToolAccess.READ,
     description=(
         "Read the morning briefings Ze actually sent, newest first: when each was "
-        "sent, whether it was delivered or held, whether the user opened it, and "
+        "sent, whether it was delivered or held, whether it was marked read in the notification centre, and "
         "the full text of what it covered. Use for any question about a briefing "
         "Ze already sent. count is how many to return (1-5)."
     ),
@@ -148,8 +148,13 @@ async def get_briefing(notification_store: NotificationStore, count: int = 1) ->
                 "sent_at": r.delivered_at.isoformat() if r.delivered_at else None,
                 "created_at": r.created_at.isoformat(),
                 "delivery": r.delivery,
-                "opened": r.read_at is not None,
-                "opened_at": r.read_at.isoformat() if r.read_at else None,
+                "marked_read": r.read_at is not None,
+                "marked_read_at": r.read_at.isoformat() if r.read_at else None,
+                "delivery_status": (
+                    f"delivered at {r.delivered_at.isoformat()}"
+                    if r.delivered_at
+                    else "not confirmed as delivered"
+                ),
                 "body": r.body,
             }
             for r in rows
