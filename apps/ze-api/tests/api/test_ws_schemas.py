@@ -103,7 +103,5 @@ async def test_live_push_stamps_ui_version_only_when_it_carries_components():
 
 def test_plugin_page_responses_carry_ui_version():
     from ze_news.api.schemas import PluginPageResponse as News
-    from ze_personal.api.schemas import PluginPageResponse as Personal
 
-    for cls in (News, Personal):
-        assert cls(title="t", tree=[]).ui_version == "2.0"
+    assert News(title="t", tree=[]).ui_version == "2.0"

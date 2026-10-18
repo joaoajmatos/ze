@@ -19,13 +19,13 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main` with 191a merged. `make install && make web-install`; `graphify update .`; `graphify affected` on `UiContribution`, `UiManifest`, `collect_ui_contributions`, `filter_ui_manifest_by_openapi`, `CORE_RESERVED_NAV_PATHS`, `PluginPage`, `refreshKeysForScreen`, `TryChips`, `MindEntityPage`, `DoingWorkflowPage`, `Connections`. Grep `manifest.nav`, `ui_manifest.nav`, `ui_nav`, `show_in_mobile_nav`, `page_operation_id`, `getNewsPage`, `news/page`, `build_news_page`, `PluginPageResponse`. Confirm: that a plugin's agents are the registered agents whose class `__module__` starts with one of its `agent_module_paths()` (or name another source); the function in `ze_agents/claims.py` or `ze_components/claims.py` that says which (ClaimKind, Provenance) pairs are allowed (if none, lead adds `is_licensed_posture` in T002); where plugin settings responses can be validated by core; the memory graph and workflow store lookups for the subject; whether 188's `DoingWorkflowPage` is on `main`; and the final `TryChips` chips array and props. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
+- [x] T001 [L:lead] Branch from `main` with 191a merged. `make install && make web-install`; `graphify update .`; `graphify affected` on `UiContribution`, `UiManifest`, `collect_ui_contributions`, `filter_ui_manifest_by_openapi`, `CORE_RESERVED_NAV_PATHS`, `PluginPage`, `refreshKeysForScreen`, `TryChips`, `MindEntityPage`, `DoingWorkflowPage`, `Connections`. Grep `manifest.nav`, `ui_manifest.nav`, `ui_nav`, `show_in_mobile_nav`, `page_operation_id`, `getNewsPage`, `news/page`, `build_news_page`, `PluginPageResponse`. Confirm: that a plugin's agents are the registered agents whose class `__module__` starts with one of its `agent_module_paths()` (or name another source); the function in `ze_agents/claims.py` or `ze_components/claims.py` that says which (ClaimKind, Provenance) pairs are allowed (if none, lead adds `is_licensed_posture` in T002); where plugin settings responses can be validated by core; the memory graph and workflow store lookups for the subject; whether 188's `DoingWorkflowPage` is on `main`; and the final `TryChips` chips array and props. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
 
 ---
 
 ## Phase 2: Foundational (contract step, lane `lead`)
 
-- [ ] T002 [L:lead] Tests first:
+- [x] T002 [L:lead] Tests first:
   - `core/contracts/ze-plugin/tests/test_ui.py` (rewrite): each of these raises `AgentConfigError` naming the id:
     - the kinds `nav`, `page` and `foo`;
     - a module without a slot, with an unknown slot, or without a provider;

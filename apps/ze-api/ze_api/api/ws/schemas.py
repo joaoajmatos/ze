@@ -254,7 +254,7 @@ class WsVoiceRef(BaseModel):
 
 
 class WsScreenContext(BaseModel):
-    place: Literal["world", "ask", "doing", "mind", "governance", "plugin"] | None = (
+    place: Literal["world", "ask", "doing", "mind", "governance"] | None = (
         None
     )
     route: str | None = Field(None, max_length=200)

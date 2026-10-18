@@ -150,16 +150,6 @@ class NewsPlugin(ZePlugin):
             return []
         return [
             UiContribution(
-                id="ze_news.overview",
-                plugin="ze_news",
-                kind="nav",
-                label="News",
-                icon="newspaper",
-                path="news",
-                page_operation_id="getNewsPage",
-                show_in_mobile_nav=True,
-            ),
-            UiContribution(
                 id="ze_news.settings",
                 plugin="ze_news",
                 kind="settings_section",
