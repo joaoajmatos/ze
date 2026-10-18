@@ -6,7 +6,7 @@ No tables. In-memory and trace shapes only.
 | Field | Type | Rule |
 |---|---|---|
 | text | str | stripped; may be empty |
-| duration_s | float | from ffprobe; 0 < d ≤ 120 |
+| duration_s | float | from the two-step probe (research R1); 0 < d ≤ 120 |
 
 ## Registry entry (ze-api `voice/registry.py`)
 | Field | Type | Rule |
@@ -14,7 +14,7 @@ No tables. In-memory and trace shapes only.
 | transcription_id | str | `uuid4().hex`, 32 chars |
 | text | str | as transcribed |
 | duration_s | float | |
-| created_at | datetime (UTC) | expires at +10 min; swept on access |
+| created_at | datetime (UTC) | expires at +10 min; swept on access; at most 100 entries, oldest dropped |
 
 ## VoiceInput (ze-agents `interface/types.py`, on `RawInput.voice`)
 | Field | Type | Rule |
@@ -28,7 +28,7 @@ No tables. In-memory and trace shapes only.
 | modality | str | `voice` (only voice turns carry the section) |
 | duration_s | float \| None | |
 | edited | bool \| None | |
-Never the transcript text (clarification Q2).
+Never the transcript text (clarification Q2). Read back by the message store's trace parser (`input` absent on old rows → `None`).
 
 ## Removed
 `RawInput.audio`, `RawInput.audio_mime`, `AgentState.audio_data`, `AgentState.audio_mime`, `invoke_raw(audio_data=, audio_mime=)`.

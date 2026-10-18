@@ -10,11 +10,15 @@
 - Errors (`{ "detail": "<plain line>" }`):
   | Status | When | detail |
   |---|---|---|
-  | 413 | over 10 MB, or over 120 s | "That recording is too large: the limit is 10 MB." / "That recording is too long: the limit is 2 minutes." |
+  | 413 | over 10 MB (declared or read), or over 120 s | "That recording is too large: the limit is 10 MB." / "That recording is too long: the limit is 2 minutes." |
   | 415 | other type | "Unsupported recording type. Use WebM, Ogg, MP4 or WAV." |
   | 422 | length cannot be determined | "I couldn't make out the recording." |
   | 502 | speech model failed | "I couldn't make out the recording." |
   | 503 | ffmpeg missing on the server | "Voice input is not available on this server." |
+  | 422 | no `file` part, or not multipart | "Send the recording as a file named file." |
+
+- A declared `Content-Length` over the limit is refused with the same 413 before the body is read.
+- WebM and fragmented MP4 (what browsers record) are measured; a progressive MP4 with its index at the end is refused as unreadable (422).
 
 ## WS `message` frame: `context.voice`
 ```json

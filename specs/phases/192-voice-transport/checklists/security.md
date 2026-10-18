@@ -17,7 +17,7 @@
 - [x] CHK006 Is "not stored" defined precisely: audio never persisted, the transcript only in memory for 10 minutes, and never on the trace? [Clarity, Spec §FR-004, Clarifications Q2]
 - [x] CHK007 Is the source of the length measurement unambiguous (the server, never the client)? [Clarity, Spec Assumptions, Clarifications Q3]
 - [x] CHK008 Is "edited" defined by a server-side comparison rule rather than a client flag? [Clarity, Research R5, Contract]
-- [ ] CHK009 Does the spec say whether the size cap is enforced while streaming (no full buffering of oversized bodies)? [Clarity, Gap: in plan Constraints and T012 only]
+- [x] CHK009 Does the spec require oversized uploads to be refused from their declared length before the body is accepted, and the read to stop at the cap otherwise? [Clarity, Spec §FR-002, Research R6b]
 
 ## Untrusted Input
 
@@ -31,6 +31,12 @@
 - [x] CHK014 Is behaviour after a server restart defined for live references? [Recovery, Spec Edge Cases]
 - [x] CHK015 Is the missing-ffmpeg deployment case specified with a user-facing line and an operator log? [Exception Flow, Spec §FR-002, Plan]
 
+## Subprocess Safety
+
+- [x] CHK018 Is the demuxer for untrusted bytes fixed from the validated type rather than auto-detected, with only the pipe protocol allowed? [Security, Plan Constraints, Research R6c]
+- [x] CHK019 Are timeouts defined for the length probe and the conversion, with the user-facing result on timeout? [Exception Flow, Plan Constraints, Research R6c]
+- [x] CHK020 Is the retry behaviour of a voice reply specified? [Coverage, Spec Edge Cases]
+
 ## Dependencies and Assumptions
 
 - [x] CHK016 Is the new runtime dependency (audio tools in the server image) recorded with its reason? [Dependency, Spec Assumptions, Plan Complexity Tracking]
@@ -38,4 +44,4 @@
 
 ## Notes
 
-- CHK009 is satisfied in plan and tasks (chunked read, abort past the cap, T012 asserts it) but not stated in the spec; acceptable at spec level (it is an implementation guard), recorded for the reviewer.
+- Revised after Gauge's review (V-1, V-3, V-4, V-6): CHK009 now passes against FR-002; CHK018–CHK020 added.

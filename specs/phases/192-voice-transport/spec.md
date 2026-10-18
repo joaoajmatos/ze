@@ -85,13 +85,15 @@ Each transcription is counted in Ze's spend like any other model call, so Govern
 - The same reference sent twice: the second turn is also voice. The reference stays valid until it expires and is not consumed.
 - A server restart drops unexpired references. Turns that name them run as text (Story 1, scenario 3).
 - The connection-level API key protects the route like every other REST route.
+- A Retry of a voice reply regenerates from the stored message text as a text turn; the new reply's trace carries no voice section (the reference is not replayed).
+- A progressive MP4 whose index sits at the end of the file cannot be measured without writing it to disk; it is rejected as unreadable. Browser recorders produce WebM or fragmented MP4, which are measured.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: The system MUST accept a recording upload of WebM, Ogg, MP4/M4A or WAV audio, at most 10 MB and at most 120 seconds, and return the transcript, the duration in seconds and a transcription reference.
-- **FR-002**: The system MUST reject other types, oversized files, over-long recordings and recordings whose length cannot be read with distinct plain errors that state the limit or the accepted types. A server that lacks the audio tools MUST answer "Voice input is not available on this server".
+- **FR-002**: The system MUST reject other types, oversized files, over-long recordings and recordings whose length cannot be read with distinct plain errors that state the limit or the accepted types. A server that lacks the audio tools MUST answer "Voice input is not available on this server". An oversized upload MUST be refused from its declared length before the body is accepted, and the read MUST stop at the cap when no length is declared.
 - **FR-003**: The system MUST transcribe with the same speech model the engine uses today (the configured `whisper` model), and record the call in spend under the transcription flow.
 - **FR-004**: The system MUST NOT store audio. The transcription reference MUST map, in memory and for 10 minutes, to the transcript and duration, so a later turn can record them without trusting the client.
 - **FR-005**: A message that names a live transcription reference MUST run as a voice turn. Its trace MUST carry an input section: modality, duration in seconds, and whether the sent text differs from the transcript. The raw transcript MUST NOT be kept on the trace.
