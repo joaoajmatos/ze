@@ -47,6 +47,22 @@ async def test_three_runs_of_one_key_leave_three_rows_newest_first(app_pool):
             "SELECT count(*) FROM action_records WHERE context->>'script_key' = $1", key
         )
     assert count == 3
+    async with pg_pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO action_records (
+                id, idempotency_key, action_type, actor, producer_plugin,
+                lifecycle, outcome, occurred_at, provenance, confidence,
+                target_face, summary, authoritative_domain,
+                authoritative_record_id, context
+            ) VALUES (
+                $1, 'other', 'test.act', 't', 'p', 'succeeded', 'success', now(),
+                'prompt_supplied', 1.0, 'world', 's', 'elsewhere', 'x', $2::jsonb
+            )
+            """,
+            uuid4(),
+            {"script_key": key},
+        )
     rows = await store.list_by_script_key(key)
     assert [r.authoritative_ref.record_id for r in rows] == list(reversed(ids))
     assert all(r.context.script_key == key for r in rows)

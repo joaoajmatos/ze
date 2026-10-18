@@ -352,7 +352,9 @@ class PostgresActionRecordStore:
     ) -> list[ActionRecord]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT * FROM action_records WHERE context->>'script_key' = $1::text "
+                "SELECT * FROM action_records "
+                "WHERE authoritative_domain = 'workspace.tool_script' "
+                "AND context->>'script_key' = $1::text "
                 "ORDER BY occurred_at DESC, id DESC LIMIT $2",
                 script_key,
                 max(1, min(limit, 500)),
