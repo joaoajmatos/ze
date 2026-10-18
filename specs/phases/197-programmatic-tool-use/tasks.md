@@ -102,7 +102,7 @@
 
 ## Phase 7: The sandbox and the runner (US1, US2)
 
-- [ ] T018 [P] [L:sandbox] [US1] Tests first `sidecar/workspace/tests/test_scripts_relay.py` (subprocess as the current user; uid switch skipped when not root):
+- [x] T018 [P] [L:sandbox] [US1] Tests first `sidecar/workspace/tests/test_scripts_relay.py` (subprocess as the current user; uid switch skipped when not root):
   - `WS /scripts` with a missing or wrong token, and with `WORKSPACE_API_TOKEN` empty, fails the handshake with close code 1008 (`WebSocketException`, raised before accept);
   - `start` writes `ze_tools.py`, `main.py` and `_ze_main.py` into a fresh scratch dir and spawns `python3 -I -X utf8 _ze_main.py`; `import ze_tools` works through the real spawn;
   - a script calling `z.echo(x=1)` produces a `call` frame and continues with the `reply` value;
@@ -112,7 +112,7 @@
   - the scratch dir is gone after `end`.
 
   Implement `sidecar/workspace/scripts.py`, `script_runtime/`, and the route in `main.py`; add `websockets` to `requirements.txt` only if the test client needs it.
-- [ ] T019 [L:sandbox] [US2] Tests first:
+- [x] T019 [L:sandbox] [US2] Tests first:
   - `timeout_seconds: 1` with `while True: pass` ends `timeout`, and no process of the script user remains (a child started with `os.setsid()` is killed too; tested by pid when not root);
   - `cancel` ends `killed`;
   - a request line over 256 KB, a `finish` line over 1 MiB, malformed JSON, and more than `2 × 20` request lines each end `bad_request`;
@@ -122,8 +122,8 @@
   - the WS `max_size` is 2 MiB.
 
   Implement the `ScriptSlot`, the caps and the uid-wide kill.
-- [ ] T020 [L:sandbox] [US1] `Dockerfile`: add system user `zescript` (home `/tmp/ze-scripts`), copy `scripts.py` and `script_runtime/`. Spawn scripts as `zescript` with rlimits in the preexec: `RLIMIT_AS` 256 MiB, `RLIMIT_NPROC` 32, `RLIMIT_FSIZE` 16 MiB, `RLIMIT_CPU` wall + 1 s, `RLIMIT_NOFILE` 64. Env limited to `PATH`, `HOME`, `LANG`, `ZE_REQ_FD`, `ZE_REP_FD`. Unit tests: `script_env()` returns exactly those keys; `script_rlimits(limits)` returns those five values; an exit by SIGKILL/SIGXCPU/SIGXFSZ or a `MemoryError` stderr maps to `resource_limit`.
-- [ ] T021 [L:sandbox] [US1] Isolation:
+- [x] T020 [L:sandbox] [US1] `Dockerfile`: add system user `zescript` (home `/tmp/ze-scripts`), copy `scripts.py` and `script_runtime/`. Spawn scripts as `zescript` with rlimits in the preexec: `RLIMIT_AS` 256 MiB, `RLIMIT_NPROC` 32, `RLIMIT_FSIZE` 16 MiB, `RLIMIT_CPU` wall + 1 s, `RLIMIT_NOFILE` 64. Env limited to `PATH`, `HOME`, `LANG`, `ZE_REQ_FD`, `ZE_REP_FD`. Unit tests: `script_env()` returns exactly those keys; `script_rlimits(limits)` returns those five values; an exit by SIGKILL/SIGXCPU/SIGXFSZ or a `MemoryError` stderr maps to `resource_limit`.
+- [x] T021 [L:sandbox] [US1] Isolation:
   - the lifespan sets `/workspace` to mode 0750 at runtime, after `apply_network_isolation`;
   - `apply_network_isolation` adds a `reject` rule for all output from `zescript`'s uid (nft `meta skuid`, iptables `--uid-owner` fallback) and verifies it by listing the chain and finding the rule;
   - `/stat` gains `scripts_busy` and `scripts_isolated` (rule verified and mode set);
@@ -131,7 +131,7 @@
   - `docker-compose.yml`: `cap_add: [NET_ADMIN]` on the workspace service.
 
   Unit tests with the command runner faked: verification reads the chain listing (a successful command whose listing lacks the rule gives `scripts_isolated` false); probe breach handling. `sidecar/workspace/tests/smoke_scripts.py` (marked `docker`) covers every check in [quickstart.md](./quickstart.md).
-- [ ] T022 [L:sandbox] Update `sidecar/workspace/README.md`: `WS /scripts`, frames and caps, the `zescript` user, rlimits, stdout discarded, the script slot, `scripts_isolated` and the probe, `cap_add: [NET_ADMIN]` for local dev, the smoke test.
+- [x] T022 [L:sandbox] Update `sidecar/workspace/README.md`: `WS /scripts`, frames and caps, the `zescript` user, rlimits, stdout discarded, the script slot, `scripts_isolated` and the probe, `cap_add: [NET_ADMIN]` for local dev, the smoke test.
 - [x] T023 [P] [L:runner] [US1] Tests first `core/ops/ze-workspace/tests/test_script_runner.py` with the T007 fake sidecar: `WorkspaceScriptRunner.run` sends `start` with the token; relays each `call` to `dispatch` and sends its `reply`; a `DispatchReply(stop=True)` sends `cancel` after the reply; `end` maps to `ScriptOutcome` (all eight statuses); connection refused → `unavailable`; `end busy` → `busy`; no `end` within `wall_seconds + 5` → cancel and `timeout`; `/stat` with `scripts_isolated: false` → `unavailable` without opening the socket; the client's `max_size` is 2 MiB. Implement `ze_workspace/scripts.py`, `WorkspaceClient.scripts_url()` and the new `stat` fields in `client.py`; add `websockets==16.0` to `core/ops/ze-workspace/pyproject.toml`.
 
 ---
