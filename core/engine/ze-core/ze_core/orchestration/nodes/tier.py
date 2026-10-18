@@ -78,6 +78,8 @@ async def choose_tier(state: AgentState, config: RunnableConfig) -> dict:
             question_kinds=judgment.question_kinds,
             consumed=judgment.consumed,
             skip_reason=judgment.skip_reason,
+            surface="complexity",
+            bars={},
         )
         update["judgments"] = [*(state.get("judgments") or []), *rows]
     return update

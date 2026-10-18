@@ -36,7 +36,7 @@ def _trace(skills_used: list[SkillUsageTrace] | None = None) -> MessageTrace:
                 name="search", result_snippet="ok", duration_ms=10, success=True
             )
         ],
-        total_duration_ms=100,
+        tool_duration_ms=100,
         skills_used=skills_used or [],
     )
 

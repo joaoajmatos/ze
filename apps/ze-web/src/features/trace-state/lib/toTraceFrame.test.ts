@@ -13,7 +13,7 @@ describe("toTraceFrame", () => {
       subtasks: [],
       memory_chunks: [{ text: "User prefers concise answers", score: 0.91, source: "fact" }],
       tool_calls: [{ name: "search_web", result_snippet: "ok", duration_ms: 120, success: true }],
-      total_duration_ms: 450,
+      tool_duration_ms: 450,
       skills_used: [],
       conductor_hint: null,
       conductor_ledger: [],
@@ -65,7 +65,7 @@ describe("toTraceFrame", () => {
       subtasks: [],
       memory_chunks: [],
       tool_calls: [],
-      total_duration_ms: 0,
+      tool_duration_ms: 0,
       rollback,
     } as MessageTraceResponse;
     expect(toTraceFrame("msg-2", trace, "t").rollback).toEqual(rollback);
@@ -87,7 +87,7 @@ describe("toTraceFrame", () => {
       subtasks: [],
       memory_chunks: [],
       tool_calls: [],
-      total_duration_ms: 0,
+      tool_duration_ms: 0,
       tier,
     } as MessageTraceResponse;
     expect(toTraceFrame("msg-3", trace, "t").tier).toEqual(tier);
@@ -95,12 +95,12 @@ describe("toTraceFrame", () => {
 
   it("carries the screen trace", () => {
     const screen = { origin: "chat_about" as const, place: "doing", subject: ["Workflow · Weekly report"], selection_count: 0, visible_count: 0, canvas_count: 0, note_chars: 40, invalid: [], resolvers: [] };
-    const trace = { agent: "a", routing_method: "embedding", confidence: 1, score_gap: 0, is_compound: false, subtasks: [], memory_chunks: [], tool_calls: [], total_duration_ms: 1, screen } as MessageTraceResponse;
+    const trace = { agent: "a", routing_method: "embedding", confidence: 1, score_gap: 0, is_compound: false, subtasks: [], memory_chunks: [], tool_calls: [], tool_duration_ms: 1, screen } as MessageTraceResponse;
     expect(toTraceFrame("m", trace, "t").screen).toEqual(screen);
   });
 
   it("keeps the extraction confidence of a stored memory chunk", () => {
-    const frame = toTraceFrame("m1", { agent: "companion", routing_method: "embedding", confidence: 0.5, score_gap: 0, is_compound: false, subtasks: [], memory_chunks: [{ text: "a", score: 0.9, source: "fact", extraction_confidence: 0.8 }], tool_calls: [], total_duration_ms: 1 } as never, "t1");
+    const frame = toTraceFrame("m1", { agent: "companion", routing_method: "embedding", confidence: 0.5, score_gap: 0, is_compound: false, subtasks: [], memory_chunks: [{ text: "a", score: 0.9, source: "fact", extraction_confidence: 0.8 }], tool_calls: [], tool_duration_ms: 1 } as never, "t1");
     expect(frame.memory_chunks[0].extraction_confidence).toBe(0.8);
   });
 });

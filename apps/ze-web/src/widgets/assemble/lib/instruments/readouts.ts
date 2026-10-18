@@ -28,7 +28,7 @@ export function readoutsFor(trace: Partial<WsTraceUpdateFrame>): Readouts {
   const systemOne = requests > 0 ? { requests, latencyMs, inputTokens } : null;
   const compaction = trace.compaction ? `messages ${trace.compaction.span_start}–${trace.compaction.span_end} summarised` : null;
   return {
-    toolMs: trace.total_duration_ms ?? 0,
+    toolMs: trace.tool_duration_ms ?? 0,
     model: trace.tier?.model ?? "not recorded",
     systemOne,
     systemOneText: systemOne

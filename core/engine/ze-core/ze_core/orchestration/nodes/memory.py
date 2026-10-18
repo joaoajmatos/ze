@@ -96,6 +96,7 @@ def _outcome_row(intake: Any) -> JudgmentTrace | None:
         answer=answer,
         consumed=True,
         skip_reason=intake.skip_reason,
+        surface="commitment_intake",
     )
 
 
@@ -167,6 +168,8 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
                     question_kinds=intake.question_kinds,
                     consumed=intake.consumed,
                     skip_reason=intake.skip_reason,
+                    surface="commitment_intake",
+                    bars={},
                 )
                 outcome_row = _outcome_row(intake)
                 if outcome_row is not None:
@@ -184,6 +187,8 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
                     },
                     consumed=fact_result.consumed,
                     skip_reason=fact_result.skip_reason,
+                    surface="fact_judge",
+                    bars={},
                 )
         if fact_result is not None:
             proposals = fact_result.facts

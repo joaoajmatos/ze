@@ -17,6 +17,10 @@ from ze_api.api.v0.messages.schemas import (
     MessageSchema,
     ProcedureUsageTraceResponse,
     RollbackTraceResponse,
+    RoutingScoreResponse,
+    RoutingThresholdsResponse,
+    StageTimingResponse,
+    TurnUsageResponse,
     SkillUsageTraceResponse,
     SourceTraceResponse,
     ScreenTraceResponse,
@@ -154,7 +158,7 @@ class WsTraceUpdateFrame(BaseModel):
     subtasks: list[str]
     memory_chunks: list[MemoryChunkTraceResponse]
     tool_calls: list[ToolCallTraceResponse]
-    total_duration_ms: int
+    tool_duration_ms: int
     skills_used: list[SkillUsageTraceResponse] = []
     workspace: WorkspaceUsageTraceResponse | None = None
     procedure: ProcedureUsageTraceResponse | None = None
@@ -169,6 +173,13 @@ class WsTraceUpdateFrame(BaseModel):
     screen: ScreenTraceResponse | None = None
     compaction: CompactionTraceResponse | None = None
     resume_recap_applied: bool = False
+    turn_duration_ms: int | None = None
+    paused_ms: int = 0
+    stages: list[StageTimingResponse] = []
+    usage: TurnUsageResponse | None = None
+    routing_scores: list[RoutingScoreResponse] = []
+    routing_thresholds: RoutingThresholdsResponse | None = None
+    telemetry_partial: bool = False
 
 
 class WsNotificationFrame(BaseModel):

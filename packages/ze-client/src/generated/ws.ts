@@ -128,6 +128,7 @@ export type Gate =
   | "none"
   | "approved"
   | "pre_approved"
+  | "parked"
   | "denied"
   | "refused"
   | "refused_over_cap"
@@ -136,8 +137,10 @@ export type Gate =
 export type EffectPhrase3 = string | null;
 export type Agent2 = string | null;
 export type CallIndex = number;
+export type CallId = string;
+export type StartOffsetMs = number | null;
 export type ToolCalls = ToolCallTraceResponse[];
-export type TotalDurationMs = number;
+export type ToolDurationMs = number;
 export type SkillId = string;
 export type Name2 = string;
 export type Source1 = string;
@@ -181,6 +184,9 @@ export type Model = string | null;
 export type InputTokens = number | null;
 export type Consumed = boolean;
 export type SkipReason = string | null;
+export type Surface = string | null;
+export type Name3 = string;
+export type Value1 = number;
 export type Judgments = JudgmentTraceResponse[];
 export type Url = string;
 export type Title1 = string;
@@ -220,6 +226,32 @@ export type Resolvers = ScreenResolverTraceResponse[];
 export type SpanStart = number;
 export type SpanEnd = number;
 export type ResumeRecapApplied = boolean;
+export type TurnDurationMs = number | null;
+export type PausedMs = number;
+export type Name4 = string;
+export type StartMs = number;
+export type DurationMs1 = number;
+export type Run = number;
+export type Stages = StageTimingResponse[];
+export type MainModel = string | null;
+export type Model2 = string;
+export type Calls = number;
+export type PromptTokens = number;
+export type CompletionTokens = number;
+export type MaxPromptTokens = number;
+export type CostUsd = number;
+export type Estimated = boolean;
+export type Models = ModelUsageResponse[];
+export type ContextFill = number | null;
+export type ContextWindow = number | null;
+export type Estimated1 = boolean;
+export type SystemOneTokens = number;
+export type Agent6 = string;
+export type Score1 = number;
+export type RoutingScores = RoutingScoreResponse[];
+export type Threshold = number;
+export type Gap = number;
+export type TelemetryPartial = boolean;
 export type Type12 = "notification";
 export type Id6 = string;
 export type EventType = string;
@@ -283,7 +315,7 @@ export type Payload = string;
 export type ThreadId13 = string | null;
 export type Type18 = "command";
 export type ThreadId14 = string | null;
-export type Name3 = "cancel" | "costs" | "status" | "onboarding";
+export type Name5 = "cancel" | "costs" | "status" | "onboarding";
 export type Type19 = "component_submit";
 export type StepId = string;
 export type SessionId1 = string | null;
@@ -517,7 +549,7 @@ export interface WsTraceUpdateFrame {
   subtasks: Subtasks;
   memory_chunks: MemoryChunks;
   tool_calls: ToolCalls;
-  total_duration_ms: TotalDurationMs;
+  tool_duration_ms: ToolDurationMs;
   skills_used?: SkillsUsed;
   workspace?: WorkspaceUsageTraceResponse | null;
   procedure?: ProcedureUsageTraceResponse | null;
@@ -532,6 +564,13 @@ export interface WsTraceUpdateFrame {
   screen?: ScreenTraceResponse | null;
   compaction?: CompactionTraceResponse | null;
   resume_recap_applied?: ResumeRecapApplied;
+  turn_duration_ms?: TurnDurationMs;
+  paused_ms?: PausedMs;
+  stages?: Stages;
+  usage?: TurnUsageResponse | null;
+  routing_scores?: RoutingScores;
+  routing_thresholds?: RoutingThresholdsResponse | null;
+  telemetry_partial?: TelemetryPartial;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -559,6 +598,8 @@ export interface ToolCallTraceResponse {
   effect_phrase?: EffectPhrase3;
   agent?: Agent2;
   call_index?: CallIndex;
+  call_id?: CallId;
+  start_offset_ms?: StartOffsetMs;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -635,6 +676,16 @@ export interface JudgmentTraceResponse {
   input_tokens?: InputTokens;
   consumed?: Consumed;
   skip_reason?: SkipReason;
+  surface?: Surface;
+  bar?: JudgmentBarResponse | null;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "JudgmentBarResponse".
+ */
+export interface JudgmentBarResponse {
+  name: Name3;
+  value: Value1;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -711,6 +762,57 @@ export interface ScreenResolverTraceResponse {
 export interface CompactionTraceResponse {
   span_start: SpanStart;
   span_end: SpanEnd;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "StageTimingResponse".
+ */
+export interface StageTimingResponse {
+  name: Name4;
+  start_ms: StartMs;
+  duration_ms: DurationMs1;
+  run?: Run;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "TurnUsageResponse".
+ */
+export interface TurnUsageResponse {
+  main_model?: MainModel;
+  models?: Models;
+  context_fill?: ContextFill;
+  context_window?: ContextWindow;
+  estimated?: Estimated1;
+  system_one_tokens?: SystemOneTokens;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "ModelUsageResponse".
+ */
+export interface ModelUsageResponse {
+  model: Model2;
+  calls: Calls;
+  prompt_tokens: PromptTokens;
+  completion_tokens: CompletionTokens;
+  max_prompt_tokens: MaxPromptTokens;
+  cost_usd: CostUsd;
+  estimated?: Estimated;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "RoutingScoreResponse".
+ */
+export interface RoutingScoreResponse {
+  agent: Agent6;
+  score: Score1;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "RoutingThresholdsResponse".
+ */
+export interface RoutingThresholdsResponse {
+  threshold: Threshold;
+  gap: Gap;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -827,7 +929,7 @@ export interface WsActionFrame {
 export interface WsCommandFrame {
   type: Type18;
   thread_id?: ThreadId14;
-  name: Name3;
+  name: Name5;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

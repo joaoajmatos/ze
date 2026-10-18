@@ -17,7 +17,7 @@ export function toTraceFrame(
     subtasks: trace.subtasks,
     memory_chunks: trace.memory_chunks,
     tool_calls: trace.tool_calls,
-    total_duration_ms: trace.total_duration_ms,
+    tool_duration_ms: trace.tool_duration_ms,
     skills_used: trace.skills_used,
     workspace: trace.workspace,
     conductor_hint: trace.conductor_hint,

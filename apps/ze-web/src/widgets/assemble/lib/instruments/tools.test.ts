@@ -18,7 +18,7 @@ describe("toolLanes", () => {
   it("starts each call at the cumulative duration of the earlier calls in its own lane only", () => {
     expect(lanes[0].calls.map((c) => c.x)).toEqual([0, 120]);
     expect(lanes[1].calls.map((c) => c.x)).toEqual([0, 200]);
-    const total = richTrace().total_duration_ms;
+    const total = richTrace().tool_duration_ms;
     // the companion lane (1020) plus the calendar lane (500) plus messenger exceeds what any one lane spans; none borrows another's time
     expect(lanes.every((l) => l.span <= total)).toBe(true);
     expect(lanes[1].calls[0].x).toBe(0);

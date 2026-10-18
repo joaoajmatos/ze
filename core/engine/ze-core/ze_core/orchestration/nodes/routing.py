@@ -78,6 +78,8 @@ async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
             question_kinds=judgment.question_kinds,
             consumed=judgment.consumed,
             skip_reason=judgment.skip_reason,
+            surface="routing",
+            bars={},
         )
         if judgment is not None
         else []

@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult
-from ze_core.conversation.messages.judgments import judgments_from_result
+from functools import partial
+
+from ze_core.conversation.messages.judgments import judgments_from_result as _from_result
+from ze_core.conversation.messages.types import JudgmentBar
 
 _IDS = ("speech_act", "family", "biography")
 _KINDS = {"speech_act": "choice", "family": "choice", "biography": "noul"}
+
+judgments_from_result = partial(_from_result, surface="routing", bars={})
 
 
 def _ok() -> SystemOneResult:
@@ -147,3 +152,37 @@ def test_ok_noul_answer_carries_the_float_only():
     assert row.answer == 0.42
     assert row.peakedness is None and row.probabilities is None
     assert row.consumed
+
+
+def test_rows_carry_surface_and_the_bar_of_their_question():
+    bars = {"agent": JudgmentBar("choice_trust", 0.5)}
+    rows = _from_result(
+        SystemOneResult(
+            outcome="ok",
+            answers={
+                "agent": SystemOneAnswer(
+                    type="choice", choice="calendar", confidence=0.9, probabilities={}
+                ),
+                "multi_specialist": SystemOneAnswer(type="noul", noul=0.1),
+            },
+        ),
+        question_kinds={"agent": "choice", "multi_specialist": "noul"},
+        consumed=frozenset(),
+        surface="routing",
+        bars=bars,
+    )
+    by_id = {r.question_id: r for r in rows}
+    assert all(r.surface == "routing" for r in rows)
+    assert by_id["agent"].bar == JudgmentBar("choice_trust", 0.5)
+    assert by_id["multi_specialist"].bar is None
+
+
+def test_skip_rows_carry_surface_and_bar():
+    rows = _from_result(
+        SystemOneResult(outcome="skip", skip_reason="timeout"),
+        question_kinds={"agent": "choice"},
+        consumed=frozenset(),
+        surface="routing",
+        bars={"agent": JudgmentBar("choice_trust", 0.5)},
+    )
+    assert rows[0].surface == "routing" and rows[0].bar.value == 0.5

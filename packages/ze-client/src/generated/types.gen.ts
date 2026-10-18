@@ -989,6 +989,20 @@ export type ImportResponse = {
 };
 
 /**
+ * JudgmentBarResponse
+ */
+export type JudgmentBarResponse = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Value
+     */
+    value: number;
+};
+
+/**
  * JudgmentTraceResponse
  */
 export type JudgmentTraceResponse = {
@@ -1034,6 +1048,11 @@ export type JudgmentTraceResponse = {
      * Skip Reason
      */
     skip_reason?: string | null;
+    /**
+     * Surface
+     */
+    surface?: string | null;
+    bar?: JudgmentBarResponse | null;
 };
 
 /**
@@ -1457,9 +1476,9 @@ export type MessageTraceResponse = {
      */
     tool_calls: Array<ToolCallTraceResponse>;
     /**
-     * Total Duration Ms
+     * Tool Duration Ms
      */
-    total_duration_ms: number;
+    tool_duration_ms: number;
     /**
      * Skills Used
      */
@@ -1504,6 +1523,28 @@ export type MessageTraceResponse = {
     write_confirmations?: Array<WriteConfirmationOutcomeResponse>;
     tier?: TierTraceResponse | null;
     screen?: ScreenTraceResponse | null;
+    /**
+     * Turn Duration Ms
+     */
+    turn_duration_ms?: number | null;
+    /**
+     * Paused Ms
+     */
+    paused_ms?: number;
+    /**
+     * Stages
+     */
+    stages?: Array<StageTimingResponse>;
+    usage?: TurnUsageResponse | null;
+    /**
+     * Routing Scores
+     */
+    routing_scores?: Array<RoutingScoreResponse>;
+    routing_thresholds?: RoutingThresholdsResponse | null;
+    /**
+     * Telemetry Partial
+     */
+    telemetry_partial?: boolean;
 };
 
 /**
@@ -1556,6 +1597,40 @@ export type MilestoneResponse = {
      * Created At
      */
     created_at: string;
+};
+
+/**
+ * ModelUsageResponse
+ */
+export type ModelUsageResponse = {
+    /**
+     * Model
+     */
+    model: string;
+    /**
+     * Calls
+     */
+    calls: number;
+    /**
+     * Prompt Tokens
+     */
+    prompt_tokens: number;
+    /**
+     * Completion Tokens
+     */
+    completion_tokens: number;
+    /**
+     * Max Prompt Tokens
+     */
+    max_prompt_tokens: number;
+    /**
+     * Cost Usd
+     */
+    cost_usd: number;
+    /**
+     * Estimated
+     */
+    estimated?: boolean;
 };
 
 /**
@@ -2262,6 +2337,34 @@ export type RollbackTraceResponse = {
 };
 
 /**
+ * RoutingScoreResponse
+ */
+export type RoutingScoreResponse = {
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Score
+     */
+    score: number;
+};
+
+/**
+ * RoutingThresholdsResponse
+ */
+export type RoutingThresholdsResponse = {
+    /**
+     * Threshold
+     */
+    threshold: number;
+    /**
+     * Gap
+     */
+    gap: number;
+};
+
+/**
  * ScreenResolverTraceResponse
  */
 export type ScreenResolverTraceResponse = {
@@ -2680,6 +2783,28 @@ export type SourceTraceResponse = {
 };
 
 /**
+ * StageTimingResponse
+ */
+export type StageTimingResponse = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Start Ms
+     */
+    start_ms: number;
+    /**
+     * Duration Ms
+     */
+    duration_ms: number;
+    /**
+     * Run
+     */
+    run?: number;
+};
+
+/**
  * StepResultResponse
  */
 export type StepResultResponse = {
@@ -2796,7 +2921,7 @@ export type ToolCallTraceResponse = {
     /**
      * Gate
      */
-    gate?: 'none' | 'approved' | 'pre_approved' | 'denied' | 'refused' | 'refused_over_cap' | 'expired' | 'duplicate';
+    gate?: 'none' | 'approved' | 'pre_approved' | 'parked' | 'denied' | 'refused' | 'refused_over_cap' | 'expired' | 'duplicate';
     /**
      * Effect Phrase
      */
@@ -2809,6 +2934,14 @@ export type ToolCallTraceResponse = {
      * Call Index
      */
     call_index?: number;
+    /**
+     * Call Id
+     */
+    call_id?: string;
+    /**
+     * Start Offset Ms
+     */
+    start_offset_ms?: number | null;
 };
 
 /**
@@ -2827,6 +2960,36 @@ export type TriggerWorkflowResponse = {
      * Execution Id
      */
     execution_id: string;
+};
+
+/**
+ * TurnUsageResponse
+ */
+export type TurnUsageResponse = {
+    /**
+     * Main Model
+     */
+    main_model?: string | null;
+    /**
+     * Models
+     */
+    models?: Array<ModelUsageResponse>;
+    /**
+     * Context Fill
+     */
+    context_fill?: number | null;
+    /**
+     * Context Window
+     */
+    context_window?: number | null;
+    /**
+     * Estimated
+     */
+    estimated?: boolean;
+    /**
+     * System One Tokens
+     */
+    system_one_tokens?: number;
 };
 
 /**

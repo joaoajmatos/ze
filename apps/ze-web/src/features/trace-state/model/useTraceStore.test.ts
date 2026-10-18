@@ -19,7 +19,7 @@ function frame(
     subtasks: [],
     memory_chunks: [],
     tool_calls: [],
-    total_duration_ms: 10,
+    tool_duration_ms: 10,
     skills_used: [],
     conductor_hint: extra.conductor_hint ?? null,
     conductor_ledger: extra.conductor_ledger ?? [],

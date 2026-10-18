@@ -28,7 +28,7 @@ export function richTrace(over: Partial<WsTraceUpdateFrame> = {}): WsTraceUpdate
     score_gap: 0.18,
     is_compound: true,
     subtasks: ["check goals", "book the room"],
-    total_duration_ms: 4200,
+    tool_duration_ms: 4200,
     memory_chunks: [
       { text: "Runs on Tuesdays", score: 0.91, source: "fact", extraction_confidence: 0.9 },
       { text: "Training for a 5k", score: 0.84, source: "fact", extraction_confidence: 0.7 },
