@@ -220,6 +220,15 @@ class ScreenTrace:
 
 
 @dataclass
+class InputTrace:
+    """How a turn's text arrived. Never carries the transcript itself."""
+
+    modality: str  # "voice"
+    duration_s: float | None = None
+    edited: bool | None = None
+
+
+@dataclass
 class SourceTrace:
     url: str
     title: str = ""
@@ -301,3 +310,4 @@ class MessageTrace:
     routing_scores: list[RoutingScore] = field(default_factory=list)
     routing_thresholds: RoutingThresholds | None = None
     telemetry_partial: bool = False
+    input: InputTrace | None = None

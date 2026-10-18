@@ -27,6 +27,7 @@ from ze_core.conversation.messages.types import (
     ProcedureUsageTrace,
     SkillUsageTrace,
     SourceTrace,
+    InputTrace,
     ScreenTrace,
     TierTrace,
     ToolCallTrace,
@@ -369,6 +370,7 @@ def _parse_trace(data: dict) -> MessageTrace:
         if isinstance(data.get("routing_thresholds"), dict)
         else None,
         telemetry_partial=bool(data.get("telemetry_partial", False)),
+        input=_parse_input_trace(data.get("input")),
     )
 
 
@@ -394,6 +396,13 @@ def _parse_usage(raw: dict) -> TurnUsage:
         if isinstance(m, dict)
     ]
     return TurnUsage(**values)
+
+
+def _parse_input_trace(raw: object) -> InputTrace | None:
+    if not isinstance(raw, dict) or not raw.get("modality"):
+        return None
+    allowed = {f.name for f in fields(InputTrace)}
+    return InputTrace(**{k: v for k, v in raw.items() if k in allowed})
 
 
 def _row_to_message(row: asyncpg.Record) -> Message:

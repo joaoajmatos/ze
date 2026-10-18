@@ -16,10 +16,7 @@ class AgentState(TypedDict):
 
     # ── Multimodal ─────────────────────────────────────────────────────────
     input_modality: str  # "text" | "voice" | "image" — default "text"
-    audio_data: (
-        bytes | None
-    )  # raw audio bytes; cleared after preprocess transcribes them
-    audio_mime: str | None  # e.g. "audio/ogg; codecs=opus"
+    voice_input: dict | None  # {"duration_s", "edited"} for a transcribed voice turn
     image_data: bytes | None  # raw image bytes; None for text/voice turns
     image_mime: str | None  # "image/jpeg" | "image/png" | None
     image_caption: str | None  # caption generated at preprocess; None until set

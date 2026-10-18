@@ -223,6 +223,9 @@ export type Id5 = string;
 export type Status2 = "ok" | "missing" | "changed" | "failed" | "timeout" | "cut";
 export type Ms = number;
 export type Resolvers = ScreenResolverTraceResponse[];
+export type Modality = "voice";
+export type DurationS = number | null;
+export type Edited = boolean | null;
 export type SpanStart = number;
 export type SpanEnd = number;
 export type ResumeRecapApplied = boolean;
@@ -304,6 +307,7 @@ export type Path1 = string;
 export type Size = number;
 export type Compose = ("slipping" | "decisions" | "topic") | null;
 export type Topic = string | null;
+export type TranscriptionId = string;
 export type Type15 = "ack";
 export type Ids = string[];
 export type Type16 = "confirm";
@@ -562,6 +566,7 @@ export interface WsTraceUpdateFrame {
   rollback?: RollbackTraceResponse | null;
   tier?: TierTraceResponse | null;
   screen?: ScreenTraceResponse | null;
+  input?: InputTraceResponse | null;
   compaction?: CompactionTraceResponse | null;
   resume_recap_applied?: ResumeRecapApplied;
   turn_duration_ms?: TurnDurationMs;
@@ -757,6 +762,15 @@ export interface ScreenResolverTraceResponse {
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "InputTraceResponse".
+ */
+export interface InputTraceResponse {
+  modality: Modality;
+  duration_s?: DurationS;
+  edited?: Edited;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "CompactionTraceResponse".
  */
 export interface CompactionTraceResponse {
@@ -861,6 +875,7 @@ export interface WsScreenContext {
   workspace_placed?: WorkspacePlaced;
   compose?: Compose;
   topic?: Topic;
+  voice?: WsVoiceRef | null;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -890,6 +905,13 @@ export interface WsCanvasRef {
 export interface WsWorkspacePlaced {
   path: Path1;
   size: Size;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WsVoiceRef".
+ */
+export interface WsVoiceRef {
+  transcription_id: TranscriptionId;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

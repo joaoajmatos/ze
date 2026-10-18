@@ -80,6 +80,10 @@ Pass `SLOW=1` to include slow tests (embedding model load in ze-core):
 make test-core SLOW=1
 ```
 
+The slow test `core/engine/ze-core/tests/openrouter/test_audio_real.py` runs the real
+`ffprobe` on the recordings in `apps/ze-api/tests/fixtures/audio/`. It skips when `ffprobe`
+is not on the `PATH`. Install `ffmpeg` to run it (`brew install ffmpeg` on macOS).
+
 `make test-py` runs every Python package target. It keeps going when a suite fails, then
 exits non-zero and names each failed target. CI runs `make test-py`, so a local run matches CI.
 

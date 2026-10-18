@@ -16,6 +16,7 @@ from ze_agents.types import Source, add_sources
 from ze_core.conversation.messages.memory_chunks import extract_memory_chunks
 from ze_core.conversation.messages.types import (
     CompactionTrace,
+    InputTrace,
     MessageTrace,
     ProcedureUsageTrace,
     RoutingScore,
@@ -112,6 +113,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         screen=_screen_trace(state.get("screen_trace")),
         routing_scores=_routing_scores(envelope),
         routing_thresholds=_routing_thresholds(envelope),
+        input=_input_trace(state),
     )
     update: dict[str, Any] = {"message_trace": trace}
     update.update(_with_declined_lines(state, agent_result))
@@ -446,3 +448,14 @@ def _screen_trace(raw: Any) -> ScreenTrace | None:
     except (TypeError, ValueError):
         log.warning("screen_trace_unreadable")
         return None
+
+
+def _input_trace(state: AgentState) -> InputTrace | None:
+    voice = state.get("voice_input")
+    if not voice:
+        return None
+    return InputTrace(
+        modality="voice",
+        duration_s=voice.get("duration_s"),
+        edited=voice.get("edited"),
+    )

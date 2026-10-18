@@ -23,7 +23,6 @@ SeedKind = Literal[
 OnboardingSessionStatus = Literal["active", "completed", "cancelled"]
 OnboardingStoredStepStatus = Literal["pending", "active", "completed", "skipped"]
 OnboardingSeedReviewStatus = Literal["pending", "approved", "rejected", "applied"]
-ResetScope = Literal["memory", "personal_state", "full_dev"]
 
 
 @dataclass(frozen=True)
@@ -145,18 +144,6 @@ class OnboardingView:
     text: str
     components: list[dict[str, Any]] = field(default_factory=list)
     completed: bool = False
-
-
-@dataclass(frozen=True)
-class ResetPreview:
-    scope: ResetScope
-    counts: dict[str, int]
-
-
-@dataclass(frozen=True)
-class ResetResult:
-    scope: ResetScope
-    deleted: dict[str, int]
 
 
 class OnboardingStore(Protocol):

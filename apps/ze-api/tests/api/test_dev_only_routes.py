@@ -13,7 +13,6 @@ from ze_api.settings import get_settings
 EVAL_ONLY_PATHS = {
     "/eval/chat",
     "/eval/confirm",
-    "/api/v0/collisions",
     "/api/v0/routing/log",
 }
 

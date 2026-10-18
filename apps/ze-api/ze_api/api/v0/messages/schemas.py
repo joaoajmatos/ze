@@ -185,6 +185,12 @@ class TierTraceResponse(BaseModel):
     model: str
 
 
+class InputTraceResponse(BaseModel):
+    modality: Literal["voice"]
+    duration_s: float | None = None
+    edited: bool | None = None
+
+
 class ScreenResolverTraceResponse(BaseModel):
     kind: str
     id: str
@@ -263,6 +269,7 @@ class MessageTraceResponse(BaseModel):
     routing_scores: list[RoutingScoreResponse] = []
     routing_thresholds: RoutingThresholdsResponse | None = None
     telemetry_partial: bool = False
+    input: InputTraceResponse | None = None
 
 
 class MessageTraceEntry(BaseModel):

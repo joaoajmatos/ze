@@ -1,6 +1,7 @@
 from ze_proactive.job import ProactiveJob, proactive_job
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.notification_store import NotificationStore
 from ze_proactive.push_log_store import PushLogStore, PushLogEntry
 from ze_proactive.types import PushClass, PushKind, PushOutcome, Urgency
 
@@ -9,6 +10,7 @@ __all__ = [
     "proactive_job",
     "ProactiveScheduler",
     "ProactiveNotifier",
+    "NotificationStore",
     "PushClass",
     "PushKind",
     "PushLogStore",

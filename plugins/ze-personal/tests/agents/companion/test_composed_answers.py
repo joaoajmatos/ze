@@ -53,8 +53,8 @@ def test_instructions_say_when_to_call_them_and_to_ground_the_sentence():
     assert "sources_failed" in text
 
 
-def test_tool_deps_signature_is_unchanged():
-    assert set(make_agent().tool_deps()) == {"memory_store"}
+def test_tool_deps_carry_the_memory_and_notification_stores():
+    assert set(make_agent().tool_deps()) == {"memory_store", "notification_store"}
 
 
 async def test_run_passes_the_composer_and_the_preset_to_the_tool_loop():

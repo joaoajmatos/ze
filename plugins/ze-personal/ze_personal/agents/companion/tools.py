@@ -7,6 +7,7 @@ from ze_agents.tool import Injected, ToolAccess, tool
 from ze_sdk import ToolReversibility, undo_payload
 from ze_logging import get_logger
 from ze_sdk.contribution import TargetFace
+from ze_sdk.proactive import NotificationStore
 from ze_sdk.memory import (
     FactRestoreConflictError,
     Fact,
@@ -119,3 +120,43 @@ async def forget_fact(
     if not ids:
         return {"ok": False, "error": "no matching fact"}
     return {"ok": True, "ids": [str(i) for i in ids]}
+
+
+_BRIEFING_EVENT = "morning_brief"
+
+
+@tool(
+    access=ToolAccess.READ,
+    description=(
+        "Read the morning briefings Ze actually sent, newest first: when each was "
+        "sent, whether it was delivered or held, whether it was marked read in the notification centre, and "
+        "the full text of what it covered. Use for any question about a briefing "
+        "Ze already sent. count is how many to return (1-5)."
+    ),
+)
+async def get_briefing(notification_store: NotificationStore, count: int = 1) -> dict:
+    limit = max(1, min(count, 5))
+    try:
+        rows = await notification_store.latest_by_event(_BRIEFING_EVENT, limit=limit)
+    except Exception as exc:
+        log.warning("get_briefing_failed", error=str(exc))
+        return {"found": False, "error": f"could not read the briefing record: {exc}"}
+    return {
+        "found": bool(rows),
+        "briefings": [
+            {
+                "sent_at": r.delivered_at.isoformat() if r.delivered_at else None,
+                "created_at": r.created_at.isoformat(),
+                "delivery": r.delivery,
+                "marked_read": r.read_at is not None,
+                "marked_read_at": r.read_at.isoformat() if r.read_at else None,
+                "delivery_status": (
+                    f"delivered at {r.delivered_at.isoformat()}"
+                    if r.delivered_at
+                    else "not confirmed as delivered"
+                ),
+                "body": r.body,
+            }
+            for r in rows
+        ],
+    }

@@ -53,3 +53,15 @@ class UiManifestResponse(BaseModel):
 class VersionResponse(BaseModel):
     api_version: str
     client_version: str
+
+
+class AgentModelSetting(BaseModel):
+    name: str
+    model: str
+    model_simple: str | None
+
+
+class ModelSettingsResponse(BaseModel):
+    complexity_enabled: bool
+    simple_max: float | None
+    agents: list[AgentModelSetting]

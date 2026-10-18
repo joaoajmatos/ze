@@ -9,7 +9,8 @@ from ze_personal.agents.companion.tools import forget_fact, remember_fact
 def test_companion_tool_deps_expose_memory_store():
     agent = CompanionAgent.__new__(CompanionAgent)
     agent._memory_store = AsyncMock()
-    assert agent.tool_deps() == {"memory_store": agent._memory_store}
+    agent._notification_store = None
+    assert agent.tool_deps()["memory_store"] is agent._memory_store
 
 
 async def test_remember_fact_payload_carries_displaced_ids():

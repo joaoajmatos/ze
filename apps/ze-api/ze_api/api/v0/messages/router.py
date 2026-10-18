@@ -170,6 +170,7 @@ def _trace_to_response(trace) -> MessageTraceResponse:
             else None
         ),
         telemetry_partial=bool(getattr(trace, "telemetry_partial", False)),
+        input=_dataclass_to_response(getattr(trace, "input", None)),
     )
 
 
@@ -184,6 +185,10 @@ def _write_confirmation_row(row: dict) -> dict:
         "summary": str(row.get("summary", "")),
         "outcome": row.get("outcome", "denied"),
     }
+
+
+def _dataclass_to_response(value) -> dict | None:
+    return asdict(value) if value is not None else None
 
 
 def _screen_to_response(screen) -> dict | None:

@@ -8,9 +8,9 @@ WORKDIR /app
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# libgomp: runtime dependency for PyTorch CPU wheels
+# libgomp: runtime dependency for PyTorch CPU wheels; ffmpeg: voice recording probe and conversion
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libgomp1 \
+    && apt-get install -y --no-install-recommends libgomp1 ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./
