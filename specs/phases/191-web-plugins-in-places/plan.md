@@ -10,7 +10,7 @@ The plugin UI contract gains `place` and a `preset` kind. The `nav` kind is rena
 
 - **Manifest.** It returns `pages`, `presets` and `settings_sections`.
 - **News.** It drops its page, route and page builder, and contributes the preset "What's new in my sources?" plus its existing settings section.
-- **Web.** A plugin page renders inside its place at `/<place>/plugin/<path>` as HUD modules, one per top-level element. Each place lists its plugin pages in a small entries module that renders only when the place has pages. The old top-level `/:pluginPath` route becomes a redirect-only lookup, and `/news` redirects to `/ask`. Ask's Try chips gain up to two plugin presets.
+- **Web.** A plugin page renders inside its place at `/<place>/plugin/<path>` as HUD modules, one per top-level element. Each place lists its plugin pages in a small entries module that renders only when the place has pages. The old top-level `/:pluginPath` route is deleted (old plugin paths fall to not-found), and `/news` redirects to `/ask`. Ask's Try chips gain up to two plugin presets.
 
 ## Technical Context
 
@@ -31,7 +31,7 @@ The plugin UI contract gains `place` and a `preset` kind. The `nav` kind is rena
 | III Layered packages | Contribution types in ze-plugin, re-exported by `ze_sdk.ui`. ze-news imports `ze_sdk.ui` only; the manifest route lives in ze-api. |
 | IV Typed Python | `UiContribution` dataclass with `place: Place | None`, `prompt: str | None`; `AgentConfigError` on invalid contributions (the existing typed error). |
 | V Tests | Fail-first per task. |
-| VIII Hard cuts | `nav` → `page` rename, `CORE_RESERVED_NAV_PATHS` deleted, the manifest field `nav` → `pages`, the News page route and builder deleted, the top-level plugin page route reduced to a redirect; no shims. |
+| VIII Hard cuts | `nav` → `page` rename, `CORE_RESERVED_NAV_PATHS` deleted, the manifest field `nav` → `pages`, the News page route and builder deleted, the top-level plugin page route deleted; no redirect shim. |
 
 Gate: pass.
 
@@ -41,17 +41,19 @@ Gate: pass.
 
 | Symbol | Callers | Change |
 |---|---|---|
-| `UiContribution` (`ze_plugin/ui.py`), re-exported by `ze_sdk.ui` | `ze_news/plugin.py`, `collect_ui_contributions`, `filter_ui_manifest_by_openapi`, `core/contracts/ze-plugin/tests/test_ui.py`, `apps/ze-api/tests/api/test_ui_manifest.py` | `kind` becomes `Literal["page", "settings_section", "preset"]`; adds `place`, `prompt`. |
+| `UiContribution` (`ze_plugin/ui.py`), re-exported by `ze_sdk.ui` (`ze_sdk/ui.py:2,10` also re-exports `CORE_RESERVED_NAV_PATHS`) | `ze_news/plugin.py` (`:160` passes `show_in_mobile_nav`), `collect_ui_contributions`, `filter_ui_manifest_by_openapi`, `core/contracts/ze-plugin/tests/test_ui.py`, `apps/ze-api/tests/api/test_ui_manifest.py` | `kind` becomes `Literal["page", "settings_section", "preset"]`; adds `place`, `prompt`. |
 | `CORE_RESERVED_NAV_PATHS` | `collect_ui_contributions` | Deleted. Uniqueness becomes per `(place, path)`. |
-| `UiManifest` (`nav`, `settings_sections`) | `ZeContainer.ui_manifest`, `UiManifestResponse.from_domain` | Becomes `pages`, `presets`, `settings_sections`. |
+| `UiManifest` (`nav`, `settings_sections`) | `ZeContainer.ui_manifest`, `UiManifestResponse.from_domain`, `wiring/agents.py:224-231` (`build_ui_manifest` logs `nav=`), `wiring/container.py:768` (`ui_nav=len(ui_manifest.nav)`; 192 and 194 also edit this file, so rebase on whichever lands first) | Becomes `pages`, `presets`, `settings_sections`. |
 | `filter_ui_manifest_by_openapi` | container wiring | Filters pages by `page_operation_id` and settings by `settings_operation_id`; presets pass. |
 | `UiContributionSchema`, `UiManifestResponse` (`api/v0/system/schemas.py`) | `getUiManifest` | Mirror the domain; `make codegen`. |
+| News page operation in tests | `apps/ze-api/tests/api/test_openapi_export.py:11,27` and `apps/ze-api/tests/test_plugin_routes.py:28` (name `getNewsPage` / `/news/page`), `packages/ze-client/src/sdk-dispatch.test.ts` (dispatches `getNewsPage`), `features/primitive-tree/api/usePluginScreenActions.test.ts:51-64` | Point each at a remaining operation (`getNewsSettings`) or the fixture page operation. |
 | `getNewsPage` route, `ze_news/ui/page.py` `build_news_page`, `PluginPageResponse` use for the page | `ze_news/api/routes.py`, `plugins/ze-news/tests/test_api_routes.py`, `test_ui_page.py` | Deleted; the settings route stays. |
-| `manifest.nav` (web) | `pages/plugin-page/ui/PluginPage.tsx:28`, `shared/lib/query-keys.ts:75` (`refreshKeysForScreen`) | Become `manifest.pages`; the refresh lookup matches page paths. |
+| `manifest.nav` (web) | `pages/plugin-page/ui/PluginPage.tsx:28`, `shared/lib/query-keys.ts:75` (`refreshKeysForScreen`) | Become `manifest.pages`; the refresh lookup matches the page **id** (paths repeat across places; see the contract). |
+| `placeOf` (`shared/config/places.ts`) | `AppShell` (`widgets/app-shell`, `onAsk`), place frame, strip | `placeOf("/plugin/x")` returns World (today the `plugin` segment returns null). New `isPluginPath(pathname)`; `AppShell` sets `onAsk` only when the place is Ask **and** the path is not a plugin path, so `/ask/plugin/x` opens the overlay. |
 | `manifest.settings_sections` | `widgets/connections/ui/Connections.tsx:81` | Unchanged name. |
-| `:pluginPath` route (`app/router/routes.tsx:61`) | router | Becomes `PluginRedirect` (lookup → `/<place>/plugin/<path>`, else not found). New child routes `<place>/plugin/:pluginPath` for each place. |
+| `:pluginPath` route (`app/router/routes.tsx:61`) | router | Deleted; the `*` route covers old paths. New child routes `<place>/plugin/:pluginPath` for each place. |
 | `PluginScreen` (`widgets/plugin-screen`) | `PluginPage`, `PluginSettingsSection` (in Connections) | Restyled: one `Module` per top-level element; the header hook removed (the place frame owns the title). |
-| `widgets/try-chips` (187) | `pages/ask` | Takes a `presets` prop; the page passes manifest presets. |
+| `widgets/try-chips` (187: `chips` array, `chips[Number(e.key) - 1]`, `disabled` prop, keys by `chip.text`) | `pages/ask` | Takes `presets: { id, label, prompt }[]`; plugin chips are appended to the same `chips` array, so numbering and keys continue (3–4 or 4–5); React keys become a stable id (core chips get fixed ids); `disabled` applies to all. |
 | The five place pages (`pages/{world,ask,doing,mind,governance}`) | router | Each renders `PluginEntries place="…"` (one line each). |
 
 ## Design
@@ -65,6 +67,9 @@ Gate: pass.
   - **preset:** requires `prompt` (1–300 characters) and `label` (at most 40 characters); there is no place.
   - **settings_section:** unchanged.
   - **ids:** unique, as today.
+  
+  - **kind:** anything other than `page`, `preset`, `settings_section` raises.
+  - **path:** `^[a-z0-9][a-z0-9-]{0,39}$`.
   
   Each list is sorted by `(priority, id)`.
 - `UiManifest(pages, presets, settings_sections)`.
@@ -81,15 +86,17 @@ Gate: pass.
 ### ze-web
 
 - `entities/ui-manifest`: types from the generated client; `useUiManifestQuery` unchanged; a selector `pagesForPlace(manifest, place)`.
-- `pages/plugin-page`: `PluginPage` reads `:place` and `:pluginPath`, finds the page with that place and path (not found otherwise), and renders `PluginScreen`. `PluginRedirect` (same slice) handles the old top-level `/:pluginPath`: it looks up the manifest page by path and navigates to `/<place>/plugin/<path>` with `replace`, else not found. While the manifest loads it shows the loading line.
+- `pages/plugin-page`: `PluginPage` reads `:place` and `:pluginPath`, finds the page with that place and path (not found otherwise; the loading line while the manifest loads), and renders `PluginScreen`.
 - `widgets/plugin-screen`: restyled to modules (`Module` per top-level primitive, `A·NN` index, label from the element's title or the entry label); `useSetPageHeader` removed. `PluginSettingsSection` usage in Connections is unchanged.
 - `widgets/plugin-entries`: `PluginEntries({ place })` renders a `Module` titled "From plugins" with one 44 px row per page (icon, label) linking to `/<place>/plugin/<path>`. It renders nothing when there are none.
-- `widgets/try-chips`: a `presets` prop. Plugin chips come after the core chips, at most two, keys 4–5 under the same focus rule, each calling `onSend(prompt, { origin: "preset" })`.
+- `widgets/try-chips`: a `presets: { id, label, prompt }[]` prop. Plugin chips are appended to the core `chips` array (at most two), so their index and key continue the visible numbering (3–4 without an active goal, 4–5 with one) under the same focus rule and `disabled` state; each calls `onSend(prompt, { origin: "preset" })`. React keys are ids (`core.slipping`, `core.decisions`, `core.goal`, the preset id).
 - **Router:**
   - one `<place>/plugin/:pluginPath` child per place (`plugin/:pluginPath` under `/` for World), placed before the dynamic `ask/:threadId` and `mind/:entityId`;
-  - `:pluginPath` → `PluginRedirect`;
+  - the top-level `:pluginPath` route deleted (the `*` route renders not-found);
+  - `matchRoutes` tests pin the ranking: `<place>/plugin/:pluginPath` beats `ask/:threadId`, `mind/:entityId`, and the `doing/*` and `governance/*` splats;
   - `places.ts` redirect `/news` → `/ask`;
-  - `query-keys.ts`: `refreshKeysForScreen` uses `pages`.
+  - `query-keys.ts`: `refreshKeysForScreen` matches `manifest.pages[].id`.
+  - `places.ts`: `placeOf` maps `/plugin/...` to World; `isPluginPath`. `AppShell`: `onAsk` false on plugin paths.
 - **Place pages:** each adds `<PluginEntries place="…" />` in its rail or index; Ask passes `presets` to `TryChips`.
 
 ## Project Structure
@@ -112,7 +119,8 @@ plugins/ze-news/ze_news/{plugin.py,api/routes.py,ui/page.py (deleted)}
 packages/ze-client/src/generated/*
 apps/ze-web/src/entities/ui-manifest/ ; pages/plugin-page/ ; widgets/{plugin-screen,plugin-entries (new),try-chips}/
 apps/ze-web/src/pages/{world,ask,doing,mind,governance}/ui/*Page.tsx (one line each)
-apps/ze-web/src/app/router/routes.tsx ; shared/config/places.ts ; shared/lib/query-keys.ts
+apps/ze-web/src/app/router/routes.tsx ; shared/config/places.ts ; shared/lib/query-keys.ts ; widgets/app-shell/ui/AppShell.tsx
+eval/calibration/routing.jsonl (one row)
 ```
 
 ## Docs touched
@@ -130,17 +138,17 @@ apps/ze-web/src/app/router/routes.tsx ; shared/config/places.ts ; shared/lib/que
 - **ze-plugin:** `UiContribution` with `place`, `prompt` and the `page`/`preset` kinds; `UiManifest(pages, presets, settings_sections)`, with the validation rules.
 - **ze-api:** the schemas.
 - `make codegen`.
-- **Router:** the child routes and `PluginRedirect` stub, the `/news` redirect, and `refreshKeysForScreen` on `pages`.
+- **Router and shell:** the child routes, the top-level `:pluginPath` route deleted, the `/news` redirect, `refreshKeysForScreen` on page ids, `placeOf`/`isPluginPath`, and `AppShell`'s `onAsk`.
 - **Fixture:** `apps/ze-web/src/test/fixtures/manifest.ts` (two pages in Mind and Doing, one preset, one settings section).
 
 | Lane | Model / role | Owns (disjoint) | Tasks | Starts after | Reviewer |
 |---|---|---|---|---|---|
-| lead | Sonnet ENG lead | `ze_plugin/ui.py`, `ze_sdk/ui.py`, `api/v0/system/{schemas,ui}.py`, ze-api wiring that builds the manifest, `packages/ze-client/src/generated/*`, `app/router/*`, `shared/config/places.ts`, `shared/lib/query-keys.ts`, the web fixture; merges, gates | T001–T003, T011, T012 | - | Gauge |
-| news | Sonnet ENG | `plugins/ze-news/ze_news/{plugin.py,api/routes.py,ui/page.py}` and their tests | T004 | contract step | floor Reviewer |
-| web | Sonnet ENG | `entities/ui-manifest`, `pages/plugin-page`, `widgets/{plugin-screen,plugin-entries,try-chips}`, the five place pages (one line each), and their tests | T005–T009 | contract step | floor Reviewer |
+| lead | Sonnet ENG lead | `ze_plugin/ui.py`, `ze_sdk/ui.py`, `api/v0/system/{schemas,ui}.py`, ze-api wiring that builds the manifest, `packages/ze-client/src/generated/*` and `sdk-dispatch.test.ts`, the ze-api tests naming the manifest or `getNewsPage`, `app/router/*`, `shared/config/places.ts`, `shared/lib/query-keys.ts`, `widgets/app-shell/*`, the web fixture; merges, gates | T001–T003, T011, T012 | - | Gauge |
+| news | Sonnet ENG | `plugins/ze-news/ze_news/{plugin.py,api/routes.py,ui/page.py}` and their tests, the `eval/calibration/routing.jsonl` news row | T004 | contract step | floor Reviewer |
+| web | Sonnet ENG | `entities/ui-manifest`, `pages/plugin-page`, `widgets/{plugin-screen,plugin-entries,try-chips}`, `features/primitive-tree/api/usePluginScreenActions.test.ts`, the five place pages (one line each), and their tests | T005–T009 | contract step | floor Reviewer |
 | docs | Haiku DOCS | the files in "Docs touched", plus the screenshot capture run | T013–T015 | T011 | floor Reviewer |
 
-**Rules**: one lane per file. The place pages belong to other floors (186–190) until those land; lane `web` touches one line in each and rebases when needed. There is no JR lane: each piece crosses a contract or a page layout.
+**Rules**: one lane per file, with one exception: the contract step deletes News's `nav` contribution in `ze_news/plugin.py` so startup passes, before lane `news` starts. The place pages belong to other floors (186–190) until those land; lane `web` touches one line in each and rebases when needed. There is no JR lane: each piece crosses a contract or a page layout.
 
 ## Complexity Tracking
 

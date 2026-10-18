@@ -14,8 +14,9 @@
 - **Rationale**: no tab system exists inside the places after 186–190 (they are module pages); a module matches DESIGN.md and costs one line per page.
 
 ## R4. Old top-level links
-- **Decision**: the `/:pluginPath` catch-all becomes `PluginRedirect` (manifest lookup → place URL, else not found); `/news` is a static redirect to `/ask` in `places.ts`.
-- **Rationale**: one hop for bookmarks (FR-004); News has no page any more (clarification Q3).
+- **Superseded (Gauge P-3)**: no redirect stub. ~~the `/:pluginPath` catch-all becomes `PluginRedirect` (manifest lookup → place URL, else not found); `/news` is a static redirect to `/ask` in `places.ts`.
+- **Decision now**: delete the `:pluginPath` route outright; the existing `*` route shows not-found for old top-level plugin paths. `/news` stays a static redirect to `/ask` in `places.ts`.
+- **Rationale**: a lookup redirect is a compatibility shim (pre-v1 hard cuts); the only live plugin page (News) is gone, and `/news` is covered by the redirect table.
 
 ## R5. News preset
 - **Decision**: a plain prompt routed normally (clarification Q2); no compose type.
