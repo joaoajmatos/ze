@@ -50,7 +50,7 @@
   - output is identical for the same schemas in any input order (sorted by name), always defines `propose` and `finish`, and imports `_call` and `ToolError` from `ze_tools_base`; the text compiles (`compile(stub, "ze_tools.py", "exec")`);
   - `normalize_source("x = 1  # c\n\n\ny = 'a # b'\n") == "x = 1\ny = 'a # b'"`; `source_hash` ignores comments and blank lines and changes with literals;
   - `tool_signature("finance", ["get_transactions", "get_positions", "get_transactions"])` equals `tool_signature("finance", ["get_transactions", "get_positions"])` and differs from the same names in the other order or for another agent.
-- [ ] T010 [L:harness] [US1] Tests first `core/contracts/ze-agents/tests/test_script_step.py` with a fake `ScriptRunner` that replays requests:
+- [x] T010 [L:harness] [US1] Tests first `core/contracts/ze-agents/tests/test_script_step.py` with a fake `ScriptRunner` that replays requests:
   - (a) the data-read set is the visible tools minus server tools, `delegate_to_agent`, `run_tool_script`, `invoke_procedure`, `workspace_*`, WRITE tools, `produces_ui` tools and `egress` tools (a fake `render_chart`, a fake `show_topic` and a fake `browser_extract` are excluded);
   - (b) skill narrowing to two read tools gives a stub with exactly those two;
   - (c) a request for a read tool runs `call_tool` with a fresh `call_id`, deps merged and `_`-keys stripped;
@@ -62,9 +62,9 @@
   - (i) `source` over 8,000 chars returns `source_too_long` without calling the runner.
 
   Implement `ze_agents/script_step.py` steps 1–5 (plan.md "Loop integration").
-- [ ] T011 [L:harness] [US1] Tests first in `core/contracts/ze-agents/tests/test_base_agent_loop.py`: an agent with a runner in `ctx` and one data read tool sees `run_tool_script` in its request and `SCRIPT_GUIDANCE` in its system prompt; with no runner, or with only UI and write tools (a companion-like tool list), it sees neither; a model that calls the tool once and then answers makes exactly two model calls; the script tool message holds only the capped value; `run_tool_script` survives skill narrowing and procedure narrowing (`procedure_tool_names` set). Implement in `ze_agents/base_agent.py` (`names` addition, schema substitution, guidance appended once before the loop, the narrowing rule beside `invoke_procedure`).
-- [ ] T012 [L:harness] [US1] `execute_tool` (`orchestration/nodes/execution.py`) copies `config["configurable"].get("script_runner")` into each `AgentContext` it builds (single and compound paths), and `run_delegate` (`ze_agents/delegate.py`) copies `ctx.script_runner` into `sub_ctx`; tests for both (`test_delegate.py`).
-- [ ] T013 [L:harness] [US1] Tests first: a script ending `exception`, `bad_request`, `busy`, `unavailable` or `resource_limit` gives the model the structured error JSON from [contracts/scripts.md](./contracts/scripts.md) with `completed`, `stderr_tail` (last 20 lines) and, on `exception`, `last_result_shape` built from the last successful inner result (a list of dicts gives `list[dict] keys: ...`, at most 20 keys); no partial result is shown as success. Implement in `script_step.py`.
+- [x] T011 [L:harness] [US1] Tests first in `core/contracts/ze-agents/tests/test_base_agent_loop.py`: an agent with a runner in `ctx` and one data read tool sees `run_tool_script` in its request and `SCRIPT_GUIDANCE` in its system prompt; with no runner, or with only UI and write tools (a companion-like tool list), it sees neither; a model that calls the tool once and then answers makes exactly two model calls; the script tool message holds only the capped value; `run_tool_script` survives skill narrowing and procedure narrowing (`procedure_tool_names` set). Implement in `ze_agents/base_agent.py` (`names` addition, schema substitution, guidance appended once before the loop, the narrowing rule beside `invoke_procedure`).
+- [x] T012 [L:harness] [US1] `execute_tool` (`orchestration/nodes/execution.py`) copies `config["configurable"].get("script_runner")` into each `AgentContext` it builds (single and compound paths), and `run_delegate` (`ze_agents/delegate.py`) copies `ctx.script_runner` into `sub_ctx`; tests for both (`test_delegate.py`).
+- [x] T013 [L:harness] [US1] Tests first: a script ending `exception`, `bad_request`, `busy`, `unavailable` or `resource_limit` gives the model the structured error JSON from [contracts/scripts.md](./contracts/scripts.md) with `completed`, `stderr_tail` (last 20 lines) and, on `exception`, `last_result_shape` built from the last successful inner result (a list of dicts gives `list[dict] keys: ...`, at most 20 keys); no partial result is shown as success. Implement in `script_step.py`.
 
 ---
 
@@ -150,7 +150,7 @@
   - `invoke_procedure` on a script procedure records the invocation and returns the run-it-with-`run_tool_script` text.
 
   Implement in `procedures/store.py`, `discovery.py`, `validate.py`, `tools.py`.
-- [ ] T026 [L:harness] [US5] Tests first in `test_script_step.py`: `procedure_id` of a READY match with `source_kind == "tool_script"` runs `steps[0]` with a stub built from the agent's current data read tools (a tool in the procedure's limits that the agent no longer has is absent from the stub); a non-script or non-READY match returns `procedure_not_script`. Implement in `script_step.py`.
+- [x] T026 [L:harness] [US5] Tests first in `test_script_step.py`: `procedure_id` of a READY match with `source_kind == "tool_script"` runs `steps[0]` with a stub built from the agent's current data read tools (a tool in the procedure's limits that the agent no longer has is absent from the stub); a non-script or non-READY match returns `procedure_not_script`. Implement in `script_step.py`.
 - [ ] T027 [L:runner] [US1] `WorkspaceStack.script_runner` and `build_workspace_stack(procedure_admission=...)` in `ze_workspace/bootstrap.py`: builds `WorkspaceScriptRunner` (with `ScriptLearning` when the action store and admission service are given) when the sidecar is configured. Test: a runner when configured, `None` otherwise, learning absent without the admission service.
 
 ---

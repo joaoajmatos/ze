@@ -437,7 +437,16 @@ class TestAgenticLoop:
         a.tools = ["render_metric"]
         client = self._client(
             [
-                (None, [{"id": "c1", "name": "render_metric", "arguments": {"label": "x"}}]),
+                (
+                    None,
+                    [
+                        {
+                            "id": "c1",
+                            "name": "render_metric",
+                            "arguments": {"label": "x"},
+                        }
+                    ],
+                ),
                 (None, None),
             ]
         )
@@ -456,7 +465,16 @@ class TestAgenticLoop:
         a.tools = ["render_metric"]
         client = self._client(
             [
-                (None, [{"id": "c1", "name": "render_metric", "arguments": {"label": "x"}}]),
+                (
+                    None,
+                    [
+                        {
+                            "id": "c1",
+                            "name": "render_metric",
+                            "arguments": {"label": "x"},
+                        }
+                    ],
+                ),
                 (None, None),
             ]
         )
@@ -1075,3 +1093,150 @@ class TestAgenticLoopSources:
             ctx, client, [{"role": "user", "content": "hi"}], system="sys"
         )
         assert ctx.sources == [Source("https://a.test", "A")]
+
+
+# ── tool scripts (197) ────────────────────────────────────────────────────────
+
+
+class _ScriptRunner:
+    def __init__(self, value=None, requests=()):
+        self.value = value
+        self.requests = list(requests)
+        self.sources: list[str] = []
+
+    async def run(self, *, script_id, agent, source, stub, limits, dispatch):
+        from ze_agents.scripts import ScriptOutcome, ScriptRequest
+
+        self.sources.append(source)
+        for i, (name, args) in enumerate(self.requests, start=1):
+            await dispatch(ScriptRequest(seq=i, tool=name, args=args))
+        return ScriptOutcome(status="ok", value=self.value)
+
+
+def _script_agent(tools: list[str]) -> BaseAgent:
+    a = _agent()
+    a.tools = tools
+    return a
+
+
+def _script_client(*responses) -> MagicMock:
+    client = MagicMock()
+    client.complete_with_tools = AsyncMock(side_effect=list(responses))
+    client.complete = AsyncMock(return_value="fallback")
+    return client
+
+
+def _sent_tool_names(client: MagicMock, call: int = 0) -> list[str]:
+    schemas = client.complete_with_tools.call_args_list[call][1]["tools"]
+    return [s["function"]["name"] for s in schemas]
+
+
+def _read_tool(name: str = "get_rows") -> None:
+    async def _impl() -> str:
+        return '{"n": 1}'
+
+    _impl.__name__ = name
+    tool(access=ToolAccess.READ, description="rows")(_impl)
+
+
+class TestToolScriptVisibility:
+    async def test_runner_and_a_data_read_tool_offer_the_script(self):
+        from ze_agents.scripts import SCRIPT_GUIDANCE, SCRIPT_TOOL_NAME
+
+        _read_tool()
+        a = _script_agent(["get_rows"])
+        client = _script_client(("done", None))
+        ctx = _ctx()
+        ctx.script_runner = _ScriptRunner()
+        await a.agentic_loop(ctx, client, [], system="base")
+        assert SCRIPT_TOOL_NAME in _sent_tool_names(client)
+        system = client.complete_with_tools.call_args[1]["system"]
+        assert system.count(SCRIPT_GUIDANCE) == 1
+
+    async def test_no_runner_means_no_script_tool_or_guidance(self):
+        from ze_agents.scripts import SCRIPT_GUIDANCE, SCRIPT_TOOL_NAME
+
+        _read_tool()
+        a = _script_agent(["get_rows"])
+        client = _script_client(("done", None))
+        await a.agentic_loop(_ctx(), client, [], system="base")
+        assert SCRIPT_TOOL_NAME not in _sent_tool_names(client)
+        assert SCRIPT_GUIDANCE not in client.complete_with_tools.call_args[1]["system"]
+
+    async def test_only_ui_and_write_tools_get_no_script(self):
+        from ze_agents.scripts import SCRIPT_GUIDANCE, SCRIPT_TOOL_NAME
+
+        @tool(access=ToolAccess.READ, description="draw", produces_ui=True)
+        async def render_chart() -> str:
+            return "x"
+
+        @tool(
+            access=ToolAccess.WRITE,
+            description="w",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+            asks_first=False,
+            no_ask_reason="test",
+        )
+        async def save_note() -> str:
+            return "x"
+
+        a = _script_agent(["render_chart", "save_note"])
+        client = _script_client(("done", None))
+        ctx = _ctx()
+        ctx.script_runner = _ScriptRunner()
+        await a.agentic_loop(ctx, client, [], system="base")
+        assert SCRIPT_TOOL_NAME not in _sent_tool_names(client)
+        assert SCRIPT_GUIDANCE not in client.complete_with_tools.call_args[1]["system"]
+
+    async def test_script_then_answer_is_two_model_calls(self):
+        _read_tool()
+        a = _script_agent(["get_rows"])
+        runner = _ScriptRunner(
+            value={"total": 7}, requests=[("get_rows", {}), ("get_rows", {})]
+        )
+        ctx = _ctx()
+        ctx.script_runner = runner
+        messages: list[dict] = []
+        client = _script_client(
+            (
+                None,
+                [
+                    {
+                        "id": "call_1",
+                        "name": "run_tool_script",
+                        "arguments": {"source": "import ze_tools"},
+                    }
+                ],
+            ),
+            ("The total is 7.", None),
+        )
+        text, calls = await a.agentic_loop(ctx, client, messages, system="s")
+        assert text == "The total is 7."
+        assert client.complete_with_tools.call_count == 2
+        assert runner.sources == ["import ze_tools"]
+        tool_msgs = [m for m in messages if m["role"] == "tool"]
+        assert len(tool_msgs) == 1
+        assert tool_msgs[0]["tool_call_id"] == "call_1"
+        assert tool_msgs[0]["content"] == '{"total": 7}'
+        assert [c.tool_name for c in calls] == ["run_tool_script"]
+        assert len(calls[0].inner_calls) == 2
+
+    async def test_script_survives_skill_and_procedure_narrowing(self):
+        from ze_agents.scripts import SCRIPT_TOOL_NAME
+
+        _read_tool()
+        _read_tool("get_other")
+        a = _script_agent(["get_rows", "get_other"])
+        client = _script_client(("done", None))
+        ctx = _ctx()
+        ctx.script_runner = _ScriptRunner()
+        ctx.skill_tool_names = ["get_rows"]
+        await a.agentic_loop(ctx, client, [], system="s")
+        assert _sent_tool_names(client) == ["get_rows", SCRIPT_TOOL_NAME]
+
+        client = _script_client(("done", None))
+        ctx = _ctx()
+        ctx.script_runner = _ScriptRunner()
+        ctx.procedure_tool_names = ["get_rows"]
+        await a.agentic_loop(ctx, client, [], system="s")
+        assert _sent_tool_names(client) == ["get_rows", SCRIPT_TOOL_NAME]

@@ -46,6 +46,7 @@ from ze_agents.interrupt import (
 )
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.rollback import is_error_result
+from ze_agents.scripts import SCRIPT_GUIDANCE, SCRIPT_TOOL_NAME, SCRIPT_TOOL_SCHEMA
 from ze_logging import get_logger
 from ze_agents.types import (
     AgentContext,
@@ -95,6 +96,11 @@ MEMORY_CONSTITUTION = (
 )
 
 BIOGRAPHY_HEADING = "## Retrieved biography"
+
+_NO_SCRIPT_RESULT = (
+    '{"error": {"kind": "sandbox_unavailable", '
+    '"message": "scripts are not available in this run"}}'
+)
 
 _DEFERRED_DELEGATE_RESULT = (
     "Not run yet: another delegated action is waiting for the user's approval. "
@@ -302,12 +308,14 @@ class BaseAgent(ABC):
         if skill_tool_names is not None:
             allowed = set(skill_tool_names)
             visible = [
-                n for n in visible if n in allowed or n == _PROCEDURE_INVOKE_TOOL
+                n
+                for n in visible
+                if n in allowed or n in (_PROCEDURE_INVOKE_TOOL, SCRIPT_TOOL_NAME)
             ]
         procedure_tool_names = getattr(ctx, "procedure_tool_names", None)
         if procedure_tool_names is not None:
             allowed = set(procedure_tool_names)
-            visible = [n for n in visible if n in allowed]
+            visible = [n for n in visible if n in allowed or n == SCRIPT_TOOL_NAME]
         return visible
 
     def _format_active_skills(self, ctx: AgentContext) -> str:
@@ -639,6 +647,7 @@ class BaseAgent(ABC):
         loop (`LoopParked`) with the new child.
         """
         from ze_agents.delegate import run_delegate
+        from ze_agents.script_step import script_parent_id
 
         for pw in resume.parked:
             decision = ctx.write_decisions.get(pw.item_id)
@@ -664,6 +673,7 @@ class BaseAgent(ABC):
                     _trace_call_id=pw.trace_call_id,
                     **merged,
                 )
+                tool_call.parent_call_id = script_parent_id(accumulated, pw.call_id)
             elif decision is not None and decision.outcome == "duplicate":
                 tool_call = ToolCall(
                     tool_name=pw.tool,
@@ -834,6 +844,11 @@ class BaseAgent(ABC):
             DELEGATE_TOOL_SCHEMA,
             run_delegate,
         )
+        from ze_agents.script_step import (
+            data_read_names,
+            proposal_call_id,
+            run_script_step,
+        )
         from ze_agents.tool import get_tool
 
         names = tool_names if tool_names is not None else list(self.tools)
@@ -846,6 +861,8 @@ class BaseAgent(ABC):
                     names.append(platform_name)
         if _PROCEDURE_INVOKE_TOOL in registered and _PROCEDURE_INVOKE_TOOL not in names:
             names.append(_PROCEDURE_INVOKE_TOOL)
+        if ctx.script_runner is not None and SCRIPT_TOOL_NAME not in names:
+            names.append(SCRIPT_TOOL_NAME)
         accumulated: list[ToolCall] = []
         _deps = deps or {}
         hooks = get_hooks()
@@ -859,6 +876,8 @@ class BaseAgent(ABC):
         tool_ctx_block = await _fetch_tool_executor_context(ctx)
         if tool_ctx_block:
             system = f"{system}\n\n{tool_ctx_block}"
+        if ctx.script_runner is not None and data_read_names(self, ctx, names):
+            system = f"{system}\n\n{SCRIPT_GUIDANCE}"
 
         def _collect_sources(found: list[Source]) -> None:
             add_sources(ctx.sources, found)
@@ -877,11 +896,15 @@ class BaseAgent(ABC):
                 raise AgentAbortedError(ctx.abort_token.reason)
 
             visible = self._visible_tool_names(ctx, names)
+            if SCRIPT_TOOL_NAME in visible and not data_read_names(self, ctx, names):
+                visible.remove(SCRIPT_TOOL_NAME)
             tool_schemas = [
                 _OPENROUTER_TOOL_SCHEMAS[n]
                 if n in _OPENROUTER_TOOL_SCHEMAS
                 else DELEGATE_TOOL_SCHEMA
                 if n == DELEGATE_TOOL_NAME
+                else SCRIPT_TOOL_SCHEMA
+                if n == SCRIPT_TOOL_NAME
                 else _hide_deps(get_tool(n).llm_schema(), _deps)
                 for n in visible
             ]
@@ -951,23 +974,22 @@ class BaseAgent(ABC):
                     f"(iteration {iteration + 1})"
                 )
 
-            messages.append(
-                {
-                    "role": "assistant",
-                    "content": None,
-                    "tool_calls": [
-                        {
-                            "id": tc["id"],
-                            "type": "function",
-                            "function": {
-                                "name": tc["name"],
-                                "arguments": json.dumps(tc["arguments"]),
-                            },
-                        }
-                        for tc in tool_calls
-                    ],
-                }
-            )
+            assistant_message: dict[str, Any] = {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": tc["id"],
+                        "type": "function",
+                        "function": {
+                            "name": tc["name"],
+                            "arguments": json.dumps(tc["arguments"]),
+                        },
+                    }
+                    for tc in tool_calls
+                ],
+            }
+            messages.append(assistant_message)
 
             invoke_calls = [
                 tc for tc in tool_calls if tc["name"] == _PROCEDURE_INVOKE_TOOL
@@ -999,6 +1021,91 @@ class BaseAgent(ABC):
                             "content": "[search complete]",
                         }
                     )
+                elif tc["name"] == SCRIPT_TOOL_NAME:
+                    if ctx.script_runner is None:
+                        tool_call = ToolCall(
+                            tool_name=SCRIPT_TOOL_NAME,
+                            args=tc["arguments"],
+                            result=_NO_SCRIPT_RESULT,
+                            duration_ms=0,
+                            success=False,
+                            error="sandbox_unavailable",
+                        )
+                        _finish(ctx, tool_call)
+                        accumulated.append(tool_call)
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tc["id"],
+                                "content": _NO_SCRIPT_RESULT,
+                            }
+                        )
+                        continue
+                    step = await run_script_step(
+                        self,
+                        _without_reserved(tc["name"], tc["arguments"]),
+                        ctx,
+                        tc["id"],
+                        _deps,
+                        names,
+                        iteration,
+                    )
+                    tool_call = step.tool_call
+                    _finish(ctx, tool_call)
+                    accumulated.append(tool_call)
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tc["id"],
+                            "content": tool_call.result,
+                        }
+                    )
+                    proposals = [
+                        (proposal_call_id(tc["id"], i), p)
+                        for i, p in enumerate(step.proposals)
+                    ]
+                    # The synthetic ids join the assistant message before any call can
+                    # park, so the checkpointed transcript holds them for the resume.
+                    assistant_message["tool_calls"].extend(
+                        {
+                            "id": synthetic_id,
+                            "type": "function",
+                            "function": {
+                                "name": p.tool,
+                                "arguments": json.dumps(p.args),
+                            },
+                        }
+                        for synthetic_id, p in proposals
+                    )
+                    for synthetic_id, proposal in proposals:
+                        if proposal.rejected is not None:
+                            written = proposal.rejected
+                            _finish(ctx, written)
+                        else:
+                            model_args = _model_args(proposal.tool, proposal.args)
+                            merged = _merge_deps(
+                                proposal.tool, model_args, {**_deps, "ctx": ctx}
+                            )
+                            written = await self.call_tool(
+                                proposal.tool,
+                                ctx,
+                                _iteration=iteration,
+                                _lm_args=model_args,
+                                _call_id=synthetic_id,
+                                **merged,
+                            )
+                            written.parent_call_id = tool_call.call_id
+                            if written.parked is not None:
+                                parked_writes.append(written.parked)
+                                continue
+                        accumulated.append(written)
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": synthetic_id,
+                                "content": _serialise_result(written),
+                            }
+                        )
                 elif tc["name"] == DELEGATE_TOOL_NAME:
                     if child is not None:
                         tool_call = ToolCall(
