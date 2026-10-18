@@ -41,7 +41,7 @@ The user presses the mic in the Ask bar and talks. While they talk, the orb list
 
 1. **Given** microphone permission, **When** the user presses the mic, **Then** recording starts, the orb enters listening and its gather follows the input level, and the mic shows a stop state with the elapsed time.
 2. **Given** a recording, **When** the user stops it, **Then** Presence shows "transcribing", then the transcript fills the Ask bar, focused, with the caret at the end.
-3. **Given** a transcript in the bar, **When** the user sends (edited or not), **Then** the message goes through the single send path with the voice reference and whether the text was edited.
+3. **Given** a transcript in the bar, **When** the user sends (edited or not), **Then** the message goes through the single send path with the voice reference, and the trace records whether the text was edited.
 4. **Given** a recording reaches 120 seconds, **When** the limit is hit, **Then** recording stops on its own and transcription starts.
 5. **Given** transcription fails, **When** the error returns, **Then** the bar shows "I couldn't make out the recording" with Retry, which re-sends the same recording without recording again.
 6. **Given** microphone permission is denied or no microphone exists, **When** the user presses the mic, **Then** a plain line says why, and the mic stays disabled with that reason as its label.
@@ -87,7 +87,7 @@ Nothing named after the prototype remains in the web app. The design document de
 
 **Why this priority**: pre-v1 hard cuts; the prototype has done its job.
 
-**Independent Test**: no route, file or import named `jarvis` or `proto` remains in the web source; the design document's prototype-only notes are gone.
+**Independent Test**: no route, file or import named `jarvis` remains in the web source and no prototype file remains; the design document's prototype-only notes are gone.
 
 **Acceptance Scenarios**:
 
@@ -108,7 +108,7 @@ Nothing named after the prototype remains in the web app. The design document de
 
 - **FR-001**: The Ask bar's mic MUST record audio in a format the transcription service accepts, show elapsed time, stop on press or at 120 seconds, support hold-`v` to talk when no text field has focus, and upload the recording for transcription.
 - **FR-002**: While recording, Presence MUST be listening with the live input level driving the orb, and MUST show "transcribing" while the upload runs.
-- **FR-003**: The transcript MUST land in the Ask bar, focused and editable. Sending MUST carry the voice reference and whether the text differs from the transcript, through the single send path.
+- **FR-003**: The transcript MUST land in the Ask bar, focused and editable. Sending MUST carry the voice reference through the single send path; Ze records whether the sent text differs from the transcript (192 compares them on the server).
 - **FR-004**: Failures MUST show plain lines (couldn't make out with Retry; heard nothing; permission denied; no microphone; unsupported browser). Retry MUST reuse the same recording.
 - **FR-005**: An ambience toggle in the Presence module's head MUST play the existing quiet drone, off by default, remembered per browser, never auto-starting under reduced motion, ducked while recording.
 - **FR-006**: The prototype MUST be removed: every prototype route and file, its surface notes under `.impeccable/surfaces`, and any interim file or leftover style mapping from 186–190.
@@ -118,7 +118,7 @@ Nothing named after the prototype remains in the web app. The design document de
 
 ### Key Entities
 
-- **Recording**: audio in progress or finished, elapsed time, level stream, transcription state (idle, recording, transcribing, failed, done).
+- **Recording**: audio in progress or finished, elapsed time, level stream, state (idle, recording, transcribing, failed, unavailable), and a kept copy of the last recording for Retry.
 - **Ambience preference**: on or off, per browser.
 
 ## Success Criteria *(mandatory)*
@@ -126,7 +126,7 @@ Nothing named after the prototype remains in the web app. The design document de
 ### Measurable Outcomes
 
 - **SC-001**: Critique of at least 30/40 on every place, recorded in the floor's handoff note.
-- **SC-002**: No route, file or import named `jarvis` or `proto` remains in the web source.
+- **SC-002**: No route, file, import or design note named `jarvis` remains in the web source, its `.impeccable/surfaces` notes or the design document, and no prototype file remains.
 - **SC-003**: A spoken message reaches the Ask bar as editable text in under 5 seconds for a 10-second recording on a normal connection.
 - **SC-004**: The web suites, typecheck, build and lint pass.
 
