@@ -1,0 +1,10 @@
+Current workspace ("Ze") roles:
+  - "Spec Architect" — Ze is a single-user personal AI assistant monorepo (Python/FastAPI + LangGraph backend, React ze-web… (in use by 1 terminal: Lintel)
+  - "Backend Engineer" — Ze is a single-user personal AI assistant monorepo (Python/FastAPI + LangGraph backend, React ze-web… (in use by 0 terminals)
+  - "Web Engineer" — Ze is a single-user personal AI assistant monorepo (Python/FastAPI + LangGraph backend, React ze-web… (in use by 2 terminals: Canvas, Gantry)
+  - "Reviewer" — Ze is a single-user personal AI assistant monorepo (Python/FastAPI + LangGraph backend, React ze-web… (in use by 3 terminals: Vigil, Gauge, Caliper)
+  - "QA & Eval" — Ze is a single-user personal AI assistant monorepo (Python/FastAPI + LangGraph backend, React ze-web… (in use by 1 terminal: Tally)
+  - "Platform Engineer" — Ze is a single-user personal AI assistant monorepo (Python/FastAPI + LangGraph backend, React ze-web… (in use by 0 terminals)
+  - "Docs Steward" — Ze is a single-user personal AI assistant monorepo (Python/FastAPI + LangGraph backend, React ze-web… (in use by 0 terminals)
+  - "Floor Reviewer" — Ze is a single-user personal AI assistant monorepo (Python/FastAPI + LangGraph backend, React ze-web… (in use by 0 terminals)
+  - "Junior Engineer" — Ze is a single-user personal AI assistant monorepo (Python/FastAPI + LangGraph backend, React ze-web… (in use by 1 terminal: Tendril)

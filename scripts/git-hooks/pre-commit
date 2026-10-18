@@ -10,6 +10,8 @@ if [[ "${SKIP:-}" == "1" ]]; then
   exit 0
 fi
 
+"$ROOT/scripts/process/precommit_checks.sh"
+
 STAGED_PY="$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)"
 STAGED_WEB="$(git diff --cached --name-only --diff-filter=ACM | grep '^apps/ze-web/' || true)"
 

@@ -481,14 +481,39 @@ codegen:
 	bun run scripts/codegen.ts
 
 # ── Code quality ──────────────────────────────────────────────────────────────
-.PHONY: check hooks lint lint-web typecheck-web format clean
+.PHONY: check hooks process-install-hooks process-ready process-land-preflight process-gates process-review-request process-review-verdict lint lint-web typecheck-web format clean
 
-check: lint web-build
+check: lint lint-web web-build
 	@echo "check: ok"
 
 hooks:
 	@chmod +x scripts/install-git-hooks.sh scripts/git-hooks/pre-commit scripts/git-hooks/pre-push
 	@./scripts/install-git-hooks.sh
+
+# Same hooks, plus the process checks that run only inside a Maestri terminal.
+process-install-hooks: hooks
+	@chmod +x scripts/process/precommit_checks.sh scripts/process/hooks/*.py
+
+# Gates for the diff, hard checks, one receipt for HEAD in .process/receipts/.
+# make process-ready [PORTAL_SHOT=<png>] [FLOOR=<name> sets the floor to review when green]
+process-ready:
+	@python3 scripts/process/ready.py $(if $(PORTAL_SHOT),--portal-shot $(PORTAL_SHOT)) $(if $(FLOOR),--set-review "$(FLOOR)")
+
+# Refuse to land a floor that is not ready: make process-land-preflight [FLOOR=<path>]
+process-land-preflight:
+	@python3 scripts/process/land_preflight.py $(if $(FLOOR),--floor "$(FLOOR)")
+
+# Full gate set with a receipt for HEAD (Ground, after the floor landed): make process-gates PROFILE=land
+process-gates:
+	@python3 scripts/process/ready.py --profile $(or $(PROFILE),diff)
+
+# Review as files: make process-review-request RANGE=a..b REVIEWER=<name> [REQUESTER="Claude Code"]
+process-review-request:
+	@python3 scripts/process/review.py request "$(RANGE)" "$(REVIEWER)" $(if $(REQUESTER),--requester "$(REQUESTER)")
+
+# make process-review-verdict RANGE=a..b VERDICT=APPROVE|CHANGES [FINDINGS=<file>]
+process-review-verdict:
+	@python3 scripts/process/review.py verdict "$(RANGE)" "$(VERDICT)" $(if $(FINDINGS),--findings "$(FINDINGS)")
 
 lint:
 	uv run ruff check .

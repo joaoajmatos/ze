@@ -52,4 +52,5 @@ Design specs (what comes next) live in [`specs/`](../specs/), not here. The cons
 | [configuration.md](configuration.md) | `.env`, `config.yaml`, `persona.yaml` |
 | [deployment.md](deployment.md) | Fly.io, GitHub Actions CI, environment setup |
 | [testing.md](testing.md) | `make test-<name>` across Python packages and ze-web |
+| [process.md](process.md) | The agent process kit: hooks, gate receipts, review records, landing checks |
 | [eval.md](eval.md) | End-to-end evals via MCP, LLM-as-judge |

@@ -177,7 +177,7 @@ Three workflows live in `.github/workflows/`:
 
 **`ci.yml`** — runs on every push and pull request to `main`. Each job runs all its
 gates, even when an earlier gate fails, so one red run shows every broken gate:
-- **Web:** `make typecheck-web`, `make web-build`, `make test-web`
+- **Web:** `make typecheck-web`, `make lint-web`, `make web-build`, `make test-web`
 - **Backend:** `make lint` (ruff), then `make test-py` (every Python package suite,
   fast tests only)
 
