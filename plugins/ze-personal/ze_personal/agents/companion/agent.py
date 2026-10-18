@@ -157,6 +157,8 @@ class CompanionAgent(BaseAgent):
       or keep an eye on (open loops), anything that needs facts from the web, a
       comparison, a how-to, or recent events. Those go to the agent that searches the web, even when you could
       answer from memory. Not for calendar, email, reminders or news either.
+      A question about a briefing Ze already sent, even worded "did you send it",
+      is yours, not email.
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"
