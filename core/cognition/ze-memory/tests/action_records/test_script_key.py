@@ -32,6 +32,7 @@ async def test_list_by_script_key_filters_newest_first_and_clamps_limit():
     assert await store.list_by_script_key("k1") == []
     sql, *args = conn.fetch.await_args.args
     assert "context->>'script_key' = $1::text" in sql
+    assert "authoritative_domain = 'workspace.tool_script'" in sql
     assert "ORDER BY occurred_at DESC, id DESC" in sql
     assert args == ["k1", 3]
     await store.list_by_script_key("k1", limit=9999)

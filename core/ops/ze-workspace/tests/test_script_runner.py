@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 import asyncio
+from uuid import uuid4
 from unittest.mock import AsyncMock
 
 import pytest
-from ze_agents.scripts import DispatchReply, ScriptLimits, ScriptOutcome, ScriptRequest
+from ze_agents.errors import AgentAbortedError
+from ze_agents.scripts import (
+    DispatchReply,
+    ScriptContext,
+    ScriptLimits,
+    ScriptOutcome,
+    ScriptRequest,
+)
 
 from tests.fixtures.script_frames import (
     END_STATUSES,
@@ -17,8 +25,10 @@ from tests.fixtures.script_frames import (
     end_frame,
     start_frame,
 )
+from tests.test_script_learning import FakeLedger
 from ze_workspace.client import WorkspaceClient
 from ze_workspace.errors import WorkspaceUnavailableError
+from ze_workspace.script_learning import ScriptLearning
 from ze_workspace.scripts import WorkspaceScriptRunner
 from ze_workspace.types import WorkspaceStat
 
@@ -199,3 +209,85 @@ async def test_procedure_id_reaches_learning():
 async def test_wait_for_ze_fixture_still_works():
     sidecar = FakeScriptSidecar([WaitForZe("start"), end_frame("ok")])
     assert (await run(runner_for(sidecar))).status == "ok"
+
+
+async def _drain() -> None:
+    current = asyncio.current_task()
+    pending = [t for t in asyncio.all_tasks() if t is not current]
+    await asyncio.gather(*pending, return_exceptions=True)
+
+
+async def test_abort_in_dispatch_propagates_and_cancels():
+    sidecar = FakeScriptSidecar([call_frame(1, "a"), end_frame("ok")])
+
+    async def dispatch(request):
+        raise AgentAbortedError("user cancelled")
+
+    with pytest.raises(AgentAbortedError):
+        await run(runner_for(sidecar), dispatch)
+    assert sidecar.socket.sent_of("cancel") == [{"type": "cancel"}]
+
+
+async def test_no_cancel_after_a_normal_end():
+    sidecar = FakeScriptSidecar([end_frame("ok")])
+    await run(runner_for(sidecar))
+    assert sidecar.socket.sent_of("cancel") == []
+
+
+async def test_refused_names_stay_out_of_the_learned_tools():
+    sidecar = FakeScriptSidecar(
+        [
+            call_frame(1, "get_a"),
+            call_frame(2, "forged"),
+            call_frame(3, "write_x"),
+            call_frame(4, "get_b"),
+            end_frame("ok"),
+        ]
+    )
+
+    async def dispatch(request):
+        errors = {"forged": "tool_not_available", "write_x": "writes_must_be_proposed"}
+        if request.tool in errors:
+            return DispatchReply(ok=False, error=errors[request.tool])
+        if request.tool == "get_b":
+            return DispatchReply(ok=False, error="upstream 500")
+        return DispatchReply(ok=True, value=1)
+
+    learning = AsyncMock()
+    await run(runner_for(sidecar, learning=learning), dispatch)
+    await _drain()
+    assert learning.record.await_args.kwargs["tools"] == ["get_a", "get_b"]
+
+
+async def test_three_runs_through_the_runner_yield_one_candidate_with_the_user_turn():
+    ledger = FakeLedger()
+    admission = AsyncMock()
+    admission.candidate_exists = AsyncMock(return_value=False)
+    learning = ScriptLearning(action_record_store=ledger, admission=admission)
+    turn = ScriptContext(
+        user_turn="what did I spend most on this month? " + "x" * 200,
+        message_id=str(uuid4()),
+        thread_id=str(uuid4()),
+    )
+    for i in range(3):
+        sidecar = FakeScriptSidecar(
+            [call_frame(1, "get_a"), call_frame(2, "get_b"), end_frame("ok")]
+        )
+        runner = runner_for(sidecar, learning=learning)
+        await runner.run(
+            script_id=str(uuid4()),
+            agent="finance",
+            source=f"z.finish({i})",
+            stub="",
+            limits=ScriptLimits(),
+            dispatch=ok_dispatch,
+            context=turn,
+        )
+        await _drain()
+    admission.submit_procedure_candidate.assert_awaited_once()
+    cand = admission.submit_procedure_candidate.await_args.args[0]
+    assert cand.trigger == turn.user_turn[:120]
+    assert cand.steps == ["z.finish(2)"]
+    for row in ledger.rows.values():
+        assert str(row.context.message_id) == turn.message_id
+        assert str(row.context.thread_id) == turn.thread_id

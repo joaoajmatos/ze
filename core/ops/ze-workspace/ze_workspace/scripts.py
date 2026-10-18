@@ -5,8 +5,10 @@ import json
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from ze_agents.errors import AgentAbortedError
 from ze_agents.scripts import (
     DispatchReply,
+    ScriptContext,
     ScriptLimits,
     ScriptOutcome,
     ScriptRequest,
@@ -29,6 +31,11 @@ _END_STATUSES = {
     "unavailable",
     "resource_limit",
 }
+
+
+# Replies that mean the request never reached a tool; they are not part of the
+# script's shape, so they stay out of the learning key.
+_REFUSED_ERRORS = {"bad_request", "tool_not_available", "writes_must_be_proposed"}
 
 
 def _unavailable(reason: str) -> ScriptOutcome:
@@ -69,12 +76,13 @@ class WorkspaceScriptRunner:
         limits: ScriptLimits,
         dispatch: Callable[[ScriptRequest], Awaitable[DispatchReply]],
         procedure_id: str | None = None,
+        context: ScriptContext | None = None,
     ) -> ScriptOutcome:
         tools: list[str] = []
         outcome = await self._run(script_id, source, stub, limits, dispatch, tools)
         if self._learning is not None:
             task = asyncio.create_task(
-                self._learn(script_id, agent, source, outcome, tools, procedure_id)
+                self._learn(script_id, agent, source, outcome, tools, procedure_id, context)
             )
             task.add_done_callback(lambda t: t.exception())
         return outcome
@@ -87,6 +95,7 @@ class WorkspaceScriptRunner:
         outcome: ScriptOutcome,
         tools: list[str],
         procedure_id: str | None,
+        context: ScriptContext | None,
     ) -> None:
         try:
             await self._learning.record(
@@ -96,6 +105,9 @@ class WorkspaceScriptRunner:
                 outcome=outcome,
                 tools=tools,
                 procedure_id=procedure_id,
+                user_turn=context.user_turn if context else None,
+                message_id=context.message_id if context else None,
+                thread_id=context.thread_id if context else None,
             )
         except Exception as exc:
             log.warning("script_learning_failed", error=str(exc))
@@ -131,8 +143,9 @@ class WorkspaceScriptRunner:
                         timeout=deadline,
                     )
                 except asyncio.TimeoutError:
-                    await self._cancel(ws)
                     return ScriptOutcome(status="timeout")
+        except AgentAbortedError:
+            raise
         except OSError as exc:
             return _unavailable(str(exc))
         except Exception as exc:
@@ -146,6 +159,27 @@ class WorkspaceScriptRunner:
             pass
 
     async def _converse(
+        self,
+        ws: Any,
+        script_id: str,
+        source: str,
+        stub: str,
+        limits: ScriptLimits,
+        dispatch: Callable[[ScriptRequest], Awaitable[DispatchReply]],
+        tools: list[str],
+    ) -> ScriptOutcome:
+        ended = False
+        try:
+            outcome = await self._exchange(
+                ws, script_id, source, stub, limits, dispatch, tools
+            )
+            ended = True
+            return outcome
+        finally:
+            if not ended:
+                await self._cancel(ws)
+
+    async def _exchange(
         self,
         ws: Any,
         script_id: str,
@@ -185,12 +219,15 @@ class WorkspaceScriptRunner:
                 tool=str(frame["tool"]),
                 args=dict(frame.get("args") or {}),
             )
-            tools.append(request.tool)
             try:
                 reply = await dispatch(request)
+            except AgentAbortedError:
+                raise
             except Exception as exc:
                 log.warning("script_dispatch_failed", tool=request.tool, error=str(exc))
                 reply = DispatchReply(ok=False, error=f"{type(exc).__name__}: {exc}")
+            if not _was_refused(reply):
+                tools.append(request.tool)
             body: dict[str, Any] = {"type": "reply", "seq": request.seq, "ok": reply.ok}
             if reply.ok:
                 body["value"] = reply.value
@@ -199,3 +236,10 @@ class WorkspaceScriptRunner:
             await ws.send(json.dumps(body))
             if reply.stop:
                 await self._cancel(ws)
+
+
+def _was_refused(reply: DispatchReply) -> bool:
+    if reply.ok:
+        return False
+    error = reply.error or ""
+    return error in _REFUSED_ERRORS or error.startswith("limit:")

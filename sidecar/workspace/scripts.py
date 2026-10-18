@@ -16,7 +16,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Any
 
-from fastapi import WebSocket
+from fastapi import WebSocket, WebSocketDisconnect
 
 SCRATCH_ROOT = Path(os.environ.get("ZE_SCRIPTS_ROOT", "/tmp/ze-scripts"))
 RUNTIME_DIR = Path(__file__).resolve().parent / "script_runtime"
@@ -55,10 +55,10 @@ def script_env(scratch: Path, req_fd: int, rep_fd: int) -> dict[str, str]:
     }
 
 
-def script_rlimits(wall_seconds: int) -> dict[int, int]:
+def script_rlimits(wall_seconds: int, nproc_base: int = 0) -> dict[int, int]:
     return {
         resource.RLIMIT_AS: RLIMIT_AS_BYTES,
-        resource.RLIMIT_NPROC: RLIMIT_NPROC_COUNT,
+        resource.RLIMIT_NPROC: nproc_base + RLIMIT_NPROC_COUNT,
         resource.RLIMIT_FSIZE: RLIMIT_FSIZE_BYTES,
         resource.RLIMIT_CPU: wall_seconds + 1,
         resource.RLIMIT_NOFILE: RLIMIT_NOFILE_COUNT,
@@ -83,6 +83,8 @@ def script_identity() -> tuple[int, int] | None:
 
 
 PROBE_WORKSPACE = "/workspace"
+PROBE_BREACH_EXIT = 87
+ALLOW_UNISOLATED_ENV = "ZE_SCRIPTS_ALLOW_UNISOLATED"
 
 
 @dataclass
@@ -103,6 +105,35 @@ isolation = Isolation()
 
 def probe_enabled() -> bool:
     return script_identity() is not None
+
+
+def sandbox_refusal() -> str | None:
+    """Why scripts must not run here, or None. The endpoint fails closed."""
+    if script_identity() is not None:
+        return None if isolation.ok else "sandbox not isolated"
+    if os.geteuid() == 0:
+        return "script user missing"
+    if os.environ.get(ALLOW_UNISOLATED_ENV) != "1":
+        return "sandbox not isolated"
+    return None
+
+
+def _own_process_count() -> int:
+    """Processes of the current user, so RLIMIT_NPROC leaves room when not switching uid."""
+    import subprocess
+
+    if Path("/proc/self/stat").exists():
+        return len(_uid_pids(os.getuid()))
+    try:
+        out = subprocess.run(
+            ["ps", "-U", str(os.getuid()), "-o", "pid="],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return 0
+    return len(out.split())
 
 
 class ScriptSlot:
@@ -127,21 +158,37 @@ class ScriptSlot:
 slot = ScriptSlot()
 
 
-def _descendants(root_pid: int) -> list[int]:
-    """Every descendant of root_pid by parent links (a setsid child is still one)."""
+def _parent_links() -> list[tuple[int, int]]:
+    """(pid, ppid) for every process: /proc on Linux, ps elsewhere."""
     import subprocess
 
+    links: list[tuple[int, int]] = []
+    if Path("/proc/self/stat").exists():
+        for entry in Path("/proc").glob("[0-9]*"):
+            try:
+                tail = (entry / "stat").read_text().rsplit(")", 1)[1].split()
+                links.append((int(entry.name), int(tail[1])))
+            except (OSError, IndexError, ValueError):
+                pass
+        return links
     try:
         out = subprocess.run(
             ["ps", "-A", "-o", "pid=,ppid="], capture_output=True, text=True, timeout=5
         ).stdout
     except (OSError, subprocess.SubprocessError):
         return []
-    children: dict[int, list[int]] = collections.defaultdict(list)
     for line in out.splitlines():
         parts = line.split()
         if len(parts) == 2:
-            children[int(parts[1])].append(int(parts[0]))
+            links.append((int(parts[0]), int(parts[1])))
+    return links
+
+
+def _descendants(root_pid: int) -> list[int]:
+    """Every descendant of root_pid by parent links (a setsid child is still one)."""
+    children: dict[int, list[int]] = collections.defaultdict(list)
+    for pid, ppid in _parent_links():
+        children[ppid].append(pid)
     found: list[int] = []
     stack = [root_pid]
     while stack:
@@ -261,15 +308,30 @@ class ScriptRun:
         rep_r, rep_w = os.pipe()
         env = script_env(scratch, req_w, rep_r)
         identity = script_identity()
-        limits = script_rlimits(self.timeout)
+        limits = script_rlimits(self.timeout, 0 if identity else _own_process_count())
 
         def _preexec() -> None:
             for which, value in limits.items():
-                resource.setrlimit(which, (value, value))
-            assert identity is not None
-            os.setgroups([])
-            os.setgid(identity[1])
-            os.setuid(identity[0])
+                try:
+                    resource.setrlimit(which, (value, value))
+                except (OSError, ValueError):
+                    if identity is not None:
+                        raise
+            if identity is not None:
+                os.setgroups([])
+                os.setgid(identity[1])
+                os.setuid(identity[0])
+
+        if probe_enabled():
+            breach = await self._probe(scratch, env, _preexec)
+            if breach:
+                isolation.breached = True
+                for fd in (req_r, req_w, rep_r, rep_w):
+                    os.close(fd)
+                shutil.rmtree(scratch, ignore_errors=True)
+                self.end("unavailable", exception=breach)
+                assert self.result is not None
+                return self.result
 
         try:
             self.proc = await _spawn(
@@ -279,7 +341,6 @@ class ScriptRun:
                     "-X",
                     "utf8",
                     "_ze_main.py",
-                    *(["--probe", PROBE_WORKSPACE] if probe_enabled() else []),
                 ],
                 cwd=str(scratch),
                 env=env,
@@ -287,7 +348,7 @@ class ScriptRun:
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.PIPE,
                 pass_fds=(req_w, rep_r),
-                preexec_fn=_preexec if identity else None,
+                preexec_fn=_preexec,
                 start_new_session=True,
             )
         finally:
@@ -322,6 +383,36 @@ class ScriptRun:
             shutil.rmtree(scratch, ignore_errors=True)
         assert self.result is not None
         return self.result
+
+    async def _probe(self, scratch: Path, env: dict[str, str], preexec: Any) -> str:
+        """Run the isolation probe as its own process, so user code can never forge a breach."""
+        proc = await _spawn(
+            [
+                shutil.which("python3") or "python3",
+                "-I",
+                "-X",
+                "utf8",
+                "_ze_main.py",
+                "--probe-only",
+                PROBE_WORKSPACE,
+            ],
+            cwd=str(scratch),
+            env={k: v for k, v in env.items() if not k.startswith("ZE_")},
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+            preexec_fn=preexec,
+            start_new_session=True,
+        )
+        try:
+            code = await asyncio.wait_for(proc.wait(), timeout=10)
+        except asyncio.TimeoutError:
+            kill_script_processes(proc.pid)
+            await proc.wait()
+            return "isolation probe timed out"
+        if code == PROBE_BREACH_EXIT:
+            return "isolation probe found a breach"
+        return "" if code == 0 else f"isolation probe failed ({code})"
 
     async def _drain_stderr(self) -> None:
         assert self.proc is not None and self.proc.stderr is not None
@@ -363,10 +454,6 @@ class ScriptRun:
             if "finish" in msg:
                 self.finish_line = msg
                 continue
-            if "isolation_breach" in msg:
-                isolation.breached = True
-                self.end("unavailable", exception=str(msg["isolation_breach"]))
-                return
             tool, args, seq = msg.get("tool"), msg.get("args"), msg.get("seq")
             if not (
                 isinstance(tool, str)
@@ -418,7 +505,11 @@ class ScriptRun:
 
     async def _read_ws(self) -> None:
         while True:
-            frame = await self.ws.receive_json()
+            try:
+                frame = await self.ws.receive_json()
+            except (WebSocketDisconnect, RuntimeError):
+                self.end("killed", exception="connection closed")
+                return
             kind = frame.get("type")
             if kind == "reply":
                 waiter = self.pending.pop(frame.get("seq"), None)
@@ -459,11 +550,17 @@ async def handle(ws: WebSocket) -> None:
         start = await ws.receive_json()
         if not isinstance(start, dict) or start.get("type") != "start":
             await ws.send_json(_end("bad_request"))
-        elif script_identity() and not isolation.ok:
-            await ws.send_json(_end("unavailable", exception="sandbox not isolated"))
+        elif (reason := sandbox_refusal()) is not None:
+            await ws.send_json(_end("unavailable", exception=reason))
         else:
             result = await ScriptRun(ws, start).run()
-            await ws.send_json(result)
-        await ws.close()
+            try:
+                await ws.send_json(result)
+            except (WebSocketDisconnect, RuntimeError):
+                pass
+        try:
+            await ws.close()
+        except (WebSocketDisconnect, RuntimeError):
+            pass
     finally:
         slot.release()
