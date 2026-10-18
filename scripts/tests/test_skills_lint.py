@@ -120,3 +120,13 @@ def test_eval_grading_and_split():
 def test_run_refuses_without_the_spend_flag():
     skill_eval = load_process_module("skill_eval")
     assert skill_eval.main(["--run", "ze-web-verify"]) == 2
+
+
+def test_speckit_hooks_point_at_existing_skills():
+    yaml = pytest.importorskip("yaml")
+    hooks = yaml.safe_load((REPO / ".specify" / "extensions.yml").read_text())["hooks"]
+    for entries in hooks.values():
+        for hook in entries:
+            skill = hook["command"].replace(".", "-")
+            assert (REPO / ".claude" / "skills" / skill / "SKILL.md").exists(), skill
+            assert hook["optional"] is False
