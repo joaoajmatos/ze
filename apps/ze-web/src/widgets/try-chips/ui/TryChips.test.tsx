@@ -2,6 +2,7 @@ import type { GoalListItem, WsScreenContext } from "@myguyze/ze-client";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAskOverlay } from "@/features/ask-bar";
+import type { UiContribution } from "@/entities/ui-manifest";
 import { TryChips } from "./TryChips";
 
 let goals: GoalListItem[] = [];
@@ -110,5 +111,70 @@ describe("TryChips", () => {
     fireEvent.click(screen.getByRole("button", { name: /What's slipping\?/ }));
     fireEvent.keyDown(document.body, { key: "1" });
     expect(onSend).not.toHaveBeenCalled();
+  });
+
+  describe("plugin presets", () => {
+    const preset = (id: string, prompt: string): UiContribution =>
+      ({ id, plugin: "p", kind: "preset", label: prompt, icon: "box", prompt, priority: 100 }) as UiContribution;
+    const sends = () => vi.fn((_text: string, _context: WsScreenContext) => true);
+
+    it("renders presets after the core chips, at most two, in order", () => {
+      render(<TryChips onSend={sends()} presets={[preset("a.one", "First?"), preset("b.two", "Second?"), preset("c.three", "Third?")]} />);
+      const labels = screen.getAllByRole("button").map((b) => b.textContent ?? "");
+      expect(labels).toHaveLength(4);
+      expect(labels[2]).toContain("First?");
+      expect(labels[3]).toContain("Second?");
+      expect(screen.queryByRole("button", { name: /Third\?/ })).toBeNull();
+    });
+
+    it("continues the visible numbering and keys: 3-4 with no goal", () => {
+      const onSend = sends();
+      render(<TryChips onSend={onSend} presets={[preset("a.one", "First?"), preset("b.two", "Second?")]} />);
+      expect(screen.getByRole("button", { name: /First\?/ })).toHaveTextContent("3");
+      fireEvent.keyDown(document.body, { key: "3" });
+      fireEvent.keyDown(document.body, { key: "4" });
+      fireEvent.keyDown(document.body, { key: "5" });
+      expect(onSend).toHaveBeenCalledTimes(2);
+      expect(onSend).toHaveBeenNthCalledWith(1, "First?", { origin: "preset" });
+      expect(onSend).toHaveBeenNthCalledWith(2, "Second?", { origin: "preset" });
+    });
+
+    it("continues as 4-5 with an active goal", () => {
+      goals = [goal("a")];
+      const onSend = sends();
+      render(<TryChips onSend={onSend} presets={[preset("a.one", "First?"), preset("b.two", "Second?")]} />);
+      expect(screen.getByRole("button", { name: /First\?/ })).toHaveTextContent("4");
+      fireEvent.keyDown(document.body, { key: "5" });
+      fireEvent.keyDown(document.body, { key: "6" });
+      expect(onSend).toHaveBeenCalledTimes(1);
+      expect(onSend).toHaveBeenCalledWith("Second?", { origin: "preset" });
+    });
+
+    it("sends the prompt with origin preset on click", () => {
+      const onSend = sends();
+      render(<TryChips onSend={onSend} presets={[preset("a.one", "First?")]} />);
+      fireEvent.click(screen.getByRole("button", { name: /First\?/ }));
+      expect(onSend).toHaveBeenCalledWith("First?", { origin: "preset" });
+    });
+
+    it("keys chips by id, so a repeated prompt raises no key warning", () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      render(<TryChips onSend={sends()} presets={[preset("a.one", "Same?"), preset("b.two", "Same?")]} />);
+      expect(error).not.toHaveBeenCalled();
+      error.mockRestore();
+    });
+
+    it("disables presets when told to", () => {
+      const onSend = sends();
+      render(<TryChips onSend={onSend} disabled presets={[preset("a.one", "First?")]} />);
+      fireEvent.click(screen.getByRole("button", { name: /First\?/ }));
+      fireEvent.keyDown(document.body, { key: "3" });
+      expect(onSend).not.toHaveBeenCalled();
+    });
+
+    it("adds no chip without presets", () => {
+      render(<TryChips onSend={sends()} presets={[]} />);
+      expect(screen.getAllByRole("button")).toHaveLength(2);
+    });
   });
 });

@@ -79,7 +79,7 @@
 
 ## Phase 4: User Story 1 - Modules in slots (P1) 🎯 MVP
 
-- [ ] T006 [L:web] [US1] Tests first `widgets/plugin-module/ui/PluginModuleSlot.test.tsx` (fixture manifest; mocked query; mocked `IntersectionObserver`):
+- [x] T006 [L:web] [US1] Tests first `widgets/plugin-module/ui/PluginModuleSlot.test.tsx` (fixture manifest; mocked query; mocked `IntersectionObserver`):
   - a slot with no modules renders nothing;
   - each module renders in a `Module` titled with its label, in priority order;
   - the loading line "Loading <label>…" shows while waiting;
@@ -90,13 +90,13 @@
   - an unknown primitive shows 191a's fallback.
 
   Implement `PluginModuleSlot`.
-- [ ] T007 [L:web] [US1] Tests first, extending `pages/mind-entity/ui/MindEntityPage.test.tsx`, `pages/doing-workflow/ui/DoingWorkflowPage.test.tsx` and `widgets/connections/ui/Connections.test.tsx`, each with the fixture manifest:
+- [x] T007 [L:web] [US1] Tests first, extending `pages/mind-entity/ui/MindEntityPage.test.tsx`, `pages/doing-workflow/ui/DoingWorkflowPage.test.tsx` and `widgets/connections/ui/Connections.test.tsx`, each with the fixture manifest:
   - the Mind entity page mounts the `mind.entity` slot with subject `{ kind: "entity", id, label, entity_type }`;
   - the Doing workflow page mounts the `doing.run` slot with the selected execution as `id` and the workflow as `parent_id`;
   - Connections mounts the `governance.connections` slot with subject `none`, after the settings sections.
 
   Implement the one-line mounts.
-- [ ] T008 [L:web] [US2] Tests first `widgets/try-chips/ui/TryChips.test.tsx` and `pages/ask/ui/AskPage.test.tsx` (extend):
+- [x] T008 [L:web] [US2] Tests first `widgets/try-chips/ui/TryChips.test.tsx` and `pages/ask/ui/AskPage.test.tsx` (extend):
   - presets render after the core chips, at most two, in order;
   - their index labels and keys continue the visible numbering (3–4 with no active goal, 4–5 with one), and the key past the last chip does nothing;
   - React keys are ids;
@@ -111,7 +111,7 @@
 
 ## Phase 5: User Stories 3 and 4 - No plugin pages; settings verified (P2, P3)
 
-- [ ] T009 [L:web] [US4] Test only, `widgets/connections/ui/Connections.test.tsx` (extend) with the fixture: the settings section renders and a save dispatches its operation. No implementation change is expected; if one is needed, report it to the Spec Architect.
+- [x] T009 [L:web] [US4] Test only, `widgets/connections/ui/Connections.test.tsx` (extend) with the fixture: the settings section renders and a save dispatches its operation. No implementation change is expected; if one is needed, report it to the Spec Architect.
 
 ---
 

@@ -10,6 +10,9 @@ export type ModuleSlot = "mind.entity" | "doing.run" | "governance.connections";
 export interface ModuleSubject {
   kind: "entity" | "workflow_run" | "none";
   id?: string;
+  /** Display-only; never sent. The server reads the label and type from its own records. */
+  label?: string;
+  entity_type?: string;
   /** The workflow id, for a run. */
   parent_id?: string;
 }

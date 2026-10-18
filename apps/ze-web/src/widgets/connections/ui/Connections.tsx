@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ChoosePalette } from "@/features/choose-palette";
 import { useConnectionTest } from "@/features/test-api-connection";
 import { useUiManifestQuery } from "@/entities/ui-manifest";
@@ -9,8 +9,8 @@ import { RedirectHintTarget } from "@/shared/ui";
 import { Control, Dialog, Module } from "@/shared/ui/hud";
 import { PluginSettingsSection } from "./PluginSettingsSection";
 
-/** Governance › Connections: which server Ze talks to, plugin settings and the palette. */
-export function Connections() {
+/** Governance › Connections: which server Ze talks to, plugin settings and the palette. `extra` follows the settings sections; the page passes the plugin module slot (a widget cannot import a widget). */
+export function Connections({ extra }: { extra?: ReactNode }) {
   const cfg = getConfig();
   const { data: manifest } = useUiManifestQuery();
   const [serverUrl, setServerUrl] = useState(cfg?.serverUrl ?? "");
@@ -91,6 +91,8 @@ export function Connections() {
           </div>
         </div>
       </Module>
+
+      {extra}
 
       {forgetting && (
         <Dialog title="Forget this server?" onClose={() => setForgetting(false)}>

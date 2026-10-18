@@ -32,6 +32,14 @@ vi.mock("@/widgets/workflow-graph", () => ({
   WorkflowGraph: ({ steps }: { steps: { task: string }[] }) => <div data-testid="graph">{steps.map((s) => s.task).join(", ")}</div>,
 }));
 
+const { slot } = vi.hoisted(() => ({ slot: vi.fn() }));
+vi.mock("@/widgets/plugin-module", () => ({
+  PluginModuleSlot: (props: { slot: string }) => {
+    slot(props);
+    return <section aria-label={`slot ${props.slot}`} />;
+  },
+}));
+
 import { DoingWorkflowPage } from "./DoingWorkflowPage";
 
 const wf: WorkflowDetailResponse = {
@@ -73,6 +81,15 @@ describe("DoingWorkflowPage", () => {
     const { container } = view();
     expect(screen.getByTestId("graph")).toHaveTextContent("Current step");
     expect(container.textContent).not.toMatch(/Current definition/i);
+  });
+
+  it("mounts the doing.run slot for the selected run, with the workflow as parent", () => {
+    m.execs.data = [exec({ id: "e7" })];
+    view();
+    expect(screen.queryByRole("region", { name: "slot doing.run" })).toBeNull();
+    fireEvent.click(screen.getByText("Completed"));
+    expect(screen.getByRole("region", { name: "slot doing.run" })).toBeInTheDocument();
+    expect(slot).toHaveBeenLastCalledWith({ slot: "doing.run", subject: { kind: "workflow_run", id: "e7", parent_id: "wf-1" } });
   });
 
   it("says Never run when there are no executions", () => {
