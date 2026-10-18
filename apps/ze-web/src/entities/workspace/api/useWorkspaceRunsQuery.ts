@@ -13,7 +13,7 @@ export function useWorkspaceRunsQuery({ limit }: { limit: number }) {
     queryFn: async () => {
       const { data, error } = await listWorkspaceRuns({ query: { limit } });
       if (error) throw error;
-      return data ?? [];
+      return data?.runs ?? [];
     },
     refetchInterval: (q) => (hasRunning(q.state.data) ? RUN_POLL_MS : false),
   });

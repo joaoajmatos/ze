@@ -213,11 +213,9 @@ describe("useAnswerGate — stuck goals", () => {
     expect(refreshKeysForScreen("goals")).toContainEqual(queryKeys.goals);
   });
 
-  it("no path in the feature calls startGoal", async () => {
-    const { readFileSync, readdirSync } = await import("node:fs");
-    const { join } = await import("node:path");
-    const root = join(__dirname, "..");
-    const files = ["api/useAnswerGate.ts", "ui/AnswerGateFrameHandler.tsx", "model/gate-flights.ts", ...readdirSync(root).filter((f) => f === "index.ts")];
-    for (const f of files) expect(readFileSync(join(root, f), "utf8")).not.toMatch(/startGoal/);
+  it("no path in the feature calls startGoal", () => {
+    const sources = import.meta.glob(["../**/*.ts", "../**/*.tsx", "!../**/*.test.*"], { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+    expect(Object.keys(sources).length).toBeGreaterThan(2);
+    for (const text of Object.values(sources)) expect(text).not.toMatch(/startGoal/);
   });
 });

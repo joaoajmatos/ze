@@ -38,7 +38,7 @@ describe("workspace runs", () => {
   afterEach(() => vi.useRealTimers());
 
   it("lists with limit 20 and polls every 5 s only while a run is in progress", async () => {
-    listWorkspaceRuns.mockResolvedValue({ data: [run({ status: "in_progress" })], error: undefined });
+    listWorkspaceRuns.mockResolvedValue({ data: { runs: [run({ status: "in_progress" })] }, error: undefined });
     const { Wrapper } = wrapper();
     renderHook(() => useWorkspaceRunsQuery({ limit: 20 }), { wrapper: Wrapper });
     await waitFor(() => expect(listWorkspaceRuns).toHaveBeenCalledTimes(1));
@@ -48,7 +48,7 @@ describe("workspace runs", () => {
   });
 
   it("does not poll when nothing runs", async () => {
-    listWorkspaceRuns.mockResolvedValue({ data: [run({})], error: undefined });
+    listWorkspaceRuns.mockResolvedValue({ data: { runs: [run({})] }, error: undefined });
     const { Wrapper } = wrapper();
     renderHook(() => useWorkspaceRunsQuery({ limit: 20 }), { wrapper: Wrapper });
     await waitFor(() => expect(listWorkspaceRuns).toHaveBeenCalledTimes(1));
@@ -64,7 +64,7 @@ describe("workspace runs", () => {
   });
 
   it("workspace status polls on the runs data", async () => {
-    listWorkspaceRuns.mockResolvedValue({ data: [run({ status: "in_progress" })], error: undefined });
+    listWorkspaceRuns.mockResolvedValue({ data: { runs: [run({ status: "in_progress" })] }, error: undefined });
     const { Wrapper } = wrapper();
     renderHook(() => { useWorkspaceRunsQuery({ limit: 20 }); return useWorkspaceQuery(); }, { wrapper: Wrapper });
     await waitFor(() => expect(getWorkspace).toHaveBeenCalledTimes(1));

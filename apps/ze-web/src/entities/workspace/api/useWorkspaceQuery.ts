@@ -3,8 +3,8 @@ import type { WorkspaceRunResponse } from "@myguyze/ze-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 import { hasRunning } from "../lib/run-status";
-import { RUN_POLL_MS } from "./useWorkspaceRunsQuery";
 import type { WorkspaceStatus } from "./types";
+import { RUN_POLL_MS } from "./useWorkspaceRunsQuery";
 
 export function useWorkspaceQuery(enabled = true) {
   const queryClient = useQueryClient();
