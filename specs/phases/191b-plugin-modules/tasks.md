@@ -118,10 +118,10 @@
 ## Phase 6: Polish and cross-cutting
 
 - [x] T010 [L:lead] Merge `news`, then `web`. `make codegen` if a schema moved. Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. The quickstart grep returns nothing.
-- [ ] T011 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev-full`, with captures of Ask (News chip) and a Mind topic entity with the Sources module at 1440 and 390, no console errors; record them in the Handoffs note.
+- [x] T011 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev-full`, with captures of Ask (News chip) and a Mind topic entity with the Sources module at 1440 and 390, no console errors; record them in the Handoffs note.
 - [x] T012 [P] [L:docs] `docs/extending-ze.md`, `docs/frontend.md`, `docs/native-interface.md`, `packages/ze-sdk/README.md` and `core/contracts/ze-plugin/README.md` where they document UI contributions; doc-style skill.
-- [ ] T013 [P] [L:docs] README screenshots refreshed from T011's captures; `AGENTS.md` phase row 191b and the plugin-UI Learned Workspace Facts line; `specs/README.md` row 191b → Implemented; spec status.
-- [ ] T014 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
+- [x] T013 [P] [L:docs] README screenshots refreshed from T011's captures; `AGENTS.md` phase row 191b and the plugin-UI Learned Workspace Facts line; `specs/README.md` row 191b → Implemented; spec status.
+- [x] T014 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
 
 ---
 
@@ -142,3 +142,19 @@ After the contract step:
 ## Implementation Strategy
 
 - MVP = US1 (a module in each slot, proven by the fixture plugin) on the contract step. US2 moves News and is what the user sees. US3 is the hard cut done in the contract step. US4 is a regression guard.
+
+---
+
+## Handoffs
+
+**T001 differences from plan.md** (Socket):
+- `getContactsPage`, `ze_personal/ui/page.py` and ze-personal's `PluginPageResponse` stay: Mind › People reads them (Spec Architect ruling, a7abb032 on `web-overhaul-specs`). `queryKeys.contactsPage` stays; `queryKeys.pluginPage` is gone.
+- The fixture plugin is `apps/ze-api/tests/support/fixture_plugin.py` (ze-api tests cannot import ze-plugin's tests directory).
+- ze-plugin has no ze-components dependency: `validate_plugin_tree` checks dicts (tool binding, claim kind/subject/source, card-action intent); the primitive JSON-schema check and card-tone recompute live in the ze-api route.
+- No (ClaimKind, Provenance) pair table exists; `ClaimPosture` carries kind/subject/source. Plugins may state kind identity|fact|inference|suspicion, subject fact|person, and a `Provenance` source; card actions only with intent `open`.
+- `request_module_refresh` and `AppInterface.send_refresh` are async. The route finds a module's plugin by contribution id over `container.plugins`.
+- Lane `web`: Connections takes an `extra` node and `GovernancePage` mounts the `governance.connections` slot (FSD forbids widget to widget); `doing.run` mounts only when a run is selected.
+
+**T011 live run** (throwaway DB `ze_e2e_191b`, API 8080, vite 5200, portal "191b Web", 800x600; the 390 portal resize stalled, phone width is covered by unit tests only): Ask shows "3 What's new in my sources?" after the two core chips; a `topic` entity "climate" with two tagged articles shows the Sources module (title · source · date, posture `fact`), a `person` entity shows none; `/news` lands on `/ask`; `/notes` renders the not-found page ("Back to the world"); Governance shows the News settings section; no console errors. Screenshots (portal captures): Ask `/var/folders/n1/28pvt34n0q99sl5rw3df51hr0000gn/T/maestri-portal-8956055A-E00A-4609-81ED-63AE3F7D7816.png`, Mind entity `.../maestri-portal-F4F015C0-8A66-4DED-A9E1-C40702E72189.png`. Not run live: quickstart step 3 (provider failure line, covered by route and slot tests), the `refresh_news` live refresh, the `doing.run` slot, and the chip's routing turn (no OpenRouter calls).
+
+**T013/T014:** the repo has no README screenshots of News or plugin pages, so none were refreshed. Docs touched: `docs/{extending-ze,frontend,native-interface,sdk}.md`, `plugins/ze-news/README.md`, `AGENTS.md`, `specs/README.md`, spec status. `packages/ze-sdk/README.md` and `core/contracts/ze-plugin/README.md` do not document UI contributions, so are unchanged. The quickstart grep returns only the negative assertions in tests, `packages/ze-ui/fixtures/string-action-button.json` (a legacy string-action fixture) and an `.impeccable` plan note.
