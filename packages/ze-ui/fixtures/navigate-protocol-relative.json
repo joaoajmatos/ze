@@ -1,0 +1,10 @@
+[
+  {
+    "type": "button",
+    "label": "Go",
+    "action": {
+      "kind": "navigate",
+      "route": "//evil.example"
+    }
+  }
+]
