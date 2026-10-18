@@ -31,7 +31,7 @@
   - `core/contracts/ze-agents/tests/test_errors.py`: `VoiceInputError(ZeError)` with `UnsupportedAudioError`, `AudioTooLargeError`, `AudioTooLongError`, `AudioUnreadableError`, `AudioToolMissingError`, `TranscriptionFailedError`.
   
   Implement in `ze_agents/interface/types.py` (add `VoiceInput` and `RawInput.voice`; the audio fields stay for `core`), `ze_agents/screen.py` (`"voice"` in `known` only) and `ze_agents/errors.py`.
-- [ ] T003 [L:lead] Tests first:
+- [x] T003 [L:lead] Tests first:
   - `core/engine/ze-core/tests/conversation/test_message_trace_input.py`:
     - `InputTrace` round-trips through `asdict`, and `MessageTrace.input` defaults to `None`;
     - **store round-trip (V-2)**: `save_trace` then `get_trace` keeps `input` for a voice trace, a text trace keeps `None`, and a stored row without an `input` key parses with `None` (mocked pool returning the JSON).
