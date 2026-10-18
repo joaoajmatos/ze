@@ -16,7 +16,10 @@
 
 - [x] CHK006 Do the requirements state that fetched and searched text is data, never instructions? [Clarity, Spec §FR-003]
 - [x] CHK007 Is it explicit that a write prompted by page content still goes through the 181 gate? [Consistency, US1 scenario 3]
-- [x] CHK008 Is the reach of a fetch (OpenRouter's side, cannot reach the user's network) stated, so no Ze-side domain filter is expected? [Assumption, Edge Cases]
+- [x] CHK008 Is the reach of a fetch (OpenRouter's side, cannot reach the user's network) stated? [Assumption, Edge Cases]
+- [x] CHK008a Is the exfiltration case (a page makes the model put private memory into a fetch URL) covered by a requirement that does not depend on the model obeying instructions? [Coverage, Spec §FR-003a, US1 scenario 3, Gauge S-1; drafted strict, user decision pending]
+- [x] CHK008b Is the residual leak through search queries recorded as a known limit? [Gap → ADR amendment, research R6]
+- [x] CHK008c Is there a last-mile guard so a future caller of the OpenRouter client cannot send a non-allowlisted server tool? [Coverage, Spec §FR-005a]
 
 ## Spend and observability
 
@@ -32,4 +35,4 @@
 
 ## Notes
 
-- All items pass against spec, plan and tasks as of 2026-10-18.
+- All items pass against spec, plan and tasks as of 2026-10-18 (after Gauge review S-1 to S-11). CHK008a depends on the pending strict/open decision; under open fetch it fails by design and the risk is accepted by the user.

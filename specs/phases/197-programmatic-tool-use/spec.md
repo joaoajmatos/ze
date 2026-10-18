@@ -46,7 +46,7 @@ User answered all recommended (relayed by the Maestro). Limits as proposed.
 
 These follow from the facts above and are not open:
 
-- **Ze always initiates.** The script asks for a tool by writing a framed request line to its output; Ze reads it from the run's event stream, runs the tool through `call_tool` as the calling agent, and writes the reply into the script's input through a new sidecar endpoint. The sandbox never connects to Ze and holds no Ze credential.
+- **Ze always initiates.** Ze opens one connection to the sidecar per script (a WebSocket on the sidecar, authenticated like every sidecar endpoint). The script asks for a tool by writing a framed request on a dedicated pipe; the sidecar relays it to Ze over that connection; Ze runs the tool through `call_tool` as the calling agent and sends the reply back the same way. The sandbox never connects to Ze and holds no Ze credential.
 - **The stub is generated per run** from the calling agent's visible tools at that moment (its declared read tools, intersected with skill and procedure narrowing, minus server tools, `delegate_to_agent`, the workspace tools and the script tool itself). A name outside that set is refused inside Ze even if the script forges a request.
 - **Inner calls are ordinary tool calls.** Each one is a `ToolCall` with its own `call_id`, the script step's `call_id` as parent, 187b timing, gate outcome and undo payload. It counts against the turn's tool-call cap.
 - **Python only.** The stub module is `ze_tools`; each function takes keyword arguments matching the tool's schema and returns the tool's result as JSON-decoded data (a string when the tool returns text).
@@ -142,7 +142,7 @@ When the same script (same normalized source) succeeds three times with no failu
 - An inner call raises: the script gets an exception carrying the tool's error string, exactly what the model would have seen.
 - Concurrent inner calls (threads in the script): requests are handled one at a time in arrival order; the stub is synchronous.
 - The user cancels the turn: the script is killed and inner calls in flight finish or are abandoned the way a direct call is.
-- An unattended run (goal or workflow step) uses a script: inner calls carry the unattended origin and the step's pre-approved writes rules (181) unchanged.
+- Unattended runs (goal and workflow steps) do not get the script tool in this phase: only conversation turns wire a script runner, and the tool is hidden when no runner is wired. A later phase can extend it with the 181 pre-approved writes rules.
 - A tool whose result is not JSON-serializable: the stub receives its string form, as `_serialise_result` gives the model today.
 - Server tools (`openrouter:*`) and `delegate_to_agent` are never in the stub; they run on OpenRouter's side or start another agent.
 
@@ -151,7 +151,7 @@ When the same script (same normalized source) succeeds three times with no failu
 ### Functional Requirements
 
 - **FR-001**: Ze MUST offer one script tool (working name `run_tool_script(source)`) to agents that opt in (class attribute `script_tools = True`): companion, calendar, messenger and finance in this phase. It runs `source` as Python in the workspace sandbox with a generated `ze_tools` module.
-- **FR-002**: The script MUST reach Ze only through framed request lines on its output, answered by Ze through a sidecar input endpoint. The sandbox MUST hold no Ze credential and open no connection to Ze.
+- **FR-002**: The script MUST reach Ze only through framed requests on a dedicated pipe, relayed by the sidecar over a connection Ze opened and answered by Ze over the same connection. The sandbox MUST hold no Ze credential and open no connection to Ze.
 - **FR-003**: The stub MUST contain exactly the calling agent's visible tools at that moment (declared ∩ skill narrowing ∩ procedure narrowing), minus write tools, server tools, `delegate_to_agent`, workspace tools and the script tool. Ze MUST re-check every request against that set.
 - **FR-004**: Every inner call MUST run through `call_tool` as the calling agent, with its gates, hooks, retry rules, cap and undo handling unchanged, and MUST be recorded as a `ToolCall` with `parent_call_id` set to the script step's `call_id`.
 - **FR-005**: Writes MUST follow the 181 gate. The script's return value MAY carry proposed writes (tool name and arguments); after the script ends Ze runs each through `call_tool` as a direct call of the calling agent, recorded with `parent_call_id`. A write requested from inside the script MUST be refused with `writes_must_be_proposed`. The stub MUST hold read tools only.
@@ -188,6 +188,6 @@ When the same script (same normalized source) succeeds three times with no failu
 - Scripts are short-lived (seconds); a script never detaches into a follow-up turn the way a long `workspace_run` does.
 - The per-script spend is attributed from cost rows tagged with the inner calls' ids (the 187b recorder); tools that make no model call cost nothing.
 - Stub signatures come from tool schemas; return values stay untyped (JSON data or string). Typed returns are out of scope.
-- The sidecar gains one endpoint to write to a running script's input and one way to mark a run as a script run; its network isolation and secret stripping stay as they are.
+- The sidecar gains one script endpoint (a WebSocket Ze opens), a script sandbox user with no network, and a script slot beside the run slot; the workspace run path, its network rules and its secret stripping stay as they are.
 - Normalized source = whitespace and comments stripped, literal values kept.
 - 187b lands before this phase is built.
