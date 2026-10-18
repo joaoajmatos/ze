@@ -1,0 +1,17 @@
+[
+  {
+    "type": "gauge",
+    "label": "Load",
+    "value": 0.4,
+    "children": [
+      {
+        "type": "text",
+        "content": "inside"
+      }
+    ]
+  },
+  {
+    "type": "text",
+    "content": "still here"
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "type": "row",
+    "children": [
+      {
+        "type": "badge",
+        "label": "default"
+      },
+      {
+        "type": "badge",
+        "label": "ok",
+        "color": "success"
+      },
+      {
+        "type": "badge",
+        "label": "warn",
+        "color": "warning"
+      },
+      {
+        "type": "badge",
+        "label": "bad",
+        "color": "error"
+      }
+    ]
+  }
+]

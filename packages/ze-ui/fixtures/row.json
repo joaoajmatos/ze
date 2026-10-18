@@ -1,0 +1,18 @@
+[
+  {
+    "type": "row",
+    "align": "between",
+    "gap": "sm",
+    "children": [
+      {
+        "type": "text",
+        "content": "Left"
+      },
+      {
+        "type": "badge",
+        "label": "new",
+        "color": "info"
+      }
+    ]
+  }
+]

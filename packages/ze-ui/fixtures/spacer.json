@@ -1,0 +1,14 @@
+[
+  {
+    "type": "text",
+    "content": "above"
+  },
+  {
+    "type": "spacer",
+    "size": "lg"
+  },
+  {
+    "type": "text",
+    "content": "below"
+  }
+]
