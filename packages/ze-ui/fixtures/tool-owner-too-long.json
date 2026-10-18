@@ -1,0 +1,12 @@
+[
+  {
+    "type": "button",
+    "label": "Go",
+    "action": {
+      "kind": "tool",
+      "owner": "ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo",
+      "tool": "t",
+      "args": {}
+    }
+  }
+]

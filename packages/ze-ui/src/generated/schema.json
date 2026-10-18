@@ -365,19 +365,26 @@
       "type": "object",
       "properties": {
         "owner": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 64
         },
         "tool": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 64
         },
         "args": {
           "type": "object",
           "additionalProperties": {
             "type": [
-              "boolean",
+              "string",
               "number",
-              "string"
-            ]
+              "boolean"
+            ],
+            "maxLength": 200
+          },
+          "maxProperties": 12,
+          "propertyNames": {
+            "maxLength": 64
           }
         },
         "kind": {
@@ -397,7 +404,7 @@
       "properties": {
         "route": {
           "type": "string",
-          "pattern": "^/"
+          "pattern": "^/(?!/)(?!.*\\.\\.)"
         },
         "kind": {
           "const": "navigate"
@@ -420,7 +427,8 @@
           ]
         },
         "topic": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 120
         },
         "kind": {
           "const": "compose"
@@ -693,7 +701,8 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "uniqueItems": true
         },
         "row_actions": {
           "type": "array",

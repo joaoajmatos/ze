@@ -26,7 +26,9 @@ class Table:
     rows: list[list[str]]
     title: str | None = None
     caption: str | None = None
-    keys: list[str] | None = None
+    keys: list[str] | None = field(
+        default=None, metadata={"json_schema": {"uniqueItems": True}}
+    )
     row_actions: list[RowAction] | None = None
     claim: ClaimPosture | None = None
     type: Literal["table"] = field(default="table", init=False)
@@ -36,6 +38,8 @@ class Table:
             raise InvalidComponentError(
                 f"table has {len(self.rows)} rows but {len(self.keys)} keys"
             )
+        if self.keys is not None and len(set(self.keys)) != len(self.keys):
+            raise InvalidComponentError("table keys must be unique")
         if self.row_actions and self.keys is None:
             raise InvalidComponentError("table row actions need keys")
 

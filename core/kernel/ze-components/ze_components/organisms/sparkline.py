@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -21,6 +22,8 @@ class Sparkline:
     type: Literal["sparkline"] = field(default="sparkline", init=False)
 
     def __post_init__(self) -> None:
+        if not all(math.isfinite(p) for p in self.points):
+            raise InvalidComponentError("sparkline points must be finite numbers")
         if len(self.points) > SPARKLINE_MAX_POINTS:
             raise InvalidComponentError(
                 f"sparkline holds at most {SPARKLINE_MAX_POINTS} points, got {len(self.points)}"

@@ -176,3 +176,65 @@ def test_new_primitives_validate_their_shape():
         keys=["k"],
         row_actions=[RowAction("Go", AskAction("go"))],
     )
+
+
+def test_tool_action_bounds():
+    with pytest.raises(InvalidComponentError):
+        ToolAction("o" * 65, "t", {})
+    with pytest.raises(InvalidComponentError):
+        ToolAction("o", "", {})
+    with pytest.raises(InvalidComponentError):
+        ToolAction("o", "t", {f"k{i}": 1 for i in range(13)})
+    with pytest.raises(InvalidComponentError):
+        ToolAction("o", "t", {"k" * 65: 1})
+    with pytest.raises(InvalidComponentError):
+        ToolAction("o", "t", {"k": "x" * 201})
+    defs = export_json_schema()["$defs"]["ToolAction"]["properties"]
+    assert defs["owner"]["maxLength"] == 64
+    assert defs["args"]["maxProperties"] == 12
+
+
+def test_compose_action_bounds():
+    with pytest.raises(InvalidComponentError):
+        ComposeAction("nope")  # type: ignore[arg-type]
+    with pytest.raises(InvalidComponentError):
+        ComposeAction("topic", topic="x" * 121)
+    assert ComposeAction("topic", topic="x" * 120).topic == "x" * 120
+    assert (
+        export_json_schema()["$defs"]["ComposeAction"]["properties"]["topic"][
+            "maxLength"
+        ]
+        == 120
+    )
+
+
+@pytest.mark.parametrize("route", ["//evil.example", "/a/../b", "/..", "x"])
+def test_navigate_refuses_protocol_relative_and_dotdot(route):
+    with pytest.raises(InvalidComponentError):
+        NavigateAction(route)
+
+
+def test_table_keys_must_be_unique():
+    from ze_components import Table
+
+    with pytest.raises(InvalidComponentError):
+        Table(headers=["a"], rows=[["1"], ["2"]], keys=["k", "k"])
+    assert (
+        export_json_schema()["$defs"]["Table"]["properties"]["keys"]["uniqueItems"]
+        is True
+    )
+
+
+def test_sparkline_points_must_be_finite():
+    from ze_components import Sparkline
+
+    for bad in (float("nan"), float("inf")):
+        with pytest.raises(InvalidComponentError):
+            Sparkline("s", points=[1.0, bad])
+
+
+def test_summary_names_the_new_primitives():
+    from ze_components.summary import describe_components
+
+    text = describe_components([{"type": "stat_row"}, {"type": "sparkline"}])
+    assert "stat_row" not in text and "stat row" in text
