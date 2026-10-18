@@ -108,9 +108,9 @@ describe("partial telemetry frames", () => {
   });
 
   it("merges tool rows by call_id: a second row with the same id replaces the first in place", () => {
-    const call = (call_id: string, gate: string, name = "send_email") => ({ call_id, name, gate, duration_ms: 0, success: true, result_snippet: "" }) as never;
-    partial({ tool_calls: [call("a", "none", "list_events"), call("b", "parked")] });
-    partial({ tool_calls: [{ ...call("b", "approved"), duration_ms: 300 }] });
+    const call = (call_id: string, gate: string, name = "send_email") => ({ call_id, name, gate, duration_ms: 0, success: true, result_snippet: "" });
+    partial({ tool_calls: [call("a", "none", "list_events"), call("b", "parked")] as never });
+    partial({ tool_calls: [{ ...call("b", "approved"), duration_ms: 300 }] as never });
     expect(bucket().pendingTrace?.tool_calls?.map((c) => [c.call_id, c.gate])).toEqual([["a", "none"], ["b", "approved"]]);
     expect(bucket().pendingTrace?.tool_calls?.[1].duration_ms).toBe(300);
   });

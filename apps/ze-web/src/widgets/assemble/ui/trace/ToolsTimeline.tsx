@@ -23,7 +23,7 @@ export function ToolsTimeline({ trace, partial = false, highlight = [] }: { trac
               ))}
             </div>
             <ul>
-              {lane.calls.map((c, i) => (
+              {lane.calls.map((c) => (
                 <li key={c.id} data-highlight={highlight.includes(c.name) ? "" : undefined}>
                   <span className="key">{c.name}</span>
                   <span className="ro muted">{c.returned ? "returned" : `${c.durationMs} ms`}</span>
