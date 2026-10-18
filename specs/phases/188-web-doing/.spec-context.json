@@ -4,7 +4,7 @@
   "branch": "188-web-doing",
   "currentStep": "implement",
   "status": "implementing",
-  "currentTask": "T006",
+  "currentTask": "T020",
   "history": [
     {
       "step": "implement",
@@ -53,6 +53,126 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-17T23:51:50.964Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007a",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:14.115Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:14.510Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:14.788Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:15.020Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:15.360Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:15.625Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:15.866Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:16.137Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:16.545Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:16.845Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:17.235Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:17.597Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:17.873Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:18.186Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:18.515Z"
     }
   ],
   "task_summaries": {
@@ -79,6 +199,66 @@
     "T006": {
       "status": "DONE",
       "did": "stuck variant on answer-gate"
+    },
+    "T007a": {
+      "status": "DONE",
+      "did": "reused HeldWriteCard"
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "DoingNeedsYou"
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "GoalsBoard"
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "WorkflowsBoard"
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Runs"
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "SkillsQueue"
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "MilestoneField"
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "workflow-graph restyle, banner deleted"
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "DoingGoalPage"
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "DoingWorkflowPage"
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "DoingPage"
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "router, redirects, DoingInterim deleted"
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "old pages and widgets deleted"
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "linked loop reminders on goal page"
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "chat chips per kind and publishers"
     }
   }
 }

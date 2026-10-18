@@ -26,8 +26,8 @@ describe("notificationHref", () => {
   });
 
   it("falls back to the list when a parent id is missing", () => {
-    expect(notificationHref(n("goal_gate", "gate-1"))).toBe("/doing/goals");
-    expect(notificationHref(n("workflow_execution", "e-1", null))).toBe("/doing/workflows");
+    expect(notificationHref(n("goal_gate", "gate-1"))).toBe("/doing#goals");
+    expect(notificationHref(n("workflow_execution", "e-1", null))).toBe("/doing#workflows");
   });
 
   it("returns null for an unknown type or a missing target", () => {
