@@ -21,11 +21,13 @@ JSON on `messages.trace` (no migration). New and changed fields on `MessageTrace
 
 **RoutingScore**: `agent`, `score`.
 
-**ToolCallTrace** additions: `call_id` (str), `start_offset_ms` (int \| null). Live rows also carry `gate`.
+**ToolCallTrace** additions: `call_id` (str), `start_offset_ms` (int \| null; null when the recorder is partial or the offset is out of range). Live rows also carry `gate`.
 
 **JudgmentTrace** additions: `surface` (str \| null), `bar` ({name: str, value: float} \| null).
 
-**ze-agents `ToolCall`** additions: `call_id` (uuid hex; the `ParkedWrite`/`ApprovedCall` id for parked and approved calls), `started_at` (`time.monotonic()` seconds; survives delegate nesting). **`AgentContext.tool_sink`**: runtime-only callable.
+**ze-agents `ParkedWrite`** addition: `trace_call_id` (uuid hex, set at park time; checkpointed with the park state).
+
+**ze-agents `ToolCall`** additions: `call_id` (uuid hex; `ParkedWrite.trace_call_id` for parked and approved calls), `started_at` (`time.monotonic()` seconds; survives delegate nesting). **`AgentContext.tool_sink`**: runtime-only callable.
 
 **RoutingEnvelope** additions: `threshold`, `gap_threshold`.
 

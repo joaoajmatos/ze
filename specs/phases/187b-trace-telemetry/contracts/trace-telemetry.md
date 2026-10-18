@@ -17,7 +17,7 @@ Tool partial (one per finished call, from the tool sink):
 "tool_calls": [{ "call_id": "9f…", "name": "list_events", "agent": "calendar",
                  "gate": "none", "start_offset_ms": 640, "duration_ms": 312, "success": true, "result_snippet": "…" }]
 ```
-Clients append `stages` and merge `tool_calls` by `call_id`. A row with `gate: "parked"` is waiting for the user; its approved run later arrives with the same `call_id` and replaces it. Live frames are best effort: a frame that cannot be sent within 1 s is dropped, and the committed trace is the complete record.
+Clients append `stages` (de-duplicated by `run`, `name`, `start_ms`) and merge `tool_calls` by `call_id`; partials for a message whose committed trace has arrived are ignored. The server drains queued partials (at most 1 s) before it sends the committed trace. A row with `gate: "parked"` is waiting for the user; its approved run later arrives with the same `call_id` and replaces it. Live frames are best effort: a frame that cannot be sent within 1 s is dropped, and the committed trace is the complete record.
 
 ## Committed trace (final `trace_update` frame and `GET /api/v0/messages/{id}/trace`)
 ```json

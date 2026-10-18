@@ -31,8 +31,8 @@
 - **Rationale**: awaiting a WebSocket send in each of about 17 node wrappers would let a slow or displaced client slow the turn (FR-008), and an await in `finally` during a cancel is fragile.
 
 ## R9. Parked and approved calls share an id
-- **Decision**: a parked call's `call_id` is its `ParkedWrite.call_id`; the approved run reuses `ApprovedCall.call_id`.
-- **Rationale**: one call in the committed trace; the live parked row is replaced in place, never shown beside its approved run.
+- **Decision**: `ParkedWrite` gains `trace_call_id` (uuid at park time); the parked call and its approved run both use it as `ToolCall.call_id`.
+- **Rationale**: one call in the committed trace, replaced in place live. The provider's tool-call id (`ParkedWrite.call_id`) is unique only within one assistant message, and providers renumber across rounds and delegates (Gauge N-3), so it cannot serve as a trace id.
 
 ## R7. Rename
 - **Decision**: `total_duration_ms` → `tool_duration_ms` everywhere; new `turn_duration_ms` (clarification Q2). Old stored traces keep the old key; the store reader maps a stored `total_duration_ms` to nothing (dropped), since the value was never a total.

@@ -50,7 +50,7 @@ Gate: pass.
 | `ToolCall` (`ze_agents/types.py`), `BaseAgent.call_tool` (`base_agent.py:355-540`) | every agent loop; `_extract_tool_calls` | Adds `call_id` and `started_at` (monotonic); `call_tool` emits each returned call to `ctx.tool_sink`. |
 | `delegate_to_agent` (`ze_agents/delegate.py:267` builds `sub_ctx` field by field; `:318-330` serializes nested calls with a fixed field list) | conductor turns | `sub_ctx` gets `tool_sink=ctx.tool_sink` (and `token_sink` stays as it is today); the nested dict carries `call_id` and `started_at`. |
 | `flatten_tool_calls` (`ze_agents/nested_tools.py:38-57`) | `record_trace`, retry eligibility | Restores `call_id` and `started_at` from nested dicts (no new uuid). |
-| `ParkedWrite.call_id`, `ApprovedCall.call_id` (`ze_agents/park.py:46,60`) | park and resume | A parked call's `ToolCall.call_id` is its `ParkedWrite.call_id`; the approved call run on resume reuses `ApprovedCall.call_id`, so live and committed show one call. T001 confirms how `ParkedWrite.call_id` is derived. |
+| `ParkedWrite` (`ze_agents/park.py:58`), `ApprovedCall` (`:39`), the park and resume sites (`base_agent.py:578,950`) | park and resume | `ParkedWrite` gains `trace_call_id` (uuid at park time); the parked `ToolCall` and the approved run both take it as `call_id`, so live and committed show one call. The provider id (`call_id`) stays the approval key. |
 | `AgentContext.token_sink` pattern (`ze_agents/types.py:113-115`) and its wiring (`nodes/execution.py:299,323,400,474`) | execute_tool, subtasks, delegates | Mirror: `tool_sink` beside `token_sink`. |
 | `CostTracker.record` (`telemetry/tracker.py`) | OpenRouter client, System One client | Also adds the call to the current `TurnTelemetry`. |
 | `invoke_raw_turn`, `resume_turn` (`conversation/turn.py`) | `wiring/container.py:165`, `api/ws/{turns,confirmation,rollback_state}.py` | Start or continue the recorder; stamp `final_state["message_trace"]`; delete the `on_tool_end` branch; add `extraction_confidence` to the memory partial. |
@@ -68,7 +68,7 @@ Gate: pass.
   - `record_stage(name, started, ended)`: both from `time.monotonic()`; `start_ms = started - turn start`, `duration_ms = ended - started`. One clock for stages and tool rows (`ToolCall.started_at` is monotonic too), valid across a resume because the registry is in process.
   - `pause()` stamps `paused_at` when a run returns interrupted; `resume` adds `now - paused_at` to `paused_ms`.
   - `freeze()`, called by `stamp`: records that arrive later (fire-and-forget tasks that copied the ContextVar) are ignored. Work that finishes before the stamp counts; the stamp is the line.
-  - Sending: `emit(fields)` puts the frame on a per-turn queue and returns at once; one worker task sends in order with `asyncio.wait_for(send, 1.0)` and drops a frame that fails or times out (logged). `finish` stops the worker. A slow or displaced client never delays a node.
+  - Sending: `emit(fields)` puts the frame on a per-turn queue and returns at once; one worker task sends in order with `asyncio.wait_for(send, 1.0)` and drops a frame that fails or times out (logged). `finish` stops the worker. A slow or displaced client never delays a node. Before the stamp, `drain()` waits for the queue to empty, bounded at 1 s in total (anything still queued is dropped), so no stage frame can arrive after the committed trace (N-1).
   - The send target (run 1's `pending_message_id` and thread) is set once by `invoke_raw_turn` and kept for later runs; a recorder recreated after a restart has none (no live stage frames, stored trace stamped partial).
   - `record_call(model, prompt_tokens, completion_tokens, audio_seconds=None)`: rows with `audio_seconds` (transcription) are skipped.
   - `stamp(trace, main_model) -> MessageTrace`: returns `replace(trace, stages=…, turn_duration_ms=now - start, paused_ms=…, usage=…, telemetry_partial=…)`. Usage: cost from `estimate_cost_usd`; `estimated` when a model fell back to `DEFAULT_PRICING` or `DEFAULT_CONTEXT_WINDOW_TOKENS`; `context_fill = max_prompt_tokens(main) / get_context_window(main)`; models whose slug starts with a System One prefix (`typesafe/jev-`, read from the price table's System One entry) are summed into `system_one_tokens` and kept out of `main_model`.
@@ -91,7 +91,7 @@ Gate: pass.
 
 ### ze-core: trace building
 
-- `record_trace`: `tool_duration_ms = sum(durations)` (renamed), `routing_scores`/`routing_thresholds` from the envelope, tool rows carry `call_id` and `start_offset_ms` (from `ToolCall.started_at` against the recorder's start, or null without a recorder).
+- `record_trace`: `tool_duration_ms = sum(durations)` (renamed), `routing_scores`/`routing_thresholds` from the envelope, tool rows carry `call_id` and `start_offset_ms` (from `ToolCall.started_at` against the recorder's start). It is null without a recorder, when the recorder is `partial` (a restart gave it a new monotonic base, while run-1 `started_at` values were checkpointed under the old one), or when the offset falls outside 0..now (N-2).
 - `judgments_from_result(result, *, question_kinds, consumed, skip_reason=None, surface: str, bars: Mapping[str, JudgmentBar | None])`. Each row gets `surface` and `bars.get(qid)`; a surface with null bars passes `{}`, and rows say `bar: null` with `surface` set (the instrument reads that as uncalibrated). Bar maps, read from the surface config in force:
   - routing: the Choice question → `choice_trust`, the multi-specialist Noul → `multi_specialist_hold`;
   - skills: Choice → `choice_trust`, `needs_skill` → `needs_skill_hold`;
@@ -108,7 +108,8 @@ Gate: pass.
 
 - `ToolCall.call_id: str = field(default_factory=lambda: uuid4().hex)`, `ToolCall.started_at: float | None = None` (the same `time.monotonic()` value `call_tool` already takes as `start`).
 - `AgentContext.tool_sink: Any | None = field(default=None, repr=False)`.
-- `call_tool` funnels every return through `_finish(ctx, tool_call)`, which calls `ctx.tool_sink(tool_call)` inside try/except (the sink only enqueues; an error is logged, never raised). A parked call sets `call_id` from its `ParkedWrite`; a call run under `ApprovedCall` sets it from `ApprovedCall.call_id`.
+- Ids for parked calls (N-3): `ParkedWrite.call_id` is the provider's tool-call id (`base_agent.py:950` passes `_call_id=tc["id"]`; `ApprovedCall` is built from it at `:578`), unique only inside one assistant message. `ParkedWrite` gains `trace_call_id` (uuid hex, set at park time); the parked `ToolCall.call_id` is that value, and the resume path, which holds the `ParkedWrite`, sets the approved call's `call_id` from it. Provider ids stay what approval matches on.
+- `call_tool` funnels every return through `_finish(ctx, tool_call)`, which calls `ctx.tool_sink(tool_call)` inside try/except (the sink only enqueues; an error is logged, never raised). A parked call sets `call_id` from its `ParkedWrite.trace_call_id`; the approved run on resume sets it from the same `ParkedWrite.trace_call_id`.
 - `delegate_to_agent`: `sub_ctx` gains `tool_sink=ctx.tool_sink`; the nested dict adds `call_id` and `started_at`. `flatten_tool_calls` restores both.
 
 ### ze-api
@@ -118,7 +119,7 @@ Gate: pass.
 ### ze-web (lane `web`)
 
 - `toTraceFrame` (`features/trace-state/lib/`): passes every new field from the REST trace to the frame, so a reply opened from history shows the same instruments as live.
-- `useTraceStore`: delete `pendingArrivals`, `arrivalsByMessage`, `pendingSentAt`, `sentAtByMessage` and `stagesIn`; `mergePartialTrace` appends `stages` and merges `tool_calls` by `call_id` (a later row for the same id replaces the earlier one).
+- `useTraceStore`: delete `pendingArrivals`, `arrivalsByMessage`, `pendingSentAt`, `sentAtByMessage` and `stagesIn`; `mergePartialTrace` appends `stages`, de-duplicated by `(run, name, start_ms)`, and merges `tool_calls` by `call_id` (a later row for the same id replaces the earlier one); a partial for a message that already has its committed trace is ignored (N-1).
 - `signal.ts`: `stagesFor(trace, streaming)` maps server stages (in order) to the signal path's labels (`preprocess`, `screen`, `route`, `decompose`, `memory`, `skills`, `tier`, `preflight`, `execute`, `confirm`, `correlate`, `surface`, `synthesize`, `trace`, `memory write`); offsets come from `start_ms`. Stages from a second run are drawn after a gap marked with `paused_ms`.
 - `readouts.ts`: the total is `turn_duration_ms` (with "partial" when `telemetry_partial`), active time is total minus `paused_ms`, tool time is `tool_duration_ms`; the context-fill bar is clamped at 100% while the number shows the real value; tokens, cost and context fill from `usage` ("est." when `estimated`); System One tokens apart.
 - `routing.ts`: the shortlist bars from `routing_scores` against `routing_thresholds`.
