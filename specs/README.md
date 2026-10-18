@@ -230,7 +230,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 186 | [World (W2)](phases/186-web-world/spec.md) | ✅ Implemented |
 | 187 | [Ask / Assemble (W3)](phases/187-web-ask-assemble/spec.md) | ✅ Implemented |
 | 187b | [Trace Telemetry](phases/187b-trace-telemetry/spec.md) | 🔲 Ready to implement (after 187; parallel with the web phases) |
-| 188 | [Doing (W4)](phases/188-web-doing/spec.md) | 🔲 Ready to implement (with 183 + 184; reminders after 185, screen context after 195) |
+| 188 | [Doing (W4)](phases/188-web-doing/spec.md) | ✅ Implemented |
 | 189 | [Mind (W5)](phases/189-web-mind/spec.md) | ✅ Implemented |
 | 190 | [Governance (W6)](phases/190-web-governance/spec.md) | ✅ Implemented |
 | 191a | [UI Primitives v2](phases/191a-ui-primitives-v2/spec.md) | 🔲 Ready to implement (runs now; replaces the parked 191) |
