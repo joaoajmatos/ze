@@ -18,7 +18,8 @@
 - [x] CHK007 Is it explicit that a write prompted by page content still goes through the 181 gate? [Consistency, US1 scenario 3]
 - [x] CHK008 Is the reach of a fetch (OpenRouter's side, cannot reach the user's network) stated? [Assumption, Edge Cases]
 - [x] CHK008a Is the exfiltration case (a page makes the model put private memory into a fetch URL or search query) addressed by a recorded decision? [Coverage, Spec Clarifications 2026-10-18: user chose open fetch and accepted the risk; mitigations: cap, instructions, targets on the trace (FR-007a)]
-- [x] CHK008d Can the user see what left (every fetch target and search query Ze can see), and is the case where OpenRouter exposes none stated? [Coverage, Spec §FR-007a, FR-009, T025]
+- [x] CHK008d Can the user see what left (every fetch target and search query Ze can see), is the list's completeness stated per kind (unreported counts, dropped entries, cut targets), and is the case where OpenRouter exposes none stated? [Coverage, Spec §FR-007a, FR-009, T025; re-ticked after Gauge D-2]
+- [x] CHK008e Is a source shown to the user only for a page that was actually read (never a model-written or failed fetch URL)? [Consistency, Spec §FR-003b; Gauge D-1]
 - [x] CHK008b Is the residual leak through search queries recorded as a known limit? [Gap → ADR amendment, research R6]
 - [x] CHK008c Is there a last-mile guard so a future caller of the OpenRouter client cannot send a non-allowlisted server tool? [Coverage, Spec §FR-005a]
 

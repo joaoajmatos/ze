@@ -8,11 +8,13 @@ No migration. All changes are in-process types or fields of `messages.trace` JSO
 
 **SERVER_TOOLS** (ze-agents): a `MappingProxyType` over `{"openrouter:web_search": builder, "openrouter:web_fetch": builder}`. The only allowlist; read-only at runtime.
 
-**RawCapture** (ze-core, per model call): `sources: list[Source]`, `server_tools: Counter[str]` (kind = reported key minus `_requests`); each response body contributes its last `server_tool_use` once; `server_tool_targets: list[tuple[str, str]]` (kind, target) from returned server tool calls and fetch result records, deduplicated, target ≤ 500 chars; each `web_fetch` target is also a `Source`.
+**RawCapture** (ze-core, per model call): `sources: list[Source]`, `server_tools: Counter[str]` (kind = reported key minus `_requests`); each response body contributes its last `server_tool_use` once; `server_tool_records: list[tuple[str, str, str]]` (kind, url, status) from fetch result records in the body; a record whose status is not `failed` is also a `Source`. Returned server tool calls are not parsed here: the agent loop owns them (`ToolCallTrace.target`).
 
-**TurnTelemetry** (187b recorder) addition: `server_tools: Counter[str]`, `server_tool_targets: list[tuple[str, str]]` (≤ 50), `add_server_tools(counts, targets)`.
+**TurnTelemetry** (187b recorder) addition: `server_tools: Counter[str]`, `server_tool_records: list[tuple[str, str, str]]` (pre-dedup), `add_server_tools(counts, records)`. `stamp` merges records with the call targets of the trace's server tool rows through `merge_targets` (`ze_core/telemetry/server_tool_targets.py`).
 
-**MessageTrace** additions: `server_tools: dict[str, int]` (default `{}`), `server_tool_targets: list[{kind, target}]` (default `[]`), `server_tool_targets_missing: bool` (true when fetches were counted but no fetch target was captured). Same fields on `MessageTraceResponse` and the final `trace_update` frame.
+**ServerToolTarget**: `kind: str`, `target: str` (≤ 500 chars), `status: "requested" | "completed" | "failed"`, `length: int` (full length), `cut: bool`.
+
+**MessageTrace** additions: `server_tools: dict[str, int]` (default `{}`), `server_tool_targets: list[ServerToolTarget]` (≤ 50, default `[]`), `server_tool_targets_dropped: int` (default 0), `server_tool_unreported: dict[str, int]` (kind → counted requests without a target; default `{}`). **ToolCallTrace** addition: `target: str | None` (url or query of a server tool row). Same fields on the REST responses and the final `trace_update` frame. Targets may hold signed URLs or tokens the user pasted; they are the user's own data behind the API key and are never written to logs.
 
 **config.yaml** addition:
 
