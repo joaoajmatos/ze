@@ -14,6 +14,7 @@ from ze_agents.model_resolution import resolve_model
 from ze_agents.tasks import fire_and_forget
 from ze_core.conversation.messages.judgments import judgments_from_result
 from ze_core.conversation.messages.types import JudgmentTrace
+from ze_core.orchestration.judgment_bars import intake_bars
 from ze_core.openrouter.context_windows import get_context_window
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.nodes.correlation import _format_text_section
@@ -169,7 +170,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
                     consumed=intake.consumed,
                     skip_reason=intake.skip_reason,
                     surface="commitment_intake",
-                    bars={},
+                    bars=intake_bars(config["configurable"].get("settings")),
                 )
                 outcome_row = _outcome_row(intake)
                 if outcome_row is not None:

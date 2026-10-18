@@ -6,6 +6,7 @@ from langchain_core.runnables import RunnableConfig
 
 from ze_logging import get_logger
 from ze_core.conversation.messages.judgments import judgments_from_result
+from ze_core.orchestration.judgment_bars import bar_map
 from ze_core.orchestration.judgment_state import build_judgment_state
 from ze_core.orchestration.state import AgentState
 from ze_core.telemetry.context import set_agent_context
@@ -54,7 +55,10 @@ async def match_skills(state: AgentState, config: RunnableConfig) -> dict:
             consumed=judgment.consumed,
             skip_reason=judgment.skip_reason,
             surface="skills",
-            bars={},
+            bars=bar_map(
+                matcher.surface,
+                {"skill": "choice_trust", "needs_skill": "needs_skill_hold"},
+            ),
         )
         update["judgments"] = [*(state.get("judgments") or []), *rows]
 
