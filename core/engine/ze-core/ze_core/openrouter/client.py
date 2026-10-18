@@ -18,6 +18,7 @@ from ze_agents.errors import (
     RateLimitError,
 )
 from ze_agents.types import Source
+from ze_core.openrouter.audio import normalise_audio_format, to_mp3
 from ze_core.openrouter.citations import CitationTransport, capture_citations
 from ze_core.openrouter.types import TokenUsage
 from ze_logging import get_logger
@@ -25,7 +26,7 @@ from ze_logging import get_logger
 _RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 _NO_RECORD_STATUS = {400, 404}
 _BACKOFFS = [1.0, 2.0, 4.0]
-_TRANSCRIBE_FORMATS = {"mp3", "wav", "ogg", "flac", "m4a"}
+_TRANSCRIBE_FORMATS = {"mp3", "wav"}
 _TRANSCRIBE_SYSTEM = (
     "You are a transcription engine. Transcribe the audio exactly as spoken. "
     "Output only the transcript — no commentary, no punctuation corrections, no explanations."
@@ -445,9 +446,9 @@ class OpenRouterClient:
         Unsupported formats are converted to mp3 via ffmpeg before sending.
         Returns the stripped transcript string.
         """
-        fmt = _normalise_audio_format(audio_format)
+        fmt = normalise_audio_format(audio_format)
         if fmt not in _TRANSCRIBE_FORMATS:
-            audio_bytes = await _to_mp3(audio_bytes)
+            audio_bytes = await to_mp3(audio_bytes, fmt)
             fmt = "mp3"
         message = {
             "role": "user",
@@ -555,39 +556,6 @@ class OpenRouterClient:
             return
 
         raise last_exc or OpenRouterError("All retry attempts exhausted")
-
-
-def _normalise_audio_format(fmt: str) -> str:
-    """Extract a bare format string from a MIME type or format hint."""
-    fmt = fmt.lower()
-    for known in ("ogg", "mp3", "wav", "flac", "m4a"):
-        if known in fmt:
-            return known
-    if "mpeg" in fmt:
-        return "mp3"
-    if "mp4" in fmt:
-        return "m4a"
-    return fmt.split("/")[-1].split(";")[0].strip()
-
-
-async def _to_mp3(audio_bytes: bytes) -> bytes:
-    proc = await asyncio.create_subprocess_exec(
-        "ffmpeg",
-        "-i",
-        "pipe:0",
-        "-f",
-        "mp3",
-        "-q:a",
-        "4",
-        "pipe:1",
-        stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.DEVNULL,
-    )
-    stdout, _ = await proc.communicate(input=audio_bytes)
-    if proc.returncode != 0:
-        raise RuntimeError("ffmpeg conversion failed")
-    return stdout
 
 
 def _build_messages(messages: list[dict], system: str | None) -> list[dict]:

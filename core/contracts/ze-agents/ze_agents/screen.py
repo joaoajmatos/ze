@@ -122,6 +122,7 @@ class ScreenContext:
             "compose",
             "topic",
             "workspace_placed",
+            "voice",
         }
         for key in wire:
             if key not in known:

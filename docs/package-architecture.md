@@ -161,6 +161,8 @@ packages. Plugin authors never import `ze_core` directly — use `ze_sdk` instea
 | `routing/` | `EmbeddingRouter`, `tier.py` (model tier), `RoutingFallback` |
 | `conversation/` | Message/session/confirmation stores + graph turn helpers (`turn.py`), `retry.py` (Retry eligibility), `rewind.py` (thread history rewind for Retry) |
 | `openrouter/` | `OpenRouterClient` (satisfies `LLMClient` Protocol), streaming, transcription |
+| `openrouter/audio.py` | `probe_duration` (measures a recording with `ffprobe`), audio format mapping, MP3 conversion with `ffmpeg` |
+| `voice.py` | `transcribe_audio`: measures, limits and transcribes one recording for the voice route |
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context vars |
 | `embeddings.py` | Shared `intfloat/multilingual-e5-base` singleton |
 | `nli.py` | `LocalNLIClient` — `cross-encoder/nli-deberta-v3-small` singleton (satisfies `NLIClient`) |

@@ -75,6 +75,16 @@ export type BodyImportData = {
 };
 
 /**
+ * Body_transcribeVoice
+ */
+export type BodyTranscribeVoice = {
+    /**
+     * File
+     */
+    file?: Blob | File | null;
+};
+
+/**
  * Body_uploadWorkspaceFile
  */
 export type BodyUploadWorkspaceFile = {
@@ -989,6 +999,24 @@ export type ImportResponse = {
 };
 
 /**
+ * InputTraceResponse
+ */
+export type InputTraceResponse = {
+    /**
+     * Modality
+     */
+    modality: 'voice';
+    /**
+     * Duration S
+     */
+    duration_s?: number | null;
+    /**
+     * Edited
+     */
+    edited?: boolean | null;
+};
+
+/**
  * JudgmentTraceResponse
  */
 export type JudgmentTraceResponse = {
@@ -1504,6 +1532,7 @@ export type MessageTraceResponse = {
     write_confirmations?: Array<WriteConfirmationOutcomeResponse>;
     tier?: TierTraceResponse | null;
     screen?: ScreenTraceResponse | null;
+    input?: InputTraceResponse | null;
 };
 
 /**
@@ -2809,6 +2838,24 @@ export type ToolCallTraceResponse = {
      * Call Index
      */
     call_index?: number;
+};
+
+/**
+ * TranscriptionResponse
+ */
+export type TranscriptionResponse = {
+    /**
+     * Transcript
+     */
+    transcript: string;
+    /**
+     * Duration S
+     */
+    duration_s: number;
+    /**
+     * Transcription Id
+     */
+    transcription_id: string;
 };
 
 /**
@@ -5778,6 +5825,31 @@ export type GetUiManifestResponses = {
 };
 
 export type GetUiManifestResponse = GetUiManifestResponses[keyof GetUiManifestResponses];
+
+export type TranscribeVoiceData = {
+    body?: BodyTranscribeVoice;
+    path?: never;
+    query?: never;
+    url: '/api/v0/voice/transcriptions';
+};
+
+export type TranscribeVoiceErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TranscribeVoiceError = TranscribeVoiceErrors[keyof TranscribeVoiceErrors];
+
+export type TranscribeVoiceResponses = {
+    /**
+     * Successful Response
+     */
+    200: TranscriptionResponse;
+};
+
+export type TranscribeVoiceResponse = TranscribeVoiceResponses[keyof TranscribeVoiceResponses];
 
 export type ReceiveWebhookData = {
     body?: never;
