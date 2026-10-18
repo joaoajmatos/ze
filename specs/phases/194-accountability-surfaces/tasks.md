@@ -94,7 +94,7 @@
 
 ## Phase 7: User Story 5 - Connection status in Governance (P3)
 
-- [ ] T013 [L:channels] [US5] Migration `plugins/ze-personal/ze_personal/migrations/versions/zc040_channel_poll_outcome.py` (revises `zc039`; the two nullable columns per [data-model.md](./data-model.md); downgrade drops them). Extend the migration chain test that T001 names in the Handoffs note (the test that asserts one head across `version_locations`) so `zc040` is on the single head.
+- [x] T013 [L:channels] [US5] Migration `plugins/ze-personal/ze_personal/migrations/versions/zc040_channel_poll_outcome.py` (revises `zc039`; the two nullable columns per [data-model.md](./data-model.md); downgrade drops them). Extend the migration chain test that T001 names in the Handoffs note (the test that asserts one head across `version_locations`) so `zc040` is on the single head.
 - [ ] T014 [L:channels] [US5] Tests first `plugins/ze-personal/tests/channels/test_watermark_outcome.py` (C-1):
   - `record_outcome` on an existing row UPDATEs the outcome columns and leaves `last_polled_at` unchanged;
   - with no row, it INSERTs `last_polled_at = now() - DEFAULT_LOOKBACK_HOURS` (never `now()`), so `get()` afterwards returns the lookback start;
