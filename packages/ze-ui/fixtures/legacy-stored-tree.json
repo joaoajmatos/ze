@@ -1,0 +1,41 @@
+[
+  {
+    "type": "col",
+    "variant": "card",
+    "children": [
+      {
+        "type": "text",
+        "content": "Delete this?"
+      },
+      {
+        "type": "row",
+        "children": [
+          {
+            "type": "button",
+            "label": "Yes",
+            "style": "danger",
+            "action": "yes"
+          },
+          {
+            "type": "button",
+            "label": "No",
+            "action": "no"
+          }
+        ]
+      },
+      {
+        "type": "table",
+        "headers": [
+          "a",
+          "b"
+        ],
+        "rows": [
+          [
+            "1",
+            "2"
+          ]
+        ]
+      }
+    ]
+  }
+]

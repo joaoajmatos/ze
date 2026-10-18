@@ -1882,6 +1882,10 @@ export type PluginPageResponse = {
     tree: Array<{
         [key: string]: unknown;
     }>;
+    /**
+     * Ui Version
+     */
+    ui_version?: string;
 };
 
 /**

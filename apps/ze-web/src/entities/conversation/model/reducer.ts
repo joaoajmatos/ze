@@ -5,6 +5,9 @@ import type {
   WsScreenContext,
 } from "@myguyze/ze-client";
 
+/** A message as the thread keeps it: live frames also say which UI contract their components follow. */
+export type ThreadMessage = Message & { ui_version?: string };
+
 export type TurnPhase = "idle" | "awaiting" | "thinking" | "speaking" | "paused" | "failed";
 
 export interface SentTurn {
@@ -23,7 +26,7 @@ export type TurnOutcome =
   | { kind: "rolled_back_retry_failed"; detail: string };
 
 export interface ThreadState {
-  messages: Message[];
+  messages: ThreadMessage[];
   historyLoaded: boolean;
   turn: {
     phase: TurnPhase;
@@ -96,7 +99,7 @@ const isRunning = (t: ThreadState) => RUNNING.includes(t.turn.phase);
 
 const byCreated = (a: Message, b: Message) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
 
-function upsert(messages: Message[], m: Message): Message[] {
+function upsert(messages: ThreadMessage[], m: ThreadMessage): ThreadMessage[] {
   const i = messages.findIndex((x) => x.id === m.id);
   if (i >= 0) {
     const next = [...messages];
@@ -145,7 +148,7 @@ export function reduce(state: ConversationState, event: ConversationEvent, now: 
         state,
       );
     case "message": {
-      const m = event.message;
+      const m: ThreadMessage = { ...event.message, ...(event.ui_version != null && { ui_version: event.ui_version }) };
       if (!m.thread_id) return state;
       return patch(state, m.thread_id, (t) => {
         const isNew = !t.messages.some((x) => x.id === m.id);
@@ -276,13 +279,17 @@ export function reduce(state: ConversationState, event: ConversationEvent, now: 
     case "history_loaded":
       return patch(state, event.threadId, (t) => {
         const userTexts = new Set(event.messages.filter((m) => m.role === "user").map((m) => m.text));
-        const byId = new Map<string, Message>();
+        const byId = new Map<string, ThreadMessage>();
         for (const m of t.messages) {
           if (m.id.startsWith(LOCAL_ID_PREFIX) && userTexts.has(m.text)) continue;
           byId.set(m.id, m);
         }
         const known = new Set(t.messages.map((m) => m.id));
-        for (const m of event.messages) byId.set(m.id, m);
+        // History never carries a version; a reply seen live keeps the one its frame had.
+        for (const m of event.messages) {
+          const version = byId.get(m.id)?.ui_version;
+          byId.set(m.id, version ? { ...m, ui_version: version } : m);
+        }
         const merged = { ...t, historyLoaded: true, messages: [...byId.values()].sort(byCreated) };
         // A reload during a wait that finds a reply we never saw ends the wait.
         const arrived = event.messages.some((m) => m.role === "assistant" && !known.has(m.id));

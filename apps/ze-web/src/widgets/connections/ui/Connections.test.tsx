@@ -24,7 +24,7 @@ vi.mock("@/entities/ui-manifest", () => ({
   usePluginSettingsQuery: () => ({ data: { tree: [] }, isLoading: false, isError: false, refetch: vi.fn() }),
 }));
 vi.mock("@/features/choose-palette", () => ({ ChoosePalette: () => <div data-testid="palette" /> }));
-vi.mock("@/features/primitive-tree", () => ({ usePluginScreenActions: () => ({}) }));
+vi.mock("@/features/primitive-tree", async (orig) => ({ ...(await orig<typeof import("@/features/primitive-tree")>()), usePrimitiveActions: () => ({}) }));
 
 const fetchMock = vi.fn();
 

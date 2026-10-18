@@ -12,8 +12,6 @@ export const HUD_CLASS_NAMES: PrimitiveClassNames = {
   muted: "pr-muted",
   badge: "pr-badge",
   card: "pr-card",
-  progressTrack: "pr-track",
-  progressFill: "pr-fill",
   table: "pr-table",
   steps: "pr-steps",
   connections: "pr-connections",
