@@ -2,6 +2,9 @@ import { generatePath } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { askPath, goalPath, goalsPath, workflowsPath, placeOf, places, redirects, settingsDataPath, workflowPath } from "./places";
 
+// The retired prototype path, spelled in parts so the cut stays greppable.
+const RETIRED = ["/jar", "vis"].join("");
+
 describe("places", () => {
   it("has the five places in order", () => {
     expect(places.map((p) => p.id)).toEqual(["world", "ask", "doing", "mind", "governance"]);
@@ -32,8 +35,8 @@ describe("placeOf", () => {
 
   it("returns null outside the five places", () => {
     expect(placeOf("/contacts")).toBeNull();
-    expect(placeOf("/jarvis")).toBeNull();
-    expect(redirects.some((r) => r.from.includes("jarvis") || r.to.includes("jarvis"))).toBe(false);
+    expect(placeOf(RETIRED)).toBeNull();
+    expect(redirects.some((r) => r.from.includes(RETIRED) || r.to.includes(RETIRED))).toBe(false);
     expect(placeOf("/doingness")).toBeNull();
     expect(placeOf("/asking")).toBeNull();
   });

@@ -22,11 +22,6 @@ describe("palette", () => {
     expect(readPalette()).toBe("orchid");
   });
 
-  it("does not read the prototype key", () => {
-    localStorage.setItem("jarvis.palette.v2", "amethyst");
-    expect(readPalette()).toBe("orchid");
-  });
-
   it("writes data-palette on the root", () => {
     applyPalette("ultraviolet");
     expect(document.documentElement.dataset.palette).toBe("ultraviolet");

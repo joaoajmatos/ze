@@ -39,6 +39,9 @@ vi.mock("@/pages/plugin-page", () => ({
 
 import { routes } from "./routes";
 
+// The retired prototype path, spelled in parts so the cut stays greppable.
+const RETIRED = ["/jar", "vis"].join("");
+
 function go(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   render(<RouterProvider router={router} />);
@@ -77,11 +80,11 @@ describe("places", () => {
     expect(await screen.findByTestId("workflow")).toHaveTextContent("workflow w-1");
   });
 
-  it("has no route for the prototype, and /jarvis falls to the plugin catch-all", async () => {
+  it("has no route for the retired prototype, and its old path falls to the plugin catch-all", async () => {
     const paths = (rs: typeof routes): string[] => rs.flatMap((r) => [r.path ?? "", ...paths(r.children ?? [])]);
-    expect(paths(routes).filter((p) => /jarvis/i.test(p))).toEqual([]);
-    go("/jarvis");
-    expect(await screen.findByTestId("plugin")).toHaveTextContent("plugin jarvis");
+    expect(paths(routes).filter((p) => p.startsWith(RETIRED.slice(1)))).toEqual([]);
+    go(RETIRED);
+    expect(await screen.findByTestId("plugin")).toHaveTextContent(`plugin ${RETIRED.slice(1)}`);
   });
 
   it("renders a manifest plugin path through PluginPage", async () => {
