@@ -117,7 +117,7 @@
 
 ## Phase 6: Polish and cross-cutting
 
-- [ ] T010 [L:lead] Merge `news`, then `web`. `make codegen` if a schema moved. Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. The quickstart grep returns nothing.
+- [x] T010 [L:lead] Merge `news`, then `web`. `make codegen` if a schema moved. Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. The quickstart grep returns nothing.
 - [ ] T011 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev-full`, with captures of Ask (News chip) and a Mind topic entity with the Sources module at 1440 and 390, no console errors; record them in the Handoffs note.
 - [x] T012 [P] [L:docs] `docs/extending-ze.md`, `docs/frontend.md`, `docs/native-interface.md`, `packages/ze-sdk/README.md` and `core/contracts/ze-plugin/README.md` where they document UI contributions; doc-style skill.
 - [ ] T013 [P] [L:docs] README screenshots refreshed from T011's captures; `AGENTS.md` phase row 191b and the plugin-UI Learned Workspace Facts line; `specs/README.md` row 191b → Implemented; spec status.
