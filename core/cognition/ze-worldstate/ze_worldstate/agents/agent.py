@@ -66,6 +66,7 @@ class LoopsAgent(BaseAgent):
     """
     model = "anthropic/claude-haiku-4-5"
     timeout = 15
+    workspace_opt_out = True
     tools = ["list_open_loops", "track_loop", "confirm_loop", "close_loop", "drop_loop"]
 
     def __init__(

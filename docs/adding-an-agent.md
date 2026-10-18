@@ -227,6 +227,7 @@ class MyAgent(BaseAgent):
     model_simple = "anthropic/claude-haiku-4-5"  # optional — used only for a turn System One judges light (complexity surface, on in the shipped config); omit if the agent already uses Haiku
     vision_capable = False                         # set True if agent should receive image data
     timeout = 30
+    workspace_opt_out = False                      # True keeps the workspace_* tools off a store-backed specialist
     tools = ["tool_one", "tool_two"]               # must match @tool-registered names
 
     def __init__(self, openrouter_client: LLMClient, settings: Settings) -> None:

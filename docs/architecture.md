@@ -84,6 +84,9 @@ mixes gathering and acting, becomes a companion-primary turn (`apply_conductor_r
 The decomposed subtasks stay as a hint. Companion then calls specialists through
 `delegate_to_agent`, one at a time, each with its own write confirmation check.
 Only independent compound requests keep the parallel fan-out and `synthesize`.
+A conductor turn has a time budget (`conductor:` in config, `ze_agents/budget.py`). Past the soft
+deadline `delegate_to_agent` refuses new work, the loop stops calling tools, and companion answers
+with what is done and what is not. A hard timeout answers from the specialist ledger.
 
 **Model tier** (`ze_core.routing.tier`): routing always assigns the agent's full model.
 After `match_skills`, the `choose_tier` node asks one System One Noul whether the task
