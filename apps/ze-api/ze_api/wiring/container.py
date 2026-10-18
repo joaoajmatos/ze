@@ -492,6 +492,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         turn_starter=turn_starter,
         push_sender=push_sender,
         action_record_store=stores.action_record_store,
+        procedure_admission=stores.procedure_admission,
     )
     wire_automation(automation, workspace, stores, shared, worldstate, skills_stack)
     install_contradiction_hook(shared, worldstate)
@@ -717,6 +718,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         procedure_discovery=stores.procedure_discovery,
         procedure_activator=stores.procedure_activator,
         screen_resolvers=screen_resolvers,
+        script_runner=workspace.script_runner,
         job_run_store=stores.job_run_store,
         hypothesis_store=correlation.hypothesis_store,
     )

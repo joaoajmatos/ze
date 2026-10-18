@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import hashlib
 from datetime import datetime, timezone
 from uuid import UUID
 
 from ze_agents.claims import Provenance
+from ze_agents.script_stub import tool_signature
 from ze_agents.scripts import ScriptOutcome
 from ze_logging import get_logger
 from ze_memory.action_records.recorder import ActionRecorder
@@ -23,12 +23,6 @@ _STREAK = 3
 _NAME_MAX = 120
 _TRIGGER_MAX = 120
 _NOT_RUN = {"busy", "unavailable"}
-
-
-def tool_signature(agent: str, tools: list[str]) -> str:
-    """Stable key for one agent's script shape: its distinct tools in first-call order."""
-    distinct = list(dict.fromkeys(tools))
-    return hashlib.sha256("\n".join([agent, *distinct]).encode()).hexdigest()
 
 
 def _lifecycle(status: str) -> tuple[ActionLifecycle, ActionOutcome, str | None]:
@@ -95,14 +89,18 @@ class ScriptLearning:
                 failure_code=failure_code,
             )
         except Exception as exc:
-            log.warning("script_record_failed", script_id=script_id, error=type(exc).__name__)
+            log.warning(
+                "script_record_failed", script_id=script_id, error=type(exc).__name__
+            )
             return
         if outcome.status != "ok" or procedure_id is not None or not distinct:
             return
         try:
             await self._maybe_submit(agent, source, key, distinct, user_turn)
         except Exception as exc:
-            log.warning("script_candidate_failed", script_key=key, error=type(exc).__name__)
+            log.warning(
+                "script_candidate_failed", script_key=key, error=type(exc).__name__
+            )
 
     async def _maybe_submit(
         self,
@@ -120,7 +118,9 @@ class ScriptLearning:
         name = f"Script: {' → '.join(distinct)} [{key[:8]}]"[:_NAME_MAX]
         if await self._admission.candidate_exists(name):
             return
-        trigger = (user_turn or "").strip()[:_TRIGGER_MAX] or f"repeat the {agent} read script"
+        trigger = (user_turn or "").strip()[
+            :_TRIGGER_MAX
+        ] or f"repeat the {agent} read script"
         await self._admission.submit_procedure_candidate(
             ProcedureCandidate(
                 source_kind=ProcedureSourceKind.TOOL_SCRIPT,
@@ -131,7 +131,9 @@ class ScriptLearning:
                 steps=[source],
                 success_criteria=["script ends ok"],
                 limits=distinct,
-                evidence_refs=[EvidenceRef(kind="action_record", id=r.id) for r in recent],
+                evidence_refs=[
+                    EvidenceRef(kind="action_record", id=r.id) for r in recent
+                ],
             )
         )
         log.info("script_candidate_submitted", script_key=key, name=name)

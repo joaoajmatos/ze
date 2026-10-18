@@ -54,6 +54,7 @@ def build_workspace_stack(
     procedure_admission: Any = None,
 ) -> WorkspaceStack:
     import ze_workspace.tools  # noqa: F401
+    from ze_agents.scripts import ScriptLimits
 
     workspace_cfg = {}
     config = getattr(settings, "config", {}) or {}
@@ -81,6 +82,8 @@ def build_workspace_stack(
     script_runner = _build_script_runner(
         client, action_record_store, procedure_admission
     )
+    if script_runner is not None:
+        script_runner.limits = ScriptLimits.from_config(config)
     run_watcher = RunWatcher(
         store=store,
         turn_starter=turn_starter or _NoopTurnStarter(),

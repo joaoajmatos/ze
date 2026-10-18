@@ -50,6 +50,7 @@ class WorkspaceScriptRunner:
         self._connect = connect
         self._learning = learning
         self._grace = grace_seconds
+        self.limits = ScriptLimits()
 
     def _connector(self) -> Callable[..., Any]:
         if self._connect is not None:
@@ -124,7 +125,9 @@ class WorkspaceScriptRunner:
             ) as ws:
                 try:
                     return await asyncio.wait_for(
-                        self._converse(ws, script_id, source, stub, limits, dispatch, tools),
+                        self._converse(
+                            ws, script_id, source, stub, limits, dispatch, tools
+                        ),
                         timeout=deadline,
                     )
                 except asyncio.TimeoutError:
