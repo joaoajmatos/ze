@@ -40,10 +40,10 @@ A plugin that contributes a page names the place it belongs to. Its page shows a
 
 **Acceptance Scenarios**:
 
-1. **Given** a plugin contributing a page with place `mind` and path `p`, **When** the user opens Mind, **Then** a section for it appears and opens at `/mind/p`, rendered as modules.
-2. **Given** that plugin, **When** the user opens `/p`, **Then** they land on `/mind/p` in one hop.
+1. **Given** a plugin contributing a page with place `mind` and path `p`, **When** the user opens Mind, **Then** an entry for it appears in Mind and opens at `/mind/plugin/p`, rendered as modules.
+2. **Given** that plugin, **When** the user opens `/p`, **Then** they land on `/mind/plugin/p` in one hop.
 3. **Given** a plugin page contribution with no place, or a place outside the five, **When** Ze starts, **Then** startup fails with a typed configuration error naming the contribution.
-4. **Given** two contributions with the same place and path, **When** Ze starts, **Then** startup fails as duplicate nav paths do today.
+4. **Given** two contributions with the same place and path, **When** Ze starts, **Then** startup fails with a duplicate-path error. The same path in two different places is allowed.
 
 ---
 
@@ -87,12 +87,12 @@ Plugin settings sections render and save from Governance › Connections. Phase 
 
 ### Functional Requirements
 
-- **FR-001**: Page contributions MUST declare a place, one of the five (world, ask, doing, mind, governance). Startup MUST fail with a typed configuration error when it is missing or invalid.
+- **FR-001**: Page contributions (the `nav` kind, renamed `page`) MUST declare a place, one of the five (world, ask, doing, mind, governance). Startup MUST fail with a typed configuration error when it is missing or invalid.
 - **FR-002**: The UI manifest MUST carry each page contribution's place and each preset contribution, and the generated web client MUST be regenerated.
 - **FR-003**: A new preset contribution kind MUST carry a label and a prompt. Ask MUST show presets as Try chips after the core chips, at most two plugin chips, in contribution priority order, sending through the single send path with the preset marked.
-- **FR-004**: The web app MUST render each plugin page as a section of its place at `/<place>/<path>`, with one HUD module per top-level element. The old top-level path MUST redirect to it in one hop.
+- **FR-004**: The web app MUST render each plugin page inside its place at `/<place>/plugin/<path>` (the `plugin` segment keeps plugin paths clear of `/ask/:threadId`, `/mind/:entityId` and the Doing detail routes), with one HUD module per top-level element, and list the place's plugin pages as entries on that place. The old top-level path MUST redirect to it in one hop.
 - **FR-005**: The top-level catch-all plugin route and any plugin nav mapping outside places MUST be removed (pre-v1 hard cut). The News page route, its page descriptor and its nav contribution MUST be removed; `/news` MUST redirect to Ask.
-- **FR-006**: The core reserved nav paths list MUST be updated to the five places and their known section paths, so a plugin cannot claim them.
+- **FR-006**: Plugin page paths MUST be unique within a place. The old top-level reserved-paths list MUST be deleted, because plugin paths no longer share the top level with core routes.
 - **FR-007**: Docs MUST describe page contributions with a place and the preset kind (extending-Ze guide, frontend, native interface), and README screenshots MUST be refreshed.
 
 ### Key Entities
