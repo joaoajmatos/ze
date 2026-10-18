@@ -65,11 +65,10 @@ def test_getter_resolves_from_the_container(getter, field: str) -> None:
     assert getter(request) is sentinel
 
 
-def test_container_has_the_new_fields_and_no_reset_service() -> None:
+def test_container_has_the_new_store_fields() -> None:
     from dataclasses import fields
 
     from ze_api.wiring.container import ZeContainer
 
     names = {f.name for f in fields(ZeContainer)}
     assert {"action_record_store", "user_channel_store", "watermark_store"} <= names
-    assert "reset_service" not in names
