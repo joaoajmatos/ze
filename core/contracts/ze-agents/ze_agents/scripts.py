@@ -143,6 +143,7 @@ class ScriptRunner(Protocol):
         stub: str,
         limits: ScriptLimits,
         dispatch: Callable[[ScriptRequest], Awaitable[DispatchReply]],
+        procedure_id: str | None = None,
     ) -> ScriptOutcome: ...
 
 
