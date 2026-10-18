@@ -43,7 +43,7 @@
 
 **Independent test**: with a fake runner, the agent's model is called twice in total and the trace holds one script step with its inner calls.
 
-- [ ] T009 [P] [L:stub] [US1] Tests first `core/contracts/ze-agents/tests/test_script_stub.py`, then implement `ze_agents/script_stub.py`:
+- [x] T009 [P] [L:stub] [US1] Tests first `core/contracts/ze-agents/tests/test_script_stub.py`, then implement `ze_agents/script_stub.py`:
   - `build_stub([{"type": "function", "function": {"name": "get_transactions", "description": "List transactions.", "parameters": {"type": "object", "properties": {"period": {"type": "string"}, "limit": {"type": "integer"}}, "required": ["period"]}}}])` contains `def get_transactions(*, period: str, limit: int = None):`, the docstring `"""List transactions."""`, and `return _call("get_transactions", {k: v for k, v in {"period": period, "limit": limit}.items() if v is not None})`;
   - types map `string→str`, `integer→int`, `number→float`, `boolean→bool`, `array→list`, `object→dict`, anything else → no annotation;
   - a tool name or property that is not a Python identifier (`"bad-name"`) is skipped;
