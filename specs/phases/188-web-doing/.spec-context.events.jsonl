@@ -19,3 +19,7 @@
 {"step": "implement", "substep": null, "task": "T018", "kind": "complete", "by": "extension", "at": "2026-10-18T00:11:17.873Z", "did": "old pages and widgets deleted"}
 {"step": "implement", "substep": null, "task": "T019", "kind": "complete", "by": "extension", "at": "2026-10-18T00:11:18.186Z", "did": "linked loop reminders on goal page"}
 {"step": "implement", "substep": null, "task": "T020", "kind": "complete", "by": "extension", "at": "2026-10-18T00:11:18.515Z", "did": "chat chips per kind and publishers"}
+{"step": "implement", "substep": null, "task": "T022", "kind": "complete", "by": "extension", "at": "2026-10-18T00:11:45.442Z", "did": "docs by lane jr"}
+{"step": "implement", "substep": null, "task": "T023", "kind": "complete", "by": "extension", "at": "2026-10-18T00:11:45.833Z", "did": "AGENTS, README, status"}
+{"step": "implement", "substep": null, "task": "T021", "kind": "complete", "by": "extension", "at": "2026-10-18T00:26:54.444Z", "did": "gates green, captures, detector 0"}
+{"step": "implement", "substep": null, "task": "T024", "kind": "complete", "by": "extension", "at": "2026-10-18T00:26:55.014Z", "did": "coverage checked against git diff main...HEAD"}

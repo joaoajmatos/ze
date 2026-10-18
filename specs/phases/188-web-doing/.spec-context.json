@@ -4,7 +4,7 @@
   "branch": "188-web-doing",
   "currentStep": "implement",
   "status": "implementing",
-  "currentTask": "T020",
+  "currentTask": "T024",
   "history": [
     {
       "step": "implement",
@@ -173,6 +173,38 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-18T00:11:18.515Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:45.442Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:11:45.833Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:26:54.444Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-18T00:26:55.014Z"
     }
   ],
   "task_summaries": {
@@ -259,6 +291,22 @@
     "T020": {
       "status": "DONE",
       "did": "chat chips per kind and publishers"
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "docs by lane jr"
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "AGENTS, README, status"
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "gates green, captures, detector 0"
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "coverage checked against git diff main...HEAD"
     }
   }
 }

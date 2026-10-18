@@ -68,10 +68,10 @@
 
 ## Phase 8: Acceptance and docs
 
-- [ ] T021 [ENG] [WEB] Gates: `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. Impeccable critique ≥ 29/40 on the index and both detail pages and ≥ the T001 baseline; detector 0; captures at 1440 and 390 with no console errors and 44 px targets; SC-001 check (no raw enum or traceback). Record in the Handoffs note.
-- [ ] T022 [DOCS] Update every doc in plan.md "Docs touched".
-- [ ] T023 [DOCS] `AGENTS.md` phase row 188 and the places fact; `specs/README.md` row 188 → Implemented; spec status.
-- [ ] T024 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; record in the Handoffs note.
+- [x] T021 [ENG] [WEB] Gates: `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. Impeccable critique ≥ 29/40 on the index and both detail pages and ≥ the T001 baseline; detector 0; captures at 1440 and 390 with no console errors and 44 px targets; SC-001 check (no raw enum or traceback). Record in the Handoffs note.
+- [x] T022 [DOCS] Update every doc in plan.md "Docs touched".
+- [x] T023 [DOCS] `AGENTS.md` phase row 188 and the places fact; `specs/README.md` row 188 → Implemented; spec status.
+- [x] T024 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; record in the Handoffs note.
 
 ---
 
