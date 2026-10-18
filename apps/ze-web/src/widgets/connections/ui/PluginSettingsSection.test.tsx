@@ -13,7 +13,7 @@ vi.mock("@/features/primitive-tree", async (orig) => ({
   usePrimitiveActions: () => ({}),
 }));
 
-const entry = { id: "ze_news.settings", plugin: "ze_news", kind: "settings", label: "News", icon: "newspaper" } as UiContribution;
+const entry = { id: "ze_news.settings", plugin: "ze_news", kind: "settings_section", label: "News", icon: "newspaper" } as UiContribution;
 const answer = (data: unknown) =>
   usePluginSettingsQuery.mockReturnValue({ data, isLoading: false, isError: false, refetch: vi.fn() });
 

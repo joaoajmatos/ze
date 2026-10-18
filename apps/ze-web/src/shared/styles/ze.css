@@ -2142,6 +2142,7 @@ input[type="checkbox"] {
   padding: 12px 14px;
   min-width: 0;
 }
+.pr-label {
   font-family: var(--font-label);
   font-size: var(--label);
   letter-spacing: 0.22em;
