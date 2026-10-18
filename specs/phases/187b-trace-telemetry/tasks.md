@@ -91,7 +91,7 @@
 
 ## Phase 6: User Story 4 - Truthful live tool and memory rows (P2)
 
-- [ ] T008 [L:tools] [US4] Tests first `core/contracts/ze-agents/tests/test_call_tool_sink.py` and `tests/test_delegate_sink.py`:
+- [x] T008 [L:tools] [US4] Tests first `core/contracts/ze-agents/tests/test_call_tool_sink.py` and `tests/test_delegate_sink.py`:
   - every return path of `call_tool` (success, exception, unknown tool, refused, parked, denied, duplicate, pre-approved) hands exactly one `ToolCall` to `ctx.tool_sink`, with `started_at` (monotonic) set on the paths that ran the tool;
   - a sink that raises is logged and the call result is unchanged;
   - a parked call's `call_id` is its `ParkedWrite.trace_call_id`; the approved run on resume has the same `call_id`, so a park-then-approve gives one id; two delegates whose provider tool-call ids collide (both `call_0`) get different `call_id`s;
@@ -99,7 +99,7 @@
   - `execute_tool`, compound subtasks and delegates pass `tool_sink` into `AgentContext` beside `token_sink` (`execution.py:299,323,400,474`).
 
   Implement in `ze_agents/base_agent.py` (`_finish`, ids for parked and approved calls), `ze_agents/delegate.py`, `ze_agents/nested_tools.py` and `nodes/execution.py`.
-- [ ] T009 [L:tools] [US4] Tests first `tests/orchestration/nodes/test_record_trace.py` (extend): `tool_duration_ms` is the sum of tool durations; each committed tool row carries the `call_id` of its `ToolCall` and `start_offset_ms` from `started_at` against the recorder start (null with no recorder, with a `partial` recorder created by `resume()` after a simulated restart, or when out of range); a compound turn with two subtasks and a delegate turn: every committed row's `call_id` equals the id its live row carried (SC-003), and rows keep their flattened `call_index`; `routing_scores` is the top 9 of `raw_scores` by score, highest first, and empty for envelopes with a single forced score; `routing_thresholds` comes from the envelope. Implement in `nodes/trace.py`.
+- [x] T009 [L:tools] [US4] Tests first `tests/orchestration/nodes/test_record_trace.py` (extend): `tool_duration_ms` is the sum of tool durations; each committed tool row carries the `call_id` of its `ToolCall` and `start_offset_ms` from `started_at` against the recorder start (null with no recorder, with a `partial` recorder created by `resume()` after a simulated restart, or when out of range); a compound turn with two subtasks and a delegate turn: every committed row's `call_id` equals the id its live row carried (SC-003), and rows keep their flattened `call_index`; `routing_scores` is the top 9 of `raw_scores` by score, highest first, and empty for envelopes with a single forced score; `routing_thresholds` comes from the envelope. Implement in `nodes/trace.py`.
 
 ---
 
