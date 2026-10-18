@@ -22,6 +22,7 @@ from ze_memory.action_records.types import (
     ActionOutcome,
     ActionRecord,
     ActionRecordDraft,
+    ActionSubjectKind,
     AuthoritativeRef,
     CausalRef,
     material_tuple,
@@ -44,6 +45,16 @@ class ActionRecordStore(Protocol):
         causal_ref: CausalRef | None = None,
         before: datetime | None = None,
         limit: int = 100,
+    ) -> list[ActionRecord]: ...
+
+    async def list_by_subject(
+        self,
+        *,
+        kind: ActionSubjectKind | None = None,
+        subject_id: UUID | None = None,
+        since: datetime | None = None,
+        cursor: tuple[datetime, UUID] | None = None,
+        limit: int = 50,
     ) -> list[ActionRecord]: ...
 
 
@@ -294,6 +305,17 @@ class PostgresActionRecordStore:
                 "SELECT * FROM action_records WHERE id = $1", record_id
             )
         return _record_from_row(row) if row is not None else None
+
+    async def list_by_subject(
+        self,
+        *,
+        kind: ActionSubjectKind | None = None,
+        subject_id: UUID | None = None,
+        since: datetime | None = None,
+        cursor: tuple[datetime, UUID] | None = None,
+        limit: int = 50,
+    ) -> list[ActionRecord]:
+        raise NotImplementedError
 
     async def list(
         self,

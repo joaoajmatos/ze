@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -24,11 +25,11 @@ router = APIRouter(
     "inflows it was seen in.",
 )
 async def list_loops(
-    state: str | None = Query(default=None),
+    state: list[str] | None = Query(default=None),
+    since: datetime | None = Query(default=None),
     store: LoopStore = Depends(get_loop_store),
 ) -> list[LoopListItem]:
-    states = [state] if state else None
-    loops = await loop_rest.list_loops(store, states)
+    loops = await loop_rest.list_loops(store, state or None)
     return [LoopListItem.model_validate(loop) for loop in loops]
 
 

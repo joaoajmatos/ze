@@ -19,22 +19,22 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main`. `make install`; `graphify update .`; `graphify affected` on `ActionRecordStore`, `LoopStore`, `ChannelWatermarkStore`, `InboundPollingJob`, `ResetService`, `list_collisions`, `complexity_surface_config`, `resolve_agent_model`. Grep `reset_personal_state\|reset-personal-state\|ResetService` across the repo (docs, CONTRIBUTING, README, Makefile). Run `EXPLAIN` for the planned ledger query on the dev DB (research R2). Name the migration chain test file (the one asserting a single head) for T013. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
+- [x] T001 [L:lead] Branch from `main`. `make install`; `graphify update .`; `graphify affected` on `ActionRecordStore`, `LoopStore`, `ChannelWatermarkStore`, `InboundPollingJob`, `ResetService`, `list_collisions`, `complexity_surface_config`, `resolve_agent_model`. Grep `reset_personal_state\|reset-personal-state\|ResetService` across the repo (docs, CONTRIBUTING, README, Makefile). Run `EXPLAIN` for the planned ledger query on the dev DB (research R2). Name the migration chain test file (the one asserting a single head) for T013. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
 
 ---
 
 ## Phase 2: Foundational (contract step, lane `lead`)
 
-- [ ] T002 [L:lead] Tests first `apps/ze-api/tests/api/test_accountability_contract.py`: the OpenAPI export lists `listActionRecords`, `listCollisions` (product spec, not the dev spec), `getModelSettings`, `listChannelStatus`, and `listLoops` with a `since` parameter, each with its response model from [contracts/rest.md](./contracts/rest.md). Implement:
+- [x] T002 [L:lead] Tests first `apps/ze-api/tests/api/test_accountability_contract.py`: the OpenAPI export lists `listActionRecords`, `listCollisions` (product spec, not the dev spec), `getModelSettings`, `listChannelStatus`, and `listLoops` with a `since` parameter, each with its response model from [contracts/rest.md](./contracts/rest.md). Implement:
   - the schemas: `api/v0/actions/schemas.py`, `api/v0/collisions/schemas.py` (moved `CollisionLogEntrySchema`), `api/v0/channels/schemas.py`, and the `ModelSettingsResponse` additions to `api/v0/system/schemas.py`;
   - 501 route stubs with final signatures and operation ids in `api/v0/actions/router.py`, `api/v0/collisions/router.py`, `api/v0/channels/router.py` and `api/v0/system/models.py`;
   - the registration in `api/v0/__init__.py`;
   - `since` accepted and ignored on `listLoops`.
-- [ ] T003 [P] [L:lead] DI and stubs, with tests:
+- [x] T003 [P] [L:lead] DI and stubs, with tests:
   - **DI (A-2):** `ZeContainer` gains `action_record_store`, `user_channel_store` and `watermark_store` fields, from the instances `wiring/stores.py` already builds. `api/deps.py` gains `get_action_record_store`, `get_user_channel_store`, `get_watermark_store` and `get_channel_registry`; a test per getter resolves it from a built container.
   - **Reset sites:** remove `reset_service` from `wiring/container.py` (the import at ~77, the field at ~265 and the construction at ~670).
   - **Domain stubs: `ActionSubjectKind` and its context-key map in `ze_memory/action_records/types.py` (test: the map is closed, unknown kind raises a typed error); `list_by_subject` on the `ActionRecordStore` Protocol (signature only); `PollOutcome` and `ChannelPollStatus` in `ze_personal/channels/types.py`; `record_outcome` and `get_status_many` signatures on `ChannelWatermarkStore` raising `NotImplementedError`.**
-- [ ] T004 [L:lead] `make codegen`; commit `packages/ze-client/src/generated/*` with T002. Hand the route bodies and store bodies to their lanes (Handoffs note).
+- [x] T004 [L:lead] `make codegen`; commit `packages/ze-client/src/generated/*` with T002. Hand the route bodies and store bodies to their lanes (Handoffs note).
 
 **Checkpoint**: lanes start.
 
@@ -170,3 +170,14 @@ After the contract step, four lanes at once:
 ## Implementation Strategy
 
 - MVP = US1 (the ledger route Doing waits for). US2–US4 are small and independent; US5 carries the one migration; US6 is a deletion. Each story's route is usable alone after the contract step.
+
+---
+
+## Handoffs
+
+**Contract step (lead, T001-T004)**
+- Chain test for T013: `apps/ze-api/tests/test_migrate.py` (single head across `version_locations`; `zc039` lives in ze-core `migrations/versions`, so `zc040` goes in ze-personal with `down_revision = "zc039"`).
+- Reset references outside specs: `Makefile`, `apps/ze-api/tests/onboarding/test_reset.py`, `ze_onboarding/{__init__,reset}.py`, `docs/onboarding.md`, `scripts/reset_personal_state.py`, plus `reset_service` assertions in `tests/api/test_ws_commands_reset_removed.py`. Matches plan.md; no README/CONTRIBUTING mention.
+- Done early by lead (reads: do not redo): `/api/v0/collisions` removed from `EVAL_ONLY_PATHS` (`test_dev_only_routes.py`) and the "not in paths" assertion in `test_openapi_export.py`. Reads still owns the handler, the 404-on-old-path test and deleting `api/eval/collisions.py`.
+- Stubs: product routes return 501; `PostgresActionRecordStore.list_by_subject`, `ChannelWatermarkStore.record_outcome` and `get_status_many` raise `NotImplementedError`. `subject_context_key()` and `UnknownActionSubjectKindError` are in ze-memory.
+- Not done in T001: `graphify affected` and the ledger `EXPLAIN` (R2). Ledger lane runs the `EXPLAIN` with T005.

@@ -112,6 +112,22 @@ def get_procedure_admission(request: Request):
     return request.app.state.container.procedure_admission
 
 
+def get_action_record_store(request: Request):
+    return request.app.state.container.action_record_store
+
+
+def get_user_channel_store(request: Request):
+    return request.app.state.container.user_channel_store
+
+
+def get_watermark_store(request: Request):
+    return request.app.state.container.watermark_store
+
+
+def get_channel_registry(request: Request):
+    return request.app.state.container.channel_registry
+
+
 def get_collision_store(request: Request):
     return request.app.state.container.collision_store
 

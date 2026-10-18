@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import asyncpg
 
 from ze_logging import get_logger
+from ze_personal.channels.types import ChannelPollStatus, PollOutcome
 
 
 class ChannelWatermarkStore:
@@ -57,3 +58,13 @@ class ChannelWatermarkStore:
                 channel_id,
                 polled_at,
             )
+
+    async def record_outcome(
+        self, channel_id: str, outcome: PollOutcome, at: datetime
+    ) -> None:
+        raise NotImplementedError
+
+    async def get_status_many(
+        self, channel_ids: list[str]
+    ) -> dict[str, ChannelPollStatus]:
+        raise NotImplementedError
