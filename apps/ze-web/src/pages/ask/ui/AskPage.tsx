@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useParams } from "react-router-dom";
 import { Canvas, ConfirmationPlacement, RetryControl, TraceModule, TraceSheet, type WhyTarget } from "@/widgets/assemble";
 import { SessionsRail } from "@/widgets/sessions-rail";
@@ -9,7 +10,7 @@ import { useThread, useThreadHistory } from "@/entities/conversation";
 import { useOnboardingSession } from "@/entities/onboarding-session";
 import { useSession } from "@/entities/session";
 import { useConnectionState } from "@/shared/api";
-import { useNarrow } from "@/shared/lib";
+import { useNarrow, useRailSlot } from "@/shared/lib";
 import { Control } from "@/shared/ui";
 
 const ONBOARDING_KEY = "ze_onboarding_opened";
@@ -43,6 +44,7 @@ function AskThread({ threadId }: { threadId: string }) {
   const { loadHistory } = useThreadHistory(threadId);
   const connection = useConnectionState();
   const narrow = useNarrow();
+  const railSlot = useRailSlot((s) => s.element);
   const chatAbout = useChatAbout();
   const draft = useAskOverlay((s) => s.draft);
   const onboardingId = useOnboardingSession((s) => s.sessionId);
@@ -81,17 +83,21 @@ function AskThread({ threadId }: { threadId: string }) {
   };
   const empty = thread.messages.length === 0 && thread.historyLoaded;
 
+  const rail = (
+    <div className="ask-rail" role="region" aria-label="Ask">
+      <TryChips onSend={(text, context) => send(text, context)} disabled={connection !== "online" || running} />
+      {onboardingThread && threadId !== onboardingThread && (
+        <button type="button" className="ctl-text ask-continue" onClick={() => selectSession(onboardingThread)}>
+          <span className="lbl on">Continue getting to know you</span>
+        </button>
+      )}
+      <SessionsRail />
+    </div>
+  );
+
   return (
     <div className="ask-page">
-      <aside className="ask-rail" aria-label="Ask">
-        <TryChips onSend={(text, context) => send(text, context)} disabled={connection !== "online" || running} />
-        {onboardingThread && threadId !== onboardingThread && (
-          <button type="button" className="ctl-text ask-continue" onClick={() => selectSession(onboardingThread)}>
-            <span className="lbl on">Continue getting to know you</span>
-          </button>
-        )}
-        <SessionsRail />
-      </aside>
+      {railSlot ? createPortal(rail, railSlot) : rail}
       <section className="ask-main" aria-label="Conversation">
         {empty && <p className="muted">Ask Ze anything below. Its answer comes back as modules you can pin, dismiss or ask about.</p>}
         <Canvas

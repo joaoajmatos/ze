@@ -474,7 +474,7 @@
 /* ---------- the Ask page ---------- */
 .ask-page {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 18px;
   min-height: 0;
   height: calc(100dvh - 190px);
@@ -483,13 +483,18 @@
   min-height: 0;
   min-width: 0;
 }
-.ask-rail,
 .ask-main,
 .ask-trace {
   overflow-y: auto;
   display: grid;
   align-content: start;
   gap: 12px;
+}
+.ask-rail {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
 }
 .ask-main {
   padding-right: 4px;
@@ -510,10 +515,12 @@
   .ask-main {
     order: 1;
   }
+  .shell.on-ask .place {
+    order: 1;
+  }
   .ask-rail {
     order: 2;
   }
-  .ask-rail,
   .ask-main,
   .ask-trace {
     overflow: visible;
@@ -540,6 +547,10 @@
 }
 .sessions-rail .row {
   min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+.sessions-rail .row .t {
+  text-align: left;
 }
 .sessions-rail .row .t {
   min-width: 0;
@@ -548,4 +559,10 @@
 .sessions-title {
   min-height: 44px;
   display: block;
+}
+@media (min-width: 1024px) {
+  .sessions-rail {
+    max-height: 48dvh;
+    overflow-y: auto;
+  }
 }

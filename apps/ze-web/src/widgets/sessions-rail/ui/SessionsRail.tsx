@@ -1,6 +1,6 @@
 import type { SessionSchema, SessionSearchResult } from "@myguyze/ze-client";
 import { useEffect, useRef, useState } from "react";
-import { formatRelative, MarkdownPreview, matchSourceLabel, parseSearchSnippet, useSession, useSessionSearchQuery, useSessionsQuery } from "@/entities/session";
+import { formatRelative, matchSourceLabel, parseSearchSnippet, plainPreview, useSession, useSessionSearchQuery, useSessionsQuery } from "@/entities/session";
 import { useWsStore } from "@/shared/api";
 import { Control, Module } from "@/shared/ui";
 
@@ -33,8 +33,8 @@ function Item({ session, active, onSelect, snippet, matchSource }: ItemProps) {
   const attention = useWsStore((s) => s.attentionThreads[session.id] ?? false);
   const flag = thinking ? `${label} is replying` : attention ? `${label} has a new reply` : null;
   return (
-    <div className={`row ${active ? "focused" : ""}`}>
-      <button type="button" className="t ctl-text sessions-title"  onClick={onSelect} aria-current={active ? "true" : undefined}>
+    <div className={`row sessions-row ${active ? "focused" : ""}`}>
+      <button type="button" className="t ctl-text sessions-title" onClick={onSelect} aria-current={active ? "true" : undefined}>
         {label}
       </button>
       <span className="ro">
@@ -53,9 +53,7 @@ function Item({ session, active, onSelect, snippet, matchSource }: ItemProps) {
       ) : (
         session.preview &&
         session.preview !== label && (
-          <span className="s">
-            <MarkdownPreview>{session.preview}</MarkdownPreview>
-          </span>
+          <span className="s">{plainPreview(session.preview)}</span>
         )
       )}
     </div>
@@ -103,7 +101,7 @@ export function SessionsRail() {
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search conversations…"
+        placeholder="Search…"
         aria-label="Search conversations"
         className="sessions-search"
       />

@@ -49,10 +49,10 @@ describe("SessionsRail", () => {
     expect(screen.getByRole("button", { name: "Tax questions" }).className).toContain("sessions-title");
   });
 
-  it("renders a preview's markdown instead of showing it raw", () => {
+  it("shows a preview as plain text", () => {
     browse = { items: [{ ...session("s3", "Loops"), preview: "You have **two** loops" } as SessionSchema] };
     render(<SessionsRail />);
-    expect(screen.getByText("two").tagName).toBe("STRONG");
+    expect(screen.getByText("You have two loops")).toBeInTheDocument();
     expect(screen.queryByText(/\*\*/)).toBeNull();
   });
 
