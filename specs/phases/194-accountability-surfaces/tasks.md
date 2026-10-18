@@ -86,9 +86,9 @@
 
 ## Phase 6: User Story 4 - Closed loops by time (P2)
 
-- [ ] T010 [P] [L:reads] [US4] Tests first `core/cognition/ze-worldstate/tests/test_store_list_since.py` (mocked pool): `list(states=["closed", "dropped"], since=t)` adds `updated_at > $n` and the state set; `since=None` keeps the old SQL; existing callers (positional `states`) are unchanged. Implement in `PostgresLoopStore.list` and the `LoopStore` Protocol.
-- [ ] T011 [L:reads] [US4] `@pytest.mark.pg` test in the same package: loops closed 2, 5 and 20 days ago; `since` = 7 days ago returns the first two.
-- [ ] T012 [L:reads] [US4] Tests first `apps/ze-api/tests/api/test_loops_route.py` (extend): `state` is repeatable (`?state=closed&state=dropped` passes both); `since` is passed through and combines with it; an invalid datetime → 422. Implement in `api/v0/loops/router.py`.
+- [x] T010 [P] [L:reads] [US4] Tests first `core/cognition/ze-worldstate/tests/test_store_list_since.py` (mocked pool): `list(states=["closed", "dropped"], since=t)` adds `updated_at > $n` and the state set; `since=None` keeps the old SQL; existing callers (positional `states`) are unchanged. Implement in `PostgresLoopStore.list` and the `LoopStore` Protocol.
+- [x] T011 [L:reads] [US4] `@pytest.mark.pg` test in the same package: loops closed 2, 5 and 20 days ago; `since` = 7 days ago returns the first two.
+- [x] T012 [L:reads] [US4] Tests first `apps/ze-api/tests/api/test_loops_route.py` (extend): `state` is repeatable (`?state=closed&state=dropped` passes both); `since` is passed through and combines with it; an invalid datetime → 422. Implement in `api/v0/loops/router.py`.
 
 ---
 

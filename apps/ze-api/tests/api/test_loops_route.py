@@ -92,7 +92,7 @@ async def test_list_loops_defaults_to_non_terminal_states():
     data = resp.json()
     assert len(data) == 1
     assert data[0]["state"] == "suspected"
-    store.list.assert_awaited_once_with(["suspected", "active", "drifting"])
+    store.list.assert_awaited_once_with(["suspected", "active", "drifting"], since=None)
 
 
 @pytest.mark.asyncio
@@ -276,3 +276,54 @@ async def test_transition_404_when_missing():
         )
 
     assert resp.status_code == 404
+
+
+async def _list(store, params):
+    store.list_sources_for = AsyncMock(return_value={})
+    app, _ = _make_app(store)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        return await client.get(
+            "/api/v0/loops",
+            params=params,
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+
+@pytest.mark.asyncio
+async def test_state_is_repeatable():
+    store = AsyncMock()
+    store.list = AsyncMock(return_value=[])
+
+    resp = await _list(store, [("state", "closed"), ("state", "dropped")])
+
+    assert resp.status_code == 200
+    store.list.assert_awaited_once_with(["closed", "dropped"], since=None)
+
+
+@pytest.mark.asyncio
+async def test_since_passes_through_and_combines_with_state():
+    store = AsyncMock()
+    store.list = AsyncMock(return_value=[])
+
+    resp = await _list(
+        store,
+        [("state", "closed"), ("state", "dropped"), ("since", "2026-10-11T00:00:00Z")],
+    )
+
+    assert resp.status_code == 200
+    store.list.assert_awaited_once_with(
+        ["closed", "dropped"], since=datetime(2026, 10, 11, tzinfo=timezone.utc)
+    )
+
+
+@pytest.mark.asyncio
+async def test_invalid_since_is_422():
+    store = AsyncMock()
+    store.list = AsyncMock(return_value=[])
+
+    resp = await _list(store, {"since": "last tuesday"})
+
+    assert resp.status_code == 422
+    store.list.assert_not_called()
