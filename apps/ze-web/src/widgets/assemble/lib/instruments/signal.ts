@@ -29,6 +29,7 @@ const LABEL_OF: Record<string, string> = {
   preflight: "preflight",
   execute_tool: "execute",
   await_write_confirmation: "confirm",
+  await_budget_confirmation: "budget",
   correlate: "correlate",
   surface_loops: "surface",
   synthesize: "synthesize",

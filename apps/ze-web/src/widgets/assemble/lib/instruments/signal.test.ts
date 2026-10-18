@@ -61,3 +61,10 @@ describe("stagesFor", () => {
     expect(labels(s)).toEqual(["inject routing context"]);
   });
 });
+
+describe("budget confirmation stage", () => {
+  it("is labelled budget", () => {
+    const s = stagesFor({ ...richTrace(), stages: [{ name: "await_budget_confirmation", start_ms: 0, duration_ms: 1, run: 1 }] }, false);
+    expect(s.stages.map((x) => x.label)).toContain("budget");
+  });
+});

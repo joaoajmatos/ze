@@ -191,9 +191,10 @@ describe("Readouts and ReversalTrack", () => {
     expect(screen.queryByText(/ in · /)).toBeNull();
   });
 
-  it("falls back to the tool-time readout for a trace before 187b", () => {
+  it("shows no time for a trace before 187b, not a tool time of zero", () => {
     render(<Readouts trace={richTrace({ turn_duration_ms: null, usage: null })} />);
-    expect(screen.getByRole("img", { name: "4200 milliseconds of tool time" })).toBeInTheDocument();
+    expect(screen.queryByText("Tool time")).toBeNull();
+    expect(screen.queryByText("Total")).toBeNull();
   });
 
   it("shows the model, System One line and compaction", () => {

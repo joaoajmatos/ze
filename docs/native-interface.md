@@ -295,6 +295,8 @@ ignore a partial for a message whose committed trace has arrived. The server dra
 `routing_thresholds`, `telemetry_partial`, `call_id` and `start_offset_ms` on each tool row, and
 `surface` and `bar` on each judgment.
 
+`usage.models[].cost_usd` comes from Ze's price table, not from the OpenRouter bill. The cost reconciler corrects the ledger later, and the trace keeps the table figure. `usage` counts only the model calls made before the trace is stamped. Work that runs after it, such as the loop title writer, adds nothing, so `usage` is not all the spend a turn caused. The server waits up to 1 s for queued partial frames before it commits the reply, so a slow client can delay the commit by that long.
+
 A `confirm_request` for a busy thread pauses the delivery watchdog, and an approve or deny restarts it. A confirmation is placed in the canvas under the latest exchange, in `/ask` and in the overlay. A prompt-kind confirmation shows its actions as command chips that send `action`.
 
 Close code `4000` means another window took the connection. The client does not reconnect on its own. It shows "Ze is open in another window" with a Use here control, which reconnects at once.

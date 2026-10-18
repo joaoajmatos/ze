@@ -69,7 +69,7 @@ export function routingFor(trace: Partial<WsTraceUpdateFrame>, settled = true): 
   const tier = trace.tier;
   const tierLine = tier ? `${tier.tier} · ${tier.decided_by === "system_one" ? "System One" : tier.decided_by.replace(/_/g, " ")} · ${tier.model}` : null;
   const scores = (trace.routing_scores ?? []).map((s) => ({ agent: s.agent, score: s.score, chosen: s.agent === trace.agent }));
-  return { scores, thresholds: trace.routing_thresholds ?? null, methodWords: METHOD_WORDS[method] ?? method, bar, options, tierLine };
+  return { scores, thresholds: scores.length > 0 ? (trace.routing_thresholds ?? null) : null, methodWords: METHOD_WORDS[method] ?? method, bar, options, tierLine };
 }
 
 const PLACE_LABEL: Record<string, string> = Object.fromEntries(places.map((p) => [p.id, p.label]));

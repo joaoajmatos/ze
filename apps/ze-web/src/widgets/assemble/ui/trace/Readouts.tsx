@@ -20,14 +20,7 @@ export function Readouts({ trace }: { trace: Partial<WsTraceUpdateFrame> }) {
             {r.total.partial && <span className="ro muted"> partial</span>}
           </dd>
         </div>
-      ) : (
-        <div>
-          <dt className="lbl">Tool time</dt>
-          <dd>
-            <DotMatrix text={`${(r.toolMs / 1000).toFixed(1)} S`} size={3} title={`${r.toolMs} milliseconds of tool time`} />
-          </dd>
-        </div>
-      )}
+      ) : null}
       {r.total && r.activeMs !== null && (
         <>
           <div>

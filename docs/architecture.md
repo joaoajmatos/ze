@@ -258,7 +258,7 @@ marks the trace `telemetry_partial`.
 core nodes, overrides, plugin nodes and the workflow graph. Each wrapper records the stage in a
 `finally` and queues a partial `stages` frame. One sender task sends the queue in order, drops a
 frame that cannot go within 1 s, and never delays a node. Before the stamp, the turn drains the
-queue (at most 1 s), so no stage frame follows the committed trace.
+queue (at most 1 s), so no stage frame follows the committed trace. A slow client can hold the reply commit for that long. Cost in `usage` is the static price table, not the bill, and model calls after the stamp are not counted. Plugin graph nodes must be async: `timed()` calls a sync node inline on the event loop.
 
 `CostTracker.record` adds each chat completion to the recorder. The stamp writes `stages`,
 `turn_duration_ms` (includes `paused_ms`), `tool_duration_ms` (the sum of tool durations, formerly

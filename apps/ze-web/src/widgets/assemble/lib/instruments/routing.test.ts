@@ -88,6 +88,11 @@ describe("routingFor shortlist", () => {
     expect(routingFor(scored(), false).scores).toHaveLength(3);
   });
 
+  it("marks no threshold when there is no shortlist, even if the envelope carried one", () => {
+    const r = routingFor(richTrace({ routing_scores: [], routing_thresholds: { threshold: 0.78, gap: 0.05 }, routing_method: "screen" }));
+    expect(r.thresholds).toBeNull();
+  });
+
   it("has an empty list, and the method, when routing used no embedding scores", () => {
     const r = routingFor(richTrace({ routing_scores: [], routing_thresholds: null, routing_method: "preset" }));
     expect(r.scores).toEqual([]);

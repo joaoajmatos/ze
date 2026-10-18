@@ -371,7 +371,7 @@ Override only the hooks your plugin needs. All methods have no-op defaults.
 | `checkpoint_serde_modules()` | `-> tuple[str, ...]` | `types.py` module paths scanned for checkpoint-serializable dataclasses/enums. |
 | `memory_policies()` | `-> dict[str, Any]` | Agent name → retrieval policy for this plugin's agents. |
 | `pre_route_node()` | `-> Callable \| None` | An async graph node inserted between preprocess and embed_route. |
-| `graph_nodes()` | `-> dict[str, Callable]` | Additional LangGraph nodes keyed by node name. |
+| `graph_nodes()` | `-> dict[str, Callable]` | Additional LangGraph nodes keyed by node name. Write them async: the turn timer calls a sync node inline on the event loop. |
 | `graph_edges(builder)` | `-> None` | Wire plugin nodes into the graph at build time. |
 | `configurable_services()` | `-> dict[str, Any]` | Services injected into `config["configurable"]` every turn. |
 
