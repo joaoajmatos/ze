@@ -162,3 +162,27 @@ def test_turn_filter_on_a_single_turn_scenario_means_turn_one():
     }
 
     assert tools_correct(scenario, _PARKED) is True
+
+
+def test_llm_calls_over_the_limit_fails():
+    from ze_eval.scoring import llm_calls_correct
+
+    assert llm_calls_correct({"max_llm_calls": 3}, 4) is False
+
+
+def test_llm_calls_at_the_limit_passes():
+    from ze_eval.scoring import llm_calls_correct
+
+    assert llm_calls_correct({"max_llm_calls": 3}, 3) is True
+
+
+def test_scenario_without_max_llm_calls_ignores_the_count():
+    from ze_eval.scoring import llm_calls_correct
+
+    assert llm_calls_correct({}, 99) is None
+
+
+def test_missing_llm_call_count_is_not_judged():
+    from ze_eval.scoring import llm_calls_correct
+
+    assert llm_calls_correct({"max_llm_calls": 3}, None) is None
