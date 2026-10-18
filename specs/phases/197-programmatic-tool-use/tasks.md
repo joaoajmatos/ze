@@ -89,7 +89,7 @@
 
 ## Phase 6: User Story 4 - The trace shows the script and every call inside it (P2)
 
-- [ ] T017 [L:harness] [US4] Tests first:
+- [x] T017 [L:harness] [US4] Tests first:
   - `flatten_tool_calls` (ze-agents nested tools test) is depth-first: [delegate call, script step (2 inner), other call] flattens to delegate, step, inner 1, inner 2, other; inner calls get `parent_call_id`; a script step whose result JSON holds a `tool_calls` key, and an inner call whose result does, produce no extra rows;
   - `_extract_tool_calls` (`core/engine/ze-core/tests/orchestration/test_message_trace.py`) gives the step `access == "script"`, copies `parent_call_id` and `script`, keeps the flattened order, and the 187b call ids match;
   - `retry_eligibility` (ze-core retry test) accepts a reply with a script step and inner reads (not `unknown_tool`), and lists a proposed reversible write in the rollback plan.
