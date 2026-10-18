@@ -132,6 +132,20 @@ async def test_run_logs_outreach_for_a_prospect_through_the_outreach_log():
     assert result.tool_calls[0].success
 
 
+async def test_run_skips_outreach_when_no_candidate_is_a_known_contact():
+    person_store = make_person_store()
+    person_store.get_by_name = AsyncMock(return_value=[])
+    outreach_log = AsyncMock()
+    agent = make_agent(person_store=person_store, outreach_log=outreach_log)
+
+    result = await agent.run(
+        make_ctx("The plan is to email the list. Sent it to The Observer")
+    )
+
+    outreach_log.log_outreach_event.assert_not_awaited()
+    assert result.tool_calls == []
+
+
 async def test_run_sends_prompt_as_user_message():
     captured: list[list] = []
 

@@ -255,16 +255,25 @@ class CompanionAgent(BaseAgent):
         event = _detect_outreach_event(ctx.prompt)
         if event is None:
             return None
+        contact_name = await self._known_contact(event["candidates"])
+        if contact_name is None:
+            return None
         return await self.call_tool(
             "log_outreach_event",
             ctx,
-            contact_name=event["contact_name"],
+            contact_name=contact_name,
             event_type=event["event_type"],
             channel=event["channel"],
             notes=ctx.prompt,
             campaign_store=self._outreach_log,
             person_store=self._person_store,
         )
+
+    async def _known_contact(self, candidates: list[str]) -> str | None:
+        for name in candidates:
+            if await self._person_store.get_by_name(name):
+                return name
+        return None
 
 
 def _detect_outreach_event(text: str) -> dict | None:
@@ -292,4 +301,9 @@ def _detect_outreach_event(text: str) -> dict | None:
             channel = ch
             break
 
-    return {"contact_name": names[0], "event_type": event_type, "channel": channel}
+    return {
+        "contact_name": names[0],
+        "candidates": names,
+        "event_type": event_type,
+        "channel": channel,
+    }
