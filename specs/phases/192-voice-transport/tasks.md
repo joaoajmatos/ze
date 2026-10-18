@@ -131,7 +131,7 @@ US3 is asserted in T007 (flow and agent ContextVars during the call); the cost t
   - `docs/configuration.md` (~177);
   - `docs/native-interface.md` (the route, `context.voice`, trace `input`);
   - `docs/ingestion.md` (system binaries: ffmpeg/ffprobe beside yt-dlp, ~203).
-- [ ] T016 [P] [L:docs] `docs/package-architecture.md` (~163) and `core/engine/ze-core/README.md` (~29) module tables (`voice.py`, `openrouter/audio.py`); `docs/testing.md` (slow real-ffprobe test); `AGENTS.md` phase row 192, the graph-flow line ("preprocess (image → caption)"), and the layout tree if it lists module files; `specs/README.md` row 192 → Implemented; spec status.
+- [x] T016 [P] [L:docs] `docs/package-architecture.md` (~163) and `core/engine/ze-core/README.md` (~29) module tables (`voice.py`, `openrouter/audio.py`); `docs/testing.md` (slow real-ffprobe test); `AGENTS.md` phase row 192, the graph-flow line ("preprocess (image → caption)"), and the layout tree if it lists module files; `specs/README.md` row 192 → Implemented; spec status.
 - [ ] T017 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched" (the exact line list); record in the Handoffs note.
 
 ---

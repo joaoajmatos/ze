@@ -26,7 +26,8 @@ The `ze_core/screen/` package holds the screen resolver registry and `build_scre
 |---|---|
 | `orchestration/` | `graph_builder`, `AgentState`, graph nodes and edges |
 | `routing/` | `EmbeddingRouter`, `tier.py` (model tier), `PostgresRoutingStore`, fallback |
-| `openrouter/` | `OpenRouterClient`, streaming, transcription |
+| `openrouter/` | `OpenRouterClient`, streaming, transcription. `audio.py` measures recordings with `ffprobe` and converts them with `ffmpeg` |
+| `voice.py` | `transcribe_audio`: measures, limits and transcribes one recording for the voice route |
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context var |
 | `conversation/` | Message/session/confirmation stores + graph turn helpers. `retry.py` decides Retry eligibility from the trace, `rewind.py` rewinds thread history for a retry, `rollback.py` (`run_rollback`) undoes the actions of a reply before a retry and records each undo on `messages.rollback`, and messages carry `replaces`/`replaced_by`/`rollback` |
 | `container.py` | Base `Container` with DI wiring |

@@ -233,7 +233,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 189 | [Mind (W5)](phases/189-web-mind/spec.md) | ✅ Implemented |
 | 190 | [Governance (W6)](phases/190-web-governance/spec.md) | ✅ Implemented |
 | 191 | [Plugins in Places (W7)](phases/191-web-plugins-in-places/spec.md) | 🔲 Draft |
-| 192 | [Voice Input Transport (B3)](phases/192-voice-transport/spec.md) | 🔲 Ready to implement (parallel; before 193) |
+| 192 | [Voice Input Transport (B3)](phases/192-voice-transport/spec.md) | ✅ Implemented (before 193) |
 | 193 | [Voice and Polish (W8)](phases/193-web-voice-polish/spec.md) | 🔲 Draft |
 | 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | 🔲 Ready to implement (parallel; zc040 to reserve) |
 | 195 | [Screen Context Awareness](phases/195-screen-context-awareness/spec.md) | ✅ Implemented (live eval: first run 10 of 26, chat_about 9 of 15 after owner routing; chip capture deferred to 193) |

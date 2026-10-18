@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17 (refined through `/speckit-specify` 2026-10-18)
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Voice Input Transport (B3)": Maestro brief 2026-10-17, backend floor B3; overhaul plan section d, gap 5, and section c (Voice); user decision 6 ("Voice: input only in this overhaul (W8); spoken output later").
 
