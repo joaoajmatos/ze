@@ -10,6 +10,7 @@ from fastapi import WebSocket
 from ze_components import UI_CONTRACT_VERSION
 from ze_api.api.ws.frames import frame_from_pending
 from ze_api.api.ws.serializers import message_to_dict
+from ze_api.api.ws.ui_gates import UiActionGates
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -34,6 +35,7 @@ class ConnectionManager:
         self._ws: WebSocket | None = None
         self._lock = asyncio.Lock()
         self._slots: dict[str, ThreadSlot] = {}
+        self.ui_gates = UiActionGates()
 
     @property
     def connected(self) -> bool:
@@ -95,6 +97,15 @@ class ConnectionManager:
                                 )
             except Exception as exc:
                 log.warning("ws_confirmation_replay_error", error=str(exc))
+
+        # A screen button's open gate survives a disconnect: ask again.
+        for frame in self.ui_gates.open_frames():
+            async with self._lock:
+                if self._ws is not None:
+                    try:
+                        await self._ws.send_json(frame)
+                    except Exception as exc:
+                        log.warning("ws_ui_gate_replay_failed", error=str(exc))
 
         # Replay open held writes (unattended runs waiting for the user).
         if held_store is not None:

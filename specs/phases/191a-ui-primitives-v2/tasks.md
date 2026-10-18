@@ -50,7 +50,7 @@
 
 ## Phase 3: User Story 1 - Actions ask first, like chat (P1) 🎯 MVP
 
-- [ ] T005 [L:server] [US1] Tests first `core/contracts/ze-agents/tests/test_run_action.py` and `tests/test_tool_ui_action.py`, with tools registered through the real `@tool` decorator (not stubs):
+- [x] T005 [L:server] [US1] Tests first `core/contracts/ze-agents/tests/test_run_action.py` and `tests/test_tool_ui_action.py`, with tools registered through the real `@tool` decorator (not stubs):
   - an asks-first IRREVERSIBLE tool returns a parked `ToolCall` (no `AgentConfigError`), whose `ParkedWrite` has a non-empty `call_id`, an `item_id`, a `summary` and an `effect_phrase`, the same fields the loop produces;
   - `run_action(..., approval=ApprovedCall(parked.call_id), approval_request_id="r1")` runs it once and records `r1` as the approval;
   - a reversible write runs; the constraint veto still applies; `ctx.loop_active` is restored after the call;
@@ -58,7 +58,7 @@
   - `@tool(access=READ, ui_action=True)` fails registration; `done_phrase` is stored on the spec.
 
   Implement `BaseAgent.run_action` and the `ui_action`/`done_phrase` arguments in `ze_agents/tool.py`.
-- [ ] T006 [L:server] [US1] Tests first `apps/ze-api/tests/api/ws/test_ui_actions.py` (fake agent registry and connection manager):
+- [x] T006 [L:server] [US1] Tests first `apps/ze-api/tests/api/ws/test_ui_actions.py` (fake agent registry and connection manager):
   - a reversible opted-in write runs once and sends `ui_action_result` with `ok: true` and its `done_phrase` (or "Done."); a failing one sends "Couldn't <effect>." and never the raw error;
   - an irreversible opted-in write sends one `confirm_request` (`kind: "write"`, one item with the summary); a `confirm` approve runs it once; two `confirm` frames for the same id run it once (the gate is popped first); deny sends "Okay, I didn't <effect>.";
   - the timeout (fake clock) sends "Okay, I didn't <effect>." and a later `confirm` for that id gets "That request expired."; a `confirm` for an id no gate knows (restart) gets "That request expired.";
@@ -71,7 +71,7 @@
   - the gate's `confirm_request` item has no `editable_field`, and a `confirm` with `edits` runs the original args;
 
   Implement `api/ws/ui_actions.py`, the `ui_action` and `confirm` branches and the reconnect replay in `api/ws/endpoint.py`, and the supersede call in `api/ws/turns.py`.
-- [ ] T007 [L:server] [US3] Tests first `core/kernel/ze-components/tests/test_render_tools.py` (extend): `render_stat_row`, `render_keyed_table` and `render_sparkline` register as READ render tools; their schemas omit `claim`, `row_actions` and any tool, navigate or compose action; `render_confirm` and `render_choice_group` keep `actions: [{label, value, style}]` and each `value` becomes `AskAction(text=value)` in the built tree; a keyed table whose `keys` length differs from its rows raises; a sparkline over 60 points is truncated. Implement in `ze_components/tools.py`.
+- [x] T007 [L:server] [US3] Tests first `core/kernel/ze-components/tests/test_render_tools.py` (extend): `render_stat_row`, `render_keyed_table` and `render_sparkline` register as READ render tools; their schemas omit `claim`, `row_actions` and any tool, navigate or compose action; `render_confirm` and `render_choice_group` keep `actions: [{label, value, style}]` and each `value` becomes `AskAction(text=value)` in the built tree; a keyed table whose `keys` length differs from its rows raises; a sparkline over 60 points is truncated. Implement in `ze_components/tools.py`.
 
 ---
 
