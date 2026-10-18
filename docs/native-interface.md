@@ -411,6 +411,32 @@ A retried reply is itself rateable and retryable.
 
 ---
 
+## Screen tool actions
+
+A button in a server-built tree can carry a tool action. The browser sends it as a `ui_action` frame:
+
+```json
+{ "type": "ui_action", "id": "6c1…", "thread_id": "t-1",
+  "action": { "kind": "tool", "owner": "news", "tool": "mark_source_read", "args": { "source_id": "s-12" } } }
+```
+
+This frame differs from the `action` frame, which answers prompt-frame choices such as goal gates. Only a WRITE tool that declares `ui_action=True` and belongs to the named agent can run. Anything else gets "That action is not available."
+
+The server runs the tool through the owning agent's `call_tool`, so the constraint veto, hooks and write gates apply as in chat. It answers with `ui_action_result` (`id`, `thread_id`, `ok`, `line`, and `code: "busy"` when the thread is busy). A success line is the tool's `done_phrase` or "Done."; a failure is "Couldn't <effect>." and never raw error text.
+
+An asks-first write sends one normal `confirm_request` (`kind: "write"`, one item, no edit field), and the client answers with the usual `confirm` frame. The gate:
+
+- pops on the first `confirm`, so a second one finds nothing;
+- on deny, timeout (`CONFIRM_TIMEOUT_SECONDS`) or a new turn on the thread, answers "Okay, I didn't <effect>.";
+- is sent again after a reconnect, and a disconnect does not cancel it;
+- lives in process memory. A restart drops it, and a later `confirm` gets "That request expired." It gets no ntfy push.
+
+Every run writes one `ui.tool_action` record to the action ledger.
+
+### Versions and legacy trees
+
+A live `message` frame with components carries `ui_version: "2.0"`, as does a plugin page response. Replayed and stored messages carry none, so the client renders them as legacy: string-action buttons are disabled and an unreadable tree shows "This older view can't be shown."
+
 ## Unread message replay
 
 `MessageStore` (`ze_core/conversation/messages/store.py`) persists all outbound messages (assistant

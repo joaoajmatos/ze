@@ -425,6 +425,17 @@ email, creating or deleting a calendar event, or spending money.
 
 ---
 
+## Let a screen run your tool
+
+A button in a tree you build can run one of your agent's write tools. Opt the tool in and give it a line to show on success:
+
+```python
+@tool(access=ToolAccess.WRITE, ui_action=True, done_phrase="Marked as read.")
+async def mark_source_read(source_id: str, ...): ...
+```
+
+Then build the button with `ToolAction(owner="news", tool="mark_source_read", args={"source_id": "s-12"})`. Args are scalars. The press goes through the same write gates as chat, including the confirmation for an irreversible tool. A READ tool cannot opt in. See [native-interface.md](native-interface.md#screen-tool-actions).
+
 ## Error handling
 
 Raise typed errors from `ze_sdk.errors`. Never raise bare `Exception` or `ValueError`.

@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-18
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description (2026-10-18, phase 191 reopened): "Plugins are data and behavior sources... I dont know if they should contribute complete pages... they could contribute visual components and/or primitives that can be used to render information." Then: "I like that. And maybe this also involves improving our ze ui and or ze components." The agreed plugin UI model (Maestro scratchpad `191-plugin-ui-model.md`, summarized in `PRODUCT.md` › Plugin UI model) splits the work: 191a improves the primitives and their contract; 191b lets plugins place modules in slots the places offer.
 

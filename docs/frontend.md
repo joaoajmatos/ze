@@ -169,6 +169,12 @@ Example: goal detail view at `/doing/goals/:goalId`.
 
 Do not put route-specific logic in entities — entities are reusable across screens.
 
+## Primitive actions and the gallery
+
+A server-built tree puts typed actions on its buttons. `features/primitive-tree/api/usePrimitiveActions.ts` maps each kind: `ask` sends a turn on the selected thread, `navigate` goes to a place route (anything else shows a notice), `compose` sends a preset turn, and `tool` sends a `ui_action` frame and shows the `ui_action_result` line as a notice. A second press while one is pending is ignored. Stored trees without a version render as legacy.
+
+In development, `/dev/primitives` renders every fixture from `packages/ze-ui/fixtures/`. A production build does not include the route.
+
 ## Adding a user action
 
 Example: confirm recurring expense.

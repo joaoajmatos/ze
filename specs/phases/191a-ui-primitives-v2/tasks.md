@@ -124,10 +124,10 @@
 ## Phase 7: Polish and cross-cutting
 
 - [x] T013 [L:lead] Merge `server`, `ui`, then `web`. `make codegen` if a schema moved. Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. The quickstart grep returns nothing.
-- [ ] T014 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev-full`, with captures of the gallery at 1440 and 390 and of an irreversible action's confirmation; record them in the Handoffs note.
-- [ ] T015 [P] [L:docs] `packages/ze-ui/README.md`, `core/kernel/ze-components/README.md` (also replace `make generate-components` with `make codegen`), `docs/frontend.md`, `docs/native-interface.md` (how `ui_action` differs from the existing `action` frame; the UI gate lifecycle and its limits; legacy trees), `docs/extending-ze.md` (`@tool(ui_action=True, done_phrase=…)`); doc-style skill.
-- [ ] T016 [P] [L:docs] `AGENTS.md` phase row 191a and the Learned Workspace Facts line on chat inline UI; `specs/README.md` row 191a → Implemented; spec status.
-- [ ] T017 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
+- [x] T014 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev-full`, with captures of the gallery at 1440 and 390 and of an irreversible action's confirmation; record them in the Handoffs note.
+- [x] T015 [P] [L:docs] `packages/ze-ui/README.md`, `core/kernel/ze-components/README.md` (also replace `make generate-components` with `make codegen`), `docs/frontend.md`, `docs/native-interface.md` (how `ui_action` differs from the existing `action` frame; the UI gate lifecycle and its limits; legacy trees), `docs/extending-ze.md` (`@tool(ui_action=True, done_phrase=…)`); doc-style skill.
+- [x] T016 [P] [L:docs] `AGENTS.md` phase row 191a and the Learned Workspace Facts line on chat inline UI; `specs/README.md` row 191a → Implemented; spec status.
+- [x] T017 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
 
 ---
 
