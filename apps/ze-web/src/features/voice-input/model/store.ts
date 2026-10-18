@@ -77,7 +77,7 @@ export const useVoiceInput = create<VoiceInputState>((set, get) => {
         return;
       }
       set({ status: "idle", pending: null });
-      onTranscript?.(transcript, transcriptionId);
+      deliverTranscript(transcript, transcriptionId);
     } catch (err) {
       presenceActions.voice("none");
       const e = err instanceof VoiceError ? err : new VoiceError("retryable", "I couldn't make out the recording.");
@@ -180,4 +180,9 @@ export function registerTranscript(cb: (text: string, transcriptionId: string) =
 /** The input level 0..1 for the orb; 0 unless recording. */
 export function currentLevel(): number {
   return useVoiceInput.getState().status === "recording" ? recorderLevel() : 0;
+}
+
+/** Delivers a transcript to the registered callback. */
+export function deliverTranscript(text: string, transcriptionId: string): void {
+  onTranscript?.(text, transcriptionId);
 }

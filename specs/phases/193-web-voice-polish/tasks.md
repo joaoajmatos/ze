@@ -76,7 +76,7 @@
   - `transcribe` sends a `File` named `recording.<ext>` with the mime as its type.
 
   Implement `store.ts` (replacing the stub's no-ops; the exported signatures do not change) and `transcribe.ts`.
-- [ ] T008 [L:voice] [US1] Tests first `features/voice-input/ui/VoiceMic.test.tsx`, `ui/VoiceStatus.test.tsx` and `model/useHoldToTalk.test.ts`:
+- [x] T008 [L:voice] [US1] Tests first `features/voice-input/ui/VoiceMic.test.tsx`, `ui/VoiceStatus.test.tsx` and `model/useHoldToTalk.test.ts`:
   - idle: label "Speak to Ze (hold V)", 44 px class; press → `start`; recording: stop icon, elapsed `0:12` after 12 s, `aria-pressed="true"`, label "Stop recording", press → `stop`; transcribing: disabled, `aria-busy="true"`; `blocked` or unavailable: disabled with the reason as label and title;
   - the status line (`VoiceStatus`): "Transcribing…"; a `retryable` failure shows its `detail` with Retry and Dismiss (both 44 px) calling `retry` and `dismiss`; a `rerecord` failure shows its `detail` with Record again (calls `dismiss` then `start`) and Dismiss, and no Retry; "Ze heard nothing"; the line has `role="status"` and `aria-live="polite"`;
   - hold-to-talk: keydown `v` outside a text field → `start`; keyup → `stop`; a keyup within 300 ms discards (no upload); keydown with a modifier, a repeat, focus in an input, a textarea or a contenteditable, or an open dialog does nothing; `enabled` false does nothing; window blur during a hold → `stop`.
