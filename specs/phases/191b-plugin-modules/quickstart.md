@@ -11,4 +11,4 @@
 3. Stop the database briefly (or make the provider raise in a dev build): the module shows "News could not load." and the rest of the entity page is unchanged.
 4. Governance › Connections still renders and saves News settings.
 5. `/news` lands on `/ask`; `/notes` shows not found.
-6. The Doing run slot is proven in tests only until 188 lands; after it lands, open a run and confirm the slot mounts (fixture plugin in a dev build).
+6. Open a Doing workflow run: the `doing.run` slot mounts (fixture plugin in a dev build).

@@ -4,7 +4,7 @@
 
 **Tests**: required. **Fail-first**: write the test, run it, see it fail for the stated reason, then implement.
 
-**Build gate**: 191a on `main`; 187 (Try chips) and 189 (Mind entity page) landed; 188 (Doing workflow page) landed or landing (see the Lane Plan rule).
+**Build gate**: 191a, 187, 188 and 189 on `main` (188 lands before 191b starts).
 
 ## Format: `[ID] [P?] [Lane] [Story] Description`
 
@@ -92,7 +92,7 @@
   Implement `PluginModuleSlot`.
 - [ ] T007 [L:web] [US1] Tests first, extending `pages/mind-entity/ui/MindEntityPage.test.tsx`, `pages/doing-workflow/ui/DoingWorkflowPage.test.tsx` and `widgets/connections/ui/Connections.test.tsx`, each with the fixture manifest:
   - the Mind entity page mounts the `mind.entity` slot with subject `{ kind: "entity", id, label, entity_type }`;
-  - the Doing workflow page mounts the `doing.run` slot with the selected execution as `id` and the workflow as `parent_id` (if 188 has not landed, the mount waits for it: record it on 188's landing checklist in the Handoffs note);
+  - the Doing workflow page mounts the `doing.run` slot with the selected execution as `id` and the workflow as `parent_id`;
   - Connections mounts the `governance.connections` slot with subject `none`, after the settings sections.
 
   Implement the one-line mounts.
