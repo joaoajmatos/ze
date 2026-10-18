@@ -125,7 +125,7 @@ class Procedure:
     source_refs: list[UUID] = ...
 ```
 
-**Tables:** `procedure_candidates`, `procedure_versions` — pgvector embedding on `trigger + name` of admitted versions. Direct writes to a procedure table are hard-cut; sources submit candidates through `ProcedureAdmissionService`. `ProcedureDiscovery.match` returns ready or blocked guidance for agents and planners. Invocation is explicit (`invoke_procedure`) and never grants tools.
+**Tables:** `procedure_candidates`, `procedure_versions` — pgvector embedding on `trigger + name` of admitted versions. Direct writes to a procedure table are hard-cut; sources submit candidates through `ProcedureAdmissionService`. `ProcedureDiscovery.match` returns ready or blocked guidance for agents and planners. Invocation is explicit (`invoke_procedure`) and never grants tools. A `tool_script` candidate (source kind added in phase 197) holds one tool script; after approval, `run_tool_script(procedure_id=...)` reruns it.
 
 ### `TaskState`
 

@@ -331,7 +331,7 @@ Each inbound frame has one state owner in ze-web. `features/turn-stream/model/fr
 (`stages: [{name, start_ms, duration_ms, run}]`). The `embed_route` frame adds `routing_scores` and
 `routing_thresholds`. The memory frame adds `extraction_confidence` per fact chunk. Each finished
 tool call adds a row to `tool_calls` (`call_id`, `name`, `agent`, `gate`, `start_offset_ms`,
-`duration_ms`, `success`, `result_snippet`). A `gate: "parked"` row waits for the user, and its
+`duration_ms`, `success`, `result_snippet`). A tool script is one row with `access: "script"` and a `script` object (`source`, `outcome`, `limit`); the calls it made follow it, each with `parent_call_id` set to the script row's `call_id`. A `gate: "parked"` row waits for the user, and its
 approved run arrives later with the same `call_id`. A frame that cannot go within 1 s is dropped.
 
 Clients append stages (one per `run`, `name` and `start_ms`), merge tool rows by `call_id`, and
