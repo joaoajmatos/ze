@@ -80,6 +80,8 @@ It also runs `check_query_errors.py` on changed `entities/*/api/use*Query.ts` fi
 
 These checks only warn: old route literals, public docs not touched by a behavior change, and a web change without `PORTAL_SHOT`. Add `Docs: none (reason)` to a commit message to silence the docs warning.
 
+`gates.sh` takes the machine-wide full-gate lock (`/tmp/ze-full-gates.lock`, the one `~/.maestri-ze/gate-lock.sh` uses) for `test-py`, `test-web`, `test-pg`, `typecheck-web` and `web-build`. One full run happens at a time on the machine. The script waits for its turn and removes a lock whose holder has died. Running under `gate-lock.sh` does not deadlock. `lint` and `lint-web` never wait.
+
 A claim about gates or reviews must cite a file under `.process/`.
 
 ## Verify web changes in your own portal

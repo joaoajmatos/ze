@@ -102,3 +102,90 @@ def test_gates_all_green_exits_zero(tmp_path):
         ).returncode
         == 0
     )
+
+
+def _heavy_repo(tmp_path: Path) -> Path:
+    repo = _repo_with_gates(tmp_path)
+    (repo / "Makefile").write_text("test-py:\n\t@true\nlint:\n\t@true\n")
+    return repo
+
+
+def test_full_gate_waits_for_a_live_lock_and_cleans_a_stale_one(tmp_path):
+    import os
+
+    repo = _heavy_repo(tmp_path)
+    lock = tmp_path / "gate.lock"
+    env = {**os.environ, "ZE_GATE_LOCK": str(lock), "ZE_GATE_LOCK_POLL": "0.2"}
+    # stale: holder pid does not exist
+    lock.mkdir()
+    (lock / "pid").write_text("999999")
+    p = subprocess.run(
+        [str(PROCESS / "gates.sh"), "-", "test-py"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=30,
+    )
+    assert p.returncode == 0 and not lock.exists()
+    # live holder: a sleeping process; the gate must wait until it exits
+    import threading
+
+    holder = subprocess.Popen(["sleep", "2"])
+    threading.Thread(
+        target=holder.wait, daemon=True
+    ).start()  # reap it, or kill -0 still sees a zombie
+    lock.mkdir()
+    (lock / "pid").write_text(str(holder.pid))
+    p = subprocess.run(
+        [str(PROCESS / "gates.sh"), "-", "test-py"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=30,
+    )
+    assert (
+        "waiting for the full-gate lock" in p.stderr
+        and p.returncode == 0
+        and not lock.exists()
+    )
+
+
+def test_light_gates_ignore_the_lock(tmp_path):
+    import os
+
+    repo = _heavy_repo(tmp_path)
+    lock = tmp_path / "gate.lock"
+    lock.mkdir()
+    (lock / "pid").write_text(str(os.getpid()))
+    env = {**os.environ, "ZE_GATE_LOCK": str(lock)}
+    p = subprocess.run(
+        [str(PROCESS / "gates.sh"), "-", "lint"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=30,
+    )
+    assert p.returncode == 0 and lock.exists()
+
+
+def test_gates_under_gate_lock_do_not_deadlock(tmp_path):
+    import os
+
+    repo = _heavy_repo(tmp_path)
+    lock = tmp_path / "gate.lock"
+    env = {**os.environ, "ZE_GATE_LOCK": str(lock)}
+    wrapper = (
+        f"mkdir {lock} && echo $$ > {lock}/pid && exec {PROCESS / 'gates.sh'} - test-py"
+    )
+    p = subprocess.run(
+        ["sh", "-c", wrapper],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=30,
+    )
+    assert p.returncode == 0
