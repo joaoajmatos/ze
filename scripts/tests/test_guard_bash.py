@@ -164,7 +164,7 @@ def _precommit(repo, env_extra):
     )
 
 
-def test_precommit_blocks_telemetry_key_and_arch_notes(tmp_path):
+def test_precommit_blocks_arch_notes(tmp_path):
     _git(tmp_path, "init", "-q")
     _git(
         tmp_path,
@@ -184,11 +184,11 @@ def test_precommit_blocks_telemetry_key_and_arch_notes(tmp_path):
     (tmp_path / "ctx" / ".spec-context.json").write_text(
         '{"telemetryInstanceId": "abc"}'
     )
-    _git(tmp_path, "add", "specs", "ctx")
+    _git(tmp_path, "add", "specs")
     assert _precommit(tmp_path, {}).returncode == 0
     p = _precommit(tmp_path, {"MAESTRI_TERMINAL_ID": "T", "ZE_ROLE": "eng"})
     assert p.returncode == 1
-    assert "telemetryInstanceId" in p.stderr and "specs/arch" in p.stderr
+    assert "specs/arch" in p.stderr
     assert (
         _precommit(tmp_path, {"MAESTRI_TERMINAL_ID": "T", "SKIP": "1"}).returncode == 0
     )

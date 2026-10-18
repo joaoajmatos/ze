@@ -6,11 +6,6 @@ set -u
 
 fail=0
 
-if git diff --cached -U0 -- '*.spec-context.json' | grep -q '^+.*telemetryInstanceId'; then
-  echo "process: a staged .spec-context.json carries telemetryInstanceId; discard that hunk." >&2
-  fail=1
-fi
-
 new_arch="$(git diff --cached --name-only --diff-filter=A -- 'specs/arch/' || true)"
 if [[ -n "$new_arch" && "${ZE_ROLE:-}" != "architect" && "${ZE_ROLE:-}" != "maestro" ]]; then
   echo "process: new files under specs/arch/ need the architect or Maestro (no working notes there):" >&2

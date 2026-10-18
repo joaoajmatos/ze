@@ -481,7 +481,7 @@ codegen:
 	bun run scripts/codegen.ts
 
 # ── Code quality ──────────────────────────────────────────────────────────────
-.PHONY: check hooks process-install-hooks lint lint-web typecheck-web format clean
+.PHONY: check hooks process-install-hooks process-ready lint lint-web typecheck-web format clean
 
 check: lint web-build
 	@echo "check: ok"
@@ -493,6 +493,11 @@ hooks:
 # Same hooks, plus the process checks that run only inside a Maestri terminal.
 process-install-hooks: hooks
 	@chmod +x scripts/process/precommit_checks.sh scripts/process/hooks/*.py
+
+# Gates for the diff, hard checks, one receipt for HEAD in .process/receipts/.
+# make process-ready [PORTAL_SHOT=<png>] [FLOOR=<name> sets the floor to review when green]
+process-ready:
+	@python3 scripts/process/ready.py $(if $(PORTAL_SHOT),--portal-shot $(PORTAL_SHOT)) $(if $(FLOOR),--set-review "$(FLOOR)")
 
 lint:
 	uv run ruff check .
