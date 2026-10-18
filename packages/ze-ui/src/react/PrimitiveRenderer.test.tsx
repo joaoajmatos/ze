@@ -350,8 +350,6 @@ describe("PrimitiveRenderer classNames map (HUD restyle)", () => {
     muted: "x-muted",
     badge: "x-badge",
     card: "x-card",
-    progressTrack: "x-track",
-    progressFill: "x-fill",
     table: "x-table",
     steps: "x-steps",
     connections: "x-connections",
@@ -375,19 +373,17 @@ describe("PrimitiveRenderer classNames map (HUD restyle)", () => {
     expect(screen.getByText("dim")).toHaveClass("x-body", "x-muted");
   });
 
-  it("maps badge, card-style col, progress, table, steps, connections and button", () => {
+  it("maps badge, card-style col, table, steps, connections and button", () => {
     withMap({ type: "col", variant: "card", children: [
       { type: "badge", label: "b" },
-      { type: "progress", value: 0.5, label: "p" },
       { type: "table", headers: ["h"], rows: [["c"]] },
       { type: "steps", steps: [{ label: "s", status: "done" }] },
-      { type: "button", label: "go", action: "a", style: "primary" },
+      { type: "button", label: "go", action: { kind: "ask", text: "a" }, style: "primary" },
       { type: "divider" },
     ] });
     expect(screen.getByText("b")).toHaveClass("x-badge");
     expect(screen.getByText("go")).toHaveClass("x-button", "x-primary");
     expect(document.querySelector(".x-card")).not.toBeNull();
-    expect(document.querySelector(".x-track .x-fill")).not.toBeNull();
     expect(document.querySelector(".x-table")).not.toBeNull();
     expect(document.querySelector(".x-steps")).not.toBeNull();
     expect(document.querySelector(".x-divider")).not.toBeNull();

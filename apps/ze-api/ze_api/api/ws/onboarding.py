@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from ze_components import UI_CONTRACT_VERSION
 from ze_api.api.ws.connection import ConnectionManager
 from ze_onboarding import OnboardingView
 
@@ -14,6 +15,7 @@ async def send_onboarding_view(
     await conn_mgr.send_frame(
         {
             "type": "message",
+            "ui_version": UI_CONTRACT_VERSION,
             "message": {
                 "id": str(uuid4()),
                 "role": "assistant",

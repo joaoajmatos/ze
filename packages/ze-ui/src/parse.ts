@@ -5,11 +5,11 @@ import {
   runPrimitiveTreeValidator,
   runPrimitiveValidator,
 } from "./generated/validators.gen";
-import type { Primitive } from "./generated/types.gen";
+import type { Primitive, PrimitiveAction } from "./generated/types.gen";
 
 export type PrimitiveTree = Primitive[];
 export type PrimitiveNode = Primitive;
-export type PrimitiveAction = string;
+export type { PrimitiveAction };
 
 export function validatePrimitive(data: unknown): data is Primitive {
   return runPrimitiveValidator(data);

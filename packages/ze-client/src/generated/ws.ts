@@ -15,7 +15,8 @@ export type WsInboundFrame =
   | WsRefreshFrame
   | WsPongFrame
   | WsTraceUpdateFrame
-  | WsNotificationFrame;
+  | WsNotificationFrame
+  | WsUiActionResultFrame;
 export type Type = "message";
 export type Id = string;
 export type Role = "user" | "assistant";
@@ -39,6 +40,7 @@ export type Entries = RollbackEntryResponse[];
 export type ReplacedBy1 = string | null;
 export type SessionId = string;
 export type Completed = boolean;
+export type UiVersion = string | null;
 export type Type1 = "edit";
 export type Id1 = string;
 export type ThreadId1 = string | null;
@@ -46,6 +48,7 @@ export type Text1 = string | null;
 export type Components1 = {
   [k: string]: unknown;
 }[];
+export type UiVersion1 = string | null;
 export type Type2 = "confirm_request";
 export type Id2 = string;
 export type ThreadId2 = string | null;
@@ -234,6 +237,12 @@ export type Read1 = boolean;
 export type PushClass = "requested" | "accountability" | "discretionary";
 export type Urgency = "low" | "normal" | "high";
 export type Delivery = "delivered" | "held" | "released" | "suppressed" | "failed";
+export type Type13 = "ui_action_result";
+export type Id7 = string;
+export type ThreadId11 = string | null;
+export type Ok = boolean;
+export type Line = string;
+export type Code1 = "busy" | null;
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "WsOutboundFrame".
@@ -243,19 +252,20 @@ export type WsOutboundFrame =
   | WsAckFrame
   | WsConfirmFrame
   | WsActionFrame
+  | WsUiActionFrame
   | WsCommandFrame
   | WsComponentSubmitFrame
   | WsRetryFrame
   | WsPingFrame;
-export type Type13 = "message";
+export type Type14 = "message";
 export type Text5 = string;
-export type ThreadId11 = string | null;
+export type ThreadId12 = string | null;
 export type Place1 = ("world" | "ask" | "doing" | "mind" | "governance" | "plugin") | null;
 export type Route1 = string | null;
 export type Origin1 = ("ask_bar" | "chat_about" | "preset") | null;
 export type Subject1 = WsScreenRef[] | null;
 export type Kind4 = string;
-export type Id7 = string;
+export type Id8 = string;
 export type Label1 = string | null;
 export type Component = string | null;
 export type ParentId = string | null;
@@ -265,34 +275,40 @@ export type Visible = WsScreenRef[] | null;
 export type FocusedModule1 = string | null;
 export type Canvas = WsCanvasRef[] | null;
 export type Index = number;
-export type Type14 = string;
+export type Type15 = string;
 export type CapturedAt1 = string | null;
 export type WorkspacePlaced = WsWorkspacePlaced[] | null;
 export type Path1 = string;
 export type Size = number;
 export type Compose = ("slipping" | "decisions" | "topic") | null;
 export type Topic = string | null;
-export type Type15 = "ack";
+export type Type16 = "ack";
 export type Ids = string[];
-export type Type16 = "confirm";
-export type Id8 = string;
-export type ThreadId12 = string;
+export type Type17 = "confirm";
+export type Id9 = string;
+export type ThreadId13 = string;
 export type Choice = "approve" | "deny";
-export type Type17 = "action";
+export type Type18 = "action";
 export type Payload = string;
-export type ThreadId13 = string | null;
-export type Type18 = "command";
 export type ThreadId14 = string | null;
+export type Type19 = "ui_action";
+export type Id10 = string;
+export type ThreadId15 = string;
+export type Kind5 = "tool";
+export type Owner = string;
+export type Tool4 = string;
+export type Type20 = "command";
+export type ThreadId16 = string | null;
 export type Name3 = "cancel" | "costs" | "status" | "onboarding";
-export type Type19 = "component_submit";
+export type Type21 = "component_submit";
 export type StepId = string;
 export type SessionId1 = string | null;
-export type ThreadId15 = string | null;
-export type Type20 = "retry";
+export type ThreadId17 = string | null;
+export type Type22 = "retry";
 export type MessageId4 = string;
-export type ThreadId16 = string;
+export type ThreadId18 = string;
 export type ConfirmedPlan = string[] | null;
-export type Type21 = "ping";
+export type Type23 = "ping";
 
 export interface WsProtocol {
   inbound?: WsInboundFrame;
@@ -306,6 +322,7 @@ export interface WsMessageFrame {
   type: Type;
   message: MessageSchema;
   onboarding?: OnboardingMeta | null;
+  ui_version?: UiVersion;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -362,6 +379,7 @@ export interface WsEditFrame {
   thread_id?: ThreadId1;
   text?: Text1;
   components?: Components1;
+  ui_version?: UiVersion1;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -734,12 +752,24 @@ export interface WsNotificationFrame {
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WsUiActionResultFrame".
+ */
+export interface WsUiActionResultFrame {
+  type: Type13;
+  id: Id7;
+  thread_id?: ThreadId11;
+  ok: Ok;
+  line: Line;
+  code?: Code1;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "WsSendMessageFrame".
  */
 export interface WsSendMessageFrame {
-  type: Type13;
+  type: Type14;
   text: Text5;
-  thread_id?: ThreadId11;
+  thread_id?: ThreadId12;
   context?: WsScreenContext | null;
 }
 /**
@@ -766,7 +796,7 @@ export interface WsScreenContext {
  */
 export interface WsScreenRef {
   kind: Kind4;
-  id: Id7;
+  id: Id8;
   label?: Label1;
   component?: Component;
   parent_id?: ParentId;
@@ -778,7 +808,7 @@ export interface WsScreenRef {
  */
 export interface WsCanvasRef {
   index: Index;
-  type: Type14;
+  type: Type15;
   ref?: WsScreenRef | null;
 }
 /**
@@ -794,7 +824,7 @@ export interface WsWorkspacePlaced {
  * via the `definition` "WsAckFrame".
  */
 export interface WsAckFrame {
-  type: Type15;
+  type: Type16;
   ids: Ids;
 }
 /**
@@ -802,9 +832,9 @@ export interface WsAckFrame {
  * via the `definition` "WsConfirmFrame".
  */
 export interface WsConfirmFrame {
-  type: Type16;
-  id: Id8;
-  thread_id: ThreadId12;
+  type: Type17;
+  id: Id9;
+  thread_id: ThreadId13;
   choice: Choice;
   edits?: Edits;
 }
@@ -816,17 +846,40 @@ export interface Edits {
  * via the `definition` "WsActionFrame".
  */
 export interface WsActionFrame {
-  type: Type17;
+  type: Type18;
   payload: Payload;
-  thread_id?: ThreadId13;
+  thread_id?: ThreadId14;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WsUiActionFrame".
+ */
+export interface WsUiActionFrame {
+  type: Type19;
+  id: Id10;
+  thread_id: ThreadId15;
+  action: WsUiToolAction;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WsUiToolAction".
+ */
+export interface WsUiToolAction {
+  kind: Kind5;
+  owner: Owner;
+  tool: Tool4;
+  args?: Args;
+}
+export interface Args {
+  [k: string]: string | number | boolean;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "WsCommandFrame".
  */
 export interface WsCommandFrame {
-  type: Type18;
-  thread_id?: ThreadId14;
+  type: Type20;
+  thread_id?: ThreadId16;
   name: Name3;
 }
 /**
@@ -834,11 +887,11 @@ export interface WsCommandFrame {
  * via the `definition` "WsComponentSubmitFrame".
  */
 export interface WsComponentSubmitFrame {
-  type: Type19;
+  type: Type21;
   step_id: StepId;
   values: Values;
   session_id?: SessionId1;
-  thread_id?: ThreadId15;
+  thread_id?: ThreadId17;
 }
 export interface Values {
   [k: string]: unknown;
@@ -848,9 +901,9 @@ export interface Values {
  * via the `definition` "WsRetryFrame".
  */
 export interface WsRetryFrame {
-  type: Type20;
+  type: Type22;
   message_id: MessageId4;
-  thread_id: ThreadId16;
+  thread_id: ThreadId18;
   confirmed_plan?: ConfirmedPlan;
 }
 /**
@@ -858,5 +911,5 @@ export interface WsRetryFrame {
  * via the `definition` "WsPingFrame".
  */
 export interface WsPingFrame {
-  type: Type21;
+  type: Type23;
 }

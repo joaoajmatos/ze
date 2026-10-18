@@ -13,7 +13,6 @@ import type {
   Form,
   Headline,
   Primitive,
-  ProgressBar,
   Row,
   Spacer,
   StepItem,
@@ -143,8 +142,6 @@ function PrimitiveNodeRenderer({ node }: { node: Primitive }) {
       return <SpacerRenderer node={node} />;
     case "button":
       return <ButtonRenderer node={node} />;
-    case "progress":
-      return <ProgressRenderer node={node} />;
     case "table":
       return <TableRenderer node={node} />;
     case "form":
@@ -250,13 +247,13 @@ function SpacerRenderer({ node }: { node: Spacer }) {
 }
 
 function ButtonRenderer({ node }: { node: Button }) {
-  const { onButtonAction, onDisconnected } = usePrimitiveRendererActions();
+  const { onAction, onDisconnected } = usePrimitiveRendererActions();
   const cx = useCx();
   const [used, setUsed] = useState(false);
 
   function handleClick() {
     if (used) return;
-    const ok = onButtonAction?.(node.action);
+    const ok = onAction?.(node.action);
     if (ok === false) {
       onDisconnected?.();
       return;
@@ -293,28 +290,6 @@ function ButtonRenderer({ node }: { node: Button }) {
     >
       {used ? `✓ ${node.label}` : node.label}
     </button>
-  );
-}
-
-function ProgressRenderer({ node }: { node: ProgressBar }) {
-  const cx = useCx();
-  const pct = Math.round(Math.max(0, Math.min(1, node.value)) * 100);
-  return (
-    <div className="w-full">
-      {node.label && <p className={cx("label", "mb-1 text-xs text-smoke")}>{node.label}</p>}
-      <div
-        className={cx("progressTrack", "h-1.5 w-full rounded-full bg-white/10")}
-        role="progressbar"
-        aria-valuenow={pct}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div
-          className={cx("progressFill", "h-1.5 rounded-full bg-plum-voltage transition-all")}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
   );
 }
 

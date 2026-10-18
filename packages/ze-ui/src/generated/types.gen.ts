@@ -8,7 +8,6 @@ export type ZeUIPrimitives =
   | Divider
   | Spacer
   | Button
-  | ProgressBar
   | Table
   | Form
   | Connections
@@ -16,7 +15,12 @@ export type ZeUIPrimitives =
   | Chart
   | Headline
   | ClaimCard
-  | ClaimTimeline;
+  | ClaimTimeline
+  | EntityFacet
+  | StatRow
+  | ClaimList
+  | Sparkline
+  | Card;
 export type Primitive =
   | Col
   | Row
@@ -25,7 +29,6 @@ export type Primitive =
   | Divider
   | Spacer
   | Button
-  | ProgressBar
   | Table
   | Form
   | Connections
@@ -33,7 +36,13 @@ export type Primitive =
   | Chart
   | Headline
   | ClaimCard
-  | ClaimTimeline;
+  | ClaimTimeline
+  | EntityFacet
+  | StatRow
+  | ClaimList
+  | Sparkline
+  | Card;
+export type PrimitiveAction = AskAction | ToolAction | NavigateAction | ComposeAction;
 
 export interface Col {
   children: Primitive[];
@@ -84,24 +93,45 @@ export interface Spacer {
 }
 export interface Button {
   label: string;
-  action: string;
+  action: PrimitiveAction;
   style?: "primary" | "secondary" | "danger";
   claim?: ClaimPosture;
   type: "button";
 }
-export interface ProgressBar {
-  value: number;
-  label?: string;
-  claim?: ClaimPosture;
-  type: "progress";
+export interface AskAction {
+  text: string;
+  kind: "ask";
+}
+export interface ToolAction {
+  owner: string;
+  tool: string;
+  args: {
+    [k: string]: boolean | number | string;
+  };
+  kind: "tool";
+}
+export interface NavigateAction {
+  route: string;
+  kind: "navigate";
+}
+export interface ComposeAction {
+  compose: "slipping" | "decisions" | "topic";
+  topic?: string;
+  kind: "compose";
 }
 export interface Table {
   headers: string[];
   rows: string[][];
   title?: string;
   caption?: string;
+  keys?: string[];
+  row_actions?: RowAction[];
   claim?: ClaimPosture;
   type: "table";
+}
+export interface RowAction {
+  label: string;
+  action: PrimitiveAction;
 }
 export interface Form {
   id: string;
@@ -208,4 +238,67 @@ export interface TimelineEntry {
   title: string;
   claim: ClaimPosture;
   due_at?: string;
+}
+export interface EntityFacet {
+  title: string;
+  facts: FacetFact[];
+  more?: PrimitiveAction;
+  claim?: ClaimPosture;
+  type: "entity_facet";
+}
+export interface FacetFact {
+  text: string;
+  claim: ClaimPosture;
+  source?: string;
+  at?: string;
+}
+export interface StatRow {
+  /**
+   * @minItems 1
+   * @maxItems 6
+   */
+  items:
+    | [Stat]
+    | [Stat, Stat]
+    | [Stat, Stat, Stat]
+    | [Stat, Stat, Stat, Stat]
+    | [Stat, Stat, Stat, Stat, Stat]
+    | [Stat, Stat, Stat, Stat, Stat, Stat];
+  claim?: ClaimPosture;
+  type: "stat_row";
+}
+export interface Stat {
+  label: string;
+  value: string;
+  delta?: string;
+  direction?: "up" | "down" | "flat";
+}
+export interface ClaimList {
+  items: ClaimItem[];
+  title?: string;
+  claim?: ClaimPosture;
+  type: "claim_list";
+}
+export interface ClaimItem {
+  text: string;
+  claim: ClaimPosture;
+  action?: PrimitiveAction;
+}
+export interface Sparkline {
+  label: string;
+  /**
+   * @maxItems 60
+   */
+  points: number[];
+  value?: string;
+  claim?: ClaimPosture;
+  type: "sparkline";
+}
+export interface Card {
+  title: string;
+  children: Primitive[];
+  actions?: Button[];
+  body?: string;
+  claim?: ClaimPosture;
+  type: "card";
 }

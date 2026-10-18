@@ -7,6 +7,7 @@ from uuid import UUID
 
 from fastapi import WebSocket
 
+from ze_components import UI_CONTRACT_VERSION
 from ze_api.api.ws.frames import frame_from_pending
 from ze_api.api.ws.serializers import message_to_dict
 from ze_logging import get_logger
@@ -132,9 +133,10 @@ class ConnectionManager:
             if self._ws is None:
                 return
             try:
-                await self._ws.send_json(
-                    {"type": "message", "message": message_to_dict(message)}
-                )
+                frame = {"type": "message", "message": message_to_dict(message)}
+                if frame["message"]["components"]:
+                    frame["ui_version"] = UI_CONTRACT_VERSION
+                await self._ws.send_json(frame)
             except (TypeError, ValueError) as exc:
                 log.warning("ws_push_unserializable", error=str(exc))
             except Exception as exc:

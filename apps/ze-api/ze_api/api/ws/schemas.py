@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal, Union
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
 )
 
@@ -43,6 +44,8 @@ class WsMessageFrame(BaseModel):
     type: Literal["message"]
     message: MessageSchema
     onboarding: OnboardingMeta | None = None
+    # Set on live frames whose components were just built; absent on replay and history.
+    ui_version: str | None = None
 
 
 class WsEditFrame(BaseModel):
@@ -51,6 +54,7 @@ class WsEditFrame(BaseModel):
     thread_id: str | None = None
     text: str | None = None
     components: list[dict[str, Any]] = []
+    ui_version: str | None = None
 
 
 class WsConfirmItem(BaseModel):
@@ -171,6 +175,15 @@ class WsTraceUpdateFrame(BaseModel):
     resume_recap_applied: bool = False
 
 
+class WsUiActionResultFrame(BaseModel):
+    type: Literal["ui_action_result"]
+    id: str
+    thread_id: str | None = None
+    ok: bool
+    line: str
+    code: Literal["busy"] | None = None
+
+
 class WsNotificationFrame(BaseModel):
     type: Literal["notification"]
     id: str
@@ -203,6 +216,7 @@ WsInboundFrame = Annotated[
         WsPongFrame,
         WsTraceUpdateFrame,
         WsNotificationFrame,
+        WsUiActionResultFrame,
     ],
     Field(discriminator="type"),
 ]
@@ -224,7 +238,9 @@ class WsCanvasRef(BaseModel):
 
 
 class WsScreenContext(BaseModel):
-    place: Literal["world", "ask", "doing", "mind", "governance", "plugin"] | None = None
+    place: Literal["world", "ask", "doing", "mind", "governance", "plugin"] | None = (
+        None
+    )
     route: str | None = Field(None, max_length=200)
     origin: Literal["ask_bar", "chat_about", "preset"] | None = None
     # Caps (3 / 20 / 30 / 12) are applied by ScreenContext.from_wire; a schema limit would turn these into tuple types.
@@ -262,6 +278,22 @@ class WsConfirmFrame(BaseModel):
     thread_id: str
     choice: Literal["approve", "deny"]
     edits: dict[str, str] = {}
+
+
+class WsUiToolAction(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["tool"]
+    owner: str = Field(max_length=64)
+    tool: str = Field(max_length=64)
+    args: dict[str, str | int | float | bool] = {}
+
+
+class WsUiActionFrame(BaseModel):
+    type: Literal["ui_action"]
+    id: str = Field(max_length=64)
+    thread_id: str
+    action: WsUiToolAction
 
 
 class WsActionFrame(BaseModel):
@@ -306,6 +338,7 @@ WsOutboundFrame = Annotated[
         WsAckFrame,
         WsConfirmFrame,
         WsActionFrame,
+        WsUiActionFrame,
         WsCommandFrame,
         WsComponentSubmitFrame,
         WsRetryFrame,

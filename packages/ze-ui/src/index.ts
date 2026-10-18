@@ -9,7 +9,6 @@ export type {
   Form,
   FormField,
   Primitive,
-  ProgressBar,
   Row,
   Spacer,
   Table,
