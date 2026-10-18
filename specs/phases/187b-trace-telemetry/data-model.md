@@ -5,7 +5,7 @@ JSON on `messages.trace` (no migration). New and changed fields on `MessageTrace
 | Field | Type | Notes |
 |---|---|---|
 | tool_duration_ms | int | renamed from `total_duration_ms` (sum of tool durations) |
-| turn_duration_ms | int \| null | wall time from turn start to the stamp; null on traces before 187b |
+| turn_duration_ms | int \| null | monotonic time from turn start to the stamp, including `paused_ms`; null on traces before 187b |
 | paused_ms | int | time waiting for confirmations (0 when none) |
 | stages | list[StageTiming] | order of completion |
 | usage | TurnUsage \| null | |
@@ -21,12 +21,12 @@ JSON on `messages.trace` (no migration). New and changed fields on `MessageTrace
 
 **RoutingScore**: `agent`, `score`.
 
-**ToolCallTrace** additions: `call_id` (str), `start_offset_ms` (int \| null).
+**ToolCallTrace** additions: `call_id` (str), `start_offset_ms` (int \| null). Live rows also carry `gate`.
 
 **JudgmentTrace** additions: `surface` (str \| null), `bar` ({name: str, value: float} \| null).
 
-**ze-agents `ToolCall`** additions: `call_id`, `started_at` (wall seconds). **`AgentContext.tool_sink`**: runtime-only callable.
+**ze-agents `ToolCall`** additions: `call_id` (uuid hex; the `ParkedWrite`/`ApprovedCall` id for parked and approved calls), `started_at` (`time.monotonic()` seconds; survives delegate nesting). **`AgentContext.tool_sink`**: runtime-only callable.
 
 **RoutingEnvelope** additions: `threshold`, `gap_threshold`.
 
-**TurnTelemetry** (in process, never stored): turn wall start, stages, per-model accumulators, run, paused_ms, partial flag, emit.
+**TurnTelemetry** (in process, never stored): monotonic turn start, stages, per-model accumulators (chat completions only), run, paused_at, paused_ms, frozen, partial flag, send target and queue.

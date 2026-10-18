@@ -67,7 +67,7 @@ The trace reports the measured length of the whole turn, and for the reply: toke
 
 **Acceptance Scenarios**:
 
-1. **Given** a finished turn, **When** the trace is read, **Then** the total is measured wall time from the turn's start to its reply, separate from tool time; time spent waiting for a confirmation is reported on its own.
+1. **Given** a finished turn, **When** the trace is read, **Then** the total is measured wall time from the turn's start to its reply, separate from tool time. The total includes time spent waiting for a confirmation, and that wait is also reported on its own so the readout can show active time (total minus wait).
 2. **Given** a turn with several main-model calls (an agentic loop), **When** the trace is read, **Then** tokens are summed across them, and context fill is the largest prompt sent divided by that model's window.
 3. **Given** System One judgments on the turn, **When** the trace is read, **Then** their tokens are reported apart from the main model's, never mixed into them.
 4. **Given** a model missing from the price or window table, **When** the trace is read, **Then** the cost and fill are marked as estimates from the default rates, not left blank.
@@ -109,9 +109,11 @@ A tool row that appears while the turn runs carries its real start offset, durat
 
 - A turn that errors before it replies still stores the stages and total it reached.
 - Work Ze does after the reply is sent (fire-and-forget memory writes) is not part of the turn's stages, total or usage.
-- A server restart while a turn waits for a confirmation loses the first run's telemetry; the resumed reply's trace is marked partial.
+- A server restart while a turn waits for a confirmation loses the first run's telemetry; the resumed reply's trace is marked partial and sends no live stage frames.
+- A write parked for confirmation shows live as waiting, not as a failed tool; once approved, the row it becomes keeps the same id, so the trace shows one call.
+- A slow or displaced client never slows the turn: live frames are sent in the background and dropped if they cannot go out.
 - A retried reply (165/180) has its own stage list and totals; the replaced reply keeps its own.
-- Clock: all offsets and durations come from one monotonic server clock per turn, so a wall-clock change mid-turn cannot produce a negative duration.
+- Clock: all offsets and durations come from one monotonic server clock (the process's), shared by stages and tool rows, so a wall-clock change mid-turn cannot shift or reverse them. Wall time is used only to display when the turn happened.
 - A node that runs twice in one turn (a confirmation round re-entering execute) is listed once per run, in order.
 - Old traces stored before this phase lack the new fields; they read as absent, and the instruments keep their current fallback.
 - A partial frame must never block or fail the turn: a telemetry error is logged and the turn continues.
@@ -123,13 +125,13 @@ A tool row that appears while the turn runs carries its real start offset, durat
 - **FR-001**: The trace MUST carry an ordered list of stages, each with name, start offset from the turn's start and duration in milliseconds, measured on the server. It MUST be sent on a partial frame as each stage finishes and stored with the reply.
 - **FR-002**: Every graph node a turn passes through MUST be reported as a stage, including preprocess, skill matching, correlate, loop surfacing, synthesize and the memory write. A stage that did not run MUST be absent.
 - **FR-003**: The trace MUST carry the measured total duration of the turn, separate from tool time. The existing field that holds the sum of tool durations MUST be renamed to say so (pre-v1 hard cut).
-- **FR-004**: The trace MUST carry the main model's prompt and completion tokens summed over the turn, the estimated cost from the price table, and the context fill (largest prompt over that model's window), each marked as estimated when the model fell back to default rates or window. System One tokens MUST be reported separately.
+- **FR-004**: The trace MUST carry the main model's prompt and completion tokens summed over chat completions in the turn (transcription and other non-chat usage excluded), the estimated cost from the price table, and the context fill (largest prompt over that model's window), each marked as estimated when the model fell back to default rates or window. System One tokens MUST be reported separately.
 - **FR-005**: The routing trace MUST carry the embedding shortlist (agent and score, highest first) and the confidence and gap thresholds in force for the turn, on the partial frame and the stored trace.
 - **FR-006**: Each judgment row MUST carry its surface name and the bar that decided it (or none when the surface had no bars), as configured at the time of the turn.
 - **FR-007**: Live tool rows MUST carry start offset, measured duration, success, agent and a call id equal to the committed row's (the committed flattened index stays; parallel subtasks finish in any order, so the live and committed rows are matched by id, not by position). Live memory rows MUST carry extraction confidence.
 - **FR-008**: Telemetry MUST never fail or delay a turn: errors in measuring or sending are logged and skipped.
 - **FR-009**: The REST trace response, the trace frame schema and the generated web client MUST expose the new fields.
-- **FR-010**: The web trace instruments MUST read the new fields: the signal path uses server stage offsets (live and from history), the readouts show the measured turn total and the model usage, routing draws the shortlist against its thresholds, judgment rows show their bar, and live tool rows are keyed by call index. The client-side arrival-time offsets and the "Tool time" stand-in MUST be removed.
+- **FR-010**: The web trace instruments MUST read the new fields: the signal path uses server stage offsets (live and from history), the readouts show the measured turn total and the model usage, routing draws the shortlist against its thresholds, judgment rows show their bar, and live tool rows are keyed by call id. The client-side arrival-time offsets and the "Tool time" stand-in MUST be removed.
 - **FR-011**: Docs MUST describe the new trace fields (native interface, architecture where the trace is described).
 
 ### Key Entities

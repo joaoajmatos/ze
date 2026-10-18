@@ -15,9 +15,9 @@ Memory partial adds `extraction_confidence` per fact chunk (null for episodes an
 Tool partial (one per finished call, from the tool sink):
 ```json
 "tool_calls": [{ "call_id": "9f…", "name": "list_events", "agent": "calendar",
-                 "start_offset_ms": 640, "duration_ms": 312, "success": true, "result_snippet": "…" }]
+                 "gate": "none", "start_offset_ms": 640, "duration_ms": 312, "success": true, "result_snippet": "…" }]
 ```
-Clients append `stages` and merge `tool_calls` by `call_id`.
+Clients append `stages` and merge `tool_calls` by `call_id`. A row with `gate: "parked"` is waiting for the user; its approved run later arrives with the same `call_id` and replaces it. Live frames are best effort: a frame that cannot be sent within 1 s is dropped, and the committed trace is the complete record.
 
 ## Committed trace (final `trace_update` frame and `GET /api/v0/messages/{id}/trace`)
 ```json
@@ -32,4 +32,4 @@ Clients append `stages` and merge `tool_calls` by `call_id`.
   "tool_calls": [{ "call_id": "9f…", "start_offset_ms": 640, "call_index": 0, … }],
   "judgments": [{ "question_id": "route", "surface": "routing", "bar": { "name": "choice_trust", "value": 0.5 }, … }] }
 ```
-Removed: `total_duration_ms`. Every new field is optional on read (traces before 187b lack them).
+`turn_duration_ms` includes `paused_ms`; active time is `turn_duration_ms - paused_ms`. `context_fill` can exceed 1 for a model priced with the default window; the readout clamps its bar and shows the number. Removed: `total_duration_ms`. Every new field is optional on read (traces before 187b lack them).

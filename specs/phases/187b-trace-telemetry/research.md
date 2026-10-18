@@ -10,8 +10,8 @@
 - **Rationale**: confirmations wait at most `CONFIRM_TIMEOUT_SECONDS` (900 s); a restart mid-wait is rare and is stated honestly.
 
 ## R3. Clocks
-- **Decision**: durations from `time.perf_counter()`; offsets from `time.time()` against the turn's wall start, clamped at 0.
-- **Rationale**: perf_counter is monotonic within a process; offsets must survive a resume in the same process, where wall time is the shared reference.
+- **Decision**: one clock, `time.monotonic()`, for the turn start, stage starts and ends, and `ToolCall.started_at`; wall time only for display.
+- **Rationale**: the recorder lives in process, so the monotonic clock is shared across a resume; a wall-clock step can neither reverse nor shift stages, and tool rows and stages agree. (Gauge M-4 replaced a mixed wall/perf design.)
 
 ## R4. Model usage
 - **Decision**: `CostTracker.record` (already called on every OpenRouter completion with usage) also adds to the current recorder; the main model is the tier's model when set, else the routed agent's model; System One models are recognized by the System One prefix of the price table and summed apart; cost from `estimate_cost_usd`; context fill = largest prompt of the main model over `get_context_window`.
@@ -25,6 +25,14 @@
 ## R6. Judgment bars
 - **Decision**: `judgments_from_result` takes `surface` and a per-question bar map built from the surface config in force for the turn; uncalibrated surfaces pass an empty map.
 - **Rationale**: the bar is config, read once at decision time; storing it on the row records what decided the turn even after a later recalibration.
+
+## R8. Live frames never block
+- **Decision**: a per-turn queue with one sender task, each send bounded by `wait_for(…, 1.0)`, failures dropped and logged.
+- **Rationale**: awaiting a WebSocket send in each of about 17 node wrappers would let a slow or displaced client slow the turn (FR-008), and an await in `finally` during a cancel is fragile.
+
+## R9. Parked and approved calls share an id
+- **Decision**: a parked call's `call_id` is its `ParkedWrite.call_id`; the approved run reuses `ApprovedCall.call_id`.
+- **Rationale**: one call in the committed trace; the live parked row is replaced in place, never shown beside its approved run.
 
 ## R7. Rename
 - **Decision**: `total_duration_ms` → `tool_duration_ms` everywhere; new `turn_duration_ms` (clarification Q2). Old stored traces keep the old key; the store reader maps a stored `total_duration_ms` to nothing (dropped), since the value was never a total.
