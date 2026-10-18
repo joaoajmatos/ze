@@ -19,7 +19,7 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main`. `make install`; `graphify update .`; `graphify affected` on `RawInput`, `make_graph_input`, `preprocess`, `transcribe`, `record_trace`, `MessageTrace`, `_parse_trace`, `handle_message`, `ScreenContext`; `rtk proxy grep -rn "audio_data\|audio_mime\|raw.audio\|_normalise_audio_format\|_to_mp3" core apps plugins integrations`. Confirm `python-multipart` resolves and `ffmpeg -version` / `ffprobe -version` work locally. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
+- [x] T001 [L:lead] Branch from `main`. `make install`; `graphify update .`; `graphify affected` on `RawInput`, `make_graph_input`, `preprocess`, `transcribe`, `record_trace`, `MessageTrace`, `_parse_trace`, `handle_message`, `ScreenContext`; `rtk proxy grep -rn "audio_data\|audio_mime\|raw.audio\|_normalise_audio_format\|_to_mp3" core apps plugins integrations`. Confirm `python-multipart` resolves and `ffmpeg -version` / `ffprobe -version` work locally. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
 
 ---
 
@@ -47,7 +47,7 @@
   - A 501 stub `api/v0/voice/router.py` (final signature, `operation_id="transcribeVoice"`, `response_model`, summary, description, `require_api_key`), registered in `api/v0/__init__.py`.
 
   Run `make codegen` and commit the generated client with the task.
-- [ ] T004 [P] [L:lead] Fixtures in `apps/ze-api/tests/fixtures/audio/`, with the generator script `make_fixtures.sh` committed beside them:
+- [x] T004 [P] [L:lead] Fixtures in `apps/ze-api/tests/fixtures/audio/`, with the generator script `make_fixtures.sh` committed beside them:
   - `stream.webm`, made by `ffmpeg -f lavfi -i sine=duration=3 -c:a libopus -f webm pipe:1 > stream.webm`: non-seekable, no duration;
   - `frag.mp4`, made with `-movflags frag_keyframe+empty_moov`;
   - `stream.ogg`, an Opus clip made with `-c:a libopus -f ogg pipe:1` (Firefox records `audio/ogg`);
