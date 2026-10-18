@@ -22,18 +22,20 @@ export function smoothLevel(prev: number, raw: number): number   // attack 0.5, 
 
 ## features/ask-bar
 ```ts
-<AskBar onSubmit disabledReason renderMic?: (blocked: string | null) => ReactNode />
+<AskBar onSubmit disabledReason renderMic?: (blocked: string | null) => ReactNode renderVoiceStatus?: () => ReactNode />
 useAskOverlay: { voiceId: string | null; setVoiceTranscript(text: string, id: string): void }
+OutboxItem: { …; voiceId?: string }   // its context carries voice: { transcription_id }
 ```
-Submit adds `voice: { transcription_id: voiceId }` to the explicit context when `voiceId` is set.
+On Ask, AskBar's submit adds `voice: { transcription_id: voiceId }` to the explicit context. Elsewhere, the store's `submit` puts it in the outbox context. `close` returns an unsent outbox's text and `voiceId` to the bar.
 
 ## features/voice-input (index)
 ```ts
 export function VoiceMic(props: { blocked: string | null }): JSX.Element
+export function VoiceStatus(): JSX.Element
 export function useHoldToTalk(enabled: boolean): void
 export const useVoiceInput: UseBoundStore<…VoiceInputState & { start(); stop(); retry(); dismiss() }>
 export function registerTranscript(cb: (text: string, transcriptionId: string) => void): () => void
-export function currentLevel(): number
+export function currentLevel(): number   // 0 unless recording
 ```
 
 ## features/ambience (index)
@@ -42,4 +44,4 @@ export function AmbienceToggle(): JSX.Element
 ```
 
 ## Router
-`/jarvis` (and anything below it) redirects to `/`. No `jarvis` route exists.
+No `jarvis` route and no redirect: `/jarvis` renders not found.

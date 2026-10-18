@@ -42,8 +42,8 @@ The user presses the mic in the Ask bar and talks. While they talk, the orb list
 1. **Given** microphone permission, **When** the user presses the mic, **Then** recording starts, the orb enters listening and its gather follows the input level, and the mic shows a stop state with the elapsed time.
 2. **Given** a recording, **When** the user stops it, **Then** Presence shows "transcribing", then the transcript fills the Ask bar, focused, with the caret at the end.
 3. **Given** a transcript in the bar, **When** the user sends (edited or not), **Then** the message goes through the single send path with the voice reference, and the trace records whether the text was edited.
-4. **Given** a recording reaches 120 seconds, **When** the limit is hit, **Then** recording stops on its own and transcription starts.
-5. **Given** transcription fails, **When** the error returns, **Then** the bar shows "I couldn't make out the recording" with Retry, which re-sends the same recording without recording again.
+4. **Given** a recording reaches 115 seconds, **When** the limit is hit, **Then** recording stops on its own and transcription starts. A countdown shows for the last 10 seconds. (The client stops short of the service's 2-minute limit, because a recording's measured length can run slightly past the moment it stopped.)
+5. **Given** transcription fails in a way that may pass on a second try (the recording could not be read, the speech model failed, or the network dropped), **When** the error returns, **Then** the bar shows the service's plain line with Retry, which re-sends the same recording without recording again. **Given** the recording is too large, too long or of a type the service refuses, **Then** the bar shows that line with Record again instead of Retry.
 6. **Given** microphone permission is denied or no microphone exists, **When** the user presses the mic, **Then** a plain line says why, and the mic stays disabled with that reason as its label.
 7. **Given** an empty transcript, **When** it returns, **Then** the bar shows "Ze heard nothing" and nothing is sent.
 
@@ -91,7 +91,7 @@ Nothing named after the prototype remains in the web app. The design document de
 
 **Acceptance Scenarios**:
 
-1. **Given** the cut, **When** the routes are listed, **Then** no `/jarvis` route exists and old prototype links land on World.
+1. **Given** the cut, **When** the routes are listed, **Then** no `/jarvis` route exists, and an old prototype link shows the not-found page (pre-v1 hard cut; nothing outside the prototype linked to it).
 2. **Given** the design refresh, **When** the document is read, **Then** Navigation and Components match the shipped places and primitives, and the prototype asides are removed.
 
 ### Edge Cases
@@ -106,10 +106,10 @@ Nothing named after the prototype remains in the web app. The design document de
 
 ### Functional Requirements
 
-- **FR-001**: The Ask bar's mic MUST record audio in a format the transcription service accepts, show elapsed time, stop on press or at 120 seconds, support hold-`v` to talk when no text field has focus, and upload the recording for transcription.
+- **FR-001**: The Ask bar's mic MUST record audio in a format the transcription service accepts, show elapsed time, stop on press or at 115 seconds (with a countdown from 105), support hold-`v` to talk when no text field has focus, and upload the recording for transcription.
 - **FR-002**: While recording, Presence MUST be listening with the live input level driving the orb, and MUST show "transcribing" while the upload runs.
-- **FR-003**: The transcript MUST land in the Ask bar, focused and editable. Sending MUST carry the voice reference through the single send path; Ze records whether the sent text differs from the transcript (192 compares them on the server).
-- **FR-004**: Failures MUST show plain lines (couldn't make out with Retry; heard nothing; permission denied; no microphone; unsupported browser). Retry MUST reuse the same recording.
+- **FR-003**: The transcript MUST land in the Ask bar, focused and editable. Sending MUST carry the voice reference through the single send path, from Ask and from the overlay on every other place, and keep it when an unsent message returns to the bar; Ze records whether the sent text differs from the transcript (192 compares them on the server).
+- **FR-004**: Failures MUST show plain lines: the service's own line for each refusal; Retry (reusing the same recording) only where a second try can succeed; Record again for too large, too long or unsupported; heard nothing; permission denied; no microphone; unsupported browser; voice off on this server.
 - **FR-005**: An ambience toggle in the Presence module's head MUST play the existing quiet drone, off by default, remembered per browser, never auto-starting under reduced motion, ducked while recording.
 - **FR-006**: The prototype MUST be removed: every prototype route and file, its surface notes under `.impeccable/surfaces`, and any interim file or leftover style mapping from 186–190.
 - **FR-007**: The design document MUST be refreshed through the impeccable document flow (Navigation, Components; prototype-only notes removed).
@@ -126,13 +126,13 @@ Nothing named after the prototype remains in the web app. The design document de
 ### Measurable Outcomes
 
 - **SC-001**: Critique of at least 30/40 on every place, recorded in the floor's handoff note.
-- **SC-002**: No route, file, import or design note named `jarvis` remains in the web source, its `.impeccable/surfaces` notes or the design document, and no prototype file remains.
+- **SC-002**: No route, file, import, test or design note named `jarvis` remains in the web source, its `.impeccable/surfaces` notes or the design document, and no prototype file remains. Exempt, as history: `.impeccable/plan/` (the overhaul plan and direction, where "Jarvis" names the product direction) and the phase rows in `AGENTS.md` and `specs/`.
 - **SC-003**: A spoken message reaches the Ask bar as editable text in under 5 seconds for a 10-second recording on a normal connection.
 - **SC-004**: The web suites, typecheck, build and lint pass.
 
 ## Assumptions
 
 - Holding `v` records only when no text field has focus; releasing it stops and transcribes.
-- The transcription service's limits (10 MB, 120 seconds, accepted types) are the ones 192 sets. The client enforces 120 seconds and picks a supported format.
+- The transcription service's limits (10 MB, 120 seconds, accepted types) are the ones 192 sets. The client stops at 115 seconds and picks a supported format.
 - The ambience sound is the prototype's synthesized drone, moved as is.
 - Spoken output stays out of scope (user decision 6).
