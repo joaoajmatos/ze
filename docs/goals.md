@@ -214,6 +214,25 @@ This closes the gap between "Ze learned a procedure" and "Ze can use it again be
 
 ---
 
+## The goal page in the web app
+
+Open a goal from the Goals list on Doing. The page is `/doing/goals/:goalId`. It shows these sections, top to bottom:
+
+1. **Gate first.** An open gate shows **Proceed**, **Stop** and **Redirect**. The buttons send `goal:approve:<gate_id>`, `goal:stop:<gate_id>` or `goal:redirect:<gate_id>` on the chat connection. The gate clears when the goal data refreshes. Redirect opens the chat overlay with the goal as the subject.
+2. **Start.** A goal in `planning` shows **Start**. It calls the REST route `startGoal`.
+3. **Stuck actions.** A stuck goal shows **Redirect**, **Pause** and **Abandon**. Abandon asks you to confirm once. Pause and Abandon send `goal_stuck:pause:<goal_id>` and `goal_stuck:abandon:<goal_id>`.
+4. **Milestone field.** Time runs along the x-axis. Each milestone is a mark, and its shape shows its state.
+5. **Learnings.** Each learning shows its evidence. You can review it, and the review goes to `reviewGoalLearning`. See [Goal learnings](#goal-learnings).
+6. **Retrospective and summary.** The page shows `retrospective_text` and `learnings_summary`, with the status, type and time horizon in plain words.
+7. **Traces.** The execution traces appear as a readout list.
+8. **Linked loops.** Open loops with this `goal_id` appear here. A loop with a linked reminder shows the reminder's due time and status: upcoming, overdue or fired.
+
+A paused goal shows **Resume**. Resume opens the chat overlay with the goal as the subject. The backend has no resume action.
+
+**Chat about this** on the page opens the chat overlay with the goal as the subject.
+
+---
+
 ## Data model
 
 ```
