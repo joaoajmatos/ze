@@ -22,8 +22,6 @@ SCHEMA = export_json_schema()
 DEFS = SCHEMA["$defs"]
 MAPPING = SCHEMA["discriminator"]["mapping"]
 
-# Lane `ui` adds fixtures for these in T009 and removes the mark.
-_NEW_TYPES = {"entity_facet", "stat_row", "claim_list", "sparkline", "card"}
 
 
 def _pointer(parts) -> str:
@@ -117,22 +115,7 @@ def test_every_fixture_has_an_expectation_and_the_reverse():
     assert trees == set(_fixture_names())
 
 
-@pytest.mark.parametrize(
-    "cls",
-    [
-        pytest.param(
-            c,
-            marks=pytest.mark.xfail(
-                reason="lane ui adds this fixture in T009", strict=True
-            )
-            if json.loads(json.dumps(c.__dataclass_fields__["type"].default))
-            in _NEW_TYPES
-            else (),
-        )
-        for c in PRIMITIVE_TYPES
-    ],
-    ids=lambda c: c.__name__,
-)
+@pytest.mark.parametrize("cls", PRIMITIVE_TYPES, ids=lambda c: c.__name__)
 def test_every_primitive_type_has_a_server_valid_fixture(cls):
     tag = cls.__dataclass_fields__["type"].default
     valid = []

@@ -1,0 +1,52 @@
+[
+  {
+    "type": "entity_facet",
+    "title": "Maria",
+    "facts": [
+      {
+        "text": "Works on the Lisbon project",
+        "claim": {
+          "kind": "fact",
+          "subject": "fact",
+          "ref_id": "f-1",
+          "source": "you said so",
+          "as_of": "2026-10-10",
+          "confidence": 0.8
+        },
+        "source": "email",
+        "at": "2026-10-01"
+      },
+      {
+        "text": "Probably prefers morning calls, a long note that keeps going to check that text wraps inside a narrow phone frame without clipping",
+        "claim": {
+          "kind": "inference",
+          "subject": "fact",
+          "ref_id": "f-1",
+          "source": "you said so",
+          "as_of": "2026-10-10",
+          "confidence": 0.55
+        }
+      },
+      {
+        "text": "May be leaving the team",
+        "claim": {
+          "kind": "suspicion",
+          "subject": "fact",
+          "ref_id": "f-1",
+          "source": "you said so",
+          "as_of": "2026-10-10",
+          "confidence": 0.3
+        }
+      }
+    ],
+    "more": {
+      "kind": "navigate",
+      "route": "/mind/ent-42"
+    }
+  },
+  {
+    "type": "entity_facet",
+    "title": "Empty",
+    "facts": []
+  }
+]

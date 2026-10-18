@@ -4,22 +4,29 @@ import type {
   Badge,
   Button,
   CardAction,
+  Card,
   Chart,
   ClaimCard,
+  ClaimList,
+  ClaimPosture,
   ClaimTimeline,
   Col,
   ConnectionItem,
   Connections,
   Form,
+  EntityFacet,
   Headline,
-  Primitive,
+  PrimitiveAction,
   Row,
   Spacer,
+  Sparkline,
+  StatRow,
   StepItem,
   Steps,
   Table,
   Text,
 } from "../generated/types.gen";
+import type { FallbackNode, LegacyButtonNode, RenderNode } from "../parse";
 import { AreaChart, BarChart, LineChart, PieChart } from "../charts";
 import {
   PrimitiveRendererContext,
@@ -88,7 +95,7 @@ const RELATION_LABELS: Record<string, string> = {
 };
 
 export interface PrimitiveRendererProps {
-  node: Primitive;
+  node: RenderNode;
   actions?: PrimitiveRendererActions;
 }
 
@@ -108,7 +115,7 @@ export function PrimitiveTreeRenderer({
   nodes,
   actions,
 }: {
-  nodes: Primitive[];
+  nodes: RenderNode[];
   actions?: PrimitiveRendererActions;
 }) {
   const tree = (
@@ -126,7 +133,7 @@ export function PrimitiveTreeRenderer({
   return <PrimitiveRendererContext.Provider value={actions}>{tree}</PrimitiveRendererContext.Provider>;
 }
 
-function PrimitiveNodeRenderer({ node }: { node: Primitive }) {
+function PrimitiveNodeRenderer({ node }: { node: RenderNode }) {
   switch (node.type) {
     case "col":
       return <ColRenderer node={node} />;
@@ -158,10 +165,240 @@ function PrimitiveNodeRenderer({ node }: { node: Primitive }) {
       return <ClaimCardRenderer node={node} />;
     case "claim_timeline":
       return <ClaimTimelineRenderer node={node} />;
+    case "entity_facet":
+      return <EntityFacetRenderer node={node} />;
+    case "stat_row":
+      return <StatRowRenderer node={node} />;
+    case "claim_list":
+      return <ClaimListRenderer node={node} />;
+    case "sparkline":
+      return <SparklineRenderer node={node} />;
+    case "card":
+      return <CardRenderer node={node} />;
+    case "__fallback":
+      return <FallbackRenderer node={node} />;
+    case "__legacy_button":
+      return <LegacyButtonRenderer node={node} />;
     default:
-      // Unknown primitive from a newer backend — render nothing, don't crash.
-      return null;
+      // A node that skipped parsing: show what it is instead of vanishing.
+      return <FallbackRenderer node={{ type: "__fallback", original: String((node as { type?: unknown }).type), fields: [], children: [] }} />;
   }
+}
+
+const TARGET = "min-h-11 min-w-11";
+
+function FallbackRenderer({ node }: { node: FallbackNode }) {
+  const cx = useCx();
+  return (
+    <div className="flex flex-col gap-2">
+      <div className={cx("table", "overflow-auto max-h-72 rounded-[20px] border border-white/10 bg-white/[0.02]")}>
+        <p className="px-4 py-2 text-xs font-semibold tracking-widest uppercase text-smoke">
+          Unsupported view: {node.original}
+        </p>
+        <table className="w-full text-sm">
+          <thead className="sr-only">
+            <tr>
+              <th>Field</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {node.fields.map(([name, value]) => (
+              <tr key={name} className="border-b border-white/5 last:border-0">
+                <td className="px-4 py-2 text-xs text-ash whitespace-nowrap">{name}</td>
+                <td className="px-4 py-2 text-white/80">{value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {node.children.map((child, i) => (
+        <PrimitiveNodeRenderer key={i} node={child} />
+      ))}
+    </div>
+  );
+}
+
+function LegacyButtonRenderer({ node }: { node: LegacyButtonNode }) {
+  return (
+    <button
+      type="button"
+      disabled
+      title="This older button no longer works."
+      className={cn(TARGET, "px-4 py-2 rounded-pill border border-white/15 text-xs font-semibold tracking-wide text-white opacity-40")}
+    >
+      {node.label}
+    </button>
+  );
+}
+
+/** Runs `action` through the host; a refusal reports the disconnect so the control stays usable. */
+function useRunAction() {
+  const { onAction, onDisconnected } = usePrimitiveRendererActions();
+  return async (action: PrimitiveAction): Promise<boolean> => {
+    let ok: boolean | void = true;
+    try {
+      ok = await onAction?.(action);
+    } catch {
+      ok = false;
+    }
+    if (ok === false) {
+      onDisconnected?.();
+      return false;
+    }
+    return true;
+  };
+}
+
+function fillKey(action: PrimitiveAction, key: string): PrimitiveAction {
+  if (action.kind !== "tool") return action;
+  const args = Object.fromEntries(
+    Object.entries(action.args).map(([k, v]) => [k, v === "{key}" ? key : v]),
+  );
+  return { ...action, args };
+}
+
+const POSTURE_TONE: Record<string, string> = {
+  fact: "text-white",
+  identity: "text-white",
+  inference: "text-white/80",
+  suspicion: "text-amber-spark",
+  priority: "text-ember",
+};
+
+function postureTone(claim: ClaimPosture): string {
+  return POSTURE_TONE[claim.kind ?? ""] ?? "text-white/70";
+}
+
+function EntityFacetRenderer({ node }: { node: EntityFacet }) {
+  const run = useRunAction();
+  return (
+    <section className="flex flex-col gap-2 rounded-[20px] border border-white/10 bg-white/[0.03] px-4 py-3.5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-smoke">{node.title}</p>
+      <ul className="m-0 flex list-none flex-col gap-2 p-0">
+        {node.facts.map((fact, i) => (
+          <li key={i} data-kind={fact.claim.kind ?? fact.claim.subject} className="flex flex-col">
+            <span className={cn("text-sm", postureTone(fact.claim))}>{fact.text}</span>
+            <span className="text-[11px] text-white/45">
+              {[postureLine(fact.claim), fact.source, fact.at?.slice(0, 10)].filter(Boolean).join(" · ")}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {node.more && (
+        <button
+          type="button"
+          onClick={() => void run(node.more!)}
+          className={cn(TARGET, "self-start px-3 rounded-pill border border-white/15 text-xs hover:bg-white/5")}
+        >
+          More
+        </button>
+      )}
+    </section>
+  );
+}
+
+const DIRECTION_LABEL = { up: "up", down: "down", flat: "no change" } as const;
+const DIRECTION_MARK = { up: "▲", down: "▼", flat: "–" } as const;
+
+function StatRowRenderer({ node }: { node: StatRow }) {
+  return (
+    <dl className="m-0 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {node.items.map((item, i) => (
+        <div key={i} className="flex flex-col rounded-[20px] border border-white/10 bg-white/[0.03] px-4 py-3">
+          <dt className="text-xs text-smoke">{item.label}</dt>
+          <dd className="m-0 text-xl font-light text-white">{item.value}</dd>
+          {item.delta && (
+            <dd className="m-0 text-xs text-white/60">
+              {item.direction && <span aria-hidden="true">{DIRECTION_MARK[item.direction]} </span>}
+              <span>{item.delta}</span>
+              {item.direction && <span className="sr-only"> ({DIRECTION_LABEL[item.direction]})</span>}
+            </dd>
+          )}
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function ClaimListRenderer({ node }: { node: ClaimList }) {
+  const run = useRunAction();
+  return (
+    <section className="flex flex-col gap-1">
+      {node.title && <p className="text-xs text-white/60">{node.title}</p>}
+      <ul className="m-0 flex list-none flex-col gap-1 p-0">
+        {node.items.map((item, i) => (
+          <li
+            key={i}
+            data-kind={item.claim.kind ?? item.claim.subject}
+            className="flex flex-col rounded-lg border border-white/10 px-3 py-1"
+          >
+            {item.action ? (
+              <button
+                type="button"
+                onClick={() => void run(item.action!)}
+                className={cn(TARGET, "flex flex-col items-start text-left text-sm hover:bg-white/5", postureTone(item.claim))}
+              >
+                {item.text}
+                <span className="text-[11px] text-white/45">{postureLine(item.claim)}</span>
+              </button>
+            ) : (
+              <>
+                <span className={cn("text-sm", postureTone(item.claim))}>{item.text}</span>
+                <span className="text-[11px] text-white/45">{postureLine(item.claim)}</span>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+const SPARK_W = 120;
+const SPARK_H = 28;
+
+function SparklineRenderer({ node }: { node: Sparkline }) {
+  const points = node.points.slice(0, 60);
+  const min = Math.min(...points);
+  const span = Math.max(...points) - min || 1;
+  const step = points.length > 1 ? SPARK_W / (points.length - 1) : 0;
+  const coords = points
+    .map((p, i) => `${(i * step).toFixed(1)},${(SPARK_H - ((p - min) / span) * (SPARK_H - 2) - 1).toFixed(1)}`)
+    .join(" ");
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex flex-col">
+        <span className="text-xs text-smoke">{node.label}</span>
+        {node.value && <span className="text-sm text-white">{node.value}</span>}
+      </div>
+      {points.length > 0 && (
+        <svg role="img" aria-label={`${node.label} trend`} viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} className="h-7 w-[120px]">
+          <polyline points={coords} fill="none" stroke="currentColor" strokeWidth="1.5" className="text-plum-voltage" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
+function CardRenderer({ node }: { node: Card }) {
+  const cx = useCx();
+  return (
+    <section className={cx("card", "flex flex-col gap-2 rounded-[20px] border border-white/10 bg-white/[0.03] px-4 py-3.5")}>
+      <p className="text-sm font-semibold text-white">{node.title}</p>
+      {node.body && <p className="text-sm text-white/70">{renderInlineMarkdown(node.body)}</p>}
+      {node.children.map((child, i) => (
+        <PrimitiveNodeRenderer key={i} node={child} />
+      ))}
+      {node.actions && node.actions.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          {node.actions.map((button, i) => (
+            <ButtonRenderer key={i} node={button} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
 
 function DividerRenderer() {
@@ -251,9 +488,14 @@ function ButtonRenderer({ node }: { node: Button }) {
   const cx = useCx();
   const [used, setUsed] = useState(false);
 
-  function handleClick() {
+  async function handleClick() {
     if (used) return;
-    const ok = onAction?.(node.action);
+    let ok: boolean | void = true;
+    try {
+      ok = await onAction?.(node.action);
+    } catch {
+      ok = false;
+    }
     if (ok === false) {
       onDisconnected?.();
       return;
@@ -276,11 +518,13 @@ function ButtonRenderer({ node }: { node: Button }) {
       className={
         cx("button", "")
           ? cn(
+              TARGET,
               cx("button", ""),
               node.style === "primary" && cx("buttonPrimary", ""),
               node.style === "danger" && cx("buttonDanger", ""),
             )
           : cn(
+              TARGET,
               "px-4 py-2 rounded-pill text-xs font-semibold tracking-wide cursor-pointer",
               "transition-[background-color,opacity] duration-250 disabled:opacity-40 disabled:cursor-default",
               styleClass,
@@ -295,6 +539,8 @@ function ButtonRenderer({ node }: { node: Button }) {
 
 function TableRenderer({ node }: { node: Table }) {
   const cx = useCx();
+  const run = useRunAction();
+  const rowActions = node.row_actions ?? [];
   return (
     <div className={cx("table", "overflow-auto max-h-72 rounded-[20px] border border-white/10 bg-white/[0.02]")}>
       {node.title && (
@@ -313,6 +559,11 @@ function TableRenderer({ node }: { node: Table }) {
                 {h}
               </th>
             ))}
+            {rowActions.length > 0 && (
+              <th className="px-4 py-2">
+                <span className="sr-only">Actions</span>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -323,6 +574,21 @@ function TableRenderer({ node }: { node: Table }) {
                   {cell}
                 </td>
               ))}
+              {rowActions.length > 0 && (
+                <td className="px-4 py-1 whitespace-nowrap">
+                  {node.keys?.[i] !== undefined &&
+                    rowActions.map((rowAction, k) => (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => void run(fillKey(rowAction.action, node.keys![i]!))}
+                        className={cn(TARGET, "px-3 rounded-pill border border-white/15 text-xs text-white hover:bg-white/5")}
+                      >
+                        {rowAction.label}
+                      </button>
+                    ))}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -360,7 +626,7 @@ function FormRenderer({ node }: { node: Form }) {
               value={values[field.id] ?? ""}
               onChange={(e) => setValues((v) => ({ ...v, [field.id]: e.target.value }))}
               disabled={submitted}
-              className="w-full bg-transparent border border-white/20 rounded-pill px-3 py-2 text-sm text-white focus:outline-none focus:border-plum-voltage disabled:opacity-40"
+              className="min-h-11 w-full bg-transparent border border-white/20 rounded-pill px-3 py-2 text-sm text-white focus:outline-none focus:border-plum-voltage disabled:opacity-40"
             >
               <option value="">Select…</option>
               {field.options?.map((o) => (
@@ -384,7 +650,7 @@ function FormRenderer({ node }: { node: Form }) {
       <button
         type="submit"
         disabled={submitted}
-        className="w-full py-2 rounded-pill bg-plum-voltage text-white text-xs font-semibold tracking-widest uppercase disabled:opacity-40 transition-opacity"
+        className="min-h-11 w-full py-2 rounded-pill bg-plum-voltage text-white text-xs font-semibold tracking-widest uppercase disabled:opacity-40 transition-opacity"
       >
         {submitted ? "Submitted" : "Submit"}
       </button>
@@ -585,7 +851,7 @@ function ClaimCardRenderer({ node }: { node: ClaimCard }) {
         {onChatAbout && node.claim.subject !== "person" && (
           <button
             type="button"
-            className="chat-about"
+            className={cn(TARGET, "chat-about")}
             aria-label={`Chat about ${node.title}`}
             onClick={() =>
               root.current &&
@@ -648,7 +914,7 @@ function ClaimCardRenderer({ node }: { node: ClaimCard }) {
                 if (accepted === false) setFailed(true);
                 else setDecided(true);
               }}
-              className="px-3 py-1 rounded-pill border border-white/15 text-xs hover:bg-white/5 cursor-pointer disabled:opacity-50 disabled:cursor-default"
+              className={cn(TARGET, "px-3 py-1 rounded-pill border border-white/15 text-xs hover:bg-white/5 cursor-pointer disabled:opacity-50 disabled:cursor-default")}
             >
               {action.label}
             </button>

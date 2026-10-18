@@ -77,7 +77,7 @@
 
 ## Phase 4: User Story 2 - Unknown views degrade to a table (P1)
 
-- [ ] T008 [L:ui] [US2] Tests first `packages/ze-ui/src/parse.test.ts` (extend) and `src/react/PrimitiveRenderer.test.tsx` (extend):
+- [x] T008 [L:ui] [US2] Tests first `packages/ze-ui/src/parse.test.ts` (extend) and `src/react/PrimitiveRenderer.test.tsx` (extend):
   - a tree with a known and an unknown node parses, and the unknown one becomes `__fallback` with its first 12 scalar fields, nested object arrays parsed as children;
   - a known node missing a required field fails, and the error names the node path and field;
   - `"2.3"` parses (unknown types fall back); no version and `"1.4"` parse in legacy mode: the pre-191a fixture renders its table, and its string-action button renders disabled with the title "This older button no longer works."; a legacy tree that still cannot parse throws `PrimitiveLegacyError`;
@@ -91,7 +91,7 @@
 
 ## Phase 5: User Story 3 - Slot primitives (P2)
 
-- [ ] T009 [L:ui] [US3] Add valid fixtures for each new primitive in every state (empty where allowed, normal, long text, each posture tone, with and without actions), then tests first in `PrimitiveRenderer.test.tsx` (extend):
+- [x] T009 [L:ui] [US3] Add valid fixtures for each new primitive in every state (empty where allowed, normal, long text, each posture tone, with and without actions), then tests first in `PrimitiveRenderer.test.tsx` (extend):
   - `entity_facet` shows each fact with its posture tone and source;
   - `stat_row` shows value and change with a direction word or icon label (not color alone);
   - `claim_list` shows each item's posture;
