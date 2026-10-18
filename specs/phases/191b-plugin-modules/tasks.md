@@ -90,7 +90,7 @@
   - an unknown primitive shows 191a's fallback.
 
   Implement `PluginModuleSlot`.
-- [ ] T007 [L:web] [US1] Tests first, extending `pages/mind-entity/ui/MindEntityPage.test.tsx`, `pages/doing-workflow/ui/DoingWorkflowPage.test.tsx` and `widgets/connections/ui/Connections.test.tsx`, each with the fixture manifest:
+- [x] T007 [L:web] [US1] Tests first, extending `pages/mind-entity/ui/MindEntityPage.test.tsx`, `pages/doing-workflow/ui/DoingWorkflowPage.test.tsx` and `widgets/connections/ui/Connections.test.tsx`, each with the fixture manifest:
   - the Mind entity page mounts the `mind.entity` slot with subject `{ kind: "entity", id, label, entity_type }`;
   - the Doing workflow page mounts the `doing.run` slot with the selected execution as `id` and the workflow as `parent_id`;
   - Connections mounts the `governance.connections` slot with subject `none`, after the settings sections.
@@ -111,7 +111,7 @@
 
 ## Phase 5: User Stories 3 and 4 - No plugin pages; settings verified (P2, P3)
 
-- [ ] T009 [L:web] [US4] Test only, `widgets/connections/ui/Connections.test.tsx` (extend) with the fixture: the settings section renders and a save dispatches its operation. No implementation change is expected; if one is needed, report it to the Spec Architect.
+- [x] T009 [L:web] [US4] Test only, `widgets/connections/ui/Connections.test.tsx` (extend) with the fixture: the settings section renders and a save dispatches its operation. No implementation change is expected; if one is needed, report it to the Spec Architect.
 
 ---
 

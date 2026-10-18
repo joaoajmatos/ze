@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { EntityNeighbourhood, Suspicions } from "@/widgets/entity-neighbourhood";
 import { EntitySearch } from "@/widgets/entity-search";
+import { PluginModuleSlot } from "@/widgets/plugin-module";
 import { useChatAbout } from "@/features/ask-bar";
 import { useEntityDetailQuery } from "@/entities/memory-graph";
 import { useScreenPublisher } from "@/entities/screen-context";
@@ -37,6 +38,12 @@ export function MindEntityPage() {
         {(!valid || data === null) && !isLoading && !isError && <p className="note">No entity here</p>}
         {valid && data && <EntityNeighbourhood detail={data} onSelectEntity={open} onChatAbout={chatAbout} />}
         {valid && data && <Suspicions entityId={data.entity.id} onChatAbout={chatAbout} />}
+        {valid && data && (
+          <PluginModuleSlot
+            slot="mind.entity"
+            subject={{ kind: "entity", id: data.entity.id, label: data.entity.canonical_name, entity_type: data.entity.entity_type }}
+          />
+        )}
       </div>
       <div className="mind-rail">
         <EntitySearch onSelect={open} onChatAbout={chatAbout} />
