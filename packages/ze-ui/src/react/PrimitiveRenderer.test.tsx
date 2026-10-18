@@ -638,3 +638,68 @@ describe("slot primitives", () => {
     interactive.forEach((el) => expect(el).toHaveClass("min-h-11"));
   });
 });
+
+describe("action results", () => {
+  const ask = { type: "button", label: "Go", action: { kind: "ask", text: "hi" } } as const;
+
+  it("awaits a Promise from onAction and marks the button used on success", async () => {
+    const onAction = vi.fn().mockResolvedValue(true);
+    render(<PrimitiveRenderer node={ask} actions={{ onAction }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Go" }));
+    expect(await screen.findByRole("button", { name: "✓ Go" })).toBeDisabled();
+  });
+
+  it("keeps the button usable when onAction resolves false", async () => {
+    const onAction = vi.fn().mockResolvedValue(false);
+    const onDisconnected = vi.fn();
+    render(<PrimitiveRenderer node={ask} actions={{ onAction, onDisconnected }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Go" }));
+    await vi.waitFor(() => expect(onDisconnected).toHaveBeenCalled());
+    const button = screen.getByRole("button", { name: "Go" });
+    expect(button).toBeEnabled();
+    fireEvent.click(button);
+    await vi.waitFor(() => expect(onAction).toHaveBeenCalledTimes(2));
+  });
+
+  it("keeps the button usable when onAction rejects", async () => {
+    const onAction = vi.fn().mockRejectedValue(new Error("x"));
+    render(<PrimitiveRenderer node={ask} actions={{ onAction }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Go" }));
+    await vi.waitFor(() => expect(onAction).toHaveBeenCalled());
+    expect(screen.getByRole("button", { name: "Go" })).toBeEnabled();
+  });
+
+  it("fires no row action for a row without a key", () => {
+    const onAction = vi.fn();
+    render(
+      <PrimitiveRenderer
+        actions={{ onAction }}
+        node={{
+          type: "table",
+          headers: ["a"],
+          rows: [["1"], ["2"]],
+          keys: ["k1"],
+          row_actions: [{ label: "Act", action: { kind: "ask", text: "x" } }],
+        }}
+      />,
+    );
+    const buttons = screen.getAllByRole("button", { name: "Act" });
+    expect(buttons).toHaveLength(1);
+    fireEvent.click(buttons[0]!);
+    expect(onAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows no row actions on an unkeyed table", () => {
+    render(
+      <PrimitiveRenderer
+        node={{
+          type: "table",
+          headers: ["a"],
+          rows: [["1"]],
+          row_actions: [{ label: "Act", action: { kind: "ask", text: "x" } }],
+        }}
+      />,
+    );
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+});
