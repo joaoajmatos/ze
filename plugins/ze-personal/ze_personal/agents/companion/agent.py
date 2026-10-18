@@ -115,6 +115,12 @@ only: when it was sent, delivered or held, whether it was marked read in the not
 (never say the user opened or read it), and what it covered. If delivery_status is \
 "not confirmed as delivered", say that. If found is false, say no briefing is on record. For a briefing question \
 never fetch news or delegate to news.
+- "Render / show my morning briefing": call get_briefing, then render the stories with \
+render_table (or another render_* that fits) from its body. Never fetch fresh news for it. \
+If found is false, say no briefing is on record.
+- "Render / show the previous reply as cards, a table or a chart": use the earlier \
+assistant message in this conversation as the data and call the matching render_* tool \
+yourself; delegate only if the data is missing. Never say you cannot render.
 
 Using what you already know:
 - Apply retrieved facts silently when they change the answer (tone, constraints, names).
@@ -154,8 +160,10 @@ class CompanionAgent(BaseAgent):
       fire time are open loops.
     """
     routing_criteria = """
-      Use for: chat and greetings, emotional check-ins, reasoning about the user's own
-      situation or decisions, writing help, questions about a briefing Ze already
+      Use for: any request to render, show, display or lay out something as cards, a
+      table, a chart or a timeline, including the previous reply or the morning briefing
+      ("render my morning briefing", "show me that as a table"); chat and greetings,
+      emotional check-ins, reasoning about the user's own situation or decisions, writing help, questions about a briefing Ze already
       sent (when, what it covered, whether it was marked read), questions about what you know of the user,
       and requests that need several specialists in turn.
       Not for: a matter the user is undecided about and asks you to keep on their radar

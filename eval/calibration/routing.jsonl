@@ -72,3 +72,7 @@
 {"id": "tuned-companion-briefing-contents-en", "lang": "en", "prompt": "what was in this morning's briefing?", "gold_agent": "companion", "gold_multi": false}
 {"id": "tuned-companion-briefing-sent-en", "lang": "en", "prompt": "did you send my briefing today?", "gold_agent": "companion", "gold_multi": false}
 {"id": "tuned-companion-briefing-pt", "lang": "pt", "prompt": "o que é que estava no briefing desta manhã?", "gold_agent": "companion", "gold_multi": false}
+{"id": "train-companion-render-briefing-en", "lang": "en", "prompt": "render my morning briefing", "gold_agent": "companion", "gold_multi": false}
+{"id": "train-companion-render-reply-en", "lang": "en", "prompt": "can you show me the reply using the render tools available to you?", "gold_agent": "companion", "gold_multi": false}
+{"id": "train-companion-render-table-pt", "lang": "pt", "prompt": "mostra-me essa resposta numa tabela", "gold_agent": "companion", "gold_multi": false}
+{"id": "train-companion-render-briefing-pt", "lang": "pt", "prompt": "mostra-me o resumo da manhã em cartões", "gold_agent": "companion", "gold_multi": false}
