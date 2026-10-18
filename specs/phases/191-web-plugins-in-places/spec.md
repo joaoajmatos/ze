@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17 (refined through `/speckit-specify` 2026-10-18)
 
-**Status**: Draft
+**Status**: Parked (user 2026-10-18: "We can leave them for now, and tackle this later.")
 
 **Input**: User description: "Plugins in Places (W7)": Maestro brief 2026-10-17, phase W7; overhaul plan sections a (capability map: Contacts → Mind, Reminders → World, News → Ask preset + Governance settings) and e (Phase W7). The capability map was accepted with the overhaul plan ("go with the recommendations").
 
