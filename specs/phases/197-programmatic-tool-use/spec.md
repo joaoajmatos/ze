@@ -167,7 +167,7 @@ When the same script (same normalized source) succeeds three times with no failu
 
 ### Key Entities
 
-- **Script step**: one call of the script tool: source, outcome, duration, limit hit, inner call ids.
+- **Script step**: one call of the script tool: source, outcome, duration, limit hit; its inner calls point to it by `parent_call_id`.
 - **Inner call**: an ordinary `ToolCall` with `parent_call_id`.
 - **Tool stub** (`ze_tools`): generated per run from visible tools; never stored.
 - **Script procedure candidate**: a procedure candidate whose step is a normalized script source, with script runs as evidence.
