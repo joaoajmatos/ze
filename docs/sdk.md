@@ -127,6 +127,9 @@ Structured record of a single tool invocation.
 | `duration_ms` | `int` | Wall-clock execution time. |
 | `success` | `bool` | Whether the tool ran without exception. |
 | `error` | `str \| None` | Error message if `success=False`. |
+| `parent_call_id` | `str \| None` | For a call a script made, or a proposed write: the `run_tool_script` call that made it. |
+| `inner_calls` | `list[ToolCall]` | For a `run_tool_script` call: the reads the script made, in order. |
+| `script` | `dict \| None` | For a `run_tool_script` call: the step summary (source, outcome, limit, source hash, procedure id). |
 
 ### `AskDecision`
 
@@ -318,6 +321,26 @@ The declaration decides whether Retry is available. Retry is unavailable after a
 |------------|-------------|
 | Simple scalar types (`str`, `int`, `bool`) | LLM |
 | Clients, stores, settings | `deps` dict in `agentic_loop` or explicit kwargs in `call_tool` |
+
+### Tool scripts: `produces_ui` and `egress`
+
+Tool scripts are a harness capability. You do not opt an agent in. Every agent with a data
+read tool gets `run_tool_script`, and the script stub holds that agent's data read tools.
+Two flags keep a tool out of the stub:
+
+| Argument | Set it when |
+|---|---|
+| `produces_ui=True` | The tool's effect is drawing on screen, such as a render tool or a `show_*` compose tool. A UI tool is never a data read. |
+| `egress=True` | A `READ` tool reaches a caller-chosen URL or host, such as `browser_extract`. A script has no network, so Ze never gives it such a tool. |
+
+A `READ` tool with a URL-like parameter (`url`, `uri`, `link`, `host`, `endpoint`, `domain`)
+must set `egress=True` or carry an explicit exemption with a reason. Otherwise the registry
+sweep fails.
+
+In a script, each stub tool is a function that takes keyword arguments and returns the
+tool's JSON result: dicts, lists or strings. Scripts reach a `WRITE` tool only through
+`propose(tool, **args)` inside `finish(...)`. Calling a write tool directly from a script is
+refused with `writes_must_be_proposed`.
 
 ### OpenRouter web search
 

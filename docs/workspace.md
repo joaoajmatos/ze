@@ -72,6 +72,43 @@ to pending review.
 
 Full skill lifecycle, matching, and the two-gate approval: [skills.md](skills.md#workspace-integration).
 
+## Tool scripts
+
+A tool script is a short Python program that the model writes. It calls the agent's data
+read tools in one run, then returns only the answer. The sidecar runs the script. It does
+not run it in Ze's process. See [architecture.md](architecture.md#tool-scripts) for the flow.
+
+- **Own slot.** Scripts do not share the workspace run slot. A script can run beside a
+  workspace run. Only one script runs at a time, and a second script gets `busy`. `GET /stat`
+  reports `scripts_busy`.
+- **Scratch only.** Each script gets an empty directory under `/tmp/ze-scripts`. The sidecar
+  deletes it after the run. The scratch directory holds at most 32 MB.
+- **No network.** The script runs as the `zescript` system user. The sidecar rejects all
+  output from that user and checks the rule by listing it. `/workspace` is unreadable to
+  `zescript`. At the start of each script, a probe tries to list `/workspace` and to reach
+  `1.1.1.1:53`. If either works, the script ends `unavailable` and the sidecar reports
+  `scripts_isolated: false`.
+- **Resource limits.** Address space 256 MB, 32 processes, 16 MB per file, 64 open files, and
+  CPU time of `workspace.scripts.wall_seconds` plus one second. The sidecar kills every
+  process of the `zescript` user when the script ends. Stdout goes nowhere.
+- **Gates still apply.** Each read the script makes goes through Ze's normal tool path. A
+  write is never called from the script. The script proposes it, and the user confirms it.
+
+### Enabling scripts in local Docker
+
+The sidecar needs `NET_ADMIN` for the reject rule. `docker-compose.yml` adds it:
+
+```yaml
+  workspace:
+    cap_add:
+      - NET_ADMIN
+```
+
+Without it, `scripts_isolated` is `false`. Ze then reports `sandbox_unavailable` to the model
+and runs no script. `sidecar/workspace/fly.toml` does not set
+`NET_ADMIN`, so scripts stay unavailable on Fly until that changes. Unattended goals and
+workflows get no script runner, so they never run scripts.
+
 ---
 
 ## Isolation
