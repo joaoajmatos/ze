@@ -331,7 +331,7 @@ Two flags keep a tool out of the stub:
 | Argument | Set it when |
 |---|---|
 | `produces_ui=True` | The tool's effect is drawing on screen, such as a render tool or a `show_*` compose tool. A UI tool is never a data read. |
-| `egress=True` | A `READ` tool reaches a caller-chosen URL or host, such as `browser_extract`. A script has no network, so Ze never gives it such a tool. |
+| `egress=True` | A `READ` tool reaches a caller-chosen URL or host, such as `browser_extract`. A script has no network when the sandbox is isolated, so Ze never gives it such a tool. |
 
 A `READ` tool with a URL-like parameter (`url`, `uri`, `link`, `host`, `endpoint`, `domain`)
 must set `egress=True` or carry an explicit exemption with a reason. Otherwise the registry

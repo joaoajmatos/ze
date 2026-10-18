@@ -88,6 +88,12 @@ not run it in Ze's process. See [architecture.md](architecture.md#tool-scripts) 
   `zescript`. At the start of each script, a probe tries to list `/workspace` and to reach
   `1.1.1.1:53`. If either works, the script ends `unavailable` and the sidecar reports
   `scripts_isolated: false`.
+- **Fails closed.** The sidecar refuses to run a script (`unavailable`) unless it runs as
+  root, the `zescript` user exists, and `scripts_isolated` is true. A root sidecar without
+  that user always refuses. A non-root sidecar refuses too, unless
+  `ZE_SCRIPTS_ALLOW_UNISOLATED=1` is set. That variable runs scripts as the sidecar's own
+  user with no network or file isolation. It exists for the test suite only. Never set it in
+  a deployment.
 - **Resource limits.** Address space 256 MB, 32 processes, 16 MB per file, 64 open files, and
   CPU time of `workspace.scripts.wall_seconds` plus one second. The sidecar kills every
   process of the `zescript` user when the script ends. Stdout goes nowhere.
@@ -109,8 +115,8 @@ and runs no script.
 
 Scripts are not verified on Fly. `sidecar/workspace/fly.toml` sets no `NET_ADMIN`, so the
 sidecar reports scripts unavailable there unless the isolation rule applies. Ze runs locally;
-no Fly check of scripts has been made. Unattended goals and
-workflows get no script runner, so they never run scripts.
+no Fly check of scripts has been made. Unattended goals and workflows get no script runner,
+so they never run scripts.
 
 ---
 
