@@ -68,3 +68,7 @@
 {"id": "train-loops-list-pt-1", "lang": "pt", "prompt": "Com o que é que ainda ando às voltas?", "gold_agent": "loops", "gold_multi": false}
 {"id": "train-loops-track-en", "lang": "en", "prompt": "put the lease renewal on my radar, I haven't decided yet", "gold_agent": "loops", "gold_multi": false}
 {"id": "train-loops-track-pt", "lang": "pt", "prompt": "põe a renovação do contrato no meu radar, ainda não decidi", "gold_agent": "loops", "gold_multi": false}
+{"id": "tuned-companion-briefing-en", "lang": "en", "prompt": "how did the latest morning briefing do?", "gold_agent": "companion", "gold_multi": false}
+{"id": "tuned-companion-briefing-contents-en", "lang": "en", "prompt": "what was in this morning's briefing?", "gold_agent": "companion", "gold_multi": false}
+{"id": "tuned-companion-briefing-sent-en", "lang": "en", "prompt": "did you send my briefing today?", "gold_agent": "companion", "gold_multi": false}
+{"id": "tuned-companion-briefing-pt", "lang": "pt", "prompt": "o que é que estava no briefing desta manhã?", "gold_agent": "companion", "gold_multi": false}
