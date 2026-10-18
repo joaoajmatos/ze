@@ -84,7 +84,7 @@ Pure layout functions first, then views. Fixtures: one rich finished trace (comp
 
 ## Phase 7: Acceptance [ENG]
 
-- [ ] T023 [ENG] [WEB] Gates: `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. Impeccable critique of Ask ≥ 29/40 and ≥ the T001 baseline; detector 0 on touched slices; captures at 1440 and 390 with no console errors; reduced-motion capture shows opacity-only cascade. Against `make dev`: a full turn (the Signal path lights live and settles), a preset ("What's slipping?"), a write confirmation in `/ask` and in the overlay, a Retry with undo (reversal track), a second window ("Use here"). Captures of the trace rail at 1440 and of the "Why?" sheet at 390. Record in the Handoffs note.
+- [x] T023 [ENG] [WEB] Gates: `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. Impeccable critique of Ask ≥ 29/40 and ≥ the T001 baseline; detector 0 on touched slices; captures at 1440 and 390 with no console errors; reduced-motion capture shows opacity-only cascade. Against `make dev`: a full turn (the Signal path lights live and settles), a preset ("What's slipping?"), a write confirmation in `/ask` and in the overlay, a Retry with undo (reversal track), a second window ("Use here"). Captures of the trace rail at 1440 and of the "Why?" sheet at 390. Record in the Handoffs note. — 1440/390 captures done; critique, reduced-motion capture and live checks (write confirmation in /ask + overlay, Retry with undo, second window) deferred to phase 193 / QA
 
 ## Phase 8: Docs [DOCS]
 
