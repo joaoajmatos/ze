@@ -63,7 +63,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 |---|---|---|
 | `{"type": "ping"}` | Heartbeat | Server replies with `{"type": "pong"}` |
 | `{"type": "ack", "ids": ["<uuid>", ...]}` | After displaying messages | Marks messages as read in `MessageStore` |
-| `{"type": "message", "text": "...", "thread_id": "...", "context": {...}}` | User sends a message | `thread_id` is optional; `context` is optional screen context |
+| `{"type": "message", "text": "...", "thread_id": "...", "context": {...}}` | User sends a message | `thread_id` is optional; `context` is optional screen context. `context.voice` marks a voice turn (see [Voice input](#voice-input)) |
 | `{"type": "retry", "message_id": "<uuid>", "thread_id": "...", "confirmed_plan": ["<entry id>", ...]}` | User presses Retry on the latest reply | Undoes what the reply did, then regenerates it. `confirmed_plan` lists the undo entry ids the person confirmed. Omit it or send `null` when the plan is empty. See [Reply feedback and Retry](#reply-feedback-and-retry). |
 | `{"type": "confirm", "id": "<request id>", "choice": "approve" \| "deny", "edits": {...}}` | Answer a `confirm_request` | Approves or denies the parked writes in that request. `edits` is optional (see [Confirmation flow](#confirmation-flow)) |
 | `{"type": "action", "payload": "<action value>", "thread_id": "..."}` | User presses a prompt button that is not approve or deny | Runs the action named by the button value, e.g. a goal gate's `goal_plan:yes:<id>` (see [Confirmation flow](#confirmation-flow)) |
@@ -140,6 +140,51 @@ Onboarding messages also include an `onboarding` metadata object beside `message
 
 The web app stores this metadata on the message and uses it when form/confirm
 components submit `component_submit` frames.
+
+---
+
+## Voice input
+
+Voice takes two steps. The app first uploads the recording, then sends the text as a
+message.
+
+1. **Transcribe.** The app sends the recording as a `multipart/form-data` field named
+   `file` to `POST /api/v0/voice/transcriptions` (`transcribeVoice`). The response holds
+   the transcript, the measured duration and a `transcription_id`:
+
+   ```json
+   { "transcript": "remind me to call Ana", "duration_s": 3.4, "transcription_id": "9f2c…" }
+   ```
+
+   The limits are 10 MB and 120 seconds. Accepted types are WebM, Ogg, MP4/M4A and WAV.
+   The route keeps no audio.
+
+2. **Send.** The user checks the transcript, edits it if needed, and sends the message.
+   The frame names the id:
+
+   ```json
+   { "type": "message", "text": "remind me to call Ana tomorrow", "thread_id": "…",
+     "context": { "voice": { "transcription_id": "9f2c…" } } }
+   ```
+
+   A live id makes the turn a voice turn. The server reads the transcript and duration
+   from its registry, so the client's text does not decide the modality. An unknown or
+   expired id runs the turn as text. Ids last 10 minutes and do not survive a server
+   restart.
+
+A voice turn's trace shows `input`: `{ "modality": "voice", "duration_s": 3.4, "edited": true }`.
+`edited` is true when the sent text differs from the transcript. Text turns have no `input`.
+
+Failures return `{ "detail": "<plain line>" }`. The main cases are:
+
+| Status | Cause | Detail |
+|---|---|---|
+| 413 | Over 10 MB, or over 120 seconds | "That recording is too large…" or "That recording is too long…" |
+| 415 | Other file type | "Unsupported recording type. Use WebM, Ogg, MP4 or WAV." |
+| 422 | Length cannot be read | "I couldn't make out the recording." |
+| 422 | No `file` part | "Send the recording as a file named file." |
+| 502 | Speech model failed | "I couldn't make out the recording." |
+| 503 | `ffmpeg` missing on the server | "Voice input is not available on this server." |
 
 ---
 
