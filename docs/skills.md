@@ -6,7 +6,7 @@ until you review it. Scripts never inherit that approval — they run only after
 separate executable approval, and only inside the [workspace sidecar](workspace.md).
 
 **Package:** `core/automation/ze-skills/ze_skills/`  
-**Web UI:** System `/skills` (`widgets/skill-management`)  
+**Web UI:** Doing › Skills (`widgets/skills-queue`)  
 **Specs:** [114-agent-skills](../specs/phases/114-agent-skills/spec.md) ·
 [115-workspace-sidecar](../specs/phases/115-workspace-sidecar/spec.md) (scripts)
 
@@ -69,7 +69,8 @@ Give Ze a URL to a `SKILL.md` or a zip that contains one. Ze fetches, parses, an
 creates a `pending_review` row. It never activates the skill at import.
 
 You review the parsed name, description, full instructions, tool restrictions, and
-any script filenames on `/skills`. Then you approve or reject.
+any script filenames in the Skills queue on Doing (`/doing#skills`). Skills that wait
+for review appear first. Then you approve or reject.
 
 | Source | How it arrives | Review |
 |---|---|---|
@@ -265,7 +266,7 @@ Plan-only dry-run is gone. Conversation still confirms each script run.
 Unattended goals and workflows may run approved scripts when the workspace is
 available.
 
-The workspace page is `/workspace`. Executable approval stays on `/skills`.
+The workspace file map is in Governance › Files (`/governance#files`). Executable approval stays in the Skills queue on Doing.
 
 Detached runs, automatic follow-up turns, and push when a run finishes are spec
 116, not this path.

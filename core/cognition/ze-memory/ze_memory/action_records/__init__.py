@@ -7,6 +7,7 @@ from ze_memory.action_records.types import (
     ActionOutcome,
     ActionRecord,
     ActionRecordDraft,
+    ActionSubjectKind,
     AuthoritativeRef,
     CausalRef,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "ActionRecordDraft",
     "ActionRecorder",
     "ActionRecordStore",
+    "ActionSubjectKind",
     "AuthoritativeRef",
     "CausalRef",
     "PostgresActionRecordStore",

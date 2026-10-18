@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 
 from fastapi import WebSocket
 
-from ze_agents.interface.types import RawInput
+from ze_agents.interface.types import RawInput, VoiceInput
 from ze_agents.progress.reporter import ProgressReporter
 from ze_api.api.ws.confirmation import (
     send_confirmation_request,
@@ -35,6 +35,28 @@ from ze_core.conversation.turn import turn_has_reply
 from ze_logging import get_logger
 
 log = get_logger(__name__)
+
+_MAX_TRANSCRIPTION_ID_LENGTH = 64
+
+
+def _voice_input(context_wire: Any, text: str, registry: Any) -> VoiceInput | None:
+    """Resolve a `context.voice` reference to a VoiceInput; an unknown id leaves a text turn."""
+    voice = context_wire.get("voice") if isinstance(context_wire, dict) else None
+    transcription_id = (
+        voice.get("transcription_id") if isinstance(voice, dict) else None
+    )
+    if (
+        not isinstance(transcription_id, str)
+        or not transcription_id
+        or len(transcription_id) > _MAX_TRANSCRIPTION_ID_LENGTH
+    ):
+        return None
+    found = registry.lookup(transcription_id)
+    if found is None:
+        log.info("ws_voice_ref_unknown", transcription_id=transcription_id)
+        return None
+    transcript, duration_s = found
+    return VoiceInput(duration_s=duration_s, edited=text.strip() != transcript.strip())
 
 
 async def handle_message(
@@ -124,7 +146,12 @@ async def handle_message(
         with bound_turn_context(thread_id):
             outcome = await container.invoke_raw_turn(
                 thread_id,
-                RawInput(text=text),
+                RawInput(
+                    text=text,
+                    voice=_voice_input(
+                        data.get("context"), text, container.transcription_registry
+                    ),
+                ),
                 config_extra=config_extra,
             )
     except Exception as exc:

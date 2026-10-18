@@ -19,7 +19,7 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main` with 191a merged. `make install && make web-install`; `graphify update .`; `graphify affected` on `UiContribution`, `UiManifest`, `collect_ui_contributions`, `filter_ui_manifest_by_openapi`, `CORE_RESERVED_NAV_PATHS`, `PluginPage`, `refreshKeysForScreen`, `TryChips`, `MindEntityPage`, `DoingWorkflowPage`, `Connections`. Grep `manifest.nav`, `ui_manifest.nav`, `ui_nav`, `show_in_mobile_nav`, `page_operation_id`, `getNewsPage`, `news/page`, `build_news_page`, `PluginPageResponse`. Confirm: how a plugin's registered agents are known at runtime (for the tool-action binding); the function in `ze_agents/claims.py` or `ze_components/claims.py` that says which (ClaimKind, Provenance) pairs are allowed (if none, lead adds `is_licensed_posture` in T002); where plugin settings responses can be validated by core; the memory graph and workflow store lookups for the subject; whether 188's `DoingWorkflowPage` is on `main`; and the final `TryChips` chips array and props. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
+- [ ] T001 [L:lead] Branch from `main` with 191a merged. `make install && make web-install`; `graphify update .`; `graphify affected` on `UiContribution`, `UiManifest`, `collect_ui_contributions`, `filter_ui_manifest_by_openapi`, `CORE_RESERVED_NAV_PATHS`, `PluginPage`, `refreshKeysForScreen`, `TryChips`, `MindEntityPage`, `DoingWorkflowPage`, `Connections`. Grep `manifest.nav`, `ui_manifest.nav`, `ui_nav`, `show_in_mobile_nav`, `page_operation_id`, `getNewsPage`, `news/page`, `build_news_page`, `PluginPageResponse`. Confirm: that a plugin's agents are the registered agents whose class `__module__` starts with one of its `agent_module_paths()` (or name another source); the function in `ze_agents/claims.py` or `ze_components/claims.py` that says which (ClaimKind, Provenance) pairs are allowed (if none, lead adds `is_licensed_posture` in T002); where plugin settings responses can be validated by core; the memory graph and workflow store lookups for the subject; whether 188's `DoingWorkflowPage` is on `main`; and the final `TryChips` chips array and props. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
 
 ---
 
@@ -44,7 +44,7 @@
     - a provider over 3 s (fake clock) is 504 "<Plugin> took too long.";
     - an invalid tree is 502 "<Plugin> sent a view Ze cannot show.";
     - each failure logs `ui_module_failed`;
-    - a module tree whose `ToolAction` names another plugin's agent, or a tool outside the named agent's list, is 502 "<Plugin> sent a view Ze cannot show."; the same tree in a settings response is refused;
+    - `validate_plugin_tree` (in `ze_plugin/ui_validate.py`, re-exported by `ze_sdk.ui`): a tree whose `ToolAction` names another plugin's agent, or an agent of the same plugin with a tool not in that agent's `tools`, fails; a plugin with no agents may use only navigate, ask and compose actions; the module route returns 502 "<Plugin> sent a view Ze cannot show." on such a tree;
     - a tree with an unlicensed posture pair is refused; a provider-set tone or label is replaced by the core-derived one;
     - the subject is resolved server-side: an unknown entity or run id is 404, and the provider receives the record's label and entity type (a forged `subject_label` query parameter is ignored);
     - `request_module_refresh(interface, "x.facet")` calls `send_refresh("module:x.facet")`, and a failing interface is logged, not raised; `NativeAppInterface.send_refresh` sends the `refresh` frame.
@@ -70,9 +70,10 @@
   - `plugins/ze-news/tests/test_plugin_ui.py`: `ui_contributions()` returns the preset `ze_news.whats_new` (label and prompt "What's new in my sources?"), the module `ze_news.sources` (slot `mind.entity`, label "Sources") and the settings section when enabled, and nothing when disabled;
   - the sources provider: `applies=False` before `startup()` has created the store (not an exception), for an entity type other than `topic`, and when no article matches; otherwise a `claim_list` with one item per article (title, source, date), posture `fact`/`live_search` set by code, and the tree validates against the 191a schema;
   - `GET /api/v0/news/page` is gone (not in the OpenAPI export) and `getNewsSettings` still works;
-  - `NewsFetchJob.run`: when `upsert` returns new articles, `request_module_refresh(interface, "ze_news.sources")` is called once; with no new articles it is not called.
+  - `NewsFetchJob`: after `bind_interface`, a run whose `upsert` returns new articles calls `request_module_refresh(interface, "ze_news.sources")` once, and a run with none does not; with no interface bound, a run with new articles completes without error and sends nothing;
+  - the News settings route calls `validate_plugin_tree` and its tree passes it; a settings tree with a foreign tool action raises;
 
-  Implement `NewsStore.by_tag`, the contributions and provider in `plugin.py` (the provider reads `self._store` at call time), and pass the interface to `NewsFetchJob` in `startup()`. Delete `getNewsPage`, `ui/page.py`, `tests/test_ui_page.py` and the page cases in `tests/test_api_routes.py`. Add the row `{"id": "single-news-sources-en", "lang": "en", "prompt": "What's new in my sources?", "gold_agent": "news", "gold_multi": false}` to `eval/calibration/routing.jsonl` and run `make calibrate-routing ARGS=--check-sets` (offline only).
+  Implement `NewsStore.by_tag`, the contributions and provider in `plugin.py` (the provider reads `self._store` at call time), and bind the interface in `startup()` with `bind_interface`; the settings route calls `validate_plugin_tree`. Delete `getNewsPage`, `ui/page.py`, `tests/test_ui_page.py` and the page cases in `tests/test_api_routes.py`. Add the row `{"id": "single-news-sources-en", "lang": "en", "prompt": "What's new in my sources?", "gold_agent": "news", "gold_multi": false}` to `eval/calibration/routing.jsonl` and run `make calibrate-routing ARGS=--check-sets` (offline only).
 
 ---
 

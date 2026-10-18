@@ -63,7 +63,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 |---|---|---|
 | `{"type": "ping"}` | Heartbeat | Server replies with `{"type": "pong"}` |
 | `{"type": "ack", "ids": ["<uuid>", ...]}` | After displaying messages | Marks messages as read in `MessageStore` |
-| `{"type": "message", "text": "...", "thread_id": "...", "context": {...}}` | User sends a message | `thread_id` is optional; `context` is optional screen context |
+| `{"type": "message", "text": "...", "thread_id": "...", "context": {...}}` | User sends a message | `thread_id` is optional; `context` is optional screen context. `context.voice` marks a voice turn (see [Voice input](#voice-input)) |
 | `{"type": "retry", "message_id": "<uuid>", "thread_id": "...", "confirmed_plan": ["<entry id>", ...]}` | User presses Retry on the latest reply | Undoes what the reply did, then regenerates it. `confirmed_plan` lists the undo entry ids the person confirmed. Omit it or send `null` when the plan is empty. See [Reply feedback and Retry](#reply-feedback-and-retry). |
 | `{"type": "confirm", "id": "<request id>", "choice": "approve" \| "deny", "edits": {...}}` | Answer a `confirm_request` | Approves or denies the parked writes in that request. `edits` is optional (see [Confirmation flow](#confirmation-flow)) |
 | `{"type": "action", "payload": "<action value>", "thread_id": "..."}` | User presses a prompt button that is not approve or deny | Runs the action named by the button value, e.g. a goal gate's `goal_plan:yes:<id>` (see [Confirmation flow](#confirmation-flow)) |
@@ -140,6 +140,53 @@ Onboarding messages also include an `onboarding` metadata object beside `message
 
 The web app stores this metadata on the message and uses it when form/confirm
 components submit `component_submit` frames.
+
+---
+
+## Voice input
+
+Voice takes two steps. The app first uploads the recording, then sends the text as a
+message.
+
+1. **Transcribe.** The app sends the recording as a `multipart/form-data` field named
+   `file` to `POST /api/v0/voice/transcriptions` (`transcribeVoice`). The response holds
+   the transcript, the measured duration and a `transcription_id`:
+
+   ```json
+   { "transcript": "remind me to call Ana", "duration_s": 3.4, "transcription_id": "9f2c…" }
+   ```
+
+   The limits are 10 MB and 120 seconds. Accepted types are WebM, Ogg, MP4/M4A and WAV.
+   The route keeps no audio. A request with no `Authorization` header gets a 401 before
+   the body is read; a wrong key is only checked after the upload arrives, which can be up
+   to 10 MB plus 64 KB.
+
+2. **Send.** The user checks the transcript, edits it if needed, and sends the message.
+   The frame names the id:
+
+   ```json
+   { "type": "message", "text": "remind me to call Ana tomorrow", "thread_id": "…",
+     "context": { "voice": { "transcription_id": "9f2c…" } } }
+   ```
+
+   A live id makes the turn a voice turn. The server reads the transcript and duration
+   from its registry, so the client's text does not decide the modality. An unknown or
+   expired id runs the turn as text. Ids last 10 minutes and do not survive a server
+   restart.
+
+A voice turn's trace shows `input`: `{ "modality": "voice", "duration_s": 3.4, "edited": true }`.
+`edited` is true when the sent text differs from the transcript. Text turns have no `input`.
+
+Failures return `{ "detail": "<plain line>" }`. The main cases are:
+
+| Status | Cause | Detail |
+|---|---|---|
+| 413 | Over 10 MB, or over 120 seconds | "That recording is too large…" or "That recording is too long…" |
+| 415 | Other file type | "Unsupported recording type. Use WebM, Ogg, MP4 or WAV." |
+| 422 | Length cannot be read | "I couldn't make out the recording." |
+| 422 | No `file` part | "Send the recording as a file named file." |
+| 502 | Speech model failed | "I couldn't make out the recording." |
+| 503 | `ffmpeg` missing on the server | "Voice input is not available on this server." |
 
 ---
 
@@ -488,6 +535,26 @@ The user sets quiet hours in Settings › Notifications. Two REST routes back th
 The push log records budget claims, not outcomes. What happened to each push lives on the notification's `delivery` field.
 
 While quiet hours are active, Ze holds accountability and discretionary pushes and releases them in one batch when quiet hours end. Only reminders and calendar alerts the user set still buzz. Quiet hours ship off.
+
+---
+
+## Accountability surfaces
+
+Five read routes show the web app what Ze did and how it is connected. All need the bearer key.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v0/actions` (`listActionRecords`) | The action ledger, newest first. Give `subject_type` (`goal`, `workflow`, `workflow_run` or `workspace_run`) and `subject_id` together to list one subject, or neither to list everything. Optional `since` and `limit` (1 to 200, default 50). Pages by an opaque `next_cursor`; pass it back as `cursor`. A lone subject field, a bad cursor or a limit out of range returns 422. Each item names the record it `touched`. |
+| `GET /api/v0/collisions` (`listCollisions`) | Logged contribution collisions, with the filters `entity_id`, `source_function`, `since`, `until` and `limit`. An unknown `source_function` returns 422. Collisions are logged, never resolved. |
+| `GET /api/v0/system/models` (`getModelSettings`) | Whether the complexity tier is on (`complexity_enabled`: enabled and a bar set), the bar (`simple_max`), and each agent's `model` and `model_simple`. It reads the configuration and returns no secrets. |
+| `GET /api/v0/loops` (`listLoops`) | `state` repeats (`?state=closed&state=dropped`). `since` keeps loops updated after that time. |
+| `GET /api/v0/channels/status` (`listChannelStatus`) | One row per inbound channel with `state`, `last_sync_at` and `push`. States: `connected`, `needs_reauth`, `error`, `off`, `unknown`. Push channels always report `unknown`, because Ze does not see their failures. A channel that never polled also reports `unknown`. Tokens never appear. |
+
+Channel state comes from the last poll. The poll job records `ok`, `auth_failed` or `failed` on the channel's watermark row without moving the watermark, so a failed poll skips no mail. `last_sync_at` is set only after an `ok` poll. A Gmail channel whose address never resolved shows under its bare type (`email`) until the next good poll; then that row goes away and only the address row stays.
+
+Query times (`since`, `until`) need a timezone offset; a time without one returns 422. A 401 from Google counts as `needs_reauth`, the same as a failed token refresh. When the account never resolved after a restart, the failed poll is recorded on the channel's one existing address row.
+
+Calendar, reminder and prospecting actions do not carry a goal, workflow or run, so they do not list under a subject.
 
 ---
 

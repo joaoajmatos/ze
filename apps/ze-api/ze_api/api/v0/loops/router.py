@@ -1,9 +1,15 @@
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from ze_api.api.datetimes import require_aware
 from ze_api.api.deps import get_loop_store, require_api_key
-from ze_api.api.v0.loops.schemas import LoopListItem, LoopTransitionResponse
+from ze_api.api.v0.loops.schemas import (
+    LoopListItem,
+    LoopStateName,
+    LoopTransitionResponse,
+)
 from ze_worldstate import rest as loop_rest
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.store import LoopStore
@@ -18,17 +24,19 @@ router = APIRouter(
     response_model=list[LoopListItem],
     operation_id="listLoops",
     summary="List open loops",
-    description="Return open loops, optionally filtered to one lifecycle state. "
-    "Defaults to non-terminal states (suspected, active, drifting). Each item "
+    description="Return open loops, optionally filtered to one or more lifecycle "
+    "states (repeat `state`) and to loops updated after `since` (a timezone offset is required; use Z or %2B00:00 in a URL). Defaults to "
+    "non-terminal states (suspected, active, drifting). Each item "
     "reports whether the loop was promoted by corroboration and the distinct "
     "inflows it was seen in.",
 )
 async def list_loops(
-    state: str | None = Query(default=None),
+    state: list[LoopStateName] | None = Query(default=None),
+    since: datetime | None = Query(default=None),
     store: LoopStore = Depends(get_loop_store),
 ) -> list[LoopListItem]:
-    states = [state] if state else None
-    loops = await loop_rest.list_loops(store, states)
+    require_aware(since=since)
+    loops = await loop_rest.list_loops(store, state or None, since=since)
     return [LoopListItem.model_validate(loop) for loop in loops]
 
 

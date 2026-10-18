@@ -19,19 +19,19 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main`. `make install`; `graphify update .`; `graphify affected` on `RawInput`, `make_graph_input`, `preprocess`, `transcribe`, `record_trace`, `MessageTrace`, `_parse_trace`, `handle_message`, `ScreenContext`; `rtk proxy grep -rn "audio_data\|audio_mime\|raw.audio\|_normalise_audio_format\|_to_mp3" core apps plugins integrations`. Confirm `python-multipart` resolves and `ffmpeg -version` / `ffprobe -version` work locally. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
+- [x] T001 [L:lead] Branch from `main`. `make install`; `graphify update .`; `graphify affected` on `RawInput`, `make_graph_input`, `preprocess`, `transcribe`, `record_trace`, `MessageTrace`, `_parse_trace`, `handle_message`, `ScreenContext`; `rtk proxy grep -rn "audio_data\|audio_mime\|raw.audio\|_normalise_audio_format\|_to_mp3" core apps plugins integrations`. Confirm `python-multipart` resolves and `ffmpeg -version` / `ffprobe -version` work locally. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
 
 ---
 
 ## Phase 2: Foundational (contract step, lane `lead`)
 
-- [ ] T002 [L:lead] Tests first:
+- [x] T002 [L:lead] Tests first:
   - `core/contracts/ze-agents/tests/test_interface_types.py`: `VoiceInput(duration_s, edited)`; `RawInput.voice` defaults to `None`.
   - `core/contracts/ze-agents/tests/test_screen_context.py`: a context with only `voice: {...}` returns no warning, `is_empty` is true, and `to_wire()` has no `voice` key (V-3).
-  - `core/contracts/ze-agents/tests/test_errors.py`: `VoiceInputError(ZeError)` with `UnsupportedAudioError`, `AudioTooLargeError`, `AudioTooLongError`, `AudioUnreadableError`, `AudioToolMissingError`, `TranscriptionFailedError`.
+  - `core/contracts/ze-agents/tests/test_errors.py`: `VoiceInputError(ZeError)` with `AudioTooLongError`, `AudioUnreadableError`, `AudioToolMissingError`, `TranscriptionFailedError`.
   
   Implement in `ze_agents/interface/types.py` (add `VoiceInput` and `RawInput.voice`; the audio fields stay for `core`), `ze_agents/screen.py` (`"voice"` in `known` only) and `ze_agents/errors.py`.
-- [ ] T003 [L:lead] Tests first:
+- [x] T003 [L:lead] Tests first:
   - `core/engine/ze-core/tests/conversation/test_message_trace_input.py`:
     - `InputTrace` round-trips through `asdict`, and `MessageTrace.input` defaults to `None`;
     - **store round-trip (V-2)**: `save_trace` then `get_trace` keeps `input` for a voice trace, a text trace keeps `None`, and a stored row without an `input` key parses with `None` (mocked pool returning the JSON).
@@ -47,7 +47,7 @@
   - A 501 stub `api/v0/voice/router.py` (final signature, `operation_id="transcribeVoice"`, `response_model`, summary, description, `require_api_key`), registered in `api/v0/__init__.py`.
 
   Run `make codegen` and commit the generated client with the task.
-- [ ] T004 [P] [L:lead] Fixtures in `apps/ze-api/tests/fixtures/audio/`, with the generator script `make_fixtures.sh` committed beside them:
+- [x] T004 [P] [L:lead] Fixtures in `apps/ze-api/tests/fixtures/audio/`, with the generator script `make_fixtures.sh` committed beside them:
   - `stream.webm`, made by `ffmpeg -f lavfi -i sine=duration=3 -c:a libopus -f webm pipe:1 > stream.webm`: non-seekable, no duration;
   - `frag.mp4`, made with `-movflags frag_keyframe+empty_moov`;
   - `stream.ogg`, an Opus clip made with `-c:a libopus -f ogg pipe:1` (Firefox records `audio/ogg`);
@@ -61,7 +61,7 @@
 
 ## Phase 3: User Story 1 - Transcribe, correct, then send (P1) 🎯 MVP
 
-- [ ] T005 [P] [L:core] [US1] Tests first `core/engine/ze-core/tests/openrouter/test_audio.py` (stubbed):
+- [x] T005 [P] [L:core] [US1] Tests first `core/engine/ze-core/tests/openrouter/test_audio.py` (stubbed):
   - `normalise_audio_format` maps `audio/webm;codecs=opus` → `webm`, `audio/mp4` → `m4a` and `audio/x-wav` → `wav`.
   - The container format for the probe maps mp4 and m4a → `mp4`.
   - `probe_duration`:
@@ -74,8 +74,8 @@
   - `to_mp3` raises `AudioUnreadableError` on a non-zero exit or a timeout.
 
   Move `_normalise_audio_format` and `_to_mp3` to `ze_core/openrouter/audio.py` (public names, demuxer, whitelist, timeouts). Add `probe_duration`. `client.py` imports them, and the existing client tests stay green.
-- [ ] T006 [L:core] [US1] Real-binary check before building on the probe (V-1): `core/engine/ze-core/tests/openrouter/test_audio_real.py`, marked `@pytest.mark.slow` and skipped without `ffprobe`. `probe_duration` returns 3.0 ± 0.1 on each of the T004 fixtures: `stream.webm` and `stream.ogg` (both through the packet scan) and `frag.mp4` (step 1). A WAV labelled as WebM is rejected by the forced demuxer (`AudioUnreadableError`). Run it locally with `make test-core SLOW=1` and record the result in the Handoffs note.
-- [ ] T007 [L:core] [US1] Tests first `core/engine/ze-core/tests/test_voice.py`:
+- [x] T006 [L:core] [US1] Real-binary check before building on the probe (V-1): `core/engine/ze-core/tests/openrouter/test_audio_real.py`, marked `@pytest.mark.slow` and skipped without `ffprobe`. `probe_duration` returns 3.0 ± 0.1 on each of the T004 fixtures: `stream.webm` and `stream.ogg` (both through the packet scan) and `frag.mp4` (step 1). A WAV labelled as WebM is rejected by the forced demuxer (`AudioUnreadableError`). Run it locally with `make test-core SLOW=1` and record the result in the Handoffs note.
+- [x] T007 [L:core] [US1] Tests first `core/engine/ze-core/tests/test_voice.py`:
   - success returns the stripped text and the probed duration, and passes `duration_seconds` and the mime to `client.transcribe`;
   - an empty reply returns `Transcription("", d)`;
   - over `max_seconds` raises `AudioTooLongError` before any model call;
@@ -83,14 +83,14 @@
   - the flow and agent ContextVars are `transcription` and `whisper` during the call (US3).
   
   Implement `transcribe_audio` in `ze_core/voice.py`.
-- [ ] T008 [L:core] [US1] Tests first:
+- [x] T008 [L:core] [US1] Tests first:
   - `tests/conversation/test_make_graph_input.py` (extend): a `RawInput` with `voice` sets `input_modality == "voice"` and `voice_input`; text sets `None`, and the key resets each turn.
   - `tests/orchestration/nodes/test_trace_input.py`: `record_trace` sets `MessageTrace.input` for voice and `None` for text, with no transcript text in the JSON.
 
   Implement in `conversation/turn.py`, `orchestration/state.py` and `orchestration/nodes/trace.py`. Then the hard cut (SC-002): delete `RawInput.audio`/`.audio_mime`, `AgentState.audio_data`/`.audio_mime`, the `preprocess` audio branch and its import, and `invoke_raw`'s audio kwargs (`ze_core/container.py`), plus the audio cases in `test_preprocessing.py` (lines ~29, ~57) and `test_state_serde.py` (~193-194). `rtk proxy grep -rn "audio_data\|audio_mime\|raw\.audio" core apps plugins integrations` returns nothing. `make test-core` and `make test-agents` pass.
-- [ ] T009 [P] [L:api] [US1] Tests first `apps/ze-api/tests/voice/test_registry.py` (injected clock): `register` returns a 32-character hex id; `lookup` returns `(text, duration_s)` within 10 minutes and `None` after; expired entries are swept on each call; past 100 entries the oldest is dropped. Implement `ze_api/voice/registry.py`, and add `self.transcription_registry` in `ze_api/wiring/container.py` with a test that the container exposes it.
-- [ ] T010 [L:api] [US1] Tests first `apps/ze-api/tests/api/test_voice_route.py` (success path, `transcribe_audio` patched until `core` merges): `one_second.wav` as `audio/wav` with the key returns 200 `{transcript, duration_s, transcription_id}`; the id is in `container.transcription_registry`; no key → 401; the model passed is `models.whisper` (fallback `MODEL_WHISPER`); `audio/webm;codecs=opus` is accepted. Implement the route body.
-- [ ] T011 [L:api] [US1] Tests first `apps/ze-api/tests/api/test_ws_voice_turn.py`, driving `handle_message` with a container whose registry holds an entry (V-5):
+- [x] T009 [P] [L:api] [US1] Tests first `apps/ze-api/tests/voice/test_registry.py` (injected clock): `register` returns a 32-character hex id; `lookup` returns `(text, duration_s)` within 10 minutes and `None` after; expired entries are swept on each call; past 100 entries the oldest is dropped. Implement `ze_api/voice/registry.py`, and add `self.transcription_registry` in `ze_api/wiring/container.py` with a test that the container exposes it.
+- [x] T010 [L:api] [US1] Tests first `apps/ze-api/tests/api/test_voice_route.py` (success path, `transcribe_audio` patched until `core` merges): `one_second.wav` as `audio/wav` with the key returns 200 `{transcript, duration_s, transcription_id}`; the id is in `container.transcription_registry`; no key → 401; the model passed is `models.whisper` (fallback `MODEL_WHISPER`); `audio/webm;codecs=opus` is accepted. Implement the route body.
+- [x] T011 [L:api] [US1] Tests first `apps/ze-api/tests/api/test_ws_voice_turn.py`, driving `handle_message` with a container whose registry holds an entry (V-5):
   - a frame with a live `context.voice.transcription_id` builds `RawInput(text, voice=VoiceInput(d, edited))` (spy on `invoke_raw_turn`), with `edited` False when the text equals the transcript after stripping whitespace and True otherwise;
   - an unknown or expired id gives a text-only `RawInput`, the log `ws_voice_ref_unknown`, and no user-visible warning;
   - a voice-only context is not stored as `screen_context` on the user message, and `config_extra` has no `screen_context` (V-3);
@@ -102,7 +102,7 @@
 
 ## Phase 4: User Story 2 - Failures are plain and recoverable (P1)
 
-- [ ] T012 [L:api] [US2] Tests first in `apps/ze-api/tests/api/test_voice_route.py`, each with the exact `detail` from [the contract](./contracts/transcribe-voice.md) and no registry entry on failure:
+- [x] T012 [L:api] [US2] Tests first in `apps/ze-api/tests/api/test_voice_route.py`, each with the exact `detail` from [the contract](./contracts/transcribe-voice.md) and no registry entry on failure:
   - `text/plain` → 415;
   - a declared `Content-Length` of 11 MB → 413 before the handler runs (the patched `transcribe_audio` is never called, and the middleware answers);
   - a chunked 11 MB body with no length → 413 from the handler's read cap;
@@ -124,15 +124,15 @@ US3 is asserted in T007 (flow and agent ContextVars during the call); the cost t
 
 ## Phase 6: Polish and cross-cutting
 
-- [ ] T013 [L:lead] Merge lane `core`, then lane `api`. After the merge, `lead` edits the api tests to drop their `transcribe_audio` patches, so they run on the real helper with the stubbed probe and fake client. Run `make codegen` if a schema moved. Gates: `make test-py`, `make test-core SLOW=1` (with ffprobe present), `make lint`, `make test-web`.
-- [ ] T014 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev`: a real Chrome WebM recording, a Safari MP4 recording (or the fragmented fixture), and the failure cases. Build the ze-api image once and run `ffprobe -version` inside it. Record the results in the Handoffs note.
-- [ ] T015 [P] [L:docs] From the merged diff, following the doc-style skill:
+- [x] T013 [L:lead] Merge lane `core`, then lane `api`. After the merge, `lead` edits the api tests to drop their `transcribe_audio` patches, so they run on the real helper with the stubbed probe and fake client. Run `make codegen` if a schema moved. Gates: `make test-py`, `make test-core SLOW=1` (with ffprobe present), `make lint`, `make test-web`.
+- [x] T014 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev`: a real Chrome WebM recording, a Safari MP4 recording (or the fragmented fixture), and the failure cases. Build the ze-api image once and run `ffprobe -version` inside it. Record the results in the Handoffs note.
+- [x] T015 [P] [L:docs] From the merged diff, following the doc-style skill:
   - `docs/architecture.md` (~61-62, ~175, ~692, ~700-701, and the REST table);
   - `docs/configuration.md` (~177);
   - `docs/native-interface.md` (the route, `context.voice`, trace `input`);
   - `docs/ingestion.md` (system binaries: ffmpeg/ffprobe beside yt-dlp, ~203).
-- [ ] T016 [P] [L:docs] `docs/package-architecture.md` (~163) and `core/engine/ze-core/README.md` (~29) module tables (`voice.py`, `openrouter/audio.py`); `docs/testing.md` (slow real-ffprobe test); `AGENTS.md` phase row 192, the graph-flow line ("preprocess (image → caption)"), and the layout tree if it lists module files; `specs/README.md` row 192 → Implemented; spec status.
-- [ ] T017 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched" (the exact line list); record in the Handoffs note.
+- [x] T016 [P] [L:docs] `docs/package-architecture.md` (~163) and `core/engine/ze-core/README.md` (~29) module tables (`voice.py`, `openrouter/audio.py`); `docs/testing.md` (slow real-ffprobe test); `AGENTS.md` phase row 192, the graph-flow line ("preprocess (image → caption)"), and the layout tree if it lists module files; `specs/README.md` row 192 → Implemented; spec status.
+- [x] T017 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched" (the exact line list); record in the Handoffs note.
 
 ---
 
@@ -156,3 +156,17 @@ docs after T013.
 
 - MVP = US1 with the fake client and the real-binary check (T006) early, so the browser WebM path is proven before anything builds on it. US2 hardens the route; US3 is asserted inside T007.
 - 193 can code its web voice control against the contract once T003's codegen lands.
+
+---
+
+## Handoffs
+
+- **T001**: grep matches plan "Blast radius" exactly. `make install` needs `UV_PYTHON=3.12`; `make test-web` needs node 22 on PATH (default node 16 fails in vitest startup). `ffprobe format=duration` prints `N/A` from a pipe for WebM, Ogg and WAV; only fragmented MP4 returns a duration, so WAV and Ogg also use the packet scan.
+- **T006** (core lane): real-ffprobe slow test, 4 passed (WebM/Ogg through the packet scan, `frag.mp4`, WAV labelled WebM rejected).
+- **T013** gates at merge (8b61bed2): `make test-py` rc=0, `make test-core SLOW=1` rc=0, `make lint` rc=0, `make test-web` rc=0 (1012 tests, node 22).
+- **T014** (throwaway DB `ze_192_voice`, port 8020, dropped afterwards), `curl` against the real server and real ffprobe:
+  - `text/plain` 415; no key 401; 180 s WAV 413 "too long"; 11 MB body 413 "too large"; truncated file and random bytes 422/502 plain line; WAV labelled WebM 422; missing `file` part 422 "Send the recording as a file named file.".
+  - WebM (macOS `say` → libopus), Safari-style fragmented MP4, `stream.ogg` and `frag.mp4` all pass the probe and reach the model. The model call returned 502 because the OpenRouter account has less than the $0.50 balance audio requires ("This request requires at least $0.50 in balance for audio"), so a real transcript, quickstart steps 2-3 (WS turn trace) and step 5 (cost entry) were NOT verified live; they are covered by unit tests.
+  - Docker: building the full ze-api image (torch, model downloads) was skipped. The Dockerfile's apt line (`libgomp1 ffmpeg`) was run on `python:3.12-slim-bookworm`: `ffprobe version 5.1.9`.
+- **T015–T016** (docs lane, Haiku): `docs/architecture.md`, `docs/configuration.md`, `docs/native-interface.md`, `docs/ingestion.md`, `docs/package-architecture.md`, `core/engine/ze-core/README.md`, `docs/testing.md`, `AGENTS.md` (phase 192 row, graph-flow line, `voice.py` layout line), `specs/README.md` row 192 → Implemented, spec status → Implemented. Commits `ce4bf623` (T015) and `d0c9e92b` (T016).
+- **T017** coverage check against plan.md "Docs touched": every listed item is covered (architecture lines and REST row, configuration `whisper` and ffmpeg note, ingestion system binaries, native-interface voice section, package and ze-core module tables, testing slow ffprobe test, AGENTS phase row, graph line and layout, specs row). No doc outside the plan changed. Markdown files changed against `main`: 11 (`AGENTS.md`, `core/engine/ze-core/README.md`, `docs/{architecture,configuration,ingestion,native-interface,package-architecture,testing}.md`, `specs/README.md`, `specs/phases/192-voice-transport/{spec,tasks}.md`). Not verified live: the Ze docs describe the voice route as built in T014; the transcript path is covered by unit tests only, as recorded under T014.

@@ -21,6 +21,7 @@ from ze_api.api.v0.messages.schemas import (
     SkillUsageTraceResponse,
     SourceTraceResponse,
     ScreenTraceResponse,
+    InputTraceResponse,
     TierTraceResponse,
     ToolCallTraceResponse,
     UndoPlanEntryResponse,
@@ -170,6 +171,7 @@ class WsTraceUpdateFrame(BaseModel):
     rollback: RollbackTraceResponse | None = None
     tier: TierTraceResponse | None = None
     screen: ScreenTraceResponse | None = None
+    input: InputTraceResponse | None = None
     compaction: CompactionTraceResponse | None = None
     resume_recap_applied: bool = False
 
@@ -236,6 +238,10 @@ class WsCanvasRef(BaseModel):
     ref: WsScreenRef | None = None
 
 
+class WsVoiceRef(BaseModel):
+    transcription_id: str = Field(max_length=64)
+
+
 class WsScreenContext(BaseModel):
     place: Literal["world", "ask", "doing", "mind", "governance", "plugin"] | None = (
         None
@@ -252,6 +258,7 @@ class WsScreenContext(BaseModel):
     workspace_placed: list["WsWorkspacePlaced"] | None = None
     compose: Literal["slipping", "decisions", "topic"] | None = None
     topic: str | None = Field(None, max_length=120)
+    voice: WsVoiceRef | None = None
 
 
 class WsWorkspacePlaced(BaseModel):

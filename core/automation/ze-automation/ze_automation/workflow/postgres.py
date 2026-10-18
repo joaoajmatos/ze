@@ -421,18 +421,25 @@ class PostgresWorkflowStore:
         summary: str | None = None,
     ) -> None:
         async with self._pool.acquire() as conn:
-            await conn.execute(
+            row = await conn.fetchrow(
                 """
                 UPDATE workflow_executions
                 SET status = $1, error = $2, summary = $3, completed_at = NOW()
                 WHERE id = $4
+                RETURNING workflow_id
                 """,
                 status,
                 error,
                 summary,
                 execution_id,
             )
-        await emit_workflow_finished(execution_id, status)
+        workflow_id = row["workflow_id"] if row is not None else None
+        if workflow_id is None:
+            log.warning(
+                "workflow_finish_without_execution_row",
+                execution_id=str(execution_id),
+            )
+        await emit_workflow_finished(execution_id, status, workflow_id)
 
     async def list_executions(
         self, workflow_id: UUID, limit: int = 20

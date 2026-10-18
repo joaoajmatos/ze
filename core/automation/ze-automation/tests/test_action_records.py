@@ -136,7 +136,9 @@ async def test_workflow_start_then_finish_is_causally_linked(
 ):
     execution_id = uuid4()
     workflow_id = uuid4()
-    pool, conn = _pool(fetchrow={"id": execution_id, "steps": []})
+    pool, conn = _pool(
+        fetchrow={"id": execution_id, "steps": [], "workflow_id": workflow_id}
+    )
     store = PostgresWorkflowStore(pool)
     started = await store.start_execution(workflow_id)
     assert started == execution_id
@@ -149,7 +151,8 @@ async def test_workflow_start_then_finish_is_causally_linked(
     )
     assert cancelled.outcome is ActionOutcome.CANCELLED
     assert any(ref.id == started_rec.id for ref in cancelled.causal_refs)
-    conn.execute.assert_awaited()
+    conn.fetchrow.assert_awaited()
+    assert cancelled.context.workflow_id == workflow_id
 
 
 async def test_workflow_finish_replay_is_idempotent(ledger: InMemoryActionRecordStore):

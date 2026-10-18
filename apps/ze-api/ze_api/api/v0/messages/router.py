@@ -157,6 +157,7 @@ def _trace_to_response(trace) -> MessageTraceResponse:
         ],
         tier=_tier_to_response(getattr(trace, "tier", None)),
         screen=_screen_to_response(getattr(trace, "screen", None)),
+        input=_dataclass_to_response(getattr(trace, "input", None)),
     )
 
 
@@ -171,6 +172,10 @@ def _write_confirmation_row(row: dict) -> dict:
         "summary": str(row.get("summary", "")),
         "outcome": row.get("outcome", "denied"),
     }
+
+
+def _dataclass_to_response(value) -> dict | None:
+    return asdict(value) if value is not None else None
 
 
 def _screen_to_response(screen) -> dict | None:

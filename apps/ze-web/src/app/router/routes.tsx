@@ -1,7 +1,9 @@
 import { lazy, Suspense, type ComponentType } from "react";
 import { type RouteObject } from "react-router-dom";
 import { AskPage } from "@/pages/ask";
-import { DoingInterim } from "@/pages/doing";
+import { DoingPage } from "@/pages/doing";
+import { DoingGoalPage } from "@/pages/doing-goal";
+import { DoingWorkflowPage } from "@/pages/doing-workflow";
 import { GovernancePage } from "@/pages/governance";
 import { MindPage } from "@/pages/mind";
 import { MindEntityPage } from "@/pages/mind-entity";
@@ -21,13 +23,6 @@ function lazyPage(loader: () => Promise<{ default: ComponentType }>) {
     </Suspense>
   );
 }
-
-// Interim sections load the old pages; they live here because a page cannot import a page.
-const doingLoaders = {
-  goals: () => import("@/pages/goals").then((m) => ({ default: m.GoalsPage })),
-  workflows: () => import("@/pages/workflows").then((m) => ({ default: m.WorkflowsPage })),
-  skills: () => import("@/pages/skills").then((m) => ({ default: m.SkillsPage })),
-};
 
 // Only a development build routes the gallery; the production build drops the branch and its fixtures.
 const devRoutes: RouteObject[] = import.meta.env.DEV
@@ -50,15 +45,9 @@ export const routes: RouteObject[] = [
       { index: true, element: <WorldPage /> },
       { path: "ask", element: <AskPage /> },
       { path: "ask/:threadId", element: <AskPage /> },
-      {
-        path: "doing/goals/:goalId",
-        element: lazyPage(() => import("@/pages/goal-detail").then((m) => ({ default: m.GoalDetailPage }))),
-      },
-      {
-        path: "doing/workflows/:workflowId",
-        element: lazyPage(() => import("@/pages/workflow-detail").then((m) => ({ default: m.WorkflowDetailPage }))),
-      },
-      { path: "doing/*", element: <DoingInterim loaders={doingLoaders} fallback={notFound} /> },
+      { path: "doing", element: <DoingPage /> },
+      { path: "doing/goals/:goalId", element: <DoingGoalPage /> },
+      { path: "doing/workflows/:workflowId", element: <DoingWorkflowPage /> },
       { path: "mind", element: <MindPage /> },
       { path: "mind/:entityId", element: <MindEntityPage /> },
       { path: "governance", element: <GovernancePage /> },

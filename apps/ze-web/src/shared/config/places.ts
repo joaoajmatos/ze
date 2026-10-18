@@ -43,11 +43,14 @@ export const redirects: readonly Redirect[] = [
   { from: "/priority", to: "/" },
   { from: "/reminders", to: "/" },
   { from: "/world", to: "/" },
-  { from: "/goals", to: "/doing/goals" },
+  { from: "/goals", to: "/doing", hint: "goals" },
   { from: "/goals/:goalId", to: "/doing/goals/:goalId" },
-  { from: "/workflows", to: "/doing/workflows" },
+  { from: "/workflows", to: "/doing", hint: "workflows" },
   { from: "/workflows/:workflowId", to: "/doing/workflows/:workflowId" },
-  { from: "/skills", to: "/doing/skills" },
+  { from: "/skills", to: "/doing", hint: "skills" },
+  { from: "/doing/goals", to: "/doing", hint: "goals" },
+  { from: "/doing/workflows", to: "/doing", hint: "workflows" },
+  { from: "/doing/skills", to: "/doing", hint: "skills" },
   { from: "/procedures", to: "/mind" },
   { from: "/doing/procedures", to: "/mind" },
   { from: "/contacts", to: "/mind" },
@@ -64,11 +67,11 @@ export const redirects: readonly Redirect[] = [
 ];
 
 export function goalsPath(): string {
-  return "/doing/goals";
+  return redirectHintPath("/doing", "goals");
 }
 
 export function workflowsPath(): string {
-  return "/doing/workflows";
+  return redirectHintPath("/doing", "workflows");
 }
 
 export function goalPath(goalId: string): string {

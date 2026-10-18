@@ -31,13 +31,16 @@ def make_graph_input(
     keys overwrite checkpointed channel values, and those two must survive across
     turns so follow-ups keep conversation history (write_memory appends to them).
     """
-    modality = "voice" if raw.audio else "image" if raw.image else "text"
+    modality = "voice" if raw.voice else "image" if raw.image else "text"
     return {
         "prompt": raw.text or "",
         "session_id": session_id,
         "input_modality": modality,
-        "audio_data": raw.audio,
-        "audio_mime": raw.audio_mime,
+        "voice_input": (
+            {"duration_s": raw.voice.duration_s, "edited": raw.voice.edited}
+            if raw.voice
+            else None
+        ),
         "image_data": raw.image,
         "image_mime": raw.image_mime,
         "image_caption": None,

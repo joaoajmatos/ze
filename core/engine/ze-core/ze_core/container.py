@@ -71,8 +71,6 @@ class Container:
         prompt: str,
         thread_id: str,
         *,
-        audio_data: bytes | None = None,
-        audio_mime: str | None = None,
         image_data: bytes | None = None,
         image_mime: str | None = None,
         messages: list[dict] | None = None,
@@ -98,8 +96,6 @@ class Container:
         graph_input = make_graph_input(
             RawInput(
                 text=prompt,
-                audio=audio_data,
-                audio_mime=audio_mime,
                 image=image_data,
                 image_mime=image_mime,
             ),
