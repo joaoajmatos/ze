@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ze_components.actions import AskAction
 from ze_components.atoms import (
     caption,
     divider,
@@ -30,7 +31,12 @@ def consent(
             text(body),
             divider(),
             *scope_items,
-            row([primary(accept_label, "accept"), secondary(reject_label, "reject")]),
+            row(
+                [
+                    primary(accept_label, AskAction("accept")),
+                    secondary(reject_label, AskAction("reject")),
+                ]
+            ),
         ],
         gap="md",
     )

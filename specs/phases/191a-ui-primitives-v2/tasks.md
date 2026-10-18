@@ -19,7 +19,7 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main` (29f7f307 or later). `make install && make web-install`; `graphify update .`; `graphify affected` on `Button`, `PRIMITIVE_TYPES`, `render_tool`, `parsePrimitiveTree`, `PrimitiveRenderer`, `PrimitiveRendererActions`, `usePrimitiveRendererActions`, `usePluginScreenActions`, `run_undo`, `handle_confirm`. Then:
+- [x] T001 [L:lead] Branch from `main` (29f7f307 or later). `make install && make web-install`; `graphify update .`; `graphify affected` on `Button`, `PRIMITIVE_TYPES`, `render_tool`, `parsePrimitiveTree`, `PrimitiveRenderer`, `PrimitiveRendererActions`, `usePrimitiveRendererActions`, `usePluginScreenActions`, `run_undo`, `handle_confirm`. Then:
   - list every producer of `Button` and of each primitive type outside tests (the audit);
   - list every transport that carries `components` (WS message frame, `PluginPageResponse`, composed answers, anything else);
   - list every caller of `onButtonAction` and of `parsePrimitiveTree` (including `PluginSettingsSection`);
@@ -32,7 +32,7 @@
 
 ## Phase 2: Foundational (contract step, lane `lead`)
 
-- [ ] T002 [L:lead] Tests first in `core/kernel/ze-components/tests/test_actions.py` and `test_schema.py` (extend):
+- [x] T002 [L:lead] Tests first in `core/kernel/ze-components/tests/test_actions.py` and `test_schema.py` (extend):
   - each action kind serializes with `kind` and its fields; a `NavigateAction` route without a leading `/` raises `InvalidComponentError` (a `ZeError`);
   - `ToolAction.args` accepts only scalar values;
   - `Button(label, action=AskAction("hi"))` serializes `action` as an object; a string action raises;

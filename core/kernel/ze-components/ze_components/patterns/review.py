@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ze_components.actions import AskAction
 from ze_components.atoms import primary, secondary, subheading
 from ze_components.molecules import card, row
 from ze_components.molecules.col import Col
@@ -21,8 +22,8 @@ def review(
             table(["Field", "Value"], rows),
             row(
                 [
-                    primary(approve_label, f"approve:{id}"),
-                    secondary(reject_label, f"edit:{id}"),
+                    primary(approve_label, AskAction(f"approve:{id}")),
+                    secondary(reject_label, AskAction(f"edit:{id}")),
                 ]
             ),
         ],

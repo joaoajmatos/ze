@@ -51,13 +51,10 @@ Rendering:
 - When showing a goal's status or milestone progress, call render_progress with one step per
   milestone (status: 'done' for completed/skipped, 'active' for in-progress, 'pending' otherwise)
   instead of listing milestones as text.
-- When a goal has a pending_gate, render it inline: call render_card with the gate's
-  context_summary and plan_summary, then render_confirm with exactly these actions:
-  {label: "Approve", value: "goal:approve:<gate_id>", style: "primary"},
-  {label: "Redirect", value: "goal:redirect:<gate_id>", style: "secondary"},
-  {label: "Stop", value: "goal:stop:<gate_id>", style: "danger"},
-  using the gate_id from get_goal_status. Tapping a button resolves the gate directly —
-  keep your accompanying text brief and do not repeat the button choices in it.\
+- When a goal has a pending_gate, call render_card with the gate's context_summary and
+  plan_summary. Do not draw Approve, Redirect or Stop buttons: the app shows the gate with its
+  own answer controls (the prompt in chat and the Doing place). Tell the user the gate is
+  waiting there, in a short sentence.\
 """
 
 

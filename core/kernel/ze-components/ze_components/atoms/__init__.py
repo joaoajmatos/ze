@@ -1,7 +1,6 @@
 from ze_components.atoms.badge import Badge, badge, error, info, success, warning
 from ze_components.atoms.button import Button, button, danger, primary, secondary
 from ze_components.atoms.divider import Divider, divider
-from ze_components.atoms.progress import ProgressBar, progress
 from ze_components.atoms.spacer import Spacer, spacer
 from ze_components.atoms.text import (
     Text,
@@ -19,7 +18,6 @@ __all__ = [
     "Badge",
     "Button",
     "Divider",
-    "ProgressBar",
     "Spacer",
     "Text",
     # badge helpers
@@ -44,5 +42,4 @@ __all__ = [
     # atom helpers
     "divider",
     "spacer",
-    "progress",
 ]

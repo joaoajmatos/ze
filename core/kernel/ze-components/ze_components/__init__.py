@@ -1,9 +1,17 @@
+from ze_components.actions import (
+    ACTION_TYPES,
+    AskAction,
+    ComposeAction,
+    NavigateAction,
+    PrimitiveAction,
+    ToolAction,
+)
+
 # ── Atoms ─────────────────────────────────────────────────────────────────────
 from ze_components.atoms import (
     Badge,
     Button,
     Divider,
-    ProgressBar,
     Spacer,
     Text,
     badge,
@@ -18,7 +26,6 @@ from ze_components.atoms import (
     label,
     muted,
     primary,
-    progress,
     secondary,
     spacer,
     subheading,
@@ -41,26 +48,40 @@ from ze_components.molecules import (
 
 # ── Organisms ─────────────────────────────────────────────────────────────────
 from ze_components.organisms import (
+    Card,
     Chart,
     ChartPoint,
     ClaimCard,
+    ClaimItem,
+    ClaimList,
     ClaimTimeline,
     ConnectionEvidence,
     ConnectionItem,
     Connections,
+    EntityFacet,
+    FacetFact,
     Form,
     FormField,
     Headline,
+    RowAction,
+    Sparkline,
+    Stat,
+    StatRow,
     StepItem,
     Steps,
     Table,
+    card_with_actions,
     chart,
     claim_card,
+    claim_list,
     claim_timeline,
     connections,
+    entity_facet,
     form,
     form_field,
     headline,
+    sparkline,
+    stat_row,
     steps,
     table,
 )
@@ -89,6 +110,8 @@ from ze_components.claims import (
     headline_text,
 )
 
+UI_CONTRACT_VERSION = "2.0"
+
 # ── Registry (for codegen and schema generation) ──────────────────────────────
 PRIMITIVE_SUB_TYPES: list[type] = [
     ClaimPosture,
@@ -100,6 +123,11 @@ PRIMITIVE_SUB_TYPES: list[type] = [
     ConnectionItem,
     StepItem,
     ChartPoint,
+    FacetFact,
+    Stat,
+    ClaimItem,
+    RowAction,
+    *ACTION_TYPES,
 ]
 
 PRIMITIVE_TYPES: list[type] = [
@@ -110,7 +138,6 @@ PRIMITIVE_TYPES: list[type] = [
     Divider,
     Spacer,
     Button,
-    ProgressBar,
     Table,
     Form,
     Connections,
@@ -119,14 +146,41 @@ PRIMITIVE_TYPES: list[type] = [
     Headline,
     ClaimCard,
     ClaimTimeline,
+    EntityFacet,
+    StatRow,
+    ClaimList,
+    Sparkline,
+    Card,
 ]
 
 __all__ = [
+    # Actions
+    "ACTION_TYPES",
+    "AskAction",
+    "ComposeAction",
+    "NavigateAction",
+    "PrimitiveAction",
+    "ToolAction",
+    "UI_CONTRACT_VERSION",
+    # New organisms
+    "Card",
+    "ClaimItem",
+    "ClaimList",
+    "EntityFacet",
+    "FacetFact",
+    "RowAction",
+    "Sparkline",
+    "Stat",
+    "StatRow",
+    "card_with_actions",
+    "claim_list",
+    "entity_facet",
+    "sparkline",
+    "stat_row",
     # Atoms — types
     "Badge",
     "Button",
     "Divider",
-    "ProgressBar",
     "Spacer",
     "Text",
     # Atoms — helpers
@@ -142,7 +196,6 @@ __all__ = [
     "label",
     "muted",
     "primary",
-    "progress",
     "secondary",
     "spacer",
     "subheading",
