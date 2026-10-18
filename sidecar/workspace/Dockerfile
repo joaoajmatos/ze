@@ -24,4 +24,4 @@ ENV WORKSPACE_ROOT=/workspace \
 EXPOSE 8080
 
 USER root
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--ws-max-size", "2097152"]

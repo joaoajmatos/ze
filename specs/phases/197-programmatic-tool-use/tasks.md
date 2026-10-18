@@ -112,7 +112,7 @@
   - the scratch dir is gone after `end`.
 
   Implement `sidecar/workspace/scripts.py`, `script_runtime/`, and the route in `main.py`; add `websockets` to `requirements.txt` only if the test client needs it.
-- [ ] T019 [L:sandbox] [US2] Tests first:
+- [x] T019 [L:sandbox] [US2] Tests first:
   - `timeout_seconds: 1` with `while True: pass` ends `timeout`, and no process of the script user remains (a child started with `os.setsid()` is killed too; tested by pid when not root);
   - `cancel` ends `killed`;
   - a request line over 256 KB, a `finish` line over 1 MiB, malformed JSON, and more than `2 × 20` request lines each end `bad_request`;

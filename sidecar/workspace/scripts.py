@@ -20,6 +20,12 @@ RUNTIME_DIR = Path(__file__).resolve().parent / "script_runtime"
 TICK_SECONDS = 0.1
 STDERR_RING_BYTES = 64 * 1024
 STDERR_TAIL_LINES = 20
+MAX_REQUEST_BYTES = 256 * 1024
+MAX_REPLY_BYTES = 1024 * 1024
+MAX_FINISH_BYTES = 1024 * 1024
+MAX_INNER_CALLS = 20
+SCRATCH_CAP_BYTES = 32 * 1024 * 1024
+WS_MAX_SIZE = 2 * 1024 * 1024
 
 
 class ScriptSlot:
@@ -82,6 +88,17 @@ async def _spawn(argv: list[str], **kwargs: Any) -> asyncio.subprocess.Process:
     return await asyncio.create_subprocess_exec(*argv, **kwargs)
 
 
+def scratch_bytes(path: Path) -> int:
+    total = 0
+    for root, _dirs, files in os.walk(path):
+        for name in files:
+            try:
+                total += os.lstat(os.path.join(root, name)).st_size
+            except OSError:
+                pass
+    return total
+
+
 def _tail(ring: bytearray) -> str:
     text = bytes(ring).decode("utf-8", errors="replace")
     return "\n".join(text.splitlines()[-STDERR_TAIL_LINES:])
@@ -119,6 +136,7 @@ class ScriptRun:
         self.stderr = bytearray()
         self.pending: dict[int, asyncio.Future] = {}
         self.proc: asyncio.subprocess.Process | None = None
+        self.scratch = Path()
 
     def end(self, status: str, **extra: Any) -> None:
         if self.result is None:
@@ -136,7 +154,7 @@ class ScriptRun:
         return scratch
 
     async def run(self) -> dict:
-        scratch = self._prepare()
+        scratch = self.scratch = self._prepare()
         loop = asyncio.get_running_loop()
         req_r, req_w = os.pipe()
         rep_r, rep_w = os.pipe()
@@ -161,7 +179,7 @@ class ScriptRun:
         finally:
             os.close(req_w)
             os.close(rep_r)
-        req_reader = asyncio.StreamReader(limit=2**20)
+        req_reader = asyncio.StreamReader(limit=MAX_FINISH_BYTES + MAX_REQUEST_BYTES)
         await loop.connect_read_pipe(
             lambda: asyncio.StreamReaderProtocol(req_reader), os.fdopen(req_r, "rb", 0)
         )
@@ -200,10 +218,23 @@ class ScriptRun:
     async def _relay_requests(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
+        lines = 0
         while True:
-            line = await reader.readline()
+            try:
+                line = await reader.readline()
+            except ValueError:
+                self.end("bad_request", exception="request line too long")
+                return
             if not line:
                 break
+            lines += 1
+            if lines > 2 * MAX_INNER_CALLS:
+                self.end("bad_request", exception="too many request lines")
+                return
+            cap = MAX_FINISH_BYTES if line.startswith(b'{"finish"') else MAX_REQUEST_BYTES
+            if len(line) > cap:
+                self.end("bad_request", exception="request line too long")
+                return
             try:
                 msg = json.loads(line)
             except ValueError:
@@ -226,6 +257,8 @@ class ScriptRun:
             self.pending[seq] = waiter
             await self.ws.send_json({"type": "call", "seq": seq, "tool": tool, "args": args})
             reply = await waiter
+            if len(json.dumps(reply)) > MAX_REPLY_BYTES:
+                reply = {"seq": seq, "ok": False, "error": "result_too_large"}
             writer.write((json.dumps(reply) + "\n").encode("utf-8"))
             await writer.drain()
         await self.proc.wait()  # type: ignore[union-attr]
@@ -236,6 +269,9 @@ class ScriptRun:
         assert self.proc is not None
         code = self.proc.returncode
         tail = _tail(self.stderr)
+        if scratch_bytes(self.scratch) > SCRATCH_CAP_BYTES:
+            self.end("resource_limit", exception="scratch size", stderr_tail=tail)
+            return
         if code == 0:
             finish = self.finish_line
             if finish is None:
@@ -274,6 +310,9 @@ class ScriptRun:
             await asyncio.sleep(TICK_SECONDS)
             if time.monotonic() >= deadline:
                 self.end("timeout", stderr_tail=_tail(self.stderr))
+                return
+            if scratch_bytes(scratch) > SCRATCH_CAP_BYTES:
+                self.end("resource_limit", exception="scratch size", stderr_tail=_tail(self.stderr))
                 return
 
 
