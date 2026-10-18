@@ -123,7 +123,7 @@ export type Name1 = string;
 export type ResultSnippet = string;
 export type DurationMs = number;
 export type Success = boolean;
-export type Access = "read" | "write" | "delegate" | "unknown";
+export type Access = "read" | "write" | "delegate" | "script" | "unknown";
 export type Reversibility = ("reversible" | "irreversible") | null;
 export type UndoTool = string | null;
 export type Gate =
@@ -141,11 +141,18 @@ export type Agent2 = string | null;
 export type CallIndex = number;
 export type CallId = string;
 export type StartOffsetMs = number | null;
+export type ParentCallId = string | null;
+export type Source1 = string;
+export type SourceCut = boolean;
+export type Outcome1 = string;
+export type Limit = ("wall_time" | "inner_calls" | "spend" | "result_size") | null;
+export type SourceHash = string;
+export type ProcedureId = string | null;
 export type ToolCalls = ToolCallTraceResponse[];
 export type ToolDurationMs = number;
 export type SkillId = string;
 export type Name2 = string;
-export type Source1 = string;
+export type Source2 = string;
 export type Trigger = string;
 export type Similarity = number | null;
 export type ScriptRan = boolean;
@@ -163,7 +170,7 @@ export type ScriptRan1 = boolean;
 export type Unavailable = boolean;
 export type Planned = string[] | null;
 export type InvocationId = string;
-export type ProcedureId = string;
+export type ProcedureId1 = string;
 export type VersionId = string;
 export type ConductorHint =
   | {
@@ -201,7 +208,7 @@ export type Agent4 = string;
 export type Tool3 = string | null;
 export type Effect = string | null;
 export type Summary1 = string;
-export type Outcome1 = "approved" | "edited" | "pre_approved" | "denied" | "timed_out" | "superseded" | "refused";
+export type Outcome2 = "approved" | "edited" | "pre_approved" | "denied" | "timed_out" | "superseded" | "refused";
 export type WriteConfirmations = WriteConfirmationOutcomeResponse[];
 export type Replaces1 = string;
 export type Entries1 = RollbackEntryResponse[];
@@ -260,7 +267,7 @@ export type TelemetryPartial = boolean;
 export type Type12 = "notification";
 export type Id6 = string;
 export type EventType = string;
-export type Source2 = string;
+export type Source3 = string;
 export type Title2 = string;
 export type Body = string;
 export type TargetType = string | null;
@@ -621,6 +628,20 @@ export interface ToolCallTraceResponse {
   call_index?: CallIndex;
   call_id?: CallId;
   start_offset_ms?: StartOffsetMs;
+  parent_call_id?: ParentCallId;
+  script?: ScriptTraceResponse | null;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "ScriptTraceResponse".
+ */
+export interface ScriptTraceResponse {
+  source: Source1;
+  source_cut: SourceCut;
+  outcome: Outcome1;
+  limit?: Limit;
+  source_hash: SourceHash;
+  procedure_id?: ProcedureId;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -629,7 +650,7 @@ export interface ToolCallTraceResponse {
 export interface SkillUsageTraceResponse {
   skill_id: SkillId;
   name: Name2;
-  source: Source1;
+  source: Source2;
   trigger: Trigger;
   similarity?: Similarity;
   script_ran?: ScriptRan;
@@ -670,7 +691,7 @@ export interface WorkspaceFileTraceResponse {
  */
 export interface ProcedureUsageTraceResponse {
   invocation_id: InvocationId;
-  procedure_id: ProcedureId;
+  procedure_id: ProcedureId1;
   version_id: VersionId;
 }
 /**
@@ -728,7 +749,7 @@ export interface WriteConfirmationOutcomeResponse {
   tool?: Tool3;
   effect?: Effect;
   summary?: Summary1;
-  outcome: Outcome1;
+  outcome: Outcome2;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -852,7 +873,7 @@ export interface WsNotificationFrame {
   type: Type12;
   id: Id6;
   event_type: EventType;
-  source: Source2;
+  source: Source3;
   title: Title2;
   body: Body;
   target_type: TargetType;

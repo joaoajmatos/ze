@@ -100,12 +100,22 @@ class MemoryChunkTrace:
 
 
 @dataclass
+class ScriptTrace:
+    source: str  # at most 8,000 characters
+    source_cut: bool
+    outcome: str  # a ScriptOutcome status, or a refusal such as "source_too_long"
+    limit: str | None  # "wall_time" | "inner_calls" | "spend" | "result_size"
+    source_hash: str
+    procedure_id: str | None
+
+
+@dataclass
 class ToolCallTrace:
     name: str
     result_snippet: str  # first 200 chars of result
     duration_ms: int
     success: bool
-    access: str = "unknown"  # "read" | "write" | "delegate" | "unknown"
+    access: str = "unknown"  # "read" | "write" | "delegate" | "script" | "unknown"
     reversibility: str | None = None  # "reversible" | "irreversible" | None
     undo_tool: str | None = None
     gate: str = "none"  # "none" | "approved" | "denied" | "refused" | "expired"
@@ -116,6 +126,8 @@ class ToolCallTrace:
     call_index: int = 0  # position in the flattened call list
     call_id: str = ""  # joins a live tool row to this committed one
     start_offset_ms: int | None = None  # from turn start; null when the recorder was partial
+    parent_call_id: str | None = None  # the script step an inner call or proposed write belongs to
+    script: ScriptTrace | None = None  # set on the script step row only
 
 
 @dataclass

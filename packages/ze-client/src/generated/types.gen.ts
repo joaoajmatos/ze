@@ -2679,6 +2679,36 @@ export type ScreenTraceResponse = {
 };
 
 /**
+ * ScriptTraceResponse
+ */
+export type ScriptTraceResponse = {
+    /**
+     * Source
+     */
+    source: string;
+    /**
+     * Source Cut
+     */
+    source_cut: boolean;
+    /**
+     * Outcome
+     */
+    outcome: string;
+    /**
+     * Limit
+     */
+    limit?: 'wall_time' | 'inner_calls' | 'spend' | 'result_size' | null;
+    /**
+     * Source Hash
+     */
+    source_hash: string;
+    /**
+     * Procedure Id
+     */
+    procedure_id?: string | null;
+};
+
+/**
  * SessionListResponse
  */
 export type SessionListResponse = {
@@ -3147,7 +3177,7 @@ export type ToolCallTraceResponse = {
     /**
      * Access
      */
-    access?: 'read' | 'write' | 'delegate' | 'unknown';
+    access?: 'read' | 'write' | 'delegate' | 'script' | 'unknown';
     /**
      * Reversibility
      */
@@ -3180,6 +3210,11 @@ export type ToolCallTraceResponse = {
      * Start Offset Ms
      */
     start_offset_ms?: number | null;
+    /**
+     * Parent Call Id
+     */
+    parent_call_id?: string | null;
+    script?: ScriptTraceResponse | null;
 };
 
 /**

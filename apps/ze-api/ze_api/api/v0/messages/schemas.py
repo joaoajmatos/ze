@@ -49,12 +49,21 @@ class MemoryChunkTraceResponse(BaseModel):
     extraction_confidence: float | None = None
 
 
+class ScriptTraceResponse(BaseModel):
+    source: str
+    source_cut: bool
+    outcome: str
+    limit: Literal["wall_time", "inner_calls", "spend", "result_size"] | None = None
+    source_hash: str
+    procedure_id: str | None = None
+
+
 class ToolCallTraceResponse(BaseModel):
     name: str
     result_snippet: str
     duration_ms: int
     success: bool
-    access: Literal["read", "write", "delegate", "unknown"] = "unknown"
+    access: Literal["read", "write", "delegate", "script", "unknown"] = "unknown"
     reversibility: Literal["reversible", "irreversible"] | None = None
     undo_tool: str | None = None
     gate: Literal[
@@ -73,6 +82,8 @@ class ToolCallTraceResponse(BaseModel):
     call_index: int = 0
     call_id: str = ""
     start_offset_ms: int | None = None
+    parent_call_id: str | None = None
+    script: ScriptTraceResponse | None = None
 
 
 class SkillUsageTraceResponse(BaseModel):

@@ -467,3 +467,55 @@ def test_parse_trace_before_187b_has_empty_telemetry():
     assert trace.stages == [] and trace.usage is None
     assert trace.routing_scores == [] and trace.routing_thresholds is None
     assert trace.telemetry_partial is False
+
+
+def test_script_step_trace_round_trips_and_old_traces_read_none():
+    from dataclasses import asdict
+
+    from ze_core.conversation.messages.store import _parse_trace
+    from ze_core.conversation.messages.types import (
+        MessageTrace,
+        ScriptTrace,
+        ToolCallTrace,
+    )
+
+    trace = MessageTrace(
+        agent="finance",
+        routing_method="embedding",
+        confidence=0.9,
+        score_gap=0.2,
+        is_compound=False,
+        subtasks=[],
+        tool_calls=[
+            ToolCallTrace(
+                name="run_tool_script",
+                result_snippet="{}",
+                duration_ms=9,
+                success=True,
+                access="script",
+                call_id="step",
+                script=ScriptTrace(
+                    source="x = 1",
+                    source_cut=False,
+                    outcome="ok",
+                    limit=None,
+                    source_hash="abc",
+                    procedure_id=None,
+                ),
+            ),
+            ToolCallTrace(
+                name="get_transactions",
+                result_snippet="[]",
+                duration_ms=2,
+                success=True,
+                access="read",
+                parent_call_id="step",
+            ),
+        ],
+    )
+    parsed = _parse_trace(asdict(trace))
+    assert parsed == trace
+    assert isinstance(parsed.tool_calls[0].script, ScriptTrace)
+
+    old = ToolCallTrace(name="t", result_snippet="", duration_ms=1, success=True)
+    assert (old.parent_call_id, old.script) == (None, None)

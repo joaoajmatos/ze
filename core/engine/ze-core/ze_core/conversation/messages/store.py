@@ -30,6 +30,7 @@ from ze_core.conversation.messages.types import (
     InputTrace,
     ScreenTrace,
     TierTrace,
+    ScriptTrace,
     ToolCallTrace,
     WorkspaceUsageTrace,
 )
@@ -291,6 +292,17 @@ class PostgresMessageStore:
         return result
 
 
+def _parse_tool_call(raw: dict, allowed: set[str]) -> ToolCallTrace:
+    fields_ = {k: v for k, v in raw.items() if k in allowed}
+    script = fields_.get("script")
+    if isinstance(script, dict):
+        script_allowed = {f.name for f in fields(ScriptTrace)}
+        fields_["script"] = ScriptTrace(
+            **{k: v for k, v in script.items() if k in script_allowed}
+        )
+    return ToolCallTrace(**fields_)
+
+
 def _parse_trace(data: dict) -> MessageTrace:
     workspace_raw = data.get("workspace")
     workspace = None
@@ -312,7 +324,7 @@ def _parse_trace(data: dict) -> MessageTrace:
         subtasks=data.get("subtasks", []),
         memory_chunks=[MemoryChunkTrace(**c) for c in data.get("memory_chunks", [])],
         tool_calls=[
-            ToolCallTrace(**{k: v for k, v in t.items() if k in tool_call_fields})
+            _parse_tool_call(t, tool_call_fields)
             for t in data.get("tool_calls", [])
         ],
         tool_duration_ms=data.get("tool_duration_ms", 0),
