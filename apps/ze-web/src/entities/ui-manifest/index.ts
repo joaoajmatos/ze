@@ -1,4 +1,5 @@
-export type { UiContribution, UiManifest } from "./model/types";
+export type { ModuleSlot, ModuleSubject, UiContribution, UiManifest, UiModuleResponse } from "./model/types";
+export { modulesForSlot, presets, subjectKey } from "./model/select";
 export { useUiManifestQuery } from "./api/useUiManifestQuery";
-export { usePluginPageQuery } from "./api/usePluginPageQuery";
+export { useUiModuleQuery } from "./api/useUiModuleQuery";
 export { usePluginSettingsQuery } from "./api/usePluginSettingsQuery";

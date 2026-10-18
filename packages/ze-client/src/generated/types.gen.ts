@@ -6488,6 +6488,22 @@ export type GetNewsSettingsResponses = {
 
 export type GetNewsSettingsResponse = GetNewsSettingsResponses[keyof GetNewsSettingsResponses];
 
+export type GetContactsPageData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/contacts/page';
+};
+
+export type GetContactsPageResponses = {
+    /**
+     * Successful Response
+     */
+    200: PluginPageResponse;
+};
+
+export type GetContactsPageResponse = GetContactsPageResponses[keyof GetContactsPageResponses];
+
 export type ListRemindersData = {
     body?: never;
     path?: never;

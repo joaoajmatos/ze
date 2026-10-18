@@ -245,6 +245,11 @@ class PersonalPlugin(ZePlugin):
             "thread_channel_map": self.thread_channel_map,
         }
 
+    def rest_routes(self) -> list:
+        from ze_personal.api.routes import router
+
+        return [router]
+
     def screen_resolvers(self) -> list[Any]:
         from ze_personal.contacts.screen_resolvers import build_screen_resolvers
 

@@ -50,14 +50,14 @@
     - `request_module_refresh(interface, "x.facet")` calls `send_refresh("module:x.facet")`, and a failing interface is logged, not raised; `NativeAppInterface.send_refresh` sends the `refresh` frame.
 
   Implement `ze_plugin/ui.py` (delete the page kind, `path`, `page_operation_id`, `show_in_mobile_nav`, `CORE_RESERVED_NAV_PATHS`), the `ze_sdk/ui.py` re-export (lines 2 and 10), the `api/v0/system` schemas and route description, the new `api/v0/ui_modules` route, and the log fields in `wiring/agents.py:224-232` and `wiring/container.py:768-769`. Delete News's page contribution in `ze_news/plugin.py` so startup passes (lane `news` adds the preset and module). Delete ze-personal's `getContactsPage` (`api/routes.py:24-35`), `ui/page.py`, its `PluginPageResponse` copy and their tests. Remove the `plugin` place from `WsScreenContext.place` (`api/ws/schemas.py:227`) and `PLACES` (`ze_agents/screen.py:25`). Add `AppInterface.send_refresh`, `NativeAppInterface.send_refresh` and `ze_sdk.ui.request_module_refresh`. Point `apps/ze-api/tests/api/test_openapi_export.py:11,27`, `apps/ze-api/tests/test_plugin_routes.py:28` and `packages/ze-client/src/sdk-dispatch.test.ts` at `getNewsSettings`. Run `make codegen`; commit the generated client with the task.
-- [ ] T003 [L:lead] Tests first:
+- [x] T003 [L:lead] Tests first:
   - `entities/ui-manifest/model/select.test.ts`: `modulesForSlot(manifest, "mind.entity")` returns that slot's modules in order; an empty or absent manifest gives `[]`; `presets(manifest)` returns the presets;
   - `entities/ui-manifest/api/useUiModuleQuery.test.ts`: the query key includes the module id and subject, and the request passes the subject query fields;
   - `shared/lib/query-keys.test.ts`: `refreshKeysForScreen("module:x.facet")` returns the `uiModule("x.facet")` prefix key; `queryKeys.pluginPage` and the `contacts` plugin-page expectation (line 41) are gone;
   - `app/router/routes.test.tsx`: no top-level `:pluginPath` route; `/notes` renders not found; `/news` redirects to `/ask` (in `shared/config/places.test.ts` too).
 
   Implement in `entities/ui-manifest`, `query-keys.ts` (delete `pluginPage`), `routes.tsx` and `places.ts` (drop the `plugin` comment at line 23). Add `widgets/plugin-module/index.ts` with the `PluginModuleSlot({ slot, subject })` stub (renders nothing), and `apps/ze-web/src/test/fixtures/manifest.ts` (one module per slot, one preset, one settings section).
-- [ ] T004 [L:lead] Delete `pages/plugin-page` (route, page and tests) and `widgets/plugin-screen`'s page-header use if nothing else needs it (`PluginSettingsSection` keeps working); run `make test-web` and `make typecheck-web`.
+- [x] T004 [L:lead] Delete `pages/plugin-page` (route, page and tests) and `widgets/plugin-screen`'s page-header use if nothing else needs it (`PluginSettingsSection` keeps working); run `make test-web` and `make typecheck-web`.
 
 **Checkpoint**: lanes start.
 

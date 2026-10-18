@@ -10,7 +10,7 @@ def test_collect_static_plugin_routers_includes_news():
     paths = [route.path for router in routers for route in router.routes]
     assert "/api/v0/news/settings" in paths
     assert "/api/v0/news/page" not in paths
-    assert "/api/v0/contacts/page" not in paths
+    assert "/api/v0/contacts/page" in paths
     assert "/api/v0/reminders/page" not in paths
 
 
@@ -26,7 +26,7 @@ def test_collect_openapi_operation_ids_has_settings_and_no_plugin_pages():
     operation_ids = collect_openapi_operation_ids()
     assert "getNewsSettings" in operation_ids
     assert "getNewsPage" not in operation_ids
-    assert "getContactsPage" not in operation_ids
+    assert "getContactsPage" in operation_ids
     assert "getUiModule" in operation_ids
     assert "getRemindersPage" not in operation_ids
 
