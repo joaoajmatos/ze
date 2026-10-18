@@ -1,6 +1,5 @@
-import { parsePrimitiveTree, type PrimitiveTree } from "@myguyze/ze-ui";
 import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
-import { usePrimitiveActions } from "@/features/primitive-tree";
+import { parseTree, TreeNote, usePrimitiveActions } from "@/features/primitive-tree";
 import type { UiContribution } from "@/entities/ui-manifest";
 import { usePluginPageQuery } from "@/entities/ui-manifest";
 import { useSetPageHeader } from "@/shared/lib";
@@ -15,14 +14,8 @@ export function PluginScreen({ entry }: { entry: UiContribution }) {
 
   useSetPageHeader({ title: data?.title ?? entry.label, icon: Icon });
 
-  let nodes: PrimitiveTree | null = null;
-  if (data?.tree) {
-    try {
-      nodes = parsePrimitiveTree(data.tree);
-    } catch {
-      nodes = null;
-    }
-  }
+  const parsed = data?.tree ? parseTree(data.tree, data.ui_version) : null;
+  const nodes = parsed?.status === "ok" ? parsed.nodes : null;
 
   return (
     <div className="px-4 py-6 max-w-2xl mx-auto">
@@ -43,7 +36,9 @@ export function PluginScreen({ entry }: { entry: UiContribution }) {
         <PrimitiveTreeRenderer nodes={nodes} actions={actions} />
       )}
 
-      {!isLoading && !isError && data && !nodes && (
+      {!isLoading && !isError && parsed?.status === "legacy-failed" && <TreeNote status="legacy-failed" />}
+
+      {!isLoading && !isError && data && parsed?.status !== "ok" && parsed?.status !== "legacy-failed" && (
         <ErrorState message="This page returned an invalid UI tree." onRetry={() => void refetch()} />
       )}
     </div>

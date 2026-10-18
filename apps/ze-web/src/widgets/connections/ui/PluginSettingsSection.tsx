@@ -1,8 +1,7 @@
-import { parsePrimitiveTree, type PrimitiveTree } from "@myguyze/ze-ui";
 import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
 import { ChevronDown } from "lucide-react";
 import { createElement, useState } from "react";
-import { usePrimitiveActions } from "@/features/primitive-tree";
+import { parseTree, TreeNote, usePrimitiveActions } from "@/features/primitive-tree";
 import type { UiContribution } from "@/entities/ui-manifest";
 import { usePluginSettingsQuery } from "@/entities/ui-manifest";
 import { cn } from "@/shared/lib/cn";
@@ -14,14 +13,8 @@ export function PluginSettingsSection({ entry }: { entry: UiContribution }) {
   const { data, isLoading, isError, refetch } = usePluginSettingsQuery(entry, open);
   const actions = usePrimitiveActions();
 
-  let nodes: PrimitiveTree | null = null;
-  if (data?.tree) {
-    try {
-      nodes = parsePrimitiveTree(data.tree);
-    } catch {
-      nodes = null;
-    }
-  }
+  const parsed = data?.tree ? parseTree(data.tree, data.ui_version) : null;
+  const nodes = parsed?.status === "ok" ? parsed.nodes : null;
 
   return (
     <div className="gov-stack" style={{ borderTop: "1px solid var(--hair)", paddingTop: 12 }}>
@@ -52,7 +45,9 @@ export function PluginSettingsSection({ entry }: { entry: UiContribution }) {
         <PrimitiveTreeRenderer nodes={nodes} actions={actions} />
       )}
 
-      {open && !isLoading && !isError && data && !nodes && (
+      {open && !isLoading && !isError && parsed?.status === "legacy-failed" && <TreeNote status="legacy-failed" />}
+
+      {open && !isLoading && !isError && data && parsed?.status !== "ok" && parsed?.status !== "legacy-failed" && (
         <ErrorState message="Invalid settings UI tree." onRetry={() => void refetch()} />
       )}
     </div>
