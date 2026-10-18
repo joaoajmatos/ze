@@ -120,8 +120,8 @@ class NewsAgent(BaseAgent):
     name = "news"
     display_name = "News"
     description = """
-      News headlines and daily briefings from curated sources.
-      Use for: "what's in the news today", "any headlines", "morning news briefing",
+      News headlines and digests from curated sources.
+      Use for: "what's in the news today", "any headlines",
       "latest news", "news digest", "what's happening in the world", "tech news today",
       "give me a news summary", "what's trending", "top stories today".
       For news digest and headline summaries only — not for factual research or web search.

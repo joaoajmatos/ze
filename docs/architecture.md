@@ -634,6 +634,8 @@ Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompti
 | Goal milestone progress | After each milestone | Short completion line, accountability push via `ProactiveNotifier` |
 | News fetch | Every 30 min | Ingest and embed new RSS articles |
 
+Ze keeps the sent briefing as a notification. Ask "how did the briefing do?" and the companion reads it with `get_briefing`: when it was sent, whether it was held, whether you marked it read in the notification center, and what it covered.
+
 See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full lifecycle and config.
 
 ---

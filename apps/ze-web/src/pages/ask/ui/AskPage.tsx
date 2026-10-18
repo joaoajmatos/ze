@@ -81,6 +81,10 @@ function AskThread({ threadId }: { threadId: string }) {
     setWhy({ messageId, target });
     if (narrow) setSheet(true);
   };
+  const selectReply = (messageId: string) => {
+    setSelectedId(messageId);
+    if (narrow) setSheet(true);
+  };
   const empty = thread.messages.length === 0 && thread.historyLoaded;
 
   const rail = (
@@ -104,7 +108,7 @@ function AskThread({ threadId }: { threadId: string }) {
           threadId={threadId}
           compact={narrow}
           selectedMessageId={selectedId}
-          onSelect={setSelectedId}
+          onSelect={selectReply}
           onChatAbout={chatAbout}
           onWhy={openWhy}
         />
