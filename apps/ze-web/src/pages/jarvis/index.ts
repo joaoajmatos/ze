@@ -1,1 +1,0 @@
-export { JarvisApp } from "./JarvisApp";
