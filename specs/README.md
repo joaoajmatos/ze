@@ -234,7 +234,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 189 | [Mind (W5)](phases/189-web-mind/spec.md) | ✅ Implemented |
 | 190 | [Governance (W6)](phases/190-web-governance/spec.md) | ✅ Implemented |
 | 191a | [UI Primitives v2](phases/191a-ui-primitives-v2/spec.md) | 🔲 Ready to implement (runs now; replaces the parked 191) |
-| 191b | [Plugin Modules in Slots](phases/191b-plugin-modules/spec.md) | 🔲 Draft (in review; after 191a) |
+| 191b | [Plugin Modules in Slots](phases/191b-plugin-modules/spec.md) | 🔲 Ready to implement (after 191a; run slot needs 188) |
 | 192 | [Voice Input Transport (B3)](phases/192-voice-transport/spec.md) | 🔲 Ready to implement (parallel; before 193) |
 | 193 | [Voice and Polish (W8)](phases/193-web-voice-polish/spec.md) | 🔲 Ready to implement (after 186–190, 192) |
 | 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | 🔲 Ready to implement (parallel; zc040 reserved) |

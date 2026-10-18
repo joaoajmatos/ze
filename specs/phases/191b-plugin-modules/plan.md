@@ -91,7 +91,8 @@ From `git grep` on `main` e4d57414 (T001 re-runs `graphify affected` after 191a 
     - exception → 502 with detail "<Plugin> could not load."
   
   A failure is logged (`ui_module_failed`). Schemas `UiModuleResponse`, `UiManifestResponse` (`modules`, `presets`, `settings_sections`).
-- The same tool-action binding and posture checks run on plugin settings trees: `api/v0/ui_modules/validate.py` holds the validator, and T001 confirms where plugin route responses can pass through it (the plugin router mount in ze-api); a settings tree that fails is refused with the same 502 line.
+- The tool-action binding and the posture-pair check live in `ze_plugin/ui_validate.py` as `validate_plugin_tree(plugin, components)` (re-exported by `ze_sdk.ui`), so both sides can call it: the core module route calls it, and then also recomputes tone and label (ze-api has ze-components). Plugin settings come from each plugin's own REST route, which core does not see, so News's settings route calls `validate_plugin_tree` before returning and raises on failure, and a fixture-plugin test proves the News settings tree passes it. The spec's guarantee for settings trees is therefore "validated by the plugin through the shared check, and tested"; core enforces module trees.
+- A plugin's agents: the registered agents whose class `__module__` starts with one of the plugin's `agent_module_paths()` (so `ze_news.agents.agent` → `news`). A plugin that registers no agent can emit only navigate, ask and compose actions in its trees.
 - `NativeAppInterface.send_refresh(screen)` broadcasts `{ "type": "refresh", "screen": screen }` to the connected client.
 - `build_ui_manifest` and the container log the new fields.
 
@@ -103,7 +104,7 @@ From `git grep` on `main` e4d57414 (T001 re-runs `graphify affected` after 191a 
   - the module `ze_news.sources` (slot `mind.entity`, label "Sources"). Its provider reads the store at call time and returns `applies=False` when the store is not ready, for entity types other than `topic`, or when nothing matches, else a `claim_list`: one item per article with title, source and date, posture `fact`/`live_search` set by code, and the action `navigate` to nothing; the article link is shown as text;
   - `ze_news.settings` (unchanged).
 - Deleted: `getNewsPage`, `ui/page.py`, its tests, and the page cases in `tests/test_api_routes.py`.
-- `NewsFetchJob` receives the app interface at construction (from the container in `startup()`) and calls `request_module_refresh(interface, "ze_news.sources")` after a run whose `upsert` returned new articles.
+- `NewsFetchJob` is built before startup without an interface (`plugin.py:74`); `startup(container)` binds it with `job.bind_interface(container.interface)`. After a run whose `upsert` returned new articles it calls `request_module_refresh(interface, "ze_news.sources")`; with no interface bound it skips the refresh, with no error.
 - `eval/calibration/routing.jsonl` row `single-news-sources-en` ("What's new in my sources?" → `news`), checked offline with `make calibrate-routing ARGS=--check-sets` (a live run costs credits and is not a gate). The preset sends `{ origin: "preset" }` with no `compose`, so nothing reroutes it: the screen note records the origin and normal routing picks news.
 
 ### ze-web
@@ -165,7 +166,7 @@ apps/ze-web/src/app/router/routes.tsx ; shared/config/places.ts ; shared/lib/que
 
 | Lane | Model / role | Owns (disjoint) | Tasks | Starts after | Reviewer |
 |---|---|---|---|---|---|
-| lead | Sonnet ENG lead | `ze_plugin/ui.py`, `ze_sdk/ui.py`, `api/v0/system/*`, `api/v0/ui_modules/*`, `wiring/{agents,container}.py`, `packages/ze-client/src/generated/*` and `sdk-dispatch.test.ts`, the ze-api tests naming the manifest or `getNewsPage`, `entities/ui-manifest/*`, `app/router/*`, `shared/config/places.ts`, `shared/lib/query-keys.ts`, the fixtures, `ze_agents/interface/*` and `ze_agents/screen.py`, `api/ws/schemas.py`, `interface/native.py` (`send_refresh`), the ze-personal Contacts page deletion, the deletion of `pages/plugin-page` and `widgets/plugin-screen`'s page-only parts, the one-line removal of News's page contribution; merges, gates | T001–T004, T010, T011 | 191a on `main` | Gauge |
+| lead | Sonnet ENG lead | `ze_plugin/{ui,ui_validate}.py`, `ze_sdk/ui.py`, `api/v0/system/*`, `api/v0/ui_modules/*`, `wiring/{agents,container}.py`, `packages/ze-client/src/generated/*` and `sdk-dispatch.test.ts`, the ze-api tests naming the manifest or `getNewsPage`, `entities/ui-manifest/*`, `app/router/*`, `shared/config/places.ts`, `shared/lib/query-keys.ts`, the fixtures, `ze_agents/interface/*` and `ze_agents/screen.py`, `api/ws/schemas.py`, `interface/native.py` (`send_refresh`), the ze-personal Contacts page deletion, the deletion of `pages/plugin-page` and `widgets/plugin-screen`'s page-only parts, the one-line removal of News's page contribution; merges, gates | T001–T004, T010, T011 | 191a on `main` | Gauge |
 | news | Sonnet ENG | `plugins/ze-news/**` (except the contract-step line), `eval/calibration/routing.jsonl` row | T005 | contract step | floor Reviewer |
 | web | Sonnet ENG | `widgets/{plugin-module,try-chips}/*`, `widgets/connections/ui/Connections.tsx`, `pages/{mind-entity,doing-workflow,ask}/*`, their tests | T006–T009 | contract step | floor Reviewer |
 | docs | Haiku DOCS | the files in "Docs touched" | T012–T014 | T011 | floor Reviewer |
