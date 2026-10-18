@@ -732,7 +732,7 @@ before adding one.
 
 - Write a spec before significant new features: `/speckit-specify` for `specs/phases/` features, or an ADR in `specs/arch/` (follow the existing ones) for cross-cutting decisions.
 - Until v1, break APIs and schemas when the design is wrong. Do not add compatibility shims, dual-write, or wrap-then-replace across phases (`specs/arch/pre-v1-hard-cuts.md`, constitution Principle VIII).
-- When implementing from an attached Cursor plan or a speckit phase: do not edit `plan.md`; use the pre-created todos. Check off speckit `tasks.md` via companion `write-context.py --append` then `--materialize` (never hand-edit checkboxes); run the speckit after-implement hook when implementation finishes.
+- When implementing from an attached Cursor plan or a speckit phase: do not edit `plan.md`; use the pre-created todos. Tick a speckit `tasks.md` checkbox in the same commit that finishes the task.
 - Ze's user-facing interface is the React web app (`ze-web`), not Telegram — do not describe Telegram-style UI capabilities to users.
 - Only create git commits when explicitly asked. When asked to commit a large batch, split by logical phase or spec user story rather than one dump.
 - Chat chrome: the generic side panel is **trace** (not "Ze's Mind"); session history lives there too. Do not duplicate page titles already shown in the top bar.
