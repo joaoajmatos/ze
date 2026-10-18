@@ -58,7 +58,7 @@
   - `@tool(access=READ, ui_action=True)` fails registration; `done_phrase` is stored on the spec.
 
   Implement `BaseAgent.run_action` and the `ui_action`/`done_phrase` arguments in `ze_agents/tool.py`.
-- [ ] T006 [L:server] [US1] Tests first `apps/ze-api/tests/api/ws/test_ui_actions.py` (fake agent registry and connection manager):
+- [x] T006 [L:server] [US1] Tests first `apps/ze-api/tests/api/ws/test_ui_actions.py` (fake agent registry and connection manager):
   - a reversible opted-in write runs once and sends `ui_action_result` with `ok: true` and its `done_phrase` (or "Done."); a failing one sends "Couldn't <effect>." and never the raw error;
   - an irreversible opted-in write sends one `confirm_request` (`kind: "write"`, one item with the summary); a `confirm` approve runs it once; two `confirm` frames for the same id run it once (the gate is popped first); deny sends "Okay, I didn't <effect>.";
   - the timeout (fake clock) sends "Okay, I didn't <effect>." and a later `confirm` for that id gets "That request expired."; a `confirm` for an id no gate knows (restart) gets "That request expired.";

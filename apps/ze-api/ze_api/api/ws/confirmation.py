@@ -123,13 +123,13 @@ async def handle_confirm(
     if confirmation_store is not None:
         row = await confirmation_store.get_pending(request_id)
         if row is None:
-            await _no_pending(conn_mgr, thread_id)
+            await _no_pending(conn_mgr, thread_id, request_id)
             return None
         thread_id = row.get("thread_id") or thread_id
         if pending_config is None or extract_thread_id(pending_config) != thread_id:
             pending_config = container._build_config(thread_id, **_retry_identity(row))
     elif pending_config is None:
-        await _no_pending(conn_mgr, thread_id)
+        await _no_pending(conn_mgr, thread_id, request_id)
         return None
 
     if choice not in ("approve", "deny"):
@@ -194,10 +194,24 @@ async def handle_confirm(
     )
 
 
-async def _no_pending(conn_mgr: ConnectionManager, thread_id: str) -> None:
+async def _no_pending(
+    conn_mgr: ConnectionManager, thread_id: str, request_id: str = ""
+) -> None:
     await conn_mgr.send_frame(
         {"type": "error", "detail": "No pending confirmation."}, thread_id
     )
+    if request_id:
+        # A screen button's gate is lost on restart; its card needs an answer too.
+        await conn_mgr.send_frame(
+            {
+                "type": "ui_action_result",
+                "id": request_id,
+                "ok": False,
+                "line": "That request expired.",
+                "code": None,
+            },
+            thread_id,
+        )
 
 
 def _valid_edits(edits: Any, row: dict | None) -> bool:

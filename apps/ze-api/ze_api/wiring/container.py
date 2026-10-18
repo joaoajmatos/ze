@@ -245,6 +245,7 @@ class ZeContainer(CoreContainer):
     workflow_store: Any
     held_write_store: Any
     held_write_resumer: Any
+    action_record_store: Any
     _plugin_stores: dict
     workflow_scheduler: Any
     proactive_scheduler: ProactiveScheduler
@@ -666,6 +667,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         connection_manager=connection_manager,
         component_hook=component_hook,
         confirmation_store=stores.confirmation_store,
+        action_record_store=stores.action_record_store,
         onboarding_coordinator=onboarding_coordinator,
         reset_service=ResetService(pool=pool),
         plugins=plugins,

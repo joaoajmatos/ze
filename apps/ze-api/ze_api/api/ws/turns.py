@@ -26,6 +26,7 @@ from ze_api.api.ws.rollback_state import (
     undone_phrases,
 )
 from ze_api.api.ws.session_titles import schedule_session_title
+from ze_api.api.ws.ui_actions import supersede_ui_gates
 from ze_agents.errors import RetryError
 from ze_core.conversation.messages import Message
 from ze_core.conversation.messages.types import RollbackRecord
@@ -57,6 +58,8 @@ async def handle_message(
     if not thread_id:
         await conn_mgr.send_frame({"type": "error", "detail": "thread_id required"})
         return None
+
+    await supersede_ui_gates(container, conn_mgr, thread_id)
 
     pending_gate_id = conn_mgr.take_pending_gate_redirect(thread_id)
     if pending_gate_id is not None:
