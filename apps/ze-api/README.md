@@ -33,7 +33,7 @@ Collects plugin signal sources via `collect_plugin_signal_sources()` in `wiring/
 | `lifespan.py` | Startup: migrate, check schema, build the container, dev seed, mount plugin routers |
 | `api/v0/<domain>/` | One `router.py` and `schemas.py` per REST domain, all mounted under `/api/v0` |
 | `api/ws/` | WebSocket endpoint (`/ws`), frame schemas, and the turn, confirmation and goal-action handlers |
-| `api/eval/` | Eval chat, collisions and routing log; mounted only when `EVAL_MODE` is on |
+| `api/eval/` | Eval chat and routing log; mounted only when `EVAL_MODE` is on |
 | `api/shared_schemas.py` | Types shared by more than one router |
 | `interface/native.py` | `NativeAppInterface` — WebSocket + ntfy delivery |
 | `wiring/container.py` | `ZeContainer` and `build_container()`, the only place that joins packages |

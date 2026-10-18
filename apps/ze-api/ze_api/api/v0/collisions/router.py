@@ -5,8 +5,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ze_api.api.deps import require_api_key
+from ze_api.api.deps import get_collision_store, require_api_key
 from ze_api.api.v0.collisions.schemas import CollisionLogEntrySchema
+from ze_collision import rest as collision_rest
+from ze_collision.store import CollisionLogStore
+from ze_plugin.contribution import SourceFunction
 
 router = APIRouter(
     prefix="/collisions", tags=["collisions"], dependencies=[Depends(require_api_key)]
@@ -27,5 +30,25 @@ async def list_collisions(
     since: datetime | None = Query(default=None),
     until: datetime | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
+    store: CollisionLogStore = Depends(get_collision_store),
 ) -> list[CollisionLogEntrySchema]:
-    raise HTTPException(status_code=501, detail="Not implemented")
+    sf = None
+    if source_function:
+        try:
+            sf = SourceFunction(source_function)
+        except ValueError:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Unknown source_function {source_function!r}",
+            )
+    if since and until and since > until:
+        return []
+    entries = await collision_rest.list_collisions(
+        store,
+        entity_id=entity_id,
+        source_function=sf,
+        since=since,
+        until=until,
+        limit=limit,
+    )
+    return [CollisionLogEntrySchema.from_entry(e) for e in entries]

@@ -67,7 +67,7 @@
 
 ## Phase 4: User Story 2 - See disagreements in Governance (P2)
 
-- [ ] T008 [L:reads] [US2] Move `apps/ze-api/tests/api/test_collisions_route.py` to target the product path and update `test_dev_only_routes.py` (collisions no longer dev-only) and `test_openapi_export.py`. Implement the handler body in `api/v0/collisions/router.py` (same filters; an unknown `source_function` → 422, not 500; `limit` 1..200 with 422 outside; `since > until` → empty list). Update `apps/ze-api/README.md` (~36: collisions under `api/v0`). Delete `api/eval/collisions.py`, its `include_router` line in `api/eval/__init__.py`, and `CollisionLogEntrySchema` from `api/eval/schemas.py`. A test asserts the old dev path returns 404 with the dev router mounted.
+- [x] T008 [L:reads] [US2] Move `apps/ze-api/tests/api/test_collisions_route.py` to target the product path and update `test_dev_only_routes.py` (collisions no longer dev-only) and `test_openapi_export.py`. Implement the handler body in `api/v0/collisions/router.py` (same filters; an unknown `source_function` → 422, not 500; `limit` 1..200 with 422 outside; `since > until` → empty list). Update `apps/ze-api/README.md` (~36: collisions under `api/v0`). Delete `api/eval/collisions.py`, its `include_router` line in `api/eval/__init__.py`, and `CollisionLogEntrySchema` from `api/eval/schemas.py`. A test asserts the old dev path returns 404 with the dev router mounted.
 
 ---
 
