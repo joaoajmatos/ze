@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from ze_agents.errors import HookAbort
 from ze_agents.hooks import BaseHarnessHook, LoopStartEvent, ToolStartEvent
+from ze_agents.scripts import in_script_call
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -20,6 +21,8 @@ class ToolCallCapHook(BaseHarnessHook):
         self._counts[event.ctx.session_id] = 0
 
     async def on_tool_start(self, event: ToolStartEvent) -> None:
+        if in_script_call.get():
+            return
         session_id = event.ctx.session_id
         count = self._counts.get(session_id, 0) + 1
         self._counts[session_id] = count

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 
 from ze_logging import get_logger
+from ze_agents.scripts import charge_script, current_script_budget
 from ze_agents.tasks import fire_and_forget
 from ze_core.telemetry.context import get_cost_context
+from ze_core.telemetry.pricing import estimate_cost_usd
 from ze_core.telemetry.store import CostStore
 from ze_core.telemetry.turn import current_turn_telemetry
 from ze_core.telemetry.types import CostRecord
@@ -39,6 +41,13 @@ class CostTracker:
                 log.warning(
                     "turn_telemetry_failed", method="record_call", error=str(exc)
                 )
+        if current_script_budget.get() is not None:
+            try:
+                charge_script(
+                    estimate_cost_usd(model, prompt_tokens, completion_tokens)
+                )
+            except Exception as exc:
+                log.warning("script_budget_charge_failed", error=str(exc))
         ctx = get_cost_context()
         rec = CostRecord(
             agent=ctx.agent,
