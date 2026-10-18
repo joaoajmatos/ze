@@ -130,3 +130,20 @@ def test_speckit_hooks_point_at_existing_skills():
             skill = hook["command"].replace(".", "-")
             assert (REPO / ".claude" / "skills" / skill / "SKILL.md").exists(), skill
             assert hook["optional"] is False
+
+
+def test_settings_hooks_run_existing_scripts_and_keep_the_rest():
+    import json
+
+    settings = json.loads((REPO / ".claude" / "settings.json").read_text())
+    assert "permissions" in settings and "mcpServers" in settings
+    commands = [
+        h["command"]
+        for group in settings["hooks"].values()
+        for entry in group
+        for h in entry["hooks"]
+    ]
+    assert commands
+    for command in commands:
+        script = re.search(r"scripts/process/hooks/\w+\.py", command).group(0)
+        assert (REPO / script).exists(), script

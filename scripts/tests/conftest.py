@@ -11,3 +11,13 @@ def load_process_module(name: str):
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def load_hook(name: str):
+    spec = importlib.util.spec_from_file_location(
+        name, PROCESS / "hooks" / f"{name}.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module

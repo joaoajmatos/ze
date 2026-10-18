@@ -40,6 +40,7 @@ logs/
 # Claude Code (local settings, project memory, MCP config) — but version spec-kit skills
 .claude/*
 !.claude/skills/
+!.claude/settings.json
 
 # graphify knowledge graph (full-repo local cache; see AGENTS.md)
 graphify-out/
