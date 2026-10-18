@@ -6,7 +6,14 @@ import { mockMatchMedia } from "@/test/match-media";
 const m = vi.hoisted(() => ({ sendTurn: vi.fn(() => true) }));
 vi.mock("@/features/turn-stream", () => ({ sendTurn: m.sendTurn }));
 vi.mock("@/widgets/assemble", () => ({
-  Canvas: ({ threadId }: { threadId: string }) => <div data-testid="canvas">{threadId}</div>,
+  Canvas: ({ threadId, onSelect }: { threadId: string; onSelect?: (id: string) => void }) => (
+    <div data-testid="canvas">
+      {threadId}
+      <button type="button" onClick={() => onSelect?.("m1")}>
+        trace this reply
+      </button>
+    </div>
+  ),
   ConfirmationPlacement: () => null,
   RetryControl: () => <div data-testid="retry" />,
   TraceModule: ({ messageId }: { messageId: string | null }) => <div data-testid="trace">{messageId ?? "latest"}</div>,
@@ -86,6 +93,20 @@ describe("AskPage", () => {
     mount();
     expect(screen.queryByTestId("trace")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Open the trace of the selected reply" }));
+    expect(screen.getByTestId("sheet")).toBeInTheDocument();
+  });
+
+  it("fills the trace rail when a reply is selected on a desktop", () => {
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "trace this reply" }));
+    expect(screen.getByTestId("trace")).toHaveTextContent("m1");
+  });
+
+  it("opens the trace sheet when a reply is selected on a phone", () => {
+    mm.set("(max-width: 1023px)", true);
+    mount();
+    expect(screen.queryByTestId("sheet")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "trace this reply" }));
     expect(screen.getByTestId("sheet")).toBeInTheDocument();
   });
 
