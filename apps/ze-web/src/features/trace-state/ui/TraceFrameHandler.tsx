@@ -3,7 +3,7 @@ import { useConversation } from "@/entities/conversation";
 import { useTraceSocket } from "../model/useTraceSocket";
 import { useTraceStore } from "../model/useTraceStore";
 
-const RUNNING = ["awaiting", "thinking", "speaking"];
+const RUNNING = ["awaiting", "thinking", "speaking", "paused"];
 
 /** Mounted once in the shell: feeds the trace store, and starts each turn with no stale pending trace. */
 export function TraceFrameHandler() {

@@ -217,7 +217,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
+  flex-wrap: wrap;
   width: 100%;
   min-height: 44px;
   cursor: pointer;
@@ -227,9 +228,8 @@
 }
 .tr-instrument-head .ro {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 .tr-tick .lbl {
   letter-spacing: 0.04em;
