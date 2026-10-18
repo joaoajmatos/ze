@@ -95,8 +95,8 @@
   - `retry_eligibility` (ze-core retry test) accepts a reply with a script step and inner reads (not `unknown_tool`), and lists a proposed reversible write in the rollback plan.
 
   Implement in `nested_tools.py`, `trace.py` and `conversation/retry.py`.
-- [ ] T032 [P] [L:web] [US4] Tests first `apps/ze-web/src/widgets/assemble/lib/script-rows.test.ts`: `groupScriptRows(rows)` nests rows whose `parent_call_id` matches a script row's `call_id` under it in order, leaves other rows top level, and keeps an orphan top level; `scriptSummary(row)` gives `"Script · ok · 3 calls · 420 ms"` and `"Script · limit: spend · 2 calls · …"`; `access: "script"` styles like `delegate`. Implement `widgets/assemble/lib/script-rows.ts`.
-- [ ] T033 [L:web] [US4] Tests first in the existing `widgets/assemble/ui/trace/instruments.test.tsx`: a script row draws its summary collapsed; expanded it shows the source in a monospace scrollable block (with a "cut" note when `source_cut`) and its child rows; Enter/Space toggle it with `aria-expanded`. Implement in `widgets/assemble/ui/trace/ToolsTimeline.tsx`. `make test-web` and `make typecheck-web` pass.
+- [x] T032 [P] [L:web] [US4] Tests first `apps/ze-web/src/widgets/assemble/lib/script-rows.test.ts`: `groupScriptRows(rows)` nests rows whose `parent_call_id` matches a script row's `call_id` under it in order, leaves other rows top level, and keeps an orphan top level; `scriptSummary(row)` gives `"Script · ok · 3 calls · 420 ms"` and `"Script · limit: spend · 2 calls · …"`; `access: "script"` styles like `delegate`. Implement `widgets/assemble/lib/script-rows.ts`.
+- [x] T033 [L:web] [US4] Tests first in the existing `widgets/assemble/ui/trace/instruments.test.tsx`: a script row draws its summary collapsed; expanded it shows the source in a monospace scrollable block (with a "cut" note when `source_cut`) and its child rows; Enter/Space toggle it with `aria-expanded`. Implement in `widgets/assemble/ui/trace/ToolsTimeline.tsx`. `make test-web` and `make typecheck-web` pass.
 
 ---
 
