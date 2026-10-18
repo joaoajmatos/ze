@@ -32,7 +32,9 @@ export function useAmbience() {
   const ctxRef = useRef<AudioContext | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const recordingRef = useRef(recording);
-  recordingRef.current = recording;
+  useEffect(() => {
+    recordingRef.current = recording;
+  }, [recording]);
 
   const toggle = useCallback(() => {
     const next = !on;
