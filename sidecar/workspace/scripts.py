@@ -1,0 +1,295 @@
+"""Tool scripts: one Python script at a time, calling Ze's read tools over WS /scripts."""
+
+from __future__ import annotations
+
+import asyncio
+import collections
+import json
+import os
+import shutil
+import signal
+import time
+import uuid
+from pathlib import Path
+from typing import Any
+
+from fastapi import WebSocket
+
+SCRATCH_ROOT = Path(os.environ.get("ZE_SCRIPTS_ROOT", "/tmp/ze-scripts"))
+RUNTIME_DIR = Path(__file__).resolve().parent / "script_runtime"
+TICK_SECONDS = 0.1
+STDERR_RING_BYTES = 64 * 1024
+STDERR_TAIL_LINES = 20
+
+
+class ScriptSlot:
+    """The one script slot, separate from the workspace run journal."""
+
+    def __init__(self) -> None:
+        self._running = False
+
+    def busy(self) -> bool:
+        return self._running
+
+    def acquire(self) -> bool:
+        if self._running:
+            return False
+        self._running = True
+        return True
+
+    def release(self) -> None:
+        self._running = False
+
+
+slot = ScriptSlot()
+
+
+def _descendants(root_pid: int) -> list[int]:
+    """Every descendant of root_pid by parent links (a setsid child is still one)."""
+    import subprocess
+
+    try:
+        out = subprocess.run(
+            ["ps", "-A", "-o", "pid=,ppid="], capture_output=True, text=True, timeout=5
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return []
+    children: dict[int, list[int]] = collections.defaultdict(list)
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) == 2:
+            children[int(parts[1])].append(int(parts[0]))
+    found: list[int] = []
+    stack = [root_pid]
+    while stack:
+        for child in children.get(stack.pop(), []):
+            found.append(child)
+            stack.append(child)
+    return found
+
+
+def kill_script_processes(root_pid: int) -> None:
+    """SIGKILL the script and everything it started, however it detached."""
+    pids = [root_pid, *_descendants(root_pid)]
+    for pid in reversed(pids):
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+
+async def _spawn(argv: list[str], **kwargs: Any) -> asyncio.subprocess.Process:
+    return await asyncio.create_subprocess_exec(*argv, **kwargs)
+
+
+def _tail(ring: bytearray) -> str:
+    text = bytes(ring).decode("utf-8", errors="replace")
+    return "\n".join(text.splitlines()[-STDERR_TAIL_LINES:])
+
+
+def _end(status: str, **extra: Any) -> dict:
+    return {
+        "type": "end",
+        "status": status,
+        "value": extra.get("value"),
+        "writes": extra.get("writes", []),
+        "stderr_tail": extra.get("stderr_tail", ""),
+        "exception": extra.get("exception", ""),
+    }
+
+
+def _valid_writes(writes: Any) -> bool:
+    return isinstance(writes, list) and all(
+        isinstance(w, dict)
+        and isinstance(w.get("tool"), str)
+        and isinstance(w.get("args"), dict)
+        for w in writes
+    )
+
+
+class ScriptRun:
+    def __init__(self, ws: WebSocket, start: dict) -> None:
+        self.ws = ws
+        self.start = start
+        self.id = str(start.get("id") or uuid.uuid4())
+        self.timeout = max(1, int(start.get("timeout_seconds") or 30))
+        self.done = asyncio.Event()
+        self.result: dict | None = None
+        self.finish_line: dict | None = None
+        self.stderr = bytearray()
+        self.pending: dict[int, asyncio.Future] = {}
+        self.proc: asyncio.subprocess.Process | None = None
+
+    def end(self, status: str, **extra: Any) -> None:
+        if self.result is None:
+            self.result = _end(status, **extra)
+            self.done.set()
+
+    def _prepare(self) -> Path:
+        scratch = SCRATCH_ROOT / self.id
+        scratch.mkdir(parents=True, exist_ok=True)
+        scratch.chmod(0o700)
+        shutil.copyfile(RUNTIME_DIR / "ze_tools_base.py", scratch / "ze_tools_base.py")
+        (scratch / "ze_tools.py").write_text(str(self.start.get("stub", "")), encoding="utf-8")
+        (scratch / "main.py").write_text(str(self.start.get("source", "")), encoding="utf-8")
+        shutil.copyfile(RUNTIME_DIR / "_ze_main.py", scratch / "_ze_main.py")
+        return scratch
+
+    async def run(self) -> dict:
+        scratch = self._prepare()
+        loop = asyncio.get_running_loop()
+        req_r, req_w = os.pipe()
+        rep_r, rep_w = os.pipe()
+        env = {
+            "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+            "HOME": str(scratch),
+            "LANG": os.environ.get("LANG", "C.UTF-8"),
+            "ZE_REQ_FD": str(req_w),
+            "ZE_REP_FD": str(rep_r),
+        }
+        try:
+            self.proc = await _spawn(
+                [shutil.which("python3") or "python3", "-I", "-X", "utf8", "_ze_main.py"],
+                cwd=str(scratch),
+                env=env,
+                stdin=asyncio.subprocess.DEVNULL,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.PIPE,
+                pass_fds=(req_w, rep_r),
+                start_new_session=True,
+            )
+        finally:
+            os.close(req_w)
+            os.close(rep_r)
+        req_reader = asyncio.StreamReader(limit=2**20)
+        await loop.connect_read_pipe(
+            lambda: asyncio.StreamReaderProtocol(req_reader), os.fdopen(req_r, "rb", 0)
+        )
+        w_transport, w_protocol = await loop.connect_write_pipe(
+            lambda: asyncio.streams.FlowControlMixin(loop=loop), os.fdopen(rep_w, "wb", 0)
+        )
+        rep_writer = asyncio.StreamWriter(w_transport, w_protocol, None, loop)
+        tasks = [
+            asyncio.create_task(self._drain_stderr()),
+            asyncio.create_task(self._relay_requests(req_reader, rep_writer)),
+            asyncio.create_task(self._read_ws()),
+            asyncio.create_task(self._tick(scratch)),
+        ]
+        try:
+            await self.done.wait()
+        finally:
+            if self.proc is not None:
+                kill_script_processes(self.proc.pid)
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            rep_writer.close()
+            if self.proc is not None:
+                await self.proc.wait()
+            shutil.rmtree(scratch, ignore_errors=True)
+        assert self.result is not None
+        return self.result
+
+    async def _drain_stderr(self) -> None:
+        assert self.proc is not None and self.proc.stderr is not None
+        while chunk := await self.proc.stderr.read(4096):
+            self.stderr += chunk
+            if len(self.stderr) > STDERR_RING_BYTES:
+                del self.stderr[: len(self.stderr) - STDERR_RING_BYTES]
+
+    async def _relay_requests(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
+        while True:
+            line = await reader.readline()
+            if not line:
+                break
+            try:
+                msg = json.loads(line)
+            except ValueError:
+                self.end("bad_request", exception="malformed request line")
+                return
+            if not isinstance(msg, dict):
+                self.end("bad_request", exception="malformed request line")
+                return
+            if "finish" in msg:
+                self.finish_line = msg
+                continue
+            if "isolation_breach" in msg:
+                self.end("unavailable", exception=str(msg["isolation_breach"]))
+                return
+            tool, args, seq = msg.get("tool"), msg.get("args"), msg.get("seq")
+            if not (isinstance(tool, str) and isinstance(args, dict) and isinstance(seq, int)):
+                self.end("bad_request", exception="malformed request line")
+                return
+            waiter: asyncio.Future = asyncio.get_running_loop().create_future()
+            self.pending[seq] = waiter
+            await self.ws.send_json({"type": "call", "seq": seq, "tool": tool, "args": args})
+            reply = await waiter
+            writer.write((json.dumps(reply) + "\n").encode("utf-8"))
+            await writer.drain()
+        await self.proc.wait()  # type: ignore[union-attr]
+        await asyncio.sleep(0)
+        self._natural_end()
+
+    def _natural_end(self) -> None:
+        assert self.proc is not None
+        code = self.proc.returncode
+        tail = _tail(self.stderr)
+        if code == 0:
+            finish = self.finish_line
+            if finish is None:
+                self.end("ok", stderr_tail=tail)
+            elif not _valid_writes(finish.get("writes", [])):
+                self.end("bad_request", exception="writes entries need tool and args")
+            else:
+                self.end(
+                    "ok",
+                    value=finish.get("finish"),
+                    writes=finish.get("writes", []),
+                    stderr_tail=tail,
+                )
+            return
+        lines = [ln for ln in tail.splitlines() if ln.strip()]
+        self.end("exception", exception=lines[-1] if lines else "", stderr_tail=tail)
+
+    async def _read_ws(self) -> None:
+        while True:
+            frame = await self.ws.receive_json()
+            kind = frame.get("type")
+            if kind == "reply":
+                waiter = self.pending.pop(frame.get("seq"), None)
+                if waiter is not None and not waiter.done():
+                    ok = bool(frame.get("ok"))
+                    reply = {"seq": frame.get("seq"), "ok": ok}
+                    reply["value" if ok else "error"] = frame.get("value" if ok else "error")
+                    waiter.set_result(reply)
+            elif kind == "cancel":
+                self.end("killed")
+                return
+
+    async def _tick(self, scratch: Path) -> None:
+        deadline = time.monotonic() + self.timeout
+        while True:
+            await asyncio.sleep(TICK_SECONDS)
+            if time.monotonic() >= deadline:
+                self.end("timeout", stderr_tail=_tail(self.stderr))
+                return
+
+
+async def handle(ws: WebSocket) -> None:
+    await ws.accept()
+    if not slot.acquire():
+        await ws.send_json(_end("busy"))
+        await ws.close()
+        return
+    try:
+        start = await ws.receive_json()
+        if not isinstance(start, dict) or start.get("type") != "start":
+            await ws.send_json(_end("bad_request"))
+        else:
+            result = await ScriptRun(ws, start).run()
+            await ws.send_json(result)
+        await ws.close()
+    finally:
+        slot.release()

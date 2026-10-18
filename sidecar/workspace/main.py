@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hmac
 import json
 import os
 import shutil
@@ -12,10 +13,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Query,
+    UploadFile,
+    WebSocket,
+    WebSocketException,
+)
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
+import scripts
 import supervisor
 
 
@@ -284,3 +297,13 @@ async def cancel_run(run_id: UUID):
 async def reset():
     await supervisor.reset_workspace()
     return {"ok": True}
+
+
+@app.websocket("/scripts")
+async def scripts_socket(ws: WebSocket):
+    expected = f"Bearer {API_TOKEN}"
+    if not API_TOKEN or not hmac.compare_digest(
+        (ws.headers.get("authorization") or "").encode(), expected.encode()
+    ):
+        raise WebSocketException(code=1008)
+    await scripts.handle(ws)

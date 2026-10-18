@@ -102,7 +102,7 @@
 
 ## Phase 7: The sandbox and the runner (US1, US2)
 
-- [ ] T018 [P] [L:sandbox] [US1] Tests first `sidecar/workspace/tests/test_scripts_relay.py` (subprocess as the current user; uid switch skipped when not root):
+- [x] T018 [P] [L:sandbox] [US1] Tests first `sidecar/workspace/tests/test_scripts_relay.py` (subprocess as the current user; uid switch skipped when not root):
   - `WS /scripts` with a missing or wrong token, and with `WORKSPACE_API_TOKEN` empty, fails the handshake with close code 1008 (`WebSocketException`, raised before accept);
   - `start` writes `ze_tools.py`, `main.py` and `_ze_main.py` into a fresh scratch dir and spawns `python3 -I -X utf8 _ze_main.py`; `import ze_tools` works through the real spawn;
   - a script calling `z.echo(x=1)` produces a `call` frame and continues with the `reply` value;
