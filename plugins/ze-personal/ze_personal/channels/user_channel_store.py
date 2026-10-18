@@ -44,6 +44,38 @@ class UserChannelStore:
                 channel.poll_enabled,
             )
 
+    async def ensure(self, channel: UserChannel) -> None:
+        """Insert the channel row if absent; never overwrites a known handle."""
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO user_channels
+                    (id, channel_id, channel_type, handle, display_name,
+                     is_default_outbound, poll_enabled)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (channel_id) DO NOTHING
+                """,
+                channel.id,
+                channel.channel_id,
+                channel.channel_type,
+                channel.handle,
+                channel.display_name,
+                channel.is_default_outbound,
+                channel.poll_enabled,
+            )
+
+    async def drop_unkeyed(self, channel_id: str) -> None:
+        """Remove the placeholder row a channel used before its account resolved."""
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                await conn.execute(
+                    "DELETE FROM user_channel_watermarks WHERE channel_id = $1",
+                    channel_id,
+                )
+                await conn.execute(
+                    "DELETE FROM user_channels WHERE channel_id = $1", channel_id
+                )
+
     async def list_all(self) -> list[UserChannel]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(

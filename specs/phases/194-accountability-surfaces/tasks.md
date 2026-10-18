@@ -101,7 +101,7 @@
   - `get_status_many` returns one `ChannelPollStatus` per id, with nulls for unknown ids.
 
   Add one `@pytest.mark.pg` test for the insert path with the FK satisfied. Implement in `watermark_store.py`.
-- [ ] T015 [L:channels] [US5] Tests first:
+- [x] T015 [L:channels] [US5] Tests first:
   - `integrations/ze-google/tests/test_auth_errors.py`: `is_auth_failure` is true for a `RefreshError` raised directly, as `__cause__`, or as `__context__` two levels down; false otherwise; it stops at depth 5.
   - `plugins/ze-messenger/tests/jobs/test_inbound_poll_outcome.py`:
     - a successful poll records `ok`;
