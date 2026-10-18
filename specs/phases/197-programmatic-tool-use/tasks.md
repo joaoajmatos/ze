@@ -167,7 +167,7 @@
 
 - [x] T031 [L:lead] Wire the real runner: `_build_config` sets `script_runner` from `WorkspaceStack.script_runner`, and the container passes the procedure admission service to `build_workspace_stack`. Integration test with a fake runner: a finance turn that scripts two reads ends with a trace holding the step (`access: script`) and both inner calls, and a companion turn has no script tool.
 - [x] T034 [L:lead] Write the ADR `specs/arch/programmatic-tool-use.md` (plan.md "Docs"), following the existing ADR format.
-- [ ] T036 [L:docs] Docs per plan.md "Docs": `docs/architecture.md` (script path; diagram if it helps, per the diagram rule), `docs/configuration.md` (`workspace.scripts`), `docs/sdk.md`, `docs/adding-an-agent.md`, `docs/workspace.md` (limits, `cap_add`, unavailable without it), `docs/eval.md`, `AGENTS.md` (layout lines, phase row 197, Learned Workspace Fact), `specs/README.md` row. Follow the `doc-style` skill. Coverage check: every public doc in `git diff main...HEAD --stat`, and every doc naming `workspace_run`, `invoke_procedure`, `render_tool` or the eval scenario fields, is updated or recorded as needing no change in the Handoffs note.
+- [x] T036 [L:docs] Docs per plan.md "Docs": `docs/architecture.md` (script path; diagram if it helps, per the diagram rule), `docs/configuration.md` (`workspace.scripts`), `docs/sdk.md`, `docs/adding-an-agent.md`, `docs/workspace.md` (limits, `cap_add`, unavailable without it), `docs/eval.md`, `AGENTS.md` (layout lines, phase row 197, Learned Workspace Fact), `specs/README.md` row. Follow the `doc-style` skill. Coverage check: every public doc in `git diff main...HEAD --stat`, and every doc naming `workspace_run`, `invoke_procedure`, `render_tool` or the eval scenario fields, is updated or recorded as needing no change in the Handoffs note.
 - [ ] T035 [L:lead] Merge lanes; run `make lint`, `make test-py`, `make test-workspace-sidecar`, `make test-pg`, `make test-web`, `make typecheck-web`; with Docker, the quickstart smoke test. With the user's OK only: `python eval/run.py --tag tool_scripts`, recording `llm_calls` against the direct-call baseline (same prompts with no runner wired) for SC-001, and re-run the existing routing scenarios and each scenario file of an agent that now carries the script schema, since every such request grows by the schema and `SCRIPT_GUIDANCE`; without the OK, record them as not run in the Handoffs note. Record results in the Handoffs note; mark the spec Implemented and set floor status review.
 
 ---
@@ -191,3 +191,21 @@ MVP = contract + US1 + US2 (reads with limits, sandbox, runner). US3 writes, US4
 ## Handoffs
 
 Lane leads record blast-radius differences, gate runs, the smoke test and doc coverage in the build floor's Handoffs note.
+
+### T036 doc coverage (lane docs)
+
+Changed by this lane (owned files): `docs/configuration.md` (`workspace.scripts` block, limits table, validation rules), `docs/architecture.md` (Tool scripts section; a `produces_ui` line in the render-tool section), `docs/sdk.md` (`ToolCall` fields `parent_call_id`, `inner_calls`, `script`; `produces_ui` and `egress` section), `docs/adding-an-agent.md` (read tools and scripts; checklist item), `docs/workspace.md` (Tool scripts section; `NET_ADMIN` and the Fly gap), `docs/eval.md` (`max_llm_calls` call limit), `AGENTS.md` (layout lines, phase 197 row, Learned Workspace Fact). `specs/README.md`: the 197 row already exists; its status flips to Implemented at T035. `specs/arch/programmatic-tool-use.md` is the lead's ADR (T034) and is linked from the architecture doc.
+
+Public docs in `git diff main...HEAD --stat`: the sidecar and ze-workspace READMEs belong to the sandbox and runner lanes and were not edited here.
+
+Docs that name `workspace_run`, `invoke_procedure`, `render_tool` or eval scenario fields:
+
+- `docs/workspace.md`, `docs/architecture.md`, `docs/eval.md`, `docs/configuration.md`, `docs/sdk.md`, `docs/adding-an-agent.md`: updated (above).
+- `docs/skills.md`, `docs/package-architecture.md`, `docs/scheduled-jobs.md`: name `workspace_run_skill_script` or the `workspace_runs` table. Unchanged by 197, so no change needed.
+- `docs/native-interface.md` line 418 (`workspace_run` turn event): unchanged, no change needed. Line 333 lists the `tool_calls` row fields and omits the new `parent_call_id`, `inner_calls` and `script`. Out of this lane's files: flagged to the lead.
+- `docs/memory.md` procedures section (around line 120): does not list source kinds, so no false statement. The `tool_script` source kind is not described there. Out of this lane's files: flagged to the lead.
+- `docs/diagrams/docs/skills-workspace.*`: skill flow, unchanged.
+
+Config check: `workspace.scripts` defaults in the docs match `ScriptLimits` and `apps/ze-api/config/config.yaml`. A float for an int field (`wall_seconds: 30.0`) falls back to `30` with `script_limit_invalid`. An int for a float field (`max_spend_usd: 1`) is accepted as `1.0`. Gauge's N-3 note asked for the reverse ("an int YAML value for a float field like wall_seconds"). `wall_seconds` is an int field, so the documented behaviour follows the code.
+
+Targeted tests run: `core/contracts/ze-agents/tests/test_scripts_contract.py` (17 pass); `apps/ze-api/tests/test_config_scripts.py` and `test_tool_egress_flags.py` (3 pass). No doc test exists; the docs were checked by reading the code they describe.

@@ -344,6 +344,25 @@ Calendar and email write to Google's APIs, not Ze's DB, so they have no `verify`
 
 `eval/scenarios/retry_text_only.yaml` and `eval/scenarios/retry_refused_after_write.yaml` (tag `retry`) cover Retry. The text-only turns must record no write call, so Retry stays available. The reminder and goal turns must record a write call, so Retry is unavailable. The scenario schema did not change.
 
+### Call limit
+
+Set `max_llm_calls: N` on a scenario to cap its LLM calls. `N` must be a positive integer.
+The runner counts every row the session wrote to `llm_cost_log`. The scenario passes this check when the count is `N` or
+less. A scenario without the key gets no check, and a run whose count is unknown gets none
+either.
+
+```yaml
+- id: tool_scripts_finance_spend_by_merchant
+  prompt: "What did I spend by merchant this month? Give me the top five."
+  expected_agent: finance
+  expected_tools: [run_tool_script]
+  max_llm_calls: 3
+```
+
+`eval/scenarios/tool_scripts.yaml` uses the key to show that one script replaces a chain
+of reads. The script scenarios run live, so they cost model calls. Run them only with the
+user's approval.
+
 ### Judge output
 
 `--judge` asks the judge model for JSON and parses it tolerantly: it accepts
