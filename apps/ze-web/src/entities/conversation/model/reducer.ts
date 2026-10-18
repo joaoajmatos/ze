@@ -175,7 +175,6 @@ export function reduce(state: ConversationState, event: ConversationEvent, now: 
                     ...m,
                     ...(event.text != null && { text: event.text }),
                     ...(event.components != null && { components: event.components }),
-                    ...(event.ui_version != null && { ui_version: event.ui_version }),
                   }
                 : m,
             ),

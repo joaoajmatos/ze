@@ -185,13 +185,6 @@ describe("ui_version", () => {
     expect(th(s).messages[0]).toMatchObject({ id: "m1", ui_version: "2.0" });
   });
 
-  it("an edit frame can set it", () => {
-    const s = run(
-      [frame({ type: "message", message: msg() }), frame({ type: "edit", id: "m1", thread_id: T, components: [], ui_version: "2.0" })],
-    );
-    expect(th(s).messages[0]).toMatchObject({ ui_version: "2.0" });
-  });
-
   it("history does not strip the version of a reply seen live", () => {
     let s = run([frame({ type: "message", message: msg(), ui_version: "2.0" })]);
     s = run([{ type: "history_loaded", threadId: T, messages: [msg()] }], s);
