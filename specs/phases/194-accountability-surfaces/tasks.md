@@ -144,7 +144,7 @@
 
 - [x] T018 [P] [L:ledger] Follow-up note (no code): record in the Handoffs note that calendar, reminder and prospecting producers stamp no goal, workflow or run (spec US1 coverage limit), for a later instrumentation phase.
 - [x] T019 [L:lead] Merge the lanes (ledger, reads, channels, jr1); `make codegen` if a schema moved; gates: `make test-py`, `make test-pg`, `make lint`, `make test-web`.
-- [ ] T020 [L:lead] Run [quickstart.md](./quickstart.md) steps 1–6 against `make dev`; record results in the Handoffs note.
+- [x] T020 [L:lead] Run [quickstart.md](./quickstart.md) steps 1–6 against `make dev`; record results in the Handoffs note.
 - [ ] T021 [P] [L:docs] `docs/native-interface.md` (five surfaces), `docs/memory.md` (ledger read), `docs/system-one.md` (tier settings route), `docs/architecture.md` (REST table; `zc040`), from the merged diff, doc-style skill.
 - [ ] T022 [P] [L:docs] `docs/onboarding.md` (the whole "Reset Scopes" section, ~164-181 → `make db-reset` / `make db-reset-seed`); any README/CONTRIBUTING mention found at T001; `AGENTS.md` phase row 194 and the ze-personal migration row (`user_channel_watermarks.last_outcome`, `zc040`); `specs/README.md` row 194 → Implemented; spec status.
 - [ ] T023 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
@@ -188,3 +188,12 @@ After the contract step, four lanes at once:
 - Existing tests that mocked `conn.execute` for `finish_execution` now mock `conn.fetchrow` (it returns `workflow_id`).
 - pg tests live in `apps/ze-api/tests/pg/test_action_records_subject_pg.py` (the harness is there). Run against a throwaway DB `ze_ledger_194` on ze-postgres-1; 4 passed.
 - Coverage limit for a later instrumentation phase (T018): calendar, reminder and prospecting producers stamp no goal, workflow or run id in their action context, so what Ze did through those tools during a goal or workflow does not list under that subject.
+
+**T020 quickstart (lead, throwaway DB ze_e2e_194, port 8030, EVAL_MODE, seeded; dropped after)**
+- 1 actions: goal subject lists only that goal, newest first; `next_cursor` followed to the second record, then null; lone `subject_type` 422; bad cursor 422.
+- 2 collisions: `/api/v0/collisions` 200 (`[]`, none seeded); unknown `source_function` 422; `/eval/collisions` 404.
+- 3 system/models: `complexity_enabled: true`, `simple_max: 0.4`, agents sorted. The config-off + SIGHUP flip is covered by the route test, not run live.
+- 4 loops: repeated `state` and `since` return 200; the seed has no closed loops, so the filtering itself is covered by the unit and pg tests only.
+- 5 channels/status: `google_configured: true`, one registry channel `email` / `unknown`. A revoked live Google token was not exercised (no real Google calls); the outcome path is covered by the job tests and the store-level pg test.
+- 6 `make reset-personal-state`: no rule; `db-reset-seed` target present.
+- **Bug found and fixed (outside any lane):** `PostgresActionRecordStore.append` passed `json.dumps` strings to jsonb columns on a pool that already encodes with `json.dumps`, so production rows held a jsonb string and `context->>'goal_id'` matched nothing (the lane pg tests inserted raw SQL on a codec-less pool, so they passed). Fixed to pass objects, plus a pg test appending through the production codec pool. The seed fixture `ze_seed/domains/automation.py` had the same bug for its two action records; fixed. Other `json.dumps` seed calls and other stores may have the same pattern; not audited.
