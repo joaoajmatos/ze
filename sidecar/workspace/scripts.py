@@ -6,11 +6,14 @@ import asyncio
 import collections
 import json
 import os
+import pwd
+import resource
 import shutil
 import signal
 import time
 import uuid
 from pathlib import Path
+from dataclasses import dataclass
 from typing import Any
 
 from fastapi import WebSocket
@@ -26,6 +29,80 @@ MAX_FINISH_BYTES = 1024 * 1024
 MAX_INNER_CALLS = 20
 SCRATCH_CAP_BYTES = 32 * 1024 * 1024
 WS_MAX_SIZE = 2 * 1024 * 1024
+
+
+SCRIPT_USER = "zescript"
+RLIMIT_AS_BYTES = 256 * 1024 * 1024
+RLIMIT_NPROC_COUNT = 32
+RLIMIT_FSIZE_BYTES = 16 * 1024 * 1024
+RLIMIT_NOFILE_COUNT = 64
+_LIMIT_SIGNALS = (signal.SIGKILL, signal.SIGXCPU, signal.SIGXFSZ)
+_LIMIT_MARKERS = (
+    "MemoryError",
+    "Resource temporarily unavailable",
+    "Cannot allocate memory",
+    "File too large",
+)
+
+
+def script_env(scratch: Path, req_fd: int, rep_fd: int) -> dict[str, str]:
+    return {
+        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        "HOME": str(scratch),
+        "LANG": os.environ.get("LANG", "C.UTF-8"),
+        "ZE_REQ_FD": str(req_fd),
+        "ZE_REP_FD": str(rep_fd),
+    }
+
+
+def script_rlimits(wall_seconds: int) -> dict[int, int]:
+    return {
+        resource.RLIMIT_AS: RLIMIT_AS_BYTES,
+        resource.RLIMIT_NPROC: RLIMIT_NPROC_COUNT,
+        resource.RLIMIT_FSIZE: RLIMIT_FSIZE_BYTES,
+        resource.RLIMIT_CPU: wall_seconds + 1,
+        resource.RLIMIT_NOFILE: RLIMIT_NOFILE_COUNT,
+    }
+
+
+def is_resource_limit_exit(returncode: int | None, stderr_tail: str) -> bool:
+    if returncode is not None and returncode < 0 and -returncode in _LIMIT_SIGNALS:
+        return True
+    return any(marker in stderr_tail for marker in _LIMIT_MARKERS)
+
+
+def script_identity() -> tuple[int, int] | None:
+    """The zescript uid and gid, only when the sidecar can switch to it (root)."""
+    if os.geteuid() != 0:
+        return None
+    try:
+        entry = pwd.getpwnam(SCRIPT_USER)
+    except KeyError:
+        return None
+    return entry.pw_uid, entry.pw_gid
+
+
+PROBE_WORKSPACE = "/workspace"
+
+
+@dataclass
+class Isolation:
+    """Whether scripts are closed in: reject rule verified, /workspace closed, no breach."""
+
+    rule_verified: bool = False
+    mode_set: bool = False
+    breached: bool = False
+
+    @property
+    def ok(self) -> bool:
+        return self.rule_verified and self.mode_set and not self.breached
+
+
+isolation = Isolation()
+
+
+def probe_enabled() -> bool:
+    return script_identity() is not None
 
 
 class ScriptSlot:
@@ -74,9 +151,23 @@ def _descendants(root_pid: int) -> list[int]:
     return found
 
 
+def _uid_pids(uid: int) -> list[int]:
+    found = []
+    for entry in Path("/proc").glob("[0-9]*"):
+        try:
+            if entry.stat().st_uid == uid:
+                found.append(int(entry.name))
+        except OSError:
+            pass
+    return found
+
+
 def kill_script_processes(root_pid: int) -> None:
     """SIGKILL the script and everything it started, however it detached."""
     pids = [root_pid, *_descendants(root_pid)]
+    identity = script_identity()
+    if identity and Path("/proc/self").exists():
+        pids += _uid_pids(identity[0])
     for pid in reversed(pids):
         try:
             os.kill(pid, signal.SIGKILL)
@@ -145,12 +236,22 @@ class ScriptRun:
 
     def _prepare(self) -> Path:
         scratch = SCRATCH_ROOT / self.id
+        SCRATCH_ROOT.mkdir(parents=True, exist_ok=True, mode=0o711)
         scratch.mkdir(parents=True, exist_ok=True)
         scratch.chmod(0o700)
         shutil.copyfile(RUNTIME_DIR / "ze_tools_base.py", scratch / "ze_tools_base.py")
-        (scratch / "ze_tools.py").write_text(str(self.start.get("stub", "")), encoding="utf-8")
-        (scratch / "main.py").write_text(str(self.start.get("source", "")), encoding="utf-8")
+        (scratch / "ze_tools.py").write_text(
+            str(self.start.get("stub", "")), encoding="utf-8"
+        )
+        (scratch / "main.py").write_text(
+            str(self.start.get("source", "")), encoding="utf-8"
+        )
         shutil.copyfile(RUNTIME_DIR / "_ze_main.py", scratch / "_ze_main.py")
+        identity = script_identity()
+        if identity:
+            os.chown(scratch, *identity)
+            for child in scratch.iterdir():
+                os.chown(child, *identity)
         return scratch
 
     async def run(self) -> dict:
@@ -158,22 +259,35 @@ class ScriptRun:
         loop = asyncio.get_running_loop()
         req_r, req_w = os.pipe()
         rep_r, rep_w = os.pipe()
-        env = {
-            "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
-            "HOME": str(scratch),
-            "LANG": os.environ.get("LANG", "C.UTF-8"),
-            "ZE_REQ_FD": str(req_w),
-            "ZE_REP_FD": str(rep_r),
-        }
+        env = script_env(scratch, req_w, rep_r)
+        identity = script_identity()
+        limits = script_rlimits(self.timeout)
+
+        def _preexec() -> None:
+            for which, value in limits.items():
+                resource.setrlimit(which, (value, value))
+            assert identity is not None
+            os.setgroups([])
+            os.setgid(identity[1])
+            os.setuid(identity[0])
+
         try:
             self.proc = await _spawn(
-                [shutil.which("python3") or "python3", "-I", "-X", "utf8", "_ze_main.py"],
+                [
+                    shutil.which("python3") or "python3",
+                    "-I",
+                    "-X",
+                    "utf8",
+                    "_ze_main.py",
+                    *(["--probe", PROBE_WORKSPACE] if probe_enabled() else []),
+                ],
                 cwd=str(scratch),
                 env=env,
                 stdin=asyncio.subprocess.DEVNULL,
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.PIPE,
                 pass_fds=(req_w, rep_r),
+                preexec_fn=_preexec if identity else None,
                 start_new_session=True,
             )
         finally:
@@ -184,7 +298,8 @@ class ScriptRun:
             lambda: asyncio.StreamReaderProtocol(req_reader), os.fdopen(req_r, "rb", 0)
         )
         w_transport, w_protocol = await loop.connect_write_pipe(
-            lambda: asyncio.streams.FlowControlMixin(loop=loop), os.fdopen(rep_w, "wb", 0)
+            lambda: asyncio.streams.FlowControlMixin(loop=loop),
+            os.fdopen(rep_w, "wb", 0),
         )
         rep_writer = asyncio.StreamWriter(w_transport, w_protocol, None, loop)
         tasks = [
@@ -231,7 +346,9 @@ class ScriptRun:
             if lines > 2 * MAX_INNER_CALLS:
                 self.end("bad_request", exception="too many request lines")
                 return
-            cap = MAX_FINISH_BYTES if line.startswith(b'{"finish"') else MAX_REQUEST_BYTES
+            cap = (
+                MAX_FINISH_BYTES if line.startswith(b'{"finish"') else MAX_REQUEST_BYTES
+            )
             if len(line) > cap:
                 self.end("bad_request", exception="request line too long")
                 return
@@ -247,15 +364,22 @@ class ScriptRun:
                 self.finish_line = msg
                 continue
             if "isolation_breach" in msg:
+                isolation.breached = True
                 self.end("unavailable", exception=str(msg["isolation_breach"]))
                 return
             tool, args, seq = msg.get("tool"), msg.get("args"), msg.get("seq")
-            if not (isinstance(tool, str) and isinstance(args, dict) and isinstance(seq, int)):
+            if not (
+                isinstance(tool, str)
+                and isinstance(args, dict)
+                and isinstance(seq, int)
+            ):
                 self.end("bad_request", exception="malformed request line")
                 return
             waiter: asyncio.Future = asyncio.get_running_loop().create_future()
             self.pending[seq] = waiter
-            await self.ws.send_json({"type": "call", "seq": seq, "tool": tool, "args": args})
+            await self.ws.send_json(
+                {"type": "call", "seq": seq, "tool": tool, "args": args}
+            )
             reply = await waiter
             if len(json.dumps(reply)) > MAX_REPLY_BYTES:
                 reply = {"seq": seq, "ok": False, "error": "result_too_large"}
@@ -286,6 +410,9 @@ class ScriptRun:
                     stderr_tail=tail,
                 )
             return
+        if is_resource_limit_exit(code, tail):
+            self.end("resource_limit", exception="resource limit", stderr_tail=tail)
+            return
         lines = [ln for ln in tail.splitlines() if ln.strip()]
         self.end("exception", exception=lines[-1] if lines else "", stderr_tail=tail)
 
@@ -298,7 +425,9 @@ class ScriptRun:
                 if waiter is not None and not waiter.done():
                     ok = bool(frame.get("ok"))
                     reply = {"seq": frame.get("seq"), "ok": ok}
-                    reply["value" if ok else "error"] = frame.get("value" if ok else "error")
+                    reply["value" if ok else "error"] = frame.get(
+                        "value" if ok else "error"
+                    )
                     waiter.set_result(reply)
             elif kind == "cancel":
                 self.end("killed")
@@ -312,7 +441,11 @@ class ScriptRun:
                 self.end("timeout", stderr_tail=_tail(self.stderr))
                 return
             if scratch_bytes(scratch) > SCRATCH_CAP_BYTES:
-                self.end("resource_limit", exception="scratch size", stderr_tail=_tail(self.stderr))
+                self.end(
+                    "resource_limit",
+                    exception="scratch size",
+                    stderr_tail=_tail(self.stderr),
+                )
                 return
 
 
@@ -326,6 +459,8 @@ async def handle(ws: WebSocket) -> None:
         start = await ws.receive_json()
         if not isinstance(start, dict) or start.get("type") != "start":
             await ws.send_json(_end("bad_request"))
+        elif script_identity() and not isolation.ok:
+            await ws.send_json(_end("unavailable", exception="sandbox not isolated"))
         else:
             result = await ScriptRun(ws, start).run()
             await ws.send_json(result)

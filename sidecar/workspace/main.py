@@ -40,7 +40,12 @@ API_TOKEN = os.environ.get("WORKSPACE_API_TOKEN", "")
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     WORKSPACE_ROOT.mkdir(parents=True, exist_ok=True)
-    supervisor.apply_network_isolation()
+    scripts.isolation.rule_verified = supervisor.apply_network_isolation()
+    try:
+        os.chmod(WORKSPACE_ROOT, 0o750)
+        scripts.isolation.mode_set = True
+    except OSError:
+        scripts.isolation.mode_set = False
     yield
     await supervisor.shutdown()
 
@@ -123,6 +128,8 @@ async def stat():
         "bytes_used": supervisor.bytes_used(),
         "bytes_ceiling": STORAGE_CEILING,
         "busy": supervisor.busy(),
+        "scripts_busy": scripts.slot.busy(),
+        "scripts_isolated": scripts.isolation.ok,
         "workspace_root": str(WORKSPACE_ROOT),
     }
 

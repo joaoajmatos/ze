@@ -14,7 +14,7 @@ import scripts
 
 TOKEN = "tok"
 HEADERS = {"Authorization": f"Bearer {TOKEN}"}
-STUB = '''from ze_tools_base import ToolError, _call, _finish
+STUB = """from ze_tools_base import ToolError, _call, _finish
 
 
 def echo(**kwargs):
@@ -27,18 +27,7 @@ def propose(tool, **args):
 
 def finish(result, writes=None):
     _finish(result, list(writes or []))
-'''
-
-
-@pytest.fixture
-def scripts_client(sidecar, tmp_path, monkeypatch):
-    scratch_root = tmp_path / "scratch"
-    scratch_root.mkdir()
-    monkeypatch.setattr(scripts, "SCRATCH_ROOT", scratch_root)
-    monkeypatch.setattr(main, "API_TOKEN", TOKEN)
-    monkeypatch.setattr(scripts, "slot", scripts.ScriptSlot())
-    sidecar.scratch_root = scratch_root
-    return sidecar
+"""
 
 
 def start_frame(source: str, *, stub: str = STUB, timeout: int = 10) -> dict:
@@ -63,7 +52,9 @@ def run_to_end(client, source: str, replies=None, **kwargs) -> tuple[list[dict],
             assert frame["type"] == "call"
             calls.append(frame)
             value = replies(frame) if replies else frame["args"]
-            ws.send_json({"type": "reply", "seq": frame["seq"], "ok": True, "value": value})
+            ws.send_json(
+                {"type": "reply", "seq": frame["seq"], "ok": True, "value": value}
+            )
 
 
 @pytest.mark.parametrize(
@@ -77,10 +68,14 @@ def test_handshake_refused_without_the_right_token(scripts_client, headers) -> N
     assert exc.value.code == 1008
 
 
-def test_handshake_refused_when_no_token_is_configured(scripts_client, monkeypatch) -> None:
+def test_handshake_refused_when_no_token_is_configured(
+    scripts_client, monkeypatch
+) -> None:
     monkeypatch.setattr(main, "API_TOKEN", "")
     with pytest.raises(WebSocketDisconnect) as exc:
-        with scripts_client.websocket_connect("/scripts", headers={"Authorization": "Bearer "}):
+        with scripts_client.websocket_connect(
+            "/scripts", headers={"Authorization": "Bearer "}
+        ):
             pass
     assert exc.value.code == 1008
 
@@ -101,8 +96,13 @@ def test_start_writes_the_three_files_and_spawns_isolated_python(
     _, end = run_to_end(scripts_client, "import ze_tools\nze_tools.finish(1)\n")
 
     assert end["status"] == "ok"
-    assert spawned["argv"][1:] == ["-I", "-X", "utf8", "_ze_main.py"]
-    assert {"ze_tools.py", "ze_tools_base.py", "main.py", "_ze_main.py"} <= set(spawned["files"])
+    assert spawned["argv"][1:5] == ["-I", "-X", "utf8", "_ze_main.py"]
+    assert spawned["argv"][5:] == (
+        ["--probe", scripts.PROBE_WORKSPACE] if os.geteuid() == 0 else []
+    )
+    assert {"ze_tools.py", "ze_tools_base.py", "main.py", "_ze_main.py"} <= set(
+        spawned["files"]
+    )
 
 
 def test_a_call_frame_is_relayed_and_the_reply_comes_back(scripts_client) -> None:
@@ -135,7 +135,9 @@ def test_a_failed_reply_raises_tool_error_in_the_script(scripts_client) -> None:
             )
         )
         call = ws.receive_json()
-        ws.send_json({"type": "reply", "seq": call["seq"], "ok": False, "error": "refused"})
+        ws.send_json(
+            {"type": "reply", "seq": call["seq"], "ok": False, "error": "refused"}
+        )
         end = ws.receive_json()
     assert (end["status"], end["value"]) == ("ok", "refused")
 
@@ -169,7 +171,9 @@ def test_no_finish_gives_a_none_value(scripts_client) -> None:
     assert (end["status"], end["value"]) == ("ok", None)
 
 
-def test_an_uncaught_exception_ends_exception_with_the_stderr_tail(scripts_client) -> None:
+def test_an_uncaught_exception_ends_exception_with_the_stderr_tail(
+    scripts_client,
+) -> None:
     _, end = run_to_end(
         scripts_client,
         """

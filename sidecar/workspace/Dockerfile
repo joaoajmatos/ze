@@ -7,14 +7,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && adduser --system --group --home /workspace --shell /bin/bash workspace \
     && mkdir -p /workspace \
-    && chown workspace:workspace /workspace
+    && chown workspace:workspace /workspace \
+    && adduser --system --group --no-create-home --home /tmp/ze-scripts --shell /usr/sbin/nologin zescript
 
 WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py supervisor.py ./
+COPY main.py supervisor.py scripts.py ./
+COPY script_runtime ./script_runtime
 
 ENV WORKSPACE_ROOT=/workspace \
     WORKSPACE_STORAGE_CEILING_BYTES=1073741824 \

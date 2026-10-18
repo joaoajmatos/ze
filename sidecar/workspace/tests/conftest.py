@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -9,6 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import main
+import scripts
 import supervisor
 
 
@@ -29,3 +32,23 @@ def sidecar(tmp_path, monkeypatch):
     # BaseSubprocessTransport.__del__).
     with TestClient(main.app) as client:
         yield client
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "docker: needs the running workspace container")
+
+
+@pytest.fixture
+def scripts_client(sidecar, request, monkeypatch):
+    # Outside pytest's 0700 tmp tree, so the script user can reach its scratch dir as root.
+    scratch_root = Path(tempfile.mkdtemp(prefix="ze-scripts-test-"))
+    scratch_root.chmod(0o711)
+    request.addfinalizer(lambda: shutil.rmtree(scratch_root, ignore_errors=True))
+    monkeypatch.setattr(scripts, "SCRATCH_ROOT", scratch_root)
+    monkeypatch.setattr(main, "API_TOKEN", "tok")
+    monkeypatch.setattr(scripts, "slot", scripts.ScriptSlot())
+    monkeypatch.setattr(
+        scripts, "isolation", scripts.Isolation(rule_verified=True, mode_set=True)
+    )
+    sidecar.scratch_root = scratch_root
+    return sidecar
