@@ -42,7 +42,7 @@
 
 ## Phase 3: User Story 1 - See what Ze did, by goal, workflow or run (P1) 🎯 MVP
 
-- [ ] T005 [L:ledger] [US1] Tests first `core/cognition/ze-memory/tests/action_records/test_list_by_subject.py` (mocked pool, asserting the SQL and params):
+- [x] T005 [L:ledger] [US1] Tests first `core/cognition/ze-memory/tests/action_records/test_list_by_subject.py` (mocked pool, asserting the SQL and params):
   - the subject clause uses the mapped key from the closed map (never interpolated from input), with `$n::text`;
   - `since` uses `occurred_at > $n::timestamptz`;
   - the cursor clause `(occurred_at, id) < ($a::timestamptz, $b::uuid)` appears only when a cursor is given (no cursor means no clause, K-1);

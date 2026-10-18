@@ -26,6 +26,7 @@ from ze_memory.action_records.types import (
     AuthoritativeRef,
     CausalRef,
     material_tuple,
+    subject_context_key,
     validate_draft,
 )
 from ze_memory.errors import StoreError
@@ -315,7 +316,32 @@ class PostgresActionRecordStore:
         cursor: tuple[datetime, UUID] | None = None,
         limit: int = 50,
     ) -> list[ActionRecord]:
-        raise NotImplementedError
+        if (kind is None) != (subject_id is None):
+            raise StoreError("kind and subject_id must be given together")
+        clauses: list[str] = []
+        args: list[object] = []
+        if kind is not None:
+            args.append(str(subject_id))
+            clauses.append(
+                f"context->>'{subject_context_key(kind)}' = ${len(args)}::text"
+            )
+        if since is not None:
+            args.append(since)
+            clauses.append(f"occurred_at > ${len(args)}::timestamptz")
+        if cursor is not None:
+            args.extend(cursor)
+            clauses.append(
+                f"(occurred_at, id) < (${len(args) - 1}::timestamptz, ${len(args)}::uuid)"
+            )
+        args.append(max(1, min(limit, 500)))
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        sql = (
+            f"SELECT * FROM action_records {where} "
+            f"ORDER BY occurred_at DESC, id DESC LIMIT ${len(args)}"
+        )
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(sql, *args)
+        return [_record_from_row(row) for row in rows]
 
     async def list(
         self,
