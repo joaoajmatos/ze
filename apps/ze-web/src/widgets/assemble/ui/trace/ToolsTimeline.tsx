@@ -1,29 +1,48 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
-import { useState } from "react";
-import { toolLanes } from "../../lib/instruments/tools";
+import { useState, type ReactNode } from "react";
+import { toolLanes, type ToolMark } from "../../lib/instruments/tools";
 import { groupScriptRows, isDelegateLike, scriptSummary, type ScriptNode } from "../../lib/script-rows";
 
-function ScriptRow({ node }: { node: ScriptNode }) {
+function ToolRow({ c, highlight = [], children }: { c: ToolMark; highlight?: string[]; children?: ReactNode }) {
+  return (
+    <li data-highlight={highlight.includes(c.name) ? "" : undefined}>
+      <span className="key">{c.name}</span>
+      <span className="ro muted">{c.returned ? "returned" : `${c.durationMs} ms`}</span>
+      {c.irreversible && <span className="lbl tr-flag">irreversible</span>}
+      {c.gateWords && <span className="lbl tr-flag tr-gate">{c.gateWords}</span>}
+      {c.failed && <span className="lbl tr-flag">failed</span>}
+      {c.note && <span className="ro muted">{c.note}</span>}
+      {children}
+    </li>
+  );
+}
+
+/** Writes a script proposed stay visible beside the summary; the reads and the source open on demand. */
+function ScriptRow({ node, agent, partial, highlight }: { node: ScriptNode; agent: string; partial: boolean; highlight: string[] }) {
   const [open, setOpen] = useState(false);
   const script = node.call.script;
+  const access = new Map(node.children.map((c, i) => [c.call_id ?? String(i), c.access]));
+  const marks = toolLanes(node.children, agent, partial).flatMap((l) => l.calls);
+  const isWrite = (m: ToolMark) => access.get(m.id) === "write";
+  const failed = node.call.success === false || script?.outcome === "exception";
   return (
     <div className="tr-script">
-      <button type="button" className="tr-script-toggle ro" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button type="button" className={`tr-script-toggle ro${failed ? " failed" : ""}`} aria-expanded={open} onClick={() => setOpen(!open)}>
         {scriptSummary(node)}
       </button>
+      <ul>
+        {marks.filter((m) => open || isWrite(m)).map((m) => (
+          <ToolRow key={m.id} c={m} highlight={highlight} />
+        ))}
+      </ul>
       {open && (
         <>
-          {script && <pre className="tr-script-src">{script.source}</pre>}
+          {script && (
+            <pre className="tr-script-src" tabIndex={0} aria-label="Script source">
+              {script.source}
+            </pre>
+          )}
           {script?.source_cut && <p className="ro muted">Source cut to fit the trace.</p>}
-          <ul>
-            {node.children.map((c, i) => (
-              <li key={c.call_id ?? i}>
-                <span className="key">{c.name}</span>
-                <span className="ro muted">{c.duration_ms} ms</span>
-                {c.success === false && <span className="lbl tr-flag">failed</span>}
-              </li>
-            ))}
-          </ul>
         </>
       )}
     </div>
@@ -55,15 +74,9 @@ export function ToolsTimeline({ trace, partial = false, highlight = [] }: { trac
             </div>
             <ul>
               {lane.calls.map((c) => (
-                <li key={c.id} data-highlight={highlight.includes(c.name) ? "" : undefined}>
-                  <span className="key">{c.name}</span>
-                  {scripts.has(c.id) && <ScriptRow node={scripts.get(c.id)!} />}
-                  <span className="ro muted">{c.returned ? "returned" : `${c.durationMs} ms`}</span>
-                  {c.irreversible && <span className="lbl tr-flag">irreversible</span>}
-                  {c.gateWords && <span className="lbl tr-flag tr-gate">{c.gateWords}</span>}
-                  {c.failed && <span className="lbl tr-flag">failed</span>}
-                  {c.note && <span className="ro muted">{c.note}</span>}
-                </li>
+                <ToolRow key={c.id} c={c} highlight={highlight}>
+                  {scripts.has(c.id) && <ScriptRow node={scripts.get(c.id)!} agent={lane.agent} partial={partial} highlight={highlight} />}
+                </ToolRow>
               ))}
             </ul>
           </div>
