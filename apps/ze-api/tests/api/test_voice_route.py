@@ -4,32 +4,24 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
-
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from ze_agents.errors import (
-    AudioTooLongError,
-    AudioToolMissingError,
-    AudioUnreadableError,
-    TranscriptionFailedError,
-)
 from ze_api.api.deps import get_container, require_api_key
 from ze_api.api.v0.voice import router as voice_router_module
 from ze_api.api.v0.voice.limits import VoiceBodyLimitMiddleware
 from ze_api.voice.registry import TranscriptionRegistry
-from ze_core.voice import Transcription
+from tests.conftest import FakeTranscribeClient
 
 FIXTURES = Path(__file__).parent.parent / "fixtures" / "audio"
 URL = "/api/v0/voice/transcriptions"
 TEN_MB = 10 * 1024 * 1024
 
 
-def _container(models: dict | None = None):
+def _container(models: dict | None = None, client=None):
     return SimpleNamespace(
-        openrouter_client=object(),
+        openrouter_client=client or FakeTranscribeClient(),
         settings=SimpleNamespace(config={"models": models or {}}),
         transcription_registry=TranscriptionRegistry(),
     )
@@ -41,10 +33,14 @@ def container():
 
 
 @pytest.fixture
-def transcribe(monkeypatch):
-    mock = AsyncMock(return_value=Transcription("remind me to call Ana", 3.4))
-    monkeypatch.setattr(voice_router_module, "transcribe_audio", mock)
-    return mock
+def model(container):
+    """The fake speech client; `.calls` is empty when the model was never reached."""
+    return container.openrouter_client
+
+
+@pytest.fixture
+def probe(ffprobe_stub):
+    return ffprobe_stub(["3.400000"])
 
 
 @pytest.fixture
@@ -70,7 +66,7 @@ def _wav() -> bytes:
 
 
 async def test_success_returns_transcript_and_registers_id(
-    client, container, transcribe
+    client, container, probe
 ):
     resp = await client.post(URL, files={"file": ("a.wav", _wav(), "audio/wav")})
     assert resp.status_code == 200
@@ -83,24 +79,26 @@ async def test_success_returns_transcript_and_registers_id(
     )
 
 
-async def test_uses_configured_whisper_model(client, transcribe):
+async def test_uses_configured_whisper_model(client, model, probe):
     await client.post(URL, files={"file": ("a.wav", _wav(), "audio/wav")})
-    assert transcribe.await_args.kwargs["model"] == "test/whisper"
-    assert transcribe.await_args.args[2] == "audio/wav"
+    assert model.calls[0]["model"] == "test/whisper"
+    assert model.calls[0]["audio_format"] == "audio/wav"
+    assert model.calls[0]["duration_seconds"] == 3.4
 
 
-async def test_falls_back_to_default_whisper_model(app, transcribe):
+async def test_falls_back_to_default_whisper_model(app, probe):
     from ze_agents.defaults import MODEL_WHISPER
 
-    app.dependency_overrides[get_container] = lambda: _container()
+    fallback = _container()
+    app.dependency_overrides[get_container] = lambda: fallback
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as c:
         await c.post(URL, files={"file": ("a.wav", _wav(), "audio/wav")})
-    assert transcribe.await_args.kwargs["model"] == MODEL_WHISPER
+    assert fallback.openrouter_client.calls[0]["model"] == MODEL_WHISPER
 
 
-async def test_codec_parameters_are_accepted(client, transcribe):
+async def test_codec_parameters_are_accepted(client, probe):
     resp = await client.post(
         URL,
         files={
@@ -114,7 +112,7 @@ async def test_codec_parameters_are_accepted(client, transcribe):
     assert resp.status_code == 200
 
 
-async def test_missing_key_is_401(app, transcribe):
+async def test_missing_key_is_401(app, model, probe):
     del app.dependency_overrides[require_api_key]
     app.state.settings = SimpleNamespace(ze_api_key="secret")
     async with AsyncClient(
@@ -122,7 +120,7 @@ async def test_missing_key_is_401(app, transcribe):
     ) as c:
         resp = await c.post(URL, files={"file": ("a.wav", _wav(), "audio/wav")})
     assert resp.status_code == 401
-    transcribe.assert_not_called()
+    assert model.calls == []
 
 
 # --- failures (US2) -------------------------------------------------------
@@ -136,19 +134,19 @@ def _assert_no_entry(container):
     assert len(container.transcription_registry) == 0
 
 
-async def test_unsupported_type_is_415(client, container, transcribe):
+async def test_unsupported_type_is_415(client, container, model, probe):
     resp = await client.post(URL, files={"file": ("a.txt", b"hi", "text/plain")})
     assert resp.status_code == 415
     assert (
         resp.json()["detail"]
         == "Unsupported recording type. Use WebM, Ogg, MP4 or WAV."
     )
-    transcribe.assert_not_called()
+    assert model.calls == [] and probe.calls == []
     _assert_no_entry(container)
 
 
 async def test_declared_length_over_limit_is_413_before_handler(
-    client, container, transcribe
+    client, container, model, probe
 ):
     resp = await client.post(
         URL,
@@ -157,12 +155,12 @@ async def test_declared_length_over_limit_is_413_before_handler(
     )
     assert resp.status_code == 413
     assert resp.json()["detail"] == "That recording is too large: the limit is 10 MB."
-    transcribe.assert_not_called()
+    assert model.calls == [] and probe.calls == []
     _assert_no_entry(container)
 
 
 async def test_chunked_body_over_limit_is_413_from_read_cap(
-    client, container, transcribe
+    client, container, model, probe
 ):
     boundary = "bnd"
     head = (
@@ -185,12 +183,12 @@ async def test_chunked_body_over_limit_is_413_from_read_cap(
     )
     assert resp.status_code == 413
     assert resp.json()["detail"] == "That recording is too large: the limit is 10 MB."
-    transcribe.assert_not_called()
+    assert model.calls == [] and probe.calls == []
     _assert_no_entry(container)
 
 
-async def test_too_long_is_413(client, container, transcribe):
-    transcribe.side_effect = AudioTooLongError("long")
+async def test_too_long_is_413(client, container, ffprobe_stub, model):
+    ffprobe_stub(["130.0"])
     resp = await _post_wav(client)
     assert resp.status_code == 413
     assert (
@@ -199,26 +197,24 @@ async def test_too_long_is_413(client, container, transcribe):
     _assert_no_entry(container)
 
 
-async def test_unreadable_is_422(client, container, transcribe):
-    transcribe.side_effect = AudioUnreadableError("bad")
+async def test_unreadable_is_422(client, container, ffprobe_stub):
+    ffprobe_stub([None, None])
     resp = await _post_wav(client)
     assert resp.status_code == 422
     assert resp.json()["detail"] == "I couldn't make out the recording."
     _assert_no_entry(container)
 
 
-async def test_transcription_failed_is_502_and_cause_logged(
-    client, container, transcribe, caplog
-):
-    transcribe.side_effect = TranscriptionFailedError("model down")
+async def test_transcription_failed_is_502(client, container, model, probe):
+    model.error = RuntimeError("model down")
     resp = await _post_wav(client)
     assert resp.status_code == 502
     assert resp.json()["detail"] == "I couldn't make out the recording."
     _assert_no_entry(container)
 
 
-async def test_tool_missing_is_503(client, container, transcribe, monkeypatch):
-    transcribe.side_effect = AudioToolMissingError("no ffprobe")
+async def test_tool_missing_is_503(client, container, ffprobe_stub, monkeypatch):
+    ffprobe_stub(missing=True)
     events: list[str] = []
     monkeypatch.setattr(
         voice_router_module.log, "error", lambda event, **kw: events.append(event)
@@ -237,9 +233,9 @@ async def test_tool_missing_is_503(client, container, transcribe, monkeypatch):
         {"json": {"file": "x"}},
     ],
 )
-async def test_missing_file_part_is_plain_422(client, container, transcribe, kwargs):
+async def test_missing_file_part_is_plain_422(client, container, model, probe, kwargs):
     resp = await client.post(URL, **kwargs)
     assert resp.status_code == 422
     assert resp.json()["detail"] == "Send the recording as a file named file."
-    transcribe.assert_not_called()
+    assert model.calls == [] and probe.calls == []
     _assert_no_entry(container)

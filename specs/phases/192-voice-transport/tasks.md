@@ -124,7 +124,7 @@ US3 is asserted in T007 (flow and agent ContextVars during the call); the cost t
 
 ## Phase 6: Polish and cross-cutting
 
-- [ ] T013 [L:lead] Merge lane `core`, then lane `api`. After the merge, `lead` edits the api tests to drop their `transcribe_audio` patches, so they run on the real helper with the stubbed probe and fake client. Run `make codegen` if a schema moved. Gates: `make test-py`, `make test-core SLOW=1` (with ffprobe present), `make lint`, `make test-web`.
+- [x] T013 [L:lead] Merge lane `core`, then lane `api`. After the merge, `lead` edits the api tests to drop their `transcribe_audio` patches, so they run on the real helper with the stubbed probe and fake client. Run `make codegen` if a schema moved. Gates: `make test-py`, `make test-core SLOW=1` (with ffprobe present), `make lint`, `make test-web`.
 - [ ] T014 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev`: a real Chrome WebM recording, a Safari MP4 recording (or the fragmented fixture), and the failure cases. Build the ze-api image once and run `ffprobe -version` inside it. Record the results in the Handoffs note.
 - [ ] T015 [P] [L:docs] From the merged diff, following the doc-style skill:
   - `docs/architecture.md` (~61-62, ~175, ~692, ~700-701, and the REST table);
