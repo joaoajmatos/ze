@@ -6,11 +6,23 @@
 - **Alternatives**: a chat turn ("ask Ze to do X": slow, costs a model call, may do something else); direct REST (skips gates; the hole this phase closes).
 
 ## R2. Owner check
-- **Decision**: `ToolAction.owner` names the agent whose tool list must contain the tool; the server refuses otherwise. Trees are built by code (plugins, composed answers) or by agents' render tools, which cannot set actions.
-- **Rationale**: clarification Q1 (tools owned by the tree's producer). The browser is the user's own; the check stops one plugin's tree from calling another plugin's tools, and the write gates still apply.
+- **Decision**: `ToolAction.owner` names an agent; the tool must be in its `tools`, be a WRITE tool and declare `ui_action=True`. Trees are built by code or by render tools, which cannot set tool actions.
+- **Rationale**: the server cannot tell which tree a press came from, so it checks what it can (Gauge A-4); the opt-in keeps arbitrary one-click writes unreachable, and the write gates still apply. READ tools are excluded because a screen action has nowhere to show their result.
+
+## R7. Parking outside the loop
+- **Decision**: `run_action` marks its context as in a loop for the one call and passes a fresh `_call_id`, so `call_tool` parks an asks-first write (it raises outside the loop) and the gate holds a real call id; the approved run records the UI request id.
+- **Rationale**: `run_undo` never parks (it always passes an approval), so copying it is not enough (Gauge A-1).
+
+## R8. Model-written buttons
+- **Decision**: `render_confirm` and `render_choice_group` keep model-written values as chat choices (`AskAction`); GoalAgent's inline gate buttons go, since 181's prompt frames and 188's answer-gate resolve gates.
+- **Rationale**: the old regex branch made a model-written string resolve a gate; a hard cut needs one gate path, and it already exists.
+
+## R9. Legacy trees
+- **Decision**: no version means legacy; legacy renders best effort with string-action buttons disabled; only the tree is replaced if it cannot render.
+- **Rationale**: history must not fill with errors (Gauge A-3); no read-time rewriting of stored trees.
 
 ## R3. Version and fallback
-- **Decision**: a `ui_version` string on each transport that carries components; major mismatch older than the client's → refuse; unknown types → fallback node; known types validated strictly.
+- **Decision**: a `ui_version` string on each transport that carries newly built components; unknown types → fallback node; known types validated strictly; no version or 1.x → legacy (R9).
 - **Rationale**: a newer server can add a primitive without breaking an older tab; mistakes stay visible.
 
 ## R4. Slot primitives

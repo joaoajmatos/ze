@@ -36,7 +36,7 @@ Ze draws structured UI from server-built trees of primitives. Agents build them 
 
 ### User Story 1 - An action on a screen asks first, like chat does (Priority: P1)
 
-A primitive's button that changes something (cancel a reminder, mark a source read) runs the same tool Ze would run in chat, through the same confirmation: an irreversible change asks first, a denial leaves things as they were, and the trace records it.
+A primitive's button that changes something (cancel a reminder, mark a source read) runs the same tool Ze would run in chat, through the same confirmation: an irreversible change asks first, a denial leaves things as they were, and the action ledger records it.
 
 **Why this priority**: today a plugin screen can call a write route directly, with no confirmation and no trace. This closes that hole before plugins get more surfaces.
 
@@ -48,8 +48,9 @@ A primitive's button that changes something (cancel a reminder, mark a source re
 2. **Given** a button whose action calls an irreversible write tool, **When** the user presses it, **Then** the confirmation appears first, and the tool runs only on approval.
 3. **Given** a button whose action asks Ze something, **When** the user presses it, **Then** the question is sent on the selected thread as an ordinary turn.
 4. **Given** a button whose action opens a place, **When** the user presses it, **Then** the app navigates there without a turn.
-5. **Given** a tree with an old string action (`rest:…`, `msg:…`, a bare text), **When** it is validated, **Then** validation fails with a plain error naming the action (pre-v1 hard cut).
-6. **Given** a tool action naming a tool that does not exist or that the tree's owner may not call, **When** the user presses it, **Then** nothing runs and a plain line says the action is not available.
+5. **Given** a newly built tree with a string action (`rest:…`, `msg:…`, a bare text), **When** it is validated, **Then** validation fails with a plain error naming the action (pre-v1 hard cut). A tree stored before this phase (no version) is shown best effort: its old buttons are disabled with the line "This older button no longer works.", and its text always shows.
+6. **Given** a tool action naming a tool that does not exist, is not in the named agent's tools, is not a write tool, or has not opted in to screen actions, **When** the user presses it, **Then** nothing runs and a plain line says the action is not available.
+7. **Given** a pending screen confirmation, **When** the user sends a new message on that thread, reconnects, or the server restarts, **Then** the confirmation is replaced ("Okay, I didn't …"), shown again, or answered "That request expired." respectively, and an approval never runs twice.
 
 ---
 
@@ -66,7 +67,7 @@ When the server sends a primitive the web app does not know yet, the rest of the
 1. **Given** a tree with an unknown primitive type, **When** it renders, **Then** the known primitives render and the unknown one shows as a table of its scalar fields with a note naming the type.
 2. **Given** an unknown primitive with nested children, **When** it renders, **Then** its known children render inside the fallback.
 3. **Given** a known primitive with a missing required field, **When** the tree is validated, **Then** it fails with a plain error that names the primitive and the field.
-4. **Given** a tree marked with a newer contract version than the client's, **When** it renders, **Then** it renders with the fallback for unknown types; a tree with an older major version is refused with a plain line.
+4. **Given** a tree marked with a newer minor version than the client's, **When** it renders, **Then** it renders with the fallback for unknown types. **Given** a tree with no version or a 1.x version (stored before this phase), **When** it renders, **Then** it renders best effort (unknown types fall back; string-action buttons are disabled), and if it still cannot be shown, only that tree is replaced by "This older view can't be shown." while the message text renders.
 
 ---
 
@@ -115,10 +116,10 @@ The primitive contract is defined once and checked on both sides with the same e
 ### Functional Requirements
 
 - **FR-001**: Primitive actions MUST be typed: ask (send a question on the selected thread), tool (run a named tool with arguments), navigate (open a place route), and compose (run a composed-answer preset). String actions MUST be removed (pre-v1 hard cut).
-- **FR-002**: A tool action MUST run on the server through the same tool path as chat, including the write-confirmation gate, the constraint veto and the trace. The browser MUST never call a plugin's REST operation as a primitive action.
-- **FR-003**: A tool action MUST be refused when the tool is unknown or not owned by the producer of the tree (the plugin or agent that built it), with a plain line.
+- **FR-002**: A tool action MUST run on the server through the same tool path as chat, including the write-confirmation gate and the constraint veto, and MUST be recorded in the action ledger. The browser MUST never call a plugin's REST operation as a primitive action.
+- **FR-003**: A tool action MUST name an agent and one of that agent's tools; the tool MUST be a write tool that opted in to screen actions. Anything else MUST be refused with a plain line. (The server cannot tell which tree a press came from; the opt-in keeps arbitrary one-click writes unreachable.)
 - **FR-003a**: Agents' render tools MUST offer stat rows, keyed tables and sparklines; entity facet, posture-aware list and card-with-actions MUST be code-built only.
-- **FR-004**: The tree MUST carry a contract version. The client MUST render a same-major tree with unknown types through the fallback and refuse an older major version with a plain line.
+- **FR-004**: Every newly sent tree MUST carry a contract version. The client MUST render a same-major tree with unknown types through the fallback; a tree with no version or an older major version MUST render best effort as legacy, never failing the message it belongs to. A version MUST never be stamped onto a stored tree at read time.
 - **FR-005**: An unknown primitive type MUST render as a table of its scalar fields with a note naming the type, with its known children rendered inside; it MUST never fail the rest of the tree.
 - **FR-006**: The primitive set MUST cover: entity facet, stat rows, posture-aware list, series (sparkline), keyed table with row actions, timeline, and card with actions. An audit MUST map each need to one primitive and remove unused primitives.
 - **FR-007**: Claim posture MUST remain set by code only on every primitive that shows a claim.
@@ -127,10 +128,13 @@ The primitive contract is defined once and checked on both sides with the same e
 - **FR-010**: No plugin-supplied script MUST ever run in the browser; plugins contribute only data and descriptors.
 - **FR-011**: Docs MUST describe the primitive set, typed actions, the version and fallback rules, and the gallery (ze-ui and ze-components READMEs, frontend, extending-Ze guide).
 
+- **FR-012**: A screen confirmation MUST be replaced when a new turn starts on its thread, shown again after a reconnect, answered "That request expired." when unknown, time out with "Okay, I didn't …", and run at most once.
+- **FR-013**: The outcome line MUST come from the tool's declared phrases, never from raw error text.
+
 ### Key Entities
 
 - **Primitive**: a typed descriptor (type, fields, optional children, optional code-set posture).
-- **Action**: kind (ask, tool, navigate, compose) and its payload (question text; tool name and arguments; route; preset id).
+- **Primitive action**: kind (ask, tool, navigate, compose) and its payload (question text; agent, tool name and arguments; route; preset id).
 - **Contract version**: major and minor numbers carried by each tree.
 - **Fixture**: a named example tree, valid or invalid, shared by server and client tests and the gallery.
 
