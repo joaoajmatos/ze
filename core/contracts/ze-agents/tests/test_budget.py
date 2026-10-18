@@ -139,3 +139,25 @@ async def test_cancelled_specialist_is_reported_as_possibly_partly_run():
 def test_invalid_budget_config_falls_back_per_field():
     assert conductor_budget({"conductor": {"budget_seconds": "soon"}}) == (110, 25)
     assert conductor_budget({"conductor": {"budget_seconds": 0}}) == (1, 0)
+
+
+async def test_specialist_timeout_without_any_budget_is_a_plain_failure():
+    async def _run(self, ctx: AgentContext) -> AgentResult:
+        raise TimeoutError("socket timed out")
+
+    cls = type(
+        "_NoBudget",
+        (BaseAgent,),
+        {"name": "calendar", "description": "c", "tools": [], "run": _run},
+    )
+    agent(cls)
+    register_instance("calendar", cls())
+
+    call = await run_delegate(
+        {"agent_name": "calendar", "objective": "list events"},
+        AgentContext(session_id="s", prompt="p"),
+        iteration=0,
+        caller_name="companion",
+    )
+
+    assert call.error == "socket timed out"

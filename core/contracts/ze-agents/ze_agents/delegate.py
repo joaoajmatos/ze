@@ -323,7 +323,8 @@ async def run_delegate(
         raise
     except asyncio.TimeoutError as exc:
         duration_ms = int((time.monotonic() - start) * 1000)
-        if (remaining_seconds(ctx) or 0) > 0:
+        remaining = remaining_seconds(ctx)
+        if remaining is None or remaining > 0:
             # The specialist raised its own timeout (a socket, an HTTP call).
             log.warning("delegate_error", to_agent=agent_name, error=str(exc))
             ctx.extensions[_stall_key(agent_name)] = str(exc) or "timed out"
