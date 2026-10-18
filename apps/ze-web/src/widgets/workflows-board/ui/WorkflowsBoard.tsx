@@ -48,9 +48,13 @@ export function WorkflowsBoard({ workflows, executions, loading, error, offline,
                   {w.next_run_at ? ` · next ${untilPhrase(w.next_run_at, now)}` : ""}
                 </span>
                 <span className="s">
+                  {result.kind === "unknown" && "—"}
                   {result.kind === "never" && "Never run"}
                   {result.kind === "running" && "Running"}
                   {result.kind === "ok" && `Last run went fine${w.last_run_at ? ` · ${ago(new Date(w.last_run_at), now)}` : ""}`}
+                  {result.kind === "cancelled" && "Last run was cancelled"}
+                  {result.kind === "held" && "Waiting on a write you have not approved"}
+                  {result.kind === "other" && `Last run: ${result.text}`}
                   {result.kind === "failed" && `Last run failed: ${result.text}`}
                 </span>
                 <span className="acts">

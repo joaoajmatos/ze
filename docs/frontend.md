@@ -14,7 +14,7 @@ The React web client (`apps/ze-web`) uses [Feature-Sliced Design](https://featur
 | Layer | Purpose | Name by | Example |
 |-------|---------|---------|---------|
 | `shared` | UI kit, utilities, API wiring — no business logic | — | `shared/ui` (primitives + layout), `shared/api/ws-client` |
-| `entities` | One business noun: display + read queries | singular noun | `entities/goal` → `GoalCard`, `useGoalsQuery` |
+| `entities` | One business noun: display + read queries | singular noun | `entities/goal` → `boardOrder`, `useGoalsQuery` |
 | `features` | One user interaction | verb phrase | `features/export-user-data` |
 | `widgets` | Composite screen sections | UI block role | `widgets/goals-board` |
 | `pages` | Thin route entry — composes widgets | route segment | `pages/doing` |
@@ -180,9 +180,9 @@ Skill review lives on Doing (`widgets/skills-queue`). The workspace file map liv
 
 Example: goal detail view at `/doing/goals/:goalId`.
 
-1. Add `entities/goal/ui/GoalDetail.tsx` and optionally `useGoalQuery(id)`
-2. Add `widgets/goal-detail/` composing the entity + any action features
-3. Add `pages/goal-detail/` thin page
+1. Add `useGoalDetailQuery(id)` in `entities/goal/api/`
+2. Add a widget such as `widgets/milestone-field/` for each module of the view
+3. Add `pages/doing-goal/` to compose the widgets
 4. Register the nested route in `app/router/routes.tsx` (no nav entry needed if reached from a list)
 
 Do not put route-specific logic in entities — entities are reusable across screens.

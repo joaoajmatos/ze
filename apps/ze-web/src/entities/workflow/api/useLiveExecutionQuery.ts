@@ -19,9 +19,10 @@ export function useLiveExecutionQuery(workflowId: string, executionId: string | 
     queryKey: [...queryKeys.workflowExecutions(workflowId), "live", executionId],
     queryFn: async () => {
       if (!executionId) return null;
-      const { data } = await getWorkflowExecution({
+      const { data, error } = await getWorkflowExecution({
         path: { workflow_id: workflowId, execution_id: executionId },
       });
+      if (error) throw error;
       const execution = data ?? null;
 
       if (execution && isDone(execution)) {

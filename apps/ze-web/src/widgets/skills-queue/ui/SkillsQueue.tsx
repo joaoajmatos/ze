@@ -14,7 +14,6 @@ interface Props {
   skills: SkillResponse[];
   loading: boolean;
   error: boolean;
-  offline?: boolean;
   onChatAbout?: (ref: WsScreenRef, element?: Element | null) => void;
 }
 
@@ -68,7 +67,7 @@ function Row({ skill, onChatAbout }: { skill: SkillResponse; onChatAbout?: Props
   );
 }
 
-function ImportForm({ offline }: { offline?: boolean }) {
+function ImportForm() {
   const [url, setUrl] = useState("");
   const imp = useSkillImportMutation();
   const submit = () => {
@@ -87,7 +86,7 @@ function ImportForm({ offline }: { offline?: boolean }) {
         Add a skill from a link
       </label>
       <input id="skill-url" className="doing-in" placeholder="https://example.com/SKILL.md" value={url} onChange={(e) => setUrl(e.target.value)} />
-      <button type="submit" className="ctl" disabled={offline || imp.isPending || !url.trim()}>
+      <button type="submit" className="ctl" disabled={imp.isPending || !url.trim()}>
         Import
       </button>
       {imp.isError && (
@@ -100,12 +99,12 @@ function ImportForm({ offline }: { offline?: boolean }) {
 }
 
 /** Review queue first, then what is installed. */
-export function SkillsQueue({ skills, loading, error, offline, onChatAbout }: Props) {
+export function SkillsQueue({ skills, loading, error, onChatAbout }: Props) {
   const pending = skills.filter((s) => s.status === "pending_review");
   const rest = skills.filter((s) => s.status !== "pending_review");
   return (
     <Module label="Skills" tone={pending.length ? "cream" : "default"} className="doing-skills">
-      <ImportForm offline={offline} />
+      <ImportForm />
       {error ? (
         <p className="hot" role="alert">
           Couldn't read your skills.

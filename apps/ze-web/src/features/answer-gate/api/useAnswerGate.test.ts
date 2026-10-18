@@ -71,10 +71,18 @@ describe("useAnswerGate", () => {
   it("stays in flight until the goals data drops the gate", () => {
     const { result, rerender } = renderHook(({ ids }) => useBoth(ids), { initialProps: { ids: ["g1"] } });
     act(() => void result.current.proceed("g1"));
-    act(() => void vi.advanceTimersByTime(60_000));
+    act(() => void vi.advanceTimersByTime(10_000));
     expect(result.current.stateOf("g1")).toBe("in_flight");
     rerender({ ids: [] });
     expect(result.current.stateOf("g1")).toBe("idle");
+  });
+
+  it("with no refresh or error within 15 s, Proceed re-enables with a timeout line", () => {
+    const { result } = renderHook(() => useBoth(["g1"]));
+    act(() => void result.current.proceed("g1"));
+    act(() => void vi.advanceTimersByTime(15_100));
+    expect(result.current.stateOf("g1")).toBe("idle");
+    expect(result.current.errorOf("g1")).toMatch(/hasn't answered/i);
   });
 
   it("an error frame on the thread within 15 s clears the flight and returns the error", () => {
@@ -97,9 +105,11 @@ describe("useAnswerGate", () => {
     act(() => void result.current.proceed("g1"));
     act(() => m.frames.error({ type: "error", thread_id: "other", detail: "x" }));
     expect(result.current.stateOf("g1")).toBe("in_flight");
-    act(() => void vi.advanceTimersByTime(16_000));
-    frame("error", { detail: "late" });
+    act(() => void vi.advanceTimersByTime(14_000));
     expect(result.current.stateOf("g1")).toBe("in_flight");
+    act(() => void vi.advanceTimersByTime(2_000));
+    frame("error", { detail: "late" });
+    expect(result.current.errorOf("g1")).toMatch(/hasn't answered/i);
   });
 
   it("Redirect is in flight only until the first message frame, then awaits instructions and Proceed still sends", () => {

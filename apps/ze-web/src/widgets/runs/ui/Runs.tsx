@@ -10,12 +10,12 @@ interface Props {
   loading: boolean;
   error: boolean;
   workspace: WorkspaceStatusResponse | undefined;
+  workspaceError?: boolean;
   now: Date;
-  offline: boolean;
   onChatAbout?: (ref: WsScreenRef, element?: Element | null) => void;
 }
 
-function RunRow({ run, now, offline, onChatAbout }: { run: WorkspaceRunResponse; now: Date; offline: boolean; onChatAbout?: Props["onChatAbout"] }) {
+function RunRow({ run, now, onChatAbout }: { run: WorkspaceRunResponse; now: Date; onChatAbout?: Props["onChatAbout"] }) {
   const queryClient = useQueryClient();
   const cancel = useCancelWorkspaceRunMutation();
   const [line, setLine] = useState<string | null>(null);
@@ -49,7 +49,7 @@ function RunRow({ run, now, offline, onChatAbout }: { run: WorkspaceRunResponse;
           <button
             type="button"
             className="ctl"
-            disabled={offline || cancel.isPending}
+            disabled={cancel.isPending}
             onClick={() =>
               cancel.mutate(run.id!, { onSuccess: (r) => setLine(r.outcome === "gone" ? `This run ${r.line}.` : null) })
             }
@@ -71,12 +71,12 @@ function RunRow({ run, now, offline, onChatAbout }: { run: WorkspaceRunResponse;
   );
 }
 
-export function Runs({ runs, loading, error, workspace, now, offline, onChatAbout }: Props) {
+export function Runs({ runs, loading, error, workspace, workspaceError, now, onChatAbout }: Props) {
   const off = workspace?.available === false;
   return (
     <Module label="Runs" className="doing-runs">
       {off ? (
-        <p className="hot" role="alert">
+        <p className="s" role="status">
           Workspace is off.
         </p>
       ) : error ? (
@@ -89,13 +89,14 @@ export function Runs({ runs, loading, error, workspace, now, offline, onChatAbou
         </p>
       ) : (
         <>
+          {workspaceError && <p className="s">Couldn't read whether the workspace is busy.</p>}
           {workspace?.busy && <p className="s">busy · one run at a time</p>}
           {runs.length === 0 ? (
             <p className="muted">No runs yet. Ask Ze to run something in its workspace.</p>
           ) : (
             <ul className="doing-list">
               {runs.map((r, i) => (
-                <RunRow key={r.id ?? `n${i}`} run={r} now={now} offline={offline} onChatAbout={onChatAbout} />
+                <RunRow key={r.id ?? `n${i}`} run={r} now={now} onChatAbout={onChatAbout} />
               ))}
             </ul>
           )}

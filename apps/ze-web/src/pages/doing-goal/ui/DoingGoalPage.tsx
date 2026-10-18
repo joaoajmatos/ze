@@ -4,7 +4,7 @@ import { MilestoneField } from "@/widgets/milestone-field";
 import { useAnswerGate } from "@/features/answer-gate";
 import { useChatAbout } from "@/features/ask-bar";
 import { ReviewGoalLearning } from "@/features/review-goal-learning";
-import { statusWord, useGoalDetailQuery, useGoalTracesQuery, useStartGoalMutation } from "@/entities/goal";
+import { statusWord, TRACE_LIMIT, useGoalDetailQuery, useGoalTracesQuery, useStartGoalMutation } from "@/entities/goal";
 import { useLoopsQuery } from "@/entities/loop";
 import { useRemindersQuery } from "@/entities/reminder";
 import { useScreenPublisher } from "@/entities/screen-context";
@@ -112,6 +112,11 @@ export function DoingGoalPage() {
         ← Doing
       </Link>
 
+      {detail.status === "awaiting_gate" && openGates.length === 0 && (
+        <p className="s" role="status">
+          This goal is waiting on a checkpoint, but the checkpoint isn't available.
+        </p>
+      )}
       {openGates.map((g) => (
         <GateModule key={g.id} gate={g} goalId={detail.id} goalTitle={detail.title} gateApi={gateApi} offline={offline} onChatAbout={chatAbout} />
       ))}
@@ -181,16 +186,24 @@ export function DoingGoalPage() {
         ) : (traces.data ?? []).length === 0 ? (
           <p className="muted">No tool calls recorded.</p>
         ) : (
+          <>
+          {traces.data!.length >= TRACE_LIMIT && <p className="s">Showing the first {TRACE_LIMIT} tool calls.</p>}
           <ul className="trace-list">
             {traces.data!.map((t) => (
               <li key={t.id} className="row">
                 <code className="t run-command">{t.tool_name}</code>
                 <span className="lbl">{t.success ? "Worked" : "Failed"}</span>
                 <span className="s">{t.duration_ms} ms</span>
-                {!t.success && t.error && <pre className="run-output">{t.error}</pre>}
+                {!t.success && t.error && (
+                  <details className="s">
+                    <summary>What it reported</summary>
+                    <pre className="run-output">{t.error}</pre>
+                  </details>
+                )}
               </li>
             ))}
           </ul>
+          </>
         )}
       </Module>
 
@@ -213,6 +226,7 @@ export function DoingGoalPage() {
                 <li key={l.id} className="row">
                   <span className="t">{l.title}</span>
                   <span className="lbl">{humanizeStatus(l.state)}</span>
+                  {l.reminder_id && reminders.isError && <span className="s">Couldn't read reminders.</span>}
                   {rem && (
                     <span className="s">
                       Reminder · {rem.label} · {REMINDER_WORD[rem.status]} · {dateTime(rem.fire_at)}

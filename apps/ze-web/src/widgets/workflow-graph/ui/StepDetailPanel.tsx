@@ -63,7 +63,12 @@ export function StepDetailPanel({ node, executionError, onClose }: Props) {
         <section>
           <h3 className="lbl">What went wrong</h3>
           <p className="hot">This step failed.</p>
-          {verbatim && <pre className="run-output">{verbatim}</pre>}
+          {verbatim && (
+            <details>
+              <summary>What it reported</summary>
+              <pre className="run-output">{verbatim}</pre>
+            </details>
+          )}
         </section>
       )}
       {!step.agent_hint && !step.verify && !result?.output && !failed && <p className="muted">No details for this step yet.</p>}

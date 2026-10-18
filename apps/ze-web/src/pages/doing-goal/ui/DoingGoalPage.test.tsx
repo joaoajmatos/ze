@@ -7,7 +7,7 @@ const m = vi.hoisted(() => ({
   detail: { data: undefined as unknown, isLoading: false, isError: false, refetch: vi.fn() },
   traces: { data: [] as unknown[], isLoading: false, isError: false },
   loops: { data: [] as unknown[], isLoading: false, isError: false },
-  reminders: { data: [] as unknown[] },
+  reminders: { data: [] as unknown[], isError: false },
   start: { mutate: vi.fn(), isPending: false, isError: false },
   gate: {} as Record<string, unknown>,
   chatAbout: vi.fn(),
@@ -52,7 +52,7 @@ describe("DoingGoalPage", () => {
     m.detail = { data: detail(), isLoading: false, isError: false, refetch: vi.fn() };
     m.traces = { data: [], isLoading: false, isError: false };
     m.loops = { data: [], isLoading: false, isError: false };
-    m.reminders = { data: [] };
+    m.reminders = { data: [], isError: false };
     m.start.mutate.mockReset();
     m.gate = gateApi();
     m.chatAbout.mockReset();
@@ -109,6 +109,7 @@ describe("DoingGoalPage", () => {
     expect(screen.getByText("Worked")).toBeInTheDocument();
     expect(screen.getByText("Failed")).toBeInTheDocument();
     expect(screen.getByText("SMTP refused").tagName).toBe("PRE");
+    expect(screen.getByText("SMTP refused").closest("details")).not.toBeNull();
     expect(screen.queryByText(/Show tool calls/i)).toBeNull();
   });
 
@@ -147,5 +148,24 @@ describe("DoingGoalPage", () => {
   it("publishes the goal as the screen subject", () => {
     view();
     expect(m.publisher).toHaveBeenCalledWith(expect.objectContaining({ subject: [expect.objectContaining({ kind: "goal", id: "g1" })] }));
+  });
+
+  it("says when the trace list is cut at the limit", () => {
+    m.traces.data = Array.from({ length: 100 }, (_, n) => ({ id: `t${n}`, tool_name: "x", success: true, duration_ms: 1, error: null }));
+    view();
+    expect(screen.getByText("Showing the first 100 tool calls.")).toBeInTheDocument();
+  });
+
+  it("says so when the reminders could not be read", () => {
+    m.loops.data = [{ id: "a", title: "Call", state: "active", goal_id: "g1", reminder_id: "r1" }];
+    m.reminders = { data: [], isError: true };
+    view();
+    expect(screen.getByText("Couldn't read reminders.")).toBeInTheDocument();
+  });
+
+  it("says the checkpoint is unavailable when the goal awaits a gate but none is open", () => {
+    m.detail.data = detail({ status: "awaiting_gate", gates: [] });
+    view();
+    expect(screen.getByText(/the checkpoint isn't available/)).toBeInTheDocument();
   });
 });

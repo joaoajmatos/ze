@@ -2213,21 +2213,24 @@ input[type="checkbox"] {
 }
 .graph-wrap {
   display: flex;
-  min-height: 480px;
-  height: 480px;
+  gap: 12px;
+}
+.graph-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .graph-frame {
   position: relative;
-  flex: 1;
+  height: 440px;
   min-width: 0;
   border: 1px solid var(--hair);
   overflow: hidden;
 }
 .graph-toolbar {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 10;
+  flex-shrink: 0;
 }
 .graph-tools {
   display: flex;
@@ -2334,10 +2337,6 @@ input[type="checkbox"] {
   }
   .graph-wrap {
     flex-direction: column;
-    height: auto;
-  }
-  .graph-frame {
-    min-height: 420px;
   }
   .graph-detail {
     width: auto;

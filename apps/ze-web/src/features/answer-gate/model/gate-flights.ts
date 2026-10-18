@@ -4,7 +4,7 @@ export interface Flight {
   kind: "decide" | "redirect";
   threadId: string;
   sentAt: number;
-  /** Stuck-goal answers end with a timeout line when nothing settles them; gate answers wait for the goals data. */
+  /** A decide answer ends with a timeout line and re-enables its buttons when neither a refresh nor an error settles it. */
   timeout?: boolean;
 }
 

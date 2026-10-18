@@ -58,7 +58,7 @@ export function useAnswerGate(openGateIds: readonly string[]) {
     const sent = send({ type: "action", payload: `${family}:${action}:${id}`, thread_id: threadId });
     if (!sent) return false;
     useGateFlights.setState((s) => ({
-      flights: { ...s.flights, [id]: { kind, threadId, sentAt: Date.now(), timeout: family === "goal_stuck" && kind === "decide" } },
+      flights: { ...s.flights, [id]: { kind, threadId, sentAt: Date.now(), timeout: kind === "decide" } },
       awaiting: kind === "decide" ? without(s.awaiting, id) : s.awaiting,
       errors: without(s.errors, id),
     }));

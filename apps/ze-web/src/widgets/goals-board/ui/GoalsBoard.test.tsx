@@ -108,4 +108,9 @@ describe("GoalsBoard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Chat about Learn Rust" }));
     expect(onChatAbout).toHaveBeenCalledWith({ kind: "goal", id: "g1" }, expect.anything());
   });
+
+  it("says the checkpoint is unavailable for a goal awaiting a gate with no gate id", () => {
+    view([goal({ status: "awaiting_gate" })]);
+    expect(screen.getByText(/checkpoint that isn't available/)).toBeInTheDocument();
+  });
 });

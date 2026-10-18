@@ -29,7 +29,7 @@ describe("WorkflowsBoard", () => {
   beforeEach(() => trigger.mutate.mockReset());
 
   it("shows the schedule in words and Never run", () => {
-    view({});
+    view({ executions: { w1: [] } });
     expect(screen.getByText(/At 08:00 AM, only on Monday/)).toBeInTheDocument();
     expect(screen.getByText("Never run")).toBeInTheDocument();
   });
@@ -72,4 +72,20 @@ describe("WorkflowsBoard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Chat about Weekly digest" }));
     expect(onChatAbout).toHaveBeenCalledWith({ kind: "workflow", id: "w1" }, expect.anything());
   });
+
+  it("shows a dash, not Never run, for a workflow whose executions were not fetched", () => {
+    view({ executions: {} });
+    expect(screen.queryByText("Never run")).toBeNull();
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("says cancelled and held honestly, never fine", () => {
+    const { unmount } = view({ executions: { w1: [ex({ status: "cancelled" })] } });
+    expect(screen.getByText("Last run was cancelled")).toBeInTheDocument();
+    unmount();
+    view({ executions: { w1: [ex({ status: "held" })] } });
+    expect(screen.getByText("Waiting on a write you have not approved")).toBeInTheDocument();
+    expect(screen.queryByText(/went fine/)).toBeNull();
+  });
+
 });

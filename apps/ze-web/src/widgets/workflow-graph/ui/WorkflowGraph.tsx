@@ -1,6 +1,6 @@
 import type { WorkflowStepResponse, WorkflowExecutionResponse } from "@myguyze/ze-client";
 import { ReactFlow, ReactFlowProvider, Background, useReactFlow, type Node, type Edge } from "@xyflow/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import "@xyflow/react/dist/style.css";
 import { buildWorkflowGraph } from "@/entities/workflow";
 import { layoutGraph, nodeSize } from "../lib/layout";
@@ -20,14 +20,8 @@ function WorkflowGraphInner({ steps, execution }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hideNotTaken, setHideNotTaken] = useState(false);
   const { fitView } = useReactFlow();
-  const hasFitted = useRef(false);
 
   const graph = useMemo(() => buildWorkflowGraph(steps, execution ?? null), [steps, execution]);
-
-  useEffect(() => {
-    // Re-fit whenever we switch to a different execution (different run selected).
-    hasFitted.current = false;
-  }, [execution?.id]);
 
   const { nodes, edges } = useMemo(() => {
     const visibleNodes = hideNotTaken ? graph.nodes.filter((n) => n.state !== "not-taken") : graph.nodes;
@@ -61,13 +55,6 @@ function WorkflowGraphInner({ steps, execution }: Props) {
     return { nodes: layoutGraph(rfNodes, rfEdges), edges: rfEdges };
   }, [graph, hideNotTaken, selectedId, execution?.status]);
 
-  useEffect(() => {
-    if (hasFitted.current || nodes.length === 0) return;
-    hasFitted.current = true;
-    const raf = requestAnimationFrame(() => fitView({ padding: 0.2, duration: 0 }));
-    return () => cancelAnimationFrame(raf);
-  }, [nodes, fitView]);
-
   const selectedNode = selectedId ? (graph.nodes.find((n) => n.id === selectedId) ?? null) : null;
 
   if (!steps.length) {
@@ -76,7 +63,7 @@ function WorkflowGraphInner({ steps, execution }: Props) {
 
   return (
     <div className="graph-wrap">
-      <div className="graph-frame">
+      <div className="graph-main">
         <div className="graph-toolbar">
           <WorkflowGraphToolbar
             hideNotTaken={hideNotTaken}
@@ -84,7 +71,11 @@ function WorkflowGraphInner({ steps, execution }: Props) {
             onFitView={() => fitView({ padding: 0.2, duration: 300 })}
           />
         </div>
+        <div className="graph-frame">
         <ReactFlow
+          key={execution?.id ?? "current"}
+          fitView
+          fitViewOptions={{ padding: 0.2, duration: 0 }}
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
@@ -98,6 +89,7 @@ function WorkflowGraphInner({ steps, execution }: Props) {
         >
           <Background color="color-mix(in oklab, var(--main) 10%, transparent)" gap={24} />
         </ReactFlow>
+        </div>
       </div>
 
       {selectedNode && (

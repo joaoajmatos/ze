@@ -19,9 +19,15 @@ function exec(o: Partial<WorkflowExecutionResponse>): WorkflowExecutionResponse 
 }
 
 describe("lastResult", () => {
-  it("is never when there are no executions", () => {
+  it("is never only for a fetched empty list; not fetched is unknown", () => {
     expect(lastResult([])).toEqual({ kind: "never" });
-    expect(lastResult(undefined)).toEqual({ kind: "never" });
+    expect(lastResult(undefined)).toEqual({ kind: "unknown" });
+  });
+
+  it("does not call a cancelled, held or unknown status fine", () => {
+    expect(lastResult([exec({ status: "cancelled" })])).toEqual({ kind: "cancelled" });
+    expect(lastResult([exec({ status: "held" })])).toEqual({ kind: "held" });
+    expect(lastResult([exec({ status: "timed_out" })])).toEqual({ kind: "other", text: "Timed out" });
   });
 
   it("is ok for a completed latest run", () => {

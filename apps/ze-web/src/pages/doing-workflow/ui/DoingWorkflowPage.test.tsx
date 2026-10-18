@@ -169,4 +169,11 @@ describe("DoingWorkflowPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(m.detail.refetch).toHaveBeenCalled();
   });
+
+  it("does not say Never run when the executions failed to load", () => {
+    m.execs = { data: [], isLoading: false, isError: true };
+    view();
+    expect(screen.queryByText("Never run.")).toBeNull();
+    expect(screen.getByText("Couldn't read the runs.")).toBeInTheDocument();
+  });
 });

@@ -24,7 +24,7 @@ function view(props: Partial<React.ComponentProps<typeof Runs>>) {
   const spy = vi.spyOn(client, "invalidateQueries");
   const utils = render(
     <QueryClientProvider client={client}>
-      <Runs runs={[run()]} loading={false} error={false} workspace={ws()} now={now} offline={false} {...props} />
+      <Runs runs={[run()]} loading={false} error={false} workspace={ws()} now={now} {...props} />
     </QueryClientProvider>,
   );
   return { ...utils, spy };
@@ -89,7 +89,8 @@ describe("Runs", () => {
 
   it("says Workspace is off only inside Runs", () => {
     view({ workspace: ws({ available: false }), runs: [] });
-    expect(screen.getByRole("alert")).toHaveTextContent("Workspace is off.");
+    expect(screen.getByRole("status")).toHaveTextContent("Workspace is off.");
+    expect(document.querySelector(".hot")).toBeNull();
   });
 
   it("is coral only for an unattended failed or timed out run", () => {
@@ -112,5 +113,15 @@ describe("Runs", () => {
     view({ onChatAbout });
     fireEvent.click(screen.getByRole("button", { name: "Chat about python build.py" }));
     expect(onChatAbout).toHaveBeenCalledWith({ kind: "workspace_run", id: "r1" }, expect.anything());
+  });
+
+  it("says so when the workspace status could not be read", () => {
+    view({ workspace: undefined, workspaceError: true });
+    expect(screen.getByText("Couldn't read whether the workspace is busy.")).toBeInTheDocument();
+  });
+
+  it("Cancel does not depend on the socket", () => {
+    view({ runs: [run({ status: "in_progress" })] });
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeEnabled();
   });
 });

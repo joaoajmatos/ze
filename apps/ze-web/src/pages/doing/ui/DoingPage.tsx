@@ -64,12 +64,12 @@ export function DoingPage() {
           <WorkflowsBoard workflows={workflowList} executions={latest.byWorkflow} loading={workflows.isLoading || latest.loading} error={workflows.isError || latest.error} offline={offline} now={now} onChatAbout={chatAbout} />
         </RedirectHintTarget>
         <RedirectHintTarget hintId="runs" data-module="Runs">
-          <Runs runs={runs.data ?? []} loading={runs.isLoading || workspace.isLoading} error={runs.isError} workspace={workspace.data} now={now} offline={offline} onChatAbout={chatAbout} />
+          <Runs runs={runs.data ?? []} loading={runs.isLoading || workspace.isLoading} error={runs.isError} workspace={workspace.data} workspaceError={workspace.isError} now={now} onChatAbout={chatAbout} />
         </RedirectHintTarget>
       </div>
       <div className="doing-col">
         <RedirectHintTarget hintId="skills" data-module="Skills">
-          <SkillsQueue skills={skills.data ?? []} loading={skills.isLoading} error={skills.isError} offline={offline} onChatAbout={chatAbout} />
+          <SkillsQueue skills={skills.data ?? []} loading={skills.isLoading} error={skills.isError} onChatAbout={chatAbout} />
         </RedirectHintTarget>
       </div>
     </div>

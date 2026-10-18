@@ -40,7 +40,13 @@ function GoalLine({ goal, offline, gate, onChatAbout }: { goal: GoalListItem } &
       )}
       <span className="s">
         {row.next ? `Next: ${row.next} · ` : ""}
-        {stuck ? `stuck since ${row.stuckSince}` : row.gateSince ? `gate open since ${row.gateSince}` : `started ${row.age}`}
+        {stuck
+          ? `stuck since ${row.stuckSince}`
+          : row.gateSince
+            ? `gate open since ${row.gateSince}`
+            : goal.status === "awaiting_gate"
+              ? "waiting on a checkpoint that isn't available"
+              : `started ${row.age}`}
       </span>
       {stuck && (
         <span className="acts">
