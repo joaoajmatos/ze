@@ -2,6 +2,11 @@ import re
 from typing import AsyncIterator
 
 from ze_agents.base_agent import BaseAgent
+from ze_agents.budget import (
+    DEFAULT_BUDGET_SECONDS,
+    conductor_budget,
+    set_soft_deadline,
+)
 from ze_agents.registry import agent
 from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_priority import WorldComposer
@@ -162,7 +167,7 @@ class CompanionAgent(BaseAgent):
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"
-    timeout = 60
+    timeout = DEFAULT_BUDGET_SECONDS
     tools = [
         "remember_fact",
         "forget_fact",
@@ -194,6 +199,7 @@ class CompanionAgent(BaseAgent):
         notification_store: NotificationStore | None = None,
     ) -> None:
         self._settings = settings
+        self.timeout, self._wrap_up_reserve = conductor_budget(settings.config)
         self._client = openrouter_client
         self._person_store = person_store
         self._outreach_log = outreach_log
@@ -209,6 +215,7 @@ class CompanionAgent(BaseAgent):
 
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "companion.thinking")
+        set_soft_deadline(ctx, self.timeout - self._wrap_up_reserve)
         original_sink = hold_token_sink(ctx)
         try:
             response, loop_tool_calls = await self.agentic_loop(

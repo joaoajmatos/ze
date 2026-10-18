@@ -10,6 +10,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 
 from ze_agents.effects import effect_imperative
+from ze_agents.budget import has_budget, partial_answer
 from ze_agents.errors import AgentTimeoutError, LoopParked, UnknownAgentError
 from ze_agents.park import (
     ConfirmItem,
@@ -574,7 +575,7 @@ async def _run_agent(
     set_agent_context(agent_name)
 
     instance = get_agent(agent_name)
-    timeout = float(getattr(type(instance), "timeout", 30))
+    timeout = float(getattr(instance, "timeout", 30))
 
     if token_queue is not None:
 
@@ -591,6 +592,8 @@ async def _run_agent(
         try:
             return await asyncio.wait_for(_stream_and_collect(), timeout=timeout)
         except asyncio.TimeoutError:
+            if has_budget(ctx):
+                return _out_of_time(agent_name, ctx)
             raise AgentTimeoutError(f"{agent_name} timed out after {timeout}s")
 
     try:
@@ -599,4 +602,16 @@ async def _run_agent(
             add_sources(result.sources, ctx.sources)
         return result
     except asyncio.TimeoutError:
+        if has_budget(ctx):
+            return _out_of_time(agent_name, ctx)
         raise AgentTimeoutError(f"{agent_name} timed out after {timeout}s")
+
+
+def _out_of_time(agent_name: str, ctx: AgentContext) -> AgentResult:
+    """A conductor past its hard limit still answers: what was done, what was not."""
+    log.warning("conductor_hard_timeout", agent=agent_name)
+    return AgentResult(
+        agent=agent_name,
+        response=partial_answer(ctx.conductor_ledger),
+        tool_calls=list(ctx.tool_calls),
+    )
