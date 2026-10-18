@@ -5,6 +5,8 @@ export interface OutboxItem {
   id: number;
   text: string;
   context: WsScreenContext;
+  /** Files the person placed in the workspace with this message. */
+  workspacePlaced?: { path: string; size: number }[];
 }
 
 /** The thing the person chose to chat about, until they remove it or the overlay closes. */
@@ -31,7 +33,7 @@ interface AskOverlayState {
   /** The one message waiting to be sent on the overlay thread. */
   outbox: OutboxItem | null;
   /** Queue a message and open the overlay. False when an item is already waiting. */
-  submit: (text: string, routeContext: WsScreenContext) => boolean;
+  submit: (text: string, routeContext: WsScreenContext, workspacePlaced?: { path: string; size: number }[]) => boolean;
   setDraft: (draft: string) => void;
   openWith: (prefill: string | null, context: WsScreenContext | null) => void;
   /** Start a chat about `ref`: the overlay opens (or, when `inPlace`, the Ask composer takes it). */
@@ -60,10 +62,10 @@ export const useAskOverlay = create<AskOverlayState>((set, get) => ({
   focusTick: 0,
   glanceTick: 0,
   glanceTarget: null,
-  submit: (text, routeContext) => {
+  submit: (text, routeContext, workspacePlaced) => {
     if (get().outbox) return false;
     const context = { ...routeContext, ...get().explicitContext } as WsScreenContext;
-    set({ open: true, draft: "", outbox: { id: nextId++, text, context } });
+    set({ open: true, draft: "", outbox: { id: nextId++, text, context, ...(workspacePlaced?.length ? { workspacePlaced } : {}) } });
     return true;
   },
   setDraft: (draft) => set({ draft }),

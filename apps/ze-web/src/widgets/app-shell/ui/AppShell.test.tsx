@@ -7,6 +7,8 @@ import { mockMatchMedia } from "@/test/match-media";
 
 const mocks = vi.hoisted(() => ({
   glance: vi.fn(),
+  sendTurn: vi.fn(() => true),
+  takeOver: vi.fn(),
   handlers: new Map<string, Set<(f: unknown) => void>>(),
 }));
 
@@ -14,6 +16,7 @@ vi.mock("@/shared/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/shared/api")>();
   return {
     ...actual,
+    takeOver: mocks.takeOver,
     useFrame: (type: string, handler: (f: WsInboundFrame) => void) => {
       const ref = useRef(handler);
       ref.current = handler;
@@ -28,6 +31,8 @@ vi.mock("@/shared/api", async (importOriginal) => {
 });
 vi.mock("@/features/invalidate-on-ws-refresh", () => ({ RefreshHandler: () => null }));
 vi.mock("@/features/respond-to-confirmation", () => ({ ConfirmationFrameHandler: () => null }));
+vi.mock("@/features/turn-stream", () => ({ TurnFrameHandler: () => null, sendTurn: mocks.sendTurn }));
+vi.mock("@/features/trace-state", () => ({ TraceFrameHandler: () => null }));
 vi.mock("./NotificationBell", () => ({ NotificationBell: () => <button type="button">Notifications</button> }));
 vi.mock("@/shared/ui", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/shared/ui")>()),
@@ -44,6 +49,7 @@ vi.mock("@/shared/ui", async (importOriginal) => ({
 
 import { useAskOverlay } from "@/features/ask-bar";
 import { usePresenceStore } from "@/entities/presence";
+import { useSession } from "@/entities/session";
 import { useWsStore } from "@/shared/api";
 import { AppShell } from "./AppShell";
 
@@ -62,6 +68,7 @@ function renderShell(path = "/", overlay?: React.ReactNode) {
 }
 
 beforeEach(() => {
+  mocks.sendTurn.mockClear();
   mm = mockMatchMedia({});
   mocks.glance.mockClear();
   mocks.handlers.clear();
@@ -111,12 +118,43 @@ describe("AppShell desktop", () => {
     expect(screen.getByTestId("presence")).toHaveAttribute("data-state", "error");
   });
 
-  it("renders the Ask bar except on /ask", () => {
+  it("renders the Ask bar on every place, /ask included", () => {
     const { unmount } = renderShell("/doing");
     expect(screen.getByRole("textbox", { name: /Ask Ze/ })).toBeInTheDocument();
     unmount();
     renderShell("/ask");
-    expect(screen.queryByRole("textbox", { name: /Ask Ze/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /Ask Ze/ })).toBeInTheDocument();
+  });
+
+  it("sends straight to the selected thread on /ask, with the chosen context and files", () => {
+    useSession.setState({ threadId: "t-ask" });
+    useAskOverlay.setState({ explicitContext: { origin: "chat_about" } as never });
+    renderShell("/ask");
+    fireEvent.change(screen.getByRole("textbox", { name: /Ask Ze/ }), { target: { value: "hello" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    expect(mocks.sendTurn).toHaveBeenCalledWith("t-ask", "hello", { explicitContext: { origin: "chat_about" }, workspacePlaced: undefined });
+    expect(useAskOverlay.getState().outbox).toBeNull();
+  });
+
+  it("queues in the overlay everywhere else, with the route context", () => {
+    renderShell("/doing/goals/g1");
+    fireEvent.change(screen.getByRole("textbox", { name: /Ask Ze/ }), { target: { value: "why slipping?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    expect(mocks.sendTurn).not.toHaveBeenCalled();
+    expect(useAskOverlay.getState().outbox).toMatchObject({ text: "why slipping?", context: { place: "doing", route: "/doing/goals/g1" } });
+  });
+
+  it("shows the displaced line with Use here, disables the Ask bar with that reason, and clears after takeover", () => {
+    useWsStore.setState({ isConnected: false, displaced: true });
+    renderShell("/doing");
+    expect(screen.getByText("Ze is open in another window")).toBeInTheDocument();
+    expect(screen.getByTestId("presence")).toHaveAttribute("data-state", "idle");
+    expect(screen.getByRole("img", { name: "Open in another window" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /Ze is open in another window/ })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Use here" }));
+    expect(mocks.takeOver).toHaveBeenCalledTimes(1);
+    act(() => useWsStore.setState({ displaced: false, isConnected: true }));
+    expect(screen.queryByText("Ze is open in another window")).toBeNull();
   });
 
   it("renders the overlay slot", () => {

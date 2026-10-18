@@ -282,7 +282,7 @@ async def test_trace_update_keeps_numbers_numeric():
     json.dumps(frame)
 
 
-async def test_trace_update_hides_agent_and_undo_args():
+async def test_trace_update_carries_agent_and_call_index_but_never_undo_args():
     from ze_core.conversation.messages.types import (
         MessageTrace,
         RollbackEntry,
@@ -329,7 +329,8 @@ async def test_trace_update_hides_agent_and_undo_args():
 
     frame = conn.send_frame.call_args[0][0]
     call = frame["tool_calls"][0]
-    assert "agent" not in call and "undo_args" not in call
+    assert call["agent"] == "reminders" and call["call_index"] == 3
+    assert "undo_args" not in call
     assert call["undo_note"] == "n"
     assert "secret" not in str(frame)
     entry = frame["rollback"]["entries"][0]

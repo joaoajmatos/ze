@@ -8,7 +8,7 @@ import { ago, hhmm, pct, relDay, sourceLabel, staleness, stateLabel } from "../m
 import { daysSince, decisionsFor, kindLabelOf, postureOf, short, slipsOf, worldSentence } from "../model/hud";
 import { useWorld } from "../model/world";
 
-const ASK_SLIPPING = "/jarvis/assemble?q=what%27s%20slipping%3F";
+const ASK_SLIPPING = "/ask";
 
 /** The human line of a failure body: the step that failed and the tool, never a traceback fragment. */
 function humanFailure(body: string): string {

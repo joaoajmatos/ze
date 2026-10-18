@@ -68,6 +68,8 @@ class ToolCallTraceResponse(BaseModel):
         "duplicate",
     ] = "none"
     effect_phrase: str | None = None
+    agent: str | None = None
+    call_index: int = 0
 
 
 class SkillUsageTraceResponse(BaseModel):

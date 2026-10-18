@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { tracesForThread, useTraceStore } from "./useTraceStore";
 
@@ -83,5 +83,56 @@ describe("per-thread trace isolation", () => {
     const pendingA = useTraceStore.getState().byThread["thread-a"]?.pendingTrace;
     expect(pendingA?.agent).toBe("companion");
     expect(pendingA?.conductor_ledger?.[0]?.agent).toBe("research");
+  });
+});
+
+describe("arrival stamps (trace instruments)", () => {
+  beforeEach(() => {
+    useTraceStore.setState({ byThread: {} });
+    vi.useFakeTimers();
+    vi.setSystemTime(10_000);
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const partial = (extra: Partial<WsTraceUpdateFrame>) => useTraceStore.getState().mergePartialTrace({ thread_id: "t", ...extra });
+  const bucket = () => useTraceStore.getState().byThread.t;
+
+  it("stamps each stage once, by the fields the partial carries", () => {
+    partial({ agent: "companion", routing_method: "embedding" });
+    vi.setSystemTime(10_400);
+    partial({ screen: { route: "/doing" } as never });
+    vi.setSystemTime(10_900);
+    partial({ memory_chunks: [{ text: "a", score: 0.9, source: "fact", extraction_confidence: null }] });
+    vi.setSystemTime(11_000);
+    partial({ memory_chunks: [{ text: "b", score: 0.8, source: "fact", extraction_confidence: null }] });
+    partial({ tier: { agent: "companion", tier: "full", decided_by: "default", model: "m" } as never });
+    partial({ tool_calls: [{ name: "x", call_index: 0 } as never] });
+    expect(bucket().pendingArrivals).toEqual({ route: 10_000, screen: 10_400, memory: 10_900, tier: 11_000, "tool:0": 11_000 });
+  });
+
+  it("moves the stamps to arrivalsByMessage on commit and clears the pending ones", () => {
+    partial({ agent: "companion" });
+    useTraceStore.getState().commitPendingTrace(frame("t", "m1"));
+    expect(bucket().arrivalsByMessage.m1).toEqual({ route: 10_000 });
+    expect(bucket().pendingArrivals).toEqual({});
+  });
+
+  it("gives a hydrated trace no arrivals and starts a second turn fresh", () => {
+    useTraceStore.getState().mergeTraces("t", [frame("t", "old")], ["old"]);
+    expect(bucket().arrivalsByMessage.old).toBeUndefined();
+    partial({ agent: "companion" });
+    useTraceStore.getState().commitPendingTrace(frame("t", "m1"));
+    vi.setSystemTime(20_000);
+    partial({ agent: "research" });
+    useTraceStore.getState().commitPendingTrace(frame("t", "m2"));
+    expect(bucket().arrivalsByMessage.m2).toEqual({ route: 20_000 });
+    expect(bucket().arrivalsByMessage.m1).toEqual({ route: 10_000 });
+  });
+
+  it("resetPending drops a stale pending trace so a refused turn never lends its stamps", () => {
+    partial({ agent: "companion" });
+    useTraceStore.getState().resetPending("t");
+    expect(bucket().pendingTrace).toBeNull();
+    expect(bucket().pendingArrivals).toEqual({});
   });
 });
