@@ -7,6 +7,8 @@ export interface OutboxItem {
   context: WsScreenContext;
   /** Files the person placed in the workspace with this message. */
   workspacePlaced?: { path: string; size: number }[];
+  /** 192's transcription id, when the text came from the mic; `context.voice` carries it to the server. */
+  voiceId?: string;
 }
 
 /** The thing the person chose to chat about, until they remove it or the overlay closes. */
@@ -21,6 +23,8 @@ interface AskOverlayState {
   open: boolean;
   /** What the Ask bar input holds; `askAbout` fills it. */
   draft: string;
+  /** 192's `transcription_id` for the text in the bar, until it is sent or the draft is emptied. */
+  voiceId: string | null;
   /** Bumps when something asks the Ask bar to take focus. */
   focusTick: number;
   /** Context set by `askAbout` / `chatAbout`; merged over the route's until the overlay closes. */
@@ -35,6 +39,8 @@ interface AskOverlayState {
   /** Queue a message and open the overlay. False when an item is already waiting. */
   submit: (text: string, routeContext: WsScreenContext, workspacePlaced?: { path: string; size: number }[]) => boolean;
   setDraft: (draft: string) => void;
+  /** A transcript arrived: it fills an empty draft (or follows the typed text), and the bar takes focus. */
+  setVoiceTranscript: (text: string, id: string) => void;
   openWith: (prefill: string | null, context: WsScreenContext | null) => void;
   /** Start a chat about `ref`: the overlay opens (or, when `inPlace`, the Ask composer takes it). */
   startAbout: (about: ChatAboutSubject, options: { inPlace: boolean; element?: Element | null; glance: boolean }) => void;
@@ -59,16 +65,25 @@ export function aboutContext(about: ChatAboutSubject): WsScreenContext {
 export const useAskOverlay = create<AskOverlayState>((set, get) => ({
   ...INITIAL,
   draft: "",
+  voiceId: null,
   focusTick: 0,
   glanceTick: 0,
   glanceTarget: null,
   submit: (text, routeContext, workspacePlaced) => {
     if (get().outbox) return false;
-    const context = { ...routeContext, ...get().explicitContext } as WsScreenContext;
-    set({ open: true, draft: "", outbox: { id: nextId++, text, context, ...(workspacePlaced?.length ? { workspacePlaced } : {}) } });
+    const voiceId = get().voiceId;
+    const context = { ...routeContext, ...get().explicitContext, ...(voiceId ? { voice: { transcription_id: voiceId } } : {}) } as WsScreenContext;
+    set({
+      open: true,
+      draft: "",
+      voiceId: null,
+      outbox: { id: nextId++, text, context, ...(workspacePlaced?.length ? { workspacePlaced } : {}), ...(voiceId ? { voiceId } : {}) },
+    });
     return true;
   },
-  setDraft: (draft) => set({ draft }),
+  setDraft: (draft) => set(draft === "" ? { draft, voiceId: null } : { draft }),
+  setVoiceTranscript: (text, id) =>
+    set((s) => ({ draft: s.draft.trim() === "" ? text : `${s.draft} ${text}`, voiceId: id, focusTick: s.focusTick + 1 })),
   openWith: (prefill, context) =>
     set((s) => ({ open: true, draft: prefill ?? s.draft, focusTick: s.focusTick + 1, explicitContext: context })),
   startAbout: (about, { inPlace, element, glance }) =>
@@ -87,11 +102,16 @@ export const useAskOverlay = create<AskOverlayState>((set, get) => ({
       const explicit = s.explicitContext?.origin === "chat_about" ? { ...s.explicitContext, origin: "ask_bar" as const } : s.explicitContext;
       return { outbox: null, explicitContext: explicit, about: s.about ? { ...s.about, origin: "ask_bar" } : null };
     }),
-  aboutSent: () => set((s) => (s.about && s.about.origin !== "ask_bar" ? { about: { ...s.about, origin: "ask_bar" } } : s)),
+  aboutSent: () =>
+    set((s) => ({ voiceId: null, ...(s.about && s.about.origin !== "ask_bar" ? { about: { ...s.about, origin: "ask_bar" as const } } : {}) })),
   // An unsent message goes back into the bar rather than vanishing.
   close: () =>
-    set((s) => ({ ...INITIAL, draft: s.outbox ? [s.outbox.text, s.draft].filter(Boolean).join(" ") : s.draft })),
-  reset: () => set({ ...INITIAL, draft: "", focusTick: 0, glanceTick: 0, glanceTarget: null }),
+    set((s) => ({
+      ...INITIAL,
+      draft: s.outbox ? [s.outbox.text, s.draft].filter(Boolean).join(" ") : s.draft,
+      voiceId: s.outbox?.voiceId ?? s.voiceId,
+    })),
+  reset: () => set({ ...INITIAL, draft: "", voiceId: null, focusTick: 0, glanceTick: 0, glanceTarget: null }),
 }));
 
 /** Open the overlay with the Ask bar prefilled (not sent) and the context a page knows best. */

@@ -104,9 +104,82 @@ describe("AskBar", () => {
     expect(screen.getByRole("button", { name: /Ze is offline/ })).toBeDisabled();
   });
 
-  it("has a disabled mic labelled for what is missing", () => {
+  it("renders no mic without renderMic", () => {
     renderAt("/");
-    expect(screen.getByRole("button", { name: "Voice input arrives later" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /Voice input|Speak/ })).toBeNull();
+  });
+
+  it("hands renderMic the blocked reason, or null", () => {
+    const renderMic = vi.fn((blocked: string | null) => <button type="button">mic:{String(blocked)}</button>);
+    const { unmount } = render(
+      <MemoryRouter>
+        <AskBar onSubmit={m.onSubmit} renderMic={renderMic} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: "mic:null" })).toBeInTheDocument();
+    unmount();
+    usePresenceStore.getState().dispatch({ type: "ws_closed" });
+    render(
+      <MemoryRouter>
+        <AskBar onSubmit={m.onSubmit} renderMic={renderMic} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: "mic:Ze is offline" })).toBeInTheDocument();
+  });
+
+  it("passes the displaced line to renderMic", () => {
+    render(
+      <MemoryRouter>
+        <AskBar onSubmit={m.onSubmit} disabledReason="Ze is open in another window" renderMic={(b) => <button type="button">mic:{String(b)}</button>} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: "mic:Ze is open in another window" })).toBeInTheDocument();
+  });
+
+  it("puts the mic inside .ask and the voice status outside it", () => {
+    render(
+      <MemoryRouter>
+        <AskBar onSubmit={m.onSubmit} renderMic={() => <button type="button">mic</button>} renderVoiceStatus={() => <p role="status">heard</p>} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: "mic" }).closest(".ask")).not.toBeNull();
+    expect(screen.getByRole("status").closest(".ask")).toBeNull();
+    expect(screen.getByRole("status").closest("form")).not.toBeNull();
+  });
+
+  it("carries the voice reference in the explicit context on submit", () => {
+    renderAt("/ask");
+    act(() => useAskOverlay.getState().setVoiceTranscript("remind me", "t1"));
+    submit();
+    expect(m.onSubmit).toHaveBeenCalledWith("remind me", { voice: { transcription_id: "t1" } }, undefined);
+  });
+
+  it("merges the voice reference over a chat-about context", () => {
+    renderAt("/ask");
+    act(() => useAskOverlay.getState().openWith(null, { origin: "chat_about", subject: [{ kind: "goal", id: "g1" }], captured_at: "2026-10-17T14:00:00Z" }));
+    act(() => useAskOverlay.getState().setVoiceTranscript("why", "t1"));
+    submit();
+    expect(m.onSubmit).toHaveBeenCalledWith(
+      "why",
+      { origin: "chat_about", subject: [{ kind: "goal", id: "g1" }], captured_at: "2026-10-17T14:00:00Z", voice: { transcription_id: "t1" } },
+      undefined,
+    );
+  });
+
+  it("keeps the draft and the voice reference when the send is refused", () => {
+    m.onSubmit.mockReturnValue(false);
+    renderAt("/ask");
+    act(() => useAskOverlay.getState().setVoiceTranscript("keep", "t1"));
+    submit();
+    expect(input()).toHaveValue("keep");
+    expect(useAskOverlay.getState().voiceId).toBe("t1");
+  });
+
+  it("clears the voice reference after a send", () => {
+    renderAt("/ask");
+    act(() => useAskOverlay.getState().setVoiceTranscript("sent", "t1"));
+    submit();
+    expect(useAskOverlay.getState().voiceId).toBeNull();
   });
 
   it("focuses on / outside inputs but not inside them", () => {

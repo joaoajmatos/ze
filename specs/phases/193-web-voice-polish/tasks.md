@@ -38,7 +38,7 @@
   - `shared/ui/hud/presence/presence.test.tsx` (extend): `headSlot` renders inside `presence-head`; with reduced motion the `level` getter is never called; in `listening` with motion allowed, one animation frame (mocked rAF) calls it once.
 
   Implement `presence.ts`, `store.ts` (`presenceActions.voice`), `level.ts`, `Orb.tsx` (`level`, scaling the listening gather and brightness by `1 + 0.6 * smoothed`), `Presence.tsx` (`headSlot`, `level`).
-- [ ] T003 [L:lead] Tests first:
+- [x] T003 [L:lead] Tests first:
   - `features/ask-bar/model/ask-overlay.test.ts` (extend): `voiceId` is null in the initial state; `setVoiceTranscript("hi", "t1")` on an empty draft sets the draft "hi", `voiceId` "t1" and bumps `focusTick`; on the draft "note" it gives "note hi"; `setDraft("")` clears `voiceId`; `aboutSent()` clears it; `submit` with `voiceId` "t1" puts `voiceId` "t1" on the outbox and `voice: { transcription_id: "t1" }` in its context, and clears the store's `voiceId`; `close` with that outbox unsent returns its text to the draft and "t1" to `voiceId`; `ack` clears the outbox;
   - `features/ask-bar/ui/AskBar.test.tsx` (extend): no mic renders without `renderMic`; `renderMic` receives the blocked reason ("Ze is offline" when offline, the displaced line when given) and `null` otherwise; submit with `voiceId` set calls `onSubmit(text, { voice: { transcription_id: "t1" } }, undefined)`; with a chat-about context it merges both; a refused submit keeps the draft and `voiceId`; `renderVoiceStatus` output is a sibling of `.ask`, never inside it; the "Voice input arrives later" label is gone;
   - `widgets/assemble/ui/AskOverlay.test.tsx` (extend): from a non-Ask place, an outbox carrying `voice` is sent with `context.voice.transcription_id`.

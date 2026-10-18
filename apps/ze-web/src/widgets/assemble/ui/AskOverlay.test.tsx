@@ -112,6 +112,16 @@ describe("AskOverlay", () => {
     expect(useAskOverlay.getState().outbox).toBeNull();
   });
 
+  it("sends the voice reference queued from a non-Ask place", async () => {
+    setup("/");
+    act(() => {
+      useAskOverlay.getState().setVoiceTranscript("remind me", "t1");
+      useAskOverlay.getState().submit("remind me", ROUTE);
+    });
+    await waitFor(() => expect(sentMessages()).toHaveLength(1));
+    expect(sentMessages()[0]).toMatchObject({ context: { ...ROUTE, voice: { transcription_id: "t1" } } });
+  });
+
   it("uses the context queued with the item, not the route at drain time", async () => {
     setup("/mind");
     act(() => void useAskOverlay.getState().submit("x", ROUTE));

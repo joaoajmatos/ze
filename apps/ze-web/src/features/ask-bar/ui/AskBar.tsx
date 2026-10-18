@@ -1,6 +1,6 @@
 import type { WsScreenContext } from "@myguyze/ze-client";
 import { Paperclip, X } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { presenceActions, usePresenceStore } from "@/entities/presence";
 import { placeWorkspaceFile } from "@/entities/workspace";
 import { useSendNotice } from "@/shared/lib";
@@ -18,10 +18,14 @@ interface AskBarProps {
   onSubmit: (text: string, explicitContext: WsScreenContext | null, workspacePlaced: { path: string; size: number }[] | undefined) => boolean;
   /** Why the bar cannot be used right now (another window has the connection). */
   disabledReason?: string | null;
+  /** The mic button, one cell of the bar. `blocked` is the bar's own reason when it cannot be used. */
+  renderMic?: (blocked: string | null) => ReactNode;
+  /** The voice status line, above the bar like the attachment chips so the bar never changes height. */
+  renderVoiceStatus?: () => ReactNode;
 }
 
 /** The sticky Ask input on every place. Where the message goes is the caller's business. */
-export function AskBar({ onSubmit, disabledReason = null }: AskBarProps) {
+export function AskBar({ onSubmit, disabledReason = null, renderMic, renderVoiceStatus }: AskBarProps) {
   const offline = usePresenceStore((s) => s.presence.offline);
   const text = useAskOverlay((s) => s.draft);
   const setDraft = useAskOverlay((s) => s.setDraft);
@@ -66,7 +70,8 @@ export function AskBar({ onSubmit, disabledReason = null }: AskBarProps) {
     const trimmed = text.trim();
     if (!trimmed || blocked) return;
     const placed = attachments.length ? attachments.map(({ path, size }) => ({ path, size })) : undefined;
-    const explicit = useAskOverlay.getState().explicitContext;
+    const { explicitContext, voiceId } = useAskOverlay.getState();
+    const explicit = voiceId ? { ...(explicitContext ?? {}), voice: { transcription_id: voiceId } } : explicitContext;
     if (!onSubmit(trimmed, explicit, placed)) {
       useSendNotice.getState().showNotice("Ze has not sent your last message yet. Wait for it, then send this one.");
       return;
@@ -79,6 +84,7 @@ export function AskBar({ onSubmit, disabledReason = null }: AskBarProps) {
   const label = blocked ? `Ask Ze — ${blocked}` : "Ask Ze";
   return (
     <form className="bottom" onSubmit={submit}>
+      {renderVoiceStatus?.()}
       {attachments.length > 0 && (
         <div className="chips ask-attachments">
           {attachments.map((item) => (
@@ -112,12 +118,7 @@ export function AskBar({ onSubmit, disabledReason = null }: AskBarProps) {
           onFocus={presenceActions.askFocus}
           onBlur={presenceActions.askBlur}
         />
-        <Control disabled aria-label="Voice input arrives later" title="Voice input arrives later">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden="true">
-            <rect x="5.5" y="1.5" width="5" height="8" rx="2.5" />
-            <path d="M3 7.5a5 5 0 0 0 10 0M8 12.5v2" />
-          </svg>
-        </Control>
+        {renderMic?.(blocked)}
         <Control type="submit" primary disabled={Boolean(blocked) || attaching || text.trim() === ""} aria-label={blocked ? `Ask — ${blocked}` : "Ask"}>
           Ask
         </Control>

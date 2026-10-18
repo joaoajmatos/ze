@@ -134,3 +134,63 @@ describe("chat about", () => {
     expect(useAskOverlay.getState()).toMatchObject({ about: null, explicitContext: null });
   });
 });
+
+describe("voice transcript", () => {
+  it("voiceId is null in the initial state", () => {
+    expect(useAskOverlay.getState().voiceId).toBeNull();
+  });
+
+  it("setVoiceTranscript fills an empty draft, keeps the id and asks for focus", () => {
+    const before = useAskOverlay.getState().focusTick;
+    useAskOverlay.getState().setVoiceTranscript("hi", "t1");
+    const s = useAskOverlay.getState();
+    expect(s.draft).toBe("hi");
+    expect(s.voiceId).toBe("t1");
+    expect(s.focusTick).toBe(before + 1);
+  });
+
+  it("setVoiceTranscript appends after one space to a typed draft", () => {
+    useAskOverlay.getState().setDraft("note");
+    useAskOverlay.getState().setVoiceTranscript("hi", "t1");
+    expect(useAskOverlay.getState().draft).toBe("note hi");
+  });
+
+  it("emptying the draft clears the id", () => {
+    useAskOverlay.getState().setVoiceTranscript("hi", "t1");
+    useAskOverlay.getState().setDraft("");
+    expect(useAskOverlay.getState().voiceId).toBeNull();
+  });
+
+  it("aboutSent clears the id", () => {
+    useAskOverlay.getState().setVoiceTranscript("hi", "t1");
+    useAskOverlay.getState().aboutSent();
+    expect(useAskOverlay.getState().voiceId).toBeNull();
+  });
+
+  it("submit puts the id on the outbox and its context, and clears the store's id", () => {
+    useAskOverlay.getState().setVoiceTranscript("hi", "t1");
+    useAskOverlay.getState().submit("hi", route);
+    const s = useAskOverlay.getState();
+    expect(s.outbox?.voiceId).toBe("t1");
+    expect(s.outbox?.context).toEqual({ ...route, voice: { transcription_id: "t1" } });
+    expect(s.voiceId).toBeNull();
+  });
+
+  it("close with an unsent outbox returns its text and id to the bar", () => {
+    useAskOverlay.getState().setVoiceTranscript("hi", "t1");
+    useAskOverlay.getState().submit("hi", route);
+    useAskOverlay.getState().close();
+    const s = useAskOverlay.getState();
+    expect(s.draft).toBe("hi");
+    expect(s.voiceId).toBe("t1");
+    expect(s.outbox).toBeNull();
+  });
+
+  it("ack clears the outbox", () => {
+    useAskOverlay.getState().setVoiceTranscript("hi", "t1");
+    useAskOverlay.getState().submit("hi", route);
+    useAskOverlay.getState().ack(useAskOverlay.getState().outbox!.id);
+    expect(useAskOverlay.getState().outbox).toBeNull();
+    expect(useAskOverlay.getState().voiceId).toBeNull();
+  });
+});
