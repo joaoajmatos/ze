@@ -128,6 +128,7 @@ class NewsAgent(BaseAgent):
     """
     model = "openai/gpt-4o-mini"
     timeout = 30
+    workspace_opt_out = True
     tools = ["refresh_news", "get_headlines", "search_news"]
 
     def __init__(

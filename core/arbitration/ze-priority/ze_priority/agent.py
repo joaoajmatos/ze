@@ -47,6 +47,7 @@ class PriorityAgent(BaseAgent):
     """
     model = "anthropic/claude-haiku-4-5"
     timeout = 30
+    workspace_opt_out = True
     tools = ["reprioritize_item", "restore_priority_override"]
 
     def __init__(
