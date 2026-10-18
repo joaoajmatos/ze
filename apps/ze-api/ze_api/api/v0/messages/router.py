@@ -94,7 +94,12 @@ def _trace_to_response(trace) -> MessageTraceResponse:
         is_compound=trace.is_compound,
         subtasks=trace.subtasks,
         memory_chunks=[
-            {"text": c.text, "score": c.score, "source": c.source}
+            {
+                "text": c.text,
+                "score": c.score,
+                "source": c.source,
+                "extraction_confidence": c.extraction_confidence,
+            }
             for c in trace.memory_chunks
         ],
         tool_calls=[

@@ -39,7 +39,7 @@ describe("TraceModule", () => {
     expect(screen.getByRole("group", { name: "Reply feedback" })).toBeInTheDocument();
     expect(screen.getByText("Asked from · Doing › Goal · Run 5k")).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Signal path" })).toBeInTheDocument();
-    for (const [name, readout] of [["Routing", /companion · 72%/], ["Memory", "5 from memory"], ["Tools", "5 calls"], ["Reversal", "1 undone"]] as const) {
+    for (const [name, readout] of [["Routing", /companion · Choice confidence 72%/], ["Memory", "5 from memory"], ["Tools", "5 calls"], ["Reversal", "1 undone"]] as const) {
       const button = screen.getByRole("button", { name: new RegExp(`^${name}`) });
       expect(button).toHaveAttribute("aria-expanded", "false");
       expect(button).toHaveTextContent(readout as never);
@@ -69,6 +69,19 @@ describe("TraceModule", () => {
     mount();
     expect(screen.queryByRole("button", { name: /^Memory/ })).toBeNull();
     expect(document.querySelector("[data-stage=memory]")).toHaveTextContent("1 chunk");
+  });
+
+  it("shows no routing bar and no source-less percentage while the turn streams, and no bare separator before routing", () => {
+    useConversation.setState({ byThread: { [T]: { ...emptyThread(), historyLoaded: true, turn: { phase: "thinking", typingText: null, streamingText: "", activityAt: 1, lastSent: { text: "x", context: {}, at: 1000 } } } } });
+    useTraceStore.setState({ byThread: {} });
+    useTraceStore.getState().mergePartialTrace({ thread_id: T, screen: { origin: "ask_bar", place: "doing" } as never });
+    mount();
+    expect(screen.queryByRole("button", { name: /^Routing/ })).toBeNull();
+    useTraceStore.getState().mergePartialTrace({ thread_id: T, agent: "companion", routing_method: "embedding", confidence: 0.6, score_gap: 0.1 });
+    mount();
+    const button = screen.getAllByRole("button", { name: /^Routing/ })[0];
+    expect(button).toHaveTextContent("companion · matched by meaning");
+    expect(button).not.toHaveTextContent("%");
   });
 
   it("says so when there is no trace", () => {

@@ -38,6 +38,12 @@ describe("routingFor", () => {
     expect(routingFor(richTrace({ routing_method: "fallback" })).bar).toBeNull();
   });
 
+  it("draws no bar for a partial that has no judgments yet, only the agent and the method words", () => {
+    const partial = routingFor(richTrace({ judgments: [], routing_method: "embedding" }), false);
+    expect(partial.bar).toBeNull();
+    expect(partial.methodWords).toBe("matched by meaning");
+  });
+
   it("has words for every method", () => {
     for (const m of ["embedding", "haiku", "fallback", "screen", "open_query", "preset", "forced"]) expect(METHOD_WORDS[m]).toBeTruthy();
   });

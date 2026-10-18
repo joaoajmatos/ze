@@ -35,15 +35,18 @@ export interface RoutingView {
 const FIXED = new Set(["screen", "preset", "forced", "open_query"]);
 const ROUTING_QUESTIONS = new Set(["agent", "multi_specialist"]);
 
-/** The bar is labelled by what produced it. Nothing is drawn that the trace did not measure. */
-export function routingFor(trace: Partial<WsTraceUpdateFrame>): RoutingView {
+/** The bar is labelled by what produced it. Nothing is drawn that the trace did not measure; a streaming trace has no bar yet. */
+export function routingFor(trace: Partial<WsTraceUpdateFrame>, settled = true): RoutingView {
   const method = trace.routing_method ?? "";
   const judgments = trace.judgments ?? [];
   const confidence = trace.confidence ?? 0;
   const agentConsumed = judgments.some((j) => j.question_id === "agent" && j.consumed !== false);
 
+  // While the turn streams the judgments have not arrived, so the same number could still change meaning.
+  // The bar waits for the committed trace.
   let bar: RoutingBar | null;
-  if (FIXED.has(method)) bar = { label: "fixed", value: null, ghost: null };
+  if (!settled) bar = null;
+  else if (FIXED.has(method)) bar = { label: "fixed", value: null, ghost: null };
   else if (method === "fallback" || method === "") bar = null;
   else if (method === "haiku") bar = { label: "E5 score of the pick", value: confidence, ghost: null };
   else if (agentConsumed) bar = { label: "Choice confidence", value: confidence, ghost: null };

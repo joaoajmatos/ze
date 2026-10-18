@@ -4,8 +4,8 @@ import { coordinateOf, routingFor } from "../../lib/instruments/routing";
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 /** How the specialist was chosen: the bar says what produced it, the needles show the options, the line names the tier. */
-export function RoutingInstrument({ trace }: { trace: Partial<WsTraceUpdateFrame> }) {
-  const r = routingFor(trace);
+export function RoutingInstrument({ trace, settled = true }: { trace: Partial<WsTraceUpdateFrame>; settled?: boolean }) {
+  const r = routingFor(trace, settled);
   const coordinate = coordinateOf(trace);
   return (
     <div className="tr-routing">

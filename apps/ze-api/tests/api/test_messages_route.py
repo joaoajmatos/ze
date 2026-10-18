@@ -334,6 +334,28 @@ async def test_tool_calls_carry_agent_and_call_index_and_never_undo_args() -> No
     assert "secret" not in resp.text and "undo_args" not in calls[0]
 
 
+@pytest.mark.asyncio
+async def test_memory_chunks_keep_their_extraction_confidence() -> None:
+    from ze_core.conversation.messages.types import MemoryChunkTrace
+
+    trace = _trace()
+    trace.memory_chunks = [
+        MemoryChunkTrace(text="a", score=0.9, source="fact", extraction_confidence=0.8),
+        MemoryChunkTrace(text="b", score=0.5, source="episode"),
+    ]
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=trace)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=_make_app(store)), base_url="http://test"
+    ) as client:
+        resp = await client.get(f"/api/v0/messages/{uuid4()}/trace")
+
+    chunks = resp.json()["memory_chunks"]
+    assert chunks[0]["extraction_confidence"] == 0.8
+    assert chunks[1]["extraction_confidence"] is None
+
+
 def test_ws_trace_update_declares_compaction_and_resume_recap() -> None:
     from ze_api.api.ws.schemas import WsTraceUpdateFrame
 

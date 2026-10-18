@@ -41,10 +41,10 @@ const MIN_WIDTH = 24;
 /**
  * Lanes by owning agent, the reply's agent first, calls in `call_index` order. Each lane has its own axis:
  * start times are not recorded, so a call starts where the earlier ones in its lane ended. Lanes are never
- * scaled against the turn's total. Without `agent` on the wire there is one lane in list order.
+ * scaled against the turn's total. A call without an `agent` (a trace stored before the field existed) joins the reply's lane.
  */
 export function toolLanes(calls: Call[] | undefined, replyAgent: string, partial: boolean): ToolLane[] {
-  const list = (calls ?? []).map((c, i) => ({ c: c as Call & { agent?: string | null; call_index?: number | null }, i }));
+  const list = (calls ?? []).map((c, i) => ({ c, i }));
   list.sort((a, b) => (a.c.call_index ?? a.i) - (b.c.call_index ?? b.i) || a.i - b.i);
   const hasAgents = list.some(({ c }) => c.agent);
   const byAgent = new Map<string, ToolMark[]>();

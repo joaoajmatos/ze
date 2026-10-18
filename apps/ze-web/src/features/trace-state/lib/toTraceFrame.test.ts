@@ -99,3 +99,9 @@ describe("toTraceFrame", () => {
     expect(toTraceFrame("m", trace, "t").screen).toEqual(screen);
   });
 });
+
+  it("keeps the extraction confidence of a stored memory chunk", () => {
+    const frame = toTraceFrame("m1", { agent: "companion", routing_method: "embedding", confidence: 0.5, score_gap: 0, is_compound: false, subtasks: [], memory_chunks: [{ text: "a", score: 0.9, source: "fact", extraction_confidence: 0.8 }], tool_calls: [], total_duration_ms: 1 } as never, "t1");
+    expect(frame.memory_chunks[0].extraction_confidence).toBe(0.8);
+  });
+});

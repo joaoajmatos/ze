@@ -53,7 +53,8 @@ export function TraceModule({ threadId, messageId = null, openSection = null, hi
   }
 
   const coordinate = coordinateOf(trace);
-  const routing = routingFor(trace);
+  const routing = routingFor(trace, !streaming);
+  const routingReadout = routing.bar?.value != null ? `${routing.bar.label} ${Math.round(routing.bar.value * 100)}%` : routing.methodWords;
   const { groups } = describeJudgments(trace.judgments);
   const readouts = readoutsFor(trace);
   const toolCalls = trace.tool_calls?.length ?? 0;
@@ -68,9 +69,11 @@ export function TraceModule({ threadId, messageId = null, openSection = null, hi
     >
       {coordinate && <p className="lbl tr-coordinate">{coordinate}</p>}
       <SignalPath trace={trace} arrivals={arrivals} sentAt={thread.turn.lastSent?.at ?? null} streaming={streaming} />
-      <Instrument name="Routing" readout={routing.bar?.value != null ? `${trace.agent} · ${Math.round(routing.bar.value * 100)}%` : `${trace.agent ?? ""} · ${routing.methodWords}`} open={openSection === "routing" || undefined}>
-        <RoutingInstrument trace={trace} />
-      </Instrument>
+      {trace.agent && (
+        <Instrument name="Routing" readout={`${trace.agent} · ${routingReadout}`} open={openSection === "routing" || undefined}>
+          <RoutingInstrument trace={trace} settled={!streaming} />
+        </Instrument>
+      )}
       {!streaming && memoryCount > 0 && (
         <Instrument name="Memory" readout={`${memoryCount} from memory`}>
           <MemoryConstellation chunks={trace.memory_chunks} />
