@@ -234,3 +234,43 @@ describe("Readouts and ReversalTrack", () => {
     expect(container.innerHTML).not.toMatch(/\bhot\b|coral/);
   });
 });
+
+describe("ToolsTimeline script rows", () => {
+  const base = { result_snippet: "", success: true, agent: "companion", start_offset_ms: 0 };
+  const scriptTrace = (cut = false) =>
+    richTrace({
+      tool_calls: [
+        { ...base, name: "run_tool_script", call_id: "s1", access: "script", duration_ms: 420, script: { source: "goals = get_goals()\nreturn goals", source_cut: cut, outcome: "ok", limit: null } },
+        { ...base, name: "get_goals", call_id: "i1", parent_call_id: "s1", access: "read", duration_ms: 12 },
+        { ...base, name: "get_loops", call_id: "i2", parent_call_id: "s1", access: "read", duration_ms: 9 },
+      ] as never,
+    });
+
+  it("draws the summary collapsed with no source or children", () => {
+    render(<ToolsTimeline trace={scriptTrace()} />);
+    const toggle = screen.getByRole("button", { name: /Script · ok · 2 calls · 420 ms/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(/goals = get_goals/)).toBeNull();
+    expect(screen.queryByText("get_goals")).toBeNull();
+  });
+
+  it("expands to the source in a monospace block and the child rows, with a cut note", () => {
+    render(<ToolsTimeline trace={scriptTrace(true)} />);
+    fireEvent.click(screen.getByRole("button", { name: /Script · ok/ }));
+    expect(screen.getByRole("button", { name: /Script · ok/ })).toHaveAttribute("aria-expanded", "true");
+    expect(document.querySelector("pre.tr-script-src")).toHaveTextContent("goals = get_goals()");
+    expect(screen.getByText("get_goals")).toBeInTheDocument();
+    expect(screen.getByText("get_loops")).toBeInTheDocument();
+    expect(screen.getByText(/cut/i)).toBeInTheDocument();
+  });
+
+  it("shows no cut note when the source is whole, and toggles with Enter and Space", () => {
+    render(<ToolsTimeline trace={scriptTrace()} />);
+    const toggle = screen.getByRole("button", { name: /Script · ok/ });
+    expect(toggle.tagName).toBe("BUTTON");
+    fireEvent.click(toggle);
+    expect(screen.queryByText(/cut/i)).toBeNull();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+});
