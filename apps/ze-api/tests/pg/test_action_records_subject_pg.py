@@ -105,3 +105,52 @@ async def test_since_excludes_older(pg_pool, ledger):
         kind=ActionSubjectKind.GOAL, subject_id=g, since=T0 + timedelta(days=1)
     )
     assert [r.id for r in got] == [new]
+
+
+async def test_appended_record_lists_by_subject_through_the_production_codec(pg_dsn):
+    import asyncpg
+    from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
+    from ze_memory.action_records.types import (
+        ActionContext,
+        ActionLifecycle,
+        ActionOutcome,
+        ActionRecordDraft,
+        AuthoritativeRef,
+    )
+    from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
+
+    from ze_api.wiring.db import _init_conn
+
+    goal_id = uuid4()
+    pool = await asyncpg.create_pool(pg_dsn, min_size=1, max_size=2, init=_init_conn)
+    try:
+        store = PostgresActionRecordStore(pool)
+        draft = ActionRecordDraft(
+            idempotency_key=f"codec-{uuid4()}",
+            action_type="goal.milestone",
+            actor="goal_executor",
+            producer_plugin="ze-automation",
+            lifecycle=ActionLifecycle.SUCCEEDED,
+            outcome=ActionOutcome.SUCCESS,
+            occurred_at=T0,
+            summary="did a thing",
+            authoritative_ref=AuthoritativeRef(domain="goal", record_id="x"),
+            context=ActionContext(goal_id=goal_id),
+        )
+        await store.append(
+            Contribution(
+                claim_kind=ClaimKind.ACTION_RECORD,
+                provenance=Provenance.PROMPT_SUPPLIED,
+                confidence=Confidence(value=1.0, decay_profile=DecayProfile.TIME_LINEAR),
+                target_face=TargetFace.WORLD,
+                source_function=SourceFunction.ACTION,
+                action_record=draft,
+            )
+        )
+        found = await store.list_by_subject(
+            kind=ActionSubjectKind.GOAL, subject_id=goal_id
+        )
+        assert [r.idempotency_key for r in found] == [draft.idempotency_key]
+        assert found[0].context.goal_id == goal_id
+    finally:
+        await pool.close()

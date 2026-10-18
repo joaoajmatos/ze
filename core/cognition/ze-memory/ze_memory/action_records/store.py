@@ -69,32 +69,30 @@ def _parse_uuid(value: str | UUID | None) -> UUID | None:
     return value if isinstance(value, UUID) else UUID(str(value))
 
 
-def _context_to_json(ctx: ActionContext) -> str:
-    return json.dumps(
-        {
-            "request_id": _uuid_str(ctx.request_id),
-            "session_id": _uuid_str(ctx.session_id),
-            "message_id": _uuid_str(ctx.message_id),
-            "thread_id": _uuid_str(ctx.thread_id),
-            "goal_id": _uuid_str(ctx.goal_id),
-            "milestone_id": _uuid_str(ctx.milestone_id),
-            "workflow_id": _uuid_str(ctx.workflow_id),
-            "workflow_run_id": _uuid_str(ctx.workflow_run_id),
-            "workspace_run_id": _uuid_str(ctx.workspace_run_id),
-            "channel_id": _uuid_str(ctx.channel_id),
-            "outreach_id": _uuid_str(ctx.outreach_id),
-            "calendar_ref": ctx.calendar_ref,
-            "reminder_id": _uuid_str(ctx.reminder_id),
-        }
-    )
+def _context_to_json(ctx: ActionContext) -> dict:
+    return {
+        "request_id": _uuid_str(ctx.request_id),
+        "session_id": _uuid_str(ctx.session_id),
+        "message_id": _uuid_str(ctx.message_id),
+        "thread_id": _uuid_str(ctx.thread_id),
+        "goal_id": _uuid_str(ctx.goal_id),
+        "milestone_id": _uuid_str(ctx.milestone_id),
+        "workflow_id": _uuid_str(ctx.workflow_id),
+        "workflow_run_id": _uuid_str(ctx.workflow_run_id),
+        "workspace_run_id": _uuid_str(ctx.workspace_run_id),
+        "channel_id": _uuid_str(ctx.channel_id),
+        "outreach_id": _uuid_str(ctx.outreach_id),
+        "calendar_ref": ctx.calendar_ref,
+        "reminder_id": _uuid_str(ctx.reminder_id),
+    }
 
 
-def _evidence_to_json(evidence: list[EvidenceRef]) -> str:
-    return json.dumps([{"kind": ref.kind, "id": str(ref.id)} for ref in evidence])
+def _evidence_to_json(evidence: list[EvidenceRef]) -> list[dict]:
+    return [{"kind": ref.kind, "id": str(ref.id)} for ref in evidence]
 
 
-def _causal_to_json(refs: list[CausalRef]) -> str:
-    return json.dumps([{"kind": ref.kind, "id": str(ref.id)} for ref in refs])
+def _causal_to_json(refs: list[CausalRef]) -> list[dict]:
+    return [{"kind": ref.kind, "id": str(ref.id)} for ref in refs]
 
 
 def _load_json(raw) -> object:
