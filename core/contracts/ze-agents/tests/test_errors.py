@@ -16,7 +16,7 @@ def test_voice_input_error_is_a_ze_error():
 @pytest.mark.parametrize(
     "cls",
     [
-                AudioTooLongError,
+        AudioTooLongError,
         AudioUnreadableError,
         AudioToolMissingError,
         TranscriptionFailedError,

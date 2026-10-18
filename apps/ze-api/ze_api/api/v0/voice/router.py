@@ -76,7 +76,11 @@ async def transcribe_voice(
     model = config.get("models", {}).get("whisper", MODEL_WHISPER)
     try:
         result = await transcribe_audio(
-            container.openrouter_client, data, file.content_type, model=model
+            container.openrouter_client,
+            data,
+            file.content_type,
+            model=model,
+            slots=container.transcription_slots,
         )
     except AudioTooLongError:
         raise HTTPException(

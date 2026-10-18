@@ -93,3 +93,28 @@ async def test_conversion_errors_are_not_model_failures(probe, fake_transcribe_c
     fake_transcribe_client.error = error
     with pytest.raises(type(error)):
         await transcribe_audio(fake_transcribe_client, b"a", "audio/webm", model="m")
+
+
+async def test_slots_bound_concurrent_transcriptions(fake_transcribe_client, monkeypatch):
+    import asyncio
+
+    running = 0
+    peak = 0
+
+    async def slow_probe(data, mime, **_):
+        nonlocal running, peak
+        running += 1
+        peak = max(peak, running)
+        await asyncio.sleep(0.01)
+        running -= 1
+        return 1.0
+
+    monkeypatch.setattr(voice, "probe_duration", slow_probe)
+    slots = asyncio.Semaphore(2)
+    await asyncio.gather(
+        *(
+            transcribe_audio(fake_transcribe_client, b"a", "audio/wav", model="m", slots=slots)
+            for _ in range(6)
+        )
+    )
+    assert peak == 2

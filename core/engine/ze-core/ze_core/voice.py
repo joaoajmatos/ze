@@ -16,9 +16,6 @@ from ze_logging import get_logger
 
 log = get_logger(__name__)
 
-# Probe and conversion are subprocesses; a retry loop must not start them unbounded.
-_SLOTS = asyncio.Semaphore(3)
-
 
 @dataclass
 class Transcription:
@@ -33,9 +30,15 @@ async def transcribe_audio(
     *,
     model: str,
     max_seconds: float = 120,
+    slots: asyncio.Semaphore | None = None,
 ) -> Transcription:
-    """Measure, gate and transcribe one recording. The audio is never stored."""
-    async with _SLOTS:
+    """Measure, gate and transcribe one recording. The audio is never stored.
+
+    `slots` bounds how many probe and conversion subprocesses run at once.
+    """
+    if slots is None:
+        return await _transcribe(client, data, mime, model, max_seconds)
+    async with slots:
         return await _transcribe(client, data, mime, model, max_seconds)
 
 

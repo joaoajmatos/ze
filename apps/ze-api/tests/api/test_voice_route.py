@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from types import SimpleNamespace
 import pytest
@@ -25,6 +26,7 @@ def _container(models: dict | None = None, client=None):
         openrouter_client=client or FakeTranscribeClient(),
         settings=SimpleNamespace(config={"models": models or {}}),
         transcription_registry=TranscriptionRegistry(),
+        transcription_slots=asyncio.Semaphore(3),
     )
 
 
@@ -312,4 +314,29 @@ async def test_trailing_slash_path_is_also_guarded(client, container, model, pro
         headers={"content-type": "multipart/form-data; boundary=b"},
     )
     assert resp.status_code == 413
+    assert model.calls == []
+
+
+async def test_chunked_body_without_length_is_cut_off_on_the_real_route(client, model):
+    """No Content-Length: the byte counter, not the header, stops the upload."""
+    sent = 0
+
+    async def body():
+        nonlocal sent
+        yield (
+            b'--b\r\nContent-Disposition: form-data; name="file"; filename="a.wav"\r\n'
+            b"Content-Type: audio/wav\r\n\r\n"
+        )
+        for _ in range(40):
+            sent += 1
+            yield b"x" * (1024 * 1024)
+
+    resp = await client.post(
+        URL,
+        content=body(),
+        headers={"content-type": "multipart/form-data; boundary=b"},
+    )
+    assert resp.status_code == 413
+    assert resp.json()["detail"] == "That recording is too large: the limit is 10 MB."
+    assert sent <= 12
     assert model.calls == []

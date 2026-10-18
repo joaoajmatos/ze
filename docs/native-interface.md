@@ -157,7 +157,9 @@ message.
    ```
 
    The limits are 10 MB and 120 seconds. Accepted types are WebM, Ogg, MP4/M4A and WAV.
-   The route keeps no audio.
+   The route keeps no audio. A request with no `Authorization` header gets a 401 before
+   the body is read; a wrong key is only checked after the upload arrives, which can be up
+   to 10 MB plus 64 KB.
 
 2. **Send.** The user checks the transcript, edits it if needed, and sends the message.
    The frame names the id:
