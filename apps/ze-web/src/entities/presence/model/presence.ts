@@ -13,6 +13,9 @@ export type PresenceEvent =
   | { type: "turn_message" }
   | { type: "turn_error" }
   | { type: "turn_reset" }
+  | { type: "voice_recording" }
+  | { type: "voice_transcribing" }
+  | { type: "voice_idle" }
   | { type: "turn_end" }
   | { type: "settle" }
   | { type: "set_onboarding"; on: boolean }
@@ -24,6 +27,8 @@ export interface PresenceState {
   offline: boolean;
   turn: "none" | "thinking" | "speaking";
   turnPhrase: string | null;
+  /** The mic: recording makes the orb listen, transcribing makes it think. */
+  voice: "none" | "recording" | "transcribing";
   askFocused: boolean;
   askHasText: boolean;
   worldSignal: "attention" | "acting" | "assembling" | null;
@@ -40,6 +45,8 @@ const WORLD_PHRASES = {
 
 function derive(s: Omit<PresenceState, "orb" | "phrase">, now: number): Pick<PresenceState, "orb" | "phrase"> {
   if (s.offline) return { orb: "error", phrase: "Offline" };
+  if (s.voice === "recording") return { orb: "listening", phrase: "listening" };
+  if (s.voice === "transcribing") return { orb: "thinking", phrase: "transcribing" };
   if (s.doneUntil !== null && now < s.doneUntil) return { orb: "done", phrase: "done" };
   if (s.turn === "thinking") return { orb: "thinking", phrase: s.turnPhrase ?? "thinking" };
   if (s.turn === "speaking") return { orb: "speaking", phrase: "speaking" };
@@ -52,6 +59,7 @@ const BASE: Omit<PresenceState, "orb" | "phrase"> = {
   offline: true,
   turn: "none",
   turnPhrase: null,
+  voice: "none",
   askFocused: false,
   askHasText: false,
   worldSignal: null,
@@ -64,6 +72,7 @@ function baseOf(s: PresenceState): Omit<PresenceState, "orb" | "phrase"> {
     offline: s.offline,
     turn: s.turn,
     turnPhrase: s.turnPhrase,
+    voice: s.voice,
     askFocused: s.askFocused,
     askHasText: s.askHasText,
     worldSignal: s.worldSignal,
@@ -113,6 +122,15 @@ export function nextPresence(state: PresenceState, event: PresenceEvent, now: nu
     case "turn_error":
     case "turn_reset":
       next = { ...base, turn: "none", turnPhrase: null, doneUntil: null };
+      break;
+    case "voice_recording":
+      next = { ...base, voice: "recording" };
+      break;
+    case "voice_transcribing":
+      next = { ...base, voice: "transcribing" };
+      break;
+    case "voice_idle":
+      next = { ...base, voice: "none" };
       break;
     case "settle":
       if (base.doneUntil === null || now < base.doneUntil) return state;

@@ -95,4 +95,35 @@ describe("nextPresence", () => {
     const s = run([{ type: "set_world_signal", orb: "attention" }, { type: "ws_closed" }, { type: "turn_thinking" }], online);
     expect(s.orb).toBe("error");
   });
+
+  describe("voice", () => {
+    it("voice survives an unrelated event", () => {
+      const s = run([{ type: "voice_recording" }, { type: "ask_focus" }], online);
+      expect(s.voice).toBe("recording");
+    });
+
+    it("recording is listening even with a turn thinking or a world signal", () => {
+      const s = run([{ type: "set_world_signal", orb: "attention" }, { type: "turn_thinking" }, { type: "voice_recording" }], online);
+      expect(s.orb).toBe("listening");
+      expect(s.phrase).toBe("listening");
+    });
+
+    it("transcribing is thinking with the phrase transcribing", () => {
+      const s = run([{ type: "voice_transcribing" }], online);
+      expect(s.orb).toBe("thinking");
+      expect(s.phrase).toBe("transcribing");
+    });
+
+    it("voice_idle returns to the derived state", () => {
+      expect(run([{ type: "voice_recording" }, { type: "voice_idle" }], online).orb).toBe("idle");
+      const busy = run([{ type: "turn_thinking" }, { type: "voice_recording" }, { type: "voice_idle" }], online);
+      expect(busy.orb).toBe("thinking");
+    });
+
+    it("offline still wins over voice", () => {
+      const s = run([{ type: "voice_recording" }, { type: "ws_closed" }], online);
+      expect(s.orb).toBe("error");
+      expect(s.phrase).toBe("Offline");
+    });
+  });
 });

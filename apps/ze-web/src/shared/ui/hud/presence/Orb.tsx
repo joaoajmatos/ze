@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { GAZE_PERSONALITY, initialGaze, nextGaze, stepSpring, type GazeInput, type GazePhase, type GazeState, type Point, type PointerKind } from "./gaze";
 import { MONAD, deform, easeEye, eyeBase, inEye, monadPosition, clampPoint, originRadius, withReflexes, OPEN_EYE, type Eye } from "./monad";
+import { smoothLevel } from "./level";
 import { simplex2 } from "./noise";
 import type { OrbColors, OrbState, PresenceHandle } from "./types";
 
@@ -18,6 +19,8 @@ interface Props {
   /** CSS selector of the thing the orb leans toward while in attention (the slipping item's mark). */
   leanTo?: string;
   label?: string;
+  /** Input level 0..1, read inside the frame while listening. Never called under reduced motion. */
+  level?: () => number;
 }
 
 const N = 29; // dots across the sphere's diameter
@@ -110,7 +113,7 @@ function wave(i: number, t: number): number {
  * The lit dotted sphere is the home shape in every state. Each program returns where this dot wants
  * to be (a displacement from its grid home), how bright, and which colour; springs do the rest.
  */
-function program(s: OrbState, d: Dot, shade: number, rim: number, t: number, age: number, tAbs: number, lean: Lean, m: Point): Target {
+function program(s: OrbState, d: Dot, shade: number, rim: number, t: number, age: number, tAbs: number, lean: Lean, m: Point, gain: number): Target {
   const { x, y, r, ang, z, seed } = d;
   // Every motion is measured from the monad: rx, ry point from it to this dot, pr is the distance (0..1).
   const rx = x - m.x;
@@ -130,10 +133,10 @@ function program(s: OrbState, d: Dot, shade: number, rim: number, t: number, age
     case "listening": {
       // Gathers a little and leans toward the Ask field below; a ring runs inward like it is drawing breath.
       const ring = Math.pow(Math.max(0, Math.sin((pr + t * 0.9) * 9)), 10);
-      dx += rx * -0.07;
-      dy += ry * -0.05 + 0.05;
+      dx += rx * -0.07 * gain;
+      dy += ry * -0.05 * gain + 0.05;
       // Tones run edge to core: ultraviolet at the limb, orchid at the centre.
-      return { dx, dy, v: shade * 0.45 + rim * 0.6 + ring * 0.9, color: ring > 0.5 ? 1 : 0, g: ring > 0.5 ? undefined : (1 - pr) * 2 };
+      return { dx, dy, v: (shade * 0.45 + rim * 0.6 + ring * 0.9) * gain, color: ring > 0.5 ? 1 : 0, g: ring > 0.5 ? undefined : (1 - pr) * 2 };
     }
     case "thinking": {
       // Slow internal swirl: the core turns one way, the mid-depth the other, the limb stays put.
@@ -250,10 +253,11 @@ interface GazeLive {
  * place on the grid and springs toward where the current state wants it, so a state change is one
  * continuous morph that reaches the rim a beat after the core. Never a cut, never a crossfade.
  */
-export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size, colors, reducedMotion, rings = 1, leanTo, label }, handle) {
+export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size, colors, reducedMotion, rings = 1, leanTo, label, level }, handle) {
   const ref = useRef<HTMLCanvasElement>(null);
   const dotsRef = useRef<Dot[] | null>(null);
   const leanToRef = useRef(leanTo);
+  const levelRef = useRef(level);
   const st = useRef<{ state: OrbState; since: number }>({ state, since: 0 });
   const ringsRef = useRef(rings);
   const colorsRef = useRef(colors);
@@ -261,7 +265,8 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
     colorsRef.current = colors;
     ringsRef.current = rings;
     leanToRef.current = leanTo;
-  }, [colors, rings, leanTo]);
+    levelRef.current = level;
+  }, [colors, rings, leanTo, level]);
   useEffect(() => {
     if (st.current.state !== state) st.current = { state, since: performance.now() };
   }, [state]);
@@ -361,6 +366,7 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
     let last = t0;
     let ringMix = 0;
     let visible = true;
+    let smoothed = 0;
     const lean: Lean = { x: 0, y: 0 };
     const leanGoal: Lean = { x: 0, y: 0 };
     let leanAt = 0;
@@ -425,6 +431,10 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
         startleEnv = Math.exp(-(now - startleAt) / (STARTLE_MS / 2.2));
         if (startleEnv < 0.02) startleEnv = 0;
       }
+      // The mic level is read here, once per frame, so a level change never re-renders React.
+      const listening = !reducedMotion && cur.state === "listening";
+      smoothed = listening && levelRef.current ? smoothLevel(smoothed, levelRef.current()) : smoothLevel(smoothed, 0);
+      const gain = 1 + 0.6 * smoothed;
       gazeClock += dt * eased.rate;
       const t = reducedMotion ? 1.3 : gazeClock;
       const damp = 2 * Math.sqrt(K);
@@ -479,7 +489,7 @@ export const Orb = forwardRef<PresenceHandle, Props>(function Orb({ state, size,
         let shade = Math.max(0, d.x * L[0] + d.y * L[1] + d.z * L[2]);
         shade = Math.pow(shade, 2.2);
         const rim = Math.pow(1 - d.z, 4) * 0.5;
-        const want = program(reducedMotion ? (cur.state === "attention" ? "attention" : "idle") : d.following, d, shade, rim, t, reducedMotion ? 3 : age, reducedMotion ? 0.1 : tAbs, lean, m);
+        const want = program(reducedMotion ? (cur.state === "attention" ? "attention" : "idle") : d.following, d, shade, rim, t, reducedMotion ? 3 : age, reducedMotion ? 0.1 : tAbs, lean, m, gain);
         // The monad is whichever grid dots the eye covers now: lit at once, ahead of the dots that follow.
         const inMonad = inEye(d, m, lids);
         if (inMonad) {

@@ -19,7 +19,7 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main` (29f7f307 or later) with 187, 192 and 186–190 merged. `make web-install`; `graphify update .`; `graphify affected` on `AskBar`, `useAskOverlay`, `nextPresence`, `presenceActions`, `Orb`, `Presence`, `AppShell`, `JarvisApp`. Check that:
+- [x] T001 [L:lead] Branch from `main` (29f7f307 or later) with 187, 192 and 186–190 merged. `make web-install`; `graphify update .`; `graphify affected` on `AskBar`, `useAskOverlay`, `nextPresence`, `presenceActions`, `Orb`, `Presence`, `AppShell`, `JarvisApp`. Check that:
   - the generated client exports `transcribeVoice` and `WsScreenContext` has `voice?: { transcription_id: string }`;
   - `AskBar` still renders the disabled mic `Control` ("Voice input arrives later");
   - `pages/jarvis` has no importer outside itself and `routes.tsx`;
@@ -32,7 +32,7 @@
 
 ## Phase 2: Foundational (contract step, lane `lead`)
 
-- [ ] T002 [L:lead] Tests first:
+- [x] T002 [L:lead] Tests first:
   - `entities/presence/model/presence.test.ts`: `voice` survives an unrelated event (`baseOf` and `BASE` copy it); `voice_recording` → orb `listening`, phrase "listening", even with a turn thinking or a world signal; `voice_transcribing` → `thinking`, phrase "transcribing"; `voice_idle` returns to the derived state; offline still wins over voice;
   - `shared/ui/hud/presence/level.test.ts`: `smoothLevel(0, 1)` is 0.5; `smoothLevel(1, 0)` is 0.88; the output stays in 0–1;
   - `shared/ui/hud/presence/presence.test.tsx` (extend): `headSlot` renders inside `presence-head`; with reduced motion the `level` getter is never called; in `listening` with motion allowed, one animation frame (mocked rAF) calls it once.
@@ -141,3 +141,9 @@ Then lead T011, then polish T012 | T013, then docs.
 ## Implementation Strategy
 
 - MVP = US1 (voice) on the contract step. US2 and US4 are small and run beside it. US3 is the overhaul's acceptance bar and runs last over the merged tree.
+
+---
+
+## Handoffs
+
+- **T001** (main 0039a5bf, 192 merged): matches plan "Blast radius". `transcribeVoice` is in `packages/ze-client/src/generated/sdk.gen.ts:934`; `WsVoiceRef { transcription_id }` exists in `generated/ws.ts` (the `voice` field of `WsScreenContext`). `AskBar` still renders the disabled "Voice input arrives later" mic. `pages/jarvis` importers: `routes.tsx:46-47`, `routes.test.tsx:36,81-83`; `places.test.ts:35` and `palette.test.ts:26` mention it. No `*Interim.tsx` file remains under `pages/` (187 and 188 deleted them), so lane `cut` has no Interim files to delete. `ask-overlay.ts` lines as in the plan. Test runner note: `make test-web` needs node 22 on PATH (the default node 16 fails); locally `bun --bun x vitest run <paths>` works.

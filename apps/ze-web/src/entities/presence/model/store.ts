@@ -18,6 +18,8 @@ export const presenceActions = {
   askFocus: () => usePresenceStore.getState().dispatch({ type: "ask_focus" }),
   askBlur: () => usePresenceStore.getState().dispatch({ type: "ask_blur" }),
   askText: (nonEmpty: boolean) => usePresenceStore.getState().dispatch({ type: "ask_text", nonEmpty }),
+  voice: (state: "none" | "recording" | "transcribing") =>
+    usePresenceStore.getState().dispatch({ type: state === "recording" ? "voice_recording" : state === "transcribing" ? "voice_transcribing" : "voice_idle" }),
   setWorldSignal: (orb: "attention" | "acting" | "assembling" | null) =>
     usePresenceStore.getState().dispatch({ type: "set_world_signal", orb }),
 };

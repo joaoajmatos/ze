@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useEffect, useState, type ReactNode } from "react";
 import { useReducedMotion } from "@/shared/lib/use-reduced-motion";
 import { Corners } from "../Corners";
 import { DotMatrix } from "../DotMatrix";
@@ -29,10 +29,14 @@ interface PresenceProps {
   rings?: number;
   /** CSS selector of the item the orb leans toward while in attention. */
   leanTo?: string;
+  /** Rendered after the clock in the head: the shell puts the ambience toggle here. */
+  headSlot?: ReactNode;
+  /** Input level 0..1 for the orb while it listens. */
+  level?: () => number;
 }
 
 /** Ze's presence in its own framed module: status, session clock, the orb and what it is doing. */
-export const Presence = forwardRef<PresenceHandle, PresenceProps>(function Presence({ state, phrase, compact = false, rings, leanTo }, handle) {
+export const Presence = forwardRef<PresenceHandle, PresenceProps>(function Presence({ state, phrase, compact = false, rings, leanTo, headSlot, level }, handle) {
   const clock = useSessionClock();
   const colors = usePaletteColors();
   const reducedMotion = useReducedMotion();
@@ -45,9 +49,10 @@ export const Presence = forwardRef<PresenceHandle, PresenceProps>(function Prese
           <i className={`pulse ${online ? "" : "off"}`} aria-hidden="true" /> {online ? "Online" : "Offline"}
         </span>
         <DotMatrix text={clock} size={2.4} title={`Session ${clock}`} />
+        {headSlot}
       </header>
       <div className="presence-orb">
-        <Orb ref={handle} state={state} size={compact ? 150 : 184} colors={colors} reducedMotion={reducedMotion} rings={rings} leanTo={leanTo} />
+        <Orb ref={handle} state={state} size={compact ? 150 : 184} colors={colors} reducedMotion={reducedMotion} rings={rings} leanTo={leanTo} level={level} />
       </div>
       <footer className="presence-foot">
         <span className="lbl">presence</span>

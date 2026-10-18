@@ -81,4 +81,33 @@ describe("Presence", () => {
     rerender(<Presence state="error" phrase="Offline" />);
     expect(screen.getAllByText("Offline").length).toBeGreaterThan(0);
   });
+
+  it("renders headSlot inside the presence head", () => {
+    mm = mockMatchMedia({});
+    render(<Presence state="idle" phrase="ready" headSlot={<button type="button">slot</button>} />);
+    expect(screen.getByRole("button", { name: "slot" }).closest(".presence-head")).not.toBeNull();
+  });
+
+  it("under reduced motion the level getter is never called", () => {
+    mm = mockMatchMedia({ "(prefers-reduced-motion: reduce)": true });
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+      cb(performance.now());
+      return 1;
+    });
+    const level = vi.fn(() => 0.5);
+    render(<Presence state="listening" phrase="listening" level={level} />);
+    expect(level).not.toHaveBeenCalled();
+  });
+
+  it("in listening with motion allowed one animation frame reads the level once", () => {
+    mm = mockMatchMedia({});
+    let calls = 0;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+      if (calls++ === 0) cb(performance.now());
+      return 1;
+    });
+    const level = vi.fn(() => 0.5);
+    render(<Presence state="listening" phrase="listening" level={level} />);
+    expect(level).toHaveBeenCalledTimes(1);
+  });
 });
