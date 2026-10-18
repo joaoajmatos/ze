@@ -66,3 +66,15 @@ describe("averageSuccessfulRunDuration", () => {
     ])).toBe("6m");
   });
 });
+
+import { untilPhrase } from "./format";
+
+describe("untilPhrase", () => {
+  const now = new Date("2026-10-18T12:00:00Z");
+  it("says when the next run comes", () => {
+    expect(untilPhrase("2026-10-18T12:30:00Z", now)).toBe("in 30m");
+    expect(untilPhrase("2026-10-18T17:00:00Z", now)).toBe("in 5h");
+    expect(untilPhrase("2026-10-22T12:00:00Z", now)).toBe("in 4d");
+    expect(untilPhrase("2026-10-18T11:00:00Z", now)).toBe("now");
+  });
+});

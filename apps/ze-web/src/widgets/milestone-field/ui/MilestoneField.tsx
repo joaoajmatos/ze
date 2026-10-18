@@ -65,7 +65,7 @@ export function MilestoneField({ milestones }: { milestones: MilestoneResponse[]
                 strokeDasharray={m.status === "skipped" ? "2 2" : undefined}
               />
               {next?.id === m.id && (
-                <text x={cx} y={14} textAnchor="middle" className="mark-label">
+                <text x={cx} y={14} textAnchor={cx < 110 ? "start" : cx > W - 110 ? "end" : "middle"} className="mark-label">
                   {m.title.length > 28 ? `${m.title.slice(0, 27)}…` : m.title}
                 </text>
               )}

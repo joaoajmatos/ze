@@ -86,11 +86,10 @@ function GoalLine({ goal, offline, gate, onChatAbout }: { goal: GoalListItem } &
 /** One row per goal, read from the list alone. Coral only for a stuck goal. */
 export function GoalsBoard({ goals, loading, error, offline, gate, onChatAbout }: Props) {
   const { live, paused, finished } = boardOrder(goals);
-  const stuckCount = goals.filter((g) => g.stuck_since).length;
   const line = (g: GoalListItem) => <GoalLine key={g.id} goal={g} offline={offline} gate={gate} onChatAbout={onChatAbout} />;
 
   return (
-    <Module label="Goals" tone={stuckCount ? "hot" : "default"} className="doing-goals">
+    <Module label="Goals" className="doing-goals">
       {error ? (
         <p className="hot" role="alert">
           Couldn't read your goals.

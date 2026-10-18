@@ -6,7 +6,7 @@ export { useLiveExecutionQuery } from "./api/useLiveExecutionQuery";
 export { useTriggerWorkflowMutation } from "./api/useTriggerWorkflowMutation";
 export { useCancelExecutionMutation } from "./api/useCancelExecutionMutation";
 export { WorkflowCard } from "./ui/WorkflowCard";
-export { formatSchedule, formatDurationMs, averageSuccessfulRunDuration, executionDurationMs } from "./lib/format";
+export { formatSchedule, formatDurationMs, averageSuccessfulRunDuration, executionDurationMs, untilPhrase } from "./lib/format";
 export { buildWorkflowGraph, type StepState, type WorkflowGraphNode } from "./lib/buildWorkflowGraph";
 export { useLatestExecutionsQuery } from "./api/useLatestExecutionsQuery";
 export type { LatestExecutions } from "./api/useLatestExecutionsQuery";

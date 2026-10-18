@@ -73,9 +73,8 @@ function RunRow({ run, now, offline, onChatAbout }: { run: WorkspaceRunResponse;
 
 export function Runs({ runs, loading, error, workspace, now, offline, onChatAbout }: Props) {
   const off = workspace?.available === false;
-  const alarm = runs.some(isAlarm);
   return (
-    <Module label="Runs" tone={alarm ? "hot" : "default"} className="doing-runs">
+    <Module label="Runs" className="doing-runs">
       {off ? (
         <p className="hot" role="alert">
           Workspace is off.

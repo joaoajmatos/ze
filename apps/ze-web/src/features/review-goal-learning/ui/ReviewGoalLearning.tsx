@@ -1,6 +1,5 @@
 import type { LearningResponse } from "@myguyze/ze-client";
 import { useReviewGoalLearningMutation } from "@/entities/goal";
-import { Button } from "@/shared/ui";
 
 interface ReviewGoalLearningProps {
   goalId: string;
@@ -17,11 +16,8 @@ export function ReviewGoalLearning({ goalId, learning }: ReviewGoalLearningProps
   }
 
   return (
-    <div className="flex flex-wrap gap-2 pl-4">
-      <Button
-        size="sm"
-        variant="outline"
-        disabled={review.isPending}
+    <span className="acts">
+      <button type="button" className="ctl" disabled={review.isPending}
         onClick={() =>
           review.mutate({
             goalId,
@@ -31,11 +27,8 @@ export function ReviewGoalLearning({ goalId, learning }: ReviewGoalLearningProps
         }
       >
         Approve
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        disabled={review.isPending}
+      </button>
+      <button type="button" className="ctl" disabled={review.isPending}
         onClick={() =>
           review.mutate({
             goalId,
@@ -46,11 +39,8 @@ export function ReviewGoalLearning({ goalId, learning }: ReviewGoalLearningProps
         }
       >
         Reject
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        disabled={review.isPending}
+      </button>
+      <button type="button" className="ctl" disabled={review.isPending}
         onClick={() =>
           review.mutate({
             goalId,
@@ -60,7 +50,7 @@ export function ReviewGoalLearning({ goalId, learning }: ReviewGoalLearningProps
         }
       >
         Defer
-      </Button>
-    </div>
+      </button>
+    </span>
   );
 }

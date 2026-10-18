@@ -1,6 +1,6 @@
 import type { WorkflowExecutionResponse, WorkflowResponse, WsScreenRef } from "@myguyze/ze-client";
 import { Link } from "react-router-dom";
-import { formatSchedule, lastResult, useTriggerWorkflowMutation } from "@/entities/workflow";
+import { formatSchedule, lastResult, untilPhrase, useTriggerWorkflowMutation } from "@/entities/workflow";
 import { workflowPath } from "@/shared/config";
 import { ago } from "@/shared/lib";
 import { ChatAboutChip, Module } from "@/shared/ui";
@@ -18,10 +18,9 @@ interface Props {
 /** Every execution runs unattended, so a failed one is coral however it started. */
 export function WorkflowsBoard({ workflows, executions, loading, error, offline, now, onChatAbout }: Props) {
   const trigger = useTriggerWorkflowMutation();
-  const anyFailed = workflows.some((w) => lastResult(executions[w.id]).kind === "failed");
 
   return (
-    <Module label="Workflows" tone={anyFailed ? "hot" : "default"} className="doing-workflows">
+    <Module label="Workflows" className="doing-workflows">
       {error ? (
         <p className="hot" role="alert">
           Couldn't read your workflows.
@@ -46,7 +45,7 @@ export function WorkflowsBoard({ workflows, executions, loading, error, offline,
                 <span className="lbl">{w.enabled ? "On" : "Off"}</span>
                 <span className="s">
                   {formatSchedule(w.schedule)}
-                  {w.next_run_at ? ` · next ${ago(new Date(w.next_run_at), now)}` : ""}
+                  {w.next_run_at ? ` · next ${untilPhrase(w.next_run_at, now)}` : ""}
                 </span>
                 <span className="s">
                   {result.kind === "never" && "Never run"}
