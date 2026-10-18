@@ -2,7 +2,7 @@ import { parsePrimitiveTree, type PrimitiveTree } from "@myguyze/ze-ui";
 import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
 import { ChevronDown } from "lucide-react";
 import { createElement, useState } from "react";
-import { usePluginScreenActions } from "@/features/primitive-tree";
+import { usePrimitiveActions } from "@/features/primitive-tree";
 import type { UiContribution } from "@/entities/ui-manifest";
 import { usePluginSettingsQuery } from "@/entities/ui-manifest";
 import { cn } from "@/shared/lib/cn";
@@ -12,9 +12,7 @@ import { resolveNavIcon } from "@/shared/ui/icons";
 export function PluginSettingsSection({ entry }: { entry: UiContribution }) {
   const [open, setOpen] = useState(true);
   const { data, isLoading, isError, refetch } = usePluginSettingsQuery(entry, open);
-  const actions = usePluginScreenActions(() => {
-    void refetch();
-  });
+  const actions = usePrimitiveActions();
 
   let nodes: PrimitiveTree | null = null;
   if (data?.tree) {

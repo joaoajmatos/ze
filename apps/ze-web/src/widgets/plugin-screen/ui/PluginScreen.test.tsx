@@ -25,8 +25,8 @@ vi.mock("@/shared/lib", async (importOriginal) => {
 });
 
 vi.mock("@/features/primitive-tree", () => ({
-  usePluginScreenActions: () => ({
-    onButtonAction: vi.fn(),
+  usePrimitiveActions: () => ({
+    onAction: vi.fn(),
     onFormSubmit: vi.fn(),
     onDisconnected: vi.fn(),
   }),

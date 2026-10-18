@@ -1,6 +1,6 @@
 import { parsePrimitiveTree, type PrimitiveTree } from "@myguyze/ze-ui";
 import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
-import { usePluginScreenActions } from "@/features/primitive-tree";
+import { usePrimitiveActions } from "@/features/primitive-tree";
 import type { UiContribution } from "@/entities/ui-manifest";
 import { usePluginPageQuery } from "@/entities/ui-manifest";
 import { useSetPageHeader } from "@/shared/lib";
@@ -9,9 +9,7 @@ import { resolveNavIcon } from "@/shared/ui/icons";
 
 export function PluginScreen({ entry }: { entry: UiContribution }) {
   const { data, isLoading, isError, refetch } = usePluginPageQuery(entry);
-  const actions = usePluginScreenActions(() => {
-    void refetch();
-  });
+  const actions = usePrimitiveActions();
 
   const Icon = resolveNavIcon(entry.icon);
 

@@ -1,2 +1,3 @@
 export { ConnectedPrimitiveTree } from "./ui/ConnectedPrimitiveTree";
-export { usePluginScreenActions } from "./api/usePluginScreenActions";
+export { usePrimitiveActions } from "./api/usePrimitiveActions";
+export { TurnSenderProvider } from "./model/turn-sender";

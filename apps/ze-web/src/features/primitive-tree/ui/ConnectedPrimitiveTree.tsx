@@ -3,7 +3,7 @@ import { parsePrimitiveTree, type PrimitiveTree } from "@myguyze/ze-ui";
 import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
 import { useMemo } from "react";
 import { useCardActions } from "../api/useCardActions";
-import { usePrimitiveRendererActions } from "../api/usePrimitiveRendererActions";
+import { usePrimitiveActions } from "../api/usePrimitiveActions";
 import { HUD_CLASS_NAMES, renderHudHeadline } from "../lib/hud-class-names";
 
 interface ConnectedPrimitiveTreeProps {
@@ -13,7 +13,7 @@ interface ConnectedPrimitiveTreeProps {
 }
 
 export function ConnectedPrimitiveTree({ components, onChatAbout }: ConnectedPrimitiveTreeProps) {
-  const baseActions = usePrimitiveRendererActions();
+  const baseActions = usePrimitiveActions();
   const onCardAction = useCardActions();
   const actions = useMemo(
     () => ({

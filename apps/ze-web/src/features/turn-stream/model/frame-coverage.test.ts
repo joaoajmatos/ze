@@ -17,6 +17,7 @@ const ALL_FRAMES: Record<WsInboundFrame["type"], true> = {
   pong: true,
   trace_update: true,
   notification: true,
+  ui_action_result: true,
 };
 
 const sources = import.meta.glob(["/src/**/*.ts", "/src/**/*.tsx", "!/src/**/*.test.ts", "!/src/**/*.test.tsx"], {

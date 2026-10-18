@@ -107,7 +107,7 @@
 
 ## Phase 6: Web host and gallery (US1, US4)
 
-- [ ] T010 [L:web] [US1] Tests first `features/primitive-tree/api/usePrimitiveActions.test.ts`:
+- [x] T010 [L:web] [US1] Tests first `features/primitive-tree/api/usePrimitiveActions.test.ts`:
   - `navigate` to `/governance#connections` navigates to that section;
   - `ask` calls `sendTurn` on the selected thread;
   - `navigate` to `/mind/x` navigates, while a route not starting with `/` or not a place route shows a notice;

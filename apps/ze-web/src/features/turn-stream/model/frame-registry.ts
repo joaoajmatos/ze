@@ -56,6 +56,13 @@ export const FRAME_REGISTRY: FrameEntry[] = [
     role: "state-owner",
     reason: "a notification invalidates the notification cache",
   },
+  {
+    frame: "ui_action_result",
+    file: "features/primitive-tree/api/usePrimitiveActions.ts",
+    slice: "features/primitive-tree",
+    role: "state-owner",
+    reason: "the pending button action resolves on its result and shows the line",
+  },
   { frame: "pong", file: null, slice: "shared/api", role: "none", reason: "answers a ping; the client keeps no state for it" },
   ...([
     ["typing", "features/respond-to-confirmation/ui/ConfirmationFrameHandler.tsx", "the server resuming the thread acknowledges a confirmation"],
