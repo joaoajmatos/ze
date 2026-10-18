@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-18
 
-**Status**: Draft (clarified 2026-10-18)
+**Status**: Ready to implement (Gauge APPROVED 2026-10-18 at d6b2ccfb; strict fetch drafted, the user's strict/open decision S-1 pending)
 
 **Input**: User description (approved 2026-10-18, "yes do all of that"): adopt `openrouter:web_fetch` for the research agent; document that Ze requests only the server tools it declares and recommend the user switch off the unused OpenRouter workspace tools, with a decision record saying why; check that no code path can request other server tools and add a test that only allowed `openrouter:*` tools are ever sent.
 
