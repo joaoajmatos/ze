@@ -18,8 +18,6 @@ class RawInput:
     """Unprocessed input from any transport layer."""
 
     text: str | None = None
-    audio: bytes | None = None
-    audio_mime: str | None = None  # e.g. "audio/ogg; codecs=opus"
     image: bytes | None = None
     image_mime: str | None = None  # e.g. "image/jpeg"
     voice: VoiceInput | None = None

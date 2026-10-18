@@ -61,7 +61,7 @@
 
 ## Phase 3: User Story 1 - Transcribe, correct, then send (P1) 🎯 MVP
 
-- [ ] T005 [P] [L:core] [US1] Tests first `core/engine/ze-core/tests/openrouter/test_audio.py` (stubbed):
+- [x] T005 [P] [L:core] [US1] Tests first `core/engine/ze-core/tests/openrouter/test_audio.py` (stubbed):
   - `normalise_audio_format` maps `audio/webm;codecs=opus` → `webm`, `audio/mp4` → `m4a` and `audio/x-wav` → `wav`.
   - The container format for the probe maps mp4 and m4a → `mp4`.
   - `probe_duration`:
@@ -74,8 +74,8 @@
   - `to_mp3` raises `AudioUnreadableError` on a non-zero exit or a timeout.
 
   Move `_normalise_audio_format` and `_to_mp3` to `ze_core/openrouter/audio.py` (public names, demuxer, whitelist, timeouts). Add `probe_duration`. `client.py` imports them, and the existing client tests stay green.
-- [ ] T006 [L:core] [US1] Real-binary check before building on the probe (V-1): `core/engine/ze-core/tests/openrouter/test_audio_real.py`, marked `@pytest.mark.slow` and skipped without `ffprobe`. `probe_duration` returns 3.0 ± 0.1 on each of the T004 fixtures: `stream.webm` and `stream.ogg` (both through the packet scan) and `frag.mp4` (step 1). A WAV labelled as WebM is rejected by the forced demuxer (`AudioUnreadableError`). Run it locally with `make test-core SLOW=1` and record the result in the Handoffs note.
-- [ ] T007 [L:core] [US1] Tests first `core/engine/ze-core/tests/test_voice.py`:
+- [x] T006 [L:core] [US1] Real-binary check before building on the probe (V-1): `core/engine/ze-core/tests/openrouter/test_audio_real.py`, marked `@pytest.mark.slow` and skipped without `ffprobe`. `probe_duration` returns 3.0 ± 0.1 on each of the T004 fixtures: `stream.webm` and `stream.ogg` (both through the packet scan) and `frag.mp4` (step 1). A WAV labelled as WebM is rejected by the forced demuxer (`AudioUnreadableError`). Run it locally with `make test-core SLOW=1` and record the result in the Handoffs note.
+- [x] T007 [L:core] [US1] Tests first `core/engine/ze-core/tests/test_voice.py`:
   - success returns the stripped text and the probed duration, and passes `duration_seconds` and the mime to `client.transcribe`;
   - an empty reply returns `Transcription("", d)`;
   - over `max_seconds` raises `AudioTooLongError` before any model call;
@@ -83,7 +83,7 @@
   - the flow and agent ContextVars are `transcription` and `whisper` during the call (US3).
   
   Implement `transcribe_audio` in `ze_core/voice.py`.
-- [ ] T008 [L:core] [US1] Tests first:
+- [x] T008 [L:core] [US1] Tests first:
   - `tests/conversation/test_make_graph_input.py` (extend): a `RawInput` with `voice` sets `input_modality == "voice"` and `voice_input`; text sets `None`, and the key resets each turn.
   - `tests/orchestration/nodes/test_trace_input.py`: `record_trace` sets `MessageTrace.input` for voice and `None` for text, with no transcript text in the JSON.
 

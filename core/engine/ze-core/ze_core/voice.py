@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ze_agents.errors import AudioTooLongError, TranscriptionFailedError
+from ze_core.openrouter.audio import probe_duration
 from ze_core.openrouter.client import OpenRouterClient
+from ze_core.telemetry.context import set_agent_context, set_flow_context
+from ze_logging import get_logger
+
+log = get_logger(__name__)
 
 
 @dataclass
@@ -19,4 +25,18 @@ async def transcribe_audio(
     model: str,
     max_seconds: float = 120,
 ) -> Transcription:
-    raise NotImplementedError
+    """Measure, gate and transcribe one recording. The audio is never stored."""
+    duration = await probe_duration(data, mime)
+    if duration > max_seconds:
+        raise AudioTooLongError(f"Recording is {duration:.0f}s; the limit is {max_seconds:.0f}s")
+
+    set_flow_context("transcription")
+    set_agent_context("whisper")
+    try:
+        text = await client.transcribe(
+            data, mime, model=model, duration_seconds=duration
+        )
+    except Exception as exc:
+        log.warning("voice_transcription_failed", cause=type(exc).__name__)
+        raise TranscriptionFailedError("Transcription failed") from exc
+    return Transcription(text.strip(), duration)
