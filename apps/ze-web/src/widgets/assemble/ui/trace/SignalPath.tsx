@@ -1,6 +1,5 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { useReducedMotion } from "@/shared/lib";
-import { DotMatrix } from "@/shared/ui";
 import { stagesFor } from "../../lib/instruments/signal";
 
 interface SignalPathProps {
@@ -36,11 +35,6 @@ export function SignalPath({ trace, arrivals, sentAt, streaming }: SignalPathPro
         )}
       </ol>
       {streaming && !reduced && <span className="tr-sweep" data-testid="signal-sweep" aria-hidden="true" />}
-      {path.settled && path.totalMs !== null && (
-        <div className="tr-total">
-          <DotMatrix text={`${(path.totalMs / 1000).toFixed(1)} S`} size={3} title={`${(path.totalMs / 1000).toFixed(1)} seconds in total`} />
-        </div>
-      )}
     </div>
   );
 }

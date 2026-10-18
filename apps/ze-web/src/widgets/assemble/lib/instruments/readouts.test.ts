@@ -20,7 +20,7 @@ describe("readoutsFor", () => {
 
   it("reads total, model, compaction span and the recap, and no money", () => {
     const r = readoutsFor(richTrace());
-    expect(r.totalMs).toBe(4200);
+    expect(r.toolMs).toBe(4200);
     expect(r.model).toBe("anthropic/claude-sonnet");
     expect(r.compaction).toBe("messages 0–6 summarised");
     expect(r.resumeRecap).toBe(true);

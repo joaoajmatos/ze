@@ -16,7 +16,6 @@ export interface SignalPath {
   /** The reply is still coming: the strip ends in an open point. */
   replyPending: boolean;
   settled: boolean;
-  totalMs: number | null;
 }
 
 type Arrivals = Record<string, number>;
@@ -32,7 +31,7 @@ export function stagesFor(
   sentAt: number | null,
   streaming: boolean,
 ): SignalPath {
-  const at = (key: string): number | null => (arrivals && sentAt !== null && key in arrivals ? arrivals[key] - sentAt : null);
+  const at = (key: string): number | null => (arrivals && sentAt !== null && key in arrivals ? Math.max(0, arrivals[key] - sentAt) : null);
   const stages: Stage[] = [];
   if (trace.screen) stages.push({ key: "screen", label: "screen", detail: null, offsetMs: at("screen"), lit: true });
   if (trace.agent) stages.push({ key: "route", label: "route", detail: trace.agent, offsetMs: at("route"), lit: true });
@@ -45,6 +44,5 @@ export function stagesFor(
     stages,
     replyPending: streaming,
     settled: !streaming,
-    totalMs: !streaming && trace.total_duration_ms ? trace.total_duration_ms : null,
   };
 }

@@ -42,6 +42,7 @@ export function TraceModule({ threadId, messageId = null, openSection = null, hi
   const live = streaming ? bucket.pendingTrace : null;
   const trace: Partial<WsTraceUpdateFrame> | null | undefined = live ?? committed;
   const arrivals = live ? bucket.pendingArrivals : id ? bucket.arrivalsByMessage[id] : undefined;
+  const sentAt = (live ? bucket.pendingSentAt : id ? bucket.sentAtByMessage[id] : undefined) ?? null;
   const feedback = id ? feedbackById.get(id) : undefined;
 
   if (!trace) {
@@ -68,7 +69,7 @@ export function TraceModule({ threadId, messageId = null, openSection = null, hi
       tools={id && !streaming ? <ReplyActions messageId={id} feedback={feedback} /> : undefined}
     >
       {coordinate && <p className="lbl tr-coordinate">{coordinate}</p>}
-      <SignalPath trace={trace} arrivals={arrivals} sentAt={thread.turn.lastSent?.at ?? null} streaming={streaming} />
+      <SignalPath trace={trace} arrivals={arrivals} sentAt={sentAt} streaming={streaming} />
       {trace.agent && (
         <Instrument name="Routing" readout={`${trace.agent} · ${routingReadout}`} open={openSection === "routing" || undefined}>
           <RoutingInstrument trace={trace} settled={!streaming} />

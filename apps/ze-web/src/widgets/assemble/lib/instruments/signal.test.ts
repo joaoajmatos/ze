@@ -26,7 +26,7 @@ describe("stagesFor", () => {
 
   it("holds the reply as the pending end while streaming, and settles with the total", () => {
     expect(stagesFor(richTrace(), arrivals, 1_000, true)).toMatchObject({ replyPending: true, settled: false });
-    expect(stagesFor(richTrace(), arrivals, 1_000, false)).toMatchObject({ replyPending: false, settled: true, totalMs: 4_200 });
+    expect(stagesFor(richTrace(), arrivals, 1_000, false)).toMatchObject({ replyPending: false, settled: true });
   });
 
   it("draws a history trace settled, every stage lit, with no offsets", () => {

@@ -10,10 +10,14 @@ export interface ThreadTraceBucket {
   pendingArrivals: Record<string, number>;
   /** The same stamps, kept for a committed reply. A trace hydrated from history has none. */
   arrivalsByMessage: Record<string, Record<string, number>>;
+  /** When the turn in flight started (a send or a retry); the zero of its stage offsets. */
+  pendingSentAt: number | null;
+  /** The same zero, kept for a committed reply. */
+  sentAtByMessage: Record<string, number>;
 }
 
 function emptyThreadTrace(): ThreadTraceBucket {
-  return { traces: [], pending: false, pendingTrace: null, hydrating: false, pendingArrivals: {}, arrivalsByMessage: {} };
+  return { traces: [], pending: false, pendingTrace: null, hydrating: false, pendingArrivals: {}, arrivalsByMessage: {}, pendingSentAt: null, sentAtByMessage: {} };
 }
 
 /** The stages a partial frame carries, by its fields. */
@@ -174,6 +178,11 @@ export const useTraceStore = create<TraceState>()((set) => ({
           pendingTrace: null,
           pending: false,
           pendingArrivals: {},
+          pendingSentAt: null,
+          sentAtByMessage:
+            bucket.pendingSentAt !== null
+              ? { ...bucket.sentAtByMessage, [final.message_id]: bucket.pendingSentAt }
+              : bucket.sentAtByMessage,
           arrivalsByMessage: Object.keys(bucket.pendingArrivals).length
             ? { ...bucket.arrivalsByMessage, [final.message_id]: bucket.pendingArrivals }
             : bucket.arrivalsByMessage,
@@ -182,10 +191,11 @@ export const useTraceStore = create<TraceState>()((set) => ({
     }),
   resetPending: (threadId) =>
     set((s) => ({
-      byThread: updateThread(s.byThread, threadId, (bucket) =>
-        bucket.pendingTrace === null && Object.keys(bucket.pendingArrivals).length === 0
-          ? bucket
-          : { ...bucket, pendingTrace: null, pendingArrivals: {} },
-      ),
+      byThread: updateThread(s.byThread, threadId, (bucket) => ({
+        ...bucket,
+        pendingTrace: null,
+        pendingArrivals: {},
+        pendingSentAt: Date.now(),
+      })),
     })),
 }));

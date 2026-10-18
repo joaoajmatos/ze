@@ -2,7 +2,8 @@ import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { describeJudgments } from "./judgments";
 
 export interface Readouts {
-  totalMs: number;
+  /** Sum of the tool call durations; the trace does not measure the whole turn. */
+  toolMs: number;
   model: string;
   systemOne: { requests: number; latencyMs: number; inputTokens: number } | null;
   systemOneText: string | null;
@@ -27,7 +28,7 @@ export function readoutsFor(trace: Partial<WsTraceUpdateFrame>): Readouts {
   const systemOne = requests > 0 ? { requests, latencyMs, inputTokens } : null;
   const compaction = trace.compaction ? `messages ${trace.compaction.span_start}–${trace.compaction.span_end} summarised` : null;
   return {
-    totalMs: trace.total_duration_ms ?? 0,
+    toolMs: trace.total_duration_ms ?? 0,
     model: trace.tier?.model ?? "not recorded",
     systemOne,
     systemOneText: systemOne

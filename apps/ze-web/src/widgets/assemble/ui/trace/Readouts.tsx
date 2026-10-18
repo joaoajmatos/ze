@@ -7,9 +7,9 @@ export function Readouts({ trace }: { trace: Partial<WsTraceUpdateFrame> }) {
   return (
     <dl className="tr-readouts">
       <div>
-        <dt className="lbl">Total</dt>
+        <dt className="lbl">Tool time</dt>
         <dd>
-          <DotMatrix text={`${(r.totalMs / 1000).toFixed(1)} S`} size={3} title={`${r.totalMs} milliseconds in total`} />
+          <DotMatrix text={`${(r.toolMs / 1000).toFixed(1)} S`} size={3} title={`${r.toolMs} milliseconds of tool time`} />
         </dd>
       </div>
       <div>

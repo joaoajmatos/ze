@@ -36,9 +36,9 @@ describe("SignalPath", () => {
     expect(screen.getByLabelText("reply coming")).toBeInTheDocument();
   });
 
-  it("settles with the total in dot matrix", () => {
+  it("settles without drawing a total the trace cannot prove", () => {
     render(<SignalPath trace={richTrace()} sentAt={null} streaming={false} />);
-    expect(screen.getByRole("img", { name: "4.2 seconds in total" })).toBeInTheDocument();
+    expect(screen.queryByRole("img")).toBeNull();
     expect(screen.queryByTestId("signal-sweep")).toBeNull();
   });
 
@@ -117,7 +117,7 @@ describe("ToolsTimeline", () => {
 describe("Readouts and ReversalTrack", () => {
   it("shows the dot-matrix total, model, System One line and compaction", () => {
     render(<Readouts trace={richTrace()} />);
-    expect(screen.getByRole("img", { name: "4200 milliseconds in total" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "4200 milliseconds of tool time" })).toBeInTheDocument();
     expect(screen.getByText("anthropic/claude-sonnet")).toBeInTheDocument();
     expect(screen.getByText("System One: 3 requests, 870 ms, 2,100 input tokens")).toBeInTheDocument();
     expect(screen.getByText("messages 0–6 summarised")).toBeInTheDocument();
