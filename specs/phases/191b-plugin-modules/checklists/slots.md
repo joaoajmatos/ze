@@ -15,3 +15,8 @@
 - [x] CHK009 Is the preset numbering and key rule defined against 187's chips? [Consistency, T008]
 - [x] CHK010 Is every removed field and route listed with a grep? [Completeness, Quickstart]
 - [x] CHK011 Is the 188 dependency (Doing workflow page) handled if 188 is late? [Dependency, Lane Plan rule]
+- [x] CHK012 Are tool actions in plugin views bound to the contributing plugin's agents? [Spec §FR-005, T002]
+- [x] CHK013 Are plugin postures licensed and tones derived in core? [Spec §FR-005a, T002]
+- [x] CHK014 Is the subject resolved server-side? [Spec §FR-005b, Contract]
+- [x] CHK015 Does the refresh frame have a sender? [Spec §FR-005c, T002, T005]
+- [x] CHK016 Is manifest timing (startup, restart) consistent across spec, contract and quickstart? [Consistency]

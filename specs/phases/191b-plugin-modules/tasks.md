@@ -19,7 +19,7 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main` with 191a merged. `make install && make web-install`; `graphify update .`; `graphify affected` on `UiContribution`, `UiManifest`, `collect_ui_contributions`, `filter_ui_manifest_by_openapi`, `CORE_RESERVED_NAV_PATHS`, `PluginPage`, `refreshKeysForScreen`, `TryChips`, `MindEntityPage`, `DoingWorkflowPage`, `Connections`. Grep `manifest.nav`, `ui_manifest.nav`, `ui_nav`, `show_in_mobile_nav`, `page_operation_id`, `getNewsPage`, `news/page`, `build_news_page`, `PluginPageResponse`. Check whether `ze_personal/api/routes.py` serves a page route (if so, it is deleted with the page kind), whether 188's `DoingWorkflowPage` is on `main`, and the final `TryChips` chips array and props. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
+- [ ] T001 [L:lead] Branch from `main` with 191a merged. `make install && make web-install`; `graphify update .`; `graphify affected` on `UiContribution`, `UiManifest`, `collect_ui_contributions`, `filter_ui_manifest_by_openapi`, `CORE_RESERVED_NAV_PATHS`, `PluginPage`, `refreshKeysForScreen`, `TryChips`, `MindEntityPage`, `DoingWorkflowPage`, `Connections`. Grep `manifest.nav`, `ui_manifest.nav`, `ui_nav`, `show_in_mobile_nav`, `page_operation_id`, `getNewsPage`, `news/page`, `build_news_page`, `PluginPageResponse`. Confirm: how a plugin's registered agents are known at runtime (for the tool-action binding); the function in `ze_agents/claims.py` or `ze_components/claims.py` that says which (ClaimKind, Provenance) pairs are allowed (if none, lead adds `is_licensed_posture` in T002); where plugin settings responses can be validated by core; the memory graph and workflow store lookups for the subject; whether 188's `DoingWorkflowPage` is on `main`; and the final `TryChips` chips array and props. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
 
 ---
 
@@ -43,16 +43,20 @@
     - a provider that raises is 502 "<Plugin> could not load.";
     - a provider over 3 s (fake clock) is 504 "<Plugin> took too long.";
     - an invalid tree is 502 "<Plugin> sent a view Ze cannot show.";
-    - each failure logs `ui_module_failed`.
+    - each failure logs `ui_module_failed`;
+    - a module tree whose `ToolAction` names another plugin's agent, or a tool outside the named agent's list, is 502 "<Plugin> sent a view Ze cannot show."; the same tree in a settings response is refused;
+    - a tree with an unlicensed posture pair is refused; a provider-set tone or label is replaced by the core-derived one;
+    - the subject is resolved server-side: an unknown entity or run id is 404, and the provider receives the record's label and entity type (a forged `subject_label` query parameter is ignored);
+    - `request_module_refresh(interface, "x.facet")` calls `send_refresh("module:x.facet")`, and a failing interface is logged, not raised; `NativeAppInterface.send_refresh` sends the `refresh` frame.
 
-  Implement `ze_plugin/ui.py` (delete the page kind, `path`, `page_operation_id`, `show_in_mobile_nav`, `CORE_RESERVED_NAV_PATHS`), the `ze_sdk/ui.py` re-export (lines 2 and 10), the `api/v0/system` schemas and route description, the new `api/v0/ui_modules` route, and the log fields in `wiring/agents.py:224-232` and `wiring/container.py:768-769`. Delete News's page contribution in `ze_news/plugin.py` so startup passes (lane `news` adds the preset and module). Point `apps/ze-api/tests/api/test_openapi_export.py:11,27`, `apps/ze-api/tests/test_plugin_routes.py:28` and `packages/ze-client/src/sdk-dispatch.test.ts` at `getNewsSettings`. Run `make codegen`; commit the generated client with the task.
+  Implement `ze_plugin/ui.py` (delete the page kind, `path`, `page_operation_id`, `show_in_mobile_nav`, `CORE_RESERVED_NAV_PATHS`), the `ze_sdk/ui.py` re-export (lines 2 and 10), the `api/v0/system` schemas and route description, the new `api/v0/ui_modules` route, and the log fields in `wiring/agents.py:224-232` and `wiring/container.py:768-769`. Delete News's page contribution in `ze_news/plugin.py` so startup passes (lane `news` adds the preset and module). Delete ze-personal's `getContactsPage` (`api/routes.py:24-35`), `ui/page.py`, its `PluginPageResponse` copy and their tests. Remove the `plugin` place from `WsScreenContext.place` (`api/ws/schemas.py:227`) and `PLACES` (`ze_agents/screen.py:25`). Add `AppInterface.send_refresh`, `NativeAppInterface.send_refresh` and `ze_sdk.ui.request_module_refresh`. Point `apps/ze-api/tests/api/test_openapi_export.py:11,27`, `apps/ze-api/tests/test_plugin_routes.py:28` and `packages/ze-client/src/sdk-dispatch.test.ts` at `getNewsSettings`. Run `make codegen`; commit the generated client with the task.
 - [ ] T003 [L:lead] Tests first:
   - `entities/ui-manifest/model/select.test.ts`: `modulesForSlot(manifest, "mind.entity")` returns that slot's modules in order; an empty or absent manifest gives `[]`; `presets(manifest)` returns the presets;
   - `entities/ui-manifest/api/useUiModuleQuery.test.ts`: the query key includes the module id and subject, and the request passes the subject query fields;
-  - `shared/lib/query-keys.test.ts`: `refreshKeysForScreen("module:x.facet")` returns the `uiModule("x.facet")` prefix key;
+  - `shared/lib/query-keys.test.ts`: `refreshKeysForScreen("module:x.facet")` returns the `uiModule("x.facet")` prefix key; `queryKeys.pluginPage` and the `contacts` plugin-page expectation (line 41) are gone;
   - `app/router/routes.test.tsx`: no top-level `:pluginPath` route; `/notes` renders not found; `/news` redirects to `/ask` (in `shared/config/places.test.ts` too).
 
-  Implement in `entities/ui-manifest`, `query-keys.ts`, `routes.tsx` and `places.ts`. Add `widgets/plugin-module/index.ts` with the `PluginModuleSlot({ slot, subject })` stub (renders nothing), and `apps/ze-web/src/test/fixtures/manifest.ts` (one module per slot, one preset, one settings section).
+  Implement in `entities/ui-manifest`, `query-keys.ts` (delete `pluginPage`), `routes.tsx` and `places.ts` (drop the `plugin` comment at line 23). Add `widgets/plugin-module/index.ts` with the `PluginModuleSlot({ slot, subject })` stub (renders nothing), and `apps/ze-web/src/test/fixtures/manifest.ts` (one module per slot, one preset, one settings section).
 - [ ] T004 [L:lead] Delete `pages/plugin-page` (route, page and tests) and `widgets/plugin-screen`'s page-header use if nothing else needs it (`PluginSettingsSection` keeps working); run `make test-web` and `make typecheck-web`.
 
 **Checkpoint**: lanes start.
@@ -62,12 +66,13 @@
 ## Phase 3: User Story 2 - News (P1)
 
 - [ ] T005 [P] [L:news] [US2] Tests first:
-  - `plugins/ze-news/tests/test_store_by_tag.py` (mocked pool): `by_tag("climate")` matches tags case-insensitively, newest first, at most 8;
+  - `plugins/ze-news/tests/test_store_by_tag.py` (mocked pool): `by_tag("climate")` issues an exact `tags && ARRAY[$1]` match (no `lower()`), newest first, at most 8;
   - `plugins/ze-news/tests/test_plugin_ui.py`: `ui_contributions()` returns the preset `ze_news.whats_new` (label and prompt "What's new in my sources?"), the module `ze_news.sources` (slot `mind.entity`, label "Sources") and the settings section when enabled, and nothing when disabled;
-  - the sources provider: `applies=False` for an entity type other than `topic` and when no article matches; otherwise a `claim_list` with one item per article (title, source, date), posture `fact`/`live_search` set by code, and the tree validates against the 191a schema;
-  - `GET /api/v0/news/page` is gone (not in the OpenAPI export) and `getNewsSettings` still works.
+  - the sources provider: `applies=False` before `startup()` has created the store (not an exception), for an entity type other than `topic`, and when no article matches; otherwise a `claim_list` with one item per article (title, source, date), posture `fact`/`live_search` set by code, and the tree validates against the 191a schema;
+  - `GET /api/v0/news/page` is gone (not in the OpenAPI export) and `getNewsSettings` still works;
+  - `NewsFetchJob.run`: when `upsert` returns new articles, `request_module_refresh(interface, "ze_news.sources")` is called once; with no new articles it is not called.
 
-  Implement `NewsStore.by_tag`, the contributions and provider in `plugin.py`. Delete `getNewsPage`, `ui/page.py`, `tests/test_ui_page.py` and the page cases in `tests/test_api_routes.py`. Add the row `{"id": "single-news-sources-en", "lang": "en", "prompt": "What's new in my sources?", "gold_agent": "news", "gold_multi": false}` to `eval/calibration/routing.jsonl`.
+  Implement `NewsStore.by_tag`, the contributions and provider in `plugin.py` (the provider reads `self._store` at call time), and pass the interface to `NewsFetchJob` in `startup()`. Delete `getNewsPage`, `ui/page.py`, `tests/test_ui_page.py` and the page cases in `tests/test_api_routes.py`. Add the row `{"id": "single-news-sources-en", "lang": "en", "prompt": "What's new in my sources?", "gold_agent": "news", "gold_multi": false}` to `eval/calibration/routing.jsonl` and run `make calibrate-routing ARGS=--check-sets` (offline only).
 
 ---
 
@@ -86,7 +91,7 @@
   Implement `PluginModuleSlot`.
 - [ ] T007 [L:web] [US1] Tests first, extending `pages/mind-entity/ui/MindEntityPage.test.tsx`, `pages/doing-workflow/ui/DoingWorkflowPage.test.tsx` and `widgets/connections/ui/Connections.test.tsx`, each with the fixture manifest:
   - the Mind entity page mounts the `mind.entity` slot with subject `{ kind: "entity", id, label, entity_type }`;
-  - the Doing workflow page mounts the `doing.run` slot with the selected execution as `id` and the workflow as `parent_id`;
+  - the Doing workflow page mounts the `doing.run` slot with the selected execution as `id` and the workflow as `parent_id` (if 188 has not landed, the mount waits for it: record it on 188's landing checklist in the Handoffs note);
   - Connections mounts the `governance.connections` slot with subject `none`, after the settings sections.
 
   Implement the one-line mounts.
