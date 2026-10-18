@@ -50,6 +50,7 @@
 - [ ] T004 [P] [L:lead] Fixtures in `apps/ze-api/tests/fixtures/audio/`, with the generator script `make_fixtures.sh` committed beside them:
   - `stream.webm`, made by `ffmpeg -f lavfi -i sine=duration=3 -c:a libopus -f webm pipe:1 > stream.webm`: non-seekable, no duration;
   - `frag.mp4`, made with `-movflags frag_keyframe+empty_moov`;
+  - `stream.ogg`, an Opus clip made with `-c:a libopus -f ogg pipe:1` (Firefox records `audio/ogg`);
   - `one_second.wav`.
 
   In `core/engine/ze-core/tests/conftest.py`: `fake_transcribe_client`, and `ffprobe_stub(outputs: list[str], missing=False, hang=False)`, which patches `asyncio.create_subprocess_exec` and returns the outputs in order (step 1, step 2). Hand `ze_core/voice.py` and `ze_agents/interface/types.py` to lane `core` (Handoffs note).
@@ -64,7 +65,7 @@
   - `normalise_audio_format` maps `audio/webm;codecs=opus` → `webm`, `audio/mp4` → `m4a` and `audio/x-wav` → `wav`.
   - The container format for the probe maps mp4 and m4a → `mp4`.
   - `probe_duration`:
-    - returns step 1's `3.400000`;
+    - returns step 1's `3.400000`; a step-1 output of `0` or a negative number counts as failure and runs step 2 (only a positive number is success);
     - when step 1 prints `N/A`, runs step 2 and returns the last `pts_time + duration_time` (`2.994000,0.020000` → 3.014);
     - raises `AudioUnreadableError` when both steps fail or step 2 returns no packets;
     - raises `AudioToolMissingError` on `FileNotFoundError`;
@@ -73,7 +74,7 @@
   - `to_mp3` raises `AudioUnreadableError` on a non-zero exit or a timeout.
 
   Move `_normalise_audio_format` and `_to_mp3` to `ze_core/openrouter/audio.py` (public names, demuxer, whitelist, timeouts). Add `probe_duration`. `client.py` imports them, and the existing client tests stay green.
-- [ ] T006 [L:core] [US1] Real-binary check before building on the probe (V-1): `core/engine/ze-core/tests/openrouter/test_audio_real.py`, marked `@pytest.mark.slow` and skipped without `ffprobe`. `probe_duration` on the T004 `stream.webm` returns 3.0 ± 0.1 (through the packet scan), and on `frag.mp4` returns 3.0 ± 0.1. Run it locally with `make test-core SLOW=1` and record the result in the Handoffs note.
+- [ ] T006 [L:core] [US1] Real-binary check before building on the probe (V-1): `core/engine/ze-core/tests/openrouter/test_audio_real.py`, marked `@pytest.mark.slow` and skipped without `ffprobe`. `probe_duration` returns 3.0 ± 0.1 on each of the T004 fixtures: `stream.webm` and `stream.ogg` (both through the packet scan) and `frag.mp4` (step 1). A WAV labelled as WebM is rejected by the forced demuxer (`AudioUnreadableError`). Run it locally with `make test-core SLOW=1` and record the result in the Handoffs note.
 - [ ] T007 [L:core] [US1] Tests first `core/engine/ze-core/tests/test_voice.py`:
   - success returns the stripped text and the probed duration, and passes `duration_seconds` and the mime to `client.transcribe`;
   - an empty reply returns `Transcription("", d)`;
