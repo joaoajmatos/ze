@@ -62,3 +62,10 @@ describe("WorkflowGraph", () => {
     expect(screen.getByText("Not taken this run")).toBeInTheDocument();
   });
 });
+
+describe("WorkflowGraph restyle", () => {
+  it("renders no definition banner", () => {
+    const { container } = render(<WorkflowGraph steps={[step({ id: "s1", task: "Fetch" })]} execution={null} />);
+    expect(container.textContent).not.toMatch(/Current definition|definition (changed|differs)/i);
+  });
+});

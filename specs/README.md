@@ -230,12 +230,13 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 186 | [World (W2)](phases/186-web-world/spec.md) | ✅ Implemented |
 | 187 | [Ask / Assemble (W3)](phases/187-web-ask-assemble/spec.md) | ✅ Implemented |
 | 187b | [Trace Telemetry](phases/187b-trace-telemetry/spec.md) | ✅ Implemented |
-| 188 | [Doing (W4)](phases/188-web-doing/spec.md) | 🔲 Ready to implement (with 183 + 184; reminders after 185, screen context after 195) |
+| 188 | [Doing (W4)](phases/188-web-doing/spec.md) | ✅ Implemented |
 | 189 | [Mind (W5)](phases/189-web-mind/spec.md) | ✅ Implemented |
 | 190 | [Governance (W6)](phases/190-web-governance/spec.md) | ✅ Implemented |
-| 191 | [Plugins in Places (W7)](phases/191-web-plugins-in-places/spec.md) | ⏸ Parked (user 2026-10-18: redesign pending) |
+| 191a | [UI Primitives v2](phases/191a-ui-primitives-v2/spec.md) | 🔲 Ready to implement (runs now; replaces the parked 191) |
+| 191b | [Plugin Modules in Slots](phases/191b-plugin-modules/spec.md) | 🔲 Ready to implement (after 191a; run slot needs 188) |
 | 192 | [Voice Input Transport (B3)](phases/192-voice-transport/spec.md) | 🔲 Ready to implement (parallel; before 193) |
-| 193 | [Voice and Polish (W8)](phases/193-web-voice-polish/spec.md) | 🔲 Draft |
+| 193 | [Voice and Polish (W8)](phases/193-web-voice-polish/spec.md) | 🔲 Ready to implement (after 186–190, 192) |
 | 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | 🔲 Ready to implement (parallel; zc040 reserved) |
 | 195 | [Screen Context Awareness](phases/195-screen-context-awareness/spec.md) | ✅ Implemented (live eval: first run 10 of 26, chat_about 9 of 15 after owner routing; chip capture deferred to 193) |
 

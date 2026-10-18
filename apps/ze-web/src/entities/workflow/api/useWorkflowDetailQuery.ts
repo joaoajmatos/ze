@@ -7,8 +7,9 @@ export function useWorkflowDetailQuery(workflowId: string) {
   return useQuery<WorkflowDetailResponse>({
     queryKey: queryKeys.workflowDetail(workflowId),
     queryFn: async () => {
-      const { data } = await getWorkflow({ path: { workflow_id: workflowId } });
-      return data!;
+      const { data, error } = await getWorkflow({ path: { workflow_id: workflowId } });
+      if (error || !data) throw error ?? new Error("Workflow not found");
+      return data;
     },
     enabled: !!workflowId,
   });

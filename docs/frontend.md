@@ -14,10 +14,10 @@ The React web client (`apps/ze-web`) uses [Feature-Sliced Design](https://featur
 | Layer | Purpose | Name by | Example |
 |-------|---------|---------|---------|
 | `shared` | UI kit, utilities, API wiring — no business logic | — | `shared/ui` (primitives + layout), `shared/api/ws-client` |
-| `entities` | One business noun: display + read queries | singular noun | `entities/goal` → `GoalCard`, `useGoalsQuery` |
+| `entities` | One business noun: display + read queries | singular noun | `entities/goal` → `boardOrder`, `useGoalsQuery` |
 | `features` | One user interaction | verb phrase | `features/export-user-data` |
-| `widgets` | Composite screen sections | UI block role | `widgets/goals-overview` |
-| `pages` | Thin route entry — composes widgets | route segment | `pages/goals` |
+| `widgets` | Composite screen sections | UI block role | `widgets/goals-board` |
+| `pages` | Thin route entry — composes widgets | route segment | `pages/doing` |
 | `app` | Bootstrap, router, providers | — | `app/router/routes.tsx` |
 
 </details>
@@ -76,9 +76,12 @@ Old paths redirect to their place and keep params, query and hash. The table is 
 |----------|----------|
 | `/loops` | `/` |
 | `/priority`, `/reminders`, `/world` | `/` |
-| `/goals`, `/goals/:id` | `/doing/goals`, `/doing/goals/:id` |
-| `/workflows`, `/workflows/:id` | `/doing/workflows`, `/doing/workflows/:id` |
-| `/skills` | `/doing/skills` |
+| `/goals` | `/doing#goals` |
+| `/goals/:id` | `/doing/goals/:id` |
+| `/workflows` | `/doing#workflows` |
+| `/workflows/:id` | `/doing/workflows/:id` |
+| `/skills` | `/doing#skills` |
+| `/doing/goals`, `/doing/workflows`, `/doing/skills` | `/doing` with the matching hash |
 | `/brain-memory`, `/brain-graph`, `/mind/graph`, `/procedures`, `/doing/procedures`, `/contacts` | `/mind` |
 | `/costs` | `/governance` |
 | `/data`, `/governance/data` | `/governance#data` |
@@ -112,6 +115,36 @@ World is the home at `/` (`pages/world`, phase 186). It shows what Ze holds, wha
 
 The notification bell no longer lists held writes. A `held_write` notification opens World with the item selected.
 
+### Doing
+
+Doing answers what runs without you, what it did, and what it waits for (`pages/doing`, phase 188). It has three routes:
+
+| Route | Page | Content |
+|-------|------|---------|
+| `/doing` | `pages/doing` | The index: five anchored modules |
+| `/doing/goals/:goalId` | `pages/doing-goal` | One goal |
+| `/doing/workflows/:workflowId` | `pages/doing-workflow` | One workflow |
+
+The index modules, in phone order:
+
+| Module | Widget | Shows |
+|--------|--------|-------|
+| Needs you | `widgets/doing-needs-you` | Planned goals to start, open gates and held writes. Cream. |
+| Goals | `widgets/goals-board` | One row per goal, from the goal list. Stuck goals come first, in coral. Finished goals sit under "Finished (n)". |
+| Workflows | `widgets/workflows-board` | Schedule in words, next run and last result. Failed rows are coral. Run now starts a workflow. |
+| Runs | `widgets/runs` | Recent workspace runs, the live output of a running one, and Cancel. |
+| Skills | `widgets/skills-queue` | Skills waiting for review first, then the on and off list. |
+
+Rules that apply across Doing:
+
+- **Gates and held writes.** Gate actions go through `features/answer-gate` (the same sender World uses). Held writes use `HeldWriteCard` (`features/respond-to-confirmation`).
+- **Coral is for unattended failures.** A run is coral only when an unattended run failed or timed out. A cancelled or refused run is never coral. A failed workflow execution is coral.
+- **Plain words.** Statuses, origins and summaries show as plain words. Command output appears verbatim in a monospace box.
+- **Runs stay fresh.** While a run is in progress, the Runs list and the workspace status refresh every 5 seconds. A run without an id or a start time shows no Cancel button.
+- **Ask about it.** Each goal, workflow, run, skill, gate and held write offers "Chat about this".
+
+On a phone the modules stack in the order Needs you, Goals, Workflows, Runs, Skills. The detail pages use one column, and the gate comes first.
+
 ### Mind
 
 Mind shows what Ze believes. `/mind` holds four modules: Beliefs, People, Find an entity and Procedures. `/mind/:entityId` shows one entity.
@@ -124,7 +157,8 @@ Mind shows what Ze believes. `/mind` holds four modules: Beliefs, People, Find a
 
 The claim posture table (glyph, chip word, plain words per state) lives in `shared/lib/claim-posture.ts`. Beliefs publish their visible and selected rows to screen context, the entity page publishes its entity as the subject, and rows carry "Chat about this".
 
-Until each place has its own design, it hosts the old pages as sections behind a row of tabs. One file per place holds the sections: `pages/doing/ui/DoingInterim.tsx` (phase 188 replaces it). World, Ask, Mind and Governance have their own pages. A page cannot import another page, so `app/router/routes.tsx` passes each interim file the loaders for its sections. Plugin pages still use `/:pluginPath` (phase 191 places them).
+Every place now has its own page: World, Ask, Doing, Mind and Governance. `/doing` holds the Doing modules and its two detail pages. Plugin pages still use `/:pluginPath` (phase 191 places them).
+
 
 ## Governance
 
@@ -149,22 +183,22 @@ Example: finance overview at `/finance`. Plugin screens normally arrive through 
 1. **`entities/transaction/`** — `TransactionRow`, `useTransactionsQuery` wrapping `@myguyze/ze-client`
 2. **`widgets/finance-overview/`** — composes the entity list
 3. **`pages/finance/`** — `FinancePage` that renders `<FinanceOverview />`
-4. **`app/router/routes.tsx`** — add the route under its place, or add a section to that place's interim file
+4. **`app/router/routes.tsx`** — add the route under its place
 5. **`shared/config/places.ts`** — add a path helper if other screens link to it
 
 To ask Ze about a screen, call `askAbout({ text, context })` from `features/ask-bar`. To tell Ze what the page shows, call `useScreenPublisher` from `entities/screen-context` with the page's subject, selection and visible refs. The store builds the snapshot that every send attaches. To let the user chat about a record, pass `onChatAbout` to `Module`, or place a `ChatAboutChip` on a component without a frame. A widget calls `useChatAbout` and passes the callback down by props, because features and entities never import `features/ask-bar` from each other.
 
 Each slice exposes a public API through `index.ts`. Internal `ui/`, `api/`, `model/` folders are private to the slice.
 
-Core-owned screens include `/skills` (`pages/skills` + `widgets/skill-management`). The workspace file map lives in Governance. See [skills.md](skills.md) and [workspace.md](workspace.md).
+Skill review lives on Doing (`widgets/skills-queue`). The workspace file map lives in Governance. See [skills.md](skills.md) and [workspace.md](workspace.md).
 
 ## Extending an existing domain
 
 Example: goal detail view at `/doing/goals/:goalId`.
 
-1. Add `entities/goal/ui/GoalDetail.tsx` and optionally `useGoalQuery(id)`
-2. Add `widgets/goal-detail/` composing the entity + any action features
-3. Add `pages/goal-detail/` thin page
+1. Add `useGoalDetailQuery(id)` in `entities/goal/api/`
+2. Add a widget such as `widgets/milestone-field/` for each module of the view
+3. Add `pages/doing-goal/` to compose the widgets
 4. Register the nested route in `app/router/routes.tsx` (no nav entry needed if reached from a list)
 
 Do not put route-specific logic in entities — entities are reusable across screens.

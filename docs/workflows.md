@@ -132,11 +132,11 @@ After the last step, `workflow_synthesize` calls the verify-class model to merge
 
 When a run ends as failed, `workflow_failed` records the error and, if any steps succeeded, writes a partial summary of their output. The scheduler's failure handler then sends a `workflow_failure` notification (an `accountability` push) through `ProactiveNotifier` (WebSocket or ntfy). The alert honors `proactive.alerts.workflow_failure_enabled` and `workflow_failure_cooldown_hours`.
 
-Every failed run has a `failure_summary`: one plain line that names the step, the task, and the reason, such as “Step 2 of 3, “Ping the health endpoint”, failed: it ran out of time after 2 attempts.” Ze derives it from the stored run each time (`ze_automation/workflow/failure.py`). It never contains the raw error text, which stays in `error`. The run list, the workflow agent, and the failure push all use it. The push links to the run page for that execution.
+Every failed run has a `failure_summary`: one plain line that names the step, the task, and the reason, such as “Step 2 of 3, “Ping the health endpoint”, failed: it ran out of time after 2 attempts.” Ze derives it from the stored run each time (`ze_automation/workflow/failure.py`). It never contains the raw error text, which stays in `error`. The run list, the workflow agent, and the failure push all use it. The push links to the workflow page for that execution.
 
 ### Cancellation
 
-You can cancel a running execution from the chat or the run page. The run ends with status `cancelled` and a summary of the steps that finished.
+You can cancel a running execution from the chat or the workflow page in Doing. The run ends with status `cancelled` and a summary of the steps that finished.
 
 ---
 
@@ -212,7 +212,16 @@ All routes live under `/api/v0/workflows`.
 
 All endpoints require `Authorization: Bearer $ZE_API_KEY`. To create, enable, disable, or delete a workflow, talk to Ze; the REST API does not expose those actions.
 
-The web app renders each run as a top-to-bottom flowchart. Steps are nodes, `branches` and `default_next` are labeled edges, and the executed path is highlighted. The workflow page also shows the change history.
+The workflow page in the web app is `/doing/workflows/:workflowId`. It shows:
+
+- **Flowchart.** The steps form a top-to-bottom flowchart. Steps are nodes. `branches` and `default_next` are labeled edges. The executed path is highlighted.
+- **Live execution.** A running execution shows its progress as it runs.
+- **Executions.** Each execution shows its outputs. A failed execution shows its `failure_summary` line and an Open link. A workflow with no executions says "Never run".
+- **Revisions.** The change history, with a diff summary for each change and a "View conversation" link.
+- **Run now and Cancel.** Run now calls `POST /{id}/trigger`. Cancel calls `POST /{id}/executions/{execution_id}/cancel`.
+- **Chat about this run.** Opens the chat overlay with the run as the subject.
+
+The page has no "Current definition" banner.
 
 ---
 

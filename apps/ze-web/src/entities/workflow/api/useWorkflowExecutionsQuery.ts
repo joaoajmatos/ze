@@ -7,7 +7,8 @@ export function useWorkflowExecutionsQuery(workflowId: string) {
   return useQuery<WorkflowExecutionResponse[]>({
     queryKey: queryKeys.workflowExecutions(workflowId),
     queryFn: async () => {
-      const { data } = await listWorkflowExecutions({ path: { workflow_id: workflowId } });
+      const { data, error } = await listWorkflowExecutions({ path: { workflow_id: workflowId } });
+      if (error) throw error;
       return data ?? [];
     },
     enabled: !!workflowId,

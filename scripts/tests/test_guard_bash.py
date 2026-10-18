@@ -241,6 +241,34 @@ def test_push_main_needs_a_green_receipt_with_every_land_gate(tmp_path):
     assert guard.decide("git push remote process-kit", env, str(tmp_path))[0] == "allow"
 
 
+def _commit_file(repo, name):
+    (repo / name).parent.mkdir(parents=True, exist_ok=True)
+    (repo / name).write_text("x")
+    _git(repo, "add", name)
+    _git(repo, "-c", "user.email=a@b", "-c", "user.name=t", "commit", "-q", "-m", name)
+
+
+def test_push_main_allows_specs_and_docs_only_commits_after_a_green_receipt(tmp_path):
+    sha = _main_repo(tmp_path)
+    env = {**AGENT, "ZE_ROLE": "maestro"}
+    cmd = "git push remote main"
+    _receipt(tmp_path, sha, [(g, 0) for g in LAND])
+    _commit_file(tmp_path, "specs/phases/999-x/spec.md")
+    _commit_file(tmp_path, "docs/process.md")
+    assert guard.decide(cmd, env, str(tmp_path))[0] == "allow"
+    _commit_file(tmp_path, "apps/ze-web/src/a.ts")
+    verdict, why = guard.decide(cmd, env, str(tmp_path))
+    assert verdict == "deny" and "no gate receipt" in why
+
+
+def test_docs_only_push_needs_the_ancestor_receipt_green(tmp_path):
+    sha = _main_repo(tmp_path)
+    env = {**AGENT, "ZE_ROLE": "maestro"}
+    _receipt(tmp_path, sha, [(g, 1 if g == "lint" else 0) for g in LAND])
+    _commit_file(tmp_path, "specs/a.md")
+    assert guard.decide("git push remote main", env, str(tmp_path))[0] == "deny"
+
+
 def test_bare_and_head_pushes_from_main_are_checked(tmp_path):
     _main_repo(tmp_path)
     env = {**AGENT, "ZE_ROLE": "maestro"}

@@ -49,9 +49,12 @@ describe("redirects", () => {
     ["/priority", "/"],
     ["/reminders", "/"],
     ["/world", "/"],
-    ["/goals", "/doing/goals"],
-    ["/workflows", "/doing/workflows"],
-    ["/skills", "/doing/skills"],
+    ["/goals", "/doing"],
+    ["/workflows", "/doing"],
+    ["/skills", "/doing"],
+    ["/doing/goals", "/doing"],
+    ["/doing/workflows", "/doing"],
+    ["/doing/skills", "/doing"],
     ["/procedures", "/mind"],
     ["/doing/procedures", "/mind"],
     ["/contacts", "/mind"],
@@ -76,6 +79,12 @@ describe("redirects", () => {
 
   it("names the module each old path lands on", () => {
     const hint = (from: string) => redirects.find((r) => r.from === from)?.hint;
+    expect(hint("/goals")).toBe("goals");
+    expect(hint("/doing/goals")).toBe("goals");
+    expect(hint("/workflows")).toBe("workflows");
+    expect(hint("/doing/workflows")).toBe("workflows");
+    expect(hint("/skills")).toBe("skills");
+    expect(hint("/doing/skills")).toBe("skills");
     expect(hint("/settings")).toBe("connections");
     expect(hint("/governance/settings")).toBe("connections");
     expect(hint("/data")).toBe("data");
@@ -88,14 +97,14 @@ describe("redirects", () => {
 
   it("covers every old core route once", () => {
     expect(new Set(redirects.map((r) => r.from)).size).toBe(redirects.length);
-    expect(redirects).toHaveLength(22);
+    expect(redirects).toHaveLength(25);
   });
 });
 
 describe("path helpers", () => {
   it("builds goal and workflow paths", () => {
-    expect(goalsPath()).toBe("/doing/goals");
-    expect(workflowsPath()).toBe("/doing/workflows");
+    expect(goalsPath()).toBe("/doing#goals");
+    expect(workflowsPath()).toBe("/doing#workflows");
     expect(goalPath("g-1")).toBe("/doing/goals/g-1");
     expect(workflowPath("w-1")).toBe("/doing/workflows/w-1");
     expect(workflowPath("w-1", "e-1")).toBe("/doing/workflows/w-1?execution=e-1");
