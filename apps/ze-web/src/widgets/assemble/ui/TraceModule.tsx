@@ -95,9 +95,9 @@ export function TraceModule({ threadId, messageId = null, openSection = null, hi
         </Instrument>
       )}
       {!streaming && <Readouts trace={trace} />}
-      <SkillsRow skillsUsed={trace.skills_used} live={streaming} />
+      {(trace.skills_used?.length ?? 0) > 0 && <SkillsRow skillsUsed={trace.skills_used} />}
       <SourcesRow sources={trace.sources ?? []} />
-      <WorkspaceRow workspace={trace.workspace} live={streaming} />
+      {trace.workspace && <WorkspaceRow workspace={trace.workspace} />}
       {trace.conductor_hint !== undefined || trace.conductor_ledger ? <ConductorRow trace={full} live={streaming} /> : null}
       <ConfirmationsRow outcomes={trace.write_confirmations} />
       <ScreenRow screen={trace.screen} />

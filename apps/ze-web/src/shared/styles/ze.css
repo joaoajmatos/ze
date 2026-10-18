@@ -679,7 +679,7 @@ h2.lbl {
 
 .ask {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   border: 1px solid var(--hair-strong);
   background: var(--wash);
 }

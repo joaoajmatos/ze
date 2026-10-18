@@ -149,7 +149,8 @@
   margin: 0;
   padding: 10px 0 0;
   display: flex;
-  gap: 0;
+  flex-wrap: wrap;
+  gap: 14px 0;
   align-items: flex-start;
   border-top: 1px solid var(--hair);
   position: relative;
@@ -163,8 +164,9 @@
   background: var(--cream);
 }
 .tr-tick {
-  flex: 1 1 0;
+  flex: 1 1 64px;
   min-width: 0;
+  overflow-wrap: anywhere;
   position: relative;
   display: grid;
   gap: 2px;
