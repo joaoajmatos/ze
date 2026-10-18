@@ -11,7 +11,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-STATE_ROLES = {"eng", "jr", "architect", "review", "qa", "docs"}
+STATE_ROLES = {
+    "eng",
+    "web",
+    "platform",
+    "jr",
+    "architect",
+    "docs",
+}  # review and qa do not commit
 
 
 def git(cwd: str, *args: str) -> str:
@@ -19,25 +26,32 @@ def git(cwd: str, *args: str) -> str:
     return p.stdout.strip() if p.returncode == 0 else ""
 
 
-def pending_reviews(repo: str) -> list[str]:
+def pending_reviews(repo: str, agent: str = "") -> list[str]:
+    """Review requests still without a verdict; only those addressed to `agent` when its name is known."""
     found = []
     for path in sorted((Path(repo) / ".process" / "reviews").glob("*.json")):
         try:
             record = json.loads(path.read_text())
         except ValueError:
             continue
-        if record.get("state") == "requested":
+        if record.get("state") == "requested" and agent in ("", record.get("reviewer")):
             found.append(path.name)
     return found
 
 
 def state_file_stale(cwd: str, terminal_id: str) -> str:
+    """The state file when it is older than this agent's own last commit (stamped by guard_bash)."""
+    top = git(cwd, "rev-parse", "--show-toplevel")
     common = git(cwd, "rev-parse", "--path-format=absolute", "--git-common-dir")
-    committed = git(cwd, "log", "-1", "--format=%ct", "HEAD")
-    if not common or not committed:
+    if not top or not common:
         return ""
+    stamp = Path(top) / ".process" / f"own-commit-{terminal_id}"
     state = Path(common).parent / "journal" / "state" / f"{terminal_id}.md"
-    if state.exists() and state.stat().st_mtime < int(committed):
+    if (
+        stamp.exists()
+        and state.exists()
+        and state.stat().st_mtime < stamp.stat().st_mtime
+    ):
         return str(state)
     return ""
 
@@ -51,8 +65,8 @@ def decide(payload: dict, env: dict[str, str]) -> str:
     cwd = payload.get("cwd") or os.getcwd()
     toplevel = git(cwd, "rev-parse", "--show-toplevel")
     repo = env.get("ZE_REVIEW_REPO") or toplevel
-    if role == "review" and repo:
-        pending = pending_reviews(repo)
+    if role in ("review", "ground-review") and repo:
+        pending = pending_reviews(repo, env.get("ZE_AGENT", ""))
         if pending:
             return (
                 f"Review {', '.join(pending)} has no verdict record. Run "

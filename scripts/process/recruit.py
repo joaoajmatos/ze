@@ -9,6 +9,8 @@ Tunables (tests): ZE_RECRUIT_BOOT_SECS (60), ZE_RECRUIT_REPLY_SECS (120), ZE_REC
 
 import argparse
 import os
+import re
+import shlex
 import sys
 import time
 import tomllib
@@ -26,8 +28,8 @@ def load_roles(path: Path = HERE / "roles.toml") -> dict:
     return tomllib.loads(path.read_text())
 
 
-def command_for(config: dict, role: str, tier: str) -> tuple[str, str]:
-    """The agent command and the Maestri role name, or SystemExit with the rule that was broken."""
+def command_for(config: dict, role: str, tier: str, name: str = "") -> tuple[str, str]:
+    """The agent command and the Maestri role name (empty for the Maestro), or SystemExit with the rule that was broken."""
     roles = config["roles"]
     if role not in roles:
         sys.exit(f"unknown role {role!r}; known: {', '.join(roles)}")
@@ -37,7 +39,8 @@ def command_for(config: dict, role: str, tier: str) -> tuple[str, str]:
         sys.exit(
             f"role {role} may not run on {tier}; allowed: {', '.join(roles[role]['allowed'])} (roles.toml)"
         )
-    return f"ZE_ROLE={role} {config['tiers'][tier]}", roles[role]["maestri_role"]
+    env = f"ZE_ROLE={role}" + (f" ZE_AGENT={shlex.quote(name)}" if name else "")
+    return f"{env} {config['tiers'][tier]}", roles[role].get("maestri_role", "")
 
 
 def wait_for_tui(name: str, markers: list[str], seconds: float, poll: float) -> bool:
@@ -51,6 +54,14 @@ def wait_for_tui(name: str, markers: list[str], seconds: float, poll: float) -> 
         time.sleep(poll)
 
 
+READY_LINE = re.compile(r"^\s*(\u23fa\s*)?ready\.?\s*$", re.I | re.M)
+
+
+def said_ready(screen: str) -> bool:
+    """A line that is exactly 'ready': the echoed ping ('Reply with one line ready') does not count."""
+    return READY_LINE.search(screen) is not None
+
+
 def stuck_in_input(screen: str, brief: str) -> bool:
     """The brief sits in the input box (under the prompt) and the agent has not answered (no reply marker)."""
     return brief.strip()[:40] in screen and "\u23fa" not in screen
@@ -58,15 +69,14 @@ def stuck_in_input(screen: str, brief: str) -> bool:
 
 def send_brief(name: str, brief: str, seconds: float, poll: float = 2.0) -> bool:
     reply = handoff.maestri("ask", name, brief + PING, timeout=seconds)
-    if reply.returncode == 0 and "ready" in reply.stdout.lower():
+    if reply.returncode == 0 and said_ready(reply.stdout):
         return True
     if not stuck_in_input(handoff.maestri("check", name).stdout, brief):
         return False
     handoff.maestri("ask", name, "--raw", "\r")
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
-        screen = handoff.maestri("check", name).stdout
-        if "\u23fa" in screen:
+        if said_ready(handoff.maestri("check", name).stdout):
             return True
         time.sleep(poll)
     return False
@@ -84,26 +94,20 @@ def main(argv: list[str]) -> int:
     args = ap.parse_args(argv)
 
     config = load_roles()
-    command, maestri_role = command_for(config, args.role, args.tier)
+    command, maestri_role = command_for(config, args.role, args.tier, args.name)
     brief = Path(args.brief).read_text()
     missing = brief_lint.lint(brief)
     if missing:
         print("brief is missing:\n  - " + "\n  - ".join(missing), file=sys.stderr)
         return 1
-    recruit = [
-        "recruit",
-        args.name,
-        "--role",
-        maestri_role,
-        "--floor",
-        args.floor,
-        "--command",
-        command,
-    ]
+    recruit = ["recruit", args.name]
+    if maestri_role:
+        recruit += ["--role", maestri_role]
+    recruit += ["--floor", args.floor, "--command", command]
     if args.dry_run:
         print(f"{handoff.cli()} {' '.join(recruit)}")
         print(
-            f"then wait for the TUI, send {args.brief} with a ready ping, retry once with --replace"
+            f"then wait for the TUI, send {args.brief} with a ready ping, retry once (dismiss, then recruit again)"
         )
         return 0
 
@@ -133,12 +137,16 @@ def main(argv: list[str]) -> int:
                 file=sys.stderr,
             )
         if attempt == 1:
-            handoff.maestri("recruit", args.name, "--replace", args.name)
+            # --replace keeps neither --role nor --command, so start over with the same arguments
+            handoff.maestri("dismiss", args.name)
+            if handoff.maestri(*recruit).returncode != 0:
+                print("recruit failed on the retry", file=sys.stderr)
+                return 1
     handoff.append_handoff(
         Path.cwd(), args.note, f"ALERT: {args.name} never confirmed its brief"
     )
     print(
-        f"{args.name}: brief not confirmed after one --replace; check the terminal by hand",
+        f"{args.name}: brief not confirmed after one fresh recruit; check the terminal by hand",
         file=sys.stderr,
     )
     return 1

@@ -61,17 +61,33 @@ def parse_range(repo: Path, text: str) -> tuple[str, str]:
     return start, end
 
 
+def approved_end(repo: Path, base: str) -> str:
+    """Where the APPROVE records, chained from the merge base, end."""
+    edges: dict[str, list[str]] = {}
+    for r in records(repo):
+        if r.get("verdict") == "APPROVE":
+            edges.setdefault(r["from"], []).append(r["to"])
+    cur = base
+    while edges.get(cur):
+        cur = max(
+            edges[cur],
+            key=lambda e: int(git(repo, "rev-list", "--count", f"{cur}..{e}") or 0),
+        )
+    return cur
+
+
 def contiguity_problem(repo: Path, start: str) -> str:
-    past = records(repo)
-    if past:
-        last = past[-1]
-        if start != last["to"]:
-            return f"range must start at {last['to'][:8]}, where the last review ended (delta-only review)"
-        return ""
+    """A request starts where approval ended (a re-review after CHANGES covers the whole un-approved range)
+    or where a request still in flight ends (parallel stories)."""
     base = git(repo, "merge-base", "HEAD", "main")
-    if base and start != base:
-        return f"the first range must start at the merge base with main, {base[:8]}"
-    return ""
+    if not base:
+        return ""
+    allowed = {approved_end(repo, base)}
+    allowed |= {r["to"] for r in records(repo) if r.get("state") == "requested"}
+    if start in allowed:
+        return ""
+    where = ", ".join(sorted(a[:8] for a in allowed))
+    return f"range must start at {where}: the end of the last APPROVE, or of a request in flight (delta-only review)"
 
 
 def now() -> str:
@@ -103,20 +119,16 @@ def request(args) -> int:
         f"make process-review-verdict RANGE={start[:8]}..{end[:8]} VERDICT=APPROVE|CHANGES FINDINGS=<file>. "
         "That records the verdict and delivers it; do not report it by chat alone."
     )
-    sent = handoff.maestri("ask", args.reviewer, text, timeout=15)
+    handoff.maestri("ask", args.reviewer, text, timeout=15)
     handoff.append_handoff(
         repo,
         args.note,
         f"TO {args.reviewer}: review requested {start[:8]}..{end[:8]} ({path.name})",
     )
-    time.sleep(args.wait)
-    after = handoff.maestri("check", args.reviewer).stdout
-    started = sent.returncode in (0, 124) and (
-        after != before or "review" in after.lower()
-    )
+    started = _started(args.reviewer, before, text, args.wait)
     if not started:
         print(
-            f"ALERT: {args.reviewer} shows no activity {args.wait:.0f}s after the request; check the terminal",
+            f"ALERT: {args.reviewer} shows no reply {args.wait:.0f}s after the request; check the terminal",
             file=sys.stderr,
         )
         handoff.maestri(
@@ -128,6 +140,23 @@ def request(args) -> int:
         return 1
     print(f"review requested and started: {path}")
     return 0
+
+
+REPLY_MARK = "\u23fa"
+
+
+def _started(reviewer: str, before: str, text: str, wait: float) -> bool:
+    """The reviewer's terminal shows a new reply marker. A request left in the input box is submitted once."""
+    time.sleep(wait)
+    after = handoff.maestri("check", reviewer).stdout
+    if after.count(REPLY_MARK) > before.count(REPLY_MARK):
+        return True
+    if text[:40] in after:
+        handoff.maestri("ask", reviewer, "--raw", "\r", timeout=15)
+        time.sleep(min(wait, 15))
+        after = handoff.maestri("check", reviewer).stdout
+        return after.count(REPLY_MARK) > before.count(REPLY_MARK)
+    return False
 
 
 def verdict(args) -> int:

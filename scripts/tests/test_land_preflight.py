@@ -247,3 +247,30 @@ def test_land_post_dry_run_changes_nothing(world):
     )
     assert "== graph" in p.stdout and "== push main" in p.stdout
     assert git(ground, "status", "--porcelain") == before
+
+
+def test_land_post_rejects_an_empty_or_partial_receipt(world):
+    """H1: a receipt with no gates (or only some) must not let main be pushed."""
+    ground, _ = world
+    sha = git(ground, "rev-parse", "HEAD")
+    receipts = ground / ".process" / "receipts"
+    receipts.mkdir(parents=True)
+
+    def run_post(gates):
+        (receipts / f"{sha}.json").write_text(
+            json.dumps({"sha": sha, "dirty_files": 0, "gates": gates})
+        )
+        return subprocess.run(
+            [str(PROCESS / "land_post.sh"), "--dry-run"],
+            cwd=ground,
+            capture_output=True,
+            text=True,
+        )
+
+    assert "not green" in run_post([]).stderr
+    assert "missing=" in run_post([{"gate": "lint", "rc": 0}]).stderr
+    full = [
+        {"gate": g, "rc": 0}
+        for g in ("lint", "test-py", "test-web", "typecheck-web", "lint-web")
+    ]
+    assert "not green" not in run_post(full).stderr

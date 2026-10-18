@@ -32,8 +32,9 @@ else
 import json, sys
 r = json.load(open(sys.argv[1]))
 bad = [g["gate"] for g in r["gates"] if g["rc"]]
-if bad or r.get("dirty_files") or r.get("ok") is False:
-    sys.exit(f"receipt is not green: failing={bad} dirty={r.get('dirty_files')}")
+need = {"lint", "test-py", "test-web", "typecheck-web", "lint-web"} - {g["gate"] for g in r["gates"]}
+if bad or need or r.get("dirty_files") or r.get("ok") is False:
+    sys.exit(f"receipt is not green: failing={bad} missing={sorted(need)} dirty={r.get('dirty_files')}")
 PY
   run git push remote main || exit 1
 fi

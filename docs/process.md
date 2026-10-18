@@ -18,16 +18,16 @@ A rule that must hold every time lives in a script or a hook. Prose only advises
 
 Every hook does nothing unless the environment variable `MAESTRI_TERMINAL_ID` is set. Your own shell is never affected.
 
-`ZE_ROLE` scopes the role rules. The values are `maestro`, `architect`, `eng`, `jr`, `review`, `qa` and `docs`. `recruit.sh` sets it. When it is unset, the role rules do not apply.
+`ZE_ROLE` scopes the role rules. The values are `maestro`, `architect`, `eng`, `web`, `platform`, `jr`, `review` (Floor Reviewer), `ground-review` (Reviewer), `qa` and `docs`. `recruit.sh` sets it. When it is unset, the role rules do not apply.
 
 The hooks are registered in `.claude/settings.json`. OpenCode and Cursor agents do not run Claude Code hooks. For them, `make process-install-hooks` installs the git hooks, which carry the rules that concern repository state.
 
 ### What `guard_bash.py` blocks
 
-- `git add -A`, `git add .`, `git add -u` and `git stash`. Stage explicit paths.
+- `git add -A`, `git add .`, `git add -u`, `git commit -a` and `git stash`. Stage explicit paths.
 - Force pushes.
-- A push to `main` from any role but the Maestro. The Maestro also needs a green receipt for HEAD.
-- `maestri floor land` and `floor delete` from any role but the Maestro.
+- A push to `main` from any role but the Maestro. This includes a bare `git push` or `git push remote HEAD` while on `main`, and `git -C <dir> push`. The Maestro also needs a green receipt for HEAD that holds every land gate (`lint`, `test-py`, `test-web`, `typecheck-web`, `lint-web`). An empty or partial receipt does not count.
+- `maestri floor land` and `floor delete` from any role but the Maestro, also when written as `"$MAESTRI_CLI"`.
 - `maestri floor status --state review` from `eng` and `jr`. Use `make process-ready FLOOR=<name>`.
 - `make format`, `make migrate`, `make db-reset` and any URL that points at the shared database `ze`. Use a throwaway `ze_e2e_*` database.
 - `make calibrate-*` without `--check-sets` or `--recall`. A live calibration spends credits.
@@ -38,15 +38,15 @@ It asks the user first for `maestri role edit`, `write`, `delete` and `assign`. 
 ### What `guard_edit.py` blocks
 
 - `AskUserQuestion` from any role but the Maestro. Batch questions to the Maestro.
-- Edits by `review` outside a scratchpad directory. Reviewers are read-only.
+- Edits by `review` and `ground-review` outside a scratchpad directory and their own state file `journal/state/<terminal id>.md`. Reviewers are read-only. Every role may write its own state file.
 - Hand edits to `.process/receipts/` and `.process/reviews/`.
 - New files under `specs/arch/` from any role but `architect` and `maestro`.
 - Writes outside the lane's globs, when `.process/lane.json` exists. The file has the form `{"lane": "a", "owns": ["apps/ze-web/src/pages/a/*"]}`. The lead writes it into a lane worktree.
 
 ### What `stop_gate.py` blocks
 
-- A `review` agent that ends a turn while a review request has no verdict record.
-- Any agent role that ends a turn while its state file is older than its last commit.
+- A reviewer (`review` or `ground-review`) that ends a turn while a review request addressed to it has no verdict record. `recruit.sh` sets `ZE_AGENT` to the agent's name.
+- An agent that commits (`eng`, `web`, `platform`, `jr`, `architect`, `docs`) and ends a turn while its state file is older than its own last commit. `guard_bash.py` stamps `.process/own-commit-<terminal id>` when the agent runs `git commit`, so a teammate's commit never counts. Reviewers and QA do not commit and are never asked.
 
 Each reason blocks a turn once. The hook respects `stop_hook_active`.
 
@@ -76,7 +76,7 @@ Each reason blocks a turn once. The hook respects `stop_hook_active`.
 - Web files select `typecheck-web`, `lint-web` and `test-web`.
 - Each gate's exit code goes into the receipt. The script never reads the code from a pipe.
 
-It also runs `check_query_errors.py` on changed `entities/*/api/use*Query.ts` files. Each must throw on an API error and have a test that asserts `isError`.
+The diff includes new files that are not committed yet, and the receipt counts them as dirty. `--profile land` runs every land gate whatever the diff holds. It also runs `check_query_errors.py` on changed `entities/*/api/use*Query.ts` files. Each must throw on an API error and have a test that asserts `isError`.
 
 These checks only warn: old route literals, public docs not touched by a behavior change, and a web change without `PORTAL_SHOT`. Add `Docs: none (reason)` to a commit message to silence the docs warning.
 
@@ -103,11 +103,11 @@ Tick a task in `tasks.md` in the same commit that finishes it.
 
 ## Reviews as files
 
-A request starts where the last request or verdict ended, so each review covers only new commits. The first range starts at the merge base with `main`. A `CHANGES` verdict needs a findings file. The `ze-request-review` skill covers both sides.
+A request starts where the last `APPROVE` ended, or where a request still in flight ends (parallel stories). The first range starts at the merge base with `main`. After a `CHANGES` verdict, the re-review restarts at the end of the last `APPROVE`, so the reviewer approves the whole range that is still unapproved. The same range can be sent again when no verdict came. A request counts as started when the reviewer's terminal shows a new reply marker; a request left in the input box is submitted with Enter once. A `CHANGES` verdict needs a findings file. The `ze-request-review` skill covers both sides.
 
 ## Recruiting
 
-`scripts/process/roles.toml` lists which model tiers each role may use. Engineers never run on Opus. Reviewers never run on Haiku. `recruit.sh` lints the brief for the state-file path, the scratchpad rule, the pre-review checklist, the commit trailer, the reviewer name and the throwaway database. It waits for the terminal, sends the brief with a "reply ready" ping, and retries once with `recruit --replace`. When the brief still sits in the input box with no reply, the script presses Enter (`maestri ask NAME --raw "\r"`) and waits up to 120 seconds for a reply.
+`scripts/process/roles.toml` lists which model tiers each role may use and the Maestri role name each one maps to. The Maestro has no Maestri role. Engineers never run on Opus. Reviewers never run on Haiku. `recruit.sh` lints the brief for the state-file path, the scratchpad rule, the pre-review checklist, the commit trailer, the reviewer name and the throwaway database. It waits for the terminal, sends the brief with a "reply ready" ping, and, if the agent never replies, dismisses it and recruits it again once. A reply counts only when a line is exactly `ready`. When the brief still sits in the input box with no reply, the script presses Enter (`maestri ask NAME --raw "\r"`) and waits up to 120 seconds for a reply.
 
 ## Speckit checks
 

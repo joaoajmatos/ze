@@ -11,7 +11,7 @@ out="$1"; shift
 sha="$(git rev-parse HEAD)"
 [ "$out" = "-" ] && out=".process/receipts/$sha.json"
 case "$out" in /*) ;; *) out="$ROOT/$out" ;; esac
-dirty="$(git status --porcelain --untracked-files=no | wc -l | tr -d ' ')"
+dirty="$(git status --porcelain | wc -l | tr -d ' ')"
 logdir="$(dirname "$out")/logs/$sha"; mkdir -p "$logdir"
 LOCK="${ZE_GATE_LOCK:-/tmp/ze-full-gates.lock}"
 heavy() { case "$1" in test-py|test-web|test-all|test-pg|typecheck-web|web-build|check) return 0 ;; esac; return 1; }

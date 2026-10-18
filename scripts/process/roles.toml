@@ -11,7 +11,7 @@ haiku = "claude --model haiku"
 
 [roles.maestro]
 allowed = ["opus"]
-maestri_role = "Maestro"
+# The Maestro is a terminal mode, not a Maestri role: no --role.
 
 [roles.architect]
 allowed = ["opus"]
@@ -19,19 +19,31 @@ maestri_role = "Spec Architect"
 
 [roles.eng]
 allowed = ["sonnet"]
-maestri_role = "Engineer"
+maestri_role = "Backend Engineer"
+
+[roles.web]
+allowed = ["sonnet"]
+maestri_role = "Web Engineer"
+
+[roles.platform]
+allowed = ["sonnet"]
+maestri_role = "Platform Engineer"
 
 [roles.jr]
 allowed = ["haiku"]
-maestri_role = "Junior"
+maestri_role = "Junior Engineer"
 
 [roles.review]
+allowed = ["sonnet"]
+maestri_role = "Floor Reviewer"
+
+[roles.ground-review]
 allowed = ["sonnet"]
 maestri_role = "Reviewer"
 
 [roles.qa]
 allowed = ["sonnet", "haiku"]
-maestri_role = "QA"
+maestri_role = "QA & Eval"
 
 [roles.docs]
 allowed = ["haiku", "sonnet"]

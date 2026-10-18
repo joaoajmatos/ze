@@ -96,6 +96,13 @@ def docs_advisory(changed: list[str], base: str) -> list[str]:
     ]
 
 
+def changed_files(base: str) -> list[str]:
+    """Files changed since base, including new files that are not committed yet."""
+    tracked = run("git", "diff", "--name-only", base).splitlines()
+    untracked = run("git", "ls-files", "--others", "--exclude-standard").splitlines()
+    return sorted(set(tracked) | set(untracked))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="")
@@ -116,10 +123,12 @@ def main() -> int:
     root = Path(run("git", "rev-parse", "--show-toplevel"))
     os.chdir(root)
     base = args.base or run("git", "merge-base", "HEAD", "main")
-    changed = sorted(set(run("git", "diff", "--name-only", base).splitlines()))
-    gates = (
-        select_gates(changed, test_targets(Path("Makefile").read_text())) + args.gate
-    )
+    changed = changed_files(base)
+    if args.profile == "land":
+        gates = list(LAND_GATES)
+    else:
+        gates = select_gates(changed, test_targets(Path("Makefile").read_text()))
+    gates += [g for g in args.gate if g not in gates]
     web = [f for f in changed if f.startswith(WEB_PREFIXES)]
     sha = run("git", "rev-parse", "HEAD")
     print(f"base {base[:8]}  head {sha[:8]}  {len(changed)} changed file(s)")

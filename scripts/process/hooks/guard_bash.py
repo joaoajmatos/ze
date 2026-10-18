@@ -3,7 +3,7 @@
 
 Exit 2 + stderr blocks the call; exit 0 with a permissionDecision JSON on stdout asks the user.
 A no-op unless MAESTRI_TERMINAL_ID is set, so a person's own shell keeps working.
-ZE_ROLE (maestro|architect|eng|jr|review|qa|docs) scopes the role rules; unset means unrestricted.
+ZE_ROLE (maestro|architect|eng|web|platform|jr|review|ground-review|qa|docs) scopes the role rules; unset means unrestricted.
 It catches mistakes, not adversaries: receipts and land preflight are the real gate.
 """
 
@@ -13,6 +13,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 
 DENY, ASK, ALLOW = "deny", "ask", "allow"
 SEPARATORS = {";", "&&", "||", "|", "&", "|&"}
@@ -23,6 +24,10 @@ GATE_TARGETS = re.compile(
 SHARED_DB = re.compile(r"postgres(?:ql)?(?:\+\w+)?://[^\s'\"]*/ze(?:[\s'\"?]|$)")
 HEREDOC = re.compile(r"<<-?\s*(['\"]?)(\w+)\1[^\n]*\n.*?\n\s*\2(?=\n|$)", re.S)
 MAIN_REFS = {"main", "master"}
+BUILDERS = {"eng", "web", "platform", "jr"}
+LAND_GATES = {"lint", "test-py", "test-web", "typecheck-web", "lint-web"}
+MAESTRI_CLI_SPELLINGS = ("$MAESTRI_CLI", "${MAESTRI_CLI}")
+COMMIT_ALL = re.compile(r"^-[a-zA-Z]*a[a-zA-Z]*$")
 
 
 def _scrub_heredocs(cmd: str) -> str:
@@ -87,16 +92,20 @@ def _strip_prefix(argv: list[str]) -> tuple[list[str], dict[str, str]]:
     return argv, env
 
 
-def _git_parts(argv: list[str]) -> tuple[str, list[str]]:
-    i = 1
+def _git_parts(argv: list[str]) -> tuple[str, list[str], str]:
+    """(subcommand, its args, the -C directory or empty)."""
+    i, workdir = 1, ""
     while i < len(argv):
-        if argv[i] in ("-C", "-c", "--git-dir", "--work-tree"):
+        if argv[i] == "-C" and i + 1 < len(argv):
+            workdir = argv[i + 1]
+            i += 2
+        elif argv[i] in ("-c", "--git-dir", "--work-tree"):
             i += 2
         elif argv[i].startswith("-"):
             i += 1
         else:
-            return argv[i], argv[i + 1 :]
-    return "", []
+            return argv[i], argv[i + 1 :], workdir
+    return "", [], workdir
 
 
 def _make_parts(argv: list[str]) -> tuple[list[str], str]:
@@ -125,16 +134,55 @@ def _receipt_problem(cwd: str) -> str:
         return (
             f"no gate receipt for HEAD {sha[:8]}: run make process-gates PROFILE=land"
         )
+    names = {g.get("gate") for g in receipt.get("gates", [])}
     failing = [g["gate"] for g in receipt.get("gates", []) if g.get("rc")]
     if failing or receipt.get("dirty_files") or receipt.get("ok") is False:
         return f"gate receipt for HEAD {sha[:8]} is not green (failing: {failing or 'checks'})"
+    if missing := sorted(LAND_GATES - names):
+        return f"gate receipt for HEAD {sha[:8]} lacks the land gates: {', '.join(missing)} (run make process-gates PROFILE=land)"
     return ""
 
 
+def _note_own_commit(where: str) -> None:
+    """Stamp .process/own-commit-<terminal> so the stop hook can tell this agent's commits from a teammate's."""
+    terminal = os.environ.get("MAESTRI_TERMINAL_ID", "")
+    top = subprocess.run(
+        ["git", "-C", where or ".", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+    )
+    if not terminal or top.returncode:
+        return
+    marker = os.path.join(top.stdout.strip(), ".process", f"own-commit-{terminal}")
+    try:
+        os.makedirs(os.path.dirname(marker), exist_ok=True)
+        with open(marker, "w") as fh:
+            fh.write(str(time.time()))
+    except OSError:
+        pass
+
+
+def _current_branch(cwd: str) -> str:
+    p = subprocess.run(
+        ["git", "-C", cwd or ".", "symbolic-ref", "--short", "-q", "HEAD"],
+        capture_output=True,
+        text=True,
+    )
+    return p.stdout.strip()
+
+
 def _check_git(argv, role, cwd):
-    sub, rest = _git_parts(argv)
+    sub, rest, workdir = _git_parts(argv)
+    where = os.path.join(cwd, workdir) if cwd and workdir else (workdir or cwd)
     if sub == "add" and any(a in ("-A", "--all", ".", "-u", "--update") for a in rest):
         return DENY, "Stage explicit paths only (shared worktree): git add <paths>."
+    if sub == "commit" and any(a == "--all" or COMMIT_ALL.match(a) for a in rest):
+        return (
+            DENY,
+            "git commit -a would commit other agents' edits on a shared floor: git add <paths>, then git commit.",
+        )
+    if sub == "commit":
+        _note_own_commit(where)
     if sub == "stash":
         return DENY, "Never git stash on a shared floor checkout."
     if sub == "push":
@@ -145,11 +193,13 @@ def _check_git(argv, role, cwd):
             for a in rest
         ):
             return DENY, "Never force-push."
-        refs = [a.split(":")[-1] for a in rest if not a.startswith("-")]
+        positional = [a for a in rest if not a.startswith("-")]
+        refs = [a.split(":")[-1] for a in positional[1:]] or [_current_branch(where)]
+        refs = [_current_branch(where) if r == "HEAD" else r for r in refs]
         if any(r in MAIN_REFS for r in refs):
             if role and role != "maestro":
                 return DENY, f"Only the Maestro pushes main (ZE_ROLE={role})."
-            problem = _receipt_problem(cwd) if cwd else ""
+            problem = _receipt_problem(where) if where else ""
             if problem:
                 return DENY, problem
     return None
@@ -206,7 +256,7 @@ def _check_maestri(argv, role):
         if role and role != "maestro":
             return DENY, f"Only the Maestro lands or deletes floors (ZE_ROLE={role})."
     if words[:2] == ["floor", "status"] and "review" in argv and "--state" in argv:
-        if role in ("eng", "jr"):
+        if role in BUILDERS:
             return (
                 DENY,
                 "Set the review state through make process-ready FLOOR=<name>, which checks the gate receipts first.",
@@ -258,7 +308,11 @@ def decide(cmd: str, env: dict[str, str], cwd: str = "") -> tuple[str, str]:
             result = _check_git(argv, role, cwd)
         elif head == "make":
             result = _check_make(argv, ctx)
-        elif head == "maestri" or argv[0] == os.environ.get("MAESTRI_CLI"):
+        elif (
+            head == "maestri"
+            or argv[0] in MAESTRI_CLI_SPELLINGS
+            or argv[0] == os.environ.get("MAESTRI_CLI")
+        ):
             result = _check_maestri(argv, role)
         elif head == "psql" and any(
             a == "-d" and i + 1 < len(argv) and argv[i + 1] == "ze"

@@ -190,8 +190,21 @@ def test_precommit_blocks_arch_notes(tmp_path):
     )
 
 
-def test_push_main_needs_a_green_receipt(tmp_path):
-    _git(tmp_path, "init", "-q")
+LAND = ["lint", "test-py", "test-web", "typecheck-web", "lint-web"]
+
+
+def _receipt(repo, sha, gates, dirty=0):
+    receipts = repo / ".process" / "receipts"
+    receipts.mkdir(parents=True, exist_ok=True)
+    (receipts / f"{sha}.json").write_text(
+        json.dumps(
+            {"dirty_files": dirty, "gates": [{"gate": g, "rc": rc} for g, rc in gates]}
+        )
+    )
+
+
+def _main_repo(tmp_path):
+    _git(tmp_path, "init", "-q", "-b", "main")
     _git(
         tmp_path,
         "-c",
@@ -204,21 +217,96 @@ def test_push_main_needs_a_green_receipt(tmp_path):
         "-m",
         "i",
     )
-    sha = subprocess.run(
+    return subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=tmp_path, capture_output=True, text=True
     ).stdout.strip()
+
+
+def test_push_main_needs_a_green_receipt_with_every_land_gate(tmp_path):
+    sha = _main_repo(tmp_path)
     env = {**AGENT, "ZE_ROLE": "maestro"}
     cmd = "git push remote main"
     assert guard.decide(cmd, env, str(tmp_path))[0] == "deny"
-    receipts = tmp_path / ".process" / "receipts"
-    receipts.mkdir(parents=True)
-    (receipts / f"{sha}.json").write_text(
-        json.dumps({"dirty_files": 0, "gates": [{"gate": "lint", "rc": 1}]})
-    )
+    _receipt(tmp_path, sha, [(g, 1 if g == "lint" else 0) for g in LAND])
     verdict, why = guard.decide(cmd, env, str(tmp_path))
     assert verdict == "deny" and "not green" in why
-    (receipts / f"{sha}.json").write_text(
-        json.dumps({"dirty_files": 0, "gates": [{"gate": "lint", "rc": 0}]})
-    )
+    _receipt(tmp_path, sha, [])  # H1: an empty receipt is not a green one
+    verdict, why = guard.decide(cmd, env, str(tmp_path))
+    assert verdict == "deny" and "lacks the land gates" in why
+    _receipt(tmp_path, sha, [("lint", 0)])
+    assert "lacks the land gates" in guard.decide(cmd, env, str(tmp_path))[1]
+    _receipt(tmp_path, sha, [(g, 0) for g in LAND])
     assert guard.decide(cmd, env, str(tmp_path))[0] == "allow"
     assert guard.decide("git push remote process-kit", env, str(tmp_path))[0] == "allow"
+
+
+def test_bare_and_head_pushes_from_main_are_checked(tmp_path):
+    _main_repo(tmp_path)
+    env = {**AGENT, "ZE_ROLE": "maestro"}
+    for cmd in (
+        "git push",
+        "git push remote",
+        "git push remote HEAD",
+        "git push -u remote HEAD",
+    ):
+        assert guard.decide(cmd, env, str(tmp_path))[0] == "deny", cmd
+    assert (
+        guard.decide(
+            "git push remote HEAD", {**AGENT, "ZE_ROLE": "eng"}, str(tmp_path)
+        )[0]
+        == "deny"
+    )
+    _git(tmp_path, "checkout", "-q", "-b", "feat")
+    assert guard.decide("git push", env, str(tmp_path))[0] == "allow"
+
+
+def test_git_dash_c_push_checks_that_directory(tmp_path):
+    other = tmp_path / "other"
+    other.mkdir()
+    sha = _main_repo(other)
+    env = {**AGENT, "ZE_ROLE": "maestro"}
+    cmd = f"git -C {other} push remote main"
+    assert "no gate receipt" in guard.decide(cmd, env, str(tmp_path))[1]
+    _receipt(other, sha, [(g, 0) for g in LAND])
+    assert guard.decide(cmd, env, str(tmp_path))[0] == "allow"
+
+
+@pytest.mark.parametrize(
+    ("cmd", "want"),
+    [
+        ("git commit -a -m x", "deny"),
+        ("git commit -am x", "deny"),
+        ("git commit --all", "deny"),
+        ("git commit -m 'work on a thing'", "allow"),
+        ("git commit --amend --no-edit", "allow"),
+        ('"$MAESTRI_CLI" floor land F --into main', "deny"),
+        ("${MAESTRI_CLI} floor delete F", "deny"),
+        ('"$MAESTRI_CLI" ask Gauge hi', "allow"),
+    ],
+)
+def test_m5_gaps(cmd, want):
+    assert guard.decide(cmd, {**AGENT, "ZE_ROLE": "eng"})[0] == want
+
+
+@pytest.mark.parametrize("role", ["web", "platform"])
+def test_new_builder_roles_cannot_set_review(role):
+    assert (
+        guard.decide(
+            "maestri floor status F --state review", {**AGENT, "ZE_ROLE": role}
+        )[0]
+        == "deny"
+    )
+
+
+def test_commit_stamps_the_agents_own_commit_marker(tmp_path, monkeypatch):
+    _main_repo(tmp_path)
+    monkeypatch.setenv("MAESTRI_TERMINAL_ID", "T9")
+    assert (
+        guard.decide(
+            "git commit -m x",
+            {**AGENT, "MAESTRI_TERMINAL_ID": "T9", "ZE_ROLE": "eng"},
+            str(tmp_path),
+        )[0]
+        == "allow"
+    )
+    assert (tmp_path / ".process" / "own-commit-T9").exists()

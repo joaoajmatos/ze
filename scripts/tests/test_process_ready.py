@@ -189,3 +189,62 @@ def test_gates_under_gate_lock_do_not_deadlock(tmp_path):
         timeout=30,
     )
     assert p.returncode == 0
+
+
+def _main_with_makefile(tmp_path: Path) -> Path:
+    repo = _repo_with_gates(tmp_path)
+    subprocess.run(["git", "branch", "-m", "main"], cwd=repo, check=True)
+    (repo / "Makefile").write_text(
+        "test-core:\n\t$(call pytest_pkg,core/engine/ze-core/tests)\n"
+    )
+    subprocess.run(["git", "commit", "-qam", "m"], cwd=repo, check=True)
+    return repo
+
+
+def test_land_profile_runs_every_gate_even_when_the_diff_is_empty(tmp_path):
+    """H1: on Ground after a land the diff against main is empty; the land profile still selects every gate."""
+    repo = _main_with_makefile(tmp_path)
+    p = subprocess.run(
+        ["python3", str(PROCESS / "ready.py"), "--dry-run", "--profile", "land"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+    assert "0 changed file(s)" in p.stdout
+    assert f"gates: {' '.join(ready.LAND_GATES)}" in p.stdout
+    plain = subprocess.run(
+        ["python3", str(PROCESS / "ready.py"), "--dry-run"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+    assert "gates: (none)" in plain.stdout
+
+
+def test_an_untracked_new_file_selects_gates_and_makes_the_receipt_dirty(
+    tmp_path, monkeypatch
+):
+    """L2: a new, uncommitted .py file must not slip past the gate selection or the dirty count."""
+    repo = _main_with_makefile(tmp_path)
+    (repo / "core" / "engine" / "ze-core").mkdir(parents=True)
+    (repo / "core" / "engine" / "ze-core" / "new.py").write_text("x = 1\n")
+    monkeypatch.chdir(repo)
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True
+    ).stdout.strip()
+    assert "core/engine/ze-core/new.py" in ready.changed_files(base)
+    targets = ready.test_targets((repo / "Makefile").read_text())
+    assert ready.select_gates(ready.changed_files(base), targets) == [
+        "lint",
+        "test-core",
+    ]
+    (repo / "Makefile").write_text("lint:\n\t@true\n")
+    p = subprocess.run(
+        [str(PROCESS / "gates.sh"), "-", "lint"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+    sha = base
+    receipt = json.loads((repo / ".process" / "receipts" / f"{sha}.json").read_text())
+    assert receipt["dirty_files"] >= 1 and p.returncode == 0

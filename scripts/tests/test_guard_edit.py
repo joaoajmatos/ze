@@ -95,3 +95,18 @@ def test_exit_contract(repo):
         ).returncode
         == 0
     )
+
+
+@pytest.mark.parametrize("role", ["review", "ground-review", "qa", "eng"])
+def test_every_role_may_write_its_own_state_file(repo, role):
+    """H3: the Stop hook demands a state-file update, so the Edit hook must allow it, reviewers included."""
+    own = repo / "journal" / "state" / "T.md"
+    assert call(repo, "Edit", own, role) == ""
+    other = repo / "journal" / "state" / "OTHER.md"
+    assert (call(repo, "Edit", other, role) != "") is (
+        role in ("review", "ground-review")
+    )
+
+
+def test_ground_review_is_read_only_like_review(repo):
+    assert call(repo, "Edit", repo / "a.py", "ground-review")

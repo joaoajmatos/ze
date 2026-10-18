@@ -4,7 +4,7 @@
 Exit 2 + stderr blocks. A no-op unless MAESTRI_TERMINAL_ID is set; ZE_ROLE unset means unrestricted.
 Rules:
   AskUserQuestion      only the Maestro asks the user; everyone else batches questions to the Maestro
-  review role          read-only, except files in a scratchpad directory (findings go there)
+  review role          read-only, except files in a scratchpad directory (findings go there) and its own state file
   .process/receipts, .process/reviews   written by the process scripts only, never by hand
   new files in specs/arch/              architect and Maestro only (no working notes there)
   .process/lane.json   when present, writes must fall inside the lane's `owns` globs
@@ -47,7 +47,14 @@ def decide(payload: dict, env: dict[str, str]) -> str:
     if not raw:
         return ""
     path = Path(raw)
-    if role == "review" and not in_scratchpad(path):
+    terminal = env["MAESTRI_TERMINAL_ID"]
+    if (
+        path.name == f"{terminal}.md"
+        and path.parent.name == "state"
+        and path.parent.parent.name == "journal"
+    ):
+        return ""  # every role keeps its own state file
+    if role in ("review", "ground-review") and not in_scratchpad(path):
         return "Reviewers are read-only: write findings to a file in your scratchpad, not into the repository."
     root = toplevel(payload.get("cwd", ""))
     if root is None:
