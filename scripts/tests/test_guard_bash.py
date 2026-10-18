@@ -180,10 +180,6 @@ def test_precommit_blocks_arch_notes(tmp_path):
     )
     (tmp_path / "specs" / "arch").mkdir(parents=True)
     (tmp_path / "specs" / "arch" / "note.md").write_text("x")
-    (tmp_path / "ctx").mkdir()
-    (tmp_path / "ctx" / ".spec-context.json").write_text(
-        '{"telemetryInstanceId": "abc"}'
-    )
     _git(tmp_path, "add", "specs")
     assert _precommit(tmp_path, {}).returncode == 0
     p = _precommit(tmp_path, {"MAESTRI_TERMINAL_ID": "T", "ZE_ROLE": "eng"})
