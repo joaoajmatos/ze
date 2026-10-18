@@ -25,7 +25,16 @@ export interface RoutingOption {
   chosen: boolean;
 }
 
+export interface RoutingScore {
+  agent: string;
+  score: number;
+  chosen: boolean;
+}
+
 export interface RoutingView {
+  /** The embedding shortlist, highest first; empty when routing used no embedding scores. */
+  scores: RoutingScore[];
+  thresholds: { threshold: number; gap: number } | null;
   methodWords: string;
   bar: RoutingBar | null;
   options: RoutingOption[];
@@ -59,7 +68,8 @@ export function routingFor(trace: Partial<WsTraceUpdateFrame>, settled = true): 
 
   const tier = trace.tier;
   const tierLine = tier ? `${tier.tier} · ${tier.decided_by === "system_one" ? "System One" : tier.decided_by.replace(/_/g, " ")} · ${tier.model}` : null;
-  return { methodWords: METHOD_WORDS[method] ?? method, bar, options, tierLine };
+  const scores = (trace.routing_scores ?? []).map((s) => ({ agent: s.agent, score: s.score, chosen: s.agent === trace.agent }));
+  return { scores, thresholds: trace.routing_thresholds ?? null, methodWords: METHOD_WORDS[method] ?? method, bar, options, tierLine };
 }
 
 const PLACE_LABEL: Record<string, string> = Object.fromEntries(places.map((p) => [p.id, p.label]));

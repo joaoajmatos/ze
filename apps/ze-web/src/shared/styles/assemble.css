@@ -280,6 +280,28 @@
   background: color-mix(in oklab, var(--main) 40%, transparent);
   background-image: repeating-linear-gradient(90deg, transparent 0 3px, var(--field) 3px 5px);
 }
+.tr-shortlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.tr-shortlist li:not(.muted) {
+  display: grid;
+  grid-template-columns: minmax(0, 8rem) 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.tr-shortlist li[data-chosen] .tr-fill {
+  background: var(--main);
+}
+.tr-threshold {
+  inset: -2px auto -2px auto;
+  width: 1px;
+  background: var(--main);
+  opacity: 0.8;
+}
 .tr-needles {
   list-style: none;
   margin: 0;

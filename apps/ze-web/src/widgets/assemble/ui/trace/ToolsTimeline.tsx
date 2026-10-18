@@ -1,7 +1,7 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { toolLanes } from "../../lib/instruments/tools";
 
-/** Tool calls in order and duration, one lane per owning agent. Lanes share no clock. */
+/** Tool calls in order and duration, one lane per owning agent. Placed by start time where recorded. */
 export function ToolsTimeline({ trace, partial = false, highlight = [] }: { trace: Partial<WsTraceUpdateFrame>; partial?: boolean; highlight?: string[] }) {
   const lanes = toolLanes(trace.tool_calls, trace.agent ?? "", partial);
   if (lanes.length === 0) return <p className="muted">No tools used.</p>;
@@ -15,16 +15,16 @@ export function ToolsTimeline({ trace, partial = false, highlight = [] }: { trac
             <div className="tr-track">
               {lane.calls.map((c, i) => (
                 <i
-                  key={i}
+                  key={c.id}
                   className={`tr-call${c.failed ? " failed" : ""}${highlight.includes(c.name) ? " hl" : ""}`}
-                  style={partial ? { left: `${(i / Math.max(lane.calls.length, 1)) * 100}%` } : { left: `${(c.x / end) * 100}%`, width: `${Math.max((c.w / end) * 100, 2)}%` }}
+                  style={c.returned ? { left: `${(i / Math.max(lane.calls.length, 1)) * 100}%` } : { left: `${(c.x / end) * 100}%`, width: `${Math.max((c.w / end) * 100, 2)}%` }}
                   title={c.name}
                 />
               ))}
             </div>
             <ul>
               {lane.calls.map((c, i) => (
-                <li key={i} data-highlight={highlight.includes(c.name) ? "" : undefined}>
+                <li key={c.id} data-highlight={highlight.includes(c.name) ? "" : undefined}>
                   <span className="key">{c.name}</span>
                   <span className="ro muted">{c.returned ? "returned" : `${c.durationMs} ms`}</span>
                   {c.irreversible && <span className="lbl tr-flag">irreversible</span>}
@@ -37,7 +37,7 @@ export function ToolsTimeline({ trace, partial = false, highlight = [] }: { trac
           </div>
         );
       })}
-      <p className="ro muted">order and duration per lane; start times not recorded</p>
+      <p className="ro muted">{lanes.every((l) => l.timed) ? "placed by start time" : "order and duration per lane; start times not recorded"}</p>
     </div>
   );
 }

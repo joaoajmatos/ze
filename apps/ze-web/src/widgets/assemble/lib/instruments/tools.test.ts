@@ -38,7 +38,7 @@ describe("toolLanes", () => {
     const denied = lanes[2].calls[0];
     expect(denied).toMatchObject({ failed: true, gate: "denied" });
     expect(lanes[0].calls[0].gate).toBeNull();
-    expect(Object.keys(GATE_WORDS).sort()).toEqual(["approved", "denied", "duplicate", "expired", "none", "pre_approved", "refused", "refused_over_cap"]);
+    expect(Object.keys(GATE_WORDS).sort()).toEqual(["approved", "denied", "duplicate", "expired", "none", "parked", "pre_approved", "refused", "refused_over_cap"]);
   });
 
   it("has partial calls with no width, reading 'returned'", () => {
@@ -52,5 +52,48 @@ describe("toolLanes", () => {
     const l = toolLanes(calls as never, "companion", false);
     expect(l).toHaveLength(1);
     expect(l[0].calls.map((c) => c.name)).toEqual(richTrace().tool_calls.map((c) => c.name));
+  });
+});
+
+describe("toolLanes on timed rows", () => {
+  const row = (over: Record<string, unknown>) => ({ name: "t", agent: "calendar", duration_ms: 100, success: true, result_snippet: "", ...over }) as never;
+
+  it("places a call by start_offset_ms, not by the cumulative duration", () => {
+    const l = toolLanes([row({ call_id: "a", start_offset_ms: 640 }), row({ call_id: "b", start_offset_ms: 2000 })], "calendar", false);
+    expect(l[0].calls.map((c) => c.x)).toEqual([640, 2000]);
+    expect(l[0].span).toBe(2100);
+    expect(l[0].timed).toBe(true);
+  });
+
+  it("falls back to the cumulative start when an offset is null", () => {
+    const l = toolLanes([row({ call_id: "a", start_offset_ms: null }), row({ call_id: "b", start_offset_ms: null })], "calendar", false);
+    expect(l[0].calls.map((c) => c.x)).toEqual([0, 100]);
+    expect(l[0].timed).toBe(false);
+  });
+
+  it("keys a row by its call_id", () => {
+    const l = toolLanes([row({ call_id: "a", start_offset_ms: 0 })], "calendar", false);
+    expect(l[0].calls[0].id).toBe("a");
+  });
+
+  it("keeps one row per call_id: the later row replaces the earlier in place", () => {
+    const l = toolLanes([row({ call_id: "a", gate: "parked", start_offset_ms: 10 }), row({ call_id: "a", gate: "approved", duration_ms: 300, start_offset_ms: 10 })], "calendar", false);
+    expect(l[0].calls).toHaveLength(1);
+    expect(l[0].calls[0]).toMatchObject({ gate: "approved", durationMs: 300 });
+  });
+
+  it("reads a parked row as waiting for you, not failed", () => {
+    const l = toolLanes([row({ call_id: "a", gate: "parked", success: false, start_offset_ms: 10 })], "calendar", true);
+    expect(l[0].calls[0]).toMatchObject({ gateWords: "waiting for you", failed: false });
+  });
+
+  it("shows a failed live row as failed", () => {
+    const l = toolLanes([row({ call_id: "a", success: false, start_offset_ms: 10 })], "calendar", true);
+    expect(l[0].calls[0]).toMatchObject({ failed: true, returned: false });
+  });
+
+  it("keeps the 'returned' words for a live row that has no offset", () => {
+    const l = toolLanes([row({ call_id: "a", start_offset_ms: null })], "calendar", true);
+    expect(l[0].calls[0]).toMatchObject({ returned: true, w: 0 });
   });
 });
