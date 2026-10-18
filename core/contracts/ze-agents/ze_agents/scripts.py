@@ -133,6 +133,15 @@ class ScriptOutcome:
     exception: str | None = None
 
 
+@dataclass(frozen=True)
+class ScriptContext:
+    """The turn a script runs in, for the action ledger and procedure learning."""
+
+    user_turn: str | None = None
+    message_id: str | None = None
+    thread_id: str | None = None
+
+
 class ScriptRunner(Protocol):
     async def run(
         self,
@@ -144,6 +153,7 @@ class ScriptRunner(Protocol):
         limits: ScriptLimits,
         dispatch: Callable[[ScriptRequest], Awaitable[DispatchReply]],
         procedure_id: str | None = None,
+        context: ScriptContext | None = None,
     ) -> ScriptOutcome: ...
 
 
