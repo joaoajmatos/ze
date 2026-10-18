@@ -1,8 +1,8 @@
 import type { WsScreenRef, WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { useRef, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
-import type { ThreadMessage as Message } from "@/entities/conversation";
 import { ConnectedPrimitiveTree } from "@/features/primitive-tree";
+import type { ThreadMessage as Message } from "@/entities/conversation";
 import { Module } from "@/shared/ui";
 import { componentType, instrumentId, spanOf } from "../lib/exchanges";
 import type { WhyTarget } from "../lib/why";

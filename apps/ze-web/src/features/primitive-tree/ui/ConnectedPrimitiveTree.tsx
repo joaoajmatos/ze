@@ -1,11 +1,11 @@
 import type { WsScreenRef } from "@myguyze/ze-client";
 import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
 import { useMemo } from "react";
-import { TreeNote } from "./TreeNote";
 import { useCardActions } from "../api/useCardActions";
 import { usePrimitiveActions } from "../api/usePrimitiveActions";
-import { parseTree } from "../lib/parseTree";
 import { HUD_CLASS_NAMES, renderHudHeadline } from "../lib/hud-class-names";
+import { parseTree } from "../lib/parseTree";
+import { TreeNote } from "./TreeNote";
 
 interface ConnectedPrimitiveTreeProps {
   components: unknown;
