@@ -171,7 +171,7 @@ apps/ze-web/src/app/router/routes.tsx ; shared/config/places.ts ; shared/lib/que
 | web | Sonnet ENG | `widgets/{plugin-module,try-chips}/*`, `widgets/connections/ui/Connections.tsx`, `pages/{mind-entity,doing-workflow,ask}/*`, their tests | T006–T009 | contract step | floor Reviewer |
 | docs | Haiku DOCS | the files in "Docs touched" | T012–T014 | T011 | floor Reviewer |
 
-**Rules**: one lane per file at a time; the contract step's one-line edit in `ze_news/plugin.py` lands before lane `news` starts. `pages/doing-workflow` comes from 188: until 188 lands, the run slot is proven in tests only (against the fixture), and the mount is added to 188's landing checklist in the Handoffs note so it is not lost. There is no JR lane.
+**Rules**: one lane per file at a time; the contract step's one-line edit in `ze_news/plugin.py` lands before lane `news` starts. `pages/doing-workflow` comes from 188, which lands before 191b starts (Maestro, 2026-10-18), so lane `web` mounts the run slot directly. There is no JR lane.
 
 ## Complexity Tracking
 
