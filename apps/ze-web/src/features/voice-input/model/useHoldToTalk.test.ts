@@ -109,4 +109,13 @@ describe("useHoldToTalk", () => {
     key("keyup");
     expect(stop).toHaveBeenCalledTimes(1);
   });
+
+  it("turning off mid-hold discards the recording instead of uploading it", () => {
+    const { rerender } = renderHook(({ on }) => useHoldToTalk(on), { initialProps: { on: true } });
+    key("keydown");
+    vi.advanceTimersByTime(800);
+    rerender({ on: false });
+    expect(dismiss).toHaveBeenCalledTimes(1);
+    expect(stop).not.toHaveBeenCalled();
+  });
 });

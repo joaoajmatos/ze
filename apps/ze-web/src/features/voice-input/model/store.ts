@@ -7,7 +7,8 @@ import { recorderLevel, startRecorder, type Recorder } from "../lib/recorder";
 export type VoiceStatus = "idle" | "recording" | "transcribing" | "failed" | "unavailable";
 
 export interface VoiceFailure {
-  kind: "retryable" | "rerecord";
+  /** `device`: the browser could not open the microphone; pressing the mic again tries again. */
+  kind: "retryable" | "rerecord" | "device";
   detail: string;
 }
 
@@ -36,7 +37,11 @@ let mime = "";
 let ticker: ReturnType<typeof setInterval> | null = null;
 let noticeTimer: ReturnType<typeof setTimeout> | null = null;
 /** Set when stop or dismiss arrives while the microphone is still opening. */
-let cancelPending: "stop" | "discard" | null = null;
+let cancelPending: { generation: number; kind: "stop" | "discard" } | null = null;
+/** One number per `start()`, so a slow microphone request that was dismissed cannot take over a newer one. */
+let generation = 0;
+const STOP_TIMEOUT_MS = 5000;
+const LOST = "The recording was lost. Record again.";
 let onTranscript: ((text: string, transcriptionId: string) => void) | null = null;
 
 function clearTicker() {
@@ -60,6 +65,12 @@ export const useVoiceInput = create<VoiceInputState>((set, get) => {
   const unavailable = (reason: string) => {
     presenceActions.voice("none");
     set({ status: "unavailable", reason, startedAt: null, failure: null });
+  };
+
+  // The browser could not record this time; the person may fix a setting and press the mic again.
+  const deviceFailed = (detail: string) => {
+    presenceActions.voice("none");
+    set({ status: "failed", failure: { kind: "device", detail }, startedAt: null, pending: null });
   };
 
   const upload = async () => {
@@ -91,7 +102,24 @@ export const useVoiceInput = create<VoiceInputState>((set, get) => {
     recorder = null;
     clearTicker();
     if (!rec) return;
-    const blob = await rec.stop();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let blob: Blob;
+    try {
+      blob = await Promise.race([
+        rec.stop(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error("stop timed out")), STOP_TIMEOUT_MS);
+        }),
+      ]);
+    } catch {
+      rec.abort?.();
+      if (discard) return;
+      presenceActions.voice("none");
+      set({ status: "failed", failure: { kind: "rerecord", detail: LOST }, pending: null, startedAt: null });
+      return;
+    } finally {
+      clearTimeout(timer);
+    }
     if (discard) return;
     set({ pending: { blob, mime }, startedAt: null });
     await upload();
@@ -109,17 +137,23 @@ export const useVoiceInput = create<VoiceInputState>((set, get) => {
       if (get().status !== "idle") return;
       clearNotice();
       const supported = typeof MediaRecorder !== "undefined" ? pickMime((m) => MediaRecorder.isTypeSupported(m)) : null;
-      if (!navigator.mediaDevices) return unavailable("No microphone found.");
-      if (!supported) return unavailable("This browser can't record audio.");
+      if (!navigator.mediaDevices) return deviceFailed("No microphone found.");
+      if (!supported) return deviceFailed("This browser can't record audio.");
       mime = supported;
+      const mine = ++generation;
       cancelPending = null;
       set({ status: "recording", startedAt: null, notice: null, failure: null, pending: null });
       presenceActions.voice("recording");
       startRecorder({ mime: supported }).then(
         (rec) => {
+          if (mine !== generation) {
+            // A newer press replaced this one while the microphone was opening.
+            void rec.stop().catch(() => rec.abort?.());
+            return;
+          }
           recorder = rec;
-          if (cancelPending) {
-            const discard = cancelPending === "discard";
+          if (cancelPending?.generation === mine) {
+            const discard = cancelPending.kind === "discard";
             cancelPending = null;
             if (discard) set({ status: "idle", startedAt: null });
             void finish(discard);
@@ -131,14 +165,18 @@ export const useVoiceInput = create<VoiceInputState>((set, get) => {
             if (performance.now() - began >= MAX_RECORDING_MS) get().stop();
           }, TICK_MS);
         },
-        (err) => unavailable(startFailure(err)),
+        (err) => {
+          if (mine !== generation) return;
+          cancelPending = null;
+          deviceFailed(startFailure(err));
+        },
       );
     },
 
     stop: () => {
       if (get().status !== "recording") return;
       if (!recorder) {
-        cancelPending = "stop";
+        cancelPending = { generation, kind: "stop" };
         set({ status: "transcribing", startedAt: null });
         presenceActions.voice("transcribing");
         return;
@@ -158,7 +196,7 @@ export const useVoiceInput = create<VoiceInputState>((set, get) => {
       clearNotice();
       if (get().status === "recording") {
         presenceActions.voice("none");
-        if (!recorder) cancelPending = "discard";
+        if (!recorder) cancelPending = { generation, kind: "discard" };
         set({ status: "idle", startedAt: null, pending: null, failure: null, notice: null });
         if (recorder) void finish(true);
         return;

@@ -15,6 +15,7 @@ export class VoiceError extends Error {
 
 const UNAVAILABLE = "Voice input is not available on this server.";
 const UNREADABLE = "I couldn't make out the recording.";
+const UNREACHED = "Couldn't reach Ze. Try again.";
 
 function serverLine(error: unknown): string | null {
   const detail = (error as { detail?: unknown } | null)?.detail;
@@ -22,6 +23,8 @@ function serverLine(error: unknown): string | null {
 }
 
 function failure(status: number | undefined, error: unknown): VoiceError {
+  // No response at all: the recording was never judged, so the line is about the connection.
+  if (status === undefined) return new VoiceError("retryable", UNREACHED);
   const line = serverLine(error);
   if (status === 413) return new VoiceError("rerecord", line ?? "The recording is too large. Record a shorter one.");
   if (status === 415) return new VoiceError("rerecord", line ?? "This recording format isn't supported.");
@@ -37,7 +40,7 @@ export async function transcribe(blob: Blob, mime: string): Promise<{ transcript
   try {
     res = await transcribeVoice({ body: { file } });
   } catch {
-    throw new VoiceError("retryable", UNREADABLE);
+    throw new VoiceError("retryable", UNREACHED);
   }
   if (!res.data) throw failure(res.response?.status, res.error);
   return { transcript: res.data.transcript, transcriptionId: res.data.transcription_id };

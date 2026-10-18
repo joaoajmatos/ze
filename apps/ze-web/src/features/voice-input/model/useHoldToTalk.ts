@@ -41,7 +41,11 @@ export function useHoldToTalk(enabled: boolean): void {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", release);
-      release();
+      // Turned off mid-hold (a displaced window): the recording was never finished, so drop it.
+      if (heldSince !== null) {
+        heldSince = null;
+        useVoiceInput.getState().dismiss();
+      }
     };
   }, [enabled]);
 }

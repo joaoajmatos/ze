@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useVoiceInput } from "../model/store";
 import { VoiceStatus } from "./VoiceStatus";
@@ -59,5 +59,30 @@ describe("VoiceStatus", () => {
     useVoiceInput.setState({ notice: "heard_nothing" });
     render(<VoiceStatus />);
     expect(screen.getByRole("status")).toHaveTextContent("Ze heard nothing");
+  });
+
+  it("a device failure shows its line with Try again and Dismiss", () => {
+    useVoiceInput.setState({ status: "failed", failure: { kind: "device", detail: "No microphone found." } });
+    render(<VoiceStatus />);
+    expect(screen.getByRole("status")).toHaveTextContent("No microphone found.");
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(dismiss).toHaveBeenCalledTimes(1);
+    expect(start).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(dismiss).toHaveBeenCalledTimes(2);
+  });
+
+  it("announces the countdown once, when 105 s is crossed", () => {
+    vi.useFakeTimers();
+    useVoiceInput.setState({ status: "recording", startedAt: performance.now() });
+    render(<VoiceStatus />);
+    act(() => void vi.advanceTimersByTime(104_000));
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    act(() => void vi.advanceTimersByTime(1_000));
+    expect(screen.getByRole("status")).toHaveTextContent("10 seconds left");
+    act(() => void vi.advanceTimersByTime(3_000));
+    expect(screen.getByRole("status")).toHaveTextContent("10 seconds left");
+    vi.useRealTimers();
   });
 });

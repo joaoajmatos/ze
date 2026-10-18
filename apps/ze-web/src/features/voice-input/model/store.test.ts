@@ -187,39 +187,114 @@ describe("failures", () => {
 });
 
 describe("start failures", () => {
-  const unavailable = async (line: string) => {
-    expect(s().status).toBe("unavailable");
-    expect(s().reason).toBe(line);
+  const failed = (line: string) => {
+    expect(s().status).toBe("failed");
+    expect(s().failure).toEqual({ kind: "device", detail: line });
     expect(m.voice).toHaveBeenLastCalledWith("none");
   };
 
   it("a blocked microphone", async () => {
     m.startRecorder.mockRejectedValue(Object.assign(new Error("no"), { name: "NotAllowedError" }));
     await record();
-    await unavailable("Microphone access is blocked. Allow it in the browser's site settings.");
+    failed("Microphone access is blocked. Allow it in the browser's site settings.");
+  });
+
+  it("a fixed setting records on the next press, and dismiss clears the line", async () => {
+    m.startRecorder.mockRejectedValueOnce(Object.assign(new Error("no"), { name: "NotAllowedError" }));
+    await record();
+    s().dismiss();
+    expect(s().status).toBe("idle");
+    s().dismiss();
+    await record();
+    expect(s().status).toBe("recording");
   });
 
   it("no microphone", async () => {
     m.startRecorder.mockRejectedValue(Object.assign(new Error("no"), { name: "NotFoundError" }));
     await record();
-    await unavailable("No microphone found.");
+    failed("No microphone found.");
   });
 
   it("no mediaDevices", async () => {
     Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: undefined });
     await record();
-    await unavailable("No microphone found.");
+    failed("No microphone found.");
   });
 
   it("no MediaRecorder or no supported mime", async () => {
     vi.stubGlobal("MediaRecorder", undefined);
     await record();
-    await unavailable("This browser can't record audio.");
+    failed("This browser can't record audio.");
   });
 
   it("an unsupported mime", async () => {
     vi.stubGlobal("MediaRecorder", { isTypeSupported: () => false });
     await record();
-    await unavailable("This browser can't record audio.");
+    failed("This browser can't record audio.");
+  });
+
+  it("a 404 or 503 stays unavailable until reload", async () => {
+    m.transcribe.mockRejectedValueOnce(new VoiceError("unavailable", "Voice input is not available on this server."));
+    await recordAndStop();
+    s().dismiss();
+    expect(s().status).toBe("unavailable");
+    s().start();
+    expect(m.startRecorder).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a second press while the microphone is still opening", () => {
+  it("tap, dismiss, tap again: both streams are stopped, one recorder is active", async () => {
+    const stops = [vi.fn(async () => BLOB), vi.fn(async () => BLOB)];
+    const resolvers: Array<(r: { stop: () => Promise<Blob> }) => void> = [];
+    m.startRecorder.mockReset().mockImplementation(() => new Promise((resolve) => resolvers.push(resolve)));
+    s().start();
+    s().dismiss();
+    s().start();
+    expect(m.startRecorder).toHaveBeenCalledTimes(2);
+    resolvers[0]({ stop: stops[0] });
+    await flush();
+    expect(stops[0]).toHaveBeenCalledTimes(1);
+    expect(s().status).toBe("recording");
+    resolvers[1]({ stop: stops[1] });
+    await flush();
+    expect(stops[1]).not.toHaveBeenCalled();
+    expect(s().status).toBe("recording");
+    s().stop();
+    await flush();
+    expect(stops[1]).toHaveBeenCalledTimes(1);
+    expect(got).toEqual([["hello", "t1"]]);
+  });
+
+  it("a stale resolution never starts the 115 s ticker", async () => {
+    const resolvers: Array<(r: { stop: () => Promise<Blob> }) => void> = [];
+    m.startRecorder.mockReset().mockImplementation(() => new Promise((resolve) => resolvers.push(resolve)));
+    s().start();
+    s().dismiss();
+    s().start();
+    resolvers[0]({ stop: vi.fn(async () => BLOB) });
+    await flush();
+    expect(s().startedAt).toBeNull();
+  });
+});
+
+describe("a recorder that will not stop", () => {
+  it("a throwing stop ends in a Record again line", async () => {
+    m.startRecorder.mockResolvedValue({ stop: vi.fn(async () => Promise.reject(new Error("inactive"))) });
+    await recordAndStop();
+    expect(s().status).toBe("failed");
+    expect(s().failure).toEqual({ kind: "rerecord", detail: "The recording was lost. Record again." });
+    expect(m.voice).toHaveBeenLastCalledWith("none");
+  });
+
+  it("a stop that never fires gives up after 5 s and releases the stream", async () => {
+    const abort = vi.fn();
+    m.startRecorder.mockResolvedValue({ stop: () => new Promise<Blob>(() => {}), abort });
+    await recordAndStop();
+    expect(s().status).toBe("transcribing");
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(abort).toHaveBeenCalledTimes(1);
+    expect(s().status).toBe("failed");
+    expect(s().failure?.kind).toBe("rerecord");
   });
 });

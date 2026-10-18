@@ -40,7 +40,7 @@ describe("transcribe", () => {
 
   it("a network failure is retryable", async () => {
     m.transcribeVoice.mockRejectedValueOnce(new TypeError("Failed to fetch"));
-    await expect(transcribe(blob, "audio/mp4")).rejects.toMatchObject({ kind: "retryable", detail: "I couldn't make out the recording." });
+    await expect(transcribe(blob, "audio/mp4")).rejects.toMatchObject({ kind: "retryable", detail: "Couldn't reach Ze. Try again." });
   });
 
   it("413 and 415 need a new recording", async () => {

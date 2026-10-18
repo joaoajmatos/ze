@@ -9,6 +9,8 @@ export function recorderLevel(): number {
 
 export interface Recorder {
   stop: () => Promise<Blob>;
+  /** Release the microphone without waiting for the recorder to finish. */
+  abort: () => void;
 }
 
 export async function startRecorder({ mime, onLevel }: { mime: string; onLevel?: (level: number) => void }): Promise<Recorder> {
@@ -43,17 +45,26 @@ export async function startRecorder({ mime, onLevel }: { mime: string; onLevel?:
     void ctx?.close();
     throw err;
   }
+  const abort = () => {
+    cancelAnimationFrame(raf);
+    release();
+    void ctx?.close();
+    level = 0;
+  };
   return {
+    abort,
     stop: () =>
-      new Promise<Blob>((resolve) => {
+      new Promise<Blob>((resolve, reject) => {
         recorder.onstop = () => {
-          cancelAnimationFrame(raf);
-          release();
-          void ctx?.close();
-          level = 0;
+          abort();
           resolve(new Blob(chunks, { type: mime }));
         };
-        recorder.stop();
+        try {
+          recorder.stop();
+        } catch (err) {
+          abort();
+          reject(err);
+        }
       }),
   };
 }
