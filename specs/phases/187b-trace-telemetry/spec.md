@@ -10,11 +10,11 @@
 
 **Governed by**: phase 89 (message trace), 95 (streamed partial trace frames), 162/182 (System One judgments and the model tier), 187 (Ask, the trace instruments), 195 (screen trace), `specs/arch/system-one-models.md`.
 
-**Depends on**: 187 on `main` (the instruments that read these fields). It runs in parallel with the other web phases. It changes no web code except the generated client types.
+**Depends on**: 187 on `main` (landed). It runs in parallel with the other web phases. Its web lane touches only 187's trace instruments (`widgets/assemble`).
 
 **Doctrine function served**: governance (honest self-report: the trace shows what Ze measured, not what the client guessed).
 
-**Owning packages** (for planning): ze-core (trace types, the streamed turn, telemetry), ze-api (trace schemas, the partial frame), the generated client. No migration: the trace is already stored as JSON on each message.
+**Owning packages** (for planning): ze-core (trace types, the streamed turn, telemetry), ze-api (trace schemas, the partial frame), the generated client, ze-web (the 187 trace instruments). No migration: the trace is already stored as JSON on each message.
 
 ## Context
 
@@ -29,6 +29,14 @@ Phase 187 turned each reply's trace into HUD instruments: a signal path through 
 - **Memory.** Live memory rows lack the extraction confidence the committed trace carries.
 
 187 already added the tool call's agent and index, extraction confidence on committed memory rows, and compaction and resume-recap flags on the frame.
+
+## Clarifications
+
+### Session 2026-10-18 (user answers through the Maestro: all recommended)
+
+- Q: Does 187b also switch the web instruments to the new fields? → A: Yes. A small web lane drops the client-side guesses (arrival-time offsets, the "Tool time" label, list-position tool keys).
+- Q: The current total field (today the sum of tool durations)? → A: Hard-cut rename to `tool_duration_ms`, and add the measured `turn_duration_ms`.
+- Q: How is context fill defined? → A: The largest prompt sent to the main model in the turn, divided by that model's window.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -59,7 +67,7 @@ The trace reports the measured length of the whole turn, and for the reply: toke
 
 **Acceptance Scenarios**:
 
-1. **Given** a finished turn, **When** the trace is read, **Then** the total is measured wall time from the turn's start to its reply, separate from tool time.
+1. **Given** a finished turn, **When** the trace is read, **Then** the total is measured wall time from the turn's start to its reply, separate from tool time; time spent waiting for a confirmation is reported on its own.
 2. **Given** a turn with several main-model calls (an agentic loop), **When** the trace is read, **Then** tokens are summed across them, and context fill is the largest prompt sent divided by that model's window.
 3. **Given** System One judgments on the turn, **When** the trace is read, **Then** their tokens are reported apart from the main model's, never mixed into them.
 4. **Given** a model missing from the price or window table, **When** the trace is read, **Then** the cost and fill are marked as estimates from the default rates, not left blank.
@@ -89,17 +97,19 @@ A tool row that appears while the turn runs carries its real start offset, durat
 
 **Why this priority**: today the live rows contradict the committed ones a moment later (every tool "succeeds" in 0 ms).
 
-**Independent Test**: a failing tool call shows success false and its measured duration on the live frame, and its live index equals its committed index.
+**Independent Test**: a failing tool call shows success false and its measured duration on the live frame, and its live row carries the same call id as its committed row.
 
 **Acceptance Scenarios**:
 
-1. **Given** a tool call, **When** it ends, **Then** the live row carries its start offset from the turn's start, its measured duration, its success, its agent and its call index, all equal to the committed row's values.
+1. **Given** a tool call, **When** it ends, **Then** the live row carries its start offset from the turn's start, its measured duration, its success, its agent and its call id, all equal to the committed row's values.
 2. **Given** a tool call that fails, **When** it ends, **Then** the live row says it failed.
 3. **Given** memory retrieved for the turn, **When** the live memory frame goes out, **Then** each fact row carries its extraction confidence.
 
 ### Edge Cases
 
 - A turn that errors before it replies still stores the stages and total it reached.
+- Work Ze does after the reply is sent (fire-and-forget memory writes) is not part of the turn's stages, total or usage.
+- A server restart while a turn waits for a confirmation loses the first run's telemetry; the resumed reply's trace is marked partial.
 - A retried reply (165/180) has its own stage list and totals; the replaced reply keeps its own.
 - Clock: all offsets and durations come from one monotonic server clock per turn, so a wall-clock change mid-turn cannot produce a negative duration.
 - A node that runs twice in one turn (a confirmation round re-entering execute) is listed once per run, in order.
@@ -116,10 +126,11 @@ A tool row that appears while the turn runs carries its real start offset, durat
 - **FR-004**: The trace MUST carry the main model's prompt and completion tokens summed over the turn, the estimated cost from the price table, and the context fill (largest prompt over that model's window), each marked as estimated when the model fell back to default rates or window. System One tokens MUST be reported separately.
 - **FR-005**: The routing trace MUST carry the embedding shortlist (agent and score, highest first) and the confidence and gap thresholds in force for the turn, on the partial frame and the stored trace.
 - **FR-006**: Each judgment row MUST carry its surface name and the bar that decided it (or none when the surface had no bars), as configured at the time of the turn.
-- **FR-007**: Live tool rows MUST carry start offset, measured duration, success, agent and call index equal to the committed row. Live memory rows MUST carry extraction confidence.
+- **FR-007**: Live tool rows MUST carry start offset, measured duration, success, agent and a call id equal to the committed row's (the committed flattened index stays; parallel subtasks finish in any order, so the live and committed rows are matched by id, not by position). Live memory rows MUST carry extraction confidence.
 - **FR-008**: Telemetry MUST never fail or delay a turn: errors in measuring or sending are logged and skipped.
 - **FR-009**: The REST trace response, the trace frame schema and the generated web client MUST expose the new fields.
-- **FR-010**: Docs MUST describe the new trace fields (native interface, architecture where the trace is described).
+- **FR-010**: The web trace instruments MUST read the new fields: the signal path uses server stage offsets (live and from history), the readouts show the measured turn total and the model usage, routing draws the shortlist against its thresholds, judgment rows show their bar, and live tool rows are keyed by call index. The client-side arrival-time offsets and the "Tool time" stand-in MUST be removed.
+- **FR-011**: Docs MUST describe the new trace fields (native interface, architecture where the trace is described).
 
 ### Key Entities
 
@@ -134,13 +145,13 @@ A tool row that appears while the turn runs carries its real start offset, durat
 
 - **SC-001**: For a turn that runs every stage, the stored trace lists every stage the turn ran, and the sum of stage durations is within the total.
 - **SC-002**: Reopening any reply recorded after this phase shows the same stage times it showed live (no difference).
-- **SC-003**: Live tool rows and committed rows agree on duration, success and index for 100% of calls in the test suite.
+- **SC-003**: Live tool rows and committed rows agree on call id, duration and success for 100% of calls in the test suite.
 - **SC-004**: Measuring adds under 5 ms to a turn's median server time in the turn tests.
-- **SC-005**: The Python suites, the web typecheck and lint pass.
+- **SC-005**: The Python suites, the web suites, the web typecheck and lint pass.
+- **SC-006**: No web instrument computes a stage offset from client arrival time (a test fails if it does).
 
 ## Assumptions
 
 - The stage list names graph nodes as the graph defines them; the web app maps them to the signal path's labels.
 - Cost is an estimate from the existing static price table (the same table the spend budget uses); reconciled cost from the provider stays in Usage.
-- The web instruments switch to these fields in a later web change (or as a small task in this phase if the crew has room); this phase's job is that the fields exist and are true.
 - No migration: traces are stored as JSON, and old traces simply lack the fields.

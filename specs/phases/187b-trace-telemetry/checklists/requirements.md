@@ -32,4 +32,4 @@
 ## Notes
 
 - The spec names graph stages and a price table because they are the subject of the feature (a trace of the engine); no framework or library is named.
-- Open questions for clarify: whether the web instrument switch-over is in this phase; whether a judgment's bar is read from config at turn time or stored with the judgment; context fill definition (largest prompt vs last prompt).
+- Clarify 2026-10-18 resolved scope (web lane in), the total rename, and context fill.
