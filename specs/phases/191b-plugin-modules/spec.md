@@ -27,6 +27,7 @@ Plugins today can contribute a navigation entry with a whole server-driven page,
 - Q: Does World get a module slot? → A: No. Plugins reach World through claims and loops only.
 - Q: How does a module get its data? → A: Each module names a plugin read operation that returns its primitive tree for the slot's subject; it refreshes on place load, on a refresh frame naming the module, and at most every 60 s while visible.
 - Q: May plugins add composed-answer types now? → A: Not in 191b; a preset sends a plain prompt.
+- Architect decision (recorded so the answer above is not silently reinterpreted): "a plugin read operation per module" is implemented as an in-process provider function that each module declares, served by one core route; the manifest carries no operation id for modules, and the OpenAPI export lists the one core route instead of a route per plugin.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -60,8 +61,9 @@ News no longer has a page. Ask shows a "What's new in my sources?" chip that run
 **Acceptance Scenarios**:
 
 1. **Given** News enabled, **When** Ask loads, **Then** "What's new in my sources?" appears after the core chips, numbered after them.
-2. **Given** the chip is pressed, **When** the turn runs, **Then** it is an ordinary turn marked as a preset and routed to the news agent.
-3. **Given** a Mind entity that News articles mention, **When** the user opens it, **Then** a "Sources" facet lists the articles with their source and date.
+2. **Given** the chip is pressed, **When** the turn runs, **Then** it is an ordinary turn whose screen context says it came from a preset, and normal routing sends it to the news agent (guarded by a routing calibration row).
+3. **Given** a Mind topic entity whose name equals an article tag, **When** the user opens it, **Then** a "Sources" facet lists the articles with their source and date. A topic whose name differs from every tag (even only in case) shows no Sources facet.
+5. **Given** News stores new articles, **When** the fetch finishes, **Then** any open Sources facet refreshes without a reload.
 4. **Given** the old News page route, **When** this phase lands, **Then** it is gone, and `/news` redirects to Ask.
 
 ---
@@ -97,7 +99,9 @@ Settings sections render and save in Governance › Connections as 190 built the
 
 - Two plugins contribute to the same slot for the same entity: both modules show, ordered by contribution priority, then id.
 - A module's data is slow: the slot shows a loading line; the place never waits for it.
-- A plugin is disabled at runtime (config reload): its modules disappear on the next manifest load.
+- A plugin is enabled or disabled in config: the manifest is built at startup, so its modules appear or disappear after a restart and a reload.
+- A module is asked for before its plugin has finished starting: it shows nothing (not applicable), never a failure line.
+- A module's view names a tool of another plugin's agent, or carries a claim posture the shared vocabulary does not allow: Ze refuses the view and shows the plugin's failure line.
 - A module renders an unknown primitive: the 191a fallback table shows.
 - More plugin presets than chip slots: only the first two by priority show.
 
@@ -109,10 +113,13 @@ Settings sections render and save in Governance › Connections as 190 built the
 - **FR-002**: A module MUST declare a title, the slot it fills, and a plugin read operation that returns a primitive tree for the slot's subject (an entity, a run, or none for the Connections card), or a signal that it does not apply. The slot MUST fetch it on place load, refetch on a refresh frame naming the module, and refetch at most every 60 seconds while visible.
 - **FR-003**: The places MUST offer these slots: Mind entity facet, Doing run block, Governance › Connections card, and Ask preset chip. Each place MUST own placement, density and design of its slot.
 - **FR-004**: A module's failure, slowness or absence MUST never break or delay the rest of the place; the slot MUST show a plain line for a failure and a loading line while waiting.
-- **FR-005**: Module actions MUST use 191a's typed actions and gates; plugins MUST contribute no browser script.
+- **FR-005**: Module actions MUST use 191a's typed actions and gates; every tool action in a plugin's view (module or settings) MUST name an agent the contributing plugin registered and one of that agent's tools, or the view is refused. Plugins MUST contribute no browser script.
+- **FR-005a**: Claim postures in a plugin's view MUST be pairs the shared claim vocabulary allows; Ze derives their tone and label itself and refuses a view with any other posture.
+- **FR-005b**: The slot's subject MUST be resolved by Ze from its own records (an entity, a run); an unknown subject is refused.
+- **FR-005c**: A plugin MUST be able to ask for its module to be refreshed; News MUST do so after a fetch that stored new articles.
 - **FR-006**: The manifest MUST carry modules, presets and settings sections, and the generated client MUST be regenerated.
 - **FR-007**: News MUST contribute a preset, a Mind sources facet module and its settings section, and no page; its page route and descriptor MUST be removed; `/news` MUST redirect to Ask.
-- **FR-008**: The top-level plugin page route, the reserved-paths list and the mobile-nav flag MUST be removed (pre-v1 hard cut).
+- **FR-008**: The top-level plugin page route, the reserved-paths list, the mobile-nav flag, the `plugin` place value, and every remaining plugin page route (News's page and ze-personal's Contacts page) MUST be removed (pre-v1 hard cut).
 - **FR-009**: A fixture plugin MUST prove each slot in tests.
 - **FR-010**: Docs MUST describe the plugin UI model (modules, slots, presets, settings), and `PRODUCT.md` MUST carry a short Plugin UI model section.
 
