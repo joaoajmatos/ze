@@ -51,7 +51,7 @@
 
   Implement `list_by_subject` in `PostgresActionRecordStore`.
 - [x] T005a [L:ledger] [US1] Tests first `core/automation/ze-automation/tests/test_action_records_workflow.py` (A-1): `finish_execution` runs `UPDATE … RETURNING workflow_id` and calls `emit_workflow_finished(execution_id, status, workflow_id)`; the emitted record's context has both `workflow_id` and `workflow_run_id`; a missing execution row (no row returned) still emits with `workflow_id=None` and logs. Implement in `ze_automation/workflow/postgres.py` (`finish_execution` only) and `ze_automation/action_records.py`.
-- [ ] T006 [L:ledger] [US1] `@pytest.mark.pg` test in the same package: seed records for goal G1, goal G2 and workflow run R1, plus one with an empty context. Listing by G1 returns only G1's records, newest first; listing by workflow W returns both its started and finished records. Paging with limit 1 walks all records with no repeat or skip, including two records with the same `occurred_at`. `since` excludes older records.
+- [x] T006 [L:ledger] [US1] `@pytest.mark.pg` test in the same package: seed records for goal G1, goal G2 and workflow run R1, plus one with an empty context. Listing by G1 returns only G1's records, newest first; listing by workflow W returns both its started and finished records. Paging with limit 1 walks all records with no repeat or skip, including two records with the same `occurred_at`. `since` excludes older records.
 - [ ] T007 [L:ledger] [US1] Tests first `apps/ze-api/tests/api/test_actions_route.py`:
   - each subject type maps to the store call;
   - a lone `subject_type` or `subject_id` → 422;
