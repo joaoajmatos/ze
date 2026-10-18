@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { queryKeys, refreshKeysForScreen } from "@/shared/lib";
 import { AnswerGateFrameHandler } from "../ui/AnswerGateFrameHandler";
 import { useAnswerGate } from "./useAnswerGate";
 import { useGateFlights } from "../model/gate-flights";
@@ -218,8 +219,7 @@ describe("useAnswerGate — stuck goals", () => {
     expect(result.current.errorOf("g9")).toMatch(/hasn't answered/i);
   });
 
-  it("the in-flight signal is the backend's refresh frame for goals, which refetches the goals key", async () => {
-    const { refreshKeysForScreen, queryKeys } = await import("@/shared/lib");
+  it("the in-flight signal is the backend's refresh frame for goals, which refetches the goals key", () => {
     expect(refreshKeysForScreen("goals")).toContainEqual(queryKeys.goals);
   });
 
