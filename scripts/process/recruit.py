@@ -51,9 +51,25 @@ def wait_for_tui(name: str, markers: list[str], seconds: float, poll: float) -> 
         time.sleep(poll)
 
 
-def send_brief(name: str, brief: str, seconds: float) -> bool:
+def stuck_in_input(screen: str, brief: str) -> bool:
+    """The brief sits in the input box (under the prompt) and the agent has not answered (no reply marker)."""
+    return brief.strip()[:40] in screen and "\u23fa" not in screen
+
+
+def send_brief(name: str, brief: str, seconds: float, poll: float = 2.0) -> bool:
     reply = handoff.maestri("ask", name, brief + PING, timeout=seconds)
-    return reply.returncode == 0 and "ready" in reply.stdout.lower()
+    if reply.returncode == 0 and "ready" in reply.stdout.lower():
+        return True
+    if not stuck_in_input(handoff.maestri("check", name).stdout, brief):
+        return False
+    handoff.maestri("ask", name, "--raw", "\r")
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        screen = handoff.maestri("check", name).stdout
+        if "\u23fa" in screen:
+            return True
+        time.sleep(poll)
+    return False
 
 
 def main(argv: list[str]) -> int:
@@ -103,7 +119,7 @@ def main(argv: list[str]) -> int:
                 f"{args.name}: TUI not ready after {boot:.0f}s (attempt {attempt})",
                 file=sys.stderr,
             )
-        elif send_brief(args.name, brief, reply):
+        elif send_brief(args.name, brief, reply, poll):
             handoff.append_handoff(
                 Path.cwd(),
                 args.note,

@@ -239,3 +239,31 @@ def load_process_module_from_hooks(name):
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
+
+
+STUCK_CLI = """#!/usr/bin/env bash
+echo "$@" >> "$FAKE_LOG"
+case "$1" in
+  check) if grep -q -- "--raw" "$FAKE_LOG"; then echo "⏺ ready"; else echo "❯ $(head -c 40 "$FAKE_BRIEF")"; fi;;
+  ask) echo "";;
+esac
+"""
+
+
+def test_recruit_submits_a_brief_stuck_in_the_input_box(tmp_path, monkeypatch):
+    cli = tmp_path / "maestri"
+    cli.write_text(STUCK_CLI)
+    cli.chmod(cli.stat().st_mode | stat.S_IEXEC)
+    log = tmp_path / "calls.log"
+    brief = tmp_path / "brief.md"
+    brief.write_text(GOOD_BRIEF)
+    monkeypatch.setenv("MAESTRI_CLI", str(cli))
+    monkeypatch.setenv("FAKE_LOG", str(log))
+    monkeypatch.setenv("FAKE_BRIEF", str(brief))
+    monkeypatch.setenv("ZE_RECRUIT_BOOT_SECS", "1")
+    monkeypatch.setenv("ZE_RECRUIT_REPLY_SECS", "2")
+    monkeypatch.setenv("ZE_RECRUIT_POLL_SECS", "0.1")
+    monkeypatch.chdir(tmp_path)
+    assert recruit.main(["Forge", "eng", "sonnet", "F", str(brief)]) == 0
+    assert any("--raw" in line for line in calls(log))
+    assert not any("--replace" in line for line in calls(log))

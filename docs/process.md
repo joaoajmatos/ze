@@ -105,7 +105,7 @@ A request starts where the last request or verdict ended, so each review covers 
 
 ## Recruiting
 
-`scripts/process/roles.toml` lists which model tiers each role may use. Engineers never run on Opus. Reviewers never run on Haiku. `recruit.sh` lints the brief for the state-file path, the scratchpad rule, the pre-review checklist, the commit trailer, the reviewer name and the throwaway database. It waits for the terminal, sends the brief with a "reply ready" ping, and retries once with `recruit --replace`.
+`scripts/process/roles.toml` lists which model tiers each role may use. Engineers never run on Opus. Reviewers never run on Haiku. `recruit.sh` lints the brief for the state-file path, the scratchpad rule, the pre-review checklist, the commit trailer, the reviewer name and the throwaway database. It waits for the terminal, sends the brief with a "reply ready" ping, and retries once with `recruit --replace`. When the brief still sits in the input box with no reply, the script presses Enter (`maestri ask NAME --raw "\r"`) and waits up to 120 seconds for a reply.
 
 ## Speckit checks
 
