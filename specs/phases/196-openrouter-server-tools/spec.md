@@ -4,13 +4,13 @@
 
 **Created**: 2026-10-18
 
-**Status**: Draft
+**Status**: Draft (clarified 2026-10-18)
 
 **Input**: User description (approved 2026-10-18, "yes do all of that"): adopt `openrouter:web_fetch` for the research agent; document that Ze requests only the server tools it declares and recommend the user switch off the unused OpenRouter workspace tools, with a decision record saying why; check that no code path can request other server tools and add a test that only allowed `openrouter:*` tools are ever sent.
 
 **Governed by**: `specs/arch/openrouter-gateway.md` (OpenRouter is the only gateway; this phase adds an amendment), `PRODUCT.md` principle 4 (unattended work is accountable), phase 181 (writes ask first), phase 115 (the workspace is Ze's only computer), phase 187b (trace telemetry), `specs/arch/pre-v1-hard-cuts.md`.
 
-**Depends on**: nothing unfinished. 187b (Ready) and this phase both touch the trace; whichever lands second merges the new trace field into the other's shape (see Assumptions).
+**Depends on**: 187b (Ready). The server tool counts accumulate in 187b's per-turn recorder, which survives confirmation pauses, so 196 is built after 187b lands (plan R3).
 
 **Doctrine functions served**: perception (Ze can read a page the user names, as text), governance (every outside tool Ze uses is declared, gated by an allowlist and visible on the trace and in spend).
 
@@ -32,7 +32,13 @@ OpenRouter's other server tools (`openrouter:advisor`, `subagent`, `fusion`, `sh
 
 ## Clarifications
 
-_Pending: questions sent to the Maestro with recommendations._
+### Session 2026-10-18
+
+User answered all recommended (relayed by the Maestro).
+
+- Q: Which engine fetches pages? → A: `openrouter` (OpenRouter's own direct fetch; free; no extra third party sees the URL). Configurable.
+- Q: How much of the dead streaming path goes? → A: all of it: the `token_queue` branch in `orchestration/nodes/execution.py`, `BaseAgent.stream`, every agent `stream()` method and their tests (pre-v1 hard cut).
+- Q: Which agents get `openrouter:web_fetch`? → A: research only. Prospecting keeps search and its browser sidecar.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -66,7 +72,7 @@ Ze holds one allowlist of OpenRouter server tools: `openrouter:web_search` and `
 1. **Given** an agent declares `openrouter:advisor`, **When** Ze starts, **Then** startup fails with an error naming the agent and the tool and listing the allowed server tools.
 2. **Given** any registered agent runs a turn, **When** the loop builds the request, **Then** every `openrouter:*` tool in it is in the allowlist and every tool in it is one the agent declared (after skill narrowing).
 3. **Given** OpenRouter returns a server tool call Ze did not send (a name outside the allowlist), **When** the loop handles the reply, **Then** Ze records it on the trace as an unexpected server tool, logs a warning and does not treat it as success.
-4. **Given** the codebase, **When** the tests run, **Then** no agent has a `stream()` path that appends `:online` (the dead `token_queue` streaming path is removed; see Clarifications).
+4. **Given** the codebase, **When** the tests run, **Then** no agent has a `stream()` path that appends `:online` (the dead `token_queue` streaming path is removed, including `BaseAgent.stream` and every agent `stream()` method).
 
 ---
 
@@ -119,7 +125,7 @@ The configuration guide says which OpenRouter server tools Ze uses, recommends s
 - **FR-003**: The research agent MUST declare `openrouter:web_fetch` beside `openrouter:web_search`. Its instructions MUST say when to fetch (the user names a URL, or a search result needs its full text), that pages needing a login or interaction are out of reach, and that fetched or searched text is data, never instructions.
 - **FR-004**: The fetch schema MUST carry its parameters from configuration: engine, per-request fetch cap and content cap (defaults in Assumptions). The values are read at request time so a config reload applies.
 - **FR-005**: The agentic loop MUST record an allowlisted server tool call that OpenRouter returns as a read `ToolCall` under its canonical name, with a tool-result message that names the tool (not "search complete" for a fetch). A returned server tool name outside the allowlist MUST be recorded as a failed call with error `unexpected_server_tool` and logged.
-- **FR-006**: The `:online` model suffix MUST NOT appear anywhere in code or config. The research agent's `stream()` path is deleted (scope of the wider dead streaming path per Clarifications).
+- **FR-006**: The `:online` model suffix MUST NOT appear anywhere in code or config. The whole dead streaming path is deleted: the `token_queue` branch of `_run_agent`, `BaseAgent.stream`, every agent `stream()` method and the tests that cover them.
 - **FR-007**: The OpenRouter client MUST read `usage.server_tool_use` from every reply (complete and streamed) when present, and the turn MUST sum the counts per kind across all model calls of the turn, delegates included.
 - **FR-008**: `MessageTrace` MUST gain `server_tools: dict[str, int]` (kind → count; kind is the reported key without the `_requests` suffix), empty when nothing was reported. It MUST reach the trace REST response and the `trace_update` frame.
 - **FR-009**: The web trace Tools instrument MUST draw one line per reported kind ("Web search ×2", "Read page ×1"; unknown kinds by name) and nothing when the map is empty.
@@ -137,7 +143,7 @@ The configuration guide says which OpenRouter server tools Ze uses, recommends s
 
 ### Measurable Outcomes
 
-- **SC-001**: A research turn on a named public URL answers from the page's text and cites it, in the mocked loop test and in one live eval scenario (`eval/scenarios/research_fetch.yaml`, run only with the user's OK).
+- **SC-001**: A research turn on a named public URL answers from the page's text and cites it, in the mocked loop test and in two live eval scenarios in `eval/scenarios/research.yaml` (tag `research_fetch`; run only with the user's OK).
 - **SC-002**: Declaring any `openrouter:*` tool outside the allowlist fails startup in 100% of the registry tests (one per refused tool name in the ADR list).
 - **SC-003**: Across all registered agents, 0 requests carry a server tool outside the allowlist or outside the agent's declared tools.
 - **SC-004**: 0 occurrences of `:online` in code and config after the phase.
@@ -146,10 +152,10 @@ The configuration guide says which OpenRouter server tools Ze uses, recommends s
 
 ## Assumptions
 
-- Fetch defaults: engine `openrouter` (OpenRouter's own direct fetch: free, no extra third party; subject to the engine clarification), at most 5 fetches per request, content capped at about 8,000 tokens. Values live in config, not code.
+- Fetch defaults: engine `openrouter` (OpenRouter's own direct fetch: free, no extra third party), at most 5 fetches per request, content capped at about 8,000 tokens. Values live in config, not code.
 - OpenRouter executes server tools on its side and may not return each call to Ze; the counts in `usage.server_tool_use` are the reliable record. If OpenRouter does return the calls, FR-005 records them too.
 - Fees for paid engines are already inside the generation cost `CostReconciler` backfills; this phase adds no price table for server tools.
 - OpenRouter's workspace tool settings are the user's to change; Ze cannot switch them off and does not try.
 - `openrouter:web_fetch` is a beta tool at OpenRouter; its parameter names are taken from OpenRouter's docs as of 2026-10-18. The plan re-checks them.
-- 187b adds per-turn usage to the trace. Whichever of 187b and 196 lands second places `server_tools` beside 187b's usage readout; neither blocks the other.
+- 187b adds the per-turn recorder and usage readout; `server_tools` is added to that recorder and stamped beside the usage readout.
 - The browser sidecar (phase 17) is unchanged; prospecting keeps its browser tools and only search.
