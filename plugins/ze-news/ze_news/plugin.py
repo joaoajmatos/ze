@@ -10,7 +10,7 @@ from ze_agents.client import LLMClient
 from ze_agents.nli import NLIClient
 from ze_logging import get_logger
 from ze_sdk import ZePlugin
-from ze_sdk.ui import UiContribution
+from ze_sdk.ui import ModuleResult, ModuleSubject, UiContribution
 from ze_agents.settings import Settings as CoreSettings
 from ze_news.onboarding import NewsOnboardingProvider
 
@@ -150,6 +150,23 @@ class NewsPlugin(ZePlugin):
             return []
         return [
             UiContribution(
+                id="ze_news.whats_new",
+                plugin="ze_news",
+                kind="preset",
+                label="What's new in my sources?",
+                icon="newspaper",
+                prompt="What's new in my sources?",
+            ),
+            UiContribution(
+                id="ze_news.sources",
+                plugin="ze_news",
+                kind="module",
+                label="Sources",
+                icon="newspaper",
+                slot="mind.entity",
+                provider=self._sources_module,
+            ),
+            UiContribution(
                 id="ze_news.settings",
                 plugin="ze_news",
                 kind="settings_section",
@@ -158,6 +175,32 @@ class NewsPlugin(ZePlugin):
                 settings_operation_id="getNewsSettings",
             ),
         ]
+
+    async def _sources_module(self, subject: ModuleSubject) -> ModuleResult:
+        from ze_components import ClaimItem, ClaimPosture, claim_list
+        from ze_components.serialize import serialize_tree
+        from ze_news import article_ref_id
+
+        if self._store is None or subject.entity_type != "topic" or not subject.label:
+            return ModuleResult(applies=False)
+        articles = await self._store.by_tag(subject.label)
+        if not articles:
+            return ModuleResult(applies=False)
+        items = [
+            ClaimItem(
+                text=f"{a.title} · {a.source_key} · {a.published_at.date().isoformat()}",
+                claim=ClaimPosture(
+                    kind="fact",
+                    subject="fact",
+                    ref_id=article_ref_id(a.url),
+                    source="live_search",
+                ),
+            )
+            for a in articles
+        ]
+        return ModuleResult(
+            applies=True, components=serialize_tree([claim_list(items)])
+        )
 
     def rest_routes(self) -> list:
         if not self._enabled:
@@ -184,6 +227,7 @@ class NewsPlugin(ZePlugin):
                 memory_store, container
             )
 
+        self._fetch_job.bind_interface(container.interface)
         container.proactive_scheduler.register(self._fetch_job, cron=self._fetch_cron)
         log.info(
             "news_fetch_scheduled",

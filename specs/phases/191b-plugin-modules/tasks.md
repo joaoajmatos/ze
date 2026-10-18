@@ -65,7 +65,7 @@
 
 ## Phase 3: User Story 2 - News (P1)
 
-- [ ] T005 [P] [L:news] [US2] Tests first:
+- [x] T005 [P] [L:news] [US2] Tests first:
   - `plugins/ze-news/tests/test_store_by_tag.py` (mocked pool): `by_tag("climate")` issues an exact `tags && ARRAY[$1]` match (no `lower()`), newest first, at most 8;
   - `plugins/ze-news/tests/test_plugin_ui.py`: `ui_contributions()` returns the preset `ze_news.whats_new` (label and prompt "What's new in my sources?"), the module `ze_news.sources` (slot `mind.entity`, label "Sources") and the settings section when enabled, and nothing when disabled;
   - the sources provider: `applies=False` before `startup()` has created the store (not an exception), for an entity type other than `topic`, and when no article matches; otherwise a `claim_list` with one item per article (title, source, date), posture `fact`/`live_search` set by code, and the tree validates against the 191a schema;
