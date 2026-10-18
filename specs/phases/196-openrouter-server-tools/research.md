@@ -35,6 +35,9 @@
 - **Rationale**: the research prompt carries the user's memory; page text is untrusted; a fetch is a read with no write gate. Without a domain rule a page can make the model put private text in a fetch URL's path or query. `allowed_domains` is enforced by OpenRouter, so it does not depend on the model obeying instructions. A test with a fake model is not a guard; the domain rule is.
 - **Cost**: "read the full text of a search result" needs the user to paste that link. Stated as a limit in the spec.
 - **Search queries** carry the same risk today (a query is text the model writes); recorded in the ADR amendment, not fixed in this phase.
+- **Source of the URLs (Gauge S-12)**: only the user's own turn text. `AgentContext.user_turn_text` is set once by `execute_tool` from the turn's raw user message (`state["prompt"]`) and copied unchanged into every delegate and subtask context; `run_delegate`'s `prompt`/`messages` are model-written and never feed `with_fetch_urls`. A retried turn replays the stored user message, so it gets the same hosts.
+- **Fetch budget (Gauge S-13)**: `max_uses = min(config.max_uses, distinct pasted URLs)`. Once the pasted pages are read, OpenRouter refuses further fetches, so a hostile pasted page cannot trigger a second, data-carrying fetch on its own host. Residual: the model could fetch a different path on a pasted host instead of the pasted URL; stated in the ADR.
+- **Parsing**: `with_fetch_urls` keeps only `http`/`https`, takes `hostname` (userinfo and port dropped, lowercased). T025 confirms how OpenRouter matches `allowed_domains` (exact host or subdomains, `www.`) and the redirect edge is adjusted to it.
 
 ## R7 — Sources for fetched pages (Gauge S-5)
 

@@ -9,7 +9,7 @@ Only these entries may appear in a request's `tools` array as server tools, and 
 {"type": "openrouter:web_fetch", "parameters": {"engine": "openrouter", "max_uses": 5, "max_content_tokens": 8000, "allowed_domains": ["example.com"]}}
 ```
 
-`web_fetch` is sent only on a turn whose user message contains URLs; `allowed_domains` holds their hosts. The OpenRouter client raises `OpenRouterError("server tool not allowed: <type>")` before sending if any `openrouter:*` type is outside the allowlist.
+`web_fetch` is sent only on a turn whose user message (`AgentContext.user_turn_text`, never a delegate prompt) contains URLs; `allowed_domains` holds their hosts and `max_uses` is `min(configured cap, distinct pasted URLs)`. The OpenRouter client raises `OpenRouterError("server tool not allowed: <type>")` before sending if any `openrouter:*` type is outside the allowlist.
 
 ## Startup
 
