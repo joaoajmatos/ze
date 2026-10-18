@@ -682,6 +682,7 @@ class BaseAgent(ABC):
                     duration_ms=0,
                     success=True,
                     gate="duplicate",
+                    parent_call_id=script_parent_id(accumulated, pw.call_id),
                 )
                 _finish(ctx, tool_call, pw.trace_call_id)
             else:
@@ -693,6 +694,7 @@ class BaseAgent(ABC):
                     success=False,
                     error="denied by user",
                     gate="denied",
+                    parent_call_id=script_parent_id(accumulated, pw.call_id),
                 )
                 _finish(ctx, tool_call, pw.trace_call_id)
             accumulated.append(tool_call)

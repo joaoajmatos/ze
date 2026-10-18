@@ -179,7 +179,16 @@ class _Runner:
         self.writes = writes
 
     async def run(
-        self, *, script_id, agent, source, stub, limits, dispatch, procedure_id=None
+        self,
+        *,
+        script_id,
+        agent,
+        source,
+        stub,
+        limits,
+        dispatch,
+        procedure_id=None,
+        context=None,
     ):
         from ze_agents.scripts import ScriptOutcome
 
@@ -305,3 +314,28 @@ async def test_bad_proposals_become_not_a_proposable_write() -> None:
     answered = {m["tool_call_id"] for m in sent if m["role"] == "tool"}
     declared = {tc["id"] for m in sent if m.get("tool_calls") for tc in m["tool_calls"]}
     assert declared == answered
+
+
+@pytest.mark.parametrize("outcome", ["denied", "duplicate"])
+async def test_denied_and_duplicate_proposals_keep_their_script_parent(outcome) -> None:
+    from ze_agents.park import WriteDecision
+
+    client = _client((None, [_script_call()]))
+    with pytest.raises(LoopParked) as info:
+        await _ScriptAgent().agentic_loop(
+            _script_ctx([_DELETE]), client, [], system="s"
+        )
+    loop = info.value.loop
+    item = loop.parked[0].item_id
+    ctx = _script_ctx(
+        [],
+        resume=loop,
+        write_decisions={item: WriteDecision(item, outcome)},
+        write_round=1,
+    )
+    _, accumulated = await _ScriptAgent().agentic_loop(
+        ctx, _client(("Done.", None)), [], system="s"
+    )
+    row = [c for c in accumulated if c.tool_name == "delete_event"][0]
+    assert row.gate == outcome
+    assert row.parent_call_id == accumulated[0].call_id

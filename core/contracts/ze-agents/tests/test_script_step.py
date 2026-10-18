@@ -54,10 +54,20 @@ class FakeRunner:
         self.runs: list[dict[str, Any]] = []
 
     async def run(
-        self, *, script_id, agent, source, stub, limits, dispatch, procedure_id=None
+        self,
+        *,
+        script_id,
+        agent,
+        source,
+        stub,
+        limits,
+        dispatch,
+        procedure_id=None,
+        context=None,
     ):
         self.runs.append(
             {
+                "context": context,
                 "procedure_id": procedure_id,
                 "script_id": script_id,
                 "agent": agent,
@@ -605,3 +615,45 @@ async def test_runner_gets_the_procedure_id_only_for_a_rerun(names) -> None:
     pid = "aaaaaaaa-1111-2222-3333-444444444444"
     await _run(runner, names, args={"procedure_id": pid}, ctx=ctx)
     assert runner.runs[0]["procedure_id"] == pid
+
+
+async def test_runner_gets_the_turn_context(names) -> None:
+    from ze_agents.scripts import ScriptContext
+
+    runner = FakeRunner()
+    ctx = AgentContext(
+        session_id="thread-9", prompt="what did I spend", script_runner=runner
+    )
+    await _run(runner, names, ctx=ctx)
+    assert runner.runs[0]["context"] == ScriptContext(
+        user_turn="what did I spend", message_id=None, thread_id="thread-9"
+    )
+
+
+async def test_data_read_set_does_not_need_the_openrouter_helper(
+    names, monkeypatch
+) -> None:
+    import ze_agents.base_agent as base_agent
+
+    monkeypatch.delattr(base_agent, "_is_openrouter_server_tool")
+    ctx = _ctx(FakeRunner())
+    got = data_read_names(
+        _Agent(), ctx, names + ["openrouter:web_search", "openrouter_x"]
+    )
+    assert "get_rows" in got
+    assert not any(n.startswith("openrouter") for n in got)
+
+
+def test_script_parent_id_uses_equality_unless_truncated() -> None:
+    from types import SimpleNamespace
+
+    from ze_agents.script_step import proposal_call_id, script_parent_id
+
+    short = SimpleNamespace(call_id="s-short", script={"model_call_id": "c1"})
+    longer = SimpleNamespace(call_id="s-long", script={"model_call_id": "c10"})
+    assert script_parent_id([short, longer], "c1_w0") == "s-short"
+    assert script_parent_id([longer], "c1_w0") is None
+
+    model_id = "toolu:" + "a" * 70
+    cut = SimpleNamespace(call_id="s-cut", script={"model_call_id": model_id.replace(":", "_")[:64]})
+    assert script_parent_id([cut], proposal_call_id(model_id, 12)) == "s-cut"

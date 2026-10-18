@@ -1105,7 +1105,7 @@ class _ScriptRunner:
         self.sources: list[str] = []
 
     async def run(
-        self, *, script_id, agent, source, stub, limits, dispatch, procedure_id=None
+        self, *, script_id, agent, source, stub, limits, dispatch, procedure_id=None, context=None
     ):
         from ze_agents.scripts import ScriptOutcome, ScriptRequest
 
