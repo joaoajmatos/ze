@@ -90,7 +90,7 @@ Pure layout functions first, then views. Fixtures: one rich finished trace (comp
 
 - [x] T024 [DOCS] Update every doc in plan.md "Docs touched".
 - [x] T025 [DOCS] `AGENTS.md` phase row 187 and the chat-chrome preference line; `specs/README.md` row 187 → Implemented; spec status.
-- [ ] T026 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; record in the Handoffs note.
+- [x] T026 [DOCS] Coverage check: `git diff main...HEAD --stat` against "Docs touched"; record in the Handoffs note.
 
 ---
 
