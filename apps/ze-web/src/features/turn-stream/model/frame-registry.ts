@@ -71,6 +71,7 @@ export const FRAME_REGISTRY: FrameEntry[] = [
     ["message", "features/invalidate-on-ws-refresh/ui/RefreshHandler.tsx", "World reloads when a reply may have changed what it shows"],
     ["notification", "widgets/app-shell/ui/AppShell.tsx", "the orb glances at the bell"],
     ["confirm_request", "features/turn-stream/ui/TurnFrameHandler.tsx", "a waiting confirmation pauses the delivery watchdog"],
+    ["confirm_cancel", "features/primitive-tree/api/usePrimitiveActions.ts", "a cancelled gate settles the pending button press"],
   ] as const).map(
     ([frame, file, reason]): FrameEntry => ({ frame, file, slice: file.split("/").slice(0, 2).join("/"), role: "listener", reason }),
   ),
