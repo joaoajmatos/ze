@@ -23,12 +23,8 @@ def probe(workspace, listdir=os.listdir, connect=socket.create_connection):
 
 
 def main(argv):
-    if len(argv) > 2 and argv[1] == "--probe":
-        breach = probe(argv[2])
-        if breach:
-            with os.fdopen(int(os.environ["ZE_REQ_FD"]), "w") as pipe:
-                pipe.write('{"isolation_breach": "%s"}\n' % breach)
-            return
+    if len(argv) > 2 and argv[1] == "--probe-only":
+        sys.exit(87 if probe(argv[2]) else 0)
     sys.path.insert(0, os.getcwd())
     runpy.run_path("main.py", run_name="__main__")
 

@@ -46,6 +46,7 @@ def scripts_client(sidecar, request, monkeypatch):
     request.addfinalizer(lambda: shutil.rmtree(scratch_root, ignore_errors=True))
     monkeypatch.setattr(scripts, "SCRATCH_ROOT", scratch_root)
     monkeypatch.setattr(main, "API_TOKEN", "tok")
+    monkeypatch.setenv("ZE_SCRIPTS_ALLOW_UNISOLATED", "1")
     monkeypatch.setattr(scripts, "slot", scripts.ScriptSlot())
     monkeypatch.setattr(
         scripts, "isolation", scripts.Isolation(rule_verified=True, mode_set=True)

@@ -96,10 +96,7 @@ def test_start_writes_the_three_files_and_spawns_isolated_python(
     _, end = run_to_end(scripts_client, "import ze_tools\nze_tools.finish(1)\n")
 
     assert end["status"] == "ok"
-    assert spawned["argv"][1:5] == ["-I", "-X", "utf8", "_ze_main.py"]
-    assert spawned["argv"][5:] == (
-        ["--probe", scripts.PROBE_WORKSPACE] if os.geteuid() == 0 else []
-    )
+    assert spawned["argv"][1:] == ["-I", "-X", "utf8", "_ze_main.py"]
     assert {"ze_tools.py", "ze_tools_base.py", "main.py", "_ze_main.py"} <= set(
         spawned["files"]
     )
