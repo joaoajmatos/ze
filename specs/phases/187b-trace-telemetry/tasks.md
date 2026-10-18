@@ -91,7 +91,7 @@
 
 ## Phase 6: User Story 4 - Truthful live tool and memory rows (P2)
 
-- [ ] T008 [L:tools] [US4] Tests first `core/contracts/ze-agents/tests/test_call_tool_sink.py` and `tests/test_delegate_sink.py`:
+- [x] T008 [L:tools] [US4] Tests first `core/contracts/ze-agents/tests/test_call_tool_sink.py` and `tests/test_delegate_sink.py`:
   - every return path of `call_tool` (success, exception, unknown tool, refused, parked, denied, duplicate, pre-approved) hands exactly one `ToolCall` to `ctx.tool_sink`, with `started_at` (monotonic) set on the paths that ran the tool;
   - a sink that raises is logged and the call result is unchanged;
   - a parked call's `call_id` is its `ParkedWrite.trace_call_id`; the approved run on resume has the same `call_id`, so a park-then-approve gives one id; two delegates whose provider tool-call ids collide (both `call_0`) get different `call_id`s;

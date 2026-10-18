@@ -281,6 +281,7 @@ async def run_delegate(
         approval_request_id=ctx.approval_request_id,
         write_decisions=ctx.write_decisions,
         resume=resume,
+        tool_sink=ctx.tool_sink,
         extensions={"_delegate_depth": depth + 1},
     )
 
@@ -324,6 +325,8 @@ async def run_delegate(
             "gate": call.gate,
             "agent": call.agent,
             "undo": call.undo,
+            "call_id": call.call_id,
+            "started_at": call.started_at,
         }
         for call in result.tool_calls
     ]
