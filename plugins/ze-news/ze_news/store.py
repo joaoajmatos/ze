@@ -280,6 +280,18 @@ class NewsStore:
             )
         return _row_to_article(row) if row is not None else None
 
+    async def by_tag(self, tag: str, limit: int = 8) -> list[Article]:
+        sql = """
+            SELECT url, source_key, title, summary, published_at, tags, credibility_analysis
+            FROM news_articles
+            WHERE tags && ARRAY[$1]
+            ORDER BY published_at DESC
+            LIMIT $2
+        """
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(sql, tag, limit)
+        return [_row_to_article(r) for r in rows]
+
     async def get_recent(
         self,
         limit: int = 20,
