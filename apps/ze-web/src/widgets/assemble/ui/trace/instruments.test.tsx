@@ -273,4 +273,50 @@ describe("ToolsTimeline script rows", () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
+
+  it("draws a script's children with the lane row marks: gate, irreversible, duration", () => {
+    const trace = richTrace({
+      tool_calls: [
+        { ...base, name: "run_tool_script", call_id: "s1", access: "script", duration_ms: 420, script: { source: "x", source_cut: false, outcome: "ok", limit: null } },
+        { ...base, name: "archive_email", call_id: "w1", parent_call_id: "s1", access: "write", gate: "denied", duration_ms: 0 },
+        { ...base, name: "send_email", call_id: "w2", parent_call_id: "s1", access: "write", gate: "approved", reversibility: "irreversible", duration_ms: 33 },
+      ] as never,
+    });
+    render(<ToolsTimeline trace={trace} />);
+    fireEvent.click(screen.getByRole("button", { name: /Script · ok/ }));
+    const denied = screen.getByText("archive_email").closest("li")!;
+    expect(within(denied).getByText("denied")).toBeInTheDocument();
+    const sent = screen.getByText("send_email").closest("li")!;
+    expect(within(sent).getByText("approved")).toBeInTheDocument();
+    expect(within(sent).getByText("irreversible")).toBeInTheDocument();
+    expect(within(sent).getByText("33 ms")).toBeInTheDocument();
+  });
+
+  it("keeps write children visible while the script block is collapsed", () => {
+    const trace = richTrace({
+      tool_calls: [
+        { ...base, name: "run_tool_script", call_id: "s1", access: "script", duration_ms: 420, script: { source: "x", source_cut: false, outcome: "ok", limit: null } },
+        { ...base, name: "get_goals", call_id: "r1", parent_call_id: "s1", access: "read", duration_ms: 5 },
+        { ...base, name: "send_email", call_id: "w2", parent_call_id: "s1", access: "write", gate: "approved", reversibility: "irreversible", duration_ms: 33 },
+      ] as never,
+    });
+    render(<ToolsTimeline trace={trace} />);
+    expect(screen.getByRole("button", { name: /Script/ })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByText("send_email")).toBeInTheDocument();
+    expect(screen.getByText("irreversible")).toBeInTheDocument();
+    expect(screen.queryByText("get_goals")).toBeNull();
+  });
+
+  it("labels the source block as a focusable region and flags a failed script", () => {
+    const trace = richTrace({
+      tool_calls: [{ ...base, name: "run_tool_script", call_id: "s1", access: "script", success: false, duration_ms: 50, script: { source: "x", source_cut: false, outcome: "exception", limit: null } }] as never,
+    });
+    render(<ToolsTimeline trace={trace} />);
+    fireEvent.click(screen.getByRole("button", { name: /Script · exception/ }));
+    const src = document.querySelector("pre.tr-script-src")!;
+    expect(src).toHaveAttribute("tabindex", "0");
+    expect(src).toHaveAttribute("aria-label", "Script source");
+    expect(screen.getByRole("button", { name: /Script · exception/ })).toHaveClass("failed");
+    expect(screen.getAllByText("failed")).toHaveLength(1);
+  });
 });
