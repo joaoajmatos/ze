@@ -84,6 +84,18 @@ describe("TryChips", () => {
     expect(onSend).not.toHaveBeenCalled();
   });
 
+  it("ignores keys while a dialog is open", () => {
+    const onSend = vi.fn((_text: string, _context: WsScreenContext) => true);
+    render(
+      <>
+        <div role="dialog" aria-label="d" />
+        <TryChips onSend={onSend} />
+      </>,
+    );
+    fireEvent.keyDown(document.body, { key: "1" });
+    expect(onSend).not.toHaveBeenCalled();
+  });
+
   it("ignores modified keys and key 3 when there is no goal chip", () => {
     const onSend = vi.fn((_text: string, _context: WsScreenContext) => true);
     render(<TryChips onSend={onSend} />);

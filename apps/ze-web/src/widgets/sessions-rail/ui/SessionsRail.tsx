@@ -40,7 +40,7 @@ function Item({ session, active, onSelect, snippet }: ItemProps) {
       </button>
       <span className="ro">
         {flag && (
-          <span role="img" aria-label={flag} className={thinking ? "" : "hot"}>
+          <span role="img" aria-label={flag} className="on">
             ●{" "}
           </span>
         )}
@@ -94,7 +94,7 @@ export function SessionsRail() {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search conversations…"
         aria-label="Search conversations"
-        style={{ minHeight: 44, width: "100%", background: "transparent", color: "var(--ink)", border: "1px solid var(--hair)", padding: "0 14px", font: "inherit" }}
+        className="sessions-search"
       />
       {failed ? (
         <p className="hot" role="alert">
