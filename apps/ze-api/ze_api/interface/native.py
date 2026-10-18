@@ -43,10 +43,9 @@ _ROLLBACK_ENTRY_FIELDS = (
 
 
 def _public_trace(data: dict) -> dict:
-    """Drop what must stay on the server: owning agent and undo arguments."""
+    """Drop what must stay on the server: the undo arguments."""
     for call in data.get("tool_calls") or []:
         if isinstance(call, dict):
-            call.pop("agent", None)
             call.pop("undo_args", None)
     rollback = data.get("rollback")
     if isinstance(rollback, dict):

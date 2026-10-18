@@ -10,15 +10,15 @@ vi.mock("@/widgets/app-shell", () => ({
     </div>
   ),
 }));
-vi.mock("@/widgets/chat-workspace", () => ({ AskOverlay: () => <i data-testid="overlay" />, ChatWorkspace: () => null }));
+vi.mock("@/widgets/assemble", () => ({ AskOverlay: () => <i data-testid="overlay" /> }));
 vi.mock("@/pages/ask", () => ({
-  AskInterim: () => {
+  AskPage: () => {
     const { threadId } = useParams();
     return <p data-testid="ask">ask {threadId ?? "none"}</p>;
   },
 }));
 vi.mock("@/pages/world", () => ({ WorldPage: () => <p data-testid="world">world</p> }));
-vi.mock("@/pages/doing", () => ({ DoingInterim: ({ fallback }: { fallback: React.ReactNode }) => <p data-testid="doing">doing {fallback ? "" : ""}</p> }));
+vi.mock("@/pages/doing", () => ({ DoingPage: () => <p data-testid="doing">doing</p> }));
 vi.mock("@/pages/mind", () => ({ MindPage: () => <p data-testid="mind">mind</p> }));
 vi.mock("@/pages/mind-entity", () => ({ MindEntityPage: () => <p data-testid="mind-entity">entity {useParams().entityId}</p> }));
 vi.mock("@/pages/governance", () => ({
@@ -27,11 +27,11 @@ vi.mock("@/pages/governance", () => ({
     return <p data-testid="governance">governance {search}{hash}</p>;
   },
 }));
-vi.mock("@/pages/goal-detail", () => ({
-  GoalDetailPage: () => <p data-testid="goal">goal {useParams().goalId}</p>,
+vi.mock("@/pages/doing-goal", () => ({
+  DoingGoalPage: () => <p data-testid="goal">goal {useParams().goalId}</p>,
 }));
-vi.mock("@/pages/workflow-detail", () => ({
-  WorkflowDetailPage: () => <p data-testid="workflow">workflow {useParams().workflowId}</p>,
+vi.mock("@/pages/doing-workflow", () => ({
+  DoingWorkflowPage: () => <p data-testid="workflow">workflow {useParams().workflowId}</p>,
 }));
 vi.mock("@/pages/jarvis", () => ({ JarvisApp: () => <p data-testid="jarvis">jarvis</p> }));
 vi.mock("@/pages/plugin-page", () => ({
@@ -56,7 +56,6 @@ describe("places", () => {
     ["/", "world"],
     ["/ask", "ask"],
     ["/doing", "doing"],
-    ["/doing/goals", "doing"],
     ["/mind", "mind"],
     ["/mind/11111111-1111-4111-8111-111111111111", "mind-entity"],
     ["/governance", "governance"],
@@ -109,11 +108,14 @@ describe("redirects", () => {
     ["/priority", "/"],
     ["/reminders", "/"],
     ["/world", "/"],
-    ["/goals", "/doing/goals"],
+    ["/goals", "/doing#goals"],
     ["/goals/g-1", "/doing/goals/g-1"],
-    ["/workflows", "/doing/workflows"],
+    ["/workflows", "/doing#workflows"],
     ["/workflows/w-1", "/doing/workflows/w-1"],
-    ["/skills", "/doing/skills"],
+    ["/skills", "/doing#skills"],
+    ["/doing/goals", "/doing#goals"],
+    ["/doing/workflows", "/doing#workflows"],
+    ["/doing/skills", "/doing#skills"],
     ["/procedures", "/mind"],
     ["/doing/procedures", "/mind"],
     ["/contacts", "/mind"],

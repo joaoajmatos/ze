@@ -1,0 +1,66 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python *)",
+      "Bash(uv run *)",
+      "Bash(make test *)"
+    ]
+  },
+  "mcpServers": {
+    "ze-eval": {
+      "command": "uv",
+      "args": [
+        "run",
+        "python",
+        "eval/server.py"
+      ],
+      "env": {
+        "ZE_EVAL_URL": "http://localhost:8000",
+        "ZE_API_KEY": ""
+      }
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/process/hooks/guard_bash.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/process/hooks/guard_edit.py\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/process/hooks/stop_gate.py\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/process/hooks/post_bash.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

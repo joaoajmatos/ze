@@ -10,6 +10,10 @@ Ze is a Python/FastAPI backend with LangGraph orchestration, a React web client,
 
 Companion is the only agent that speaks to you. It acts as the conductor: when a request needs several specialists in sequence, the router sends it to companion, and companion calls them through one `delegate_to_agent` tool. Each call carries a full brief, runs in an isolated worker, and passes its own write confirmation check. Independent requests (for example, "check my calendar and summarize the news") still fan out in parallel in the graph and merge in a `synthesize` step. Work that must outlive the turn becomes a goal or a workflow; companion can promote a conductor run into either one.
 
+## Ask
+
+Ask answers with an assembled canvas, not a chat bubble. The reply is a sentence plus one module per part of the answer: a headline, claim cards, a timeline, a chart or a table. Each module can be pinned, dismissed or asked about. Preset questions ("What's slipping?") come from stored records, not from a model. Every reply has a trace, drawn as a rail of instruments: the path of the turn, how the specialist was chosen, what Ze remembered, which tools ran, what System One was asked, and what a retry undid. A write that needs your OK asks in place, in the canvas or in the overlay. If another window holds the connection, every place says so and offers Use here.
+
 ## System One
 
 System One is a small model that returns typed judgments (a choice among labels, a yes/no probability, a score), never free text. Ze treats it as a fast gate, with code making the final decision. Five surfaces use it:
@@ -27,6 +31,8 @@ Five of the six surfaces are on in the shipped config, each with bars measured o
 Hand Ze an objective and it decomposes into milestones, dispatches them to specialist agents on a schedule, pauses at verification gates with a progress narrative, replans on failure, and writes a retrospective when it finishes. Steer mid-flight by talking — no slash commands. Background sweep runs every 15 minutes regardless of whether you're online.
 
 Goals are the heavyweight, declared end of Ze's executive function. Most real commitments never get declared as a goal.
+
+Doing shows what runs without you. It lists goals, workflows, workspace runs and skill reviews on one page. There you start a planned goal, answer its gates, and redirect, pause or abandon a stuck one. You can also review held writes and cancel a run.
 
 World, the home screen, ranks drifting loops, stuck goals, and correlation hypotheses on one scale, and plots them by time left and how sure Ze is. You can reorder items by dragging them (or with the keyboard) or by telling Ze ("that can wait"). You can also approve held writes, answer goal checkpoints and confirm suspected loops without leaving it. Your overrides decay or stay pinned, and they feed the same ranking that decides what Ze mentions in conversation and what it pushes. When Ze cannot read a source, the page names it.
 

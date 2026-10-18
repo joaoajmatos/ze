@@ -4,6 +4,8 @@ export interface Flight {
   kind: "decide" | "redirect";
   threadId: string;
   sentAt: number;
+  /** A decide answer ends with a timeout line and re-enables its buttons when neither a refresh nor an error settles it. */
+  timeout?: boolean;
 }
 
 interface GateFlightState {

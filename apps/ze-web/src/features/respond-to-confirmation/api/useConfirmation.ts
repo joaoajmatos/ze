@@ -1,6 +1,8 @@
 import type { WsOutboundFrame } from "@myguyze/ze-client";
 import { useMemo } from "react";
-import { useWsStore, send } from "@/shared/api";
+import { useConversation } from "@/entities/conversation";
+import { useSession } from "@/entities/session";
+import { send } from "@/shared/api";
 import { useSendNotice } from "@/shared/lib";
 import { HELD_KEY, type PendingConfirm, usePendingConfirms } from "../model/pending-store";
 
@@ -14,7 +16,6 @@ export function useConfirmation(ephemeral: boolean, threadId: string) {
     () => (ephemeral ? NONE : [...(held ?? NONE), ...(stored ?? NONE)]),
     [ephemeral, held, stored],
   );
-  const setThreadThinking = useWsStore((s) => s.setThreadThinking);
 
   function respond(id: string, value: string, edits: Record<string, string> = {}) {
     const confirm = pendingConfirms.find((c) => c.id === id);
@@ -44,7 +45,11 @@ export function useConfirmation(ephemeral: boolean, threadId: string) {
     // (a held run resumes off-thread, so no frame on this thread would acknowledge it).
     if (confirm.items.length > 0 && !isHeld) usePendingConfirms.getState().markSubmitted(confirm.threadId, id);
     else usePendingConfirms.getState().remove(confirm.threadId, id);
-    if (checkpoint && !isHeld) setThreadThinking(threadId, true);
+    // The turn goes on after an approve or deny; the conversation store restarts its clock and the
+    // shell handler raises the thinking flags from that.
+    if (checkpoint && !isHeld) {
+      useConversation.getState().apply({ type: "resumed", threadId }, { activeThreadId: useSession.getState().threadId });
+    }
   }
 
   function clear() {

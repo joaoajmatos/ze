@@ -7,6 +7,7 @@ import { buildDecisions } from "@/pages/world/lib/decisions";
 import { usePendingConfirms, type PendingConfirm } from "@/features/respond-to-confirmation";
 import { useGateFlights } from "@/features/answer-gate/model/gate-flights";
 import { AnswerGateFrameHandler } from "@/features/answer-gate";
+import { useConversation } from "@/entities/conversation";
 import { NeedsYou } from "./NeedsYou";
 
 const m = vi.hoisted(() => ({
@@ -26,7 +27,10 @@ vi.mock("@/shared/api", () => ({
   },
   useWsStore: (sel: (s: unknown) => unknown) => sel({ isConnected: m.connected, setThreadThinking: vi.fn() }),
 }));
-vi.mock("@/entities/session", () => ({ useSession: (sel: (s: { threadId: string }) => unknown) => sel({ threadId: "t-1" }) }));
+vi.mock("@/entities/session", () => {
+  const useSession = Object.assign((sel: (s: { threadId: string }) => unknown) => sel({ threadId: "t-1" }), { getState: () => ({ threadId: "t-1" }) });
+  return { useSession };
+});
 vi.mock("@myguyze/ze-client", async (orig) => ({ ...(await orig<typeof import("@myguyze/ze-client")>()), decideHeldWrite: m.decideHeldWrite, confirmLoop: m.confirmLoop, dropLoop: m.dropLoop }));
 vi.mock("react-router-dom", async (orig) => ({ ...(await orig<typeof import("react-router-dom")>()), useNavigate: () => m.navigate }));
 
@@ -85,7 +89,7 @@ describe("NeedsYou", () => {
     fireEvent.click(screen.getByRole("button", { name: "Redirect" }));
     expect(m.send).toHaveBeenCalledWith({ type: "action", payload: "goal:redirect:gate1", thread_id: "t-1" });
     expect(onChatAbout).toHaveBeenCalledWith({ kind: "goal_gate", id: "gate1", parent_id: "g1" }, null);
-    act(() => m.frames.message({ type: "message", message: { thread_id: "t-1" } }));
+    act(() => useConversation.getState().apply({ type: "message", message: { id: "r1", role: "assistant", text: "x", components: [], read: true, created_at: "x", thread_id: "t-1" } }, { activeThreadId: "t-1" }));
     expect(await screen.findByText("Waiting for your instructions")).toBeTruthy();
     expect((screen.getByRole("button", { name: "Proceed" }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole("button", { name: "Stop" }) as HTMLButtonElement).disabled).toBe(false);
@@ -94,7 +98,7 @@ describe("NeedsYou", () => {
   it("gate: an error frame shows the error line and re-enables the row", async () => {
     setup();
     fireEvent.click(screen.getByRole("button", { name: "Proceed" }));
-    act(() => m.frames.error({ type: "error", thread_id: "t-1", detail: "Checkpoint not found." }));
+    act(() => useConversation.getState().apply({ type: "error", thread_id: "t-1", detail: "Checkpoint not found." }, { activeThreadId: "t-1" }));
     expect(await screen.findByText("Checkpoint not found.")).toBeTruthy();
     expect((screen.getByRole("button", { name: "Stop" }) as HTMLButtonElement).disabled).toBe(false);
   });

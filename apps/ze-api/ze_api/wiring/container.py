@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,7 @@ from ze_personal.channels.user_channel_store import UserChannelStore
 from ze_personal.channels.watermark_store import ChannelWatermarkStore
 from ze_priority import WorldComposer
 from ze_priority.store import PriorityOverrideStore
+from ze_api.voice.registry import TranscriptionRegistry
 from ze_browser import BrowserClient
 from ze_workspace.bootstrap import build_workspace_stack
 from ze_workspace.client import WorkspaceClient
@@ -299,6 +301,13 @@ class ZeContainer(CoreContainer):
     procedure_activator: Any = None
     tier_judge: Any = None
     screen_resolvers: Any = None
+    transcription_registry: TranscriptionRegistry = field(
+        default_factory=TranscriptionRegistry
+    )
+    # Bounds concurrent ffprobe/ffmpeg work for voice uploads.
+    transcription_slots: asyncio.Semaphore = field(
+        default_factory=lambda: asyncio.Semaphore(3)
+    )
 
     def _build_config(self, thread_id: str, **configurable_extra: object) -> dict:
         plugin_services: dict = {}

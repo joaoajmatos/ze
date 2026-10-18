@@ -68,6 +68,8 @@ class ToolCallTraceResponse(BaseModel):
         "duplicate",
     ] = "none"
     effect_phrase: str | None = None
+    agent: str | None = None
+    call_index: int = 0
 
 
 class SkillUsageTraceResponse(BaseModel):
@@ -135,6 +137,12 @@ class TierTraceResponse(BaseModel):
     tier: Literal["simple", "full"]
     decided_by: str
     model: str
+
+
+class InputTraceResponse(BaseModel):
+    modality: Literal["voice"]
+    duration_s: float | None = None
+    edited: bool | None = None
 
 
 class ScreenResolverTraceResponse(BaseModel):
@@ -208,6 +216,7 @@ class MessageTraceResponse(BaseModel):
     write_confirmations: list[WriteConfirmationOutcomeResponse] = []
     tier: TierTraceResponse | None = None
     screen: ScreenTraceResponse | None = None
+    input: InputTraceResponse | None = None
 
 
 class MessageTraceEntry(BaseModel):

@@ -7,7 +7,8 @@ export function useSkillsQuery(status?: SkillStatus, source?: SkillSource) {
   return useQuery<SkillResponse[]>({
     queryKey: queryKeys.skills(status, source),
     queryFn: async () => {
-      const { data } = await listSkills({ query: { status, source } });
+      const { data, error } = await listSkills({ query: { status, source } });
+      if (error) throw error;
       return data?.skills ?? [];
     },
   });

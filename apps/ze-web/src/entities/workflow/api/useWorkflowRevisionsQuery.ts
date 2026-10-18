@@ -7,7 +7,8 @@ export function useWorkflowRevisionsQuery(workflowId: string) {
   return useQuery<WorkflowRevisionResponse[]>({
     queryKey: queryKeys.workflowRevisions(workflowId),
     queryFn: async () => {
-      const { data } = await listWorkflowRevisions({ path: { workflow_id: workflowId } });
+      const { data, error } = await listWorkflowRevisions({ path: { workflow_id: workflowId } });
+      if (error) throw error;
       return data ?? [];
     },
     enabled: !!workflowId,

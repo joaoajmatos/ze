@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
-import { useFrame, useWsStore } from "@/shared/api";
+import { useConnectionState, useWsStore } from "@/shared/api";
 import { usePresenceStore } from "./store";
 
 /**
- * Ze's presence from real signals. Turn phases follow the active thread only: replayed
- * messages, other threads and frames with no thread never move the orb.
+ * Ze's presence from real signals. Turn frames reach the orb through `features/turn-stream`, for the
+ * active thread only; here it follows the connection and the thread's busy flag.
  */
 export function usePresence(activeThreadId: string | null) {
   const dispatch = usePresenceStore((s) => s.dispatch);
@@ -14,9 +14,16 @@ export function usePresence(activeThreadId: string | null) {
   const thinking = useWsStore((s) => (activeThreadId ? s.thinkingThreads[activeThreadId] === true : false));
   const typingText = useWsStore((s) => (activeThreadId ? s.typingTextThreads[activeThreadId] ?? null : null));
 
+  // A displaced window is not offline: another window has the connection, so the orb rests instead of showing an error.
+  const connection = useConnectionState();
   useEffect(() => {
-    dispatch({ type: isConnected ? "ws_open" : "ws_closed" });
-  }, [isConnected, dispatch]);
+    if (connection === "displaced") {
+      dispatch({ type: "ws_open" });
+      dispatch({ type: "turn_reset" });
+      return;
+    }
+    dispatch({ type: connection === "online" ? "ws_open" : "ws_closed" });
+  }, [connection, dispatch]);
 
   useEffect(() => {
     dispatch({ type: "turn_reset" });
@@ -39,21 +46,6 @@ export function usePresence(activeThreadId: string | null) {
     const id = window.setTimeout(() => dispatch({ type: "settle" }), Math.max(0, doneUntil - Date.now()));
     return () => window.clearTimeout(id);
   }, [doneUntil, dispatch]);
-
-  const mine = (threadId: string | null | undefined) => activeThreadId !== null && threadId === activeThreadId;
-
-  useFrame("typing", (f) => {
-    if (mine(f.thread_id)) dispatch({ type: "turn_thinking", text: f.text ?? null });
-  });
-  useFrame("token", (f) => {
-    if (mine(f.thread_id)) dispatch({ type: "turn_token" });
-  });
-  useFrame("message", (f) => {
-    if (f.message.role === "assistant" && mine(f.message.thread_id)) dispatch({ type: "turn_message" });
-  });
-  useFrame("error", (f) => {
-    if (mine(f.thread_id)) dispatch({ type: "turn_error" });
-  });
 
   return { orb, phrase, offline };
 }

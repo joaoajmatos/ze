@@ -1,13 +1,15 @@
 import { lazy, Suspense, type ComponentType } from "react";
 import { type RouteObject } from "react-router-dom";
-import { AskInterim } from "@/pages/ask";
-import { DoingInterim } from "@/pages/doing";
+import { AskPage } from "@/pages/ask";
+import { DoingPage } from "@/pages/doing";
+import { DoingGoalPage } from "@/pages/doing-goal";
+import { DoingWorkflowPage } from "@/pages/doing-workflow";
 import { GovernancePage } from "@/pages/governance";
 import { MindPage } from "@/pages/mind";
 import { MindEntityPage } from "@/pages/mind-entity";
 import { WorldPage } from "@/pages/world";
 import { AppShell } from "@/widgets/app-shell";
-import { AskOverlay } from "@/widgets/chat-workspace";
+import { AskOverlay } from "@/widgets/assemble";
 import { redirects } from "@/shared/config";
 import { ZeErrorFallback } from "@/shared/ui";
 import { RedirectTo } from "./RedirectTo";
@@ -22,13 +24,6 @@ function lazyPage(loader: () => Promise<{ default: ComponentType }>) {
   );
 }
 
-// Interim sections load the old pages; they live here because a page cannot import a page.
-const doingLoaders = {
-  goals: () => import("@/pages/goals").then((m) => ({ default: m.GoalsPage })),
-  workflows: () => import("@/pages/workflows").then((m) => ({ default: m.WorkflowsPage })),
-  skills: () => import("@/pages/skills").then((m) => ({ default: m.SkillsPage })),
-};
-
 const notFound = <ZeErrorFallback error={new Error("Nothing lives at this address.")} />;
 
 export const routes: RouteObject[] = [
@@ -38,17 +33,11 @@ export const routes: RouteObject[] = [
     errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <WorldPage /> },
-      { path: "ask", element: <AskInterim /> },
-      { path: "ask/:threadId", element: <AskInterim /> },
-      {
-        path: "doing/goals/:goalId",
-        element: lazyPage(() => import("@/pages/goal-detail").then((m) => ({ default: m.GoalDetailPage }))),
-      },
-      {
-        path: "doing/workflows/:workflowId",
-        element: lazyPage(() => import("@/pages/workflow-detail").then((m) => ({ default: m.WorkflowDetailPage }))),
-      },
-      { path: "doing/*", element: <DoingInterim loaders={doingLoaders} fallback={notFound} /> },
+      { path: "ask", element: <AskPage /> },
+      { path: "ask/:threadId", element: <AskPage /> },
+      { path: "doing", element: <DoingPage /> },
+      { path: "doing/goals/:goalId", element: <DoingGoalPage /> },
+      { path: "doing/workflows/:workflowId", element: <DoingWorkflowPage /> },
       { path: "mind", element: <MindPage /> },
       { path: "mind/:entityId", element: <MindEntityPage /> },
       { path: "governance", element: <GovernancePage /> },

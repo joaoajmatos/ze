@@ -174,8 +174,10 @@ proves wrong.
 
 `models.embedding`, `models.whisper`, and `models.vision_caption` are capability-specific
 pins, entirely outside the default/override resolution chain — changing `models.default`
-never affects them. The preprocessing node uses `whisper` to convert voice input to text
-before routing. Preprocessing calls `vision_caption` when a photo arrives without a text
+never affects them. The voice transcription route uses `whisper` to convert a recording to
+text before the turn runs. The server needs `ffmpeg` and `ffprobe` on its `PATH`; the
+Docker image installs both. Without them, the route answers "Voice input is not available
+on this server." Preprocessing calls `vision_caption` when a photo arrives without a text
 caption, so the embedding router has text to score. OpenRouter serves all three, except
 `embedding`, which runs as a local model.
 

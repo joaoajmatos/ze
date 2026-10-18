@@ -58,8 +58,8 @@ export/import/delete workflow.
 **Module:** `ze_core.routing`
 
 Routing runs on every message after preprocessing. The router itself uses local
-embeddings and simple heuristics; `preprocess` may still call OpenRouter first for voice
-transcription or image captioning.
+embeddings and simple heuristics. `preprocess` may still call OpenRouter first for image
+captioning. Voice is transcribed before the turn starts (see Multimodal input).
 
 1. At startup, Ze embeds each enabled agent's description (from `@agent` class
    attributes) using the shared `intfloat/multilingual-e5-base` instance with a
@@ -172,7 +172,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 
 | Node | Module | Responsibility |
 |---|---|---|
-| `preprocess` | `nodes/preprocessing.py` | Normalize audio/image input before routing |
+| `preprocess` | `nodes/preprocessing.py` | Caption image input before routing |
 | `resolve_screen` | `nodes/screen.py` | Runs first. Reads each ref of the turn's screen context through the resolver registry (`ze_core/screen/`, 300 ms each, 800 ms total) and writes one screen note of at most 1,200 characters. `fetch_context` passes it to the agent as `screen_context_note`. Its trace reaches `MessageTrace.screen` |
 | `embed_route` | `nodes/routing.py` | Embed prompt, score agents, choose path |
 | `decompose` | `nodes/routing.py` | Haiku decomposes compound tasks into subtasks |
@@ -259,6 +259,9 @@ as soon as `choose_tier` finishes, and the final frame repeats it. The Routing s
 trace panel shows one line, such as "Light model · System One" or "Full model · tiering off".
 It shows nothing when `decided_by` is `no_simple_model`, because that agent has one model.
 The Noul itself appears in `judgments` as `needs_deep_reasoning`.
+
+A voice turn also carries `MessageTrace.input`: `modality`, `duration_s` and `edited`. Text
+turns have `input` set to `null`. The REST trace and the `trace_update` frame both return it.
 
 `routing_log` no longer stores a model or a complexity label. Routing always assigns the
 full model, so only the trace records which model ran.
@@ -689,16 +692,29 @@ See [docs/goals.md](goals.md) for usage including steering, proactive suggestion
 
 ## Multimodal input
 
-**Module:** `ze_core.orchestration.nodes.preprocessing` · `ze_core.openrouter` (transcription client)
+**Module:** `ze_core.voice` · `ze_core.openrouter.audio` · `ze_core.orchestration.nodes.preprocessing`
 
-Ze accepts three input types from the web app. The preprocessing node normalizes them
-before routing:
+Ze accepts three input types from the web app:
 
 | Input | Handler | Processing |
 |---|---|---|
 | Text | Existing path | Passed directly as `prompt` |
-| Voice note | `preprocess` | Transcribed to text by OpenRouter Whisper, result used as `prompt`; `input_modality = "voice"` |
+| Voice note | `POST /api/v0/voice/transcriptions`, then a text turn | The server measures and transcribes the recording with `models.whisper`. The app shows the transcript, and the user sends it. The message carries `context.voice.transcription_id`, and the turn runs with `input_modality = "voice"` |
 | Photo | `preprocess` | Stored in `AgentState.image_data`; if no caption is provided, a lightweight vision model generates routing text |
+
+**Voice input** — the transcription route accepts WebM, Ogg, MP4/M4A or WAV, up to 10 MB
+and 120 seconds. The server measures the length itself with `ffprobe`. The client's
+claim is never used. The server reads the container duration and, when the
+container has none (browser WebM and Ogg), scans the packets. The server converts a
+recording to MP3 with `ffmpeg` unless it is already MP3 or WAV. Ze keeps no audio. The transcript and
+duration stay in an in-memory registry for 10 minutes, at most 100 entries. A server
+restart drops them. A message that names a live `transcription_id` runs as a voice turn.
+An unknown or expired id runs as a text turn. The transcription call is recorded in spend
+under the `transcription` flow.
+
+**Voice trace** — a voice turn's trace carries `input`: `modality`, `duration_s` and
+`edited`, which is true when the sent text differs from the transcript. The transcript
+itself is never stored on the trace.
 
 **Vision captioning** — when a photo arrives with no text caption, `preprocess`
 calls a lightweight vision model (`models.vision_caption` in config, defaults to
@@ -839,6 +855,7 @@ import time, so codegen needs no running server.
 
 | Method | Path | operationId |
 |---|---|---|
+| `POST` | `/api/v0/voice/transcriptions` | `transcribeVoice` |
 | `GET` | `/api/v0/messages` | `listMessages` |
 | `PUT` | `/api/v0/messages/{message_id}/feedback` | `setMessageFeedback` |
 | `GET` | `/api/v0/messages/feedback` | `getMessageFeedback` |

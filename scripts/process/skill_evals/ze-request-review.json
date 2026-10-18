@@ -1,0 +1,121 @@
+{
+ "skill": "ze-request-review",
+ "triggers": [
+  {
+   "query": "I finished story US2; send commits abc123..def456 to Gauge for review",
+   "should_trigger": true
+  },
+  {
+   "query": "Request a review of my latest commit range from the reviewer",
+   "should_trigger": true
+  },
+  {
+   "query": "I'm the reviewer and I'm done: deliver my APPROVE verdict for this range",
+   "should_trigger": true
+  },
+  {
+   "query": "Hand the new commits to Caliper for review and make sure they actually started",
+   "should_trigger": true
+  },
+  {
+   "query": "Deliver my review findings back to the engineer as a CHANGES verdict",
+   "should_trigger": true
+  },
+  {
+   "query": "The fix for the review findings is committed; send the delta to the reviewer",
+   "should_trigger": true
+  },
+  {
+   "query": "Record that my review of a1b2c3..d4e5f6 is approved",
+   "should_trigger": true
+  },
+  {
+   "query": "Ask the floor reviewer to review story 3 and track that it was sent",
+   "should_trigger": true
+  },
+  {
+   "query": "I have findings for the engineer; record the verdict so it can't get lost",
+   "should_trigger": true
+  },
+  {
+   "query": "Story done and gates are green: get it reviewed",
+   "should_trigger": true
+  },
+  {
+   "query": "Recruit a new engineer for this floor",
+   "should_trigger": false
+  },
+  {
+   "query": "Run make lint",
+   "should_trigger": false
+  },
+  {
+   "query": "Review this code for me right now and tell me what you think",
+   "should_trigger": false
+  },
+  {
+   "query": "Explain what a code review is",
+   "should_trigger": false
+  },
+  {
+   "query": "Commit my changes with a good message",
+   "should_trigger": false
+  },
+  {
+   "query": "Land the floor into main",
+   "should_trigger": false
+  },
+  {
+   "query": "Write tests for the guard hook",
+   "should_trigger": false
+  },
+  {
+   "query": "Which model tier does the reviewer run on?",
+   "should_trigger": false
+  },
+  {
+   "query": "Open a pull request on GitHub",
+   "should_trigger": false
+  },
+  {
+   "query": "Check the Handoffs note for messages",
+   "should_trigger": false
+  }
+ ],
+ "behaviors": [
+  {
+   "id": "request-via-make-target",
+   "prompt": "Story US2 is committed at abc123..def456. Get Gauge to review it.",
+   "judges": [
+    {
+     "op": "cmd_matches",
+     "match": "make process-review-request"
+    }
+   ]
+  },
+  {
+   "id": "verdict-via-make-target",
+   "prompt": "You are the reviewer. Range abc123..def456 is fine; deliver the verdict.",
+   "judges": [
+    {
+     "op": "cmd_matches",
+     "match": "make process-review-verdict.*VERDICT=APPROVE"
+    }
+   ]
+  },
+  {
+   "id": "no-chat-only-verdict",
+   "prompt": "You are the reviewer; range abc123..def456 has two findings, report them.",
+   "judges": [
+    {
+     "op": "cmd_matches",
+     "match": "process-review-verdict"
+    },
+    {
+     "op": "not_cmd_matches",
+     "match": "maestri ask .*(findings|M1)(?!.*process-review)"
+    }
+   ]
+  }
+ ]
+}

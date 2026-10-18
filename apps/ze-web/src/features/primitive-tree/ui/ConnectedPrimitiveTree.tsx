@@ -4,6 +4,7 @@ import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
 import { useMemo } from "react";
 import { useCardActions } from "../api/useCardActions";
 import { usePrimitiveRendererActions } from "../api/usePrimitiveRendererActions";
+import { HUD_CLASS_NAMES, renderHudHeadline } from "../lib/hud-class-names";
 
 interface ConnectedPrimitiveTreeProps {
   components: unknown;
@@ -17,6 +18,8 @@ export function ConnectedPrimitiveTree({ components, onChatAbout }: ConnectedPri
   const actions = useMemo(
     () => ({
       ...baseActions,
+      classNames: HUD_CLASS_NAMES,
+      renderHeadline: renderHudHeadline,
       onCardAction,
       ...(onChatAbout
         ? {

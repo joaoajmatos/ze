@@ -305,6 +305,75 @@ async def test_a_trace_with_a_deduplicated_call_is_served() -> None:
 
 
 @pytest.mark.asyncio
+async def test_tool_calls_carry_agent_and_call_index_and_never_undo_args() -> None:
+    trace = _trace()
+    trace.tool_calls = [
+        ToolCallTrace(
+            name="set_reminder",
+            result_snippet="",
+            duration_ms=4,
+            success=True,
+            access="write",
+            agent="reminders",
+            call_index=2,
+            undo_args={"reminder_id": "secret"},
+        ),
+        ToolCallTrace(name="get_goals", result_snippet="", duration_ms=1, success=True),
+    ]
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=trace)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=_make_app(store)), base_url="http://test"
+    ) as client:
+        resp = await client.get(f"/api/v0/messages/{uuid4()}/trace")
+
+    calls = resp.json()["tool_calls"]
+    assert (calls[0]["agent"], calls[0]["call_index"]) == ("reminders", 2)
+    assert (calls[1]["agent"], calls[1]["call_index"]) == (None, 0)
+    assert "secret" not in resp.text and "undo_args" not in calls[0]
+
+
+@pytest.mark.asyncio
+async def test_memory_chunks_keep_their_extraction_confidence() -> None:
+    from ze_core.conversation.messages.types import MemoryChunkTrace
+
+    trace = _trace()
+    trace.memory_chunks = [
+        MemoryChunkTrace(text="a", score=0.9, source="fact", extraction_confidence=0.8),
+        MemoryChunkTrace(text="b", score=0.5, source="episode"),
+    ]
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=trace)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=_make_app(store)), base_url="http://test"
+    ) as client:
+        resp = await client.get(f"/api/v0/messages/{uuid4()}/trace")
+
+    chunks = resp.json()["memory_chunks"]
+    assert chunks[0]["extraction_confidence"] == 0.8
+    assert chunks[1]["extraction_confidence"] is None
+
+
+def test_ws_trace_update_declares_compaction_and_resume_recap() -> None:
+    from ze_api.api.ws.schemas import WsTraceUpdateFrame
+
+    props = WsTraceUpdateFrame.model_json_schema()["properties"]
+    assert "compaction" in props and "resume_recap_applied" in props
+
+
+def test_tool_call_trace_schema_declares_agent_and_call_index() -> None:
+    from ze_api.api.v0.messages.schemas import ToolCallTraceResponse
+    from ze_api.api.ws.schemas import WsTraceUpdateFrame
+
+    props = ToolCallTraceResponse.model_json_schema()["properties"]
+    assert props["call_index"]["default"] == 0
+    assert "agent" in props
+    assert "ToolCallTraceResponse" in str(WsTraceUpdateFrame.model_json_schema())
+
+
+@pytest.mark.asyncio
 async def test_get_message_trace_carries_the_screen_trace():
     from ze_core.conversation.messages.types import ScreenTrace
 

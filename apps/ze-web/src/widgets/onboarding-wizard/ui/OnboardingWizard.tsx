@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useConnectionTest } from "@/features/test-api-connection";
 import { reconnect } from "@/shared/api";
 import { saveConfig } from "@/shared/config";
-import { Spotlight } from "@/shared/effects/spotlight";
 import { Button, Input } from "@/shared/ui";
 
 interface OnboardingWizardProps {
@@ -35,7 +34,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   return (
-    <Spotlight className="flex h-screen items-center justify-center">
+    <div className="flex h-screen items-center justify-center bg-[var(--field)]">
       <div className="relative w-full max-w-sm px-6">
         <AnimatePresence mode="wait">
           {step === "welcome" && (
@@ -169,6 +168,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           ))}
         </div>
       </div>
-    </Spotlight>
+    </div>
   );
 }

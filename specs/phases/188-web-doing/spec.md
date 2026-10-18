@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Ready to implement on `main` with 183 and 184 (plan and tasks written 2026-10-17 against `main` b5fdc1c1); no dependency on 187. Linked reminders wait for 185 and screen-context publishing for 195 (split task phases).
+**Status**: Implemented
 
 **Input**: Maestro brief 2026-10-17, phase W4; overhaul plan sections a (Doing), b.3, e (Phase W4).
 
