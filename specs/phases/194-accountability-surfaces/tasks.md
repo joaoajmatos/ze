@@ -4,7 +4,7 @@
 
 **Tests**: required (constitution V). **Fail-first**: write the test, run it, see it fail for the stated reason, then implement. Unit tests mock asyncpg; the two SQL filters also get one `@pytest.mark.pg` test each.
 
-**Build gate**: starts now on `main`; runs in parallel with the web floors. `zc040` must be reserved with the Maestro before T013 (the `zc` chain is shared; head is `zc039`).
+**Build gate**: starts now on `main`; runs in parallel with the web floors. `zc040` is reserved for this phase (the Maestro, 2026-10-18; `down_revision = zc039`). Phase 192 also edits `wiring/container.py`: whichever floor lands second rebases it.
 
 ## Format: `[ID] [P?] [Lane] [Story] Description`
 
@@ -19,7 +19,7 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main`. `make install`; `graphify update .`; `graphify affected` on `ActionRecordStore`, `LoopStore`, `ChannelWatermarkStore`, `InboundPollingJob`, `ResetService`, `list_collisions`, `complexity_surface_config`, `resolve_agent_model`. Grep `reset_personal_state\|reset-personal-state\|ResetService` across the repo (docs, CONTRIBUTING, README, Makefile). Run `EXPLAIN` for the planned ledger query on the dev DB (research R2). Ask the Maestro to reserve `zc040`. Name the migration chain test file (the one asserting a single head) for T013. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
+- [ ] T001 [L:lead] Branch from `main`. `make install`; `graphify update .`; `graphify affected` on `ActionRecordStore`, `LoopStore`, `ChannelWatermarkStore`, `InboundPollingJob`, `ResetService`, `list_collisions`, `complexity_surface_config`, `resolve_agent_model`. Grep `reset_personal_state\|reset-personal-state\|ResetService` across the repo (docs, CONTRIBUTING, README, Makefile). Run `EXPLAIN` for the planned ledger query on the dev DB (research R2). Name the migration chain test file (the one asserting a single head) for T013. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
 
 ---
 
@@ -30,7 +30,10 @@
   - 501 route stubs with final signatures and operation ids in `api/v0/actions/router.py`, `api/v0/collisions/router.py`, `api/v0/channels/router.py` and `api/v0/system/models.py`;
   - the registration in `api/v0/__init__.py`;
   - `since` accepted and ignored on `listLoops`.
-- [ ] T003 [P] [L:lead] Domain stubs with tests: `ActionSubjectKind` and its context-key map in `ze_memory/action_records/types.py` (test: the map is closed, unknown kind raises a typed error); `list_by_subject` on the `ActionRecordStore` Protocol (signature only); `PollOutcome` and `ChannelPollStatus` in `ze_personal/channels/types.py`; `record_outcome` and `get_status_many` signatures on `ChannelWatermarkStore` raising `NotImplementedError`.
+- [ ] T003 [P] [L:lead] DI and stubs, with tests:
+  - **DI (A-2):** `ZeContainer` gains `action_record_store`, `user_channel_store` and `watermark_store` fields, from the instances `wiring/stores.py` already builds. `api/deps.py` gains `get_action_record_store`, `get_user_channel_store`, `get_watermark_store` and `get_channel_registry`; a test per getter resolves it from a built container.
+  - **Reset sites:** remove `reset_service` from `wiring/container.py` (the import at ~77, the field at ~265 and the construction at ~670).
+  - **Domain stubs: `ActionSubjectKind` and its context-key map in `ze_memory/action_records/types.py` (test: the map is closed, unknown kind raises a typed error); `list_by_subject` on the `ActionRecordStore` Protocol (signature only); `PollOutcome` and `ChannelPollStatus` in `ze_personal/channels/types.py`; `record_outcome` and `get_status_many` signatures on `ChannelWatermarkStore` raising `NotImplementedError`.**
 - [ ] T004 [L:lead] `make codegen`; commit `packages/ze-client/src/generated/*` with T002. Hand the route bodies and store bodies to their lanes (Handoffs note).
 
 **Checkpoint**: lanes start.
@@ -39,8 +42,16 @@
 
 ## Phase 3: User Story 1 - See what Ze did, by goal, workflow or run (P1) 🎯 MVP
 
-- [ ] T005 [L:ledger] [US1] Tests first `core/cognition/ze-memory/tests/action_records/test_list_by_subject.py` (mocked pool, asserting SQL and params): the subject filter uses the mapped context key, passed as a parameter and never interpolated from input; `since` filters `occurred_at >`; the cursor applies `(occurred_at, id) <`; the order is `occurred_at DESC, id DESC`; `limit` is passed. With no subject, every record is returned. Implement `list_by_subject` in `PostgresActionRecordStore`.
-- [ ] T006 [L:ledger] [US1] `@pytest.mark.pg` test in the same package: seed records for goal G1, goal G2 and workflow run R1, plus one with an empty context. Listing by G1 returns only G1's records, newest first. Paging with limit 1 walks all records with no repeat or skip, including two records with the same `occurred_at`. `since` excludes older records.
+- [ ] T005 [L:ledger] [US1] Tests first `core/cognition/ze-memory/tests/action_records/test_list_by_subject.py` (mocked pool, asserting the SQL and params):
+  - the subject clause uses the mapped key from the closed map (never interpolated from input), with `$n::text`;
+  - `since` uses `occurred_at > $n::timestamptz`;
+  - the cursor clause `(occurred_at, id) < ($a::timestamptz, $b::uuid)` appears only when a cursor is given (no cursor means no clause, K-1);
+  - the order is `occurred_at DESC, id DESC`;
+  - with no subject, every record is returned.
+
+  Implement `list_by_subject` in `PostgresActionRecordStore`.
+- [ ] T005a [L:ledger] [US1] Tests first `core/automation/ze-automation/tests/test_action_records_workflow.py` (A-1): `finish_execution` runs `UPDATE … RETURNING workflow_id` and calls `emit_workflow_finished(execution_id, status, workflow_id)`; the emitted record's context has both `workflow_id` and `workflow_run_id`; a missing execution row (no row returned) still emits with `workflow_id=None` and logs. Implement in `ze_automation/workflow/postgres.py` (`finish_execution` only) and `ze_automation/action_records.py`.
+- [ ] T006 [L:ledger] [US1] `@pytest.mark.pg` test in the same package: seed records for goal G1, goal G2 and workflow run R1, plus one with an empty context. Listing by G1 returns only G1's records, newest first; listing by workflow W returns both its started and finished records. Paging with limit 1 walks all records with no repeat or skip, including two records with the same `occurred_at`. `since` excludes older records.
 - [ ] T007 [L:ledger] [US1] Tests first `apps/ze-api/tests/api/test_actions_route.py`:
   - each subject type maps to the store call;
   - a lone `subject_type` or `subject_id` → 422;
@@ -56,7 +67,7 @@
 
 ## Phase 4: User Story 2 - See disagreements in Governance (P2)
 
-- [ ] T008 [L:reads] [US2] Move `apps/ze-api/tests/api/test_collisions_route.py` to target the product path and update `test_dev_only_routes.py` (collisions no longer dev-only) and `test_openapi_export.py`. Implement the handler body in `api/v0/collisions/router.py` (same filters, `limit ≤ 200`, `since > until` → empty list). Delete `api/eval/collisions.py`, its `include_router` line in `api/eval/__init__.py`, and `CollisionLogEntrySchema` from `api/eval/schemas.py`. A test asserts the old dev path returns 404 with the dev router mounted.
+- [ ] T008 [L:reads] [US2] Move `apps/ze-api/tests/api/test_collisions_route.py` to target the product path and update `test_dev_only_routes.py` (collisions no longer dev-only) and `test_openapi_export.py`. Implement the handler body in `api/v0/collisions/router.py` (same filters; an unknown `source_function` → 422, not 500; `limit` 1..200 with 422 outside; `since > until` → empty list). Update `apps/ze-api/README.md` (~36: collisions under `api/v0`). Delete `api/eval/collisions.py`, its `include_router` line in `api/eval/__init__.py`, and `CollisionLogEntrySchema` from `api/eval/schemas.py`. A test asserts the old dev path returns 404 with the dev router mounted.
 
 ---
 
@@ -64,6 +75,7 @@
 
 - [ ] T009 [L:reads] [US3] Tests first `apps/ze-api/tests/api/test_model_settings_route.py` (settings fixture copied from the real YAML into `tmp_path`):
   - the shipped config → `complexity_enabled: true`, `simple_max: 0.4`;
+  - enabled with a null `simple_max` → `complexity_enabled: false` (it uses `ComplexitySurfaceConfig.calibrated`, T-1);
   - agents are sorted by name, each with `model` from `resolve_agent_model(name, "full", cfg)` and `model_simple` only when the agent declares one;
   - after the fixture's `system_one.surfaces.complexity.enabled` is set false and the settings are reloaded on the container → `false`;
   - no key containing `key`, `token` or `secret` appears in the JSON.
@@ -74,28 +86,36 @@
 
 ## Phase 6: User Story 4 - Closed loops by time (P2)
 
-- [ ] T010 [P] [L:reads] [US4] Tests first `core/cognition/ze-worldstate/tests/test_store_list_since.py` (mocked pool): `list(states=["closed"], since=t)` adds `updated_at > $n`; `since=None` keeps the old SQL; existing callers (positional `states`) are unchanged. Implement in `PostgresLoopStore.list` and the `LoopStore` Protocol.
+- [ ] T010 [P] [L:reads] [US4] Tests first `core/cognition/ze-worldstate/tests/test_store_list_since.py` (mocked pool): `list(states=["closed", "dropped"], since=t)` adds `updated_at > $n` and the state set; `since=None` keeps the old SQL; existing callers (positional `states`) are unchanged. Implement in `PostgresLoopStore.list` and the `LoopStore` Protocol.
 - [ ] T011 [L:reads] [US4] `@pytest.mark.pg` test in the same package: loops closed 2, 5 and 20 days ago; `since` = 7 days ago returns the first two.
-- [ ] T012 [L:reads] [US4] Tests first `apps/ze-api/tests/api/test_loops_route.py` (extend): `since` is passed through and combines with `state`; an invalid datetime → 422. Implement in `api/v0/loops/router.py`.
+- [ ] T012 [L:reads] [US4] Tests first `apps/ze-api/tests/api/test_loops_route.py` (extend): `state` is repeatable (`?state=closed&state=dropped` passes both); `since` is passed through and combines with it; an invalid datetime → 422. Implement in `api/v0/loops/router.py`.
 
 ---
 
 ## Phase 7: User Story 5 - Connection status in Governance (P3)
 
 - [ ] T013 [L:channels] [US5] Migration `plugins/ze-personal/ze_personal/migrations/versions/zc040_channel_poll_outcome.py` (revises `zc039`; the two nullable columns per [data-model.md](./data-model.md); downgrade drops them). Extend the migration chain test that T001 names in the Handoffs note (the test that asserts one head across `version_locations`) so `zc040` is on the single head.
-- [ ] T014 [L:channels] [US5] Tests first `plugins/ze-personal/tests/channels/test_watermark_outcome.py`: `record_outcome` upserts `last_outcome`/`last_outcome_at` without changing the watermark (and creates the row with a null watermark if absent); `get_status_many` returns one `ChannelPollStatus` per id, with nulls for unknown ids. Implement in `watermark_store.py`.
-- [ ] T015 [L:channels] [US5] Tests first `plugins/ze-messenger/tests/jobs/test_inbound_poll_outcome.py`:
-  - a successful poll records `ok`;
-  - a `google.auth.exceptions.RefreshError`, raised directly or as the `__cause__` of another error, records `auth_failed`;
-  - any other exception records `failed`;
-  - push channels record nothing;
-  - a failure while recording the outcome is logged and never breaks the poll.
-  
-  Implement in `ze_messenger/jobs/inbound_poll.py`.
+- [ ] T014 [L:channels] [US5] Tests first `plugins/ze-personal/tests/channels/test_watermark_outcome.py` (C-1):
+  - `record_outcome` on an existing row UPDATEs the outcome columns and leaves `last_polled_at` unchanged;
+  - with no row, it INSERTs `last_polled_at = now() - DEFAULT_LOOKBACK_HOURS` (never `now()`), so `get()` afterwards returns the lookback start;
+  - `get_status_many` returns one `ChannelPollStatus` per id, with nulls for unknown ids.
+
+  Add one `@pytest.mark.pg` test for the insert path with the FK satisfied. Implement in `watermark_store.py`.
+- [ ] T015 [L:channels] [US5] Tests first:
+  - `integrations/ze-google/tests/test_auth_errors.py`: `is_auth_failure` is true for a `RefreshError` raised directly, as `__cause__`, or as `__context__` two levels down; false otherwise; it stops at depth 5.
+  - `plugins/ze-messenger/tests/jobs/test_inbound_poll_outcome.py`:
+    - a successful poll records `ok`;
+    - an auth failure records `auth_failed`, after upserting the `user_channels` row first (call order asserted: a never-successful channel becomes listable);
+    - any other exception records `failed`;
+    - push channels record nothing;
+    - a failure while recording the outcome is logged and never breaks the poll;
+    - the plugin does not import `google.auth` (a grep assertion).
+
+  Implement `ze_google/auth_errors.py` (exported from the package) and `ze_messenger/jobs/inbound_poll.py`.
 - [ ] T016 [L:channels] [US5] Tests first `apps/ze-api/tests/api/test_channel_status_route.py`:
-  - the state mapping (`poll_enabled` false → `off`; `auth_failed` → `needs_reauth`; `failed` → `error`; otherwise `connected`);
-  - `last_sync_at` is the watermark;
-  - a push channel → `push: true`, `last_sync_at` null;
+  - the state mapping: `poll_enabled` false → `off`; push → `unknown` with the line "Receives by push; Ze does not monitor it."; `auth_failed` → `needs_reauth`; `failed` → `error`; `ok` → `connected`; no outcome → `unknown`;
+  - `last_sync_at` is the watermark only after an `ok` outcome, else null;
+  - a registry inbound channel missing from `user_channels` is still listed;
   - no Google credentials → `google_configured: false`;
   - no token, secret or refresh field in the JSON.
   
@@ -105,23 +125,24 @@
 
 ## Phase 8: User Story 6 - The broken reset is removed (P3)
 
-- [ ] T017 [L:jr1] [US6] Delete:
-  - `core/ops/ze-onboarding/ze_onboarding/reset.py`, its names in `ze_onboarding/__init__.py`, and the reset-service lines in `apps/ze-api/ze_api/wiring/container.py`;
+- [ ] T017 [L:jr1] [US6] Delete (the container's three reset sites are removed by `lead` in T003):
+  - `core/ops/ze-onboarding/ze_onboarding/reset.py` and its names in `ze_onboarding/__init__.py`;
+  - the `reset_service` assertions in `apps/ze-api/tests/api/test_ws_commands_reset_removed.py` (~38-39);
   - `scripts/reset_personal_state.py`;
   - the `reset-personal-state` target, its `.PHONY` entry and its help line in `Makefile`;
   - `apps/ze-api/tests/onboarding/test_reset.py`.
 
-  Done when `rtk proxy grep -rn "ResetService\|reset_personal_state\|reset-personal-state\|ResetScope\|ResetPreview" core apps plugins scripts Makefile` returns nothing, and `make test-onboarding` and `make test` pass. (Docs are lane `docs`.)
+  Done when `git grep -niE "ResetService|reset_service|reset_personal_state|reset-personal|ResetScope|ResetPreview" -- . ':!specs' ':!docs'` returns nothing, and `make test-onboarding` and `make test` pass. (Docs are lane `docs`.)
 
 ---
 
 ## Phase 9: Polish and cross-cutting
 
-- [ ] T018 [P] [L:ledger] Follow-up note (no code): if T001 or T005 found producers that stamp only `workflow_run_id` while the workflow id is at hand (research R1), write one line for the next ze-automation phase in the Handoffs note.
+- [ ] T018 [P] [L:ledger] Follow-up note (no code): record in the Handoffs note that calendar, reminder and prospecting producers stamp no goal, workflow or run (spec US1 coverage limit), for a later instrumentation phase.
 - [ ] T019 [L:lead] Merge the lanes (ledger, reads, channels, jr1); `make codegen` if a schema moved; gates: `make test-py`, `make test-pg`, `make lint`, `make test-web`.
 - [ ] T020 [L:lead] Run [quickstart.md](./quickstart.md) steps 1–6 against `make dev`; record results in the Handoffs note.
 - [ ] T021 [P] [L:docs] `docs/native-interface.md` (five surfaces), `docs/memory.md` (ledger read), `docs/system-one.md` (tier settings route), `docs/architecture.md` (REST table; `zc040`), from the merged diff, doc-style skill.
-- [ ] T022 [P] [L:docs] `docs/onboarding.md` (the reset paragraph → `make db-reset` / `make db-reset-seed`); any README/CONTRIBUTING mention found at T001; `AGENTS.md` phase row 194 and the ze-personal migration row (`user_channel_watermarks.last_outcome`, `zc040`); `specs/README.md` row 194 → Implemented; spec status.
+- [ ] T022 [P] [L:docs] `docs/onboarding.md` (the whole "Reset Scopes" section, ~164-181 → `make db-reset` / `make db-reset-seed`); any README/CONTRIBUTING mention found at T001; `AGENTS.md` phase row 194 and the ze-personal migration row (`user_channel_watermarks.last_outcome`, `zc040`); `specs/README.md` row 194 → Implemented; spec status.
 - [ ] T023 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
 
 ---
@@ -129,7 +150,7 @@
 ## Dependencies & Execution Order
 
 - T001 → T002, T003 → T004 (contract) → lanes.
-- ledger: T005 → T006, T007. reads: T008; T009; T010 → T011, T012. channels: T013 → T014 → T015, T016. jr1: T017.
+- ledger: T005 → T006, T007; T005a. reads: T008; T009; T010 → T011, T012. channels: T013 → T014 → T015, T016. jr1: T017.
 - T019 after all lanes; T020 after T019; T021–T022 after T019; T023 last. T018 any time after T005.
 
 ## Parallel Example
