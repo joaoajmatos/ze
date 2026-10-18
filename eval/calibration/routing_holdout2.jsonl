@@ -28,3 +28,7 @@
 {"id": "h2-messenger-summary-pt", "lang": "pt", "prompt": "resume-me os emails por ler do meu contabilista", "gold_agent": "messenger", "gold_multi": false}
 {"id": "h2-ingestion-article-en", "lang": "en", "prompt": "save this article to my knowledge base: https://example.com/post/event-sourcing", "gold_agent": "ingestion", "gold_multi": false}
 {"id": "h2-ingestion-article-pt", "lang": "pt", "prompt": "guarda este artigo na minha base de conhecimento: https://example.com/post/event-sourcing", "gold_agent": "ingestion", "gold_multi": false}
+{"id": "h2-companion-briefing-en", "lang": "en", "prompt": "how did the latest morning briefing do?", "gold_agent": "companion", "gold_multi": false}
+{"id": "h2-companion-briefing-contents-en", "lang": "en", "prompt": "what was in this morning's briefing?", "gold_agent": "companion", "gold_multi": false}
+{"id": "h2-companion-briefing-sent-en", "lang": "en", "prompt": "did you send my briefing today?", "gold_agent": "companion", "gold_multi": false}
+{"id": "h2-companion-briefing-pt", "lang": "pt", "prompt": "o que é que estava no briefing desta manhã?", "gold_agent": "companion", "gold_multi": false}

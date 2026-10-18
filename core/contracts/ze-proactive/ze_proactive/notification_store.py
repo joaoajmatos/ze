@@ -138,6 +138,22 @@ class NotificationStore:
         )
         return _row_to_dataclass(row)
 
+    async def latest_by_event(
+        self, event_type: str, *, limit: int = 1
+    ) -> list[NotificationRow]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                f"""
+                SELECT {_COLUMNS} FROM notifications
+                WHERE event_type = $1
+                ORDER BY created_at DESC, id DESC
+                LIMIT $2
+                """,
+                event_type,
+                limit,
+            )
+        return [_row_to_dataclass(r) for r in rows]
+
     async def list_held(self) -> list[NotificationRow]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
