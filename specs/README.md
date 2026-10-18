@@ -235,7 +235,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 191 | [Plugins in Places (W7)](phases/191-web-plugins-in-places/spec.md) | ⏸ Parked (user 2026-10-18: redesign pending) |
 | 192 | [Voice Input Transport (B3)](phases/192-voice-transport/spec.md) | 🔲 Ready to implement (parallel; before 193) |
 | 193 | [Voice and Polish (W8)](phases/193-web-voice-polish/spec.md) | 🔲 Draft |
-| 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | 🔲 Ready to implement (parallel; zc040 reserved) |
+| 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | ✅ Implemented (zc040) |
 | 195 | [Screen Context Awareness](phases/195-screen-context-awareness/spec.md) | ✅ Implemented (live eval: first run 10 of 26, chat_about 9 of 15 after owner routing; chip capture deferred to 193) |
 
 ## Ze Core specs (`core/`)

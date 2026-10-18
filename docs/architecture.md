@@ -447,7 +447,7 @@ Each loop records its sources (`open_loop_sources`, migration `zw003`): its orig
 | Calendar | The event's `external_ref` |
 | Ingestion | The ingestion id |
 
-The `loops` agent, the `GET /api/v0/loops` surface, and the World page expose review. See [cognitive-architecture.md](cognitive-architecture.md) and the [package README](../core/cognition/ze-worldstate/README.md).
+The `loops` agent, the `GET /api/v0/loops` surface (`state` repeats; `since` filters on `updated_at`), and the World page expose review. See [cognitive-architecture.md](cognitive-architecture.md) and the [package README](../core/cognition/ze-worldstate/README.md).
 
 ---
 
@@ -860,6 +860,10 @@ import time, so codegen needs no running server.
 | `GET` | `/api/v0/news` | `listNews` |
 | `GET` | `/api/v0/costs/summary` | `getCostSummary` |
 | `GET` | `/api/v0/costs/detail` | `getCostDetail` |
+| `GET` | `/api/v0/actions` | `listActionRecords` (subject filter, keyset cursor) |
+| `GET` | `/api/v0/collisions` | `listCollisions` |
+| `GET` | `/api/v0/system/models` | `getModelSettings` |
+| `GET` | `/api/v0/channels/status` | `listChannelStatus` |
 
 ### Memory
 
@@ -992,6 +996,7 @@ it owns no tables and no revision files.
 | `accountability_anomalies` | Cost outliers flagged by `CostAnomalyJob` |
 | `messages` | Conversation messages for unread-replay on WebSocket connect; `replaces` / `replaced_by` link a retried reply to its replacement; `rollback` stores what a retry undid |
 | `feedback_records` | Append-only ratings and retry requests on assistant replies |
+| `user_channel_watermarks` | Per-channel poll watermark; `last_outcome` and `last_outcome_at` (`zc040`) record how the last poll ended without moving the watermark |
 
 ---
 

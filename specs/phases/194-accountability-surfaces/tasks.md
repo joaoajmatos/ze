@@ -145,9 +145,9 @@
 - [x] T018 [P] [L:ledger] Follow-up note (no code): record in the Handoffs note that calendar, reminder and prospecting producers stamp no goal, workflow or run (spec US1 coverage limit), for a later instrumentation phase.
 - [x] T019 [L:lead] Merge the lanes (ledger, reads, channels, jr1); `make codegen` if a schema moved; gates: `make test-py`, `make test-pg`, `make lint`, `make test-web`.
 - [x] T020 [L:lead] Run [quickstart.md](./quickstart.md) steps 1–6 against `make dev`; record results in the Handoffs note.
-- [ ] T021 [P] [L:docs] `docs/native-interface.md` (five surfaces), `docs/memory.md` (ledger read), `docs/system-one.md` (tier settings route), `docs/architecture.md` (REST table; `zc040`), from the merged diff, doc-style skill.
-- [ ] T022 [P] [L:docs] `docs/onboarding.md` (the whole "Reset Scopes" section, ~164-181 → `make db-reset` / `make db-reset-seed`); any README/CONTRIBUTING mention found at T001; `AGENTS.md` phase row 194 and the ze-personal migration row (`user_channel_watermarks.last_outcome`, `zc040`); `specs/README.md` row 194 → Implemented; spec status.
-- [ ] T023 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
+- [x] T021 [P] [L:docs] `docs/native-interface.md` (five surfaces), `docs/memory.md` (ledger read), `docs/system-one.md` (tier settings route), `docs/architecture.md` (REST table; `zc040`), from the merged diff, doc-style skill.
+- [x] T022 [P] [L:docs] `docs/onboarding.md` (the whole "Reset Scopes" section, ~164-181 → `make db-reset` / `make db-reset-seed`); any README/CONTRIBUTING mention found at T001; `AGENTS.md` phase row 194 and the ze-personal migration row (`user_channel_watermarks.last_outcome`, `zc040`); `specs/README.md` row 194 → Implemented; spec status.
+- [x] T023 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
 
 ---
 
@@ -197,3 +197,5 @@ After the contract step, four lanes at once:
 - 5 channels/status: `google_configured: true`, one registry channel `email` / `unknown`. A revoked live Google token was not exercised (no real Google calls); the outcome path is covered by the job tests and the store-level pg test.
 - 6 `make reset-personal-state`: no rule; `db-reset-seed` target present.
 - **Bug found and fixed (outside any lane):** `PostgresActionRecordStore.append` passed `json.dumps` strings to jsonb columns on a pool that already encodes with `json.dumps`, so production rows held a jsonb string and `context->>'goal_id'` matched nothing (the lane pg tests inserted raw SQL on a codec-less pool, so they passed). Fixed to pass objects, plus a pg test appending through the production codec pool. The seed fixture `ze_seed/domains/automation.py` had the same bug for its two action records; fixed. Other `json.dumps` seed calls and other stores may have the same pattern; not audited.
+
+**T023 docs coverage (lead did the docs lanes)**: `git diff 7ca568ba --stat` touches AGENTS.md, apps/ze-api/README.md (reads), docs/{architecture,memory,native-interface,onboarding,system-one}.md and specs/README.md, spec status; this matches plan.md "Docs touched". T001 left no README/CONTRIBUTING reset mention. `docs/onboarding.md` "Reset Scopes" is now "Resetting a dev database".
