@@ -14,6 +14,7 @@ from ze_agents.errors import AgentAbortedError
 from ze_agents.scripts import (
     SCRIPT_TOOL_NAME,
     DispatchReply,
+    ScriptContext,
     ScriptBudget,
     ScriptLimits,
     ScriptOutcome,
@@ -72,6 +73,7 @@ class _Run:
     has_value: bool = False
 
 
+_MAX_ID = 64
 _SAFE_ID = re.compile(r"[^A-Za-z0-9_-]")
 _PROPOSAL_SUFFIX = re.compile(r"^(.*)_w\d+$")
 
@@ -79,7 +81,7 @@ _PROPOSAL_SUFFIX = re.compile(r"^(.*)_w\d+$")
 def proposal_call_id(model_call_id: str, index: int) -> str:
     """`<model id>_w<index>`, limited to `[A-Za-z0-9_-]` and 64 characters."""
     suffix = f"_w{index}"
-    base = _SAFE_ID.sub("_", model_call_id)[: 64 - len(suffix)]
+    base = _SAFE_ID.sub("_", model_call_id)[: _MAX_ID - len(suffix)]
     return f"{base}{suffix}"
 
 
@@ -88,11 +90,19 @@ def script_parent_id(accumulated: list[ToolCall], call_id: str) -> str | None:
     found = _PROPOSAL_SUFFIX.match(call_id)
     if found is None:
         return None
+    prefix = found.group(1)
+    cut = len(call_id) == _MAX_ID
     for call in accumulated:
         model_id = (call.script or {}).get("model_call_id")
-        if isinstance(model_id, str) and model_id.startswith(found.group(1)):
+        if not isinstance(model_id, str):
+            continue
+        if model_id == prefix or (cut and model_id.startswith(prefix)):
             return call.call_id
     return None
+
+
+def _is_server_tool(name: str) -> bool:
+    return name == "openrouter" or name.startswith(("openrouter:", "openrouter_"))
 
 
 def _is_harness(name: str) -> bool:
@@ -105,14 +115,13 @@ def _is_harness(name: str) -> bool:
 
 def data_read_names(agent: BaseAgent, ctx: AgentContext, names: list[str]) -> list[str]:
     """The visible tools a script may read through: no writes, UI, egress or harness tools."""
-    from ze_agents.base_agent import _is_openrouter_server_tool
     from ze_agents.tool import registered_tools
 
     registered = registered_tools()
     out: list[str] = []
     for name in agent._visible_tool_names(ctx, names):
         spec = registered.get(name)
-        if spec is None or _is_openrouter_server_tool(name) or _is_harness(name):
+        if spec is None or _is_server_tool(name) or _is_harness(name):
             continue
         if spec.access is ToolAccess.WRITE or spec.produces_ui or spec.egress:
             continue
@@ -358,6 +367,9 @@ async def run_script_step(
 
     started = time.monotonic()
     step_id = uuid4().hex
+    turn = ScriptContext(
+        user_turn=ctx.prompt, message_id=None, thread_id=ctx.session_id
+    )
     runner = ctx.script_runner
     limits = getattr(runner, "limits", None) or ScriptLimits()
 
@@ -370,7 +382,7 @@ async def run_script_step(
         "limit": None,
         "source_hash": source_hash(source) if source else "",
         "procedure_id": procedure_id,
-        "model_call_id": _SAFE_ID.sub("_", call_id)[:64],
+        "model_call_id": _SAFE_ID.sub("_", call_id)[:_MAX_ID],
     }
     step_args: dict[str, Any] = (
         {"procedure_id": procedure_id}
@@ -463,6 +475,7 @@ async def run_script_step(
         limits=limits,
         dispatch=dispatch,
         procedure_id=procedure_id,
+        context=turn,
     )
     text, success, error_kind = _model_text(outcome, run, limits, script)
     script["outcome"] = outcome.status
