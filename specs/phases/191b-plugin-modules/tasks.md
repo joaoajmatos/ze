@@ -79,7 +79,7 @@
 
 ## Phase 4: User Story 1 - Modules in slots (P1) 🎯 MVP
 
-- [ ] T006 [L:web] [US1] Tests first `widgets/plugin-module/ui/PluginModuleSlot.test.tsx` (fixture manifest; mocked query; mocked `IntersectionObserver`):
+- [x] T006 [L:web] [US1] Tests first `widgets/plugin-module/ui/PluginModuleSlot.test.tsx` (fixture manifest; mocked query; mocked `IntersectionObserver`):
   - a slot with no modules renders nothing;
   - each module renders in a `Module` titled with its label, in priority order;
   - the loading line "Loading <label>…" shows while waiting;
