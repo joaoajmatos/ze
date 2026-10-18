@@ -12,6 +12,7 @@ from ze_api.api.shared_schemas import RollbackRecordResponse
 from ze_api.api.v0.messages.schemas import (
     ConductorLedgerEntryResponse,
     JudgmentTraceResponse,
+    CompactionTraceResponse,
     MemoryChunkTraceResponse,
     MessageSchema,
     ProcedureUsageTraceResponse,
@@ -168,6 +169,8 @@ class WsTraceUpdateFrame(BaseModel):
     tier: TierTraceResponse | None = None
     screen: ScreenTraceResponse | None = None
     input: InputTraceResponse | None = None
+    compaction: CompactionTraceResponse | None = None
+    resume_recap_applied: bool = False
 
 
 class WsNotificationFrame(BaseModel):

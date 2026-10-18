@@ -107,12 +107,32 @@ function handleClosed(socket: WebSocket, displaced = false) {
   if (!displaced) scheduleReconnect();
 }
 
-function takeOverIfDisplaced() {
+/** Use this window: clear the displaced state and connect now, whatever the document's visibility. */
+export function takeOver() {
   if (!useWsStore.getState().displaced || ws || retryTimeout) return;
-  if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
   useWsStore.setState({ displaced: false });
   retryDelay = 1000;
   connect();
+}
+
+function takeOverIfDisplaced() {
+  if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+  takeOver();
+}
+
+export type ConnectionState = "online" | "displaced" | "offline";
+
+function stateOf(s: { isConnected: boolean; displaced: boolean }): ConnectionState {
+  return s.isConnected ? "online" : s.displaced ? "displaced" : "offline";
+}
+
+export function connectionState(): ConnectionState {
+  return stateOf(useWsStore.getState());
+}
+
+/** `displaced` means another window holds the connection; the person can take it back. */
+export function useConnectionState(): ConnectionState {
+  return useWsStore(stateOf);
 }
 
 let focusListening = false;

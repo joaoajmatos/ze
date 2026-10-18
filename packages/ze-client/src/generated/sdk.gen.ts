@@ -931,14 +931,14 @@ export const getUiManifest = <ThrowOnError extends boolean = false>(options?: Op
  *
  * Upload a recording (WebM, Ogg, MP4 or WAV, up to 10 MB and 2 minutes). Returns the transcript, the measured duration and a reference the next message can cite to be marked as a voice turn. No audio is kept.
  */
-export const transcribeVoice = <ThrowOnError extends boolean = false>(options: Options<TranscribeVoiceData, ThrowOnError>): RequestResult<TranscribeVoiceResponses, TranscribeVoiceErrors, ThrowOnError> => (options.client ?? client).post<TranscribeVoiceResponses, TranscribeVoiceErrors, ThrowOnError>({
+export const transcribeVoice = <ThrowOnError extends boolean = false>(options?: Options<TranscribeVoiceData, ThrowOnError>): RequestResult<TranscribeVoiceResponses, TranscribeVoiceErrors, ThrowOnError> => (options?.client ?? client).post<TranscribeVoiceResponses, TranscribeVoiceErrors, ThrowOnError>({
     ...formDataBodySerializer,
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/voice/transcriptions',
     ...options,
     headers: {
         'Content-Type': null,
-        ...options.headers
+        ...options?.headers
     }
 });
 

@@ -28,5 +28,7 @@ export function toTraceFrame(
     rollback: trace.rollback,
     tier: trace.tier,
     screen: trace.screen,
+    compaction: trace.compaction,
+    resume_recap_applied: trace.resume_recap_applied,
   } as WsTraceUpdateFrame;
 }

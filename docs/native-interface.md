@@ -308,8 +308,24 @@ while a previous invocation is still in flight, the server responds:
 {"type": "error", "detail": "busy", "code": "busy"}
 ```
 
-The client should queue or display this as feedback. A `retry` frame uses the same
+The client shows "Ze is still working on the last one" with a Cancel control (`command` frame, name `cancel`). A `retry` frame uses the same
 guard, so Retry cannot start while a turn runs on the thread.
+
+### Which client slice handles each frame
+
+Each inbound frame has one state owner in ze-web. `features/turn-stream/model/frame-registry.ts` lists them, and a test fails when a call site is missing.
+
+| Frame | State owner |
+|---|---|
+| `typing`, `token`, `message`, `edit`, `error`, `message_superseded`, `message_rollback` | `entities/conversation`, fed by `TurnFrameHandler` |
+| `confirm_request`, `confirm_cancel` | the pending-confirmation store (`features/respond-to-confirmation`) |
+| `trace_update` | `features/trace-state` |
+| `refresh`, `notification` | query invalidation (`features/invalidate-on-ws-refresh`) |
+| `pong` | none |
+
+A `confirm_request` for a busy thread pauses the delivery watchdog, and an approve or deny restarts it. A confirmation is placed in the canvas under the latest exchange, in `/ask` and in the overlay. A prompt-kind confirmation shows its actions as command chips that send `action`.
+
+Close code `4000` means another window took the connection. The client does not reconnect on its own. It shows "Ze is open in another window" with a Use here control, which reconnects at once.
 
 ### Error codes
 

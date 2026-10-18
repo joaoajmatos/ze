@@ -32,6 +32,10 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make typecheck-web
 
+      - name: Lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make lint-web
+
       - name: Build
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make web-build

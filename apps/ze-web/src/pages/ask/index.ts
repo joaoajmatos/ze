@@ -1,1 +1,1 @@
-export { AskInterim } from "./ui/AskInterim";
+export { AskPage } from "./ui/AskPage";

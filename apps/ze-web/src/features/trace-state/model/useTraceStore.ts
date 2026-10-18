@@ -6,10 +6,30 @@ export interface ThreadTraceBucket {
   pending: boolean;
   pendingTrace: Partial<WsTraceUpdateFrame> | null;
   hydrating: boolean;
+  /** Client arrival time (ms) of each stage of the turn in flight: route, screen, memory, tier, `tool:<position>`. */
+  pendingArrivals: Record<string, number>;
+  /** The same stamps, kept for a committed reply. A trace hydrated from history has none. */
+  arrivalsByMessage: Record<string, Record<string, number>>;
+  /** When the turn in flight started (a send or a retry); the zero of its stage offsets. */
+  pendingSentAt: number | null;
+  /** The same zero, kept for a committed reply. */
+  sentAtByMessage: Record<string, number>;
 }
 
 function emptyThreadTrace(): ThreadTraceBucket {
-  return { traces: [], pending: false, pendingTrace: null, hydrating: false };
+  return { traces: [], pending: false, pendingTrace: null, hydrating: false, pendingArrivals: {}, arrivalsByMessage: {}, pendingSentAt: null, sentAtByMessage: {} };
+}
+
+/** The stages a partial frame carries, by its fields. */
+function stagesIn(fields: Partial<WsTraceUpdateFrame>, toolsSoFar: number): string[] {
+  const stages: string[] = [];
+  if (fields.agent) stages.push("route");
+  if (fields.screen) stages.push("screen");
+  if ((fields.memory_chunks?.length ?? 0) > 0) stages.push("memory");
+  if (fields.tier) stages.push("tier");
+  // The wire has no call index on a partial; the list position is the order the calls ended in.
+  (fields.tool_calls ?? []).forEach((_, i) => stages.push(`tool:${toolsSoFar + i}`));
+  return stages;
 }
 
 const EMPTY_BUCKET: ThreadTraceBucket = Object.freeze(emptyThreadTrace());
@@ -75,6 +95,8 @@ interface TraceState {
   setHydrating: (threadId: string, v: boolean) => void;
   mergeTraces: (threadId: string, incoming: WsTraceUpdateFrame[], orderedIds: string[]) => void;
   mergePartialTrace: (fields: Partial<WsTraceUpdateFrame>) => void;
+  /** A new turn starts: whatever a refused or failed turn left pending is dropped. */
+  resetPending: (threadId: string) => void;
   commitPendingTrace: (final: WsTraceUpdateFrame) => void;
 }
 
@@ -129,8 +151,12 @@ export const useTraceStore = create<TraceState>()((set) => ({
         byThread: updateThread(s.byThread, threadId, (bucket) => {
           const base = bucket.pendingTrace ?? {};
           const { memory_chunks: newChunks = [], tool_calls: newCalls = [], ...rest } = fields;
+          const now = Date.now();
+          const arrivals = { ...bucket.pendingArrivals };
+          for (const stage of stagesIn(fields, base.tool_calls?.length ?? 0)) if (!(stage in arrivals)) arrivals[stage] = now;
           return {
             ...bucket,
+            pendingArrivals: arrivals,
             pendingTrace: {
               ...base,
               ...rest,
@@ -151,7 +177,25 @@ export const useTraceStore = create<TraceState>()((set) => ({
           traces: dedupeAppend(bucket.traces, final),
           pendingTrace: null,
           pending: false,
+          pendingArrivals: {},
+          pendingSentAt: null,
+          sentAtByMessage:
+            bucket.pendingSentAt !== null
+              ? { ...bucket.sentAtByMessage, [final.message_id]: bucket.pendingSentAt }
+              : bucket.sentAtByMessage,
+          arrivalsByMessage: Object.keys(bucket.pendingArrivals).length
+            ? { ...bucket.arrivalsByMessage, [final.message_id]: bucket.pendingArrivals }
+            : bucket.arrivalsByMessage,
         })),
       };
     }),
+  resetPending: (threadId) =>
+    set((s) => ({
+      byThread: updateThread(s.byThread, threadId, (bucket) => ({
+        ...bucket,
+        pendingTrace: null,
+        pendingArrivals: {},
+        pendingSentAt: Date.now(),
+      })),
+    })),
 }));

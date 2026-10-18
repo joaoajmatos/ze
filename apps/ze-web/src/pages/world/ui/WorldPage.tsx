@@ -12,7 +12,7 @@ import { useAskOverlay, useChatAbout } from "@/features/ask-bar";
 import { useLoopTransitionMutation } from "@/entities/loop";
 import { presenceActions } from "@/entities/presence";
 import { screenSnapshot, useScreenPublisher } from "@/entities/screen-context";
-import { useWsStore } from "@/shared/api";
+import { useConnectionState } from "@/shared/api";
 import { useNarrow, useRailSlot, useReducedMotion, useSendNotice } from "@/shared/lib";
 import { Corners, CommandChip, LeaderLine } from "@/shared/ui";
 import { parseFocus } from "../lib/focus";
@@ -34,7 +34,8 @@ export function WorldPage() {
   const narrow = useNarrow();
   const reducedMotion = useReducedMotion();
   const chatAbout = useChatAbout();
-  const offline = !useWsStore((s) => s.isConnected);
+  const connection = useConnectionState();
+  const offline = connection !== "online";
   const railSlot = useRailSlot((s) => s.element);
   const transition = useLoopTransitionMutation();
   const [params] = useSearchParams();
@@ -93,7 +94,7 @@ export function WorldPage() {
 
   const rail = (
     <>
-      <NeedsYou decisions={world.decisions.data} loading={world.decisions.loading} error={world.decisions.error} now={world.now} offline={offline} focus={focus} onChatAbout={chatAbout} />
+      <NeedsYou decisions={world.decisions.data} loading={world.decisions.loading} error={world.decisions.error} now={world.now} offline={offline} offlineLine={connection === "displaced" ? "Ze is open in another window." : undefined} focus={focus} onChatAbout={chatAbout} />
       <DoingNow goals={world.doing.data.goals} workflows={world.doing.data.workflows} executions={world.doing.data.executions} loading={world.doing.loading} error={world.doing.error} now={world.now} />
     </>
   );
@@ -109,7 +110,7 @@ export function WorldPage() {
           <span className="lbl on">{narrow ? `World · ${concerns.length}` : `Time left × how sure · ${concerns.length} concerns`}</span>
           <span className="lbl">
             {offline ? (
-              <span className="hot">Ze is offline</span>
+              <span className="hot">{connection === "displaced" ? "Ze is open in another window" : "Ze is offline"}</span>
             ) : failedNames.length ? (
               <span className="hot">
                 {failedNames.length} source{failedNames.length > 1 ? "s" : ""} down: {failedNames.join(", ")}

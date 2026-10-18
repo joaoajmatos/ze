@@ -81,7 +81,7 @@ export type BodyTranscribeVoice = {
     /**
      * File
      */
-    file: Blob | File;
+    file?: Blob | File | null;
 };
 
 /**
@@ -2830,6 +2830,14 @@ export type ToolCallTraceResponse = {
      * Effect Phrase
      */
     effect_phrase?: string | null;
+    /**
+     * Agent
+     */
+    agent?: string | null;
+    /**
+     * Call Index
+     */
+    call_index?: number;
 };
 
 /**
@@ -5819,7 +5827,7 @@ export type GetUiManifestResponses = {
 export type GetUiManifestResponse = GetUiManifestResponses[keyof GetUiManifestResponses];
 
 export type TranscribeVoiceData = {
-    body: BodyTranscribeVoice;
+    body?: BodyTranscribeVoice;
     path?: never;
     query?: never;
     url: '/api/v0/voice/transcriptions';

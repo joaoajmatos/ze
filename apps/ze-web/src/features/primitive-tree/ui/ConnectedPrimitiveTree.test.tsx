@@ -39,3 +39,16 @@ describe("ConnectedPrimitiveTree chat about", () => {
     expect(screen.queryByRole("button", { name: /Chat about/ })).toBeNull();
   });
 });
+
+describe("ConnectedPrimitiveTree HUD restyle", () => {
+  it("passes the HUD classes and draws a headline in dot matrix", () => {
+    renderTree([
+      { type: "headline", text: "3 slipping" },
+      { type: "text", content: "Total", style: "label" },
+      { type: "badge", label: "ok" },
+    ]);
+    expect(screen.getByRole("img", { name: "3 slipping" })).toBeInTheDocument();
+    expect(screen.getByText("Total")).toHaveClass("pr-label");
+    expect(screen.getByText("ok")).toHaveClass("pr-badge");
+  });
+});

@@ -7,12 +7,13 @@ export function useSessionsQuery(limit = 30) {
   return useInfiniteQuery({
     queryKey: queryKeys.sessions,
     queryFn: async ({ pageParam }) => {
-      const { data } = await listSessions({
+      const { data, error } = await listSessions({
         query: {
           limit,
           before: pageParam ?? undefined,
         },
       });
+      if (error) throw error;
       return data as SessionListResponse;
     },
     getNextPageParam: (lastPage) => lastPage?.next_before ?? undefined,

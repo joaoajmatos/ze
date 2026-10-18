@@ -33,7 +33,8 @@ The app has five places: World, Ask, Doing, Mind and Governance. `shared/config/
 - **Top bar:** the dot-matrix brand, the five place tabs, the notification bell and a connection dot.
 - **Strip:** the claim legend, today's date and a dot-matrix clock.
 - **Left rail:** the Presence module with the orb. The place fills the column beside it.
-- **Ask bar:** sticky at the bottom of every place except Ask. Typing there opens the Ask overlay (see [native-interface.md](native-interface.md#ask-from-any-screen)).
+- **Ask bar:** sticky at the bottom of every place, Ask included. A paperclip hands Ze a file through the workspace. On Ask the bar sends to the selected thread. On every other place it opens the Ask overlay (see [native-interface.md](native-interface.md#ask-from-any-screen)).
+- **Displaced window:** when another window takes the connection, every place shows "Ze is open in another window" with a Use here control. The orb rests, the connection dot says "Open in another window", and the Ask bar is disabled with that reason.
 - **Phone width (1023 px and below):** one column, a compact Presence, and a bottom bar with the five places as icons and labels. The Ask bar sits above it.
 
 Tokens, type and every shell class live in `shared/styles/ze.css`. Fonts (Saira, Michroma, JetBrains Mono) are self-hosted under `public/fonts/`. The HUD building blocks (`Module`, `Meter`, `Control`, `CommandChip`, `DotMatrix`, `SectionTabs`, and the orb under `hud/presence/`) live in `shared/ui/hud/`. The palette (Orchid, Ultraviolet, Amethyst) is a user setting in Governance. `main.tsx` applies the stored choice before the first render. [DESIGN.md](../DESIGN.md) is the design source of truth.
@@ -49,9 +50,23 @@ Tokens, type and every shell class live in `shared/styles/ze.css`. Fonts (Saira,
 | `thinking` | A `typing` frame, or the thread is marked thinking, until the first token |
 | `speaking` | `token` frames for the thread |
 | `done` | The `message` frame that closes the turn, for one second |
-| `error` | The WebSocket is closed. The phrase reads "Offline". |
+| `error` | The WebSocket is closed. The phrase reads "Offline". A window another window displaced stays `idle`. |
 
 Replayed messages, other threads and frames with no thread never move the orb. `attention`, `acting` and `assembling` exist in the reducer (`set_world_signal`), but no place sends them yet.
+
+### Ask
+
+Ask is the Assemble canvas. The try chips and the conversations list are portalled into the shell rail under the orb (World does the same with Needs you), so the canvas and the trace take the page. On a phone they follow the conversation. A reply is a sentence plus one module per top-level component, flown out of the orb 80 ms apart (opacity only under reduced motion). Five slices make it work:
+
+- **`entities/conversation`** keeps one state per thread: messages, the turn phase (`idle`, `awaiting`, `thinking`, `speaking`, `paused`, `failed`), streaming text, the last outcome, and an attention flag. A pure reducer (`reduce`) applies the seven conversation frames. The `/ask` page and the overlay read the same store, so they always show the same thread.
+- **`features/turn-stream`** mounts `TurnFrameHandler` once in the shell. It feeds the reducer, keeps the sessions rail flags and the orb in step, acknowledges unread replies, and runs the delivery watchdog (120 s of silence, then a history reload, then "Ze did not answer"). A turn paused on a confirmation never fails. `sendTurn` is the one place a message leaves the client. `frame-registry.ts` lists every `useFrame` call site with its reason, and a test fails when one is missing.
+- **`widgets/assemble`** draws the `Canvas` (exchanges, modules, pin and dismiss, Resend), places confirmations and Retry, and holds the trace rail and the Ask overlay.
+- **`features/trace-state`** keeps partial and final traces, and stamps when each stage reached the client.
+- **`@myguyze/ze-ui`** takes a `classNames` map and a `renderHeadline` slot, so chat modules and plugin screens share the HUD look without app CSS in the package.
+
+"Why?" on a reply opens its trace at the section the trace can prove: Routing for a preset reply, Tools (render and show rows marked) otherwise. Message components carry no call index, so it cannot name the exact call.
+
+The trace is a rail of instruments, drawn only from `MessageTrace` and `trace_update`: a Signal path (one tick per stage that arrived, lit live), Routing (a bar labelled by what produced it), Memory (relevance across, extraction confidence up), Tools (one lane per agent), Judgments (grouped by where the answer was used), Reversal (what a retry undid), and readouts. Nothing in it is estimated. Missing data reads "not recorded".
 
 ### Old routes and interim places
 
@@ -109,7 +124,7 @@ Mind shows what Ze believes. `/mind` holds four modules: Beliefs, People, Find a
 
 The claim posture table (glyph, chip word, plain words per state) lives in `shared/lib/claim-posture.ts`. Beliefs publish their visible and selected rows to screen context, the entity page publishes its entity as the subject, and rows carry "Chat about this".
 
-Until each place has its own design, it hosts the old pages as sections behind a row of tabs. One file per place holds the sections: `pages/world/ui/WorldInterim.tsx` (phase 186 replaces it), `pages/ask/ui/AskInterim.tsx` (187), `pages/doing/ui/DoingInterim.tsx` (188). A page cannot import another page, so `app/router/routes.tsx` passes each interim file the loaders for its sections. Plugin pages still use `/:pluginPath` (phase 191 places them).
+Until each place has its own design, it hosts the old pages as sections behind a row of tabs. One file per place holds the sections: `pages/doing/ui/DoingInterim.tsx` (phase 188 replaces it). World, Ask, Mind and Governance have their own pages. A page cannot import another page, so `app/router/routes.tsx` passes each interim file the loaders for its sections. Plugin pages still use `/:pluginPath` (phase 191 places them).
 
 ## Governance
 
@@ -170,9 +185,9 @@ Three slices serve the thumbs up, thumbs down, and Retry controls on assistant r
 
 - **`entities/message-feedback/`** — `useMessageFeedbackQuery` (one batch call for the visible assistant ids) and `useSetMessageFeedbackMutation` (optimistic, reverts on error, sends a client UUID idempotency key).
 - **`features/reply-feedback/`** — `ReplyActions`: the thumb buttons with `aria-pressed` and accessible names.
-- **`features/retry-reply/`** — `RetryButton` and `useRetryReply`: send the `retry` WebSocket frame and handle `message_superseded` and the `error` codes. A disabled Retry shows its reason as visible text.
+- **`features/retry-reply/`** — `RetryButton` and `useRetryReply`: send the `retry` WebSocket frame and refresh feedback and traces when the store changes. A disabled Retry shows its reason as visible text.
 
-`entities/message` cannot import a feature. `MessageBubble` therefore takes an `actions` slot, and `widgets/chat-workspace` mounts `ReplyActions` and `RetryButton` into it for stored assistant messages only. `widgets/trace-panel/ui/FeedbackSection.tsx` shows the rating history and the retry links. See [native-interface.md](native-interface.md#reply-feedback-and-retry).
+`widgets/assemble` mounts the thumbs on the latest reply and in the trace head, and `RetryControl` mounts `RetryButton` for the latest reply only. `useRetryReply` sends the `retry` frame; the conversation store applies `message_superseded`, `message_rollback` and the retry `error` codes, and `RetryControl` shows the outcome in words. See [native-interface.md](native-interface.md#reply-feedback-and-retry).
 
 ## Quiet hours and the notification bell
 
