@@ -14,6 +14,6 @@ export function useGoalTracesQuery(goalId: string, milestoneId?: string) {
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!goalId && !!milestoneId,
+    enabled: !!goalId,
   });
 }
