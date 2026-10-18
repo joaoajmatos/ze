@@ -232,5 +232,5 @@ class TestConductorHardTimeout:
         result = await execute_tool(state, {"configurable": {}})
 
         text = result["agent_result"].response
-        assert "Not finished: research." in text
+        assert "Not finished" in text and "research." in text
         assert "continue" in text

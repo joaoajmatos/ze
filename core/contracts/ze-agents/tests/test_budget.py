@@ -44,7 +44,7 @@ def test_conductor_budget_reads_config_and_keeps_reserve_inside_budget():
     assert conductor_budget(
         {"conductor": {"budget_seconds": 90, "reserve_seconds": 20}}
     ) == (90, 20)
-    assert conductor_budget({}) == (150, 25)
+    assert conductor_budget({}) == (110, 25)
     assert conductor_budget(
         {"conductor": {"budget_seconds": 10, "reserve_seconds": 40}}
     ) == (10, 9)
@@ -58,7 +58,7 @@ def test_partial_answer_names_done_open_and_offers_to_continue():
         ]
     )
     assert "Finished: research." in text
-    assert "Not finished: calendar." in text
+    assert "calendar." in text and "Not finished" in text
     assert "continue" in text
 
 
@@ -92,3 +92,50 @@ async def test_delegate_after_the_deadline_does_not_start_the_specialist():
     )
 
     assert call.error == BUDGET_EXHAUSTED_ERROR
+
+
+async def test_specialist_own_timeout_with_budget_left_is_a_plain_failure():
+    async def _run(self, ctx: AgentContext) -> AgentResult:
+        raise TimeoutError("gmail read timed out")
+
+    cls = type(
+        "_Flaky",
+        (BaseAgent,),
+        {"name": "messenger", "description": "m", "tools": [], "run": _run},
+    )
+    agent(cls)
+    register_instance("messenger", cls())
+    ctx = AgentContext(session_id="s", prompt="p")
+    set_soft_deadline(ctx, 60)
+
+    call = await run_delegate(
+        {"agent_name": "messenger", "objective": "read mail"},
+        ctx,
+        iteration=0,
+        caller_name="companion",
+    )
+
+    assert not call.success
+    assert call.error == "gmail read timed out"
+    assert BUDGET_EXHAUSTED_ERROR not in call.error
+
+
+async def test_cancelled_specialist_is_reported_as_possibly_partly_run():
+    _register_slow("messenger", 5)
+    ctx = AgentContext(session_id="s", prompt="p")
+    set_soft_deadline(ctx, 0.05)
+
+    call = await run_delegate(
+        {"agent_name": "messenger", "objective": "send it"},
+        ctx,
+        iteration=0,
+        caller_name="companion",
+    )
+
+    assert "may have partly run" in call.error
+    assert call.result == {"tool_calls": []}
+
+
+def test_invalid_budget_config_falls_back_per_field():
+    assert conductor_budget({"conductor": {"budget_seconds": "soon"}}) == (110, 25)
+    assert conductor_budget({"conductor": {"budget_seconds": 0}}) == (1, 0)

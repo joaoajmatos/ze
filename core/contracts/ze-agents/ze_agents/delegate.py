@@ -208,6 +208,25 @@ async def _emit_conductor_progress(ctx: AgentContext, agent_name: str) -> None:
     await reporter.emit(key)
 
 
+def _nested_rows(calls: list[ToolCall]) -> list[dict[str, Any]]:
+    return [
+        {
+            "tool_name": call.tool_name,
+            "args": call.args,
+            "result": call.result,
+            "duration_ms": call.duration_ms,
+            "success": call.success,
+            "error": call.error,
+            "gate": call.gate,
+            "agent": call.agent,
+            "undo": call.undo,
+            "call_id": call.call_id,
+            "started_at": call.started_at,
+        }
+        for call in calls
+    ]
+
+
 async def run_delegate(
     arguments: dict[str, Any],
     ctx: AgentContext,
@@ -302,14 +321,28 @@ async def run_delegate(
             result = await asyncio.wait_for(instance.run(sub_ctx), timeout=left)
     except AgentAbortedError:
         raise
-    except asyncio.TimeoutError:
+    except asyncio.TimeoutError as exc:
+        duration_ms = int((time.monotonic() - start) * 1000)
+        if (remaining_seconds(ctx) or 0) > 0:
+            # The specialist raised its own timeout (a socket, an HTTP call).
+            log.warning("delegate_error", to_agent=agent_name, error=str(exc))
+            ctx.extensions[_stall_key(agent_name)] = str(exc) or "timed out"
+            _update_conductor_ledger(ctx, agent_name, "stalled")
+            return _failed(arguments, str(exc) or "timed out", duration_ms=duration_ms)
         log.warning("delegate_over_budget", to_agent=agent_name)
         ctx.extensions[_stall_key(agent_name)] = "time budget used up"
         _update_conductor_ledger(ctx, agent_name, "stalled")
-        return _failed(
-            arguments,
-            f"{agent_name} did not finish in time: {BUDGET_EXHAUSTED_ERROR}",
-            duration_ms=int((time.monotonic() - start) * 1000),
+        return ToolCall(
+            tool_name=DELEGATE_TOOL_NAME,
+            args=arguments,
+            result={"tool_calls": _nested_rows(sub_ctx.tool_calls)},
+            duration_ms=duration_ms,
+            success=False,
+            error=(
+                f"{agent_name} did not finish in time and may have partly run: "
+                f"check before repeating anything it could have changed. "
+                f"{BUDGET_EXHAUSTED_ERROR}"
+            ),
         )
     except LoopParked as parked:
         log.info("delegate_parked", to_agent=agent_name)
@@ -333,22 +366,7 @@ async def run_delegate(
 
     add_sources(ctx.sources, sub_ctx.sources)
     duration_ms = int((time.monotonic() - start) * 1000)
-    nested = [
-        {
-            "tool_name": call.tool_name,
-            "args": call.args,
-            "result": call.result,
-            "duration_ms": call.duration_ms,
-            "success": call.success,
-            "error": call.error,
-            "gate": call.gate,
-            "agent": call.agent,
-            "undo": call.undo,
-            "call_id": call.call_id,
-            "started_at": call.started_at,
-        }
-        for call in result.tool_calls
-    ]
+    nested = _nested_rows(result.tool_calls)
     if _is_empty_response(result.response):
         log.warning("delegate_stalled_empty", to_agent=agent_name)
         ctx.extensions[_stall_key(agent_name)] = "empty response"

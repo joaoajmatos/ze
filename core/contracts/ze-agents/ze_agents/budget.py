@@ -12,8 +12,11 @@ import time
 from typing import Any
 
 from ze_agents.types import AgentContext
+from ze_logging import get_logger
 
-DEFAULT_BUDGET_SECONDS = 150
+log = get_logger(__name__)
+
+DEFAULT_BUDGET_SECONDS = 110
 DEFAULT_RESERVE_SECONDS = 25
 
 _SOFT_DEADLINE_KEY = "_soft_deadline"
@@ -30,12 +33,20 @@ BUDGET_EXHAUSTED_ERROR = (
 )
 
 
+def _seconds(block: dict[str, Any], key: str, default: int) -> int:
+    try:
+        return int(block.get(key, default))
+    except (TypeError, ValueError):
+        log.warning("conductor_budget_invalid", key=key, value=block.get(key))
+        return default
+
+
 def conductor_budget(config: dict[str, Any] | None) -> tuple[int, int]:
     """(budget_seconds, reserve_seconds) from the `conductor:` config block."""
     block = (config or {}).get("conductor") or {}
-    budget = int(block.get("budget_seconds", DEFAULT_BUDGET_SECONDS))
-    reserve = int(block.get("reserve_seconds", DEFAULT_RESERVE_SECONDS))
-    return budget, min(reserve, max(budget - 1, 0))
+    budget = max(_seconds(block, "budget_seconds", DEFAULT_BUDGET_SECONDS), 1)
+    reserve = _seconds(block, "reserve_seconds", DEFAULT_RESERVE_SECONDS)
+    return budget, min(max(reserve, 0), budget - 1)
 
 
 def set_soft_deadline(ctx: AgentContext, seconds: float) -> None:
@@ -67,7 +78,10 @@ def partial_answer(ledger: list[dict[str, str]]) -> str:
     if done:
         lines.append(f"Finished: {', '.join(dict.fromkeys(done))}.")
     if open_:
-        lines.append(f"Not finished: {', '.join(dict.fromkeys(open_))}.")
+        lines.append(
+            f"Not finished (it may have partly run, so check before repeating): "
+            f"{', '.join(dict.fromkeys(open_))}."
+        )
     if not done and not open_:
         lines.append("I had not finished anything yet.")
     lines.append("Tell me to continue and I will pick it up from there.")

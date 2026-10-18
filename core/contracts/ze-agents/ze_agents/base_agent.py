@@ -874,6 +874,7 @@ class BaseAgent(ABC):
             start_iteration = resume.iteration + 1
 
         wrapped_up = False
+        reached = max_iterations
         for iteration in range(start_iteration, max_iterations):
             if ctx.abort_token is not None and ctx.abort_token.is_set:
                 raise AgentAbortedError(ctx.abort_token.reason)
@@ -881,6 +882,7 @@ class BaseAgent(ABC):
             if iteration > start_iteration and budget.exhausted(ctx):
                 messages.append({"role": "user", "content": budget.WRAP_UP_NOTE})
                 wrapped_up = True
+                reached = iteration
                 break
 
             visible = self._visible_tool_names(ctx, names)
@@ -1084,7 +1086,7 @@ class BaseAgent(ABC):
         await _dispatch_loop_hooks(
             hooks,
             "on_loop_end",
-            LoopEndEvent(self.name, ctx, accumulated, iterations_used=max_iterations),
+            LoopEndEvent(self.name, ctx, accumulated, iterations_used=reached),
         )
         text = await client.complete(
             messages=messages,

@@ -16,7 +16,7 @@ routing:
 # Conductor (companion) turn limit. A turn that delegates stops starting work at
 # budget_seconds - reserve_seconds and answers with what is done; the reserve pays for that last model call.
 conductor:
-  budget_seconds: 150
+  budget_seconds: 110
   reserve_seconds: 25
 
 # Typed judgments (Jev via OpenRouter System One). 164 routing (167-calibrated), 166 skills, 168 loop gate (email, calendar, ingestion) and 173 commitment intake are on; 173 was enabled 2026-10-16 after the holdout3 ENABLE verdict (EN and PT).
