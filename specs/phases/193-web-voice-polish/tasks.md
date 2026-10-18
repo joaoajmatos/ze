@@ -102,7 +102,7 @@
 
 ## Phase 5: User Story 4 - The prototype and leftovers are gone (P2)
 
-- [ ] T010 [P] [L:cut] [US4] Delete `apps/ze-web/src/pages/jarvis/` (all files), `apps/ze-web/.impeccable/surfaces/apps-ze-web-src-pages-jarvis.md` and `apps-ze-web-src-pages-home.md`, and the "does not read the prototype key" case in `apps/ze-web/src/shared/lib/palette.test.ts` (line 26, `jarvis.palette.v2`). For each `apps/ze-web/src/pages/*/ui/*Interim.tsx` that T001 listed: if `git grep -n "<Name>"` finds no importer outside the file and its test, delete both; otherwise leave it and report it to `lead`. Then run `make typecheck-web` and `make test-web`; both pass. `git grep -niE "jarvis" -- apps/ze-web/src apps/ze-web/.impeccable/surfaces` returns nothing (DESIGN.md is lane `polish`'s; `.impeccable/plan/` is exempt history).
+- [x] T010 [P] [L:cut] [US4] Delete `apps/ze-web/src/pages/jarvis/` (all files), `apps/ze-web/.impeccable/surfaces/apps-ze-web-src-pages-jarvis.md` and `apps-ze-web-src-pages-home.md`, and the "does not read the prototype key" case in `apps/ze-web/src/shared/lib/palette.test.ts` (line 26, `jarvis.palette.v2`). For each `apps/ze-web/src/pages/*/ui/*Interim.tsx` that T001 listed: if `git grep -n "<Name>"` finds no importer outside the file and its test, delete both; otherwise leave it and report it to `lead`. Then run `make typecheck-web` and `make test-web`; both pass. `git grep -niE "jarvis" -- apps/ze-web/src apps/ze-web/.impeccable/surfaces` returns nothing (DESIGN.md is lane `polish`'s; `.impeccable/plan/` is exempt history).
 
 ---
 
