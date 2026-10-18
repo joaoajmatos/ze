@@ -95,7 +95,7 @@ export function Canvas({ threadId, compact = false, selectedMessageId = null, on
     canvas: replies.flatMap((r) =>
       ((r.components ?? []) as Record<string, unknown>[]).map((component, i) => {
         const ref = chatAboutRef(component);
-        return { index: instrumentId((numbering.get(r.id) ?? 1) + i), type: componentType(component), ...(ref ? { ref: { kind: ref.kind, id: ref.id } } : {}) };
+        return { index: (numbering.get(r.id) ?? 1) + i, type: componentType(component), ...(ref ? { ref: { kind: ref.kind, id: ref.id } } : {}) };
       }),
     ),
   });

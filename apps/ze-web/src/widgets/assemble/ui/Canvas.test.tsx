@@ -192,8 +192,8 @@ describe("Canvas", () => {
     renderCanvas({ onChatAbout: vi.fn() });
     const pubs = () => [...useScreenContextStore.getState().publications.values()];
     expect(pubs().flatMap((p) => p.canvas ?? [])).toEqual([
-      { index: "A·01", type: "claim_card", ref: { kind: "goal", id: "Run 5k" } },
-      { index: "A·02", type: "text" },
+      { index: 1, type: "claim_card", ref: { kind: "goal", id: "Run 5k" } },
+      { index: 2, type: "text" },
     ]);
     fireEvent.focus(screen.getByRole("button", { name: "Pin Run 5k" }));
     expect(pubs().map((p) => p.focused_module).filter(Boolean)).toEqual(["A·01"]);

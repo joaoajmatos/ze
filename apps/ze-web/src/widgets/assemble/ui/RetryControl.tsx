@@ -1,6 +1,5 @@
 import { RollbackNotice } from "@/features/reply-feedback";
 import { RetryButton, useRetryReply } from "@/features/retry-reply";
-import { useSession } from "@/entities/session";
 import { send, useWsStore } from "@/shared/api";
 import { useSendNotice } from "@/shared/lib";
 import { Control } from "@/shared/ui";
