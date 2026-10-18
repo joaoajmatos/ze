@@ -190,6 +190,14 @@ MVP = contract + US1 + US2 (reads with limits, sandbox, runner). US3 writes, US4
 
 ## Handoffs
 
+### Lead (Sandman)
+
+- **T001 blast-radius differences.** The companion has a data read (`get_briefing`), so it gets `run_tool_script` (Lintel ruled this, spec corrected at c12161b4; T031 asserts a research turn has none). Agents that get scripts: calendar, companion, finance, goals, loops, messenger, news, reminders, workflow. No script: research, priority, ingestion, prospecting. `browser_extract` is the only URL-taking READ tool (`egress`). Unattended goal and workflow executors build their own `AgentContext` with no runner, so they get no scripts. `procedure_candidates.source_kind` has no CHECK; `admission_id` is nullable (LEFT JOIN).
+- **Merge order with 196.** 196 deletes `_is_openrouter_server_tool` from `base_agent.py` and adds `ze_agents.server_tools.is_server_tool`. 197 uses a local check in `script_step.py` and lands first; whoever lands second rebases `base_agent.py`, and 197 can then switch to `is_server_tool`.
+- **Contract additions after the contract step.** `ScriptRunner.run` gained `procedure_id` (reruns never learn) and `context: ScriptContext` (user turn, message and thread ids for the ledger and the candidate trigger).
+- **Fly.** `sidecar/workspace/fly.toml` has no capability setting; scripts are unavailable wherever the nft reject rule cannot be verified (`scripts_isolated` false).
+- **Eval.** The `max_llm_calls` cap is enforced in `ze_eval/runner.py` (folded into the scenario's outcome), which no lane owned.
+
 Lane leads record blast-radius differences, gate runs, the smoke test and doc coverage in the build floor's Handoffs note.
 
 ### T036 doc coverage (lane docs)
