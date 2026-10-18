@@ -130,9 +130,15 @@ def _receipt_problem(cwd: str) -> str:
         with open(path) as fh:
             receipt = json.load(fh)
     except (OSError, ValueError):
+        if _docs_only_since_green(cwd, top.stdout.strip()):
+            return ""
         return (
             f"no gate receipt for HEAD {sha[:8]}: run make process-gates PROFILE=land"
         )
+    return _receipt_verdict(receipt, sha)
+
+
+def _receipt_verdict(receipt: dict, sha: str) -> str:
     names = {g.get("gate") for g in receipt.get("gates", [])}
     failing = [g["gate"] for g in receipt.get("gates", []) if g.get("rc")]
     if failing or receipt.get("dirty_files") or receipt.get("ok") is False:
@@ -140,6 +146,38 @@ def _receipt_problem(cwd: str) -> str:
     if missing := sorted(LAND_GATES - names):
         return f"gate receipt for HEAD {sha[:8]} lacks the land gates: {', '.join(missing)} (run make process-gates PROFILE=land)"
     return ""
+
+
+def _is_docs_path(path: str) -> bool:
+    return path.startswith("specs/") or (
+        path.endswith(".md") and (path.startswith("docs/") or "/" not in path)
+    )
+
+
+def _docs_only_since_green(cwd: str, top: str) -> bool:
+    """HEAD has no receipt, but an ancestor has a green land receipt and only specs/docs changed since."""
+    revs = subprocess.run(
+        ["git", "-C", cwd, "rev-list", "--first-parent", "-n", "50", "HEAD"],
+        capture_output=True,
+        text=True,
+    ).stdout.split()
+    for rev in revs[1:]:
+        path = os.path.join(top, ".process", "receipts", f"{rev}.json")
+        try:
+            with open(path) as fh:
+                receipt = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if _receipt_verdict(receipt, rev):
+            return False
+        diff = subprocess.run(
+            ["git", "-C", cwd, "diff", "--name-only", rev, "HEAD"],
+            capture_output=True,
+            text=True,
+        )
+        files = diff.stdout.split()
+        return diff.returncode == 0 and all(_is_docs_path(f) for f in files)
+    return False
 
 
 def _current_branch(cwd: str) -> str:

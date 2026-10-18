@@ -1,5 +1,5 @@
 import type { WorkflowExecutionResponse } from "@myguyze/ze-client";
-import { formatCronExpression } from "@/shared/lib/format-cron";
+import { formatCronExpression } from "./schedule";
 
 export function formatSchedule(schedule: string | null): string {
   if (!schedule) {
@@ -67,4 +67,14 @@ export function averageSuccessfulRunDuration(
 
   const avgMs = durations.reduce((sum, ms) => sum + ms, 0) / durations.length;
   return formatDurationMs(Math.round(avgMs));
+}
+
+/** "in 5h", "in 4d", or "now" for a time that has come: the next run of a schedule. */
+export function untilPhrase(iso: string, now: Date): string {
+  const m = Math.round((new Date(iso).getTime() - now.getTime()) / 60_000);
+  if (Number.isNaN(m) || m < 1) return "now";
+  if (m < 60) return `in ${m}m`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `in ${h}h`;
+  return `in ${Math.round(h / 24)}d`;
 }
