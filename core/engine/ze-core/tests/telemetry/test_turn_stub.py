@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import replace
 
 from ze_core.conversation.messages.types import MessageTrace
 from ze_core.telemetry.turn import (
@@ -24,13 +23,9 @@ def _trace() -> MessageTrace:
     )
 
 
-def test_every_name_imports_and_the_stub_stamps_nothing():
+def test_every_name_imports():
     registry = TurnTelemetryRegistry()
-    telemetry = registry.start("t1")
-    telemetry.record_stage("embed_route", 1.0, 2.0)
-    telemetry.record_call("m", 1, 1)
-    trace = _trace()
-    assert telemetry.stamp(trace, "m") == replace(trace)
+    registry.start("t1")
     assert registry.resume("t1") is not None
     registry.finish("t1")
     assert current_turn_telemetry.get() is None

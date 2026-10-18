@@ -35,7 +35,7 @@
 
 ## Phase 3: User Story 1 - Stage times, live and from history (P1) 🎯 MVP
 
-- [ ] T005 [L:recorder] [US1] Tests first `core/engine/ze-core/tests/telemetry/test_turn_telemetry.py` (fake `time.time` and `perf_counter`):
+- [x] T005 [L:recorder] [US1] Tests first `core/engine/ze-core/tests/telemetry/test_turn_telemetry.py` (fake `time.time` and `perf_counter`):
   - with the monotonic clock faked, `record_stage("fetch_context", started=t0+0.2, ended=t0+0.288)` gives `start_ms` 200, `duration_ms` 88, `run` 1; a wall-clock change (faked `time.time`) changes nothing;
   - `pause()` then `resume` 20 s later returns the same recorder, adds 20000 to `paused_ms` and sets `run` 2; `resume` with none creates one with `partial` true and no send target;
   - after `stamp`, `record_call` and `record_stage` change nothing (frozen);
