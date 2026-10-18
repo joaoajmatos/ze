@@ -217,6 +217,9 @@ export type Id5 = string;
 export type Status2 = "ok" | "missing" | "changed" | "failed" | "timeout" | "cut";
 export type Ms = number;
 export type Resolvers = ScreenResolverTraceResponse[];
+export type SpanStart = number;
+export type SpanEnd = number;
+export type ResumeRecapApplied = boolean;
 export type Type12 = "notification";
 export type Id6 = string;
 export type EventType = string;
@@ -527,6 +530,8 @@ export interface WsTraceUpdateFrame {
   rollback?: RollbackTraceResponse | null;
   tier?: TierTraceResponse | null;
   screen?: ScreenTraceResponse | null;
+  compaction?: CompactionTraceResponse | null;
+  resume_recap_applied?: ResumeRecapApplied;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -698,6 +703,14 @@ export interface ScreenResolverTraceResponse {
   id: Id5;
   status: Status2;
   ms?: Ms;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "CompactionTraceResponse".
+ */
+export interface CompactionTraceResponse {
+  span_start: SpanStart;
+  span_end: SpanEnd;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

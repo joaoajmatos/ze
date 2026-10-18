@@ -334,6 +334,13 @@ async def test_tool_calls_carry_agent_and_call_index_and_never_undo_args() -> No
     assert "secret" not in resp.text and "undo_args" not in calls[0]
 
 
+def test_ws_trace_update_declares_compaction_and_resume_recap() -> None:
+    from ze_api.api.ws.schemas import WsTraceUpdateFrame
+
+    props = WsTraceUpdateFrame.model_json_schema()["properties"]
+    assert "compaction" in props and "resume_recap_applied" in props
+
+
 def test_tool_call_trace_schema_declares_agent_and_call_index() -> None:
     from ze_api.api.v0.messages.schemas import ToolCallTraceResponse
     from ze_api.api.ws.schemas import WsTraceUpdateFrame
