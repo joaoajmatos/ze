@@ -62,9 +62,64 @@ class ChannelWatermarkStore:
     async def record_outcome(
         self, channel_id: str, outcome: PollOutcome, at: datetime
     ) -> None:
-        raise NotImplementedError
+        """Record a poll outcome without moving the watermark.
+
+        With no row yet the insert starts at the lookback window, so the next
+        successful poll still sees mail that arrived while polling failed.
+        """
+        async with self._pool.acquire() as conn:
+            updated = await conn.execute(
+                """
+                UPDATE user_channel_watermarks
+                SET last_outcome = $2, last_outcome_at = $3
+                WHERE channel_id = $1
+                """,
+                channel_id,
+                outcome.value,
+                at,
+            )
+            if updated == "UPDATE 0":
+                await conn.execute(
+                    """
+                    INSERT INTO user_channel_watermarks
+                        (channel_id, last_polled_at, last_outcome, last_outcome_at)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (channel_id) DO UPDATE SET
+                        last_outcome    = EXCLUDED.last_outcome,
+                        last_outcome_at = EXCLUDED.last_outcome_at
+                    """,
+                    channel_id,
+                    datetime.now(timezone.utc)
+                    - timedelta(hours=self.DEFAULT_LOOKBACK_HOURS),
+                    outcome.value,
+                    at,
+                )
 
     async def get_status_many(
         self, channel_ids: list[str]
     ) -> dict[str, ChannelPollStatus]:
-        raise NotImplementedError
+        if not channel_ids:
+            return {}
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT channel_id, last_polled_at, last_outcome, last_outcome_at
+                FROM user_channel_watermarks
+                WHERE channel_id = ANY($1::text[])
+                """,
+                channel_ids,
+            )
+        found = {
+            r["channel_id"]: ChannelPollStatus(
+                watermark=r["last_polled_at"],
+                last_outcome=PollOutcome(r["last_outcome"])
+                if r["last_outcome"]
+                else None,
+                last_outcome_at=r["last_outcome_at"],
+            )
+            for r in rows
+        }
+        empty = ChannelPollStatus(
+            watermark=None, last_outcome=None, last_outcome_at=None
+        )
+        return {channel_id: found.get(channel_id, empty) for channel_id in channel_ids}

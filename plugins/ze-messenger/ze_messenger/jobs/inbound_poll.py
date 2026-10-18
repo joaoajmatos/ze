@@ -3,8 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from ze_google import is_auth_failure
 from ze_logging import get_logger
-from ze_personal.channels.types import UserChannel
+from ze_personal.channels.types import PollOutcome, UserChannel
 
 _log = get_logger(__name__)
 
@@ -49,10 +50,10 @@ class InboundPollingJob:
                 channel_id=channel.channel_id,
                 error=str(exc),
             )
-            return
-
-        if not messages:
-            await self._watermarks.set(channel.channel_id, datetime.now(timezone.utc))
+            outcome = (
+                PollOutcome.AUTH_FAILED if is_auth_failure(exc) else PollOutcome.FAILED
+            )
+            await self._record_failure(channel, outcome)
             return
 
         for msg in messages:
@@ -65,19 +66,51 @@ class InboundPollingJob:
                     message_id=getattr(msg, "message_id", "?"),
                 )
 
-        await self._watermarks.set(channel.channel_id, datetime.now(timezone.utc))
-
         # Auto-register channel in user_channels on first successful poll
+        await self._user_channels.upsert(self._user_channel(channel))
+        await self._watermarks.set(channel.channel_id, datetime.now(timezone.utc))
+        await self._record_success(channel)
+
+    @staticmethod
+    def _user_channel(channel: object) -> UserChannel:
         handle = getattr(channel, "_user_email", None) or channel.channel_id
-        await self._user_channels.upsert(
-            UserChannel(
-                id=uuid4(),
-                channel_id=channel.channel_id,
-                channel_type=channel.channel_type.value,
-                handle=handle,
-                display_name=None,
-                is_default_outbound=False,
-                poll_enabled=True,
-                created_at=datetime.now(timezone.utc),
-            )
+        return UserChannel(
+            id=uuid4(),
+            channel_id=channel.channel_id,
+            channel_type=channel.channel_type.value,
+            handle=handle,
+            display_name=None,
+            is_default_outbound=False,
+            poll_enabled=True,
+            created_at=datetime.now(timezone.utc),
         )
+
+    async def _record_failure(self, channel: object, outcome: PollOutcome) -> None:
+        try:
+            # ensure, not upsert: with the account unresolved the handle falls back
+            # to the bare channel id, which would overwrite a known address.
+            await self._user_channels.ensure(self._user_channel(channel))
+            await self._watermarks.record_outcome(
+                channel.channel_id, outcome, datetime.now(timezone.utc)
+            )
+        except Exception as exc:
+            _log.warning(
+                "inbound_poll_outcome_failed",
+                channel_id=channel.channel_id,
+                error=str(exc),
+            )
+
+    async def _record_success(self, channel: object) -> None:
+        try:
+            await self._watermarks.record_outcome(
+                channel.channel_id, PollOutcome.OK, datetime.now(timezone.utc)
+            )
+            bare_key = channel.channel_type.value
+            if channel.channel_id != bare_key:
+                await self._user_channels.drop_unkeyed(bare_key)
+        except Exception as exc:
+            _log.warning(
+                "inbound_poll_outcome_failed",
+                channel_id=channel.channel_id,
+                error=str(exc),
+            )
