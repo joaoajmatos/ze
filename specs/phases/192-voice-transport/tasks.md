@@ -125,7 +125,7 @@ US3 is asserted in T007 (flow and agent ContextVars during the call); the cost t
 ## Phase 6: Polish and cross-cutting
 
 - [x] T013 [L:lead] Merge lane `core`, then lane `api`. After the merge, `lead` edits the api tests to drop their `transcribe_audio` patches, so they run on the real helper with the stubbed probe and fake client. Run `make codegen` if a schema moved. Gates: `make test-py`, `make test-core SLOW=1` (with ffprobe present), `make lint`, `make test-web`.
-- [ ] T014 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev`: a real Chrome WebM recording, a Safari MP4 recording (or the fragmented fixture), and the failure cases. Build the ze-api image once and run `ffprobe -version` inside it. Record the results in the Handoffs note.
+- [x] T014 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev`: a real Chrome WebM recording, a Safari MP4 recording (or the fragmented fixture), and the failure cases. Build the ze-api image once and run `ffprobe -version` inside it. Record the results in the Handoffs note.
 - [ ] T015 [P] [L:docs] From the merged diff, following the doc-style skill:
   - `docs/architecture.md` (~61-62, ~175, ~692, ~700-701, and the REST table);
   - `docs/configuration.md` (~177);
@@ -156,3 +156,15 @@ docs after T013.
 
 - MVP = US1 with the fake client and the real-binary check (T006) early, so the browser WebM path is proven before anything builds on it. US2 hardens the route; US3 is asserted inside T007.
 - 193 can code its web voice control against the contract once T003's codegen lands.
+
+---
+
+## Handoffs
+
+- **T001**: grep matches plan "Blast radius" exactly. `make install` needs `UV_PYTHON=3.12`; `make test-web` needs node 22 on PATH (default node 16 fails in vitest startup). `ffprobe format=duration` prints `N/A` from a pipe for WebM, Ogg and WAV; only fragmented MP4 returns a duration, so WAV and Ogg also use the packet scan.
+- **T006** (core lane): real-ffprobe slow test, 4 passed (WebM/Ogg through the packet scan, `frag.mp4`, WAV labelled WebM rejected).
+- **T013** gates at merge (8b61bed2): `make test-py` rc=0, `make test-core SLOW=1` rc=0, `make lint` rc=0, `make test-web` rc=0 (1012 tests, node 22).
+- **T014** (throwaway DB `ze_192_voice`, port 8020, dropped afterwards), `curl` against the real server and real ffprobe:
+  - `text/plain` 415; no key 401; 180 s WAV 413 "too long"; 11 MB body 413 "too large"; truncated file and random bytes 422/502 plain line; WAV labelled WebM 422; missing `file` part 422 "Send the recording as a file named file.".
+  - WebM (macOS `say` → libopus), Safari-style fragmented MP4, `stream.ogg` and `frag.mp4` all pass the probe and reach the model. The model call returned 502 because the OpenRouter account has less than the $0.50 balance audio requires ("This request requires at least $0.50 in balance for audio"), so a real transcript, quickstart steps 2-3 (WS turn trace) and step 5 (cost entry) were NOT verified live; they are covered by unit tests.
+  - Docker: building the full ze-api image (torch, model downloads) was skipped. The Dockerfile's apt line (`libgomp1 ffmpeg`) was run on `python:3.12-slim-bookworm`: `ffprobe version 5.1.9`.
