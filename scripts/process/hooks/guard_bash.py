@@ -11,6 +11,7 @@ import json
 import os
 import re
 import shlex
+import subprocess
 import sys
 
 DENY, ASK, ALLOW = "deny", "ask", "allow"
@@ -103,7 +104,34 @@ def _make_parts(argv: list[str]) -> tuple[list[str], str]:
     return targets, " ".join(argv[1:])
 
 
-def _check_git(argv, role):
+def _receipt_problem(cwd: str) -> str:
+    """Why HEAD in cwd has no green gate receipt, or empty when it has one."""
+    head = subprocess.run(
+        ["git", "-C", cwd, "rev-parse", "HEAD"], capture_output=True, text=True
+    )
+    top = subprocess.run(
+        ["git", "-C", cwd, "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+    )
+    if head.returncode or top.returncode:
+        return ""
+    sha = head.stdout.strip()
+    path = os.path.join(top.stdout.strip(), ".process", "receipts", f"{sha}.json")
+    try:
+        with open(path) as fh:
+            receipt = json.load(fh)
+    except (OSError, ValueError):
+        return (
+            f"no gate receipt for HEAD {sha[:8]}: run make process-gates PROFILE=land"
+        )
+    failing = [g["gate"] for g in receipt.get("gates", []) if g.get("rc")]
+    if failing or receipt.get("dirty_files") or receipt.get("ok") is False:
+        return f"gate receipt for HEAD {sha[:8]} is not green (failing: {failing or 'checks'})"
+    return ""
+
+
+def _check_git(argv, role, cwd):
     sub, rest = _git_parts(argv)
     if sub == "add" and any(a in ("-A", "--all", ".", "-u", "--update") for a in rest):
         return DENY, "Stage explicit paths only (shared worktree): git add <paths>."
@@ -117,10 +145,13 @@ def _check_git(argv, role):
             for a in rest
         ):
             return DENY, "Never force-push."
-        if role and role != "maestro":
-            refs = [a.split(":")[-1] for a in rest if not a.startswith("-")]
-            if any(r in MAIN_REFS for r in refs):
+        refs = [a.split(":")[-1] for a in rest if not a.startswith("-")]
+        if any(r in MAIN_REFS for r in refs):
+            if role and role != "maestro":
                 return DENY, f"Only the Maestro pushes main (ZE_ROLE={role})."
+            problem = _receipt_problem(cwd) if cwd else ""
+            if problem:
+                return DENY, problem
     return None
 
 
@@ -183,7 +214,7 @@ def _check_maestri(argv, role):
     return None
 
 
-def decide(cmd: str, env: dict[str, str]) -> tuple[str, str]:
+def decide(cmd: str, env: dict[str, str], cwd: str = "") -> tuple[str, str]:
     if not env.get("MAESTRI_TERMINAL_ID"):
         return ALLOW, ""
     role = env.get("ZE_ROLE", "").strip().lower()
@@ -205,7 +236,7 @@ def decide(cmd: str, env: dict[str, str]) -> tuple[str, str]:
             and "-c" in argv[1:]
             and argv.index("-c") + 1 < len(argv)
         ):
-            verdict = decide(argv[argv.index("-c") + 1], env)
+            verdict = decide(argv[argv.index("-c") + 1], env, cwd)
             if verdict[0] != ALLOW:
                 return verdict
             continue
@@ -224,7 +255,7 @@ def decide(cmd: str, env: dict[str, str]) -> tuple[str, str]:
         head = os.path.basename(argv[0])
         result = None
         if head == "git":
-            result = _check_git(argv, role)
+            result = _check_git(argv, role, cwd)
         elif head == "make":
             result = _check_make(argv, ctx)
         elif head == "maestri" or argv[0] == os.environ.get("MAESTRI_CLI"):
@@ -250,7 +281,9 @@ def main() -> int:
     if data.get("tool_name") != "Bash":
         return 0
     verdict, why = decide(
-        data.get("tool_input", {}).get("command", ""), dict(os.environ)
+        data.get("tool_input", {}).get("command", ""),
+        dict(os.environ),
+        data.get("cwd", ""),
     )
     if verdict == DENY:
         print(f"BLOCKED by Ze process guard: {why}", file=sys.stderr)

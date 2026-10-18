@@ -17,6 +17,7 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 WEB_PREFIXES = ("apps/ze-web/", "packages/ze-ui/", "packages/ze-client/")
+LAND_GATES = ["lint", "test-py", "test-web", "typecheck-web", "lint-web"]
 WEB_GATES = ["typecheck-web", "lint-web", "test-web"]
 BEHAVIOR = re.compile(
     r"(/api/|rest\.py|routes?\.py|@tool|config\.yaml|^Makefile$|pyproject\.toml)"
@@ -101,6 +102,12 @@ def main() -> int:
     ap.add_argument("--portal-shot", default="")
     ap.add_argument("--set-review", default="")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument(
+        "--profile",
+        choices=["diff", "land"],
+        default="diff",
+        help="land runs every gate, not only the diff's",
+    )
     ap.add_argument(
         "--gate", action="append", default=[], help="extra make target to include"
     )

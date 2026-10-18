@@ -188,3 +188,37 @@ def test_precommit_blocks_arch_notes(tmp_path):
     assert (
         _precommit(tmp_path, {"MAESTRI_TERMINAL_ID": "T", "SKIP": "1"}).returncode == 0
     )
+
+
+def test_push_main_needs_a_green_receipt(tmp_path):
+    _git(tmp_path, "init", "-q")
+    _git(
+        tmp_path,
+        "-c",
+        "user.email=a@b",
+        "-c",
+        "user.name=t",
+        "commit",
+        "-q",
+        "--allow-empty",
+        "-m",
+        "i",
+    )
+    sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=tmp_path, capture_output=True, text=True
+    ).stdout.strip()
+    env = {**AGENT, "ZE_ROLE": "maestro"}
+    cmd = "git push remote main"
+    assert guard.decide(cmd, env, str(tmp_path))[0] == "deny"
+    receipts = tmp_path / ".process" / "receipts"
+    receipts.mkdir(parents=True)
+    (receipts / f"{sha}.json").write_text(
+        json.dumps({"dirty_files": 0, "gates": [{"gate": "lint", "rc": 1}]})
+    )
+    verdict, why = guard.decide(cmd, env, str(tmp_path))
+    assert verdict == "deny" and "not green" in why
+    (receipts / f"{sha}.json").write_text(
+        json.dumps({"dirty_files": 0, "gates": [{"gate": "lint", "rc": 0}]})
+    )
+    assert guard.decide(cmd, env, str(tmp_path))[0] == "allow"
+    assert guard.decide("git push remote process-kit", env, str(tmp_path))[0] == "allow"

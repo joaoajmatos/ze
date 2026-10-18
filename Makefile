@@ -481,7 +481,7 @@ codegen:
 	bun run scripts/codegen.ts
 
 # ── Code quality ──────────────────────────────────────────────────────────────
-.PHONY: check hooks process-install-hooks process-ready lint lint-web typecheck-web format clean
+.PHONY: check hooks process-install-hooks process-ready process-land-preflight process-gates lint lint-web typecheck-web format clean
 
 check: lint web-build
 	@echo "check: ok"
@@ -498,6 +498,14 @@ process-install-hooks: hooks
 # make process-ready [PORTAL_SHOT=<png>] [FLOOR=<name> sets the floor to review when green]
 process-ready:
 	@python3 scripts/process/ready.py $(if $(PORTAL_SHOT),--portal-shot $(PORTAL_SHOT)) $(if $(FLOOR),--set-review "$(FLOOR)")
+
+# Refuse to land a floor that is not ready: make process-land-preflight [FLOOR=<path>]
+process-land-preflight:
+	@python3 scripts/process/land_preflight.py $(if $(FLOOR),--floor "$(FLOOR)")
+
+# Full gate set with a receipt for HEAD (Ground, after the floor landed): make process-gates PROFILE=land
+process-gates:
+	@python3 scripts/process/ready.py --profile $(or $(PROFILE),diff)
 
 lint:
 	uv run ruff check .
