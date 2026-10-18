@@ -96,7 +96,7 @@
   - Connections mounts the `governance.connections` slot with subject `none`, after the settings sections.
 
   Implement the one-line mounts.
-- [ ] T008 [L:web] [US2] Tests first `widgets/try-chips/ui/TryChips.test.tsx` and `pages/ask/ui/AskPage.test.tsx` (extend):
+- [x] T008 [L:web] [US2] Tests first `widgets/try-chips/ui/TryChips.test.tsx` and `pages/ask/ui/AskPage.test.tsx` (extend):
   - presets render after the core chips, at most two, in order;
   - their index labels and keys continue the visible numbering (3–4 with no active goal, 4–5 with one), and the key past the last chip does nothing;
   - React keys are ids;
