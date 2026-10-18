@@ -95,3 +95,7 @@ async def test_a_store_failure_is_an_error_not_an_empty_answer():
     store.latest_by_event = AsyncMock(side_effect=RuntimeError("db down"))
     out = await get_briefing(notification_store=store)
     assert out["found"] is False and out["error"]
+
+
+def test_criteria_keep_did_you_send_it_about_a_briefing_off_email():
+    assert "did you send it" in CompanionAgent.routing_criteria
