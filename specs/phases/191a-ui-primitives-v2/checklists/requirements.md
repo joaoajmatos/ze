@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Plugins in Places (W7)
+# Specification Quality Checklist: UI Primitives v2 (191a)
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-10-18
@@ -31,6 +31,5 @@
 
 ## Notes
 
-- Capability map (News → preset + settings) is a prior user decision, not a clarification.
-- Open points for /speckit-clarify: keep place-aware plugin pages with no current consumer; the News preset prompt.
-
+- The spec names "primitives", "tools" and "contract version" because they are the subject (a UI contract); no library or framework is named.
+- Open questions for clarify: which tools an action may call; agent render tools for the new primitives; gallery placement.

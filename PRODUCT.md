@@ -65,8 +65,9 @@ What no neighboring product can truthfully copy:
 - The world-state changes without the user: proactive jobs, drift sweeps, nightly consolidation
   and dream passes, workflows and goals running unattended. The web app should reflect that live
   (WS frames: `trace_update`, `notification`, `confirm_request`, `message_rollback`).
-- Plugins contribute screens at runtime through `GET /api/v0/ui/manifest` (today: News, Contacts,
-  Reminders) as server-driven UI from `@myguyze/ze-ui`.
+- Plugins contribute UI at runtime through `GET /api/v0/ui/manifest` as server-driven primitives
+  from `@myguyze/ze-ui`: modules in place slots, Ask presets and settings sections, never pages
+  (see Plugin UI model).
 - English and Portuguese both appear in conversation; the web UI chrome is English.
 
 ## Capabilities and Constraints
@@ -117,6 +118,23 @@ What no neighboring product can truthfully copy:
 4. Unattended work is accountable. What Ze did on its own, and why, is always findable from the
    thing it touched.
 5. Organs churn, functions persist. Group by the function a screen serves, not by package.
+
+## Plugin UI model
+
+Agreed with the user on 2026-10-18 (phases 191a and 191b).
+
+1. Plugins are sources of data and behaviour. They feed the core contracts: claims, loops,
+   signals, actions, screen resolvers, composed answers and presets, and settings. The five places
+   render what they feed. Most plugins need no UI of their own.
+2. A plugin contributes modules, never pages. A module is a title, a data source and a layout of
+   primitives, bound to a slot a place offers: a Mind entity facet, a Doing run block, a
+   Governance › Connections card, an Ask preset chip. The place owns placement, density and design.
+3. Primitives are server-driven descriptors from `@myguyze/ze-ui` and `ze-components`. No plugin
+   script runs in the browser. A new visual is a reviewed, named primitive added to `ze-ui`; an
+   unknown type renders as a plain table. Claim posture is set by code.
+4. A plugin's full view is a composed answer in Ask, summoned by a preset chip.
+5. Actions on a screen are typed and run through the same gates as chat: an irreversible change
+   asks first.
 
 ## Accessibility & Inclusion
 
