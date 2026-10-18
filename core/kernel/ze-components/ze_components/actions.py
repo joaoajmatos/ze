@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -65,6 +66,8 @@ class ToolAction:
                 raise InvalidComponentError(
                     f"tool action arg name {key[:20]!r}... is too long"
                 )
+            if isinstance(value, float) and not math.isfinite(value):
+                raise InvalidComponentError(f"tool action arg {key!r} must be finite")
             if isinstance(value, str) and len(value) > ARG_VALUE_MAX:
                 raise InvalidComponentError(
                     f"tool action arg {key!r} is over {ARG_VALUE_MAX} characters"

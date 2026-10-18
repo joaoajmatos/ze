@@ -238,3 +238,9 @@ def test_summary_names_the_new_primitives():
 
     text = describe_components([{"type": "stat_row"}, {"type": "sparkline"}])
     assert "stat_row" not in text and "stat row" in text
+
+
+def test_tool_args_reject_non_finite_floats():
+    for bad in (float("nan"), float("inf")):
+        with pytest.raises(InvalidComponentError):
+            ToolAction("o", "t", {"a": bad})

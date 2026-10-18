@@ -179,6 +179,8 @@ async def test_constraint_veto_still_applies() -> None:
         {"source_id": 5},
         {"source_id": "s1", "count": "many"},
         {"source_id": "s1", "count": True},
+        {"source_id": None},
+        {"source_id": "s1", "count": None},
         {},
     ],
 )

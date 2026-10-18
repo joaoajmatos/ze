@@ -1,11 +1,11 @@
 import type { WsScreenContext } from "@myguyze/ze-client";
 import type { PrimitiveAction } from "@myguyze/ze-ui";
 import type { PrimitiveRendererActions } from "@myguyze/ze-ui/react";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOnboardingSession } from "@/entities/onboarding-session";
 import { useSession } from "@/entities/session";
-import { send, useFrame } from "@/shared/api";
+import { send, useFrame, useWsStore } from "@/shared/api";
 import { placeOf } from "@/shared/config";
 import { useSendNotice } from "@/shared/lib";
 import { useTurnSender } from "../model/turn-sender";
@@ -51,6 +51,17 @@ export function usePrimitiveActions(): PrimitiveRendererActions {
     if (!current || current.id !== frame.id) return;
     showNotice(frame.line);
     current.settle(frame.ok);
+  });
+
+  // A result sent just before the socket dropped is never replayed, so a dropped socket settles the press.
+  const isConnected = useWsStore((s) => s.isConnected);
+  useEffect(() => {
+    if (!isConnected) pending.current?.settle(false);
+  }, [isConnected]);
+
+  // The server cancelled the gate (timeout or a newer turn) without a result for this press.
+  useFrame("confirm_cancel", (frame) => {
+    if (frame.reason !== "answered" && pending.current?.id === frame.id) pending.current.settle(false);
   });
 
   return useMemo(() => {

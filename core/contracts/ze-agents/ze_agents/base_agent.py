@@ -1198,9 +1198,12 @@ def _check_action_args(spec: Any, args: dict[str, Any]) -> None:
         if key not in args:
             raise UiActionRefusedError(f"argument {key!r} is required")
     for key, value in args.items():
+        declared = properties[key].get("type", "")
         if value is None:
-            continue
-        allowed = _JSON_SCALARS.get(properties[key].get("type", ""))
+            if "null" in (declared if isinstance(declared, list) else [declared]):
+                continue
+            raise UiActionRefusedError(f"argument {key!r} cannot be null")
+        allowed = _JSON_SCALARS.get(declared)
         if (
             allowed is None
             or not isinstance(value, allowed)

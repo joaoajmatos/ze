@@ -7,6 +7,8 @@ const m = vi.hoisted(() => ({
   sendTurn: vi.fn(() => true),
   showNotice: vi.fn(),
   handlers: [] as ((f: { id: string; ok: boolean; line: string }) => void)[],
+  cancelHandlers: [] as ((f: { id: string; reason?: string }) => void)[],
+  connected: true,
 }));
 
 vi.mock("react-router-dom", () => ({ useNavigate: () => m.navigate }));
@@ -19,9 +21,11 @@ vi.mock("@/entities/session", () => ({
 }));
 vi.mock("@/shared/api", () => ({
   send: m.send,
-  useFrame: (_type: string, handler: (f: { id: string; ok: boolean; line: string }) => void) => {
-    m.handlers.length = 0;
-    m.handlers.push(handler);
+  useWsStore: (s: (x: { isConnected: boolean }) => unknown) => s({ isConnected: m.connected }),
+  useFrame: (type: string, handler: (f: never) => void) => {
+    const list = type === "confirm_cancel" ? m.cancelHandlers : m.handlers;
+    list.length = 0;
+    list.push(handler as never);
   },
 }));
 vi.mock("@/shared/lib", () => ({
@@ -43,6 +47,7 @@ function setup() {
 describe("usePrimitiveActions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    m.connected = true;
     m.send.mockReturnValue(true);
     m.sendTurn.mockReturnValue(true);
   });
@@ -119,5 +124,42 @@ describe("usePrimitiveActions", () => {
     const pending = setup().onAction?.(toolAction) as Promise<boolean>;
     await vi.advanceTimersByTimeAsync(16 * 60_000);
     await expect(pending).resolves.toBe(false);
+  });
+
+  it("settles false when the socket drops while a press is pending", async () => {
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(TurnSenderProvider, { sendTurn: m.sendTurn, children });
+    const hook = renderHook(() => usePrimitiveActions(), { wrapper });
+    const pending = hook.result.current.onAction?.(toolAction) as Promise<boolean>;
+    m.connected = false;
+    hook.rerender();
+    await expect(pending).resolves.toBe(false);
+    m.connected = true;
+    hook.rerender();
+    void hook.result.current.onAction?.(toolAction);
+    expect(m.send).toHaveBeenCalledTimes(2);
+  });
+
+  it("settles false when the server cancels its gate, but not when it was answered", async () => {
+    const actions = setup();
+    const answered = actions.onAction?.(toolAction) as Promise<boolean>;
+    const id = (m.send.mock.calls[0][0] as { id: string }).id;
+    act(() => m.cancelHandlers[0]({ id, reason: "answered" }));
+    act(() => m.handlers[0]({ id, ok: true, line: "Done." }));
+    await expect(answered).resolves.toBe(true);
+    const cancelled = actions.onAction?.(toolAction) as Promise<boolean>;
+    const id2 = (m.send.mock.calls[1][0] as { id: string }).id;
+    act(() => m.cancelHandlers[0]({ id: id2 }));
+    await expect(cancelled).resolves.toBe(false);
+  });
+
+  it("a busy refusal leaves the next press possible", async () => {
+    const actions = setup();
+    const first = actions.onAction?.(toolAction) as Promise<boolean>;
+    const id = (m.send.mock.calls[0][0] as { id: string }).id;
+    act(() => m.handlers[0]({ id, ok: false, line: "Ze is busy. Try again." }));
+    await expect(first).resolves.toBe(false);
+    void actions.onAction?.(toolAction);
+    expect(m.send).toHaveBeenCalledTimes(2);
   });
 });
