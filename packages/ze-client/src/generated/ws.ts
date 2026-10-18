@@ -48,7 +48,6 @@ export type Text1 = string | null;
 export type Components1 = {
   [k: string]: unknown;
 }[];
-export type UiVersion1 = string | null;
 export type Type2 = "confirm_request";
 export type Id2 = string;
 export type ThreadId2 = string | null;
@@ -379,7 +378,6 @@ export interface WsEditFrame {
   thread_id?: ThreadId1;
   text?: Text1;
   components?: Components1;
-  ui_version?: UiVersion1;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

@@ -197,9 +197,6 @@ async def handle_confirm(
 async def _no_pending(
     conn_mgr: ConnectionManager, thread_id: str, request_id: str = ""
 ) -> None:
-    await conn_mgr.send_frame(
-        {"type": "error", "detail": "No pending confirmation."}, thread_id
-    )
     if request_id:
         # A screen button's gate is lost on restart; its card needs an answer too.
         await conn_mgr.send_frame(
@@ -212,6 +209,9 @@ async def _no_pending(
             },
             thread_id,
         )
+    await conn_mgr.send_frame(
+        {"type": "error", "detail": "No pending confirmation."}, thread_id
+    )
 
 
 def _valid_edits(edits: Any, row: dict | None) -> bool:

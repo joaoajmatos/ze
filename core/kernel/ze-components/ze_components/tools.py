@@ -8,6 +8,8 @@ from typing import Callable
 from ze_components import context as _ctx
 from ze_components.organisms.connections import Connections
 from ze_components.organisms.form import Form, form_field as _form_field
+from ze_components.organisms.sparkline import SPARKLINE_MAX_POINTS, Sparkline
+from ze_components.organisms.stat_row import Stat, StatRow
 from ze_components.organisms.table import Table
 from ze_components.organisms.chart import Chart, ChartPoint
 from ze_components.patterns.card_notice import card_notice
@@ -248,6 +250,63 @@ async def render_table(
     caption: str | None = None,
 ) -> Table:
     return Table(headers=headers, rows=rows, title=title, caption=caption)
+
+
+@dataclasses.dataclass
+class _KeyedTableSchema:
+    headers: list[str]
+    rows: list[list[str]]
+    keys: list[str]
+    title: str | None = None
+    caption: str | None = None
+
+
+@render_tool(
+    _KeyedTableSchema,
+    description=(
+        "Render a table whose rows each have a stable key (an id). Use when the "
+        "rows are records the user may act on later. keys: one unique string per row. "
+        "All cell values must be pre-formatted strings."
+    ),
+)
+async def render_keyed_table(
+    headers: list,
+    rows: list,
+    keys: list,
+    title: str | None = None,
+    caption: str | None = None,
+) -> Table:
+    return Table(headers=headers, rows=rows, keys=keys, title=title, caption=caption)
+
+
+@render_tool(
+    StatRow,
+    description=(
+        "Render one to six headline numbers side by side. "
+        "Each item: {label, value (pre-formatted string), delta (optional), "
+        "direction: 'up'|'down'|'flat' (optional)}."
+    ),
+)
+async def render_stat_row(items: list) -> StatRow:
+    return StatRow(items=[Stat(**_coerce_dict(i)) for i in items])
+
+
+@render_tool(
+    Sparkline,
+    description=(
+        f"Render a small trend line. points: up to {SPARKLINE_MAX_POINTS} numbers, "
+        "oldest first (longer series keep the latest points). value: the current "
+        "reading as a pre-formatted string (optional)."
+    ),
+)
+async def render_sparkline(
+    label: str, points: list, value: str | None = None
+) -> Sparkline:
+    return Sparkline(
+        label=label,
+        points=[float(p) for p in points][-SPARKLINE_MAX_POINTS:],
+        value=value,
+    )
 
 
 def _coerce_chart_points(points: list) -> list[ChartPoint]:

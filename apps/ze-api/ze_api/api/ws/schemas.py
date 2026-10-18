@@ -54,7 +54,6 @@ class WsEditFrame(BaseModel):
     thread_id: str | None = None
     text: str | None = None
     components: list[dict[str, Any]] = []
-    ui_version: str | None = None
 
 
 class WsConfirmItem(BaseModel):
