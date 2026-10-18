@@ -1,7 +1,7 @@
-import { useRef, useState, type KeyboardEvent } from "react";
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
-import { memoryPoints, type MemoryPoint } from "../../lib/instruments/memory";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { useNarrow } from "@/shared/lib";
+import { memoryPoints, type MemoryPoint } from "../../lib/instruments/memory";
 
 const W = 100;
 const H = 60;

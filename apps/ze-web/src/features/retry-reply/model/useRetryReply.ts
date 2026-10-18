@@ -1,6 +1,6 @@
 import type { WsOutboundFrame } from "@myguyze/ze-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useConversation, useThread } from "@/entities/conversation";
 import { useSession } from "@/entities/session";
 import { send } from "@/shared/api";
@@ -20,14 +20,10 @@ interface UseRetryReplyOptions {
 export function useRetryReply({ threadId, onNotice }: UseRetryReplyOptions) {
   const queryClient = useQueryClient();
   const thread = useThread(threadId);
-  const [pendingId, setPendingId] = useState<string | null>(null);
   const phase = thread.turn.phase;
   const running = phase === "awaiting" || phase === "thinking" || phase === "speaking";
+  const pendingId = thread.turn.retryOf ?? null;
   const retrying = pendingId !== null && running;
-
-  useEffect(() => {
-    if (!running && pendingId !== null) setPendingId(null);
-  }, [running, pendingId]);
 
   const changes = thread.messages.map((m) => `${m.id}:${m.replaced_by ?? ""}:${m.rollback?.state ?? ""}`).join("|") + `#${thread.lastOutcome?.kind ?? ""}`;
   const seen = useRef(changes);
@@ -52,7 +48,6 @@ export function useRetryReply({ threadId, onNotice }: UseRetryReplyOptions) {
       return false;
     }
     useConversation.getState().apply({ type: "retry_sent", threadId, messageId }, { activeThreadId: useSession.getState().threadId });
-    setPendingId(messageId);
     return true;
   }
 

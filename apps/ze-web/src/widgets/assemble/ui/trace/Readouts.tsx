@@ -1,6 +1,6 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
-import { readoutsFor } from "../../lib/instruments/readouts";
 import { DotMatrix } from "@/shared/ui";
+import { readoutsFor } from "../../lib/instruments/readouts";
 
 export function Readouts({ trace }: { trace: Partial<WsTraceUpdateFrame> }) {
   const r = readoutsFor(trace);

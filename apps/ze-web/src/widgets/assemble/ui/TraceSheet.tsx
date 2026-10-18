@@ -1,6 +1,6 @@
 import { Control, Dialog } from "@/shared/ui";
-import { TraceModule } from "./TraceModule";
 import type { WhyTarget } from "../lib/why";
+import { TraceModule } from "./TraceModule";
 
 /** The trace rail in a dialog: the overlay's "Why?" and the phone layout. Escape closes; focus returns to the opener. */
 export function TraceSheet({ threadId, messageId, target, onClose }: { threadId: string; messageId: string | null; target: WhyTarget | null; onClose: () => void }) {

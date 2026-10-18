@@ -5,8 +5,8 @@ import { ConnectedPrimitiveTree } from "@/features/primitive-tree";
 import { Module } from "@/shared/ui";
 import { componentType, instrumentId, spanOf } from "../lib/exchanges";
 import type { WhyTarget } from "../lib/why";
-import { WhyLink } from "./WhyLink";
 import { useCascade } from "./useCascade";
+import { WhyLink } from "./WhyLink";
 
 export interface ModuleKey {
   key: string;

@@ -2,9 +2,9 @@ import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { ReplyActions } from "@/features/reply-feedback";
 import { useTraceStore, threadTraceBucket } from "@/features/trace-state";
 import { Module } from "@/shared/ui";
-import { coordinateOf, routingFor } from "../lib/instruments/routing";
 import { describeJudgments } from "../lib/instruments/judgments";
 import { readoutsFor } from "../lib/instruments/readouts";
+import { coordinateOf, routingFor } from "../lib/instruments/routing";
 import type { WhySection } from "../lib/why";
 import { useAssemble } from "../model/useAssemble";
 import { Instrument } from "./trace/Instrument";
@@ -13,14 +13,14 @@ import { MemoryConstellation } from "./trace/MemoryConstellation";
 import { Readouts } from "./trace/Readouts";
 import { ReversalTrack } from "./trace/ReversalTrack";
 import { RoutingInstrument } from "./trace/RoutingInstrument";
-import { SignalPath } from "./trace/SignalPath";
-import { ToolsTimeline } from "./trace/ToolsTimeline";
 import { ConductorRow } from "./trace/rows/ConductorRow";
 import { ConfirmationsRow } from "./trace/rows/ConfirmationsRow";
 import { ScreenRow } from "./trace/rows/ScreenRow";
 import { SkillsRow } from "./trace/rows/SkillsRow";
 import { SourcesRow } from "./trace/rows/SourcesRow";
 import { WorkspaceRow } from "./trace/rows/WorkspaceRow";
+import { SignalPath } from "./trace/SignalPath";
+import { ToolsTimeline } from "./trace/ToolsTimeline";
 
 interface TraceModuleProps {
   threadId: string;

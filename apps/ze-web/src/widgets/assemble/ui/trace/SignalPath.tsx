@@ -1,7 +1,7 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
-import { stagesFor } from "../../lib/instruments/signal";
 import { useReducedMotion } from "@/shared/lib";
 import { DotMatrix } from "@/shared/ui";
+import { stagesFor } from "../../lib/instruments/signal";
 
 interface SignalPathProps {
   trace: Partial<WsTraceUpdateFrame>;

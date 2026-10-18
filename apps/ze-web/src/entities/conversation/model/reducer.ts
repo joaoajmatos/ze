@@ -31,7 +31,11 @@ export interface ThreadState {
     streamingText: string;
     activityAt: number;
     lastSent: SentTurn | null;
+    /** The reply a retry in flight regenerates. */
+    retryOf?: string | null;
   };
+  /** Replies that arrived on the live socket (not from history); the canvas flies these out of the orb. */
+  liveIds?: string[];
   lastOutcome: TurnOutcome | null;
   lastMessageAt: number | null;
   lastError: { detail: string; code: string | null; at: number } | null;
@@ -102,7 +106,7 @@ function upsert(messages: Message[], m: Message): Message[] {
 }
 
 function endTurn(t: ThreadState, phase: TurnPhase = "idle"): ThreadState {
-  return { ...t, turn: { ...t.turn, phase, typingText: null, streamingText: "" } };
+  return { ...t, turn: { ...t.turn, phase, typingText: null, streamingText: "", retryOf: null } };
 }
 
 /** Threads a frame without a `thread_id` can belong to: only the ones with a turn in flight. */
@@ -143,7 +147,13 @@ export function reduce(state: ConversationState, event: ConversationEvent, now: 
       const m = event.message;
       if (!m.thread_id) return state;
       return patch(state, m.thread_id, (t) => {
-        const next: ThreadState = { ...t, messages: upsert(t.messages, m), lastMessageAt: now };
+        const isNew = !t.messages.some((x) => x.id === m.id);
+        const next: ThreadState = {
+          ...t,
+          messages: upsert(t.messages, m),
+          lastMessageAt: now,
+          liveIds: m.role === "assistant" && isNew ? [...(t.liveIds ?? []), m.id] : t.liveIds,
+        };
         if (m.role !== "assistant") return next;
         const settled = endTurn(next);
         return { ...settled, attention: m.thread_id === ctx.activeThreadId ? false : true };
@@ -260,7 +270,7 @@ export function reduce(state: ConversationState, event: ConversationEvent, now: 
       return patch(state, event.threadId, (t) => ({
         ...t,
         lastOutcome: null,
-        turn: { ...t.turn, phase: "awaiting", typingText: null, streamingText: "", activityAt: now },
+        turn: { ...t.turn, phase: "awaiting", typingText: null, streamingText: "", activityAt: now, retryOf: event.messageId },
       }));
     case "history_loaded":
       return patch(state, event.threadId, (t) => {

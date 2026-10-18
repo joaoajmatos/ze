@@ -1,5 +1,5 @@
 import type { WsScreenRef } from "@myguyze/ze-client";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ConnectedPrimitiveTree } from "@/features/primitive-tree";
 import { ReplyActions } from "@/features/reply-feedback";
@@ -33,57 +33,35 @@ export function Canvas({ threadId, compact = false, selectedMessageId = null, on
   const [pinned, setPinned] = useState<Set<string>>(new Set());
   const [hidden, setHidden] = useState<Set<string>>(new Set());
 
-  // Replies already in the thread when it loaded appear at once; only a reply that arrives live cascades.
-  const known = useRef<Set<string> | null>(null);
-  const live = useRef<Set<string>>(new Set());
+  // Only a reply that arrived on the live socket cascades; the store marks those, history never.
+  const live = new Set(thread.liveIds ?? []);
   const replies = exchanges.flatMap((e) => e.replies);
-  if (thread.historyLoaded && known.current === null) known.current = new Set(replies.map((r) => r.id));
-  if (known.current) {
-    for (const r of replies) {
-      if (!known.current.has(r.id)) {
-        known.current.add(r.id);
-        live.current.add(r.id);
-      }
-    }
-  }
-  const seenThread = useRef(threadId);
-  if (seenThread.current !== threadId) {
-    seenThread.current = threadId;
-    known.current = null;
-    live.current = new Set();
-  }
 
-  const toggle = (setter: typeof setPinned) => (key: string) =>
+  const flip = (setter: typeof setPinned) => (key: string) =>
     setter((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
     });
-  const pin = useCallback(toggle(setPinned), []);
-  const dismiss = useCallback(
-    (key: string) => {
-      setHidden((prev) => new Set(prev).add(key));
-      setPinned((prev) => {
-        if (!prev.has(key)) return prev;
-        const next = new Set(prev);
-        next.delete(key);
-        return next;
-      });
-    },
-    [],
-  );
+  const pin = flip(setPinned);
+  const dismiss = (key: string) => {
+    setHidden((prev) => new Set(prev).add(key));
+    setPinned((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  };
 
   // Running A·NN numbers over the whole canvas, so ids are unique.
-  const numbering = useMemo(() => {
-    let n = 1;
-    const first = new Map<string, number>();
-    for (const r of replies) {
-      first.set(r.id, n);
-      n += (r.components ?? []).length;
-    }
-    return first;
-  }, [replies]);
+  const numbering = new Map<string, number>();
+  let counted = 1;
+  for (const r of replies) {
+    numbering.set(r.id, counted);
+    counted += (r.components ?? []).length;
+  }
 
   const pinnedModules = replies.flatMap((r) =>
     ((r.components ?? []) as Record<string, unknown>[]).map((component, i) => ({ r, component, i, key: `${r.id}:${i}` })).filter((m) => pinned.has(m.key) && !hidden.has(m.key)),
@@ -137,7 +115,7 @@ export function Canvas({ threadId, compact = false, selectedMessageId = null, on
                 key={reply.id}
                 message={reply}
                 compact={compact}
-                live={live.current.has(reply.id)}
+                live={live.has(reply.id)}
                 firstNumber={numbering.get(reply.id) ?? 1}
                 hidden={hidden}
                 pinned={pinned}

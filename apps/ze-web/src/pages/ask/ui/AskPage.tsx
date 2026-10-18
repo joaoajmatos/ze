@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { Canvas, ConfirmationPlacement, RetryControl, TraceModule, TraceSheet, type WhyTarget } from "@/widgets/assemble";
+import { SessionsRail } from "@/widgets/sessions-rail";
+import { TryChips } from "@/widgets/try-chips";
 import { useAskOverlay, useChatAbout } from "@/features/ask-bar";
 import { sendTurn, type SendTurnOptions } from "@/features/turn-stream";
 import { useThread, useThreadHistory } from "@/entities/conversation";
 import { useOnboardingSession } from "@/entities/onboarding-session";
 import { useSession } from "@/entities/session";
-import { Canvas, ConfirmationPlacement, RetryControl, TraceModule, TraceSheet, type WhyTarget } from "@/widgets/assemble";
-import { SessionsRail } from "@/widgets/sessions-rail";
-import { TryChips } from "@/widgets/try-chips";
 import { useConnectionState } from "@/shared/api";
 import { useNarrow } from "@/shared/lib";
 import { Control } from "@/shared/ui";
@@ -31,8 +31,13 @@ function remember(sessionId: string) {
 
 /** Ask: the rail (try, sessions), the canvas for the selected thread, and the trace of the selected reply. */
 export function AskPage() {
-  const { threadId: urlThread } = useParams<{ threadId: string }>();
   const threadId = useSession((s) => s.threadId);
+  // Per-thread view state (selected reply, open "Why?") resets by remounting on a thread change.
+  return <AskThread key={threadId} threadId={threadId} />;
+}
+
+function AskThread({ threadId }: { threadId: string }) {
+  const { threadId: urlThread } = useParams<{ threadId: string }>();
   const selectSession = useSession((s) => s.selectSession);
   const thread = useThread(threadId);
   const { loadHistory } = useThreadHistory(threadId);
@@ -54,11 +59,6 @@ export function AskPage() {
   useEffect(() => {
     if (connection === "online") void loadHistory();
   }, [connection, loadHistory]);
-
-  useEffect(() => {
-    setSelectedId(null);
-    setWhy(null);
-  }, [threadId]);
 
   const running = ["awaiting", "thinking", "speaking"].includes(thread.turn.phase);
   const onboardingThread = onboardingId && !onboardingDone ? `onboarding:${onboardingId}` : null;
