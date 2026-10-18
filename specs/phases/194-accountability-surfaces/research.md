@@ -1,9 +1,9 @@
 # Research: Accountability Surfaces (B4)
 
 ## R1. Matching an action to its subject
-- **Decision**: match on the record's `context` JSON keys only: goal → `goal_id`, workflow → `workflow_id`, workflow run → `workflow_run_id`, workspace run → `workspace_run_id`.
-- **Rationale**: producers already stamp these (`ze_automation/action_records.py` sets `goal_id`/`milestone_id`, `workflow_id` + `workflow_run_id`, or `workflow_run_id` alone; `ze_workspace/action_handoff.py` sets `workspace_run_id`). One producer path writes only `workflow_run_id`; those records list under their run, and under the workflow only if a later change stamps `workflow_id` there too (noted for the implementer at T005: add `workflow_id` at that producer if the workflow id is in scope there; it is in `ze-automation`, outside this phase's lanes, so record it as a follow-up instead of editing).
-- **Alternatives**: join through `workflow_executions` to map runs to workflows (cross-package SQL from ze-memory into automation tables: violates ownership).
+- **Decision**: match on the record's `context` keys through a closed map (goal → `goal_id`, workflow → `workflow_id`, workflow run → `workflow_run_id`, workspace run → `workspace_run_id`). The workflow-finished record gains `workflow_id`: `finish_execution` returns it with `UPDATE … RETURNING workflow_id`, and `emit_workflow_finished` stamps it (review A-1).
+- **Rationale**: `emit_workflow_started` stamps `workflow_id`, but `emit_workflow_finished` stamped only the run. A workflow's list would have shown each "started" record and never the outcome. Calendar, reminder and prospecting producers stamp only their own keys; that limit is stated in the spec.
+- **Alternatives**: joining runs to workflows across packages (violates table ownership).
 
 ## R2. Index
 - **Decision**: no new index by default. T001 runs `EXPLAIN` on the dev database; add an expression index (`zm025`) only if the filtered query scans more than a few thousand rows.
@@ -17,7 +17,7 @@
 - **Decision**: `open_loops.updated_at`, which every state transition, confirm, drift, corroboration and stamp statement already sets (`ze_worldstate/store.py`).
 
 ## R5. Needs re-auth
-- **Decision**: record each poll's outcome on `user_channel_watermarks` (`zc040`); `auth_failed` when the exception chain contains `google.auth.exceptions.RefreshError` (expired or revoked refresh token), else `failed`.
+- **Decision**: record each poll's outcome on `user_channel_watermarks` (`zc040`). An outcome is an UPDATE when the row exists. Otherwise it is an INSERT with `last_polled_at = now() - DEFAULT_LOOKBACK`, so a later success does not skip the failure window. On failure the poll job first upserts the `user_channels` row, as the success path does, so the FK holds and the channel is listed. `auth_failed` comes from ze-google's `is_auth_failure(exc)`, which walks `__cause__` and `__context__` up to depth 5 for `RefreshError`, so the plugin never imports `google.auth`. Otherwise the outcome is `failed`. Push channels report `unknown`, because the webhook path swallows errors and watches lapse (review C-1, C-2, C-3).
 - **Rationale**: nothing stores poll failures today (`inbound_poll.py` logs `inbound_poll_failed` and returns). The old channels route (deleted in cf-06) showed only `last_polled_at` and `poll_enabled`.
 - **Alternatives**: a stale-watermark heuristic (cannot tell an expired token from a quiet inbox).
 
