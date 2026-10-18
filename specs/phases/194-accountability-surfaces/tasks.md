@@ -129,7 +129,7 @@
 
 ## Phase 8: User Story 6 - The broken reset is removed (P3)
 
-- [ ] T017 [L:jr1] [US6] Delete (the container's three reset sites are removed by `lead` in T003):
+- [x] T017 [L:jr1] [US6] Delete (the container's three reset sites are removed by `lead` in T003):
   - `core/ops/ze-onboarding/ze_onboarding/reset.py` and its names in `ze_onboarding/__init__.py`;
   - the `reset_service` assertions in `apps/ze-api/tests/api/test_ws_commands_reset_removed.py` (~38-39);
   - `scripts/reset_personal_state.py`;
