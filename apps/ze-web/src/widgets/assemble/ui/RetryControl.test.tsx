@@ -82,7 +82,8 @@ describe("RetryControl", () => {
     renderControl();
     apply({ type: "message", message: reply("a") });
     apply({ type: "sent", threadId: T, text: "hi", context: {} });
-    apply({ type: "error", thread_id: T, detail: "Ze is still working on the last one.", code: "busy" });
+    apply({ type: "error", thread_id: T, detail: "busy", code: "busy" });
+    expect(screen.getByText("Ze is still working on the last one.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(m.send).toHaveBeenCalledWith({ type: "command", name: "cancel", thread_id: T });
   });

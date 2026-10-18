@@ -133,7 +133,11 @@ describe("TurnFrameHandler", () => {
 
   it("updates the onboarding session from a message frame", () => {
     mount();
+    usePresenceStore.getState().dispatch({ type: "ws_open" });
     emit({ ...assistant("onboarding:s1"), onboarding: { session_id: "s1", completed: false } });
     expect(useOnboardingSession.getState().sessionId).toBe("s1");
+    expect(usePresenceStore.getState().presence.phrase).toBe("getting to know you");
+    emit({ ...assistant("onboarding:s1", { id: "m2" }), onboarding: { session_id: "s1", completed: true } });
+    expect(usePresenceStore.getState().presence.phrase).not.toBe("getting to know you");
   });
 });

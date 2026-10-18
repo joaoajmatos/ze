@@ -12,7 +12,7 @@ vi.mock("@/widgets/app-shell", () => ({
 }));
 vi.mock("@/widgets/assemble", () => ({ AskOverlay: () => <i data-testid="overlay" /> }));
 vi.mock("@/pages/ask", () => ({
-  AskInterim: () => {
+  AskPage: () => {
     const { threadId } = useParams();
     return <p data-testid="ask">ask {threadId ?? "none"}</p>;
   },

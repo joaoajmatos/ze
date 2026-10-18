@@ -73,7 +73,10 @@ export function TurnFrameHandler() {
   useFrame("message", (f) => {
     apply(f);
     const m = f.message;
-    if (f.onboarding) useOnboardingSession.getState().setSession(f.onboarding.session_id, f.onboarding.completed);
+    if (f.onboarding) {
+      useOnboardingSession.getState().setSession(f.onboarding.session_id, f.onboarding.completed);
+      dispatchPresence({ type: "set_onboarding", on: !f.onboarding.completed });
+    }
     if (m.role !== "assistant") return;
     if (mine(m.thread_id)) {
       dispatchPresence({ type: "turn_message" });

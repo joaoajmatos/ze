@@ -27,7 +27,7 @@ export function RetryControl({ threadId }: { threadId: string }) {
       />
       {outcome && (
         <p role="status" className="assemble-outcome">
-          <span className={outcome.kind === "busy" ? "muted" : "lbl hot"}>{outcome.detail}</span>
+          <span className={outcome.kind === "busy" ? "muted" : "lbl"}>{outcome.kind === "busy" ? "Ze is still working on the last one." : outcome.detail}</span>
           {outcome.kind === "busy" && <Control onClick={() => send({ type: "command", name: "cancel", thread_id: threadId })}>Cancel</Control>}
         </p>
       )}

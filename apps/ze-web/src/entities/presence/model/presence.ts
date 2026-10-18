@@ -15,6 +15,7 @@ export type PresenceEvent =
   | { type: "turn_reset" }
   | { type: "turn_end" }
   | { type: "settle" }
+  | { type: "set_onboarding"; on: boolean }
   | { type: "set_world_signal"; orb: "attention" | "acting" | "assembling" | null };
 
 export interface PresenceState {
@@ -27,6 +28,8 @@ export interface PresenceState {
   askHasText: boolean;
   worldSignal: "attention" | "acting" | "assembling" | null;
   doneUntil: number | null;
+  /** The server is walking the person through first-run questions. */
+  onboarding: boolean;
 }
 
 const WORLD_PHRASES = {
@@ -42,7 +45,7 @@ function derive(s: Omit<PresenceState, "orb" | "phrase">, now: number): Pick<Pre
   if (s.turn === "speaking") return { orb: "speaking", phrase: "speaking" };
   if (s.askFocused && s.askHasText) return { orb: "listening", phrase: "listening" };
   if (s.worldSignal) return { orb: s.worldSignal, phrase: WORLD_PHRASES[s.worldSignal] };
-  return { orb: "idle", phrase: "ready" };
+  return { orb: "idle", phrase: s.onboarding ? "getting to know you" : "ready" };
 }
 
 const BASE: Omit<PresenceState, "orb" | "phrase"> = {
@@ -53,6 +56,7 @@ const BASE: Omit<PresenceState, "orb" | "phrase"> = {
   askHasText: false,
   worldSignal: null,
   doneUntil: null,
+  onboarding: false,
 };
 
 function baseOf(s: PresenceState): Omit<PresenceState, "orb" | "phrase"> {
@@ -64,6 +68,7 @@ function baseOf(s: PresenceState): Omit<PresenceState, "orb" | "phrase"> {
     askHasText: s.askHasText,
     worldSignal: s.worldSignal,
     doneUntil: s.doneUntil,
+    onboarding: s.onboarding,
   };
 }
 
@@ -112,6 +117,9 @@ export function nextPresence(state: PresenceState, event: PresenceEvent, now: nu
     case "settle":
       if (base.doneUntil === null || now < base.doneUntil) return state;
       next = { ...base, doneUntil: null };
+      break;
+    case "set_onboarding":
+      next = { ...base, onboarding: event.on };
       break;
     case "set_world_signal":
       next = { ...base, worldSignal: event.orb };
