@@ -120,11 +120,11 @@
 
 ## Phase 8: Polish and cross-cutting
 
-- [ ] T014 [L:lead] Merge `bars`, `tools`, `recorder`, then `web`. `make codegen` if a schema moved. Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make lint`. The quickstart grep returns nothing. Measure SC-004 with a realistic send (an interface that awaits a real local WebSocket, not a mock): the median server time of the turn tests with and without the recorder (record both numbers in the Handoffs note; over 5 ms is a finding for the Spec Architect).
-- [ ] T015 [L:lead] Run [quickstart.md](./quickstart.md) steps 1–5 against `make dev-full`, with captures of the trace panel (live, from history, and the paused turn) at 1440, and record them in the Handoffs note.
-- [ ] T016 [P] [L:docs] `docs/native-interface.md` (partial stage, tool and routing frames; best-effort live frames; committed fields; the rename), `docs/architecture.md` (the trace section and the timed-node note), `docs/frontend.md` (instruments read server stages; remove the arrival-stamp wording); doc-style skill.
-- [ ] T017 [P] [L:docs] `AGENTS.md` phase row 187b and the repo-layout block (`telemetry/` names `turn.py`, `orchestration/` names `timing.py`); `specs/README.md` row 187b → Implemented; spec status.
-- [ ] T018 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
+- [x] T014 [L:lead] Merge `bars`, `tools`, `recorder`, then `web`. `make codegen` if a schema moved. Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make lint`. The quickstart grep returns nothing. Measure SC-004 with a realistic send (an interface that awaits a real local WebSocket, not a mock): the median server time of the turn tests with and without the recorder (record both numbers in the Handoffs note; over 5 ms is a finding for the Spec Architect).
+- [x] T015 [L:lead] Run [quickstart.md](./quickstart.md) steps 1–5 against `make dev-full`, with captures of the trace panel (live, from history, and the paused turn) at 1440, and record them in the Handoffs note.
+- [x] T016 [P] [L:docs] `docs/native-interface.md` (partial stage, tool and routing frames; best-effort live frames; committed fields; the rename), `docs/architecture.md` (the trace section and the timed-node note), `docs/frontend.md` (instruments read server stages; remove the arrival-stamp wording); doc-style skill.
+- [x] T017 [P] [L:docs] `AGENTS.md` phase row 187b and the repo-layout block (`telemetry/` names `turn.py`, `orchestration/` names `timing.py`); `specs/README.md` row 187b → Implemented; spec status.
+- [x] T018 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
 
 ---
 
@@ -148,3 +148,20 @@ After the contract step:
 ## Implementation Strategy
 
 - MVP = US1 (server stage times, live and stored) on the contract step, with the signal path reading them. US2 completes the readouts. US3 and US4 make the remaining instruments honest.
+
+
+---
+
+## Handoffs
+
+**Lead, 2026-10-18.** Lanes merged in order bars, tools, recorder, web; floor branch `187b-trace-telemetry`.
+
+- **T001 differences from plan.md**: the workflow graph builder is `apps/ze-api/ze_api/wiring/workflow_graph.py`. Fact-fallback judgments use `surface="fact_judge"` with no bar. System One ids: routing `agent`, `multi_specialist`; skills `needs_skill`; tier `needs_deep_reasoning`; intake `commitment` plus its Nouls. T001's `graphify affected` runs were not made; call sites came from grep.
+- **Envelope builders** (bars lane): `routing/router.py` (3), `nodes/routing.py` (decompose stamps router bars on the Haiku envelope), `nodes/context.py` (companion reroute). Bars live in `ze_core/orchestration/judgment_bars.py` because ze-core cannot import ze-worldstate.
+- **Lead fixes after merge**: one `ROUTING_SCORES_SHOWN` (imported from `nodes/trace.py`); the `delegate_to_agent` wrapper call and provider-handled tools now reach the tool sink (a committed delegate row had no live row, SC-003).
+- **Known behavior**: an unknown tool the model invents (seen: `log_outreach_event` on companion) shows as a failed live row and is absent from the committed trace, because the loop never accumulates it.
+- **Gates** (via gate-lock where full): `make test-py`, `test-web`, `typecheck-web` rc=0; `make lint`, `lint-web` rc=0 (one existing warning in WorldPage).
+- **SC-004** (`bench_sc004`-style script in the lead scratchpad, 17 no-op nodes, `websockets` loopback, paired runs, machine under heavy load from other floors): recorder without a send target adds 0.07 ms median; with a real WebSocket send the paired median delta ranged -8 to +6 ms across runs (noise dominated). The sender is off the node path; the only wait is the end-of-turn drain. No finding for the Spec Architect, but the WS number is not a clean sub-5 ms proof.
+- **T015** against API :8040 (DB `ze_e2e_187b`, quiet profile, Google and workspace off), vite :5193, portal "Telemetry Final Web" (1440x900; the framer-motion welcome step does not advance in the portal, so config was set in localStorage): simple turn, set-reminder turn, delete-reminder turn with a 20 s pause, two compound turns. Live frames carried 13 to 16 stage frames in order, routing scores and thresholds, tool rows; the REST trace equals the committed frame; paused turn: `paused_ms` 20092, stages `run` 1 and 2, `await_write_confirmation` twice; committed tool ids all appear in live rows. Capture: `/private/tmp/claude-501/-Users-joaoamatos-coding--maestri-floors-ze--187b-trace-telemetry/2e0e0f35-f251-40fe-bc5c-1c15e9fdc8a7/scratchpad/capture-history-paused-1440.png` (history view of the paused reply: stages, "waited 20.1 s", active 9.9 s, tokens, cost). Not captured: the live panel mid-turn and a forced tool failure (step 4; no workspace sidecar here).
+- **Web finding**: in the Signal path grid the labels "PREPROCESS / INJECT ROUTING CONTEXT" and "CORRELATE / SURFACE" overlap at 1440 (more stages than before). Not fixed.
+- **T018** coverage: AGENTS.md (row, layout lines), specs/README.md, spec status, docs/native-interface.md, architecture.md, frontend.md, quickstart wording.
