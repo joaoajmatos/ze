@@ -105,13 +105,17 @@
   - `integrations/ze-google/tests/test_auth_errors.py`: `is_auth_failure` is true for a `RefreshError` raised directly, as `__cause__`, or as `__context__` two levels down; false otherwise; it stops at depth 5.
   - `plugins/ze-messenger/tests/jobs/test_inbound_poll_outcome.py`:
     - a successful poll records `ok`;
-    - an auth failure records `auth_failed`, after upserting the `user_channels` row first (call order asserted: a never-successful channel becomes listable);
+    - an auth failure records `auth_failed`, after `ensure` (insert-if-absent) of the `user_channels` row first (call order asserted: a never-successful channel becomes listable); the failure path never calls `upsert`;
+    - N-1: with an existing row (handle `me@x`) and an unresolved email, a failed poll leaves the handle `me@x`;
+    - N-2: a failure with the email unresolved records under the bare key (`email`); a later success under `gmail:me@x` calls `drop_unkeyed("email")`; a success whose id equals the bare type value does not;
     - any other exception records `failed`;
     - push channels record nothing;
     - a failure while recording the outcome is logged and never breaks the poll;
     - the plugin does not import `google.auth` (a grep assertion).
 
-  Implement `ze_google/auth_errors.py` (exported from the package) and `ze_messenger/jobs/inbound_poll.py`.
+  - `plugins/ze-personal/tests/channels/test_user_channel_store.py`: `ensure` inserts when absent and changes nothing when present; `drop_unkeyed` deletes the watermark row before the channel row, in one transaction, and is a no-op with no rows. One `@pytest.mark.pg` test: fail (bare key), re-auth, succeed → `list_all()` and `GET /channels/status` give one Gmail row, `connected`.
+
+  Implement `ze_google/auth_errors.py` (exported from the package), `UserChannelStore.ensure` and `drop_unkeyed` in `ze_personal/channels/user_channel_store.py`, and `ze_messenger/jobs/inbound_poll.py`.
 - [ ] T016 [L:channels] [US5] Tests first `apps/ze-api/tests/api/test_channel_status_route.py`:
   - the state mapping: `poll_enabled` false → `off`; push → `unknown` with the line "Receives by push; Ze does not monitor it."; `auth_failed` → `needs_reauth`; `failed` → `error`; `ok` → `connected`; no outcome → `unknown`;
   - `last_sync_at` is the watermark only after an `ok` outcome, else null;

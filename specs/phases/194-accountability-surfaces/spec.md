@@ -141,6 +141,7 @@ The personal-state reset, which wipes tables it does not list, is deleted with i
 - Records with the same timestamp page in a stable order (time, then id).
 - A collision filter with a `since` after `until` returns an empty list, not an error.
 - The tier route during a config reload returns either the old or the new values, never a mix.
+- A Gmail token that is already dead at startup fails before Ze knows the account's address: the failure shows under the bare channel, keeps any known address, and the bare row disappears after the first successful poll once re-authorised, so the user sees one Gmail row.
 
 ## Requirements *(mandatory)*
 
