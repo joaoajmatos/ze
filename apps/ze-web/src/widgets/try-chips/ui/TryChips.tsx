@@ -21,6 +21,8 @@ function activeGoal(goals: GoalListItem[]): GoalListItem | null {
   return goals.filter((g) => g.status === "active").reduce<GoalListItem | null>((best, g) => (best && touched(best) >= touched(g) ? best : g), null);
 }
 
+const dialogOpen = () => document.querySelector('[role="dialog"], [aria-modal="true"], dialog[open]') !== null;
+
 const typing = (el: Element | null) =>
   el instanceof HTMLElement && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable);
 
@@ -39,7 +41,7 @@ export function TryChips({ onSend, disabled = false }: Props) {
   useEffect(() => {
     if (disabled || !barEmpty) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented || typing(document.activeElement)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented || typing(document.activeElement) || dialogOpen()) return;
       const chip = chips[Number(e.key) - 1];
       if (!chip) return;
       e.preventDefault();
