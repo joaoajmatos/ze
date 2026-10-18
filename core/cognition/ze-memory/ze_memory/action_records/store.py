@@ -360,7 +360,7 @@ class PostgresActionRecordStore:
             _add("authoritative_domain = ?", authoritative_ref.domain)
             _add("authoritative_record_id = ?", authoritative_ref.record_id)
         if causal_ref is not None:
-            payload = json.dumps([{"kind": causal_ref.kind, "id": str(causal_ref.id)}])
+            payload = [{"kind": causal_ref.kind, "id": str(causal_ref.id)}]
             _add("causal_refs @> ?::jsonb", payload)
         if before is not None:
             _add("occurred_at < ?", before)

@@ -58,3 +58,19 @@ def test_cyclic_chain_terminates():
     a.__cause__ = b
     b.__cause__ = a
     assert not is_auth_failure(a)
+
+
+def _http_error(status: int):
+    from unittest.mock import Mock
+
+    from googleapiclient.errors import HttpError
+
+    return HttpError(Mock(status=status, reason="x"), b"{}")
+
+
+def test_http_401_is_an_auth_failure():
+    assert is_auth_failure(_http_error(401))
+
+
+def test_other_http_errors_are_not():
+    assert not is_auth_failure(_http_error(500))

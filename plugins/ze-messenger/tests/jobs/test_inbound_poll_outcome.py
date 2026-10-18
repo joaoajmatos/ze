@@ -172,3 +172,37 @@ async def test_recording_failure_after_a_failed_poll_is_swallowed():
 def test_plugin_does_not_import_google_auth():
     source = Path(inbound_poll.__file__).read_text()
     assert "google.auth" not in source
+
+
+async def test_failure_after_restart_goes_on_the_single_keyed_row():
+    ch = _channel(channel_id="email", user_email=None)
+    ch._resolve_user_email = AsyncMock(side_effect=RefreshError("invalid_grant"))
+    job, marks, users, _ = _job(ch, [_existing()])
+
+    await job.run()
+
+    assert marks.record_outcome.call_args[0][0] == "gmail:me@x"
+    assert _outcome(marks) is PollOutcome.AUTH_FAILED
+    users.ensure.assert_not_called()
+    users.upsert.assert_not_called()
+
+
+async def test_failure_with_two_keyed_rows_falls_back_to_the_bare_row():
+    ch = _channel(channel_id="email", user_email=None)
+    ch._resolve_user_email = AsyncMock(side_effect=RefreshError("invalid_grant"))
+    job, marks, users, _ = _job(ch, [_existing(), _existing("gmail:you@y", "you@y")])
+
+    await job.run()
+
+    assert marks.record_outcome.call_args[0][0] == "email"
+    users.ensure.assert_called_once()
+
+
+async def test_register_failure_after_a_good_poll_records_failed():
+    ch = _channel()
+    job, marks, users, _ = _job(ch)
+    users.upsert = AsyncMock(side_effect=RuntimeError("db down"))
+
+    await job.run()
+
+    assert _outcome(marks) is PollOutcome.FAILED

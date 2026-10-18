@@ -101,9 +101,11 @@ def test_phase_165_revisions_join_the_discovered_chains():
     zm024 = script.get_revision("zm024")
     assert zc031.down_revision == "zc030"
     assert zm024.down_revision == "zm023"
+    assert script.get_revision("zm025").down_revision == "zm024"
     assert isinstance(cfg, Config)
     heads = set(script.get_heads())
-    assert {"zc040", "zm024"} <= heads
+    assert {"zc040", "zm025"} <= heads
+    assert "zm024" not in heads  # zm025 revises it (Phase 194)
     assert "zc039" not in heads  # zc040 revises it (Phase 194)
     assert "zc031" not in heads  # zc032 revises it (Phase 180)
     assert script.get_revision("zc035").down_revision == "zc034"

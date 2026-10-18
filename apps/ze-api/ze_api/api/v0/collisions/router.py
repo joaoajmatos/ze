@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from ze_api.api.datetimes import require_aware
 from ze_api.api.deps import get_collision_store, require_api_key
 from ze_api.api.v0.collisions.schemas import CollisionLogEntrySchema
 from ze_collision import rest as collision_rest
@@ -22,7 +23,8 @@ router = APIRouter(
     operation_id="listCollisions",
     summary="List logged contribution collisions",
     description="List cross-function contribution collisions detected by the collision "
-    "seam. Collisions are logged, never blocked or resolved.",
+    "seam. Collisions are logged, never blocked or resolved. `since` and `until` need "
+    "a timezone offset; `since` after `until` returns an empty list.",
 )
 async def list_collisions(
     entity_id: UUID | None = Query(default=None),
@@ -32,6 +34,7 @@ async def list_collisions(
     limit: int = Query(default=50, ge=1, le=200),
     store: CollisionLogStore = Depends(get_collision_store),
 ) -> list[CollisionLogEntrySchema]:
+    require_aware(since=since, until=until)
     sf = None
     if source_function:
         try:

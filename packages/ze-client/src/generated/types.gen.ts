@@ -5214,7 +5214,7 @@ export type ListLoopsData = {
         /**
          * State
          */
-        state?: Array<string> | null;
+        state?: Array<'suspected' | 'active' | 'drifting' | 'closed' | 'dropped'> | null;
         /**
          * Since
          */

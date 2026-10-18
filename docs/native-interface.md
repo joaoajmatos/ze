@@ -463,6 +463,8 @@ Five read routes show the web app what Ze did and how it is connected. All need 
 
 Channel state comes from the last poll. The poll job records `ok`, `auth_failed` or `failed` on the channel's watermark row without moving the watermark, so a failed poll skips no mail. `last_sync_at` is set only after an `ok` poll. A Gmail channel whose address never resolved shows under its bare type (`email`) until the next good poll; then that row goes away and only the address row stays.
 
+Query times (`since`, `until`) need a timezone offset; a time without one returns 422. A 401 from Google counts as `needs_reauth`, the same as a failed token refresh. When the account never resolved after a restart, the failed poll is recorded on the channel's one existing address row.
+
 Calendar, reminder and prospecting actions do not carry a goal, workflow or run, so they do not list under a subject.
 
 ---

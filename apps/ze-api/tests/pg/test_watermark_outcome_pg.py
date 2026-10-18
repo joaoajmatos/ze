@@ -73,3 +73,40 @@ async def test_fail_reauth_succeed_leaves_one_connected_gmail_row(pg_pool):
     status = await marks.get_status_many(["gmail:me@x", "email"])
     assert status["gmail:me@x"].last_outcome is PollOutcome.OK
     assert status["email"].last_outcome is None
+
+
+async def test_failure_after_restart_leaves_one_needs_reauth_row(pg_pool):
+    from unittest.mock import AsyncMock, MagicMock
+
+    from google.auth.exceptions import RefreshError
+    from ze_communication.types import ChannelType
+    from ze_messenger.jobs.inbound_poll import InboundPollingJob
+
+    await _reset(pg_pool)
+    users = UserChannelStore(pg_pool)
+    marks = ChannelWatermarkStore(pg_pool)
+    await users.upsert(_channel("gmail:me@x", "me@x"))
+    await marks.set("gmail:me@x", datetime.now(timezone.utc))
+    await marks.record_outcome("gmail:me@x", PollOutcome.OK, datetime.now(timezone.utc))
+
+    channel = MagicMock()
+    channel.channel_id = "email"
+    channel.channel_type = ChannelType.EMAIL
+    channel.supports_push = False
+    channel._user_email = None
+    channel._resolve_user_email = AsyncMock(side_effect=RefreshError("invalid_grant"))
+    registry = MagicMock()
+    registry.inbound_channels.return_value = [channel]
+    job = InboundPollingJob(
+        registry=registry,
+        watermark_store=marks,
+        user_channel_store=users,
+        processor=AsyncMock(),
+    )
+
+    await job.run()
+
+    rows = await users.list_all()
+    assert [r.channel_id for r in rows] == ["gmail:me@x"]
+    status = (await marks.get_status_many(["gmail:me@x"]))["gmail:me@x"]
+    assert status.last_outcome is PollOutcome.AUTH_FAILED

@@ -7,6 +7,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from ze_api.api.datetimes import require_aware
 from ze_api.api.deps import get_action_record_store, require_api_key
 from ze_api.api.v0.actions.schemas import (
     ActionRecordItem,
@@ -29,7 +30,8 @@ router = APIRouter(
     summary="List what Ze did",
     description="List action-ledger records newest first, optionally for one goal, "
     "workflow, workflow run or workspace run. subject_type and subject_id go "
-    "together. Pages by an opaque cursor.",
+    "together. `since` is exclusive and needs a timezone offset. Pages by an opaque "
+    "cursor.",
 )
 async def list_action_records(
     subject_type: ActionSubjectType | None = Query(default=None),
@@ -39,6 +41,7 @@ async def list_action_records(
     limit: int = Query(default=50, ge=1, le=200),
     store: ActionRecordStore = Depends(get_action_record_store),
 ) -> ActionRecordPage:
+    require_aware(since=since)
     if (subject_type is None) != (subject_id is None):
         raise HTTPException(
             status_code=422,

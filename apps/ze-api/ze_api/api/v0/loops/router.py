@@ -3,8 +3,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from ze_api.api.datetimes import require_aware
 from ze_api.api.deps import get_loop_store, require_api_key
-from ze_api.api.v0.loops.schemas import LoopListItem, LoopTransitionResponse
+from ze_api.api.v0.loops.schemas import (
+    LoopListItem,
+    LoopStateName,
+    LoopTransitionResponse,
+)
 from ze_worldstate import rest as loop_rest
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.store import LoopStore
@@ -26,10 +31,11 @@ router = APIRouter(
     "inflows it was seen in.",
 )
 async def list_loops(
-    state: list[str] | None = Query(default=None),
+    state: list[LoopStateName] | None = Query(default=None),
     since: datetime | None = Query(default=None),
     store: LoopStore = Depends(get_loop_store),
 ) -> list[LoopListItem]:
+    require_aware(since=since)
     loops = await loop_rest.list_loops(store, state or None, since=since)
     return [LoopListItem.model_validate(loop) for loop in loops]
 

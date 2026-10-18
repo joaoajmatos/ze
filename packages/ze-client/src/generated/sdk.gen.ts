@@ -46,7 +46,7 @@ export const getModelSettings = <ThrowOnError extends boolean = false>(options?:
 /**
  * List what Ze did
  *
- * List action-ledger records newest first, optionally for one goal, workflow, workflow run or workspace run. subject_type and subject_id go together. Pages by an opaque cursor.
+ * List action-ledger records newest first, optionally for one goal, workflow, workflow run or workspace run. subject_type and subject_id go together. `since` is exclusive and needs a timezone offset. Pages by an opaque cursor.
  */
 export const listActionRecords = <ThrowOnError extends boolean = false>(options?: Options<ListActionRecordsData, ThrowOnError>): RequestResult<ListActionRecordsResponses, ListActionRecordsErrors, ThrowOnError> => (options?.client ?? client).get<ListActionRecordsResponses, ListActionRecordsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -68,7 +68,7 @@ export const listChannelStatus = <ThrowOnError extends boolean = false>(options?
 /**
  * List logged contribution collisions
  *
- * List cross-function contribution collisions detected by the collision seam. Collisions are logged, never blocked or resolved.
+ * List cross-function contribution collisions detected by the collision seam. Collisions are logged, never blocked or resolved. `since` and `until` need a timezone offset; `since` after `until` returns an empty list.
  */
 export const listCollisions = <ThrowOnError extends boolean = false>(options?: Options<ListCollisionsData, ThrowOnError>): RequestResult<ListCollisionsResponses, ListCollisionsErrors, ThrowOnError> => (options?.client ?? client).get<ListCollisionsResponses, ListCollisionsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

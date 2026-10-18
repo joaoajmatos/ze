@@ -67,8 +67,17 @@ class InboundPollingJob:
                 )
 
         # Auto-register channel in user_channels on first successful poll
-        await self._user_channels.upsert(self._user_channel(channel))
-        await self._watermarks.set(channel.channel_id, datetime.now(timezone.utc))
+        try:
+            await self._user_channels.upsert(self._user_channel(channel))
+            await self._watermarks.set(channel.channel_id, datetime.now(timezone.utc))
+        except Exception as exc:
+            _log.warning(
+                "inbound_poll_register_failed",
+                channel_id=channel.channel_id,
+                error=str(exc),
+            )
+            await self._record_failure(channel, PollOutcome.FAILED)
+            return
         await self._record_success(channel)
 
     @staticmethod
@@ -87,11 +96,9 @@ class InboundPollingJob:
 
     async def _record_failure(self, channel: object, outcome: PollOutcome) -> None:
         try:
-            # ensure, not upsert: with the account unresolved the handle falls back
-            # to the bare channel id, which would overwrite a known address.
-            await self._user_channels.ensure(self._user_channel(channel))
+            channel_id = await self._failure_key(channel)
             await self._watermarks.record_outcome(
-                channel.channel_id, outcome, datetime.now(timezone.utc)
+                channel_id, outcome, datetime.now(timezone.utc)
             )
         except Exception as exc:
             _log.warning(
@@ -99,6 +106,26 @@ class InboundPollingJob:
                 channel_id=channel.channel_id,
                 error=str(exc),
             )
+
+    async def _failure_key(self, channel: object) -> str:
+        """The row a failed poll is recorded on.
+
+        With the account unresolved the channel id is the bare type value. When one
+        keyed row of that type already exists (after a restart with an expired
+        token), the failure goes on that row so no second row appears. Otherwise the
+        bare row is inserted if absent, never overwriting a known address.
+        """
+        bare_key = channel.channel_type.value
+        if channel.channel_id == bare_key:
+            keyed = [
+                uc
+                for uc in await self._user_channels.list_all()
+                if uc.channel_type == bare_key and uc.channel_id != bare_key
+            ]
+            if len(keyed) == 1:
+                return keyed[0].channel_id
+        await self._user_channels.ensure(self._user_channel(channel))
+        return channel.channel_id
 
     async def _record_success(self, channel: object) -> None:
         try:
