@@ -9,6 +9,8 @@ from ze_workspace.action_handoff import configure_action_ledger, record_workspac
 from ze_workspace.client import WorkspaceClient
 from ze_workspace.followthrough import RunWatcher
 from ze_workspace.gate import WorkspaceGate
+from ze_workspace.script_learning import ScriptLearning
+from ze_workspace.scripts import WorkspaceScriptRunner
 from ze_workspace.store import PostgresWorkspaceStore, WorkspaceStore
 from ze_workspace.types import WorkspaceRun
 
@@ -38,6 +40,7 @@ class WorkspaceStack:
     store: PostgresWorkspaceStore
     gate: WorkspaceGate
     run_watcher: RunWatcher
+    script_runner: WorkspaceScriptRunner | None = None
     deps: dict[type, Any] = field(default_factory=dict)
 
 
@@ -48,6 +51,7 @@ def build_workspace_stack(
     turn_starter: Any = None,
     push_sender: Any = None,
     action_record_store: Any = None,
+    procedure_admission: Any = None,
 ) -> WorkspaceStack:
     import ze_workspace.tools  # noqa: F401
 
@@ -74,6 +78,9 @@ def build_workspace_stack(
     )
     store.on_run_persisted = record_workspace_run
     gate = WorkspaceGate()
+    script_runner = _build_script_runner(
+        client, action_record_store, procedure_admission
+    )
     run_watcher = RunWatcher(
         store=store,
         turn_starter=turn_starter or _NoopTurnStarter(),
@@ -98,5 +105,25 @@ def build_workspace_stack(
     }
     log.info("workspace_stack_ready", url=client._base_url)
     return WorkspaceStack(
-        client=client, store=store, gate=gate, run_watcher=run_watcher, deps=deps
+        client=client,
+        store=store,
+        gate=gate,
+        run_watcher=run_watcher,
+        script_runner=script_runner,
+        deps=deps,
     )
+
+
+def _build_script_runner(
+    client: WorkspaceClient, action_record_store: Any, procedure_admission: Any
+) -> WorkspaceScriptRunner | None:
+    # The sidecar's /scripts route refuses a connection without a bearer token.
+    if not client._base_url or not client._token:
+        log.info("workspace_scripts_unconfigured")
+        return None
+    learning = None
+    if action_record_store is not None and procedure_admission is not None:
+        learning = ScriptLearning(
+            action_record_store=action_record_store, admission=procedure_admission
+        )
+    return WorkspaceScriptRunner(client, learning=learning)

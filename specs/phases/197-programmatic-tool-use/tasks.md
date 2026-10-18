@@ -151,7 +151,7 @@
 
   Implement in `procedures/store.py`, `discovery.py`, `validate.py`, `tools.py`.
 - [ ] T026 [L:harness] [US5] Tests first in `test_script_step.py`: `procedure_id` of a READY match with `source_kind == "tool_script"` runs `steps[0]` with a stub built from the agent's current data read tools (a tool in the procedure's limits that the agent no longer has is absent from the stub); a non-script or non-READY match returns `procedure_not_script`. Implement in `script_step.py`.
-- [ ] T027 [L:runner] [US1] `WorkspaceStack.script_runner` and `build_workspace_stack(procedure_admission=...)` in `ze_workspace/bootstrap.py`: builds `WorkspaceScriptRunner` (with `ScriptLearning` when the action store and admission service are given) when the sidecar is configured. Test: a runner when configured, `None` otherwise, learning absent without the admission service.
+- [x] T027 [L:runner] [US1] `WorkspaceStack.script_runner` and `build_workspace_stack(procedure_admission=...)` in `ze_workspace/bootstrap.py`: builds `WorkspaceScriptRunner` (with `ScriptLearning` when the action store and admission service are given) when the sidecar is configured. Test: a runner when configured, `None` otherwise, learning absent without the admission service.
 
 ---
 
