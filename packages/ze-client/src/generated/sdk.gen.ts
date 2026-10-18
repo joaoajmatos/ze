@@ -46,7 +46,7 @@ export const getModelSettings = <ThrowOnError extends boolean = false>(options?:
 /**
  * List what Ze did
  *
- * List action-ledger records newest first, optionally for one goal, workflow, workflow run or workspace run. subject_type and subject_id go together. `since` is exclusive and needs a timezone offset. Pages by an opaque cursor.
+ * List action-ledger records newest first, optionally for one goal, workflow, workflow run or workspace run. subject_type and subject_id go together. Calendar, reminder and prospecting actions carry no goal, workflow or run, so they appear only in the unfiltered list. `since` is exclusive and needs a timezone offset (use Z or %2B00:00 in a URL; a bare + becomes a space). Pages by an opaque cursor.
  */
 export const listActionRecords = <ThrowOnError extends boolean = false>(options?: Options<ListActionRecordsData, ThrowOnError>): RequestResult<ListActionRecordsResponses, ListActionRecordsErrors, ThrowOnError> => (options?.client ?? client).get<ListActionRecordsResponses, ListActionRecordsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -68,7 +68,7 @@ export const listChannelStatus = <ThrowOnError extends boolean = false>(options?
 /**
  * List logged contribution collisions
  *
- * List cross-function contribution collisions detected by the collision seam. Collisions are logged, never blocked or resolved. `since` and `until` need a timezone offset; `since` after `until` returns an empty list.
+ * List cross-function contribution collisions detected by the collision seam. Collisions are logged, never blocked or resolved. `since` and `until` need a timezone offset (use Z or %2B00:00 in a URL); `since` after `until` returns an empty list.
  */
 export const listCollisions = <ThrowOnError extends boolean = false>(options?: Options<ListCollisionsData, ThrowOnError>): RequestResult<ListCollisionsResponses, ListCollisionsErrors, ThrowOnError> => (options?.client ?? client).get<ListCollisionsResponses, ListCollisionsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -596,7 +596,7 @@ export const markAllNotificationsRead = <ThrowOnError extends boolean = false>(o
 /**
  * List open loops
  *
- * Return open loops, optionally filtered to one or more lifecycle states (repeat `state`) and to loops updated after `since`. Defaults to non-terminal states (suspected, active, drifting). Each item reports whether the loop was promoted by corroboration and the distinct inflows it was seen in.
+ * Return open loops, optionally filtered to one or more lifecycle states (repeat `state`) and to loops updated after `since` (a timezone offset is required; use Z or %2B00:00 in a URL). Defaults to non-terminal states (suspected, active, drifting). Each item reports whether the loop was promoted by corroboration and the distinct inflows it was seen in.
  */
 export const listLoops = <ThrowOnError extends boolean = false>(options?: Options<ListLoopsData, ThrowOnError>): RequestResult<ListLoopsResponses, ListLoopsErrors, ThrowOnError> => (options?.client ?? client).get<ListLoopsResponses, ListLoopsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

@@ -65,7 +65,11 @@ class UserChannelStore:
             )
 
     async def drop_unkeyed(self, channel_id: str) -> None:
-        """Remove the placeholder row a channel used before its account resolved."""
+        """Remove the placeholder row a channel used before its account resolved.
+
+        Assumes one account per channel type: the bare type key never stands for a
+        second account, so a keyed success may delete it.
+        """
         async with self._pool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute(

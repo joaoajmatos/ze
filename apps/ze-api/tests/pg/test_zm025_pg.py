@@ -84,3 +84,16 @@ async def test_subject_key_indexes_exist(pg_pool):
             )
         }
     assert {f"action_records_{k}_idx" for k in zm025.SUBJECT_KEYS} <= names
+
+
+async def test_goal_subject_query_uses_the_partial_index(pg_pool):
+    async with pg_pool.acquire() as conn:
+        await conn.execute("SET enable_seqscan = off")
+        plan = await conn.fetch(
+            "EXPLAIN SELECT * FROM action_records "
+            "WHERE context->>'goal_id' = $1::text "
+            "ORDER BY occurred_at DESC, id DESC LIMIT 51",
+            str(uuid4()),
+        )
+    text = "\n".join(r[0] for r in plan)
+    assert "action_records_goal_id_idx" in text

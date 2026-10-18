@@ -30,8 +30,10 @@ router = APIRouter(
     summary="List what Ze did",
     description="List action-ledger records newest first, optionally for one goal, "
     "workflow, workflow run or workspace run. subject_type and subject_id go "
-    "together. `since` is exclusive and needs a timezone offset. Pages by an opaque "
-    "cursor.",
+    "together. Calendar, reminder and prospecting actions carry no goal, workflow or run, so "
+    "they appear only in the unfiltered list. `since` is exclusive and needs a "
+    "timezone offset (use Z or %2B00:00 in a URL; a bare + becomes a space). Pages "
+    "by an opaque cursor.",
 )
 async def list_action_records(
     subject_type: ActionSubjectType | None = Query(default=None),

@@ -24,7 +24,7 @@ router = APIRouter(
     summary="List logged contribution collisions",
     description="List cross-function contribution collisions detected by the collision "
     "seam. Collisions are logged, never blocked or resolved. `since` and `until` need "
-    "a timezone offset; `since` after `until` returns an empty list.",
+    "a timezone offset (use Z or %2B00:00 in a URL); `since` after `until` returns an empty list.",
 )
 async def list_collisions(
     entity_id: UUID | None = Query(default=None),

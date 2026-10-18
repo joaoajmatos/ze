@@ -25,7 +25,7 @@ router = APIRouter(
     operation_id="listLoops",
     summary="List open loops",
     description="Return open loops, optionally filtered to one or more lifecycle "
-    "states (repeat `state`) and to loops updated after `since`. Defaults to "
+    "states (repeat `state`) and to loops updated after `since` (a timezone offset is required; use Z or %2B00:00 in a URL). Defaults to "
     "non-terminal states (suspected, active, drifting). Each item "
     "reports whether the loop was promoted by corroboration and the distinct "
     "inflows it was seen in.",
