@@ -4,7 +4,7 @@ export function plainPreview(markdown: string): string {
     .replace(/```[\s\S]*?(```|$)/g, " ")
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+/gm, "")
-    .replace(/[*_~`]+/g, "")
+    .replace(/(^|\s)[*_~]+|[*_~]+(?=\s|$)|`+/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
 }

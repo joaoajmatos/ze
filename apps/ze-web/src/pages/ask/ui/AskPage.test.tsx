@@ -30,6 +30,7 @@ import { emptyThread, useConversation } from "@/entities/conversation";
 import { useOnboardingSession } from "@/entities/onboarding-session";
 import { useSession } from "@/entities/session";
 import { useWsStore } from "@/shared/api";
+import { useRailSlot } from "@/shared/lib";
 import { AskPage } from "./AskPage";
 
 let mm: ReturnType<typeof mockMatchMedia>;
@@ -61,6 +62,23 @@ describe("AskPage", () => {
     expect(screen.getByTestId("rail")).toBeInTheDocument();
     expect(screen.getByTestId("canvas")).toHaveTextContent("t1");
     expect(screen.getByTestId("trace")).toBeInTheDocument();
+  });
+
+  it("renders the rail inline when the shell has no rail slot", () => {
+    useRailSlot.setState({ element: null });
+    const { container } = mount();
+    expect(container.querySelector(".ask-page .ask-rail")).not.toBeNull();
+  });
+
+  it("portals the rail into the shell rail slot, outside the page", () => {
+    const slot = document.createElement("div");
+    document.body.appendChild(slot);
+    useRailSlot.setState({ element: slot });
+    const { container } = mount();
+    expect(slot.querySelector(".ask-rail")).not.toBeNull();
+    expect(container.querySelector(".ask-page .ask-rail")).toBeNull();
+    useRailSlot.setState({ element: null });
+    slot.remove();
   });
 
   it("orders a phone as try, sessions, canvas, then a Trace control that opens the sheet", () => {

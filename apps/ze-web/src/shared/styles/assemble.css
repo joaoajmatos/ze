@@ -515,8 +515,10 @@
   .ask-main {
     order: 1;
   }
-  .shell.on-ask .place {
+  .shell.on-ask .main .place {
     order: 1;
+    height: auto;
+    min-height: 0;
   }
   .ask-rail {
     order: 2;
@@ -546,13 +548,14 @@
   box-sizing: border-box;
 }
 .sessions-rail .row {
+  box-sizing: border-box;
+  margin-inline: 0;
+  padding-inline: 6px;
   min-width: 0;
   grid-template-columns: minmax(0, 1fr);
 }
 .sessions-rail .row .t {
   text-align: left;
-}
-.sessions-rail .row .t {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -562,7 +565,8 @@
 }
 @media (min-width: 1024px) {
   .sessions-rail {
-    max-height: 48dvh;
+    /* Orb, chips and the Ask bar take the rest of the viewport; the list scrolls inside what is left. */
+    max-height: max(160px, calc(100dvh - 660px));
     overflow-y: auto;
   }
 }

@@ -28,7 +28,7 @@ src/
 | `features/ask-bar/` | The Ask bar and the state of the Ask overlay |
 | `entities/conversation/`, `features/turn-stream/` | One store per thread and the one handler for the conversation frames |
 | `widgets/assemble/` | The Assemble canvas, the trace rail, confirmations and Retry in place, and the Ask overlay |
-| `pages/ask/` | The Ask page: rail (try, sessions), canvas, trace |
+| `pages/ask/` | The Ask page: canvas and trace; the try chips and conversations are portalled into the shell rail under the orb, as World does |
 | `widgets/*-overview/` | Management list screens |
 | `entities/message-trace/` | Per-message trace query and the trace UI pieces shared by bubbles and the trace panel |
 | `entities/message-feedback/`, `features/reply-feedback/`, `features/retry-reply/` | Thumbs up/down, Retry, and their reasons on assistant replies |

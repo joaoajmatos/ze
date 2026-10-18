@@ -56,7 +56,7 @@ Replayed messages, other threads and frames with no thread never move the orb. `
 
 ### Ask
 
-Ask is the Assemble canvas. A reply is a sentence plus one module per top-level component, flown out of the orb 80 ms apart (opacity only under reduced motion). Five slices make it work:
+Ask is the Assemble canvas. The try chips and the conversations list are portalled into the shell rail under the orb (World does the same with Needs you), so the canvas and the trace take the page. On a phone they follow the conversation. A reply is a sentence plus one module per top-level component, flown out of the orb 80 ms apart (opacity only under reduced motion). Five slices make it work:
 
 - **`entities/conversation`** keeps one state per thread: messages, the turn phase (`idle`, `awaiting`, `thinking`, `speaking`, `paused`, `failed`), streaming text, the last outcome, and an attention flag. A pure reducer (`reduce`) applies the seven conversation frames. The `/ask` page and the overlay read the same store, so they always show the same thread.
 - **`features/turn-stream`** mounts `TurnFrameHandler` once in the shell. It feeds the reducer, keeps the sessions rail flags and the orb in step, acknowledges unread replies, and runs the delivery watchdog (120 s of silence, then a history reload, then "Ze did not answer"). A turn paused on a confirmation never fails. `sendTurn` is the one place a message leaves the client. `frame-registry.ts` lists every `useFrame` call site with its reason, and a test fails when one is missing.
