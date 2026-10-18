@@ -23,7 +23,7 @@ Ask becomes the Assemble canvas. The core change is structural. Conversation sta
 |---|---|
 | Spec first | spec.md + Clarifications; plan and tasks here. |
 | Honest claims | "Why?" links to the section it can prove (origin), not to a guessed call. Onboarding shows no stepper it cannot fill. Trace "Asked from" comes from `MessageTrace.screen`. |
-| Package boundaries | ze-web and `@myguyze/ze-ui` only. One backend gap recorded for 194, not patched here. |
+| Package boundaries | ze-web and `@myguyze/ze-ui`, plus one additive ze-api response field pair (`ToolCallTraceResponse.agent`, `call_index`: the data exists in `ze_core` and stored traces; the schema dropped it). One backend gap recorded for 194, not patched here. |
 | Pre-v1 hard cuts | `widgets/chat-workspace`, `features/chat-side-panel`, `features/load-chat-history` (moved), `pages/chat`, `AskInterim`, effects, `ChatShell`, `/jarvis` composition, "Ze's Mind" wording deleted in this phase. |
 | Tests | Fail-first; reducer table; frame-coverage test for SC-001. |
 | Docs are part of done | [DOCS] tasks cover "Docs touched". |

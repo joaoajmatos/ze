@@ -149,8 +149,10 @@ The tasks.md should be immediately executable - each task must be specific enoug
 Every task MUST strictly follow this format:
 
 ```text
-- [ ] [TaskID] [P?] [Story?] Description with file path
+- [ ] [TaskID] [P?] [Lane] [Story?] Description with file path
 ```
+
+**[Lane]** is REQUIRED on every task: the lane from plan.md's Lane Plan that owns it, as `[L:lead]`, `[L:a]`, `[L:jr1]`, `[L:docs]`. A task may only touch files its lane owns; a task that needs a shared file goes to `[L:lead]`. The contract step's tasks come first and are all `[L:lead]`.
 
 **Format Components**:
 

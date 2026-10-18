@@ -114,6 +114,30 @@ ios/ or android/
 **Structure Decision**: [Document the selected structure and reference the real
 directories captured above]
 
+## Lane Plan (Maestri crew)
+
+<!--
+  REQUIRED. This plan is built by a crew working in parallel, not by one engineer in order.
+  Split the work into lanes that own DISJOINT file sets, so lanes never edit the same file.
+-->
+
+**Contract step** (lane `lead`, lands first): [the shared types, component stubs, route slots,
+schema fields and test fixtures every other lane builds against; list the files].
+
+| Lane | Model / role | Owns (files and dirs, disjoint) | Tasks | Starts after | Reviewer |
+|------|--------------|---------------------------------|-------|--------------|----------|
+| lead | Sonnet ENG lead | shared files: router, places, query keys, app shell, generated client; integration | T001, T00x, ... | - | [name] |
+| a | Sonnet ENG | [user story A's files] | ... | contract step | [name] |
+| jr1 | Haiku JR | [pure, test-specified files] | ... | contract step | [name] |
+| docs | Haiku DOCS | docs/, AGENTS.md rows, specs index | ... | each story's merge | [name] |
+
+**Rules**: one lane per file; shared files belong to `lead` and other lanes request changes;
+each lane works in its own git worktree on a sub-branch of the floor branch, and `lead` merges
+the lane branches into the floor branch; each lane is reviewed as it finishes (small diffs);
+JR lanes get only fully specified work (pure functions with the tests written into the task,
+docs from a finished diff, codegen, captures, gate runs); design, cross-layer and integration
+work stays on Sonnet or above. Size the crew to the phase: a small phase is `lead` alone.
+
 ## Complexity Tracking
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
