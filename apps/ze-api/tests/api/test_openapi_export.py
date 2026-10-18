@@ -33,7 +33,6 @@ def test_collect_openapi_operation_ids_includes_plugin_pages():
 def test_export_leaves_out_eval_only_routes():
     paths = export_openapi()["paths"]
     assert "/eval/chat" not in paths
-    assert "/api/v0/collisions" not in paths
 
 
 def test_eval_chat_response_omits_memory_proposals_count():

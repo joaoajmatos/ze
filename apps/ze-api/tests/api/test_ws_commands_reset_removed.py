@@ -35,6 +35,4 @@ async def test_reset_command_sends_no_frame_and_logs_unknown(name):
         )
 
     mgr.send_frame.assert_not_called()
-    container.reset_service.preview.assert_not_called()
-    container.reset_service.reset.assert_not_called()
     assert warnings == [("ws_unknown_command", {"name": name})]

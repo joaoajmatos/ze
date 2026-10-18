@@ -277,12 +277,10 @@ async def _apply_automation(ctx: SeedContext) -> int:
             f"seed:goal:trace:{TRACE_PT_1}",
             now - timedelta(days=40),
             str(TRACE_PT_1),
-            json.dumps(
-                {
-                    "goal_id": str(GOAL_PORTUGUESE),
-                    "milestone_id": str(MS_PT_1),
-                }
-            ),
+            {
+                "goal_id": str(GOAL_PORTUGUESE),
+                "milestone_id": str(MS_PT_1),
+            },
         )
         await conn.execute(
             """
@@ -303,12 +301,10 @@ async def _apply_automation(ctx: SeedContext) -> int:
             f"seed:goal:trace:{TRACE_PT_2}",
             now - timedelta(days=20),
             str(TRACE_PT_2),
-            json.dumps(
-                {
-                    "goal_id": str(GOAL_PORTUGUESE),
-                    "milestone_id": str(MS_PT_2),
-                }
-            ),
+            {
+                "goal_id": str(GOAL_PORTUGUESE),
+                "milestone_id": str(MS_PT_2),
+            },
         )
 
         await conn.execute(

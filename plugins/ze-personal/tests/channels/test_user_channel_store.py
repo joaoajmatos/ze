@@ -110,3 +110,46 @@ async def test_set_poll_enabled_executes_update():
     await store.set_poll_enabled("gmail:alice@example.com", False)
     conn.execute.assert_called_once()
     assert "poll_enabled" in conn.execute.call_args[0][0]
+
+
+async def test_ensure_inserts_only_when_absent():
+    conn = AsyncMock()
+    conn.execute = AsyncMock()
+    store = UserChannelStore(pool=_make_pool(conn))
+
+    await store.ensure(_channel("email"))
+
+    conn.execute.assert_called_once()
+    sql = conn.execute.call_args[0][0]
+    assert "ON CONFLICT (channel_id) DO NOTHING" in sql
+    assert "DO UPDATE" not in sql
+
+
+async def test_drop_unkeyed_deletes_watermark_before_channel_in_one_transaction():
+    conn = AsyncMock()
+    conn.execute = AsyncMock()
+    txn_cm = AsyncMock()
+    txn_cm.__aenter__ = AsyncMock(return_value=None)
+    txn_cm.__aexit__ = AsyncMock(return_value=None)
+    conn.transaction = MagicMock(return_value=txn_cm)
+    store = UserChannelStore(pool=_make_pool(conn))
+
+    await store.drop_unkeyed("email")
+
+    conn.transaction.assert_called_once()
+    first, second = (c[0] for c in conn.execute.call_args_list)
+    assert "DELETE FROM user_channel_watermarks" in first[0]
+    assert "DELETE FROM user_channels" in second[0]
+    assert first[1] == "email" and second[1] == "email"
+
+
+async def test_drop_unkeyed_is_a_no_op_with_no_rows():
+    conn = AsyncMock()
+    conn.execute = AsyncMock(return_value="DELETE 0")
+    txn_cm = AsyncMock()
+    txn_cm.__aenter__ = AsyncMock(return_value=None)
+    txn_cm.__aexit__ = AsyncMock(return_value=None)
+    conn.transaction = MagicMock(return_value=txn_cm)
+    store = UserChannelStore(pool=_make_pool(conn))
+
+    await store.drop_unkeyed("email")  # must not raise

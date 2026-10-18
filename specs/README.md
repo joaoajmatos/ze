@@ -237,7 +237,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 191b | [Plugin Modules in Slots](phases/191b-plugin-modules/spec.md) | 🔲 Ready to implement (after 191a; run slot needs 188) |
 | 192 | [Voice Input Transport (B3)](phases/192-voice-transport/spec.md) | ✅ Implemented (before 193) |
 | 193 | [Voice and Polish (W8)](phases/193-web-voice-polish/spec.md) | 🔲 Ready to implement (after 186–190, 192) |
-| 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | 🔲 Ready to implement (parallel; zc040 reserved) |
+| 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | ✅ Implemented (zc040, zm025) |
 | 195 | [Screen Context Awareness](phases/195-screen-context-awareness/spec.md) | ✅ Implemented (live eval: first run 10 of 26, chat_about 9 of 15 after owner routing; chip capture deferred to 193) |
 
 ## Ze Core specs (`core/`)

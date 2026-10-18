@@ -49,10 +49,13 @@ def _loop_to_list_item(loop: OpenLoop, sources: list[LoopSource]) -> dict:
 
 
 async def list_loops(
-    loop_store: LoopStore, states: list[str] | None = None
+    loop_store: LoopStore,
+    states: list[str] | None = None,
+    *,
+    since: datetime | None = None,
 ) -> list[dict]:
     effective_states = states if states is not None else DEFAULT_LIST_STATES
-    loops = await loop_store.list(effective_states)
+    loops = await loop_store.list(effective_states, since=since)
     sources_by_loop = await loop_store.list_sources_for(
         [loop.id for loop in loops if loop.id is not None]
     )

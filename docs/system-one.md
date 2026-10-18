@@ -113,6 +113,8 @@ The `choose_tier` node runs after `match_skills`. It asks one question, `needs_d
 
 Ze asks only when the turn has exactly one subtask, is not compound, has no conductor hint, and the agent declares a `model_simple` that differs from its `model`. Every other outcome keeps the full model. Those outcomes are: the surface off, an uncalibrated surface, a skip, a timeout, a malformed answer and an error. The shipped config turns the surface on at `simple_max` 0.40, after a held-out ENABLE in English and Portuguese on 2026-10-16. Without a `complexity` config block, the code default is off. The bar is chosen on the tuned set only. Details and the calibration commands are in [Configuration](configuration.md#surfacescomplexity).
 
+`GET /api/v0/system/models` reports whether this surface is on. `complexity_enabled` is true only when the surface is enabled and `simple_max` is set, the same test `choose_tier` uses. It also lists each agent's `model` and `model_simple`. See [Accountability surfaces](native-interface.md#accountability-surfaces).
+
 ### Skills
 
 E5 keeps the skills at or above `shortlist_floor`, up to `shortlist_k`. System One then picks one skill or `none`, and says whether the request needs a skill at all. A confident choice plus a high enough need applies at most one automatic skill. An unsure answer or a skip falls back to the older rule, where every skill above `skills.match_threshold` applies. A skill named with `/skill-name` skips this step and always applies.

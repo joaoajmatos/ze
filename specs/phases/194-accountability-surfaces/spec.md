@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17 (refined through `/speckit-specify` 2026-10-18)
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Accountability Surfaces (B4)": Maestro brief 2026-10-17, backend floor B4; overhaul plan section d, gaps 7, 8 and 11. Gap 13 (screen context on the trace) moved to phase 195 on 2026-10-17. Two gaps logged while planning 185–190 (loops `since`, channel status) and the reset deletion joined by clarification.
 

@@ -5,6 +5,77 @@ export type ClientOptions = {
 };
 
 /**
+ * ActionRecordItem
+ */
+export type ActionRecordItem = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Action Type
+     */
+    action_type: string;
+    /**
+     * Actor
+     */
+    actor: string;
+    /**
+     * Producer Plugin
+     */
+    producer_plugin: string;
+    /**
+     * Lifecycle
+     */
+    lifecycle: string;
+    /**
+     * Outcome
+     */
+    outcome: string | null;
+    /**
+     * Summary
+     */
+    summary: string;
+    touched: ActionTouched;
+    /**
+     * Occurred At
+     */
+    occurred_at: string;
+    /**
+     * Failure Code
+     */
+    failure_code: string | null;
+};
+
+/**
+ * ActionRecordPage
+ */
+export type ActionRecordPage = {
+    /**
+     * Items
+     */
+    items: Array<ActionRecordItem>;
+    /**
+     * Next Cursor
+     */
+    next_cursor: string | null;
+};
+
+/**
+ * ActionTouched
+ */
+export type ActionTouched = {
+    /**
+     * Domain
+     */
+    domain: string;
+    /**
+     * Record Id
+     */
+    record_id: string;
+};
+
+/**
  * AgentCostBucket
  */
 export type AgentCostBucket = {
@@ -28,6 +99,24 @@ export type AgentCostBucket = {
      * Completion Tokens
      */
     completion_tokens: number;
+};
+
+/**
+ * AgentModelSetting
+ */
+export type AgentModelSetting = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Model
+     */
+    model: string;
+    /**
+     * Model Simple
+     */
+    model_simple: string | null;
 };
 
 /**
@@ -131,6 +220,82 @@ export type CancelWorkflowExecutionResponse = {
 };
 
 /**
+ * ChannelStatusItem
+ */
+export type ChannelStatusItem = {
+    /**
+     * Channel Id
+     */
+    channel_id: string;
+    /**
+     * Channel Type
+     */
+    channel_type: string;
+    /**
+     * Handle
+     */
+    handle: string | null;
+    /**
+     * Display Name
+     */
+    display_name: string | null;
+    /**
+     * State
+     */
+    state: 'connected' | 'needs_reauth' | 'error' | 'off' | 'unknown';
+    /**
+     * Last Sync At
+     */
+    last_sync_at: string | null;
+    /**
+     * Push
+     */
+    push: boolean;
+};
+
+/**
+ * ChannelStatusResponse
+ */
+export type ChannelStatusResponse = {
+    /**
+     * Google Configured
+     */
+    google_configured: boolean;
+    /**
+     * Channels
+     */
+    channels: Array<ChannelStatusItem>;
+};
+
+/**
+ * CollisionLogEntrySchema
+ */
+export type CollisionLogEntrySchema = {
+    /**
+     * Id
+     */
+    id: string;
+    contribution_a: ContributionRefSchema;
+    contribution_b: ContributionRefSchema;
+    /**
+     * Matched Entity Id
+     */
+    matched_entity_id: string | null;
+    /**
+     * Matched Target Face
+     */
+    matched_target_face: string;
+    /**
+     * Conflict Summary
+     */
+    conflict_summary: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
  * CompactionTraceResponse
  */
 export type CompactionTraceResponse = {
@@ -198,6 +363,28 @@ export type ConfirmItemOut = {
      * Proposed Text
      */
     proposed_text?: string | null;
+};
+
+/**
+ * ContributionRefSchema
+ */
+export type ContributionRefSchema = {
+    /**
+     * Domain Id
+     */
+    domain_id: string;
+    /**
+     * Producer Kind
+     */
+    producer_kind: string;
+    /**
+     * Source Function
+     */
+    source_function: string;
+    /**
+     * Claim Kind
+     */
+    claim_kind: string;
 };
 
 /**
@@ -1585,6 +1772,24 @@ export type MilestoneResponse = {
      * Created At
      */
     created_at: string;
+};
+
+/**
+ * ModelSettingsResponse
+ */
+export type ModelSettingsResponse = {
+    /**
+     * Complexity Enabled
+     */
+    complexity_enabled: boolean;
+    /**
+     * Simple Max
+     */
+    simple_max: number | null;
+    /**
+     * Agents
+     */
+    agents: Array<AgentModelSetting>;
 };
 
 /**
@@ -3580,6 +3785,132 @@ export type HealthCheckResponses = {
 
 export type HealthCheckResponse = HealthCheckResponses[keyof HealthCheckResponses];
 
+export type GetModelSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/system/models';
+};
+
+export type GetModelSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ModelSettingsResponse;
+};
+
+export type GetModelSettingsResponse = GetModelSettingsResponses[keyof GetModelSettingsResponses];
+
+export type ListActionRecordsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Subject Type
+         */
+        subject_type?: 'goal' | 'workflow' | 'workflow_run' | 'workspace_run' | null;
+        /**
+         * Subject Id
+         */
+        subject_id?: string | null;
+        /**
+         * Since
+         */
+        since?: string | null;
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v0/actions';
+};
+
+export type ListActionRecordsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListActionRecordsError = ListActionRecordsErrors[keyof ListActionRecordsErrors];
+
+export type ListActionRecordsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ActionRecordPage;
+};
+
+export type ListActionRecordsResponse = ListActionRecordsResponses[keyof ListActionRecordsResponses];
+
+export type ListChannelStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/channels/status';
+};
+
+export type ListChannelStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: ChannelStatusResponse;
+};
+
+export type ListChannelStatusResponse = ListChannelStatusResponses[keyof ListChannelStatusResponses];
+
+export type ListCollisionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Entity Id
+         */
+        entity_id?: string | null;
+        /**
+         * Source Function
+         */
+        source_function?: string | null;
+        /**
+         * Since
+         */
+        since?: string | null;
+        /**
+         * Until
+         */
+        until?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v0/collisions';
+};
+
+export type ListCollisionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListCollisionsError = ListCollisionsErrors[keyof ListCollisionsErrors];
+
+export type ListCollisionsResponses = {
+    /**
+     * Response Listcollisions
+     *
+     * Successful Response
+     */
+    200: Array<CollisionLogEntrySchema>;
+};
+
+export type ListCollisionsResponse = ListCollisionsResponses[keyof ListCollisionsResponses];
+
 export type GetMemoryFeedData = {
     body?: never;
     path?: never;
@@ -4938,7 +5269,11 @@ export type ListLoopsData = {
         /**
          * State
          */
-        state?: string | null;
+        state?: Array<'suspected' | 'active' | 'drifting' | 'closed' | 'dropped'> | null;
+        /**
+         * Since
+         */
+        since?: string | null;
     };
     url: '/api/v0/loops';
 };
