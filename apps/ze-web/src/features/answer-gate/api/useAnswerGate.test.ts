@@ -228,4 +228,13 @@ describe("useAnswerGate — stuck goals", () => {
     expect(Object.keys(sources).length).toBeGreaterThan(2);
     for (const text of Object.values(sources)) expect(text).not.toMatch(/startGoal/);
   });
+
+  it("drops a timeout line once the goal leaves the open list, so a returning id starts clean", () => {
+    const { result, rerender } = renderHook(({ ids }) => useBoth(ids), { initialProps: { ids: ["g9"] as readonly string[] } });
+    act(() => void result.current.pause("g9"));
+    act(() => void vi.advanceTimersByTime(15_100));
+    expect(result.current.errorOf("g9")).toMatch(/hasn't answered/i);
+    rerender({ ids: [] });
+    expect(result.current.errorOf("g9")).toBeNull();
+  });
 });

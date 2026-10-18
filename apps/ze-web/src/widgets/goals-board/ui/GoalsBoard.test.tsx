@@ -113,4 +113,9 @@ describe("GoalsBoard", () => {
     view([goal({ status: "awaiting_gate" })]);
     expect(screen.getByText(/checkpoint that isn't available/)).toBeInTheDocument();
   });
+
+  it("does not say the checkpoint is unavailable when the goal has a gate id", () => {
+    view([goal({ status: "awaiting_gate", gate_id: "x" })]);
+    expect(screen.queryByText(/isn't available/)).toBeNull();
+  });
 });

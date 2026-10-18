@@ -24,10 +24,10 @@ export function useAnswerGate(openGateIds: readonly string[]) {
   useEffect(() => {
     const open = new Set(openKey ? openKey.split("|") : []);
     useGateFlights.setState((s) => {
-      const gone = [...Object.keys(s.flights), ...Object.keys(s.awaiting)].filter((id) => !open.has(id));
+      const gone = [...Object.keys(s.flights), ...Object.keys(s.awaiting), ...Object.keys(s.errors)].filter((id) => !open.has(id));
       if (gone.length === 0) return s;
       let next = s;
-      for (const id of gone) next = { ...next, flights: without(next.flights, id), awaiting: without(next.awaiting, id) };
+      for (const id of gone) next = { ...next, flights: without(next.flights, id), awaiting: without(next.awaiting, id), errors: without(next.errors, id) };
       return next;
     });
   }, [openKey]);
