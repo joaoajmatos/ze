@@ -46,7 +46,14 @@ describe("SessionsRail", () => {
 
   it("rows are 44px buttons", () => {
     render(<SessionsRail />);
-    expect(screen.getByRole("button", { name: "Tax questions" }).style.minHeight).toBe("44px");
+    expect(screen.getByRole("button", { name: "Tax questions" }).className).toContain("sessions-title");
+  });
+
+  it("renders a preview's markdown instead of showing it raw", () => {
+    browse = { items: [{ ...session("s3", "Loops"), preview: "You have **two** loops" } as SessionSchema] };
+    render(<SessionsRail />);
+    expect(screen.getByText("two").tagName).toBe("STRONG");
+    expect(screen.queryByText(/\*\*/)).toBeNull();
   });
 
   it("select sets the session", () => {
@@ -76,7 +83,7 @@ describe("SessionsRail", () => {
     expect(screen.queryByText("Visa renewal")).toBeNull();
     act(() => void vi.advanceTimersByTime(300));
     expect(screen.getByText("Visa renewal")).toBeTruthy();
-    expect(screen.getByText("…visa…")).toBeTruthy();
+    expect(screen.getByText("visa").tagName).toBe("MARK");
     expect(screen.queryByText("Trip planning")).toBeNull();
   });
 

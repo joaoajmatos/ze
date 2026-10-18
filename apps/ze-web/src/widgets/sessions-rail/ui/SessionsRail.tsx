@@ -1,6 +1,6 @@
 import type { SessionSchema, SessionSearchResult } from "@myguyze/ze-client";
 import { useEffect, useRef, useState } from "react";
-import { formatRelative, useSession, useSessionSearchQuery, useSessionsQuery } from "@/entities/session";
+import { formatRelative, MarkdownPreview, matchSourceLabel, parseSearchSnippet, useSession, useSessionSearchQuery, useSessionsQuery } from "@/entities/session";
 import { useWsStore } from "@/shared/api";
 import { Control, Module } from "@/shared/ui";
 
@@ -19,23 +19,22 @@ const asSession = (r: SessionSearchResult): SessionSchema => ({
   id: r.id, title: r.title, preview: r.preview, title_source: r.title_source, created_at: r.created_at, last_active_at: r.last_active_at,
 });
 
-const plain = (snippet: string) => snippet.replace(/<\/?b>/g, "");
-
 interface ItemProps {
   session: SessionSchema;
   active: boolean;
   onSelect: () => void;
   snippet?: string | null;
+  matchSource?: SessionSearchResult["match_source"];
 }
 
-function Item({ session, active, onSelect, snippet }: ItemProps) {
+function Item({ session, active, onSelect, snippet, matchSource }: ItemProps) {
   const label = session.title ?? session.preview ?? "Untitled chat";
   const thinking = useWsStore((s) => s.thinkingThreads[session.id] ?? false);
   const attention = useWsStore((s) => s.attentionThreads[session.id] ?? false);
   const flag = thinking ? `${label} is replying` : attention ? `${label} has a new reply` : null;
   return (
     <div className={`row ${active ? "focused" : ""}`}>
-      <button type="button" className="t ctl-text" style={{ minHeight: 44, display: "block" }} onClick={onSelect} aria-current={active ? "true" : undefined}>
+      <button type="button" className="t ctl-text sessions-title"  onClick={onSelect} aria-current={active ? "true" : undefined}>
         {label}
       </button>
       <span className="ro">
@@ -44,9 +43,21 @@ function Item({ session, active, onSelect, snippet }: ItemProps) {
             ●{" "}
           </span>
         )}
+        {matchSource ? `${matchSourceLabel(matchSource)} · ` : ""}
         {formatRelative(session.last_active_at)}
       </span>
-      {(snippet ?? session.preview) && session.preview !== label && <span className="s">{snippet ? plain(snippet) : session.preview}</span>}
+      {snippet ? (
+        <span className="s">
+          {parseSearchSnippet(snippet).map((part, i) => (part.highlight ? <mark key={i}>{part.text}</mark> : <span key={i}>{part.text}</span>))}
+        </span>
+      ) : (
+        session.preview &&
+        session.preview !== label && (
+          <span className="s">
+            <MarkdownPreview>{session.preview}</MarkdownPreview>
+          </span>
+        )
+      )}
     </div>
   );
 }
@@ -107,7 +118,7 @@ export function SessionsRail() {
           <p className="muted">No conversations found.</p>
         ) : (
           results.map((r) => (
-            <Item key={r.id} session={asSession(r)} active={r.id === threadId} onSelect={() => selectSession(r.id)} snippet={r.snippet} />
+            <Item key={r.id} session={asSession(r)} active={r.id === threadId} onSelect={() => selectSession(r.id)} snippet={r.snippet} matchSource={r.match_source} />
           ))
         )
       ) : sessions.length === 0 ? (
