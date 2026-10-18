@@ -751,7 +751,7 @@ before adding one.
 
 - `core/ops/ze-seed` (Phase 96) seeds dev data when `AUTO_SEED_DEV_DATA=true` (default on `make dev` / `make dev-full`); each run wipes the `seed-dev-*` namespace and re-applies narrative fixtures; plugins extend via `ZePlugin.seed_domains()`.
 - `ze-email` was renamed to `ze-messenger` (`plugins/ze-messenger/`); Gmail inbound channel lives in `integrations/ze-google`.
-- Plugin management UI registers via `ZePlugin.ui_contributions()`; `ze-web` loads nav/settings from `GET /api/v0/ui/manifest`; plugin REST routes mount via `rest_routes()`.
+- Plugins add no pages. `ZePlugin.ui_contributions()` returns modules (bound to a slot: `mind.entity`, `doing.run`, `governance.connections`), Ask presets and settings sections; `ze-web` reads them from `GET /api/v0/ui/manifest` and loads a module's tree from `GET /api/v0/ui/modules/{module_id}`; plugin REST routes mount via `rest_routes()`.
 - `apps/ze-web` follows Feature-Sliced Design: `pages → widgets → features → entities → shared`; query hooks live in `entities/<name>/api/`.
 - Chat inline UI uses `ze-components` `render_*` tools (stat row, keyed table, sparkline, table, metric, list, timeline, progress, confirm, form) rendered by `PrimitiveRenderer` below message bubbles. Button actions are typed (`ask`, `tool`, `navigate`, `compose`); a tool action runs through the write gates via the `ui_action` frame.
 - `journal/` and `brag-output/` are gitignored local writing; treat as authoring notes, not product source.

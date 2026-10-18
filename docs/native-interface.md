@@ -501,7 +501,23 @@ Every run writes one `ui.tool_action` record to the action ledger.
 
 ### Versions and legacy trees
 
-A live `message` frame with components carries `ui_version: "2.0"`, as does a plugin page response. Replayed and stored messages carry none, so the client renders them as legacy: string-action buttons are disabled and an unreadable tree shows "This older view can't be shown."
+A live `message` frame with components carries `ui_version: "2.0"`, as do plugin settings and module responses. Replayed and stored messages carry none, so the client renders them as legacy: string-action buttons are disabled and an unreadable tree shows "This older view can't be shown."
+
+## Plugin modules
+
+`GET /api/v0/ui/manifest` (`getUiManifest`) returns `modules` (id, plugin, label, icon, slot, priority), `presets` (label and prompt) and `settings_sections`. The manifest is built at startup, so a plugin enabled or disabled in config appears or disappears after a restart.
+
+`GET /api/v0/ui/modules/{module_id}` (`getUiModule`) takes `subject_kind` (`entity`, `workflow_run` or `none`), `subject_id` and `parent_id` (the workflow, for a run). Ze reads the subject's label and type from its own records and ignores any other value in the query. The plugin's provider answers within 3 seconds. Ze then checks the tree against the primitive schema, binds every tool action to an agent the plugin registered, accepts only claim postures a plugin may state, and recomputes card tone itself.
+
+| Status | Meaning |
+|---|---|
+| 200 | `{ module_id, applies, components, ui_version }`. `applies: false` means nothing to show. |
+| 404 | Unknown module or subject. |
+| 422 | The subject kind does not fit the slot. |
+| 502 | "<Plugin> could not load." or "<Plugin> sent a view Ze cannot show." |
+| 504 | "<Plugin> took too long." |
+
+A plugin asks for a refetch with `request_module_refresh(interface, module_id)` (`ze_sdk.ui`). It sends `{"type": "refresh", "screen": "module:<id>"}`, and the client refetches every subject's copy of that module.
 
 ## Unread message replay
 

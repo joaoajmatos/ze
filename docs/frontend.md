@@ -150,7 +150,7 @@ On a phone the modules stack in the order Needs you, Goals, Workflows, Runs, Ski
 Mind shows what Ze believes. `/mind` holds four modules: Beliefs, People, Find an entity and Procedures. `/mind/:entityId` shows one entity.
 
 - **Beliefs** (`widgets/beliefs-feed`): each fact is a `BeliefRow` with a glyph for its claim kind, a plain sentence, confidence, source and age. Keep, Edit and Drop review it in place. An "As of" date shows the feed as it stood then; kind and confidence stay current.
-- **People** (`widgets/people`): the Contacts plugin page, rendered through `ConnectedPrimitiveTree`.
+- **People** (`widgets/people`): the Contacts page (`getContactsPage`), rendered through `ConnectedPrimitiveTree`. The entity page also hosts the `mind.entity` plugin slot under the neighbourhood.
 - **Find an entity** (`widgets/entity-search`): a server search by name or alias (`searchEntities`). There is no whole-graph view.
 - **Entity page**: a small radial field of up to 20 neighbours (`widgets/entity-neighbourhood`), an activity chart, the entity's facts, and an "I suspect…" list of hypotheses with Useful, Not relevant and Mute.
 - **Procedures** (`widgets/procedures`): candidates to review first, then the library.
@@ -240,7 +240,7 @@ Three slices serve the thumbs up, thumbs down, and Retry controls on assistant r
 - **`shared/ui/layout/ListPage`** — standard list screen shell (header, skeleton, error, empty, children)
 - **`shared/lib/query-keys.ts`** — TanStack Query key factory; extend when adding REST resources
 - **`shared/config/places.ts`** — the five places, the old-route redirect table and the path helpers; `app/router/routes.tsx` builds the routes from it
-- **Plugin routes** — plugins add nav items, settings sections, and pages at runtime through `GET /api/v0/ui/manifest` (`entities/ui-manifest`, rendered by `pages/plugin-page`)
+- **Plugin modules** — a plugin adds no page. It contributes modules, Ask presets and settings sections through `GET /api/v0/ui/manifest` (`entities/ui-manifest`). `widgets/plugin-module` (`PluginModuleSlot`) fills a slot a place offers: `mind.entity` on the entity page, `doing.run` on a workflow run, `governance.connections` in Connections. Each module loads its tree from `GET /api/v0/ui/modules/{module_id}` (`getUiModule`) on place load, on a `refresh` frame with `screen: "module:<id>"`, and every 60 seconds while visible. A failed module shows one plain line and the rest of the place is unaffected; a module that does not apply shows nothing. Plugin presets appear after the core chips in Ask's Try chips, at most two. `/news` redirects to `/ask`, and an old top-level plugin path shows not found.
 
 ## API and types
 
