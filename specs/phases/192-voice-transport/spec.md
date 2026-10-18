@@ -58,7 +58,7 @@ When a recording cannot be used, the user is told why in plain words and can try
 **Acceptance Scenarios**:
 
 1. **Given** an unsupported file type, **When** it is uploaded, **Then** the response is "unsupported media type" with the accepted types listed.
-2. **Given** a file over 10 MB or longer than 120 seconds, **When** it is uploaded, **Then** the response says "too large" with the limit in words.
+2. **Given** a file over 10 MB or longer than 120 seconds, **When** it is uploaded, **Then** the response says "too large" (over 10 MB) or "too long" (over 2 minutes), with the limit in words.
 3. **Given** the speech model fails or returns nothing, **When** a supported file is uploaded, **Then** the response is "I couldn't make out the recording" as an upstream failure, and nothing is stored.
 
 ---
@@ -91,7 +91,7 @@ Each transcription is counted in Ze's spend like any other model call, so Govern
 ### Functional Requirements
 
 - **FR-001**: The system MUST accept a recording upload of WebM, Ogg, MP4/M4A or WAV audio, at most 10 MB and at most 120 seconds, and return the transcript, the duration in seconds and a transcription reference.
-- **FR-002**: The system MUST reject other types, oversized files and over-long recordings with distinct plain errors that state the limit or the accepted types.
+- **FR-002**: The system MUST reject other types, oversized files, over-long recordings and recordings whose length cannot be read with distinct plain errors that state the limit or the accepted types. A server that lacks the audio tools MUST answer "Voice input is not available on this server".
 - **FR-003**: The system MUST transcribe with the same speech model the engine uses today (the configured `whisper` model), and record the call in spend under the transcription flow.
 - **FR-004**: The system MUST NOT store audio. The transcription reference MUST map, in memory and for 10 minutes, to the transcript and duration, so a later turn can record them without trusting the client.
 - **FR-005**: A message that names a live transcription reference MUST run as a voice turn. Its trace MUST carry an input section: modality, duration in seconds, and whether the sent text differs from the transcript. The raw transcript MUST NOT be kept on the trace.
@@ -117,6 +117,6 @@ Each transcription is counted in Ze's spend like any other model call, so Govern
 
 - The speech model does not report a language, so the response carries none. The language field from the earlier draft is dropped.
 - Duration is measured on the server from the uploaded file (container metadata or a decode). The client's claim is never used for the 120-second limit.
-- The server has the audio converter the engine already uses for formats the model does not take directly (the existing conversion step).
+- The server image gains the audio tools needed to measure length and convert browser formats. Planning found the ze-api image has none today, so the engine's existing conversion step would fail in production. A server without them answers "Voice input is not available on this server".
 - References live in one process. A single-user, single-instance deployment makes that enough.
 - Spoken replies, streaming transcription and wake words are out of scope (user decision 6).
