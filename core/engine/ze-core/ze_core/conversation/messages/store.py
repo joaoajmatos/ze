@@ -12,10 +12,16 @@ from ze_logging import get_logger
 
 from ze_core.conversation.messages.types import (
     CompactionTrace,
+    JudgmentBar,
     JudgmentTrace,
     Message,
     MessageTrace,
     MemoryChunkTrace,
+    ModelUsage,
+    RoutingScore,
+    RoutingThresholds,
+    StageTiming,
+    TurnUsage,
     RollbackRecord,
     RollbackTrace,
     ProcedureUsageTrace,
@@ -308,14 +314,14 @@ def _parse_trace(data: dict) -> MessageTrace:
             ToolCallTrace(**{k: v for k, v in t.items() if k in tool_call_fields})
             for t in data.get("tool_calls", [])
         ],
-        total_duration_ms=data.get("total_duration_ms", 0),
+        tool_duration_ms=data.get("tool_duration_ms", 0),
         skills_used=[SkillUsageTrace(**s) for s in data.get("skills_used", [])],
         workspace=workspace,
         procedure=procedure,
         conductor_hint=data.get("conductor_hint"),
         conductor_ledger=list(data.get("conductor_ledger") or []),
         judgments=[
-            JudgmentTrace(**{k: v for k, v in raw.items() if k in judgment_fields})
+            _parse_judgment(raw, judgment_fields)
             for raw in data.get("judgments") or []
             if isinstance(raw, dict)
         ],
@@ -342,7 +348,52 @@ def _parse_trace(data: dict) -> MessageTrace:
         screen=ScreenTrace.from_dict(data["screen"])
         if isinstance(data.get("screen"), dict)
         else None,
+        turn_duration_ms=data.get("turn_duration_ms"),
+        paused_ms=int(data.get("paused_ms") or 0),
+        stages=[
+            StageTiming(**_pick_fields(raw, StageTiming))
+            for raw in data.get("stages") or []
+            if isinstance(raw, dict)
+        ],
+        usage=_parse_usage(data["usage"])
+        if isinstance(data.get("usage"), dict)
+        else None,
+        routing_scores=[
+            RoutingScore(**_pick_fields(raw, RoutingScore))
+            for raw in data.get("routing_scores") or []
+            if isinstance(raw, dict)
+        ],
+        routing_thresholds=RoutingThresholds(
+            **_pick_fields(data["routing_thresholds"], RoutingThresholds)
+        )
+        if isinstance(data.get("routing_thresholds"), dict)
+        else None,
+        telemetry_partial=bool(data.get("telemetry_partial", False)),
     )
+
+
+def _parse_judgment(raw: dict, judgment_fields: set[str]) -> JudgmentTrace:
+    values = {k: v for k, v in raw.items() if k in judgment_fields}
+    bar = values.get("bar")
+    values["bar"] = (
+        JudgmentBar(**_pick_fields(bar, JudgmentBar)) if isinstance(bar, dict) else None
+    )
+    return JudgmentTrace(**values)
+
+
+def _pick_fields(raw: dict, cls: type) -> dict:
+    allowed = {f.name for f in fields(cls)}
+    return {k: v for k, v in raw.items() if k in allowed}
+
+
+def _parse_usage(raw: dict) -> TurnUsage:
+    values = _pick_fields(raw, TurnUsage)
+    values["models"] = [
+        ModelUsage(**_pick_fields(m, ModelUsage))
+        for m in raw.get("models") or []
+        if isinstance(m, dict)
+    ]
+    return TurnUsage(**values)
 
 
 def _row_to_message(row: asyncpg.Record) -> Message:

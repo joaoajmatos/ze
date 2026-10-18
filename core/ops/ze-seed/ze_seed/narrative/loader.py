@@ -121,7 +121,7 @@ def _parse_trace(data: dict) -> MessageTrace:
         subtasks=list(data.get("subtasks", [])),
         memory_chunks=chunks,
         tool_calls=tools,
-        total_duration_ms=int(data.get("total_duration_ms", 0)),
+        tool_duration_ms=int(data.get("tool_duration_ms", 0)),
     )
 
 

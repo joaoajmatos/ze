@@ -59,7 +59,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         agent_result,
         list(state.get("subtask_results") or []),
     )
-    total_duration_ms = sum(t.duration_ms for t in tool_calls)
+    tool_duration_ms = sum(t.duration_ms for t in tool_calls)
 
     subtask_agents = (
         [envelope.primary_agent]
@@ -83,7 +83,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         subtasks=subtask_agents,
         memory_chunks=memory_chunks,
         tool_calls=tool_calls,
-        total_duration_ms=total_duration_ms,
+        tool_duration_ms=tool_duration_ms,
         compaction=compaction,
         resume_recap_applied=bool(state.get("resume_recap_applied")),
         loop_offer_ids=list(state.get("loop_offer_ids") or []),

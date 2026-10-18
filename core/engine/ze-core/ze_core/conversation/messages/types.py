@@ -114,6 +114,8 @@ class ToolCallTrace:
     undo_args: dict[str, Any] | None = None  # ids and names only; never sent to clients
     undo_note: str | None = None
     call_index: int = 0  # position in the flattened call list
+    call_id: str = ""  # joins a live tool row to this committed one
+    start_offset_ms: int | None = None  # from turn start; null when the recorder was partial
 
 
 @dataclass
@@ -161,6 +163,14 @@ class JudgmentTrace:
     input_tokens: int | None = None
     consumed: bool = False
     skip_reason: str | None = None
+    surface: str | None = None
+    bar: JudgmentBar | None = None
+
+
+@dataclass
+class JudgmentBar:
+    name: str
+    value: float
 
 
 @dataclass
@@ -216,6 +226,47 @@ class SourceTrace:
 
 
 @dataclass
+class StageTiming:
+    name: str  # graph node name
+    start_ms: int  # offset from turn start
+    duration_ms: int
+    run: int = 1  # 1, then 2... after each confirmation resume
+
+
+@dataclass
+class ModelUsage:
+    model: str
+    calls: int
+    prompt_tokens: int
+    completion_tokens: int
+    max_prompt_tokens: int
+    cost_usd: float
+    estimated: bool = False
+
+
+@dataclass
+class TurnUsage:
+    main_model: str | None = None
+    models: list[ModelUsage] = field(default_factory=list)
+    context_fill: float | None = None  # may exceed 1 when the window is a default
+    context_window: int | None = None
+    estimated: bool = False
+    system_one_tokens: int = 0
+
+
+@dataclass
+class RoutingScore:
+    agent: str
+    score: float
+
+
+@dataclass
+class RoutingThresholds:
+    threshold: float
+    gap: float
+
+
+@dataclass
 class MessageTrace:
     agent: str
     routing_method: str  # "embedding" | "haiku" | "fallback"
@@ -225,7 +276,7 @@ class MessageTrace:
     subtasks: list[str]
     memory_chunks: list[MemoryChunkTrace] = field(default_factory=list)
     tool_calls: list[ToolCallTrace] = field(default_factory=list)
-    total_duration_ms: int = 0
+    tool_duration_ms: int = 0
     compaction: CompactionTrace | None = None
     resume_recap_applied: bool = False
     loop_offer_ids: list[str] = field(default_factory=list)
@@ -243,3 +294,10 @@ class MessageTrace:
     rollback: RollbackTrace | None = None
     tier: TierTrace | None = None
     screen: ScreenTrace | None = None
+    turn_duration_ms: int | None = None  # includes paused_ms; null before 187b
+    paused_ms: int = 0
+    stages: list[StageTiming] = field(default_factory=list)
+    usage: TurnUsage | None = None
+    routing_scores: list[RoutingScore] = field(default_factory=list)
+    routing_thresholds: RoutingThresholds | None = None
+    telemetry_partial: bool = False
