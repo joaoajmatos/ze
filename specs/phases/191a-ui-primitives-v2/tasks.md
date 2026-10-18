@@ -67,7 +67,8 @@
   - an unknown owner, a tool outside the owner's `tools`, a READ tool, or a write tool without `ui_action=True` sends "That action is not available." and runs nothing;
   - a busy thread sends `code: "busy"`;
   - a graph gate's `confirm` is unaffected;
-  - every run (approved, denied, expired, failed) writes one `ActionRecord` (`action_type` "ui_action", `actor` "user", the owner's plugin, the effect phrase, the tool name and args hash, its lifecycle) and logs `ui_action_run`.
+  - every run (approved, denied, expired, failed) writes one `ActionRecord` (`action_type` `ui.tool_action`, `source_record_id` = the UI request id, `actor` "user", the owner's plugin, the tool name, args hash and effect phrase in summary/context) and logs `ui_action_run`; two identical actions pressed one after the other write two records with no idempotency conflict; a ledger that raises is logged and the action result is unchanged;
+  - the gate's `confirm_request` item has no `editable_field`, and a `confirm` with `edits` runs the original args;
 
   Implement `api/ws/ui_actions.py`, the `ui_action` and `confirm` branches and the reconnect replay in `api/ws/endpoint.py`, and the supersede call in `api/ws/turns.py`.
 - [ ] T007 [L:server] [US3] Tests first `core/kernel/ze-components/tests/test_render_tools.py` (extend): `render_stat_row`, `render_keyed_table` and `render_sparkline` register as READ render tools; their schemas omit `claim`, `row_actions` and any tool, navigate or compose action; `render_confirm` and `render_choice_group` keep `actions: [{label, value, style}]` and each `value` becomes `AskAction(text=value)` in the built tree; a keyed table whose `keys` length differs from its rows raises; a sparkline over 60 points is truncated. Implement in `ze_components/tools.py`.
