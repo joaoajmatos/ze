@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-18
 
-**Status**: Draft (clarified 2026-10-18)
+**Status**: Ready to implement (Gauge: M-1..M-7 closed at 4db40148, approved on folding R-1/R-3; egress flag per the Maestro)
 
 **Input**: User description (approved 2026-10-18, "yes do all of that"): models write short scripts that call several tools, loop and compute, and return only the result to the model, for fewer round trips, fewer tokens and more autonomy. Scripts run in the phase 115 workspace sandbox, never a hosted third-party sandbox. Ze's tools are exposed inside the sandbox as a small typed Python API, filtered to the calling agent's own tools and skill narrowing. Read tools first; writes inside scripts go through the 181 write gate (same or later phase, decided here). Every inner call is a tool call on the trace with 187b telemetry; the script is one traced step with its source stored. Limits: wall time, inner calls, cost per script; failure returns a structured error. A script that keeps succeeding can become a procedure candidate (138/139). Eval scenarios show fewer model round trips on multi-step reads; no live calibration spend without the user's OK.
 
@@ -38,8 +38,8 @@ User answered all recommended (relayed by the Maestro). Limits as proposed.
 
 - Q: How do writes work in a script? → A: the script returns the writes it proposes; Ze runs each after the script ends as a normal tool call through the 181 gate (park, confirmation, undo payloads, Retry unchanged). A write tool called from inside the script is refused with `writes_must_be_proposed`. The stub therefore holds read tools only.
 - Q: Sandbox mode and asking first? → A: script runs never ask. They run as a separate sandbox user with all network egress dropped and a throwaway scratch directory removed when the run ends, so the only effects are the gated tool calls.
-- Q: Which agents? → A: opt-in per agent (class attribute), starting with companion, calendar, messenger and finance.
-- Q: Procedure reuse? → A: three successes of the same normalized script propose a procedure candidate; invoking an approved script procedure runs its stored source through the same script tool, with the stub built from the tools the agent has at invocation time.
+- Q: Which agents? → A: (revised by the user after Gauge M-2, 2026-10-18) no opt-in list: the script tool is a general harness capability of every agent, offered whenever the agent's visible tools include at least one data read tool (write tools and tools that draw on screen are never data reads). The companion has no data read tool today (its reads are `render_*`/`show_*`), so it gets no script tool in this phase; a follow-up phase (proposed to the user by the Maestro) will give it scripts through a read bridge (cross-agent reads through delegation). The bridge is not specified here.
+- Q: Procedure reuse? → A: three successes of the same script propose a procedure candidate; invoking an approved script procedure runs its stored source through the same script tool, with the stub built from the tools the agent has at invocation time. "Same script" (user, after Gauge Me-4, 2026-10-18): same agent and same ordered list of tools called (the tool signature); the candidate keeps the latest successful script; the user reviews every candidate in Mind › Procedures before use.
 - Q: Run slot? → A: a separate script slot in the sidecar: one script may run beside one workspace run; a second script is refused `sandbox_busy`.
 
 ## Design decisions
@@ -55,7 +55,7 @@ These follow from the facts above and are not open:
 
 ### User Story 1 - One script replaces a chain of reads (Priority: P1)
 
-The user asks "which of my open goals touch people I haven't emailed in a month?". Instead of six tool calls with every result in context, the agent writes one script: list goals, list contacts, read last-contact dates, join and filter, return five lines. The model sees only the five lines.
+The user asks "what did I spend by merchant this month; top five?". Instead of a tool call per account and per page of transactions with every result in context, the finance agent writes one script: list accounts, read each account's transactions for the month, group by merchant, sort, return five lines. The model sees only the five lines.
 
 **Why this priority**: it is the point of the phase: fewer round trips and tokens on multi-step reads.
 
@@ -122,16 +122,16 @@ On the trace, a script step shows its source, its outcome, its duration, its lim
 
 ### User Story 5 - A script that keeps working becomes a procedure (Priority: P3)
 
-When the same script (same normalized source) succeeds three times with no failure in between, Ze proposes it as a procedure candidate for review in Mind › Procedures, with the script runs as evidence. Invoking an approved procedure runs its stored script through the same script tool, under the same gates and limits, instead of having the model write it again.
+When scripts with the same tool signature (same agent, same ordered list of tools called) succeed three times in a row, Ze proposes the latest one as a procedure candidate for review in Mind › Procedures, with the runs as evidence. Invoking an approved procedure runs its stored script through the same script tool, under the same gates and limits, instead of having the model write it again.
 
 **Why this priority**: it turns repeated work into reusable work, but only after the core path is proven.
 
-**Independent Test**: three successful runs of one normalized script submit exactly one candidate citing the three runs; a fourth success adds no duplicate; a failure resets the count.
+**Independent Test**: three successful runs with one tool signature submit exactly one candidate citing the three runs (each run its own ledger record); a fourth success adds no duplicate; a failure resets the count.
 
 **Acceptance Scenarios**:
 
-1. **Given** three successful runs of the same normalized script by the same agent, **When** the third ends, **Then** one candidate is submitted with the source as its step, the agent's tools at the time as its limits, and the runs as evidence.
-2. **Given** a candidate already pending or a procedure already validated for that source, **When** another success arrives, **Then** nothing new is submitted.
+1. **Given** three successful runs with the same tool signature by the same agent, **When** the third ends, **Then** one candidate is submitted with the latest source as its step, the tools called as its limits, and the three runs as evidence.
+2. **Given** a candidate already pending or a procedure already validated for that signature, **When** another success arrives, **Then** nothing new is submitted.
 3. **Given** a validated script procedure, **When** the agent invokes it, **Then** the stored script runs with the stub built from the tools the agent has now (never the tools it had when the script was learned), so a procedure never grants a tool.
 
 ### Edge Cases
@@ -142,26 +142,33 @@ When the same script (same normalized source) succeeds three times with no failu
 - An inner call raises: the script gets an exception carrying the tool's error string, exactly what the model would have seen.
 - Concurrent inner calls (threads in the script): requests are handled one at a time in arrival order; the stub is synchronous.
 - The user cancels the turn: the script is killed and inner calls in flight finish or are abandoned the way a direct call is.
+- The companion asks for a cross-agent join: it has no data read tool, so no script tool; it delegates as today. Scripts for the companion come in a follow-up phase through a read bridge.
+- A read tool that reaches a caller-chosen URL (for example `browser_extract`): it carries the `egress` flag and is never in the stub, so a script cannot reach the network through a tool; the model can still call it directly as today.
 - Unattended runs (goal and workflow steps) do not get the script tool in this phase: only conversation turns wire a script runner, and the tool is hidden when no runner is wired. A later phase can extend it with the 181 pre-approved writes rules.
 - A tool whose result is not JSON-serializable: the stub receives its string form, as `_serialise_result` gives the model today.
 - Server tools (`openrouter:*`) and `delegate_to_agent` are never in the stub; they run on OpenRouter's side or start another agent.
+- A script prints: stdout is discarded; only `finish(...)` reaches the model.
+- A script allocates memory, forks or fills the disk: the resource limits end it `resource_limit`; every process of the script user is killed.
+- A script tries to draw on screen: UI tools are not in the stub; a forged request is refused `tool_not_available`.
+- A script with 20 reads then proposes a write: the reads do not count against the turn's tool-call cap, so the write still reaches the 181 gate.
+- A reply that contains a script step is retried: the step reads as a read on the trace (`access: script`), so Retry eligibility is decided by the proposed writes as for direct calls.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: Ze MUST offer one script tool (working name `run_tool_script(source)`) to agents that opt in (class attribute `script_tools = True`): companion, calendar, messenger and finance in this phase. It runs `source` as Python in the workspace sandbox with a generated `ze_tools` module.
+- **FR-001**: Ze MUST offer one script tool (working name `run_tool_script(source)`) as a capability of every agent, with no opt-in: it appears when a script runner is wired for the turn and the agent's data read tools (FR-003) number at least one. It runs `source` as Python in the workspace sandbox with a generated `ze_tools` module. For example calendar, messenger and finance get it; the companion has none today and does not.
 - **FR-002**: The script MUST reach Ze only through framed requests on a dedicated pipe, relayed by the sidecar over a connection Ze opened and answered by Ze over the same connection. The sandbox MUST hold no Ze credential and open no connection to Ze.
-- **FR-003**: The stub MUST contain exactly the calling agent's visible tools at that moment (declared ∩ skill narrowing ∩ procedure narrowing), minus write tools, server tools, `delegate_to_agent`, workspace tools and the script tool. Ze MUST re-check every request against that set.
+- **FR-003**: The stub MUST contain exactly the calling agent's **data read tools** at that moment: its visible tools (declared ∩ skill narrowing ∩ procedure narrowing) minus write tools, tools that draw on screen (`produces_ui`: every `render_*` and `show_*` tool), tools that reach a caller-chosen URL or host (`egress`: `browser_extract` today), server tools, `delegate_to_agent`, `invoke_procedure`, workspace tools and the script tool. The script tool is offered only while that set has at least one tool. Ze MUST re-check every request against that set.
 - **FR-004**: Every inner call MUST run through `call_tool` as the calling agent, with its gates, hooks, retry rules, cap and undo handling unchanged, and MUST be recorded as a `ToolCall` with `parent_call_id` set to the script step's `call_id`.
 - **FR-005**: Writes MUST follow the 181 gate. The script's return value MAY carry proposed writes (tool name and arguments); after the script ends Ze runs each through `call_tool` as a direct call of the calling agent, recorded with `parent_call_id`. A write requested from inside the script MUST be refused with `writes_must_be_proposed`. The stub MUST hold read tools only.
-- **FR-005a**: Script runs MUST NOT ask the user first. They MUST run as a dedicated sandbox user with all network egress dropped, in a scratch directory outside `/workspace` that is deleted when the run ends, in a script slot separate from the workspace run slot (one script at a time; a second is refused `sandbox_busy`).
-- **FR-006**: Limits MUST be configurable with defaults: wall time 30 s, 20 inner calls per script (and never past the turn's tool-call cap), $0.05 attributed spend per script, 4,000-character return value, 8,000-character stored source. Each limit MUST end the script with a structured error naming it.
-- **FR-007**: A failed script MUST return a structured error: `kind` (`exception`, `limit`, `sandbox_unavailable`, `sandbox_busy`, `bad_request`), `message`, completed inner calls (name, success), and the last 20 lines of stderr.
+- **FR-005a**: Script runs MUST NOT ask the user first. They MUST run as a dedicated sandbox user with network egress rejected (rule verified at startup and probed per script), no access to `/workspace` (mode set at startup, probed per script), resource limits (memory 256 MiB, 32 processes, 16 MiB per file, CPU time = wall time + 1 s, 64 open files, 32 MiB scratch), stdout discarded, in a scratch directory outside `/workspace` deleted when the run ends, with every process of that user killed at the end, in a script slot separate from the workspace run slot (one script at a time; a second is refused `sandbox_busy`). The script endpoint MUST refuse when no sidecar token is configured. When isolation cannot be verified, scripts MUST be unavailable (fail closed).
+- **FR-006**: Limits MUST be configurable with defaults: wall time 30 s, 20 inner calls per script, 10 proposed writes, $0.05 attributed spend per script (checked between inner calls, so one call can overshoot), 4,000-character return value, 8,000-character stored source; fixed caps: 256 KB per request line, 1 MiB per reply or finish value, 2,000 characters of each inner result stored. Inner calls count against the script's cap, not the turn's tool-call cap; proposed writes count against the turn's cap as normal calls. Each limit MUST end the script with a structured error naming it.
+- **FR-007**: A failed script MUST return a structured error: `kind` (`exception`, `limit`, `resource_limit`, `sandbox_unavailable`, `sandbox_busy`, `bad_request`, `source_too_long`, `procedure_not_script`), `message`, completed inner calls (name, success), the last 20 lines of stderr, and on `exception` the shape (type and top-level keys) of the last successful inner result.
 - **FR-008**: The trace MUST carry the script step (`source` capped and marked when cut, `outcome`, `duration_ms`, limit hit if any) and each inner call linked to it by `parent_call_id` and each inner call with `parent_call_id`, on REST and on `trace_update`. The web trace Tools instrument MUST show the script as one expandable row with its source and inner calls.
 - **FR-009**: Retry eligibility, the rollback plan and confirmation summaries MUST treat inner calls exactly like direct calls.
-- **FR-010**: Three successes of the same normalized source by the same agent with no failure between them MUST submit one procedure candidate through `submit_procedure_candidate`, citing the runs; duplicates MUST NOT be submitted. Invoking a validated script procedure MUST run its stored source through the script tool with the stub built from the agent's tools at invocation time.
-- **FR-011**: The eval scenario format MUST gain an assertion on model calls per scenario (`max_llm_calls`), and at least two scenarios MUST show a multi-step read finishing in fewer model calls with the script tool than the direct-call baseline recorded in the same scenario file. Live runs need the user's OK.
+- **FR-010**: Three consecutive successes with the same tool signature by the same agent MUST submit one procedure candidate through `submit_procedure_candidate`, citing the three runs (one ledger record per run); duplicates MUST NOT be submitted. Invoking a validated script procedure MUST run its stored source through the script tool with the stub built from the agent's tools at invocation time; procedure guidance MUST show a script procedure as one line pointing to `run_tool_script(procedure_id=...)`, never its source.
+- **FR-011**: The eval scenario format MUST gain an assertion on model calls per scenario (`max_llm_calls`), and three scenarios (finance, messenger, calendar) MUST show a multi-step read finishing in fewer model calls with the script tool than the direct-call baseline. Live runs need the user's OK.
 - **FR-012**: An ADR `specs/arch/programmatic-tool-use.md` MUST record: Ze-initiated channel, no sandbox credential, stub equals visible tools, inner calls are ordinary calls, why a hosted sandbox is refused.
 - **FR-013**: Public docs MUST describe the feature: `docs/architecture.md` (the script path), `docs/configuration.md` (limits), `docs/sdk.md` (how a tool appears in a script; untyped returns), `sidecar/workspace/README.md` (the script mode and endpoint).
 
@@ -170,18 +177,18 @@ When the same script (same normalized source) succeeds three times with no failu
 - **Script step**: one call of the script tool: source, outcome, duration, limit hit; its inner calls point to it by `parent_call_id`.
 - **Inner call**: an ordinary `ToolCall` with `parent_call_id`.
 - **Tool stub** (`ze_tools`): generated per run from visible tools; never stored.
-- **Script procedure candidate**: a procedure candidate whose step is a normalized script source, with script runs as evidence.
+- **Script procedure candidate**: a procedure candidate whose step is the latest successful script source for a tool signature, with the script runs as evidence.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: On the two multi-step read eval scenarios, the script path uses at least 40% fewer model calls than the direct-call baseline (mocked in unit tests; live only with the user's OK).
+- **SC-001**: On the three multi-step read eval scenarios (finance, messenger, calendar), the script path uses at least 40% fewer model calls than the direct-call baseline (mocked in unit tests; live only with the user's OK).
 - **SC-002**: 100% of inner calls appear on the trace with a parent link, timing and gate outcome.
 - **SC-003**: 0 tool calls reach execution outside the calling agent's visible set, in a test that forges requests for every registered tool the agent lacks.
 - **SC-004**: 0 irreversible writes run from a script without the user's approval, across the write tests.
-- **SC-005**: Each of the four limits ends a script with its named error in 100% of its tests, and the turn still answers.
-- **SC-006**: A script repeated three times produces exactly one procedure candidate.
+- **SC-005**: Each limit (wall time, inner calls, proposed writes, spend, result size, request/reply size, memory, processes, file size, scratch size) ends a script with its named error in 100% of its tests, and the turn still answers.
+- **SC-006**: Three successful runs with one tool signature produce exactly one procedure candidate, against the real ledger idempotency path.
 
 ## Assumptions
 
@@ -189,5 +196,5 @@ When the same script (same normalized source) succeeds three times with no failu
 - The per-script spend is attributed from cost rows tagged with the inner calls' ids (the 187b recorder); tools that make no model call cost nothing.
 - Stub signatures come from tool schemas; return values stay untyped (JSON data or string). Typed returns are out of scope.
 - The sidecar gains one script endpoint (a WebSocket Ze opens), a script sandbox user with no network, and a script slot beside the run slot; the workspace run path, its network rules and its secret stripping stay as they are.
-- Normalized source = whitespace and comments stripped, literal values kept.
+- Normalized source (whitespace and comments stripped, literal values kept) is used for the trace hash and the candidate name only; the learning key is the tool signature.
 - 187b lands before this phase is built.

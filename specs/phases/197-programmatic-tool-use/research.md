@@ -8,9 +8,9 @@
 
 ## R2 — Script sandbox
 
-- **Decision**: a separate system user `zescript`; all its egress dropped (nft `meta skuid`, iptables `--uid-owner` fallback); scratch directory `/tmp/ze-scripts/<id>` (0700) deleted after the run; `/workspace` set to 0750 so `zescript` cannot read it; `python3 -I` (isolated mode) so the scratch directory is the only import path beyond the stdlib; env limited to `PATH`, `HOME`, `LANG` and the two fd numbers.
-- **Rationale**: clarified (no ask, no network). With no network, no files and no credential, the only effects a script can have are the gated tool calls Ze runs for it. Isolated mode stops a planted module in the scratch directory from shadowing the stdlib (the stub is written there by the sidecar, not by the script).
-- **Check**: the sidecar reports `scripts_isolated` in `/stat`; the runner refuses to run scripts when the rule could not be applied, so a misconfigured image fails closed.
+- **Decision** (revised after Gauge M-6/M-7): a separate system user `zescript`; all its egress rejected (nft `meta skuid`, iptables `--uid-owner` fallback), the rule verified by listing the chain; `/workspace` set to 0750 at runtime in the lifespan (the volume mount masks the image's mode); a per-script probe run as `zescript` (cannot list `/workspace`, cannot connect out) before the script; rlimits (256 MiB address space, 32 processes, 16 MiB per file, CPU = wall + 1 s, 64 files) and a 32 MiB scratch cap; stdout to DEVNULL, stderr into a 64 KB ring; every process of the uid killed at the end; scratch `/tmp/ze-scripts/<id>` (0700) deleted; `python3 -I` for environment hygiene, with `_ze_main.py` putting the scratch dir on `sys.path`; env limited to `PATH`, `HOME`, `LANG` and the two fd numbers; `/scripts` refuses when no token is configured.
+- **Rationale**: clarified (no ask, no network). The uid is the boundary: with no network, no `/workspace`, no credential and bounded resources, the only effects a script can have are the gated tool calls Ze runs for it. The sidecar VM is small (1 GB, shared with the user's workspace), so a runaway allocation or fork must hit a limit before the OOM killer picks uvicorn.
+- **Check**: `/stat` reports `scripts_isolated` (rule verified and mode set; the per-script probe can only lower it); the runner refuses to run scripts when it is false, so a misconfigured image or a dev container without `NET_ADMIN` fails closed. AF_UNIX sockets are outside the inet rule; the sidecar exposes none to that uid.
 
 ## R3 — Where the dispatch lives
 
@@ -29,12 +29,12 @@
 
 ## R6 — Learning
 
-- **Decision**: one action record per finished script (`source_record_type = "tool_script"`, `source_record_id = sha256(normalized source)`); three consecutive successes by one agent submit one candidate through `ProcedureAdmissionService.submit_procedure_candidate`.
+- **Decision** (revised after Gauge M-1, Me-4): one action record per run (`source_record_id` = the script id, so the recorder's idempotency key `producer:type:id:action:lifecycle` is unique per run; the ledger's `ON CONFLICT DO NOTHING` would otherwise keep only the first run of a key); the learning key goes in `ActionContext.script_key` (JSONB, no migration) and is the tool signature (agent + ordered distinct tools called; recommended answer, user decision pending); three consecutive successes for a key submit one candidate through `ProcedureAdmissionService.submit_procedure_candidate`, storing the latest source. Identical source rarely repeats because the model writes each script fresh.
 - **Rationale**: the action ledger is the evidence store the procedure lifecycle already cites (`candidate_from_action_pattern` requires action records); no new table. `procedure_candidates.source_kind` is unconstrained TEXT (zm022), so `tool_script` needs no migration. Source kind lives only on candidates, so discovery reads it through `procedure_versions.admission_id → procedure_admissions.candidate_id`.
 
 ## R7 — Data leaving through tools (lesson from 196 S-1)
 
-- **Finding**: a script has no network, so it cannot send data out itself. It can only call the agent's read tools, and none of the four opted-in agents' read tools sends data to a third party (they read Ze's own stores or Google read APIs with the user's own account). Server tools (`openrouter:*`) are never in the stub. No extra rule needed; the ADR states the property so a future read tool that calls out is reviewed against it.
+- **Finding**: a script has no network, so it cannot send data out itself. It can only call the agent's read tools, and scripts are a capability of every agent (user answer), and at least one READ tool reaches a caller-chosen URL (`browser_extract`, ze-browser). Decision (Gauge R-1, Maestro): such tools carry `egress` and are excluded from the stub, so scripts have no network directly or through a tool; a registry sweep flags any READ tool with a URL-like parameter that lacks `egress` or a stated exemption. Server tools (`openrouter:*`) are never in the stub.
 
 ## R8 — Eval
 
