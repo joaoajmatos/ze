@@ -1,0 +1,35 @@
+- id: tool_scripts_finance_spend_by_merchant
+  prompt: "What did I spend by merchant this month? Give me the top five."
+  description: Multi-step finance read — a script should group several reads into one model turn
+  expected_agent: finance
+  expected_tools: [run_tool_script]
+  max_llm_calls: 3
+  tags: [tool_scripts, finance]
+  criteria:
+    - Should answer with at most five merchants, ordered by spend this month
+    - Should name the amounts and currency it found rather than guessing
+    - Should say so if there are no transactions this month
+
+- id: tool_scripts_messenger_recent_contacts
+  prompt: "Which unread emails are from people I emailed last week?"
+  description: Multi-step messenger read — a script should join unread mail with last week's sent mail
+  expected_agent: messenger
+  expected_tools: [run_tool_script]
+  max_llm_calls: 3
+  tags: [tool_scripts, messenger]
+  criteria:
+    - Should list only unread messages whose sender also appears in last week's sent mail
+    - Should name each sender and subject it found
+    - Should say so clearly if no unread email matches
+
+- id: tool_scripts_calendar_meeting_hours
+  prompt: "How many hours of meetings do I have each day next week, and which day is lightest?"
+  description: Multi-step calendar read — a script should total each day's events in one pass
+  expected_agent: calendar
+  expected_tools: [run_tool_script]
+  max_llm_calls: 3
+  tags: [tool_scripts, calendar]
+  criteria:
+    - Should give a meeting-hours figure for each day of next week
+    - Should name the day with the fewest meeting hours
+    - Should not invent events when a day has none
