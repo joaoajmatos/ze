@@ -23,7 +23,6 @@ DEFS = SCHEMA["$defs"]
 MAPPING = SCHEMA["discriminator"]["mapping"]
 
 
-
 def _pointer(parts) -> str:
     return "".join("/" + str(p).replace("~", "~0").replace("/", "~1") for p in parts)
 

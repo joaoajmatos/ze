@@ -34,8 +34,10 @@ class AskAction:
 class ToolAction:
     """Run one of `owner`'s write tools that opted in with `ui_action=True`."""
 
-    owner: str = field(metadata={"json_schema": {"maxLength": NAME_MAX}})
-    tool: str = field(metadata={"json_schema": {"maxLength": NAME_MAX}})
+    owner: str = field(
+        metadata={"json_schema": {"minLength": 1, "maxLength": NAME_MAX}}
+    )
+    tool: str = field(metadata={"json_schema": {"minLength": 1, "maxLength": NAME_MAX}})
     args: dict[str, ArgValue] = field(
         metadata={
             "json_schema": {
@@ -77,7 +79,9 @@ class ToolAction:
 class NavigateAction:
     """Go to a place route, optionally with a `#section`."""
 
-    route: str = field(metadata={"json_schema": {"pattern": "^/(?!/)(?!.*\\.\\.)"}})
+    route: str = field(
+        metadata={"json_schema": {"pattern": "^/(?!/)(?![\\s\\S]*\\.\\.)"}}
+    )
     kind: Literal["navigate"] = field(default="navigate", init=False)
 
     def __post_init__(self) -> None:

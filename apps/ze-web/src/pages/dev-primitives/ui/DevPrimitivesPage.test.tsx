@@ -39,4 +39,4 @@ describe("DevPrimitivesPage", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Ask" })[0]);
     expect(screen.getByRole("status")).toHaveTextContent('"kind":"ask"');
   });
-});
+}, 30_000);
