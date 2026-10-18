@@ -41,8 +41,6 @@ export function TraceModule({ threadId, messageId = null, openSection = null, hi
   const committed = bucket.traces.find((t) => t.message_id === id);
   const live = streaming ? bucket.pendingTrace : null;
   const trace: Partial<WsTraceUpdateFrame> | null | undefined = live ?? committed;
-  const arrivals = live ? bucket.pendingArrivals : id ? bucket.arrivalsByMessage[id] : undefined;
-  const sentAt = (live ? bucket.pendingSentAt : id ? bucket.sentAtByMessage[id] : undefined) ?? null;
   const feedback = id ? feedbackById.get(id) : undefined;
 
   if (!trace) {
@@ -69,13 +67,13 @@ export function TraceModule({ threadId, messageId = null, openSection = null, hi
       tools={id && !streaming ? <ReplyActions messageId={id} feedback={feedback} /> : undefined}
     >
       {coordinate && <p className="lbl tr-coordinate">{coordinate}</p>}
-      <SignalPath trace={trace} arrivals={arrivals} sentAt={sentAt} streaming={streaming} />
+      <SignalPath trace={trace} streaming={streaming} />
       {trace.agent && (
         <Instrument name="Routing" readout={`${trace.agent} · ${routingReadout}`} open={openSection === "routing" || undefined}>
           <RoutingInstrument trace={trace} settled={!streaming} />
         </Instrument>
       )}
-      {!streaming && memoryCount > 0 && (
+      {memoryCount > 0 && (
         <Instrument name="Memory" readout={`${memoryCount} from memory`}>
           <MemoryConstellation chunks={trace.memory_chunks} />
         </Instrument>

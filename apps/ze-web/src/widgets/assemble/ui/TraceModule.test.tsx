@@ -63,11 +63,11 @@ describe("TraceModule", () => {
     expect(screen.getByRole("button", { name: /^Tools/ })).toHaveAttribute("aria-expanded", "true");
   });
 
-  it("hides the memory constellation while the turn streams and shows the live signal", () => {
+  it("shows the live memory constellation while the turn streams, with the live signal", () => {
     useConversation.setState({ byThread: { [T]: { ...emptyThread(), historyLoaded: true, turn: { phase: "thinking", typingText: null, streamingText: "", activityAt: 1, lastSent: { text: "x", context: {}, at: 1000 } } } } });
     useTraceStore.getState().mergePartialTrace({ thread_id: T, agent: "companion", memory_chunks: [{ text: "a", score: 0.9, source: "fact", extraction_confidence: null }] });
     mount();
-    expect(screen.queryByRole("button", { name: /^Memory/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /^Memory/ })).toBeInTheDocument();
     expect(document.querySelector("[data-stage=memory]")).toHaveTextContent("1 chunk");
   });
 

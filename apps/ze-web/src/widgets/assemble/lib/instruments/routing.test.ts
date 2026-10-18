@@ -66,3 +66,36 @@ describe("coordinateOf", () => {
     expect(coordinateOf(richTrace({ screen: null }))).toBeNull();
   });
 });
+
+describe("routingFor shortlist", () => {
+  const scored = () =>
+    richTrace({
+      routing_scores: [
+        { agent: "companion", score: 0.83 },
+        { agent: "research", score: 0.71 },
+        { agent: "calendar", score: 0.4 },
+      ],
+      routing_thresholds: { threshold: 0.78, gap: 0.05 },
+    });
+
+  it("draws one bar per routing score against the thresholds, the picked agent marked", () => {
+    const r = routingFor(scored());
+    expect(r.scores.map((s) => [s.agent, s.score, s.chosen])).toEqual([["companion", 0.83, true], ["research", 0.71, false], ["calendar", 0.4, false]]);
+    expect(r.thresholds).toEqual({ threshold: 0.78, gap: 0.05 });
+  });
+
+  it("shows the scores while the turn still streams", () => {
+    expect(routingFor(scored(), false).scores).toHaveLength(3);
+  });
+
+  it("has an empty list, and the method, when routing used no embedding scores", () => {
+    const r = routingFor(richTrace({ routing_scores: [], routing_thresholds: null, routing_method: "preset" }));
+    expect(r.scores).toEqual([]);
+    expect(r.thresholds).toBeNull();
+    expect(r.methodWords).toBe("a preset question");
+  });
+
+  it("reads a trace before 187b as no scores", () => {
+    expect(routingFor(richTrace()).scores).toEqual([]);
+  });
+});

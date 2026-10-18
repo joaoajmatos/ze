@@ -16,35 +16,43 @@ beforeEach(() => {
 });
 afterEach(() => mm.restore());
 
-const arrivals = { route: 1_400, screen: 1_100, memory: 1_900, tier: 2_300, "tool:0": 2_800 };
-
 describe("SignalPath", () => {
-  it("starts at the origin and has one tick per stage with its offset", () => {
-    render(<SignalPath trace={richTrace()} arrivals={arrivals} sentAt={1_000} streaming={false} />);
+  it("starts at the origin and has one tick per server stage with its offset", () => {
+    render(<SignalPath trace={richTrace()} streaming={false} />);
     expect(document.querySelector(".tr-origin")).not.toBeNull();
     const ticks = [...document.querySelectorAll(".tr-tick")].map((t) => t.getAttribute("data-stage"));
-    expect(ticks).toEqual(["screen", "route", "memory", "tier", "tools"]);
-    expect(screen.getByText("+0.1 s")).toBeInTheDocument();
-    expect(screen.getByText("+1.8 s")).toBeInTheDocument();
+    expect(ticks).toEqual(["preprocess", "screen", "route", "memory", "skills", "tier", "preflight", "execute", "synthesize", "trace", "memory write"]);
+    expect(screen.getAllByText("+0.0 s")).toHaveLength(3);
+    expect(screen.getByText("+1.4 s")).toBeInTheDocument();
+  });
+
+  it("marks a second run with the time spent waiting for you", () => {
+    const stages = [
+      { name: "await_write_confirmation", start_ms: 290, duration_ms: 0, run: 1 },
+      { name: "execute_tool", start_ms: 0, duration_ms: 400, run: 2 },
+    ];
+    render(<SignalPath trace={richTrace({ stages, paused_ms: 12_000 })} streaming={false} />);
+    expect(screen.getByText("waited 12.0 s")).toBeInTheDocument();
   });
 
   it("marks the newest lit tick live while streaming and sweeps, and shows the reply as pending", () => {
-    render(<SignalPath trace={richTrace({ tool_calls: [] })} arrivals={arrivals} sentAt={1_000} streaming />);
+    render(<SignalPath trace={richTrace({ stages: richTrace().stages!.slice(0, 6) })} streaming />);
     expect(document.querySelectorAll("[data-live]")).toHaveLength(1);
     expect(document.querySelector("[data-live]")?.getAttribute("data-stage")).toBe("tier");
     expect(screen.getByTestId("signal-sweep")).toBeInTheDocument();
     expect(screen.getByLabelText("reply coming")).toBeInTheDocument();
   });
 
-  it("settles without drawing a total the trace cannot prove", () => {
-    render(<SignalPath trace={richTrace()} sentAt={null} streaming={false} />);
-    expect(screen.queryByRole("img")).toBeNull();
+  it("draws a trace without stages with no offsets", () => {
+    render(<SignalPath trace={richTrace({ stages: undefined })} streaming={false} />);
+    expect(document.querySelectorAll(".tr-tick")).toHaveLength(5);
+    expect(screen.queryByText(/^\+\d/)).toBeNull();
     expect(screen.queryByTestId("signal-sweep")).toBeNull();
   });
 
   it("renders no sweep under reduced motion", () => {
     mm.set("(prefers-reduced-motion: reduce)", true);
-    render(<SignalPath trace={richTrace()} sentAt={0} streaming />);
+    render(<SignalPath trace={richTrace()} streaming />);
     expect(screen.queryByTestId("signal-sweep")).toBeNull();
   });
 });
@@ -66,6 +74,21 @@ describe("RoutingInstrument", () => {
   });
 });
 
+describe("RoutingInstrument shortlist", () => {
+  it("draws one meter per score with the threshold marked", () => {
+    render(<RoutingInstrument trace={richTrace({ routing_scores: [{ agent: "companion", score: 0.83 }, { agent: "research", score: 0.71 }], routing_thresholds: { threshold: 0.78, gap: 0.05 } })} />);
+    const meters = within(screen.getByRole("list", { name: "Shortlist scores" })).getAllByRole("meter");
+    expect(meters.map((m) => m.getAttribute("aria-valuenow"))).toEqual(["83", "71"]);
+    expect(document.querySelectorAll(".tr-threshold").length).toBeGreaterThan(0);
+    expect(screen.getByText("threshold 78% · gap 5%")).toBeInTheDocument();
+  });
+
+  it("draws no shortlist for an empty list", () => {
+    render(<RoutingInstrument trace={richTrace({ routing_scores: [] })} />);
+    expect(screen.queryByRole("list", { name: "Shortlist scores" })).toBeNull();
+  });
+});
+
 describe("JudgmentGauges", () => {
   it("groups by surface, gives skip reasons in words and a decision line", () => {
     render(<JudgmentGauges trace={richTrace()} />);
@@ -73,6 +96,12 @@ describe("JudgmentGauges", () => {
     expect(screen.getByRole("group", { name: "What Ze kept" })).toBeInTheDocument();
     expect(screen.getByText("skipped: the model's answer was not usable")).toBeInTheDocument();
     expect(screen.getByTestId("intake-decision")).toHaveTextContent("linked to the reminder it created this turn");
+  });
+
+  it("marks the bar on a gauge and reads a surface without one as uncalibrated", () => {
+    render(<JudgmentGauges trace={richTrace()} />);
+    expect(screen.getByText("bar choice_trust 50%")).toBeInTheDocument();
+    expect(screen.getAllByText("uncalibrated")).toHaveLength(1);
   });
 });
 
@@ -114,10 +143,61 @@ describe("ToolsTimeline", () => {
   });
 });
 
+describe("ToolsTimeline on live rows", () => {
+  const live = (over: Record<string, unknown>) => ({ name: "send_email", agent: "messenger", duration_ms: 0, success: true, result_snippet: "", access: "write", start_offset_ms: 640, ...over });
+
+  it("says a parked call is waiting for you, and replaces it with its approved run", () => {
+    const { rerender } = render(<ToolsTimeline trace={richTrace({ tool_calls: [live({ call_id: "c1", gate: "parked" })] as never })} partial />);
+    expect(screen.getByText("waiting for you")).toBeInTheDocument();
+    rerender(<ToolsTimeline trace={richTrace({ tool_calls: [live({ call_id: "c1", gate: "approved", duration_ms: 300 })] as never })} partial />);
+    expect(screen.queryByText("waiting for you")).toBeNull();
+    expect(screen.getByText("approved")).toBeInTheDocument();
+    expect(screen.getAllByText("send_email")).toHaveLength(1);
+  });
+
+  it("shows a failed live row as failed", () => {
+    render(<ToolsTimeline trace={richTrace({ tool_calls: [live({ call_id: "c2", success: false })] as never })} partial />);
+    expect(screen.getByText("failed")).toBeInTheDocument();
+  });
+});
+
 describe("Readouts and ReversalTrack", () => {
-  it("shows the dot-matrix total, model, System One line and compaction", () => {
-    render(<Readouts trace={richTrace()} />);
+  it("shows the total, active and tool time, tokens, cost and context fill", () => {
+    render(<Readouts trace={richTrace({ paused_ms: 1000 })} />);
+    expect(screen.getByRole("img", { name: "6000 milliseconds for the whole turn" })).toBeInTheDocument();
+    expect(screen.getByText("5.0 s")).toBeInTheDocument();
+    expect(screen.getByText("4.2 s")).toBeInTheDocument();
+    expect(screen.getByText("9,920 in · 500 out")).toBeInTheDocument();
+    expect(screen.getByText("$0.0356")).toBeInTheDocument();
+    expect(screen.getByRole("meter", { name: "Context fill" })).toHaveAttribute("aria-valuenow", "3");
+    expect(screen.getByText("1,840 tokens")).toBeInTheDocument();
+  });
+
+  it("says partial for a total the recorder lost the start of", () => {
+    render(<Readouts trace={richTrace({ telemetry_partial: true })} />);
+    expect(screen.getByText("partial")).toBeInTheDocument();
+  });
+
+  it("marks estimated usage and clamps an over-full context bar", () => {
+    render(<Readouts trace={richTrace({ usage: { ...richTrace().usage!, estimated: true, context_fill: 1.4 } })} />);
+    expect(screen.getAllByText(/est\./).length).toBeGreaterThan(0);
+    expect(screen.getByRole("meter", { name: "Context fill" })).toHaveAttribute("aria-valuenow", "100");
+    expect(screen.getByText("140%")).toBeInTheDocument();
+  });
+
+  it("shows the model name only without usage", () => {
+    render(<Readouts trace={richTrace({ usage: null })} />);
+    expect(screen.getByText("anthropic/claude-sonnet")).toBeInTheDocument();
+    expect(screen.queryByText(/ in · /)).toBeNull();
+  });
+
+  it("falls back to the tool-time readout for a trace before 187b", () => {
+    render(<Readouts trace={richTrace({ turn_duration_ms: null, usage: null })} />);
     expect(screen.getByRole("img", { name: "4200 milliseconds of tool time" })).toBeInTheDocument();
+  });
+
+  it("shows the model, System One line and compaction", () => {
+    render(<Readouts trace={richTrace()} />);
     expect(screen.getByText("anthropic/claude-sonnet")).toBeInTheDocument();
     expect(screen.getByText("System One: 3 requests, 870 ms, 2,100 input tokens")).toBeInTheDocument();
     expect(screen.getByText("messages 0–6 summarised")).toBeInTheDocument();
