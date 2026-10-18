@@ -115,16 +115,31 @@ def test_every_fixture_has_an_expectation_and_the_reverse():
     assert trees == set(_fixture_names())
 
 
+def _node_types(nodes: list) -> set[str]:
+    found: set[str] = set()
+    for node in nodes:
+        if isinstance(node, dict):
+            found.add(node.get("type"))
+            found |= _node_types(node.get("children", []))
+            found |= _node_types(
+                [
+                    a
+                    for a in node.get("actions", [])
+                    if isinstance(a, dict) and "type" in a
+                ]
+            )
+    return found
+
+
 @pytest.mark.parametrize("cls", PRIMITIVE_TYPES, ids=lambda c: c.__name__)
 def test_every_primitive_type_has_a_server_valid_fixture(cls):
     tag = cls.__dataclass_fields__["type"].default
-    valid = []
+    valid: set[str] = set()
     for name in _fixture_names():
         if (
             json.loads((FIXTURES / f"{name}.expect.json").read_text())["server"]
             != "valid"
         ):
             continue
-        tree = json.loads((FIXTURES / f"{name}.json").read_text())
-        valid.append(json.dumps(tree))
-    assert any(f'"type": "{tag}"' in text for text in valid), tag
+        valid |= _node_types(json.loads((FIXTURES / f"{name}.json").read_text()))
+    assert tag in valid, tag

@@ -106,7 +106,7 @@ export interface ToolAction {
   owner: string;
   tool: string;
   args: {
-    [k: string]: boolean | number | string;
+    [k: string]: string | number | boolean;
   };
   kind: "tool";
 }
