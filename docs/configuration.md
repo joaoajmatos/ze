@@ -427,9 +427,9 @@ for how the sandbox enforces them.
 
 Each key takes a positive number. A wrong type or a value of zero or less keeps the default
 for that key and logs `script_limit_invalid`. The other keys keep their values. The
-`wall_seconds`, `max_inner_calls`, `max_proposed_writes`, `max_result_chars` and
-`max_source_chars` keys take an integer, so `wall_seconds: 30.0` falls back to `30` with a
-warning. `max_spend_usd` takes an integer or a float, so `max_spend_usd: 1` sets `1.0`.
+The integer keys (`wall_seconds`, `max_inner_calls`, `max_proposed_writes`, `max_result_chars`
+and `max_source_chars`) must be whole numbers. `wall_seconds: 30.0` falls back to `30` with a
+warning. `max_spend_usd` accepts an integer or a float, so `max_spend_usd: 1` sets `1.0`.
 Byte caps on the request and reply frames, and the inner-result store size, are code
 constants, not config keys.
 

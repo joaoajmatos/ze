@@ -338,7 +338,9 @@ must set `egress=True` or carry an explicit exemption with a reason. Otherwise t
 sweep fails.
 
 In a script, each stub tool is a function that takes keyword arguments and returns the
-tool's JSON result: dicts, lists or strings. Scripts reach a `WRITE` tool only through
+tool's JSON result: dicts, lists or strings. A result that JSON cannot encode, such as a
+dataclass or a `Decimal`, arrives as its `str()`. A `datetime` or `date` arrives as an ISO
+string. Numbers, booleans and `None` arrive unchanged. Scripts reach a `WRITE` tool only through
 `propose(tool, **args)` inside `finish(...)`. Calling a write tool directly from a script is
 refused with `writes_must_be_proposed`.
 
