@@ -50,7 +50,7 @@
 
 ## Phase 3: User Story 1 - Actions ask first, like chat (P1) 🎯 MVP
 
-- [ ] T005 [L:server] [US1] Tests first `core/contracts/ze-agents/tests/test_run_action.py` and `tests/test_tool_ui_action.py`, with tools registered through the real `@tool` decorator (not stubs):
+- [x] T005 [L:server] [US1] Tests first `core/contracts/ze-agents/tests/test_run_action.py` and `tests/test_tool_ui_action.py`, with tools registered through the real `@tool` decorator (not stubs):
   - an asks-first IRREVERSIBLE tool returns a parked `ToolCall` (no `AgentConfigError`), whose `ParkedWrite` has a non-empty `call_id`, an `item_id`, a `summary` and an `effect_phrase`, the same fields the loop produces;
   - `run_action(..., approval=ApprovedCall(parked.call_id), approval_request_id="r1")` runs it once and records `r1` as the approval;
   - a reversible write runs; the constraint veto still applies; `ctx.loop_active` is restored after the call;

@@ -350,6 +350,49 @@ class BaseAgent(ABC):
             tool, ctx, _lm_args=args, _approval=ApprovedCall("undo"), **merged
         )
 
+    async def run_action(
+        self,
+        tool: str,
+        args: dict[str, Any],
+        ctx: AgentContext,
+        *,
+        approval: ApprovedCall | None = None,
+        approval_request_id: str | None = None,
+    ) -> ToolCall:
+        """Run a tool a screen button named, through `call_tool`, outside the model loop.
+
+        Only a WRITE tool with `ui_action=True` and only its model-visible scalar
+        parameters can be named; anything else raises `UiActionRefusedError` before
+        the tool runs. An asks-first tool comes back parked (with a real `call_id`) so
+        the caller can ask the user; the approved re-run passes `approval`.
+        """
+        from ze_agents.errors import UiActionRefusedError, UnknownToolError
+        from ze_agents.tool import get_tool
+
+        try:
+            spec = get_tool(tool)
+        except UnknownToolError:
+            raise UiActionRefusedError(f"unknown tool {tool!r}") from None
+        if spec.access.value != "write" or not spec.ui_action:
+            raise UiActionRefusedError(f"tool {tool!r} is not a screen action")
+        _check_action_args(spec, args)
+        call_id = approval.call_id if approval is not None else uuid4().hex
+        ctx.approval_request_id = approval_request_id
+        merged = _merge_deps(tool, args, {**self.tool_deps(), "ctx": ctx})
+        previous_active = ctx.loop_active
+        ctx.loop_active = True
+        try:
+            return await self.call_tool(
+                tool,
+                ctx,
+                _lm_args=dict(args),
+                _call_id=call_id,
+                _approval=approval,
+                **merged,
+            )
+        finally:
+            ctx.loop_active = previous_active
+
     # ── Tool execution ────────────────────────────────────────────────────────
 
     async def call_tool(
@@ -1132,6 +1175,38 @@ def _split_undo(spec: Any, result: Any) -> tuple[Any, dict[str, Any] | None]:
         return stripped, payload
     log.warning("undo_payload_dropped", tool=spec.name)
     return stripped, None
+
+
+_JSON_SCALARS: dict[str, tuple[type, ...]] = {
+    "string": (str,),
+    "integer": (int,),
+    "number": (int, float),
+    "boolean": (bool,),
+}
+
+
+def _check_action_args(spec: Any, args: dict[str, Any]) -> None:
+    """Refuse screen-action args that are not the tool's visible scalar parameters."""
+    from ze_agents.errors import UiActionRefusedError
+
+    params = spec.llm_schema()["function"]["parameters"]
+    properties = params.get("properties", {})
+    for key in args:
+        if key.startswith("_") or key not in properties:
+            raise UiActionRefusedError(f"argument {key!r} is not available")
+    for key in params.get("required", []):
+        if key not in args:
+            raise UiActionRefusedError(f"argument {key!r} is required")
+    for key, value in args.items():
+        if value is None:
+            continue
+        allowed = _JSON_SCALARS.get(properties[key].get("type", ""))
+        if (
+            allowed is None
+            or not isinstance(value, allowed)
+            or (isinstance(value, bool) and bool not in allowed)
+        ):
+            raise UiActionRefusedError(f"argument {key!r} has the wrong type")
 
 
 def _merge_deps(tool_name: str, llm_args: dict, deps: dict[str, Any]) -> dict:
