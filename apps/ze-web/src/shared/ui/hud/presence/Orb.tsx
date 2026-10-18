@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { GAZE_PERSONALITY, initialGaze, nextGaze, stepSpring, type GazeInput, type GazePhase, type GazeState, type Point, type PointerKind } from "./gaze";
-import { MONAD, deform, easeEye, eyeBase, inEye, monadPosition, clampPoint, originRadius, withReflexes, OPEN_EYE, type Eye } from "./monad";
 import { smoothLevel } from "./level";
+import { MONAD, deform, easeEye, eyeBase, inEye, monadPosition, clampPoint, originRadius, withReflexes, OPEN_EYE, type Eye } from "./monad";
 import { simplex2 } from "./noise";
 import type { OrbColors, OrbState, PresenceHandle } from "./types";
 

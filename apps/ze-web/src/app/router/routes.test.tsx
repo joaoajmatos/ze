@@ -33,7 +33,6 @@ vi.mock("@/pages/doing-goal", () => ({
 vi.mock("@/pages/doing-workflow", () => ({
   DoingWorkflowPage: () => <p data-testid="workflow">workflow {useParams().workflowId}</p>,
 }));
-vi.mock("@/pages/jarvis", () => ({ JarvisApp: () => <p data-testid="jarvis">jarvis</p> }));
 vi.mock("@/pages/plugin-page", () => ({
   PluginPage: () => <p data-testid="plugin">plugin {useParams().pluginPath}</p>,
 }));
@@ -78,10 +77,11 @@ describe("places", () => {
     expect(await screen.findByTestId("workflow")).toHaveTextContent("workflow w-1");
   });
 
-  it("renders /jarvis as a child of the shell", async () => {
+  it("has no route for the prototype, and /jarvis falls to the plugin catch-all", async () => {
+    const paths = (rs: typeof routes): string[] => rs.flatMap((r) => [r.path ?? "", ...paths(r.children ?? [])]);
+    expect(paths(routes).filter((p) => /jarvis/i.test(p))).toEqual([]);
     go("/jarvis");
-    const el = await screen.findByTestId("jarvis");
-    expect(screen.getAllByTestId("shell")[0]).toContainElement(el);
+    expect(await screen.findByTestId("plugin")).toHaveTextContent("plugin jarvis");
   });
 
   it("renders a manifest plugin path through PluginPage", async () => {

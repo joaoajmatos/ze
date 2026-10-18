@@ -33,6 +33,7 @@ describe("placeOf", () => {
   it("returns null outside the five places", () => {
     expect(placeOf("/contacts")).toBeNull();
     expect(placeOf("/jarvis")).toBeNull();
+    expect(redirects.some((r) => r.from.includes("jarvis") || r.to.includes("jarvis"))).toBe(false);
     expect(placeOf("/doingness")).toBeNull();
     expect(placeOf("/asking")).toBeNull();
   });

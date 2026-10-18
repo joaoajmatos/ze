@@ -42,10 +42,6 @@ export const routes: RouteObject[] = [
       { path: "mind/:entityId", element: <MindEntityPage /> },
       { path: "governance", element: <GovernancePage /> },
       { path: "governance/*", element: notFound },
-      {
-        path: "jarvis/*",
-        element: lazyPage(() => import("@/pages/jarvis").then((m) => ({ default: m.JarvisApp }))),
-      },
       ...redirects.map((r) => ({ path: r.from.slice(1), element: <RedirectTo to={r.to} hint={r.hint} hintMap={r.hintMap} /> })),
       { path: ":pluginPath", element: lazyPage(() => import("@/pages/plugin-page").then((m) => ({ default: m.PluginPage }))) },
       { path: "*", element: notFound },

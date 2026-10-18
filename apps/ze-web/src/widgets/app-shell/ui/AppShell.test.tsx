@@ -37,21 +37,25 @@ vi.mock("./NotificationBell", () => ({ NotificationBell: () => <button type="but
 vi.mock("@/shared/ui", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/shared/ui")>()),
   NoticeBanner: () => null,
-  Presence: forwardRef(function PresenceStub(props: { state: string; phrase: string; compact?: boolean }, ref) {
+  Presence: forwardRef(function PresenceStub(props: { state: string; phrase: string; compact?: boolean; headSlot?: React.ReactNode; level?: () => number }, ref) {
     useImperativeHandle(ref, () => ({ glance: mocks.glance }), []);
     return (
       <section data-testid="presence" data-state={props.state} data-compact={String(!!props.compact)}>
         {props.phrase}
+        <div data-testid="presence-head">{props.headSlot}</div>
       </section>
     );
   }),
 }));
 
 import { useAskOverlay } from "@/features/ask-bar";
+import { useVoiceInput } from "@/features/voice-input";
 import { usePresenceStore } from "@/entities/presence";
 import { useSession } from "@/entities/session";
 import { useWsStore } from "@/shared/api";
 import { AppShell } from "./AppShell";
+
+const idleVoice = { status: "idle" as const, startedAt: null, reason: null, failure: null, notice: null, pending: null };
 
 let mm: ReturnType<typeof mockMatchMedia>;
 
@@ -73,6 +77,7 @@ beforeEach(() => {
   mocks.glance.mockClear();
   mocks.handlers.clear();
   useAskOverlay.getState().reset();
+  useVoiceInput.setState(idleVoice);
   usePresenceStore.getState().reset();
   useWsStore.setState({ isConnected: true, thinkingThreads: {}, typingTextThreads: {} });
 });
@@ -209,5 +214,71 @@ describe("AppShell phone", () => {
     renderShell("/");
     fireEvent.click(screen.getByRole("link", { name: "Doing" }));
     expect(screen.getByRole("link", { name: "Doing" })).toHaveAttribute("aria-current", "page");
+  });
+});
+
+describe("AppShell voice and ambience", () => {
+  it("shows the mic from VoiceMic inside the Ask bar", () => {
+    renderShell("/doing");
+    const mic = screen.getByRole("button", { name: "Speak to Ze (hold V)" });
+    expect(mic.closest(".ask")).not.toBeNull();
+    expect(mic).toHaveClass("ctl");
+  });
+
+  it("shows the ambience toggle in the Presence head", () => {
+    renderShell();
+    const toggle = within(screen.getByTestId("presence-head")).getByRole("button", { name: "Ambience off" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("renders the voice status line above the bar, outside .ask", () => {
+    renderShell();
+    const line = document.querySelector(".voice-status");
+    expect(line).not.toBeNull();
+    expect(line).toHaveAttribute("role", "status");
+    expect(line!.closest(".ask")).toBeNull();
+  });
+
+  it("wires registerTranscript to the bar", async () => {
+    const mod = await import("@/features/voice-input/model/store");
+    renderShell("/ask");
+    act(() => mod.deliverTranscript("hello", "t1"));
+    expect(screen.getByRole("textbox", { name: /Ask Ze/ })).toHaveValue("hello");
+    expect(useAskOverlay.getState().voiceId).toBe("t1");
+  });
+
+  it("stops a recording when the overlay closes", () => {
+    const stop = vi.fn();
+    useVoiceInput.setState({ status: "recording", stop });
+    useAskOverlay.setState({ open: true });
+    renderShell("/doing");
+    expect(stop).not.toHaveBeenCalled();
+    act(() => useAskOverlay.getState().close());
+    expect(stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not stop a recording when the person changes place", () => {
+    const stop = vi.fn();
+    useVoiceInput.setState({ status: "recording", stop });
+    const { rerender } = renderShell("/doing");
+    rerender(
+      <MemoryRouter initialEntries={["/mind"]}>
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route path="*" element={<p>page</p>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(stop).not.toHaveBeenCalled();
+  });
+
+  it("does not stop an idle mic when the overlay closes", () => {
+    const stop = vi.fn();
+    useVoiceInput.setState({ status: "idle", stop });
+    useAskOverlay.setState({ open: true });
+    renderShell("/doing");
+    act(() => useAskOverlay.getState().close());
+    expect(stop).not.toHaveBeenCalled();
   });
 });

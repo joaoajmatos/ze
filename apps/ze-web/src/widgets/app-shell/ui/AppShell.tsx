@@ -1,12 +1,14 @@
 import type { WsScreenContext } from "@myguyze/ze-client";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { AmbienceToggle } from "@/features/ambience";
 import { AnswerGateFrameHandler } from "@/features/answer-gate";
 import { AskBar, useAskOverlay, useAskShortcut } from "@/features/ask-bar";
 import { RefreshHandler } from "@/features/invalidate-on-ws-refresh";
 import { ConfirmationFrameHandler } from "@/features/respond-to-confirmation";
 import { TraceFrameHandler } from "@/features/trace-state";
 import { sendTurn, TurnFrameHandler } from "@/features/turn-stream";
+import { currentLevel, registerTranscript, useHoldToTalk, useVoiceInput, VoiceMic, VoiceStatus } from "@/features/voice-input";
 import { usePresence } from "@/entities/presence";
 import { screenSnapshot } from "@/entities/screen-context";
 import { useSession } from "@/entities/session";
@@ -43,6 +45,18 @@ function Shell({ overlay }: { overlay?: ReactNode }) {
       : useAskOverlay.getState().submit(text, screenSnapshot(pathname), placed);
 
   const connection = useConnectionState();
+  const blocked = connection === "displaced" ? DISPLACED_LINE : null;
+  useHoldToTalk(!blocked);
+
+  // A transcript lands in the Ask bar; the bar's next send carries its id.
+  useEffect(() => registerTranscript((text, id) => useAskOverlay.getState().setVoiceTranscript(text, id)), []);
+
+  // Closing the overlay ends a recording and transcribes it; changing place does not.
+  const wasOverlayOpen = useRef(overlayOpen);
+  useEffect(() => {
+    if (wasOverlayOpen.current && !overlayOpen && useVoiceInput.getState().status === "recording") useVoiceInput.getState().stop();
+    wasOverlayOpen.current = overlayOpen;
+  }, [overlayOpen]);
   const presenceRef = useRef<PresenceHandle>(null);
   const bellRef = useRef<HTMLDivElement>(null);
   useAskShortcut();
@@ -85,7 +99,7 @@ function Shell({ overlay }: { overlay?: ReactNode }) {
       <NoticeBanner />
       <main className="main main-places">
         <aside className="rail" aria-label="Ze status">
-          <Presence ref={presenceRef} state={orb} phrase={phrase} compact={narrow} />
+          <Presence ref={presenceRef} state={orb} phrase={phrase} compact={narrow} headSlot={<AmbienceToggle />} level={currentLevel} />
           <div className="rail-slot" ref={setRailSlot} />
         </aside>
         <div className="place">
@@ -93,7 +107,12 @@ function Shell({ overlay }: { overlay?: ReactNode }) {
           <Outlet />
         </div>
       </main>
-      <AskBar onSubmit={askSubmit} disabledReason={connection === "displaced" ? DISPLACED_LINE : null} />
+      <AskBar
+        onSubmit={askSubmit}
+        disabledReason={blocked}
+        renderMic={(reason) => <VoiceMic blocked={reason} />}
+        renderVoiceStatus={() => <VoiceStatus />}
+      />
       {narrow && <BottomBar />}
       <RefreshHandler />
       <ConfirmationFrameHandler />
