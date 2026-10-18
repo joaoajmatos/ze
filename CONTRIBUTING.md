@@ -36,8 +36,7 @@ make web           # React web app on :5173
 
 3. **Run checks** before pushing:
    ```bash
-   make check       # ruff + ze-web tsc build — mirrors CI lint gates
-   make lint-web    # optional: ESLint / FSD boundaries when editing ze-web
+   make check       # ruff, ze-web ESLint (FSD boundaries) and ze-web tsc build — mirrors CI lint gates
    make test        # ze-api (skips slow) — must pass
    make test-web    # vitest — must pass if you changed ze-web
    make test-all    # optional, all packages including slow
