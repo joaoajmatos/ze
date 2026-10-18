@@ -100,7 +100,7 @@ describe("PluginScreen", () => {
 
   it("shows error state for invalid UI tree", () => {
     usePluginPageQuery.mockReturnValue({
-      data: { title: "News", tree: [{ type: "col" }] },
+      data: { title: "News", tree: [{ type: "col" }], ui_version: "2.0" },
       isLoading: false,
       isError: false,
       refetch: vi.fn(),
