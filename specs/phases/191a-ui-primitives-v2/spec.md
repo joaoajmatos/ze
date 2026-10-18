@@ -24,6 +24,14 @@ Ze draws structured UI from server-built trees of primitives. Agents build them 
 - **The tree is brittle.** A tree with one primitive the web app does not know fails validation as a whole, and the renderer draws nothing for an unknown type. A plugin cannot add a view without a web release in lockstep.
 - **The set has gaps.** Places and plugin modules need an entity facet, rows of stats, a posture-aware list, a small series, a keyed table with row actions, a timeline and a card with actions. Some exist in part; some do not.
 
+## Clarifications
+
+### Session 2026-10-18 (user answers through the Maestro: all recommended)
+
+- Q: Which tools may a primitive's action call? → A: Any tool owned by the producer of the tree (the plugin or agent), run on the server through the normal tool path: gates, the constraint veto and the trace apply; an irreversible write asks first.
+- Q: May agents draw the new primitives in chat? → A: Stat rows, keyed tables and sparklines only. Entity facet, posture-aware list and card-with-actions stay code-built.
+- Q: Where does the gallery live? → A: A development-only route, absent from production builds.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - An action on a screen asks first, like chat does (Priority: P1)
@@ -108,7 +116,8 @@ The primitive contract is defined once and checked on both sides with the same e
 
 - **FR-001**: Primitive actions MUST be typed: ask (send a question on the selected thread), tool (run a named tool with arguments), navigate (open a place route), and compose (run a composed-answer preset). String actions MUST be removed (pre-v1 hard cut).
 - **FR-002**: A tool action MUST run on the server through the same tool path as chat, including the write-confirmation gate, the constraint veto and the trace. The browser MUST never call a plugin's REST operation as a primitive action.
-- **FR-003**: A tool action MUST be refused when the tool is unknown or not owned by the producer of the tree, with a plain line.
+- **FR-003**: A tool action MUST be refused when the tool is unknown or not owned by the producer of the tree (the plugin or agent that built it), with a plain line.
+- **FR-003a**: Agents' render tools MUST offer stat rows, keyed tables and sparklines; entity facet, posture-aware list and card-with-actions MUST be code-built only.
 - **FR-004**: The tree MUST carry a contract version. The client MUST render a same-major tree with unknown types through the fallback and refuse an older major version with a plain line.
 - **FR-005**: An unknown primitive type MUST render as a table of its scalar fields with a note naming the type, with its known children rendered inside; it MUST never fail the rest of the tree.
 - **FR-006**: The primitive set MUST cover: entity facet, stat rows, posture-aware list, series (sparkline), keyed table with row actions, timeline, and card with actions. An audit MUST map each need to one primitive and remove unused primitives.
@@ -139,5 +148,4 @@ The primitive contract is defined once and checked on both sides with the same e
 
 - Plugin modules, slots and the manifest change are 191b; this phase gives them their vocabulary.
 - The existing claim posture rules (184) carry over unchanged.
-- Render tools for agents keep their current behaviour; which new primitives agents may draw in chat is a planning detail unless the user wants otherwise.
 - The gallery is a development tool, not a user-facing place.

@@ -20,6 +20,14 @@
 
 Plugins today can contribute a navigation entry with a whole server-driven page, and a settings section. Only News uses the page. Under the agreed model, a plugin is a source of data and behaviour: it feeds the core contracts (claims, loops, signals, actions, screen resolvers, composed answers, settings), and the five places render what it feeds. When a plugin does need a visual of its own, it contributes a **module**: a title, a data source and a layout of primitives, bound to a **slot** that a place offers. The place decides where the module sits, how dense it is and how it looks. A plugin's "full view" is a composed answer in Ask, summoned by a preset chip.
 
+## Clarifications
+
+### Session 2026-10-18 (user answers through the Maestro: all recommended)
+
+- Q: Does World get a module slot? → A: No. Plugins reach World through claims and loops only.
+- Q: How does a module get its data? → A: Each module names a plugin read operation that returns its primitive tree for the slot's subject; it refreshes on place load, on a refresh frame naming the module, and at most every 60 s while visible.
+- Q: May plugins add composed-answer types now? → A: Not in 191b; a preset sends a plain prompt.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A plugin's module appears in a place's slot (Priority: P1)
@@ -98,7 +106,7 @@ Settings sections render and save in Governance › Connections as 190 built the
 ### Functional Requirements
 
 - **FR-001**: Plugin UI contributions MUST be one of: module, preset, settings section. The page kind MUST be removed, and an unknown kind MUST fail startup with a typed configuration error naming the contribution.
-- **FR-002**: A module MUST declare a title, the slot it fills, and a data source that returns a primitive tree for the slot's subject (an entity, a run, or none for the Connections card), or a signal that it does not apply.
+- **FR-002**: A module MUST declare a title, the slot it fills, and a plugin read operation that returns a primitive tree for the slot's subject (an entity, a run, or none for the Connections card), or a signal that it does not apply. The slot MUST fetch it on place load, refetch on a refresh frame naming the module, and refetch at most every 60 seconds while visible.
 - **FR-003**: The places MUST offer these slots: Mind entity facet, Doing run block, Governance › Connections card, and Ask preset chip. Each place MUST own placement, density and design of its slot.
 - **FR-004**: A module's failure, slowness or absence MUST never break or delay the rest of the place; the slot MUST show a plain line for a failure and a loading line while waiting.
 - **FR-005**: Module actions MUST use 191a's typed actions and gates; plugins MUST contribute no browser script.
@@ -126,6 +134,6 @@ Settings sections render and save in Governance › Connections as 190 built the
 
 ## Assumptions
 
-- World gets plugin data through claims and loops, not through a module slot (see clarify).
-- Presets send a plain prompt routed like a typed question; a plugin's composed answer type is a later phase unless the user wants it here.
+- World gets plugin data through claims and loops only (clarification).
+- Presets send a plain prompt routed like a typed question; plugin composed-answer types are a later phase (clarification).
 - Only News contributes UI today; Finance and others gain none here (plugins mature later).
