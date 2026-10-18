@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from ze_api.api.openapi import OPENAPI_TAGS
 from ze_api.api.eval import dev_router
 from ze_api.api.v0 import router as v0_router
+from ze_api.api.v0.voice.limits import VoiceBodyLimitMiddleware
 from ze_api.api.ws import router as ws_router
 from ze_api.lifespan import lifespan
 from ze_api.settings import get_settings
@@ -37,6 +38,8 @@ def create_app() -> FastAPI:
         },
     )
 
+    # Added before CORS so the 413 it answers still carries CORS headers.
+    app.add_middleware(VoiceBodyLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=_parse_cors_origins(settings.cors_origins),
