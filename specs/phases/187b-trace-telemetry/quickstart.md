@@ -3,7 +3,7 @@
 ## Automated
 - `make test-core`, `make test-agents`, `make test` (ze-api), `make test-seed`, `make test-py`.
 - `make test-web`, `make typecheck-web`, `make lint`.
-- `rtk proxy grep -rn "total_duration_ms\|pendingArrivals\|arrivalsByMessage\|sentAtByMessage\|pendingSentAt" core apps packages plugins --include='*.py' --include='*.ts' --include='*.tsx' --include='*.yaml'` returns nothing.
+- `rtk proxy grep -rn "total_duration_ms\|pendingArrivals\|arrivalsByMessage\|sentAtByMessage\|pendingSentAt" core apps packages plugins --include='*.py' --include='*.ts' --include='*.tsx' --include='*.yaml'` returns nothing outside tests that assert the old names are gone (`test_trace_telemetry_schema.py`, `test_message_store.py`, `useTraceStore.test.ts`).
 
 ## Manual against `make dev-full`
 1. Ask "what's on my calendar tomorrow". Watch the trace panel: the signal path fills stage by stage with server times; the total, tokens, cost and context fill appear on the readouts; routing shows the shortlist against its bars; judgment gauges show bars.

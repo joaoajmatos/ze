@@ -37,7 +37,7 @@ def test_trace_response_without_sources_is_empty():
         subtasks=[],
         memory_chunks=[],
         tool_calls=[],
-        total_duration_ms=0,
+        tool_duration_ms=0,
     )
     assert _trace_to_response(trace).sources == []
 

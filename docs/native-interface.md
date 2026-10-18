@@ -325,6 +325,25 @@ Each inbound frame has one state owner in ze-web. `features/turn-stream/model/fr
 | `refresh`, `notification` | query invalidation (`features/invalidate-on-ws-refresh`) |
 | `pong` | none |
 
+### Trace telemetry frames
+
+`trace_update` frames with `partial: true` are best effort. The server sends one per finished node
+(`stages: [{name, start_ms, duration_ms, run}]`). The `embed_route` frame adds `routing_scores` and
+`routing_thresholds`. The memory frame adds `extraction_confidence` per fact chunk. Each finished
+tool call adds a row to `tool_calls` (`call_id`, `name`, `agent`, `gate`, `start_offset_ms`,
+`duration_ms`, `success`, `result_snippet`). A `gate: "parked"` row waits for the user, and its
+approved run arrives later with the same `call_id`. A frame that cannot go within 1 s is dropped.
+
+Clients append stages (one per `run`, `name` and `start_ms`), merge tool rows by `call_id`, and
+ignore a partial for a message whose committed trace has arrived. The server drains queued partials
+(at most 1 s) before it sends the committed frame. The committed trace, also at
+`GET /api/v0/messages/{id}/trace`, is the complete record: `tool_duration_ms` (renamed from
+`total_duration_ms`), `turn_duration_ms`, `paused_ms`, `stages`, `usage`, `routing_scores`,
+`routing_thresholds`, `telemetry_partial`, `call_id` and `start_offset_ms` on each tool row, and
+`surface` and `bar` on each judgment.
+
+`usage.models[].cost_usd` comes from Ze's price table, not from the OpenRouter bill. The cost reconciler corrects the ledger later, and the trace keeps the table figure. `usage` counts only the model calls made before the trace is stamped. Work that runs after it, such as the loop title writer, adds nothing, so `usage` is not all the spend a turn caused. The server waits up to 1 s for queued partial frames before it commits the reply, so a slow client can delay the commit by that long.
+
 A `confirm_request` for a busy thread pauses the delivery watchdog, and an approve or deny restarts it. A confirmation is placed in the canvas under the latest exchange, in `/ask` and in the overlay. A prompt-kind confirmation shows its actions as command chips that send `action`.
 
 Close code `4000` means another window took the connection. The client does not reconnect on its own. It shows "Ze is open in another window" with a Use here control, which reconnects at once.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 from ze_api.api.ws.commands import handle_command
 from ze_api.api.ws.connection import ConnectionManager
@@ -28,6 +28,7 @@ async def test_cancel_with_two_pendings_only_drops_named_thread():
 
     container = AsyncMock()
     container.abort_invocation = AsyncMock()
+    container.turn_telemetry = MagicMock()
 
     pending_configs = {
         "req-a": _config("thread-a"),
@@ -64,6 +65,7 @@ async def test_cancel_without_thread_id_does_not_clear_pendings():
 
     container = AsyncMock()
     container.abort_invocation = AsyncMock()
+    container.turn_telemetry = MagicMock()
 
     pending_configs = {
         "req-a": _config("thread-a"),
@@ -87,3 +89,32 @@ async def test_cancel_without_thread_id_does_not_clear_pendings():
     container.abort_invocation.assert_not_awaited()
     frames = [call[0][0] for call in ws.send_json.call_args_list]
     assert any(f.get("type") == "error" for f in frames)
+
+
+async def test_cancel_finishes_the_threads_turn_recorder():
+    from ze_core.telemetry.turn import TurnTelemetryRegistry
+
+    mgr = ConnectionManager()
+    ws = _make_ws()
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[])
+    await mgr.connect(ws, store)
+
+    container = AsyncMock()
+    container.abort_invocation = AsyncMock()
+    container.turn_telemetry = TurnTelemetryRegistry()
+    paused = container.turn_telemetry.start("thread-a")
+    other = container.turn_telemetry.start("thread-b")
+    paused.pause()
+
+    await handle_command(
+        ws,
+        {"type": "command", "name": "cancel", "thread_id": "thread-a"},
+        container,
+        mgr,
+        {},
+        {},
+    )
+
+    assert container.turn_telemetry.resume("thread-a") is not paused
+    assert container.turn_telemetry.resume("thread-b") is other

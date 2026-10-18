@@ -42,6 +42,8 @@ class RoutingEnvelope:
     raw_scores: dict[str, float] = field(default_factory=dict)
     is_sequential: bool = False
     judgment: RoutingJudgment | None = None
+    threshold: float = ROUTING_THRESHOLD
+    gap_threshold: float = ROUTING_GAP_THRESHOLD
 
 
 @dataclass

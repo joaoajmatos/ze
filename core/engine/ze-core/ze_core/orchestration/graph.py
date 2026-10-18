@@ -65,36 +65,45 @@ def graph_builder(
         after_surface_loops,
     )
     from ze_core.orchestration.state import AgentState
+    from ze_core.orchestration.timing import add_timed_node
 
     ov = node_overrides or {}
     builder = StateGraph(state_type or AgentState)
 
-    builder.add_node("preprocess", ov.get("preprocess", nodes.preprocess))
-    builder.add_node("resolve_screen", ov.get("resolve_screen", nodes.resolve_screen))
-    builder.add_node("embed_route", ov.get("embed_route", nodes.embed_route))
-    builder.add_node("decompose", ov.get("decompose", nodes.decompose))
-    builder.add_node("fetch_context", ov.get("fetch_context", nodes.fetch_context))
-    builder.add_node("match_skills", ov.get("match_skills", nodes.match_skills))
-    builder.add_node("choose_tier", ov.get("choose_tier", nodes.choose_tier))
-    builder.add_node("preflight", ov.get("preflight", nodes.preflight))
-    builder.add_node(
+    add_timed_node(builder, "preprocess", ov.get("preprocess", nodes.preprocess))
+    add_timed_node(
+        builder, "resolve_screen", ov.get("resolve_screen", nodes.resolve_screen)
+    )
+    add_timed_node(builder, "embed_route", ov.get("embed_route", nodes.embed_route))
+    add_timed_node(builder, "decompose", ov.get("decompose", nodes.decompose))
+    add_timed_node(
+        builder, "fetch_context", ov.get("fetch_context", nodes.fetch_context)
+    )
+    add_timed_node(builder, "match_skills", ov.get("match_skills", nodes.match_skills))
+    add_timed_node(builder, "choose_tier", ov.get("choose_tier", nodes.choose_tier))
+    add_timed_node(builder, "preflight", ov.get("preflight", nodes.preflight))
+    add_timed_node(
+        builder,
         "await_budget_confirmation",
         ov.get("await_budget_confirmation", nodes.await_budget_confirmation),
     )
-    builder.add_node("execute_tool", ov.get("execute_tool", nodes.execute_tool))
-    builder.add_node(
+    add_timed_node(builder, "execute_tool", ov.get("execute_tool", nodes.execute_tool))
+    add_timed_node(
+        builder,
         "await_write_confirmation",
         ov.get("await_write_confirmation", nodes.await_write_confirmation),
     )
-    builder.add_node("correlate", ov.get("correlate", nodes.correlate))
-    builder.add_node("surface_loops", ov.get("surface_loops", nodes.surface_loops))
-    builder.add_node("synthesize", ov.get("synthesize", nodes.synthesize))
-    builder.add_node("record_trace", ov.get("record_trace", nodes.record_trace))
-    builder.add_node("write_memory", ov.get("write_memory", nodes.write_memory))
+    add_timed_node(builder, "correlate", ov.get("correlate", nodes.correlate))
+    add_timed_node(
+        builder, "surface_loops", ov.get("surface_loops", nodes.surface_loops)
+    )
+    add_timed_node(builder, "synthesize", ov.get("synthesize", nodes.synthesize))
+    add_timed_node(builder, "record_trace", ov.get("record_trace", nodes.record_trace))
+    add_timed_node(builder, "write_memory", ov.get("write_memory", nodes.write_memory))
 
     builder.set_entry_point("preprocess")
     if pre_route_node is not None:
-        builder.add_node("inject_routing_context", pre_route_node)
+        add_timed_node(builder, "inject_routing_context", pre_route_node)
         builder.add_edge("preprocess", "inject_routing_context")
         builder.add_edge("inject_routing_context", "resolve_screen")
     else:
@@ -146,6 +155,7 @@ def build_graph(checkpointer: Any, plugins: list[ZePlugin] | None = None) -> Any
     """Build and compile the standard conversation graph."""
     from ze_core.orchestration.edges import after_decompose, after_embed_route
     from ze_core.orchestration.state import build_state_type
+    from ze_core.orchestration.timing import add_timed_node
 
     state_type = build_state_type(plugins or [])
     pre_route_fns = [
@@ -167,7 +177,7 @@ def build_graph(checkpointer: Any, plugins: list[ZePlugin] | None = None) -> Any
 
     for plugin in plugins or []:
         for name, fn in plugin.graph_nodes().items():
-            builder.add_node(name, fn)
+            add_timed_node(builder, name, fn)
         plugin.graph_edges(builder)
 
     return builder.compile(checkpointer=checkpointer)

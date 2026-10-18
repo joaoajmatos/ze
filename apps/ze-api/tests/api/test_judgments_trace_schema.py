@@ -46,7 +46,7 @@ def test_judgments_default_empty():
         subtasks=[],
         memory_chunks=[],
         tool_calls=[],
-        total_duration_ms=0,
+        tool_duration_ms=0,
     )
     assert trace.judgments == []
 

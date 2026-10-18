@@ -19,6 +19,7 @@ from ze_agents.errors import (
     AgentError,
     HookAbort,
     LoopParked,
+    UnknownToolError,
 )
 from ze_agents.hooks import (
     LoopEndEvent,
@@ -404,6 +405,7 @@ class BaseAgent(ABC):
         _lm_args: dict | None = None,
         _call_id: str | None = None,
         _approval: ApprovedCall | None = None,
+        _trace_call_id: str | None = None,
         **kwargs: Any,
     ) -> ToolCall:
         """Execute a registered tool with write confirmation and hook dispatch.
@@ -411,8 +413,46 @@ class BaseAgent(ABC):
         An asks-first WRITE tool is parked, not run, unless the user approved this
         exact call (`_approval`, built by the resume path) or a plan pre-approved the
         tool. Model arguments never reach the private parameters: the loop strips
-        `_`-prefixed keys (`_model_args`).
+        `_`-prefixed keys (`_model_args`). Every finished call goes to `ctx.tool_sink`;
+        `_trace_call_id` is the parked row's id, so its approved run shares it.
         """
+        try:
+            tool_call = await self._run_tool_call(
+                name,
+                ctx,
+                _iteration,
+                _lm_args,
+                _call_id,
+                _approval,
+                kwargs,
+            )
+        except UnknownToolError as exc:
+            _finish(
+                ctx,
+                ToolCall(
+                    agent=self.name,
+                    tool_name=name,
+                    args=_lm_args if _lm_args is not None else kwargs,
+                    result=None,
+                    duration_ms=0,
+                    success=False,
+                    error=str(exc),
+                ),
+                _trace_call_id,
+            )
+            raise
+        return _finish(ctx, tool_call, _trace_call_id)
+
+    async def _run_tool_call(
+        self,
+        name: str,
+        ctx: AgentContext,
+        _iteration: int,
+        _lm_args: dict | None,
+        _call_id: str | None,
+        _approval: ApprovedCall | None,
+        kwargs: dict[str, Any],
+    ) -> ToolCall:
         from ze_agents.tool import get_tool
 
         spec = get_tool(name)
@@ -558,6 +598,7 @@ class BaseAgent(ABC):
                 error=str(exc),
                 gate=confirmation_gate,
                 approval=approval,
+                started_at=start,
             )
             await _dispatch_tool_end(hooks, name, tool_call, ctx, _iteration)
             return tool_call
@@ -577,6 +618,7 @@ class BaseAgent(ABC):
             gate=confirmation_gate,
             approval=approval,
             undo=undo,
+            started_at=start,
         )
 
         # ── Hook: after ───────────────────────────────────────────────────────
@@ -619,6 +661,7 @@ class BaseAgent(ABC):
                     _iteration=resume.iteration,
                     _lm_args=args,
                     _approval=ApprovedCall(pw.call_id),
+                    _trace_call_id=pw.trace_call_id,
                     **merged,
                 )
             elif decision is not None and decision.outcome == "duplicate":
@@ -630,6 +673,7 @@ class BaseAgent(ABC):
                     success=True,
                     gate="duplicate",
                 )
+                _finish(ctx, tool_call, pw.trace_call_id)
             else:
                 tool_call = ToolCall(
                     tool_name=pw.tool,
@@ -640,6 +684,7 @@ class BaseAgent(ABC):
                     error="denied by user",
                     gate="denied",
                 )
+                _finish(ctx, tool_call, pw.trace_call_id)
             accumulated.append(tool_call)
             messages.append(
                 {
@@ -945,6 +990,7 @@ class BaseAgent(ABC):
                         duration_ms=0,
                         success=True,
                     )
+                    _finish(ctx, tool_call)
                     accumulated.append(tool_call)
                     messages.append(
                         {
@@ -963,6 +1009,7 @@ class BaseAgent(ABC):
                             success=True,
                         )
                     else:
+                        delegate_started = time.monotonic()
                         tool_call = await run_delegate(
                             tc["arguments"],
                             ctx,
@@ -974,6 +1021,8 @@ class BaseAgent(ABC):
                             child_call_id = tc["id"]
                             child_arguments = dict(tc["arguments"])
                             continue
+                        tool_call.started_at = delegate_started
+                        _finish(ctx, tool_call)
                     accumulated.append(tool_call)
                     messages.append(
                         {
@@ -1047,6 +1096,23 @@ class _AskResolution:
     result: Any = None
     text: str = ""
     reason: ParkReason = "asks_first"
+
+
+def _finish(
+    ctx: AgentContext, tool_call: ToolCall, trace_call_id: str | None = None
+) -> ToolCall:
+    """Stamp the call's trace id and hand it to the turn's tool sink, once."""
+    if tool_call.parked is not None:
+        tool_call.call_id = tool_call.parked.trace_call_id
+    elif trace_call_id:
+        tool_call.call_id = trace_call_id
+    sink = ctx.tool_sink
+    if sink is not None:
+        try:
+            sink(tool_call)
+        except Exception as exc:
+            log.warning("tool_sink_failed", tool=tool_call.tool_name, error=str(exc))
+    return tool_call
 
 
 def _refusal(

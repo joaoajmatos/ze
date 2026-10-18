@@ -159,7 +159,7 @@ class NativeAppInterface:
                     "subtasks": [],
                     "memory_chunks": [],
                     "tool_calls": [],
-                    "total_duration_ms": 0,
+                    "tool_duration_ms": 0,
                     **fields,
                 },
                 thread_id,

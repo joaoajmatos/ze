@@ -12,7 +12,7 @@ export interface MemoryPoint {
 
 const GLYPHS = new Set(["fact", "episode", "profile"]);
 
-/** Points from the committed trace only: live memory partials carry no confidence. */
+/** Points from the live partial or the committed trace; both carry the chunk's extraction confidence. */
 export function memoryPoints(chunks: WsTraceUpdateFrame["memory_chunks"] | undefined): { points: MemoryPoint[]; ranked: MemoryPoint[] } {
   const points = (chunks ?? []).map((c, id): MemoryPoint => ({
     id,

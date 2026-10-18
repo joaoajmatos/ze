@@ -4,6 +4,7 @@ import json
 import re
 from dataclasses import dataclass
 from typing import Any
+from uuid import uuid4
 
 from ze_agents.types import ToolCall
 
@@ -53,6 +54,8 @@ def flatten_tool_calls(tool_calls: list[ToolCall]) -> list[ToolCall]:
                         gate=str(item.get("gate") or "none"),
                         agent=item.get("agent"),
                         undo=item.get("undo"),
+                        call_id=str(item.get("call_id") or uuid4().hex),
+                        started_at=item.get("started_at"),
                     )
                 )
     return out

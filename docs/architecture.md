@@ -246,6 +246,28 @@ metadata. Older traces parse to `false`.
 
 The trace stores these values so that Retry never depends on registry state at retry time.
 
+### Turn telemetry in the trace
+
+`invoke_raw_turn` and `resume_turn` start or continue one `TurnTelemetry` per thread. The
+recorder lives in process, uses `time.monotonic()` for every stage and tool offset, and
+survives a confirmation pause, so a resumed turn counts the wait as `paused_ms` and keeps its
+earlier stages (`run` 1, then 2). A resume that finds no recorder (a restart) starts one and
+marks the trace `telemetry_partial`.
+
+`timed(name, fn)` in `ze_core/orchestration/timing.py` wraps every node the graph builders add:
+core nodes, overrides, plugin nodes and the workflow graph. Each wrapper records the stage in a
+`finally` and queues a partial `stages` frame. One sender task sends the queue in order, drops a
+frame that cannot go within 1 s, and never delays a node. Before the stamp, the turn drains the
+queue (at most 1 s), so no stage frame follows the committed trace. A slow client can hold the reply commit for that long. Cost in `usage` is the static price table, not the bill, and model calls after the stamp are not counted. Plugin graph nodes must be async: `timed()` calls a sync node inline on the event loop.
+
+`CostTracker.record` adds each chat completion to the recorder. The stamp writes `stages`,
+`turn_duration_ms` (includes `paused_ms`), `tool_duration_ms` (the sum of tool durations, formerly
+`total_duration_ms`), and `usage`: tokens and cost per model, the largest main-model prompt over
+its context window, and System One tokens kept apart. `routing_scores` (top 9) and
+`routing_thresholds` come from the routing envelope; each judgment row names its `surface` and
+the `bar` in force. Tool calls carry `call_id` and `start_offset_ms`. Older traces lack these
+fields and read as empty.
+
 ### Model tier in the trace
 
 `choose_tier` writes a `TierTrace` to `MessageTrace.tier` with four fields: `agent`, `tier`

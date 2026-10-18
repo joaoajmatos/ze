@@ -59,6 +59,11 @@ export interface JudgmentRow {
   options: { name: string; probability: number }[];
   status: "used" | "skipped";
   reason: string | null;
+  surface: string | null;
+  /** The bar the answer was held against; null when the surface has none yet. */
+  bar: { name: string; value: number } | null;
+  /** The surface exists but ships without a calibrated bar. */
+  uncalibrated: boolean;
 }
 
 export interface JudgmentGroup {
@@ -112,6 +117,9 @@ function rowOf(j: Judgment): JudgmentRow {
     value: shape !== "choice" && typeof j.answer === "number" ? j.answer : null,
     options,
     status: skipped ? "skipped" : "used",
+    surface: j.surface ?? null,
+    bar: j.bar ?? null,
+    uncalibrated: Boolean(j.surface) && !j.bar,
     reason: skipped ? (SKIP_WORDS[j.skip_reason ?? ""] ?? (j.skip_reason ? humanizeStatus(j.skip_reason).toLowerCase() : "not used")) : null,
   };
 }

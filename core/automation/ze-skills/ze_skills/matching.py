@@ -83,6 +83,10 @@ class SkillMatcher:
             self._floor = match_threshold
         self._cache: dict[str, tuple[str, Any]] = {}
 
+    @property
+    def surface(self) -> SkillsSurfaceConfig:
+        return self._surface
+
     async def match(
         self, message: str, *, judgment_state: dict[str, str] | None = None
     ) -> SkillMatchOutcome:
