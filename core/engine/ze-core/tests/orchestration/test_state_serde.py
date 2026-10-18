@@ -368,3 +368,39 @@ def test_parked_loop_keeps_call_id_and_started_at(serde: JsonPlusSerializer) -> 
     assert restored.accumulated[0].call_id == "fixed-id"
     assert restored.accumulated[0].started_at == 1234.5
     assert restored.parked[0].trace_call_id == "trace-id"
+
+
+def test_script_step_round_trips_through_a_parked_loop(serde: JsonPlusSerializer) -> None:
+    from ze_agents.park import ParkedLoop
+
+    inner = ToolCall(
+        tool_name="get_transactions",
+        args={"period": "month"},
+        result="[]",
+        duration_ms=2,
+        success=True,
+        parent_call_id="step-1",
+    )
+    step = ToolCall(
+        tool_name="run_tool_script",
+        args={"source_hash": "abc"},
+        result="{}",
+        duration_ms=9,
+        success=True,
+        call_id="step-1",
+        inner_calls=[inner],
+        script={"source": "x=1", "source_cut": False, "outcome": "ok", "limit": None,
+                "source_hash": "abc", "procedure_id": None},
+    )
+    loop = ParkedLoop(
+        agent="finance", messages=[], accumulated=[step], iteration=1, parked=[]
+    )
+    restored = round_trip(serde, loop)
+    assert restored == loop
+    assert restored.accumulated[0].inner_calls[0].parent_call_id == "step-1"
+    assert restored.accumulated[0].script["outcome"] == "ok"
+
+
+def test_agent_context_with_a_script_runner_is_never_the_stored_shape() -> None:
+    ctx = AgentContext(session_id="s", prompt="p")
+    assert ctx.script_runner is None

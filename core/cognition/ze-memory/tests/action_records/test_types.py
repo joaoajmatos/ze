@@ -100,3 +100,10 @@ def test_unsafe_summary_is_rejected(summary: str) -> None:
 def test_summary_is_bounded() -> None:
     draft = validate_draft(_draft(summary="ok " * 400))
     assert len(draft.summary) <= 500
+
+
+def test_action_context_carries_a_script_key() -> None:
+    from ze_memory.action_records.types import ActionContext
+
+    assert ActionContext().script_key is None
+    assert ActionContext(script_key="k").script_key == "k"
