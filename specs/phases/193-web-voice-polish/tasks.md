@@ -87,7 +87,7 @@
 
 ## Phase 4: User Story 2 - Ambience is a choice (P2)
 
-- [ ] T009 [P] [L:ambience] [US2] Copy the drone from git, not the working tree (lane `cut` deletes it in parallel): `git show main:apps/ze-web/src/pages/jarvis/hud/useAmbience.ts > apps/ze-web/src/features/ambience/model/useAmbience.ts`, unchanged first (the drone code stays as is), then tests first `features/ambience/model/useAmbience.test.ts` and `ui/AmbienceToggle.test.tsx` with a fake `AudioContext` (record `createOscillator` calls and `gain.setTargetAtTime` targets) and a fake `localStorage`:
+- [x] T009 [P] [L:ambience] [US2] Copy the drone from git, not the working tree (lane `cut` deletes it in parallel): `git show main:apps/ze-web/src/pages/jarvis/hud/useAmbience.ts > apps/ze-web/src/features/ambience/model/useAmbience.ts`, unchanged first (the drone code stays as is), then tests first `features/ambience/model/useAmbience.test.ts` and `ui/AmbienceToggle.test.tsx` with a fake `AudioContext` (record `createOscillator` calls and `gain.setTargetAtTime` targets) and a fake `localStorage`:
   - fresh: `on` false, no `AudioContext` created;
   - starting calls `ctx.resume()` on the new context (Safari);
   - toggle → an `AudioContext` is created, `localStorage["ze.ambience"]` is `"on"`; toggle again → master gain target 0 and `"off"`;
