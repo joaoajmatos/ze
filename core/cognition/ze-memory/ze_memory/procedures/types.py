@@ -139,6 +139,7 @@ class ProcedureVersion:
     id: UUID | None = None
     created_at: datetime | None = None
     ended_at: datetime | None = None
+    source_kind: str | None = None
 
 
 @dataclass

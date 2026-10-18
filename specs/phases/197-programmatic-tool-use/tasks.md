@@ -132,18 +132,18 @@
 
   Unit tests with the command runner faked: verification reads the chain listing (a successful command whose listing lacks the rule gives `scripts_isolated` false); probe breach handling. `sidecar/workspace/tests/smoke_scripts.py` (marked `docker`) covers every check in [quickstart.md](./quickstart.md).
 - [ ] T022 [L:sandbox] Update `sidecar/workspace/README.md`: `WS /scripts`, frames and caps, the `zescript` user, rlimits, stdout discarded, the script slot, `scripts_isolated` and the probe, `cap_add: [NET_ADMIN]` for local dev, the smoke test.
-- [ ] T023 [P] [L:runner] [US1] Tests first `core/ops/ze-workspace/tests/test_script_runner.py` with the T007 fake sidecar: `WorkspaceScriptRunner.run` sends `start` with the token; relays each `call` to `dispatch` and sends its `reply`; a `DispatchReply(stop=True)` sends `cancel` after the reply; `end` maps to `ScriptOutcome` (all eight statuses); connection refused → `unavailable`; `end busy` → `busy`; no `end` within `wall_seconds + 5` → cancel and `timeout`; `/stat` with `scripts_isolated: false` → `unavailable` without opening the socket; the client's `max_size` is 2 MiB. Implement `ze_workspace/scripts.py`, `WorkspaceClient.scripts_url()` and the new `stat` fields in `client.py`; add `websockets==16.0` to `core/ops/ze-workspace/pyproject.toml`.
+- [x] T023 [P] [L:runner] [US1] Tests first `core/ops/ze-workspace/tests/test_script_runner.py` with the T007 fake sidecar: `WorkspaceScriptRunner.run` sends `start` with the token; relays each `call` to `dispatch` and sends its `reply`; a `DispatchReply(stop=True)` sends `cancel` after the reply; `end` maps to `ScriptOutcome` (all eight statuses); connection refused → `unavailable`; `end busy` → `busy`; no `end` within `wall_seconds + 5` → cancel and `timeout`; `/stat` with `scripts_isolated: false` → `unavailable` without opening the socket; the client's `max_size` is 2 MiB. Implement `ze_workspace/scripts.py`, `WorkspaceClient.scripts_url()` and the new `stat` fields in `client.py`; add `websockets==16.0` to `core/ops/ze-workspace/pyproject.toml`.
 
 ---
 
 ## Phase 8: User Story 5 - A script that keeps working becomes a procedure (P3)
 
-- [ ] T024 [L:runner] [US5] Tests first:
+- [x] T024 [L:runner] [US5] Tests first:
   - `core/ops/ze-workspace/tests/test_script_learning.py`, running the real `ActionRecorder` over a fake store that enforces the real idempotency key: every finished script appends its own record (three runs of one tool signature give three rows); fields per [data-model.md](./data-model.md) (lifecycle and outcome values, `failure_code`, `ActionContext.script_key`, which round-trips through `_context_to_json` and the row reader in `action_records/store.py`); the third consecutive success for a key submits exactly one candidate (name `Script: <tools in order> [<key prefix>]` within 120 chars, latest source as its step, `preconditions=[]`, the three record ids as evidence); a fourth success submits nothing (`candidate_exists` true); a failure between successes resets the run; two agents with the same tools do not combine; a run with `procedure_id` never submits; a store error is logged and never raised;
   - one `@pytest.mark.pg` test: three runs of one key leave three `action_records` rows, and `list_by_script_key` returns them newest first.
 
   Implement `ze_workspace/script_learning.py` (copying `ze_workspace/action_records.py`'s pattern) and `ActionRecordStore.list_by_script_key` in `ze_memory/action_records/store.py`; the runner calls learning fire-and-forget after each run.
-- [ ] T025 [L:runner] [US5] Tests first:
+- [x] T025 [L:runner] [US5] Tests first:
   - `procedures/store.py`: `list_active_versions` returns `source_kind` per version through one LEFT JOIN (`admission_id → candidate_id`, NULL without an admission), with no extra query per version; `candidate_exists(name)`; one `@pytest.mark.pg` test for the join;
   - `discovery.py` fills `ProcedureMatch.source_kind`, and `format_procedure_guidance` prints a `tool_script` match as one line pointing to `run_tool_script(procedure_id="<id>")` with no steps;
   - `validate_candidate` rejects a `tool_script` candidate without `evidence_refs`, with two steps, or with a step over 8,000 chars;
@@ -151,7 +151,7 @@
 
   Implement in `procedures/store.py`, `discovery.py`, `validate.py`, `tools.py`.
 - [x] T026 [L:harness] [US5] Tests first in `test_script_step.py`: `procedure_id` of a READY match with `source_kind == "tool_script"` runs `steps[0]` with a stub built from the agent's current data read tools (a tool in the procedure's limits that the agent no longer has is absent from the stub); a non-script or non-READY match returns `procedure_not_script`. Implement in `script_step.py`.
-- [ ] T027 [L:runner] [US1] `WorkspaceStack.script_runner` and `build_workspace_stack(procedure_admission=...)` in `ze_workspace/bootstrap.py`: builds `WorkspaceScriptRunner` (with `ScriptLearning` when the action store and admission service are given) when the sidecar is configured. Test: a runner when configured, `None` otherwise, learning absent without the admission service.
+- [x] T027 [L:runner] [US1] `WorkspaceStack.script_runner` and `build_workspace_stack(procedure_admission=...)` in `ze_workspace/bootstrap.py`: builds `WorkspaceScriptRunner` (with `ScriptLearning` when the action store and admission service are given) when the sidecar is configured. Test: a runner when configured, `None` otherwise, learning absent without the admission service.
 
 ---
 

@@ -56,6 +56,9 @@ class ProcedureAdmissionService:
         )
         return saved
 
+    async def candidate_exists(self, name: str) -> bool:
+        return await self._store.candidate_exists(name)
+
     async def review_procedure_candidate(
         self,
         candidate_id: UUID,
