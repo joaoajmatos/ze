@@ -146,6 +146,8 @@ def main() -> int:
         advice.append(
             "portal: web change with no --portal-shot <path>; verify in your Maestri portal (ze-web-verify)"
         )
+    if args.portal_shot and not Path(args.portal_shot).exists():
+        advice.append(f"portal: --portal-shot {args.portal_shot} does not exist")
     for line in advice:
         print("advisory:", line)
 
