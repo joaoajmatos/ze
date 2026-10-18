@@ -103,6 +103,34 @@ class RetryRewindError(RetryError):
     """The thread's checkpointed history cannot be rewound to before the reply."""
 
 
+class VoiceInputError(ZeCoreError):
+    """Base class for voice-recording failures."""
+
+
+class UnsupportedAudioError(VoiceInputError):
+    """The recording's type is not one the route accepts."""
+
+
+class AudioTooLargeError(VoiceInputError):
+    """The recording is over the size limit."""
+
+
+class AudioTooLongError(VoiceInputError):
+    """The recording is over the length limit."""
+
+
+class AudioUnreadableError(VoiceInputError):
+    """The recording's length or content cannot be read."""
+
+
+class AudioToolMissingError(VoiceInputError):
+    """ffmpeg or ffprobe is not installed on the server."""
+
+
+class TranscriptionFailedError(VoiceInputError):
+    """The speech model did not return a transcript."""
+
+
 class WorkflowError(ZeCoreError):
     """Base class for workflow errors."""
 

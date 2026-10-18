@@ -25,7 +25,7 @@
 
 ## Phase 2: Foundational (contract step, lane `lead`)
 
-- [ ] T002 [L:lead] Tests first:
+- [x] T002 [L:lead] Tests first:
   - `core/contracts/ze-agents/tests/test_interface_types.py`: `VoiceInput(duration_s, edited)`; `RawInput.voice` defaults to `None`.
   - `core/contracts/ze-agents/tests/test_screen_context.py`: a context with only `voice: {...}` returns no warning, `is_empty` is true, and `to_wire()` has no `voice` key (V-3).
   - `core/contracts/ze-agents/tests/test_errors.py`: `VoiceInputError(ZeError)` with `UnsupportedAudioError`, `AudioTooLargeError`, `AudioTooLongError`, `AudioUnreadableError`, `AudioToolMissingError`, `TranscriptionFailedError`.
