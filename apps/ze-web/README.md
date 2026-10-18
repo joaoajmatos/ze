@@ -15,7 +15,7 @@ src/
 ├── app/           # bootstrap, router, providers, global styles
 ├── pages/         # thin route entry points (one slice per route)
 ├── widgets/       # composite screen sections
-├── features/      # user actions (export-data, load-chat-history, …)
+├── features/      # user actions (export-data, turn-stream, …)
 ├── entities/      # domain nouns (goal, message, contact, …)
 └── shared/        # UI kit, lib, API wiring, config
 ```
@@ -26,7 +26,9 @@ src/
 | `shared/styles/ze.css` | Design tokens and shell classes ([DESIGN.md](../../DESIGN.md) is the design source) |
 | `widgets/app-shell/` | The frame around every place: top bar, strip, Presence, Ask bar, phone bottom bar |
 | `features/ask-bar/` | The Ask bar and the state of the Ask overlay |
-| `widgets/chat-workspace/` | Ask UI: thread, bubbles, input, trace panel, and the Ask overlay |
+| `entities/conversation/`, `features/turn-stream/` | One store per thread and the one handler for the conversation frames |
+| `widgets/assemble/` | The Assemble canvas, the trace rail, confirmations and Retry in place, and the Ask overlay |
+| `pages/ask/` | The Ask page: rail (try, sessions), canvas, trace |
 | `widgets/*-overview/` | Management list screens |
 | `entities/message-trace/` | Per-message trace query and the trace UI pieces shared by bubbles and the trace panel |
 | `entities/message-feedback/`, `features/reply-feedback/`, `features/retry-reply/` | Thumbs up/down, Retry, and their reasons on assistant replies |
