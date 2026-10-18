@@ -88,9 +88,9 @@
   - `tests/orchestration/nodes/test_trace_input.py`: `record_trace` sets `MessageTrace.input` for voice and `None` for text, with no transcript text in the JSON.
 
   Implement in `conversation/turn.py`, `orchestration/state.py` and `orchestration/nodes/trace.py`. Then the hard cut (SC-002): delete `RawInput.audio`/`.audio_mime`, `AgentState.audio_data`/`.audio_mime`, the `preprocess` audio branch and its import, and `invoke_raw`'s audio kwargs (`ze_core/container.py`), plus the audio cases in `test_preprocessing.py` (lines ~29, ~57) and `test_state_serde.py` (~193-194). `rtk proxy grep -rn "audio_data\|audio_mime\|raw\.audio" core apps plugins integrations` returns nothing. `make test-core` and `make test-agents` pass.
-- [ ] T009 [P] [L:api] [US1] Tests first `apps/ze-api/tests/voice/test_registry.py` (injected clock): `register` returns a 32-character hex id; `lookup` returns `(text, duration_s)` within 10 minutes and `None` after; expired entries are swept on each call; past 100 entries the oldest is dropped. Implement `ze_api/voice/registry.py`, and add `self.transcription_registry` in `ze_api/wiring/container.py` with a test that the container exposes it.
-- [ ] T010 [L:api] [US1] Tests first `apps/ze-api/tests/api/test_voice_route.py` (success path, `transcribe_audio` patched until `core` merges): `one_second.wav` as `audio/wav` with the key returns 200 `{transcript, duration_s, transcription_id}`; the id is in `container.transcription_registry`; no key → 401; the model passed is `models.whisper` (fallback `MODEL_WHISPER`); `audio/webm;codecs=opus` is accepted. Implement the route body.
-- [ ] T011 [L:api] [US1] Tests first `apps/ze-api/tests/api/test_ws_voice_turn.py`, driving `handle_message` with a container whose registry holds an entry (V-5):
+- [x] T009 [P] [L:api] [US1] Tests first `apps/ze-api/tests/voice/test_registry.py` (injected clock): `register` returns a 32-character hex id; `lookup` returns `(text, duration_s)` within 10 minutes and `None` after; expired entries are swept on each call; past 100 entries the oldest is dropped. Implement `ze_api/voice/registry.py`, and add `self.transcription_registry` in `ze_api/wiring/container.py` with a test that the container exposes it.
+- [x] T010 [L:api] [US1] Tests first `apps/ze-api/tests/api/test_voice_route.py` (success path, `transcribe_audio` patched until `core` merges): `one_second.wav` as `audio/wav` with the key returns 200 `{transcript, duration_s, transcription_id}`; the id is in `container.transcription_registry`; no key → 401; the model passed is `models.whisper` (fallback `MODEL_WHISPER`); `audio/webm;codecs=opus` is accepted. Implement the route body.
+- [x] T011 [L:api] [US1] Tests first `apps/ze-api/tests/api/test_ws_voice_turn.py`, driving `handle_message` with a container whose registry holds an entry (V-5):
   - a frame with a live `context.voice.transcription_id` builds `RawInput(text, voice=VoiceInput(d, edited))` (spy on `invoke_raw_turn`), with `edited` False when the text equals the transcript after stripping whitespace and True otherwise;
   - an unknown or expired id gives a text-only `RawInput`, the log `ws_voice_ref_unknown`, and no user-visible warning;
   - a voice-only context is not stored as `screen_context` on the user message, and `config_extra` has no `screen_context` (V-3);
@@ -102,7 +102,7 @@
 
 ## Phase 4: User Story 2 - Failures are plain and recoverable (P1)
 
-- [ ] T012 [L:api] [US2] Tests first in `apps/ze-api/tests/api/test_voice_route.py`, each with the exact `detail` from [the contract](./contracts/transcribe-voice.md) and no registry entry on failure:
+- [x] T012 [L:api] [US2] Tests first in `apps/ze-api/tests/api/test_voice_route.py`, each with the exact `detail` from [the contract](./contracts/transcribe-voice.md) and no registry entry on failure:
   - `text/plain` → 415;
   - a declared `Content-Length` of 11 MB → 413 before the handler runs (the patched `transcribe_audio` is never called, and the middleware answers);
   - a chunked 11 MB body with no length → 413 from the handler's read cap;
