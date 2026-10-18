@@ -481,7 +481,7 @@ codegen:
 	bun run scripts/codegen.ts
 
 # ── Code quality ──────────────────────────────────────────────────────────────
-.PHONY: check hooks process-install-hooks process-ready process-land-preflight process-gates lint lint-web typecheck-web format clean
+.PHONY: check hooks process-install-hooks process-ready process-land-preflight process-gates process-review-request process-review-verdict lint lint-web typecheck-web format clean
 
 check: lint web-build
 	@echo "check: ok"
@@ -506,6 +506,14 @@ process-land-preflight:
 # Full gate set with a receipt for HEAD (Ground, after the floor landed): make process-gates PROFILE=land
 process-gates:
 	@python3 scripts/process/ready.py --profile $(or $(PROFILE),diff)
+
+# Review as files: make process-review-request RANGE=a..b REVIEWER=<name> [REQUESTER="Claude Code"]
+process-review-request:
+	@python3 scripts/process/review.py request "$(RANGE)" "$(REVIEWER)" $(if $(REQUESTER),--requester "$(REQUESTER)")
+
+# make process-review-verdict RANGE=a..b VERDICT=APPROVE|CHANGES [FINDINGS=<file>]
+process-review-verdict:
+	@python3 scripts/process/review.py verdict "$(RANGE)" "$(VERDICT)" $(if $(FINDINGS),--findings "$(FINDINGS)")
 
 lint:
 	uv run ruff check .

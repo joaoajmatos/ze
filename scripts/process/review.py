@@ -1,0 +1,192 @@
+#!/usr/bin/env python3
+"""Review requests and verdicts as files, so neither can be lost in chat.
+
+Usage:
+  review.py request <a..b> <reviewer> [--requester "Claude Code"] [--note N] [--wait SECS] [--repo PATH]
+  review.py verdict <a..b> APPROVE|CHANGES [--findings FILE] [--note N] [--repo PATH]
+Records live in <repo>/.process/reviews/<a8>..<b8>.json. A request must start where the last
+request or verdict ended (delta-only review), or at the merge base with main for the first one.
+"""
+
+import argparse
+import json
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+HERE = Path(__file__).parent
+sys.path.insert(0, str(HERE))
+import handoff  # noqa: E402
+
+VERDICTS = ("APPROVE", "CHANGES")
+
+
+def git(repo: Path, *args: str) -> str:
+    p = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
+    return p.stdout.strip() if p.returncode == 0 else ""
+
+
+def resolve(repo: Path, ref: str) -> str:
+    return git(repo, "rev-parse", "--verify", "-q", f"{ref}^{{commit}}")
+
+
+def reviews_dir(repo: Path) -> Path:
+    return repo / ".process" / "reviews"
+
+
+def records(repo: Path) -> list[dict]:
+    found = [json.loads(p.read_text()) for p in reviews_dir(repo).glob("*.json")]
+    return sorted(found, key=lambda r: r["at"])
+
+
+def record_path(repo: Path, start: str, end: str) -> Path:
+    return reviews_dir(repo) / f"{start[:8]}..{end[:8]}.json"
+
+
+def parse_range(repo: Path, text: str) -> tuple[str, str]:
+    if ".." not in text:
+        sys.exit(f"range must look like a..b, got {text!r}")
+    left, right = text.split("..", 1)
+    start, end = resolve(repo, left), resolve(repo, right)
+    if not start or not end:
+        sys.exit(f"range {text!r}: a ref does not exist in {repo}")
+    if subprocess.run(
+        ["git", "-C", str(repo), "merge-base", "--is-ancestor", start, end]
+    ).returncode:
+        sys.exit(f"range {text!r}: {left} is not an ancestor of {right}")
+    if start == end:
+        sys.exit(f"range {text!r} is empty")
+    return start, end
+
+
+def contiguity_problem(repo: Path, start: str) -> str:
+    past = records(repo)
+    if past:
+        last = past[-1]
+        if start != last["to"]:
+            return f"range must start at {last['to'][:8]}, where the last review ended (delta-only review)"
+        return ""
+    base = git(repo, "merge-base", "HEAD", "main")
+    if base and start != base:
+        return f"the first range must start at the merge base with main, {base[:8]}"
+    return ""
+
+
+def now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def request(args) -> int:
+    repo = Path(args.repo).resolve()
+    start, end = parse_range(repo, args.range)
+    problem = contiguity_problem(repo, start)
+    if problem:
+        print(f"review request refused: {problem}", file=sys.stderr)
+        return 1
+    path = record_path(repo, start, end)
+    record = {
+        "from": start,
+        "to": end,
+        "reviewer": args.reviewer,
+        "requester": args.requester,
+        "state": "requested",
+        "at": now(),
+    }
+    reviews_dir(repo).mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record, indent=1) + "\n")
+
+    before = handoff.maestri("check", args.reviewer).stdout
+    text = (
+        f"Review {start[:8]}..{end[:8]} in {repo} (read-only). When done run, from that directory: "
+        f"make process-review-verdict RANGE={start[:8]}..{end[:8]} VERDICT=APPROVE|CHANGES FINDINGS=<file>. "
+        "That records the verdict and delivers it; do not report it by chat alone."
+    )
+    sent = handoff.maestri("ask", args.reviewer, text, timeout=15)
+    handoff.append_handoff(
+        repo,
+        args.note,
+        f"TO {args.reviewer}: review requested {start[:8]}..{end[:8]} ({path.name})",
+    )
+    time.sleep(args.wait)
+    after = handoff.maestri("check", args.reviewer).stdout
+    started = sent.returncode in (0, 124) and (
+        after != before or "review" in after.lower()
+    )
+    if not started:
+        print(
+            f"ALERT: {args.reviewer} shows no activity {args.wait:.0f}s after the request; check the terminal",
+            file=sys.stderr,
+        )
+        handoff.maestri(
+            "ask",
+            args.requester,
+            f"ALERT: reviewer {args.reviewer} never started {start[:8]}..{end[:8]}",
+            timeout=15,
+        )
+        return 1
+    print(f"review requested and started: {path}")
+    return 0
+
+
+def verdict(args) -> int:
+    repo = Path(args.repo).resolve()
+    start, end = parse_range(repo, args.range)
+    path = record_path(repo, start, end)
+    if not path.exists():
+        print(
+            f"no review request {path.name} in {repo}; ask the requester to run make process-review-request",
+            file=sys.stderr,
+        )
+        return 1
+    findings = Path(args.findings).read_text() if args.findings else ""
+    if args.verdict == "CHANGES" and not findings.strip():
+        print(
+            "a CHANGES verdict needs FINDINGS=<file> with the findings", file=sys.stderr
+        )
+        return 1
+    record = json.loads(path.read_text())
+    record.update(
+        state="delivered", verdict=args.verdict, findings=findings, delivered_at=now()
+    )
+    path.write_text(json.dumps(record, indent=1) + "\n")
+    summary = f"{args.verdict} for {start[:8]}..{end[:8]} (record {path})"
+    message = summary + (f"\n\n{findings[:6000]}" if findings else "")
+    sent = handoff.maestri("ask", record["requester"], message, timeout=30)
+    handoff.append_handoff(
+        repo, args.note, f"TO {record['requester']}: review verdict {summary}"
+    )
+    if sent.returncode not in (0, 124):
+        print(
+            f"verdict recorded but the ask to {record['requester']} failed (rc {sent.returncode}); resend by hand",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"verdict delivered: {summary}")
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser()
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    req = sub.add_parser("request")
+    req.add_argument("range")
+    req.add_argument("reviewer")
+    req.add_argument("--requester", default="Claude Code")
+    req.add_argument("--wait", type=float, default=60)
+    ver = sub.add_parser("verdict")
+    ver.add_argument("range")
+    ver.add_argument("verdict", choices=VERDICTS)
+    ver.add_argument("--findings", default="")
+    for p in (req, ver):
+        p.add_argument("--note", default="")
+        p.add_argument(
+            "--repo", default=git(Path.cwd(), "rev-parse", "--show-toplevel") or "."
+        )
+    args = ap.parse_args(argv)
+    return request(args) if args.cmd == "request" else verdict(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

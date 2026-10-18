@@ -1,0 +1,38 @@
+# Who may run on which model tier. recruit.py enforces it; the source of truth for role/tier rules.
+# Tiers: the command that starts the agent. ZE_ROLE is prepended by recruit.py.
+
+# Strings that show the agent's TUI is ready for a brief.
+ready_markers = ["❯", "? for shortcuts", "bypass permissions", "shift+tab"]
+
+[tiers]
+opus = "claude --model opus --effort high"
+sonnet = "claude --model sonnet --effort high"
+haiku = "claude --model haiku"
+
+[roles.maestro]
+allowed = ["opus"]
+maestri_role = "Maestro"
+
+[roles.architect]
+allowed = ["opus"]
+maestri_role = "Spec Architect"
+
+[roles.eng]
+allowed = ["sonnet"]
+maestri_role = "Engineer"
+
+[roles.jr]
+allowed = ["haiku"]
+maestri_role = "Junior"
+
+[roles.review]
+allowed = ["sonnet"]
+maestri_role = "Reviewer"
+
+[roles.qa]
+allowed = ["sonnet", "haiku"]
+maestri_role = "QA"
+
+[roles.docs]
+allowed = ["haiku", "sonnet"]
+maestri_role = "Docs Steward"
