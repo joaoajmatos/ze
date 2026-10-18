@@ -248,3 +248,32 @@ def test_an_untracked_new_file_selects_gates_and_makes_the_receipt_dirty(
     sha = base
     receipt = json.loads((repo / ".process" / "receipts" / f"{sha}.json").read_text())
     assert receipt["dirty_files"] >= 1 and p.returncode == 0
+
+
+def test_dirty_count_ignores_process_files_and_scratchpads_but_not_new_sources(
+    tmp_path,
+):
+    """N2: untracked files block a green receipt, except the receipt's own files and scratchpad paths."""
+    repo = _repo_with_gates(tmp_path)
+    (repo / ".process").mkdir(exist_ok=True)
+    (repo / ".process" / "own-commit-T").write_text("1")
+    (repo / "scratchpad").mkdir()
+    (repo / "scratchpad" / "notes.md").write_text("x")
+    sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True
+    ).stdout.strip()
+
+    def dirty():
+        subprocess.run(
+            [str(PROCESS / "gates.sh"), "-", "good"],
+            cwd=repo,
+            capture_output=True,
+            check=True,
+        )
+        return json.loads((repo / ".process" / "receipts" / f"{sha}.json").read_text())[
+            "dirty_files"
+        ]
+
+    assert dirty() == 0
+    (repo / "new_module.py").write_text("x = 1\n")
+    assert dirty() == 1

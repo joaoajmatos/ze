@@ -13,7 +13,6 @@ import re
 import shlex
 import subprocess
 import sys
-import time
 
 DENY, ASK, ALLOW = "deny", "ask", "allow"
 SEPARATORS = {";", "&&", "||", "|", "&", "|&"}
@@ -143,25 +142,6 @@ def _receipt_problem(cwd: str) -> str:
     return ""
 
 
-def _note_own_commit(where: str) -> None:
-    """Stamp .process/own-commit-<terminal> so the stop hook can tell this agent's commits from a teammate's."""
-    terminal = os.environ.get("MAESTRI_TERMINAL_ID", "")
-    top = subprocess.run(
-        ["git", "-C", where or ".", "rev-parse", "--show-toplevel"],
-        capture_output=True,
-        text=True,
-    )
-    if not terminal or top.returncode:
-        return
-    marker = os.path.join(top.stdout.strip(), ".process", f"own-commit-{terminal}")
-    try:
-        os.makedirs(os.path.dirname(marker), exist_ok=True)
-        with open(marker, "w") as fh:
-            fh.write(str(time.time()))
-    except OSError:
-        pass
-
-
 def _current_branch(cwd: str) -> str:
     p = subprocess.run(
         ["git", "-C", cwd or ".", "symbolic-ref", "--short", "-q", "HEAD"],
@@ -181,8 +161,6 @@ def _check_git(argv, role, cwd):
             DENY,
             "git commit -a would commit other agents' edits on a shared floor: git add <paths>, then git commit.",
         )
-    if sub == "commit":
-        _note_own_commit(where)
     if sub == "stash":
         return DENY, "Never git stash on a shared floor checkout."
     if sub == "push":

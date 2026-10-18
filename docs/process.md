@@ -8,7 +8,7 @@ A rule that must hold every time lives in a script or a hook. Prose only advises
 
 | Piece | Path | Purpose |
 |---|---|---|
-| Hooks | `scripts/process/hooks/` | Block a tool call before it runs (`guard_bash.py`, `guard_edit.py`) or stop a turn (`stop_gate.py`) |
+| Hooks | `scripts/process/hooks/` | Block a tool call before it runs (`guard_bash.py`, `guard_edit.py`), note a finished commit (`post_bash.py`) or stop a turn (`stop_gate.py`) |
 | Checks | `scripts/process/` | One script per rule. Make targets, hooks, git hooks and CI all call the same script |
 | Skills | `.claude/skills/ze-*` | Short wrappers that name the script to run |
 | Tests | `scripts/tests/` | Run in `make test-py` through `make test-scripts` |
@@ -46,7 +46,7 @@ It asks the user first for `maestri role edit`, `write`, `delete` and `assign`. 
 ### What `stop_gate.py` blocks
 
 - A reviewer (`review` or `ground-review`) that ends a turn while a review request addressed to it has no verdict record. `recruit.sh` sets `ZE_AGENT` to the agent's name.
-- An agent that commits (`eng`, `web`, `platform`, `jr`, `architect`, `docs`) and ends a turn while its state file is older than its own last commit. `guard_bash.py` stamps `.process/own-commit-<terminal id>` when the agent runs `git commit`, so a teammate's commit never counts. Reviewers and QA do not commit and are never asked.
+- An agent that commits (`eng`, `web`, `platform`, `jr`, `architect`, `docs`) and ends a turn while its state file is older than its own last commit. `post_bash.py` (a PostToolUse hook) stamps `.process/own-commit-<terminal id>` after the agent's `git commit` succeeds, so a refused or failed commit and a teammate's commit never count. Reviewers and QA do not commit and are never asked.
 
 Each reason blocks a turn once. The hook respects `stop_hook_active`.
 
@@ -60,7 +60,7 @@ Each reason blocks a turn once. The hook respects `stop_hook_active`.
 | `make process-review-request RANGE=a..b REVIEWER=<name>` | Records the request, asks the reviewer, and alerts when the reviewer shows no activity |
 | `make process-review-verdict RANGE=a..b VERDICT=APPROVE\|CHANGES FINDINGS=<file>` | Records the verdict and delivers it |
 | `make process-land-preflight FLOOR=<path>` | Refuses a floor that is not ready to land |
-| `make process-gates PROFILE=land` | Runs every gate in Ground and writes the receipt that the push needs |
+| `make process-gates PROFILE=land` | Runs every gate in Ground and writes the receipt that the push needs. At land, run only this: no raw gates first |
 | `make process-install-hooks` | Installs the git hooks |
 | `scripts/process/recruit.sh` | Recruits an agent with the right role and tier, and confirms the brief arrived |
 | `scripts/process/land_post.sh` | After a land: refreshes the graph and pushes `main`. Safe to run again |
@@ -76,7 +76,7 @@ Each reason blocks a turn once. The hook respects `stop_hook_active`.
 - Web files select `typecheck-web`, `lint-web` and `test-web`.
 - Each gate's exit code goes into the receipt. The script never reads the code from a pipe.
 
-The diff includes new files that are not committed yet, and the receipt counts them as dirty. `--profile land` runs every land gate whatever the diff holds. It also runs `check_query_errors.py` on changed `entities/*/api/use*Query.ts` files. Each must throw on an API error and have a test that asserts `isError`.
+The diff includes new files that are not committed yet. The receipt counts every uncommitted or untracked file as dirty, except files under `.process/` and scratchpad paths, and a receipt with dirty files is not green: commit, delete or ignore untracked files before the run. `--profile land` runs every land gate whatever the diff holds. It also runs `check_query_errors.py` on changed `entities/*/api/use*Query.ts` files. Each must throw on an API error and have a test that asserts `isError`.
 
 These checks only warn: old route literals, public docs not touched by a behavior change, and a web change without `PORTAL_SHOT`. Add `Docs: none (reason)` to a commit message to silence the docs warning.
 
@@ -90,7 +90,7 @@ Run `scripts/process/web_portal.sh <port>`, then the `maestri portal create` com
 
 ## Landing a floor
 
-The Maestro uses the `ze-land-floor` skill. `land_preflight.py` fails when:
+The Maestro uses the `ze-land-floor` skill. After the land, Ground runs `make process-gates PROFILE=land` once and nothing else; the push guard accepts only the receipt that command writes. `land_preflight.py` fails when:
 
 1. The floor shares no history with `main`, or merging `main` into it conflicts.
 2. The floor or Ground has untracked files that `.git/info/exclude` does not cover.
@@ -103,7 +103,7 @@ Tick a task in `tasks.md` in the same commit that finishes it.
 
 ## Reviews as files
 
-A request starts where the last `APPROVE` ended, or where a request still in flight ends (parallel stories). The first range starts at the merge base with `main`. After a `CHANGES` verdict, the re-review restarts at the end of the last `APPROVE`, so the reviewer approves the whole range that is still unapproved. The same range can be sent again when no verdict came. A request counts as started when the reviewer's terminal shows a new reply marker; a request left in the input box is submitted with Enter once. A `CHANGES` verdict needs a findings file. The `ze-request-review` skill covers both sides.
+A request starts where the last `APPROVE` ended, or where a request still in flight ends (parallel stories). The first range starts at the merge base with `main`. After a `CHANGES` verdict, the re-review restarts at the end of the last `APPROVE`, so the reviewer approves the whole range that is still unapproved. The same range can be sent again when no verdict came. A request counts as started when the reviewer's terminal shows a new reply marker or the agent is busy (`esc to interrupt`; the ask queues). Only a request that is still unsubmitted under the prompt raises the alert, after one Enter. A `CHANGES` verdict needs a findings file. The `ze-request-review` skill covers both sides.
 
 ## Recruiting
 

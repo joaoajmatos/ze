@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -298,15 +299,48 @@ def test_new_builder_roles_cannot_set_review(role):
     )
 
 
-def test_commit_stamps_the_agents_own_commit_marker(tmp_path, monkeypatch):
+def test_post_bash_stamps_only_after_a_commit(tmp_path):
+    """N1: the stamp comes from a PostToolUse hook, so a refused commit (guard deny) never leaves one."""
     _main_repo(tmp_path)
-    monkeypatch.setenv("MAESTRI_TERMINAL_ID", "T9")
+    post = Path(guard.__file__).parent / "post_bash.py"
+    marker = tmp_path / ".process" / "own-commit-T9"
+
+    def run(command, terminal="T9"):
+        env = {k: v for k, v in os.environ.items() if k != "MAESTRI_TERMINAL_ID"}
+        if terminal:
+            env["MAESTRI_TERMINAL_ID"] = terminal
+        payload = {
+            "tool_name": "Bash",
+            "tool_input": {"command": command},
+            "cwd": str(tmp_path),
+        }
+        return subprocess.run(
+            [sys.executable, str(post)],
+            input=json.dumps(payload),
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+    assert run("git status").returncode == 0 and not marker.exists()
+    assert run("git commit -m x", terminal="").returncode == 0 and not marker.exists()
+    assert run("git commit -m x").returncode == 0 and marker.exists()
+    marker.unlink()
     assert (
-        guard.decide(
-            "git commit -m x",
-            {**AGENT, "MAESTRI_TERMINAL_ID": "T9", "ZE_ROLE": "eng"},
-            str(tmp_path),
-        )[0]
-        == "allow"
+        run("git add a.py && git commit -m 'fix: x'").returncode == 0
+        and marker.exists()
     )
-    assert (tmp_path / ".process" / "own-commit-T9").exists()
+    marker.unlink()
+    assert (
+        run(f"git -C {tmp_path} commit --amend --no-edit").returncode == 0
+        and marker.exists()
+    )
+    marker.unlink()
+    assert run("echo git commit").returncode == 0 and not marker.exists()
+    # the guard itself no longer writes the stamp
+    guard.decide(
+        "git commit -m x",
+        {**AGENT, "MAESTRI_TERMINAL_ID": "T9", "ZE_ROLE": "eng"},
+        str(tmp_path),
+    )
+    assert not marker.exists()

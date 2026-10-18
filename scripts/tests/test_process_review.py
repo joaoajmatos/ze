@@ -234,15 +234,18 @@ def _repo(tmp_path):
 
 REVIEW_CLI = """#!/usr/bin/env bash
 echo "$@" >> "$FAKE_LOG"
-asked() { grep -c '^ask Gauge Review' "$FAKE_LOG"; }
+asked() { grep -c '^ask Gauge .rq' "$FAKE_LOG"; }
 raw() { grep -c -- '--raw' "$FAKE_LOG"; }
 marks() { i=0; while [ "$i" -lt "$1" ]; do echo "⏺ reading the diff"; i=$((i+1)); done; }
 case "$1" in
   check)
     case "$FAKE_MODE" in
       idle) echo "welcome screen";;
+      oldtoken) echo "❯ [rqold000] Review aaaa..bbbb in /x (read-only). make process-review-verdict";;
+      busy) echo "⏺ reading the diff"; echo "✽ Brewing… (1m · esc to interrupt)";;
+      stuckforever) echo "❯ $(grep '^ask Gauge .rq' "$FAKE_LOG" | tail -1)";;
       active) marks "$(asked)";;
-      stuck) if [ "$(raw)" -ge 1 ]; then marks "$(raw)"; else echo "❯ $(grep '^ask Gauge Review' "$FAKE_LOG" | tail -1)"; fi;;
+      stuck) if [ "$(raw)" -ge 1 ]; then marks "$(raw)"; else echo "❯ $(grep '^ask Gauge .rq' "$FAKE_LOG" | tail -1)"; fi;;
     esac;;
   ask) echo "";;
   note) exit 1;;
@@ -291,17 +294,41 @@ def test_a_reply_marker_means_the_review_started(review_cli, tmp_path):
     assert record["state"] == "requested" and record["from"] == a and record["to"] == b
 
 
-def test_an_idle_terminal_raises_the_alert_and_the_range_can_be_sent_again(
+def test_a_request_that_never_leaves_the_input_box_raises_the_alert_and_can_be_sent_again(
     review_cli, tmp_path, monkeypatch
 ):
     a, b, *_ = _repo(tmp_path)
-    monkeypatch.setenv("FAKE_MODE", "idle")
+    monkeypatch.setenv("FAKE_MODE", "stuckforever")
     p = request(tmp_path, f"{a}..{b}")
     assert p.returncode == 1 and "ALERT" in p.stderr
+    assert any(
+        "--raw" in line for line in review_cli.read_text().splitlines()
+    )  # one Enter was tried first
     monkeypatch.setenv("FAKE_MODE", "active")
     again = request(tmp_path, f"{a}..{b}")  # M2: the same range is re-sent, not refused
     assert again.returncode == 0, again.stderr
     assert len(list((tmp_path / ".process" / "reviews").glob("*.json"))) == 1
+
+
+def test_an_older_request_in_the_scrollback_is_not_this_request(
+    review_cli, tmp_path, monkeypatch
+):
+    """N3: the stuck check matches this request's unique token, not the start of its text."""
+    a, b, *_ = _repo(tmp_path)
+    monkeypatch.setenv("FAKE_MODE", "oldtoken")
+    assert request(tmp_path, f"{a}..{b}").returncode == 0
+    assert not any("--raw" in line for line in review_cli.read_text().splitlines())
+
+
+def test_an_agent_that_is_already_busy_counts_as_started(
+    review_cli, tmp_path, monkeypatch
+):
+    """The ask queues behind the current work, so no fresh reply marker appears; 'esc to interrupt' means busy."""
+    a, b, *_ = _repo(tmp_path)
+    monkeypatch.setenv("FAKE_MODE", "busy")
+    p = request(tmp_path, f"{a}..{b}")
+    assert p.returncode == 0, p.stderr
+    assert not any("--raw" in line for line in review_cli.read_text().splitlines())
 
 
 def test_a_request_stuck_in_the_input_box_is_submitted(
@@ -314,12 +341,12 @@ def test_a_request_stuck_in_the_input_box_is_submitted(
     assert any("--raw" in line for line in review_cli.read_text().splitlines())
 
 
-def test_a_reply_that_only_echoes_the_request_does_not_count(
+def test_an_idle_screen_without_the_request_is_not_an_alarm(
     review_cli, tmp_path, monkeypatch
 ):
     a, b, *_ = _repo(tmp_path)
-    monkeypatch.setenv("FAKE_MODE", "idle")  # screen never gets a reply marker
-    assert request(tmp_path, f"{a}..{b}").returncode == 1
+    monkeypatch.setenv("FAKE_MODE", "idle")
+    assert request(tmp_path, f"{a}..{b}").returncode == 0
 
 
 def test_changes_then_re_review_restarts_at_the_last_approve_and_lands(
