@@ -76,9 +76,11 @@ def check(feature: Path) -> list[str]:
             for a in owned_paths(lanes[first]["owns"]):
                 for b in owned_paths(lanes[second]["owns"]):
                     if overlaps(a, b):
-                        errs.append(
-                            f"{name}: lanes {first} and {second} both own {a} / {b}"
-                        )
+                        msg = f"{name}: lanes {first} and {second} both own {a} / {b}"
+                        if "lead" in (first, second):
+                            errs.append(f"note: {msg} (contract-then-extend)")
+                        else:
+                            errs.append(msg)
     if tasks_file.exists():
         for task_id, rest in TASK.findall(tasks_file.read_text()):
             tag = re.search(r"\[L:([\w-]+)\]", rest)
@@ -111,8 +113,10 @@ def phases_with_lane_plan() -> list[Path]:
 
 def main(argv: list[str]) -> int:
     dirs = [Path(a) for a in argv] or phases_with_lane_plan()
-    errs = [e for d in dirs for e in check(d)]
-    print("\n".join(errs) or "lane plan: ok")
+    found = [e for d in dirs for e in check(d)]
+    errs = [e for e in found if not e.startswith("note: ")]
+    notes = [e for e in found if e.startswith("note: ")]
+    print("\n".join(notes + errs) or "lane plan: ok")
     return 1 if errs else 0
 
 

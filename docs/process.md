@@ -113,7 +113,7 @@ A request starts where the last request or verdict ended, so each review covers 
 
 The `after_tasks` hook runs `check_lane_plan.py` and `check_speckit_flow.py`. The `after_implement` hook runs `check_phase_status.py`.
 
-- `check_lane_plan.py` needs a `lead` lane, a model and reviewer for each lane, no file owned by two lanes, and an `[L:x]` tag on every task.
+- `check_lane_plan.py` needs a `lead` lane, a model and reviewer for each lane, no file owned by two lanes (a file the `lead` lane owns for the contract step and one other lane then extends is a note, not an error), and an `[L:x]` tag on every task.
 - `check_speckit_flow.py` reads artifacts: a Clarifications section in `spec.md`, a Lane Plan in `plan.md` and a lane tag on each task. A phase marked `**Complexity**: complex` also needs `checklists/*.md` and an analyze result (`analysis.md`, or an `## Analysis` section).
 
 ## Skill checks
@@ -121,6 +121,10 @@ The `after_tasks` hook runs `check_lane_plan.py` and `check_speckit_flow.py`. Th
 `scripts/tests/test_skills_lint.py` checks every `.claude/skills/ze-*` skill: name, a third-person description with a "Use when" clause, a body under 500 lines, existing script and make-target references, and `disable-model-invocation: true` on skills with side effects.
 
 `skill_eval.py` holds trigger queries and behavior scenarios in `scripts/process/skill_evals/`. Run it only when a skill changes and the user agrees to the usage.
+
+## Python 3.14 floors
+
+On a machine whose default Python is 3.14, `uv sync` fails because `torch` has no wheel for it. Run `UV_PYTHON=3.12 make install` in the floor.
 
 ## Limits
 

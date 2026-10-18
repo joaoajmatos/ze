@@ -43,12 +43,21 @@ def test_missing_section(tmp_path):
     assert "no '## Lane Plan'" in lane.check(d)[0]
 
 
-def test_overlapping_ownership(tmp_path):
+def test_lead_overlap_is_only_a_note(tmp_path):
     plan = PLAN.replace(
         "`apps/ze-web/src/pages/a/`", "`apps/ze-web/src/app/router.tsx`"
     )
     errs = lane.check(feature(tmp_path, plan=plan))
-    assert any("both own" in e and "lead" in e for e in errs)
+    assert any(e.startswith("note: ") and "contract-then-extend" in e for e in errs)
+    assert not [e for e in errs if not e.startswith("note: ")]
+
+
+def test_lane_vs_lane_overlap_is_an_error(tmp_path):
+    plan = PLAN.replace(
+        "`apps/ze-web/src/shared/lib/format.ts`", "`apps/ze-web/src/pages/a/`"
+    )
+    errs = lane.check(feature(tmp_path, plan=plan))
+    assert [e for e in errs if not e.startswith("note: ") and "a and jr1" in e]
 
 
 def test_glob_overlap(tmp_path):
