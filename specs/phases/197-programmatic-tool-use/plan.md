@@ -146,7 +146,7 @@ Revised after Gauge's review of 2026-10-18 (M-1..M-7, Me-1..Me-5, N-1..N-7) and 
 
 ### Agents
 
-- No per-agent change: the capability lives in `BaseAgent`. Any agent with a data read tool (for example calendar, messenger and finance) gets the script tool when a runner is wired; T001 lists, per registered agent, whether it has a data read tool. The companion has only UI reads and delegation today, so it gets none; a follow-up phase (proposed to the user) adds a read bridge. No prompt edits.
+- No per-agent change: the capability lives in `BaseAgent`. Any agent with a data read tool (for example calendar, messenger and finance) gets the script tool when a runner is wired; T001 lists, per registered agent, whether it has a data read tool. Build T001 found the companion's one data read, `get_briefing`, so it gets the script tool too (accepted under the user's rule); research, priority, ingestion and prospecting have none. Cross-agent reads for the companion are the follow-up read-bridge phase. `refresh_news` (news) is a READ that fetches the user's configured feeds, not a caller-chosen URL, so it is not `egress`. No prompt edits.
 - Finance is pinned to one provider; a script's source and value go only to the same model and the trace, so nothing leaves that provider (N-5, ADR).
 
 ### Eval
