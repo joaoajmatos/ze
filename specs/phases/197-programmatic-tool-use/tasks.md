@@ -77,7 +77,7 @@
 
 ## Phase 5: User Story 3 - Writes in scripts never skip the gate (P2)
 
-- [ ] T016 [L:harness] [US3] Tests first in `test_base_agent_loop.py` and `test_agentic_loop_park.py`:
+- [x] T016 [L:harness] [US3] Tests first in `test_base_agent_loop.py` and `test_agentic_loop_park.py`:
   - a script finishing with one IRREVERSIBLE and one REVERSIBLE proposed write parks the irreversible one exactly like a direct call (one `ParkedWrite`, `LoopParked` raised) and runs the reversible one with its undo payload; both `ToolCall`s carry `parent_call_id`;
   - the synthetic ids are `<model id>_w0`, `<model id>_w1`, match `^[A-Za-z0-9_-]{1,64}$` (a model id with `:` or 70 chars is sanitized and cut), and appear in `messages[-1]["tool_calls"]` before `LoopParked` is raised, so the checkpointed `ParkedLoop.messages` holds them and resume after approval runs exactly the approved proposal (`_apply_resume` finds it by `call_id`);
   - in `retry_mode` the irreversible proposal is refused; at the round cap proposals are `refused_over_cap`;
