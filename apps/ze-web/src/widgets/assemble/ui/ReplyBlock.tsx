@@ -19,6 +19,8 @@ interface ReplyBlockProps {
   message: Message;
   compact: boolean;
   live: boolean;
+  /** Called once the fly-out starts, so a remount never replays it. */
+  onPlayed?: () => void;
   /** Running A·NN number of this reply's first module on the canvas. */
   firstNumber: number;
   hidden: Set<string>;
@@ -47,21 +49,29 @@ export function chatAboutRef(component: Component): WsScreenRef | null {
   return { kind: claim.subject, id: claim.ref_id, label: labelOf(component), component: componentType(component) };
 }
 
-const TONES = new Set(["cream", "hot", "dotted"]);
+const TONES = new Set(["cream", "dotted"]);
+
+/** Coral ("hot") only follows a claim, whose posture code sets; a bare model-emitted tone never paints a module coral. */
+function toneOf(component: Component): "cream" | "hot" | "dotted" | "default" {
+  if (component.tone === "hot" && component.claim) return "hot";
+  return TONES.has(component.tone ?? "") ? (component.tone as "cream" | "dotted") : "default";
+}
 
 /** One reply: the sentence, then a module per top-level component. */
-export function ReplyBlock({ message, compact, live, firstNumber, hidden, pinned, onPin, onDismiss, onChatAbout, selected, onSelect, trace, onWhy, below }: ReplyBlockProps) {
+export function ReplyBlock({ message, compact, live, onPlayed, firstNumber, hidden, pinned, onPin, onDismiss, onChatAbout, selected, onSelect, trace, onWhy, below }: ReplyBlockProps) {
   const root = useRef<HTMLDivElement>(null);
-  useCascade(root, live);
+  useCascade(root, live, onPlayed);
   const components = (message.components ?? []) as Component[];
 
   return (
     <div ref={root} className="contents">
-      {message.text && (
+      {(message.text || components.length > 0) && (
         <div className={`cell span-12 ${selected ? "is-selected" : ""}`}>
-          <div className="assemble-sentence sentence">
-            <ReactMarkdown>{message.text}</ReactMarkdown>
-          </div>
+          {message.text && (
+            <div className="assemble-sentence sentence">
+              <ReactMarkdown>{message.text}</ReactMarkdown>
+            </div>
+          )}
           {onSelect && (
             <button type="button" className="ctl-text assemble-why" aria-pressed={selected} onClick={() => onSelect(message.id)}>
               <span className="lbl">{selected ? "tracing this reply" : "trace this reply"}</span>
@@ -82,7 +92,7 @@ export function ReplyBlock({ message, compact, live, firstNumber, hidden, pinned
             <Module
               label={label}
               index={instrumentId(firstNumber + i)}
-              tone={TONES.has(component.tone ?? "") ? (component.tone as "cream" | "hot" | "dotted") : "default"}
+              tone={toneOf(component)}
               tools={<ModuleTools label={label} pinned={false} onPin={() => onPin(key)} onDismiss={() => onDismiss(key)} />}
               onChatAbout={ref && onChatAbout ? (el) => onChatAbout(ref, el) : undefined}
               chatAboutLabel={label}

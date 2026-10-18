@@ -66,10 +66,11 @@ function AskThread({ threadId }: { threadId: string }) {
   // The server re-sends the onboarding view on every connect until it completes, so open it once per session id.
   useEffect(() => {
     if (!onboardingId || onboardingDone || !onboardingThread) return;
-    if (urlThread || draft.trim() || running || rememberedSession() === onboardingId) return;
+    // Only from an empty thread: never move someone out of a conversation they are in.
+    if (urlThread || draft.trim() || running || !thread.historyLoaded || thread.messages.length > 0 || rememberedSession() === onboardingId) return;
     remember(onboardingId);
     selectSession(onboardingThread);
-  }, [onboardingId, onboardingDone, onboardingThread, urlThread, draft, running, selectSession]);
+  }, [onboardingId, onboardingDone, onboardingThread, urlThread, draft, running, thread.historyLoaded, thread.messages.length, selectSession]);
 
   const send = useCallback((text: string, context: SendTurnOptions["explicitContext"]) => sendTurn(threadId, text, { explicitContext: context }), [threadId]);
 
@@ -83,7 +84,7 @@ function AskThread({ threadId }: { threadId: string }) {
   return (
     <div className="ask-page">
       <aside className="ask-rail" aria-label="Ask">
-        <TryChips onSend={(text, context) => send(text, context)} />
+        <TryChips onSend={(text, context) => send(text, context)} disabled={connection !== "online" || running} />
         {onboardingThread && threadId !== onboardingThread && (
           <button type="button" className="ctl-text ask-continue" onClick={() => selectSession(onboardingThread)}>
             <span className="lbl on">Continue getting to know you</span>

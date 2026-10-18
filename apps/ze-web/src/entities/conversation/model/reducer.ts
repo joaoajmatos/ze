@@ -70,6 +70,7 @@ export type ConversationEvent =
   | { type: "paused"; threadId: string }
   | { type: "resumed"; threadId: string }
   | { type: "opened"; threadId: string }
+  | { type: "cascaded"; threadId: string; messageId: string }
   | { type: "reset"; threadId: string };
 
 export interface ReduceContext {
@@ -298,6 +299,8 @@ export function reduce(state: ConversationState, event: ConversationEvent, now: 
       return patch(state, event.threadId, (t) =>
         isRunning(t) ? t : { ...t, turn: { ...t.turn, phase: "awaiting", activityAt: now } },
       );
+    case "cascaded":
+      return patch(state, event.threadId, (t) => ({ ...t, liveIds: (t.liveIds ?? []).filter((id) => id !== event.messageId) }));
     case "opened":
       return patch(state, event.threadId, (t) => ({ ...t, attention: false }));
     case "reset":

@@ -164,9 +164,8 @@
   background: var(--cream);
 }
 .tr-tick {
-  flex: 1 1 64px;
+  flex: 1 1 84px;
   min-width: 0;
-  overflow-wrap: anywhere;
   position: relative;
   display: grid;
   gap: 2px;
@@ -222,6 +221,26 @@
   width: 100%;
   min-height: 44px;
   cursor: pointer;
+}
+.tr-instrument-head .lbl {
+  flex: none;
+}
+.tr-instrument-head .ro {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tr-tick .lbl {
+  letter-spacing: 0.04em;
+}
+.tr-tick .ro {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tr-readouts .ro {
+  overflow-wrap: anywhere;
 }
 .tr-instrument-head:hover .lbl,
 .tr-instrument-head:focus-visible .lbl {
@@ -485,6 +504,15 @@
     grid-template-columns: minmax(0, 1fr);
     height: auto;
   }
+  .ask-page > * {
+    min-height: auto;
+  }
+  .ask-main {
+    order: 1;
+  }
+  .ask-rail {
+    order: 2;
+  }
   .ask-rail,
   .ask-main,
   .ask-trace {
@@ -498,4 +526,26 @@
   .tr-sweep {
     display: none;
   }
+}
+
+.sessions-search {
+  min-height: 44px;
+  width: 100%;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--hair);
+  padding: 0 14px;
+  font: inherit;
+  box-sizing: border-box;
+}
+.sessions-rail .row {
+  min-width: 0;
+}
+.sessions-rail .row .t {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sessions-title {
+  min-height: 44px;
+  display: block;
 }

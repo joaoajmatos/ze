@@ -8,9 +8,9 @@ const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
 
 /**
  * A live reply's modules fly out of the orb, 80 ms apart, while the orb shows "assembling". Under reduced motion
- * they fade in place, same timing, no movement. Runs once, when `live` is true on mount.
+ * they fade in place, same timing, no movement. Plays once: `onPlayed` clears the reply from the live set, so a remount does not replay it.
  */
-export function useCascade(root: RefObject<HTMLElement | null>, live: boolean) {
+export function useCascade(root: RefObject<HTMLElement | null>, live: boolean, onPlayed?: () => void) {
   const reduced = useReducedMotion();
   useLayoutEffect(() => {
     const el = root.current;
@@ -19,6 +19,7 @@ export function useCascade(root: RefObject<HTMLElement | null>, live: boolean) {
     if (targets.length === 0) return;
     const orb = document.querySelector(".presence-orb")?.getBoundingClientRect();
     const animations: Animation[] = [];
+    onPlayed?.();
     targets.forEach((target, i) => {
       const rect = target.getBoundingClientRect();
       const keyframes: Keyframe[] =

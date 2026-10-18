@@ -9,7 +9,7 @@ export function Instrument({ name, readout, open: openProp, children, id }: { na
     <section className="tr-instrument" data-instrument={id ?? name.toLowerCase()} data-open={open ? "" : undefined}>
       <button type="button" className="tr-instrument-head" aria-expanded={open} aria-controls={panel} onClick={() => setOpen(!open)}>
         <span className="lbl">{name}</span>
-        <span className="ro">{readout}</span>
+        <span className="ro" title={readout}>{readout}</span>
       </button>
       {open && (
         <div id={panel} className="tr-instrument-body">

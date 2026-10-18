@@ -3,6 +3,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ConnectedPrimitiveTree } from "@/features/primitive-tree";
 import { ReplyActions } from "@/features/reply-feedback";
+import { useConversation } from "@/entities/conversation";
 import { useScreenPublisher } from "@/entities/screen-context";
 import { Module } from "@/shared/ui";
 import { componentType, instrumentId, spanOf } from "../lib/exchanges";
@@ -116,6 +117,7 @@ export function Canvas({ threadId, compact = false, selectedMessageId = null, on
                 message={reply}
                 compact={compact}
                 live={live.has(reply.id)}
+                onPlayed={() => useConversation.getState().apply({ type: "cascaded", threadId, messageId: reply.id }, { activeThreadId: threadId })}
                 firstNumber={numbering.get(reply.id) ?? 1}
                 hidden={hidden}
                 pinned={pinned}

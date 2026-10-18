@@ -15,12 +15,14 @@ export function AnswerGateFrameHandler() {
   const threadId = useSession((s) => s.threadId);
   const lastMessageAt = useConversation((s) => s.byThread[threadId]?.lastMessageAt ?? null);
   const lastError = useConversation((s) => s.byThread[threadId]?.lastError ?? null);
-  const seenMessage = useRef(lastMessageAt);
-  const seenError = useRef(lastError);
+  // Keyed by thread, so switching to a thread that already holds an old reply or error settles nothing.
+  const seenMessage = useRef(`${threadId}:${lastMessageAt}`);
+  const seenError = useRef(`${threadId}:${lastError?.at ?? null}`);
 
   useEffect(() => {
-    if (lastMessageAt === seenMessage.current) return;
-    seenMessage.current = lastMessageAt;
+    const stamp = `${threadId}:${lastMessageAt}`;
+    if (stamp === seenMessage.current) return;
+    seenMessage.current = stamp;
     useGateFlights.setState((s) => {
       const redirecting = Object.entries(s.flights).filter(([, fl]) => fl.kind === "redirect" && fl.threadId === threadId);
       if (redirecting.length === 0) return s;
@@ -35,10 +37,11 @@ export function AnswerGateFrameHandler() {
   }, [lastMessageAt, threadId]);
 
   useEffect(() => {
-    if (lastError === seenError.current) return;
-    seenError.current = lastError;
+    const stamp = `${threadId}:${lastError?.at ?? null}`;
+    if (stamp === seenError.current) return;
+    seenError.current = stamp;
     if (!lastError) return;
-    const now = Date.now();
+    const now = lastError.at;
     useGateFlights.setState((s) => {
       const waiting = Object.entries(s.flights)
         .filter(([, fl]) => fl.threadId === threadId && (fl.kind === "redirect" || now - fl.sentAt <= ERROR_WINDOW_MS))

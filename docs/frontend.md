@@ -124,7 +124,7 @@ Mind shows what Ze believes. `/mind` holds four modules: Beliefs, People, Find a
 
 The claim posture table (glyph, chip word, plain words per state) lives in `shared/lib/claim-posture.ts`. Beliefs publish their visible and selected rows to screen context, the entity page publishes its entity as the subject, and rows carry "Chat about this".
 
-Until each place has its own design, it hosts the old pages as sections behind a row of tabs. One file per place holds the sections: `pages/world/ui/WorldInterim.tsx` (phase 186 replaces it), `pages/ask/ui/AskInterim.tsx` (187), `pages/doing/ui/DoingInterim.tsx` (188). A page cannot import another page, so `app/router/routes.tsx` passes each interim file the loaders for its sections. Plugin pages still use `/:pluginPath` (phase 191 places them).
+Until each place has its own design, it hosts the old pages as sections behind a row of tabs. One file per place holds the sections: `pages/doing/ui/DoingInterim.tsx` (phase 188 replaces it). World, Ask, Mind and Governance have their own pages. A page cannot import another page, so `app/router/routes.tsx` passes each interim file the loaders for its sections. Plugin pages still use `/:pluginPath` (phase 191 places them).
 
 ## Governance
 
