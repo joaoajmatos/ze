@@ -2,7 +2,12 @@
 
 import pytest
 
-from ze_agents.errors import AudioTooLongError, TranscriptionFailedError
+from ze_agents.errors import (
+    AudioToolMissingError,
+    AudioTooLongError,
+    AudioUnreadableError,
+    TranscriptionFailedError,
+)
 from ze_core import voice
 from ze_core.voice import Transcription, transcribe_audio
 
@@ -80,3 +85,11 @@ async def test_flow_and_agent_context_during_call(
     await transcribe_audio(fake_transcribe_client, b"a", "audio/wav", model="m")
     assert ("flow", ("transcription",)) in calls
     assert ("agent", ("whisper",)) in calls
+
+
+@pytest.mark.parametrize("error", [AudioToolMissingError("no ffmpeg"), AudioUnreadableError("bad")])
+async def test_conversion_errors_are_not_model_failures(probe, fake_transcribe_client, error):
+    probe(1.0)
+    fake_transcribe_client.error = error
+    with pytest.raises(type(error)):
+        await transcribe_audio(fake_transcribe_client, b"a", "audio/webm", model="m")

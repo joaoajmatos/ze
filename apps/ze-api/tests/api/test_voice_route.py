@@ -17,6 +17,7 @@ from tests.conftest import FakeTranscribeClient
 FIXTURES = Path(__file__).parent.parent / "fixtures" / "audio"
 URL = "/api/v0/voice/transcriptions"
 TEN_MB = 10 * 1024 * 1024
+AUTH = {"Authorization": "Bearer test"}
 
 
 def _container(models: dict | None = None, client=None):
@@ -56,7 +57,9 @@ def app(container):
 @pytest.fixture
 async def client(app):
     async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+        headers=AUTH,
     ) as c:
         yield c
 
@@ -92,7 +95,7 @@ async def test_falls_back_to_default_whisper_model(app, probe):
     fallback = _container()
     app.dependency_overrides[get_container] = lambda: fallback
     async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test", headers=AUTH
     ) as c:
         await c.post(URL, files={"file": ("a.wav", _wav(), "audio/wav")})
     assert fallback.openrouter_client.calls[0]["model"] == MODEL_WHISPER
@@ -239,3 +242,74 @@ async def test_missing_file_part_is_plain_422(client, container, model, probe, k
     assert resp.json()["detail"] == "Send the recording as a file named file."
     assert model.calls == [] and probe.calls == []
     _assert_no_entry(container)
+
+
+async def test_no_authorization_header_is_refused_before_the_body_is_read(app):
+    reads = 0
+
+    async def body():
+        nonlocal reads
+        for _ in range(3):
+            reads += 1
+            yield b"x" * 1024
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as c:
+        resp = await c.post(
+            URL,
+            content=body(),
+            headers={"content-type": "multipart/form-data; boundary=b"},
+        )
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "Invalid API key"
+
+
+async def test_chunked_body_is_cut_off_at_the_limit(app):
+    """The middleware stops reading once the limit plus one chunk has arrived."""
+    chunk = 1024 * 1024
+    seen_bytes = 0
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": URL,
+        "headers": [
+            (b"content-type", b"multipart/form-data; boundary=b"),
+            (b"authorization", b"Bearer t"),
+        ],
+    }
+    sent = 0
+    total_chunks = 50
+
+    async def receive():
+        nonlocal sent, seen_bytes
+        sent += 1
+        more = sent < total_chunks
+        seen_bytes += chunk
+        return {"type": "http.request", "body": b"x" * chunk, "more_body": more}
+
+    responses: list[dict] = []
+
+    async def send(message):
+        responses.append(message)
+
+    async def drain_app(scope, receive, send):
+        while (await receive()).get("more_body"):
+            pass
+
+    from ze_api.api.v0.voice.limits import VoiceBodyLimitMiddleware
+
+    await VoiceBodyLimitMiddleware(drain_app)(scope, receive, send)
+    assert responses[0]["status"] == 413
+    assert seen_bytes <= TEN_MB + 64 * 1024 + chunk
+
+
+async def test_trailing_slash_path_is_also_guarded(client, container, model, probe):
+    resp = await client.post(
+        URL + "/",
+        content=b"x" * (TEN_MB + 70 * 1024),
+        headers={"content-type": "multipart/form-data; boundary=b"},
+    )
+    assert resp.status_code == 413
+    assert model.calls == []

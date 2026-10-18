@@ -38,7 +38,7 @@ There will be one voice path: transcribe first, then the user corrects the text,
 | I Spec-first | spec with clarifications; plan, research, data model, contract, quickstart, checklists, tasks. |
 | II Single-user | No per-user scoping; the registry is process-wide. |
 | III Layered packages | Audio tools and the transcription helper in ze-core (`openrouter/audio.py`, `voice.py`); `VoiceInput` in ze-agents beside `RawInput`; route, registry, the length guard and WS wiring in ze-api. `ScreenContext` only learns that `voice` is a known key. No plugin is touched. |
-| IV Typed Python | Dataclasses `VoiceInput`, `InputTrace`, `Transcription`. Errors are `ZeError` subclasses under `VoiceInputError`: `UnsupportedAudioError`, `AudioTooLargeError` (size), `AudioTooLongError` (length), `AudioUnreadableError`, `AudioToolMissingError`, `TranscriptionFailedError`. `to_mp3`'s bare `RuntimeError` becomes `AudioUnreadableError`. |
+| IV Typed Python | Dataclasses `VoiceInput`, `InputTrace`, `Transcription`. Errors are `ZeError` subclasses under `VoiceInputError`: `AudioTooLongError` (length), `AudioUnreadableError`, `AudioToolMissingError`, `TranscriptionFailedError`. `to_mp3`'s bare `RuntimeError` becomes `AudioUnreadableError`. |
 | V Tests | Fail-first; no real model in default suites; the real-ffprobe test is slow-marked. |
 | VI Persistence | No schema change. |
 | VII One gateway | `OpenRouterClient.transcribe`. |
@@ -84,7 +84,7 @@ From `graphify affected` (after `graphify update .`) and `rtk proxy grep`:
     
     No packets, or a non-zero exit on both steps, raises `AudioUnreadableError`. A missing binary raises `AudioToolMissingError`. A timeout kills the process and raises `AudioUnreadableError`.
   - The container format comes from the validated mime: `webm`, `ogg`, `mp4` (for mp4 and m4a) or `wav`.
-- **MP4.** Safari's MediaRecorder writes fragmented MP4, which probes from a pipe. A progressive MP4 with `moov` at the end cannot be probed from a pipe. It is not written to disk: it fails the probe and is rejected as unreadable. The contract says so (research R1).
+- **MP4.** Safari's MediaRecorder writes fragmented MP4, which probes from a pipe. A progressive MP4 with `moov` at the end also probes from a pipe (checked in review, 5.0 s); the packet scan covers anything else.
 - **`voice.py`:** `Transcription(text, duration_s)` and `async transcribe_audio(client, data, mime, *, model, max_seconds=120) -> Transcription`. Steps:
   1. Probe; over the limit raises `AudioTooLongError` before any model call.
   2. Set the flow and agent context (`transcription`, `whisper`).
@@ -106,7 +106,7 @@ From `graphify affected` (after `graphify update .`) and `rtk proxy grep`:
   4. Register the result.
 
   Errors map as follows:
-  - 413: `AudioTooLargeError` ("too large… 10 MB") or `AudioTooLongError` ("too long… 2 minutes").
+  - 413: size over 10 MB (raised by the route and the length guard) or `AudioTooLongError` ("too long… 2 minutes").
   - 415: unsupported type.
   - 422: `AudioUnreadableError`.
   - 502: `TranscriptionFailedError` ("I couldn't make out the recording"; the cause is logged).

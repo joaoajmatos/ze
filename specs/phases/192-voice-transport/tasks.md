@@ -28,7 +28,7 @@
 - [x] T002 [L:lead] Tests first:
   - `core/contracts/ze-agents/tests/test_interface_types.py`: `VoiceInput(duration_s, edited)`; `RawInput.voice` defaults to `None`.
   - `core/contracts/ze-agents/tests/test_screen_context.py`: a context with only `voice: {...}` returns no warning, `is_empty` is true, and `to_wire()` has no `voice` key (V-3).
-  - `core/contracts/ze-agents/tests/test_errors.py`: `VoiceInputError(ZeError)` with `UnsupportedAudioError`, `AudioTooLargeError`, `AudioTooLongError`, `AudioUnreadableError`, `AudioToolMissingError`, `TranscriptionFailedError`.
+  - `core/contracts/ze-agents/tests/test_errors.py`: `VoiceInputError(ZeError)` with `AudioTooLongError`, `AudioUnreadableError`, `AudioToolMissingError`, `TranscriptionFailedError`.
   
   Implement in `ze_agents/interface/types.py` (add `VoiceInput` and `RawInput.voice`; the audio fields stay for `core`), `ze_agents/screen.py` (`"voice"` in `known` only) and `ze_agents/errors.py`.
 - [x] T003 [L:lead] Tests first:

@@ -107,14 +107,6 @@ class VoiceInputError(ZeCoreError):
     """Base class for voice-recording failures."""
 
 
-class UnsupportedAudioError(VoiceInputError):
-    """The recording's type is not one the route accepts."""
-
-
-class AudioTooLargeError(VoiceInputError):
-    """The recording is over the size limit."""
-
-
 class AudioTooLongError(VoiceInputError):
     """The recording is over the length limit."""
 

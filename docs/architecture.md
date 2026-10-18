@@ -704,9 +704,9 @@ Ze accepts three input types from the web app:
 
 **Voice input** — the transcription route accepts WebM, Ogg, MP4/M4A or WAV, up to 10 MB
 and 120 seconds. The server measures the length itself with `ffprobe`. The client's
-claim is never used. WebM and fragmented MP4 are measured by a packet scan. A progressive
-MP4 with its index at the end is refused as unreadable. The server converts a recording to
-MP3 with `ffmpeg` when the speech model needs it. Ze keeps no audio. The transcript and
+claim is never used. The server reads the container duration and, when the
+container has none (browser WebM and Ogg), scans the packets. The server converts a
+recording to MP3 with `ffmpeg` unless it is already MP3 or WAV. Ze keeps no audio. The transcript and
 duration stay in an in-memory registry for 10 minutes, at most 100 entries. A server
 restart drops them. A message that names a live `transcription_id` runs as a voice turn.
 An unknown or expired id runs as a text turn. The transcription call is recorded in spend

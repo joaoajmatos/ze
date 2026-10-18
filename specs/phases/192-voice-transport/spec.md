@@ -86,7 +86,7 @@ Each transcription is counted in Ze's spend like any other model call, so Govern
 - A server restart drops unexpired references. Turns that name them run as text (Story 1, scenario 3).
 - The connection-level API key protects the route like every other REST route.
 - A Retry of a voice reply regenerates from the stored message text as a text turn; the new reply's trace carries no voice section (the reference is not replayed).
-- A progressive MP4 whose index sits at the end of the file cannot be measured without writing it to disk; it is rejected as unreadable. Browser recorders produce WebM or fragmented MP4, which are measured.
+- Browser recorders produce WebM, Ogg or fragmented MP4; all are measured from a pipe. A recording whose length cannot be read is rejected as unreadable.
 
 ## Requirements *(mandatory)*
 

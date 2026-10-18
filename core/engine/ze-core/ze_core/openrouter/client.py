@@ -26,7 +26,7 @@ from ze_logging import get_logger
 _RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 _NO_RECORD_STATUS = {400, 404}
 _BACKOFFS = [1.0, 2.0, 4.0]
-_TRANSCRIBE_FORMATS = {"mp3", "wav", "ogg", "flac", "m4a"}
+_TRANSCRIBE_FORMATS = {"mp3", "wav"}
 _TRANSCRIBE_SYSTEM = (
     "You are a transcription engine. Transcribe the audio exactly as spoken. "
     "Output only the transcript — no commentary, no punctuation corrections, no explanations."

@@ -1,11 +1,9 @@
 import pytest
 from ze_agents.errors import (
-    AudioTooLargeError,
     AudioTooLongError,
     AudioToolMissingError,
     AudioUnreadableError,
     TranscriptionFailedError,
-    UnsupportedAudioError,
     VoiceInputError,
     ZeError,
 )
@@ -18,9 +16,7 @@ def test_voice_input_error_is_a_ze_error():
 @pytest.mark.parametrize(
     "cls",
     [
-        UnsupportedAudioError,
-        AudioTooLargeError,
-        AudioTooLongError,
+                AudioTooLongError,
         AudioUnreadableError,
         AudioToolMissingError,
         TranscriptionFailedError,
