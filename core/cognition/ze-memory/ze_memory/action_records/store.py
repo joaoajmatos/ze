@@ -58,6 +58,10 @@ class ActionRecordStore(Protocol):
         limit: int = 50,
     ) -> list[ActionRecord]: ...
 
+    async def list_by_script_key(
+        self, script_key: str, limit: int = 3
+    ) -> list[ActionRecord]: ...
+
 
 def _uuid_str(value: UUID | None) -> str | None:
     return None if value is None else str(value)
@@ -84,6 +88,7 @@ def _context_to_json(ctx: ActionContext) -> dict:
         "outreach_id": _uuid_str(ctx.outreach_id),
         "calendar_ref": ctx.calendar_ref,
         "reminder_id": _uuid_str(ctx.reminder_id),
+        "script_key": ctx.script_key,
     }
 
 
@@ -121,6 +126,7 @@ def _context_from_json(raw) -> ActionContext:
         outreach_id=_parse_uuid(data.get("outreach_id")),
         calendar_ref=data.get("calendar_ref"),
         reminder_id=_parse_uuid(data.get("reminder_id")),
+        script_key=data.get("script_key"),
     )
 
 
@@ -339,6 +345,18 @@ class PostgresActionRecordStore:
         )
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(sql, *args)
+        return [_record_from_row(row) for row in rows]
+
+    async def list_by_script_key(
+        self, script_key: str, limit: int = 3
+    ) -> list[ActionRecord]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM action_records WHERE context->>'script_key' = $1::text "
+                "ORDER BY occurred_at DESC, id DESC LIMIT $2",
+                script_key,
+                max(1, min(limit, 500)),
+            )
         return [_record_from_row(row) for row in rows]
 
     async def list(

@@ -67,12 +67,13 @@ class WorkspaceScriptRunner:
         stub: str,
         limits: ScriptLimits,
         dispatch: Callable[[ScriptRequest], Awaitable[DispatchReply]],
+        procedure_id: str | None = None,
     ) -> ScriptOutcome:
         tools: list[str] = []
         outcome = await self._run(script_id, source, stub, limits, dispatch, tools)
         if self._learning is not None:
             task = asyncio.create_task(
-                self._learn(script_id, agent, source, outcome, tools)
+                self._learn(script_id, agent, source, outcome, tools, procedure_id)
             )
             task.add_done_callback(lambda t: t.exception())
         return outcome
@@ -84,6 +85,7 @@ class WorkspaceScriptRunner:
         source: str,
         outcome: ScriptOutcome,
         tools: list[str],
+        procedure_id: str | None,
     ) -> None:
         try:
             await self._learning.record(
@@ -92,6 +94,7 @@ class WorkspaceScriptRunner:
                 source=source,
                 outcome=outcome,
                 tools=tools,
+                procedure_id=procedure_id,
             )
         except Exception as exc:
             log.warning("script_learning_failed", error=str(exc))

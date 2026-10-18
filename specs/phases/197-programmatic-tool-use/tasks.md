@@ -138,7 +138,7 @@
 
 ## Phase 8: User Story 5 - A script that keeps working becomes a procedure (P3)
 
-- [ ] T024 [L:runner] [US5] Tests first:
+- [x] T024 [L:runner] [US5] Tests first:
   - `core/ops/ze-workspace/tests/test_script_learning.py`, running the real `ActionRecorder` over a fake store that enforces the real idempotency key: every finished script appends its own record (three runs of one tool signature give three rows); fields per [data-model.md](./data-model.md) (lifecycle and outcome values, `failure_code`, `ActionContext.script_key`, which round-trips through `_context_to_json` and the row reader in `action_records/store.py`); the third consecutive success for a key submits exactly one candidate (name `Script: <tools in order> [<key prefix>]` within 120 chars, latest source as its step, `preconditions=[]`, the three record ids as evidence); a fourth success submits nothing (`candidate_exists` true); a failure between successes resets the run; two agents with the same tools do not combine; a run with `procedure_id` never submits; a store error is logged and never raised;
   - one `@pytest.mark.pg` test: three runs of one key leave three `action_records` rows, and `list_by_script_key` returns them newest first.
 

@@ -180,6 +180,20 @@ async def test_learning_gets_the_run_without_blocking():
     assert kwargs["tools"] == ["a", "b"]
     assert kwargs["agent"] == "finance"
     assert kwargs["outcome"].status == "ok"
+    assert kwargs["procedure_id"] is None
+
+
+async def test_procedure_id_reaches_learning():
+    sidecar = FakeScriptSidecar([end_frame("ok")])
+    learning = AsyncMock()
+    runner = runner_for(sidecar, learning=learning)
+    await runner.run(
+        script_id="s1", agent="a", source="x", stub="", limits=ScriptLimits(),
+        dispatch=ok_dispatch, procedure_id="p-1",
+    )
+    await asyncio.sleep(0)
+    await asyncio.sleep(0)
+    assert learning.record.await_args.kwargs["procedure_id"] == "p-1"
 
 
 async def test_wait_for_ze_fixture_still_works():
