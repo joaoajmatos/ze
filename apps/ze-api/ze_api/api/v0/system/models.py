@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
+from ze_agents.registry import get_enabled_agents
 
-from ze_api.api.deps import require_api_key
-from ze_api.api.v0.system.schemas import ModelSettingsResponse
+from ze_api.api.deps import get_container, require_api_key
+from ze_api.api.v0.system.schemas import AgentModelSetting, ModelSettingsResponse
+from ze_core.routing.tier import complexity_surface_config, resolve_agent_model
 
 router = APIRouter(dependencies=[Depends(require_api_key)])
 
@@ -17,5 +19,23 @@ router = APIRouter(dependencies=[Depends(require_api_key)])
     description="Report whether the complexity tier is on, its bar, and each agent's "
     "full and simple model. Read-only; no secrets.",
 )
-async def get_model_settings() -> ModelSettingsResponse:
-    raise HTTPException(status_code=501, detail="Not implemented")
+async def get_model_settings(container=Depends(get_container)) -> ModelSettingsResponse:
+    config = container.settings.config
+    surface = complexity_surface_config(config)
+    agents = get_enabled_agents()
+    return ModelSettingsResponse(
+        complexity_enabled=surface.calibrated,
+        simple_max=surface.simple_max,
+        agents=[
+            AgentModelSetting(
+                name=name,
+                model=resolve_agent_model(name, "full", config),
+                model_simple=(
+                    resolve_agent_model(name, "simple", config)
+                    if agents[name].model_simple
+                    else None
+                ),
+            )
+            for name in sorted(agents)
+        ],
+    )

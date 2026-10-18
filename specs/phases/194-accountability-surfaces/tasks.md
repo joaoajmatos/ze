@@ -73,7 +73,7 @@
 
 ## Phase 5: User Story 3 - Print the configured model tier (P2)
 
-- [ ] T009 [L:reads] [US3] Tests first `apps/ze-api/tests/api/test_model_settings_route.py` (settings fixture copied from the real YAML into `tmp_path`):
+- [x] T009 [L:reads] [US3] Tests first `apps/ze-api/tests/api/test_model_settings_route.py` (settings fixture copied from the real YAML into `tmp_path`):
   - the shipped config → `complexity_enabled: true`, `simple_max: 0.4`;
   - enabled with a null `simple_max` → `complexity_enabled: false` (it uses `ComplexitySurfaceConfig.calibrated`, T-1);
   - agents are sorted by name, each with `model` from `resolve_agent_model(name, "full", cfg)` and `model_simple` only when the agent declares one;
