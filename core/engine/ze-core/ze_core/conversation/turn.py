@@ -11,6 +11,7 @@ from ze_agents.interface.types import RawInput
 
 from ze_agents.park import WriteConfirmation
 from ze_logging import get_logger
+from ze_core.orchestration.nodes.trace import ROUTING_SCORES_SHOWN
 from ze_core.telemetry.context import enter_turn_context
 from ze_core.telemetry.turn import (
     TurnTelemetry,
@@ -26,7 +27,6 @@ if TYPE_CHECKING:
 
 NO_PENDING_CONFIRMATION = "No pending confirmation."
 
-ROUTING_SCORES_SHOWN = 9  # matches system_one.surfaces.routing.shortlist_k
 
 
 def make_graph_input(
