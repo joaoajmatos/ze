@@ -14,7 +14,7 @@
 
 **Doctrine functions served**: action (what Ze did on its own), governance (disagreements between the user and the executive are observable; the tier Ze runs is printed honestly).
 
-**Owning packages** (for planning): ze-memory (ledger read), ze-collision (unchanged store), ze-api (routes), ze-worldstate (loops filter), ze-personal / ze-google (channel status), ze-onboarding (reset deleted). No migration expected.
+**Owning packages** (for planning): ze-memory (ledger read), ze-collision (unchanged store), ze-api (routes), ze-worldstate (loops filter), ze-personal / ze-google (channel status), ze-onboarding (reset deleted). One migration (`zc040`, ze-personal): planning found that poll failures are only logged, so "needs re-auth" needs the last poll outcome recorded.
 
 ## Context
 
