@@ -481,7 +481,7 @@ codegen:
 	bun run scripts/codegen.ts
 
 # ── Code quality ──────────────────────────────────────────────────────────────
-.PHONY: check hooks lint lint-web typecheck-web format clean
+.PHONY: check hooks process-install-hooks lint lint-web typecheck-web format clean
 
 check: lint web-build
 	@echo "check: ok"
@@ -489,6 +489,10 @@ check: lint web-build
 hooks:
 	@chmod +x scripts/install-git-hooks.sh scripts/git-hooks/pre-commit scripts/git-hooks/pre-push
 	@./scripts/install-git-hooks.sh
+
+# Same hooks, plus the process checks that run only inside a Maestri terminal.
+process-install-hooks: hooks
+	@chmod +x scripts/process/precommit_checks.sh scripts/process/hooks/*.py
 
 lint:
 	uv run ruff check .
