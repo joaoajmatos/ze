@@ -43,6 +43,21 @@ const nodes = parsePrimitiveTree(rawComponents);
 <PrimitiveTreeRenderer nodes={nodes} actions={actions} />
 ```
 
+## Styling the renderer
+
+The renderer ships Tailwind defaults and carries no app CSS. A host restyles it through the actions object:
+
+```typescript
+const actions = {
+  classNames: { heading: "app-heading", badge: "app-badge", card: "app-card" },
+  renderHeadline: (text) => <DotMatrix text={text} />,
+};
+<PrimitiveTreeRenderer nodes={nodes} actions={actions} />
+```
+
+- `classNames` maps a part (`heading`, `body`, `label`, `muted`, `badge`, `card`, `progressTrack`, `progressFill`, `table`, `steps`, `connections`, `button`, `buttonPrimary`, `buttonDanger`, `claimCard`, `claimTimeline`, `divider`) to a class. A mapped part replaces the default classes. An unmapped part keeps them, so a host without a map looks as before.
+- `renderHeadline` draws the `headline` primitive. Without it, the text renders as plain type.
+
 ## Testing
 
 From the repo root:

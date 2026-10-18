@@ -1,0 +1,121 @@
+{
+ "skill": "ze-web-verify",
+ "triggers": [
+  {
+   "query": "I changed the Governance page; check that it renders and send me a screenshot before review",
+   "should_trigger": true
+  },
+  {
+   "query": "Verify my ze-web change in the browser portal",
+   "should_trigger": true
+  },
+  {
+   "query": "Is the new World field widget actually rendering? Look at it in a portal.",
+   "should_trigger": true
+  },
+  {
+   "query": "I finished the Mind page story, hand it to review with proof it works in the browser",
+   "should_trigger": true
+  },
+  {
+   "query": "Spin up vite for my checkout and open it in a Maestri portal",
+   "should_trigger": true
+  },
+  {
+   "query": "Check the phone layout of the Ask bar at 390 wide in a portal",
+   "should_trigger": true
+  },
+  {
+   "query": "Make sure the console has no errors on the Doing page after my change",
+   "should_trigger": true
+  },
+  {
+   "query": "I touched packages/ze-ui; confirm the change works in the real app",
+   "should_trigger": true
+  },
+  {
+   "query": "Take a portal screenshot of the notification bell dropdown",
+   "should_trigger": true
+  },
+  {
+   "query": "Before I request review on this web story, verify it visually",
+   "should_trigger": true
+  },
+  {
+   "query": "Run the unit tests for ze-core",
+   "should_trigger": false
+  },
+  {
+   "query": "Explain how FSD layers work in ze-web",
+   "should_trigger": false
+  },
+  {
+   "query": "Add a Python field to the goals REST route",
+   "should_trigger": false
+  },
+  {
+   "query": "Write the spec for the next phase",
+   "should_trigger": false
+  },
+  {
+   "query": "Rename a TypeScript type in packages/ze-client",
+   "should_trigger": false
+  },
+  {
+   "query": "Fix the ruff lint errors in ze-memory",
+   "should_trigger": false
+  },
+  {
+   "query": "What does the quiet-hours form do?",
+   "should_trigger": false
+  },
+  {
+   "query": "Land the process-kit floor",
+   "should_trigger": false
+  },
+  {
+   "query": "Summarize the last three commits",
+   "should_trigger": false
+  },
+  {
+   "query": "Review the diff of the loops backend",
+   "should_trigger": false
+  }
+ ],
+ "behaviors": [
+  {
+   "id": "web-verify-serves-via-script",
+   "prompt": "I changed apps/ze-web/src/pages/world. Verify it works in a portal on port 5192.",
+   "judges": [
+    {
+     "op": "cmd_matches",
+     "match": "scripts/process/web_portal\\.sh"
+    },
+    {
+     "op": "not_cmd_matches",
+     "match": "vite .*--port 8000|uvicorn"
+    }
+   ]
+  },
+  {
+   "id": "web-verify-never-touches-api-8000",
+   "prompt": "Verify my web change in the browser; the backend is not running.",
+   "judges": [
+    {
+     "op": "not_cmd_matches",
+     "match": "make dev|uvicorn|:8000|make migrate"
+    }
+   ]
+  },
+  {
+   "id": "web-verify-records-shot-in-receipt",
+   "prompt": "Web story done, screenshot at /tmp/x.png. Get it ready for review.",
+   "judges": [
+    {
+     "op": "cmd_matches",
+     "match": "make process-ready.*PORTAL_SHOT="
+    }
+   ]
+  }
+ ]
+}

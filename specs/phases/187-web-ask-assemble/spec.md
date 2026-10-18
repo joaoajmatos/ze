@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17
 
-**Status**: Ready to implement once 184, 195 and 186 are on `main` (plan and tasks written 2026-10-17 against `main` b9e62e7b)
+**Status**: Implemented (2026-10-18; plan and tasks written 2026-10-17 against `main` b9e62e7b)
 
 **Input**: Maestro brief 2026-10-17, phase W3; overhaul plan sections a (Ask), b.2, c (how the conversation works), e (Phase W3). User decision 7: "B1 runs before W3; W3 does not ship client-side compositions"; decision 9: instrument ids only on the Assemble canvas.
 

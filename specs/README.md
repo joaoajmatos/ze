@@ -228,14 +228,15 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 184 | [Composed Answers and Claim Posture (B1)](phases/184-composed-answers-posture/spec.md) | ✅ Implemented |
 | 185 | [World Data Gaps (B2)](phases/185-world-data-gaps/spec.md) | ✅ Implemented |
 | 186 | [World (W2)](phases/186-web-world/spec.md) | ✅ Implemented |
-| 187 | [Ask / Assemble (W3)](phases/187-web-ask-assemble/spec.md) | 🔲 Ready to implement (after 184, 195, 186) |
+| 187 | [Ask / Assemble (W3)](phases/187-web-ask-assemble/spec.md) | ✅ Implemented |
+| 187b | [Trace Telemetry](phases/187b-trace-telemetry/spec.md) | 🔲 Ready to implement (after 187; parallel with the web phases) |
 | 188 | [Doing (W4)](phases/188-web-doing/spec.md) | ✅ Implemented |
 | 189 | [Mind (W5)](phases/189-web-mind/spec.md) | ✅ Implemented |
 | 190 | [Governance (W6)](phases/190-web-governance/spec.md) | ✅ Implemented |
-| 191 | [Plugins in Places (W7)](phases/191-web-plugins-in-places/spec.md) | 🔲 Draft |
+| 191 | [Plugins in Places (W7)](phases/191-web-plugins-in-places/spec.md) | ⏸ Parked (user 2026-10-18: redesign pending) |
 | 192 | [Voice Input Transport (B3)](phases/192-voice-transport/spec.md) | 🔲 Ready to implement (parallel; before 193) |
-| 193 | [Voice and Polish (W8)](phases/193-web-voice-polish/spec.md) | 🔲 Draft |
-| 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | 🔲 Ready to implement (parallel; zc040 to reserve) |
+| 193 | [Voice and Polish (W8)](phases/193-web-voice-polish/spec.md) | 🔲 Ready to implement (after 186–190, 192) |
+| 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | 🔲 Ready to implement (parallel; zc040 reserved) |
 | 195 | [Screen Context Awareness](phases/195-screen-context-awareness/spec.md) | ✅ Implemented (live eval: first run 10 of 26, chat_about 9 of 15 after owner routing; chip capture deferred to 193) |
 
 ## Ze Core specs (`core/`)

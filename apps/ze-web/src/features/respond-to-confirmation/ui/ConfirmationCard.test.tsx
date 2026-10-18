@@ -176,7 +176,7 @@ describe("ConfirmationCard", () => {
     );
     expect(screen.getByText("Milestone 2 is ready. Continue?")).toBeInTheDocument();
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+    fireEvent.click(screen.getByRole("button", { name: /Pause/ }));
     expect(onRespond).toHaveBeenCalledWith("goal_gate:pause:abc", {});
   });
 

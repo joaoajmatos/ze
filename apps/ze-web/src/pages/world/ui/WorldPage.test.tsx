@@ -17,6 +17,7 @@ vi.mock("../model/useWorld", () => ({ useWorld: () => m.world }));
 vi.mock("@/shared/api", () => ({
   send: vi.fn(() => true),
   useFrame: () => {},
+  useConnectionState: () => (m.connected ? "online" : "offline"),
   useWsStore: (sel: (s: { isConnected: boolean; setThreadThinking: () => void }) => unknown) => sel({ isConnected: m.connected, setThreadThinking: () => {} }),
 }));
 vi.mock("@/entities/session", () => ({ useSession: (sel: (s: { threadId: string }) => unknown) => sel({ threadId: "t-1" }) }));

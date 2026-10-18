@@ -10,6 +10,10 @@ Ze is a Python/FastAPI backend with LangGraph orchestration, a React web client,
 
 Companion is the only agent that speaks to you. It acts as the conductor: when a request needs several specialists in sequence, the router sends it to companion, and companion calls them through one `delegate_to_agent` tool. Each call carries a full brief, runs in an isolated worker, and passes its own write confirmation check. Independent requests (for example, "check my calendar and summarize the news") still fan out in parallel in the graph and merge in a `synthesize` step. Work that must outlive the turn becomes a goal or a workflow; companion can promote a conductor run into either one.
 
+## Ask
+
+Ask answers with an assembled canvas, not a chat bubble. The reply is a sentence plus one module per part of the answer: a headline, claim cards, a timeline, a chart or a table. Each module can be pinned, dismissed or asked about. Preset questions ("What's slipping?") come from stored records, not from a model. Every reply has a trace, drawn as a rail of instruments: the path of the turn, how the specialist was chosen, what Ze remembered, which tools ran, what System One was asked, and what a retry undid. A write that needs your OK asks in place, in the canvas or in the overlay. If another window holds the connection, every place says so and offers Use here.
+
 ## System One
 
 System One is a small model that returns typed judgments (a choice among labels, a yes/no probability, a score), never free text. Ze treats it as a fast gate, with code making the final decision. Five surfaces use it:

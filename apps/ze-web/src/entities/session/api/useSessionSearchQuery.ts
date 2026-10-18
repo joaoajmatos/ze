@@ -9,9 +9,10 @@ export function useSessionSearchQuery(query: string) {
   return useQuery<SessionSearchResult[]>({
     queryKey: queryKeys.sessionSearch(trimmed),
     queryFn: async () => {
-      const { data } = await searchSessions({
+      const { data, error } = await searchSessions({
         query: { q: trimmed, limit: 20 },
       });
+      if (error) throw error;
       return data ?? [];
     },
     enabled: trimmed.length >= 2,

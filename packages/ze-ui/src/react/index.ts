@@ -7,6 +7,7 @@ export {
   PrimitiveRendererContext,
   usePrimitiveRendererActions,
   type CardActionEvent,
+  type PrimitiveClassNames,
   type ChatAboutEvent,
   type PrimitiveRendererActions,
 } from "./context";

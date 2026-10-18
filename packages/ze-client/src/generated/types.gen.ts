@@ -2801,6 +2801,14 @@ export type ToolCallTraceResponse = {
      * Effect Phrase
      */
     effect_phrase?: string | null;
+    /**
+     * Agent
+     */
+    agent?: string | null;
+    /**
+     * Call Index
+     */
+    call_index?: number;
 };
 
 /**

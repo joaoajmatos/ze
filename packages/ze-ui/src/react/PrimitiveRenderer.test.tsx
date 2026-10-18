@@ -339,3 +339,77 @@ describe("claim card chat about", () => {
     });
   });
 });
+
+describe("PrimitiveRenderer classNames map (HUD restyle)", () => {
+  const map = {
+    heading: "x-heading",
+    subheading: "x-sub",
+    body: "x-body",
+    label: "x-label",
+    caption: "x-caption",
+    muted: "x-muted",
+    badge: "x-badge",
+    card: "x-card",
+    progressTrack: "x-track",
+    progressFill: "x-fill",
+    table: "x-table",
+    steps: "x-steps",
+    connections: "x-connections",
+    button: "x-button",
+    buttonPrimary: "x-primary",
+    claimCard: "x-claim",
+    claimTimeline: "x-timeline",
+    divider: "x-divider",
+  };
+  const withMap = (node: Parameters<typeof PrimitiveRenderer>[0]["node"], extra = {}) =>
+    render(<PrimitiveRendererContext.Provider value={{ classNames: map, ...extra }}><PrimitiveRenderer node={node} /></PrimitiveRendererContext.Provider>);
+
+  it("maps the text variants and the muted colour", () => {
+    withMap({ type: "col", children: [
+      { type: "text", content: "big", style: "heading" },
+      { type: "text", content: "lbl", style: "label" },
+      { type: "text", content: "dim", style: "body", color: "muted" },
+    ] });
+    expect(screen.getByText("big")).toHaveClass("x-heading");
+    expect(screen.getByText("lbl")).toHaveClass("x-label");
+    expect(screen.getByText("dim")).toHaveClass("x-body", "x-muted");
+  });
+
+  it("maps badge, card-style col, progress, table, steps, connections and button", () => {
+    withMap({ type: "col", variant: "card", children: [
+      { type: "badge", label: "b" },
+      { type: "progress", value: 0.5, label: "p" },
+      { type: "table", headers: ["h"], rows: [["c"]] },
+      { type: "steps", steps: [{ label: "s", status: "done" }] },
+      { type: "button", label: "go", action: "a", style: "primary" },
+      { type: "divider" },
+    ] });
+    expect(screen.getByText("b")).toHaveClass("x-badge");
+    expect(screen.getByText("go")).toHaveClass("x-button", "x-primary");
+    expect(document.querySelector(".x-card")).not.toBeNull();
+    expect(document.querySelector(".x-track .x-fill")).not.toBeNull();
+    expect(document.querySelector(".x-table")).not.toBeNull();
+    expect(document.querySelector(".x-steps")).not.toBeNull();
+    expect(document.querySelector(".x-divider")).not.toBeNull();
+  });
+
+  it("keeps the default classes when no map is given", () => {
+    render(<PrimitiveRenderer node={{ type: "badge", label: "plain" }} />);
+    expect(screen.getByText("plain").className).toContain("rounded-full");
+  });
+
+  it("renders a headline through the renderHeadline slot, else as plain text", () => {
+    const { unmount } = withMap({ type: "headline", text: "3 slipping" }, { renderHeadline: (t: string) => <span data-testid="dm">{t}</span> });
+    expect(screen.getByTestId("dm")).toHaveTextContent("3 slipping");
+    unmount();
+    withMap({ type: "headline", text: "3 slipping" });
+    expect(screen.getByText("3 slipping")).toBeInTheDocument();
+  });
+
+  it("gives claim_card and claim_timeline their HUD classes", () => {
+    withMap({ type: "claim_card", title: "Run 5k", claim: { subject: "goal", ref_id: "g1", kind: "goal" } } as never);
+    expect(document.querySelector(".x-claim")).not.toBeNull();
+    withMap({ type: "claim_timeline", title: "Ahead", entries: [{ title: "Pay rent", due_at: "2026-10-20T00:00:00Z" }] } as never);
+    expect(document.querySelector(".x-timeline")).not.toBeNull();
+  });
+});

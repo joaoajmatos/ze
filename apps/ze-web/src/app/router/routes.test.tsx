@@ -10,9 +10,9 @@ vi.mock("@/widgets/app-shell", () => ({
     </div>
   ),
 }));
-vi.mock("@/widgets/chat-workspace", () => ({ AskOverlay: () => <i data-testid="overlay" />, ChatWorkspace: () => null }));
+vi.mock("@/widgets/assemble", () => ({ AskOverlay: () => <i data-testid="overlay" /> }));
 vi.mock("@/pages/ask", () => ({
-  AskInterim: () => {
+  AskPage: () => {
     const { threadId } = useParams();
     return <p data-testid="ask">ask {threadId ?? "none"}</p>;
   },

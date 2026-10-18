@@ -1,6 +1,6 @@
 import { lazy, Suspense, type ComponentType } from "react";
 import { type RouteObject } from "react-router-dom";
-import { AskInterim } from "@/pages/ask";
+import { AskPage } from "@/pages/ask";
 import { DoingPage } from "@/pages/doing";
 import { DoingGoalPage } from "@/pages/doing-goal";
 import { DoingWorkflowPage } from "@/pages/doing-workflow";
@@ -9,7 +9,7 @@ import { MindPage } from "@/pages/mind";
 import { MindEntityPage } from "@/pages/mind-entity";
 import { WorldPage } from "@/pages/world";
 import { AppShell } from "@/widgets/app-shell";
-import { AskOverlay } from "@/widgets/chat-workspace";
+import { AskOverlay } from "@/widgets/assemble";
 import { redirects } from "@/shared/config";
 import { ZeErrorFallback } from "@/shared/ui";
 import { RedirectTo } from "./RedirectTo";
@@ -33,8 +33,8 @@ export const routes: RouteObject[] = [
     errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <WorldPage /> },
-      { path: "ask", element: <AskInterim /> },
-      { path: "ask/:threadId", element: <AskInterim /> },
+      { path: "ask", element: <AskPage /> },
+      { path: "ask/:threadId", element: <AskPage /> },
       { path: "doing", element: <DoingPage /> },
       { path: "doing/goals/:goalId", element: <DoingGoalPage /> },
       { path: "doing/workflows/:workflowId", element: <DoingWorkflowPage /> },

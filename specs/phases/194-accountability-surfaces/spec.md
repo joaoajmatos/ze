@@ -50,6 +50,9 @@ The user opens a goal, a workflow or a workspace run and sees the actions Ze too
 2. **Given** more records than one page, **When** the user lists them, **Then** the list pages with a cursor and never repeats or skips a record.
 3. **Given** a time window, **When** the user lists actions since a time, **Then** only records that occurred after it return.
 4. **Given** a subject with no records, **When** it is listed, **Then** the list is empty, not an error.
+5. **Given** a workflow run that finished, **When** the user lists the workflow's actions, **Then** both its started and its finished records appear.
+
+**Coverage limit**: goal-trace, workflow and workspace actions carry their subject. Calendar, reminder and prospecting actions carry only their own keys, so what Ze did through those tools during a goal or workflow run does not list under that goal or workflow. Pages must not promise it.
 
 ---
 
@@ -94,7 +97,7 @@ World's "Touched · 7 d" asks only for loops closed or dropped since a time, ins
 
 **Acceptance Scenarios**:
 
-1. **Given** closed and dropped loops across 30 days, **When** World lists them since 7 days ago, **Then** only loops whose last change falls in the window return.
+1. **Given** closed and dropped loops across 30 days, **When** World lists both states since 7 days ago in one request, **Then** only loops whose last change falls in the window return.
 2. **Given** no `since`, **When** loops are listed, **Then** the behaviour is unchanged.
 
 ---
@@ -112,7 +115,9 @@ Governance › Connections shows each messaging channel and the Gmail connection
 1. **Given** a connected Gmail channel, **When** the status is read, **Then** it reports connected with its last sync time.
 2. **Given** expired credentials, **When** the status is read, **Then** it reports needs re-auth.
 3. **Given** a poll that failed for another reason, **When** the status is read, **Then** it reports error.
-4. **Given** a channel that receives mail by push (no polling), **When** the status is read, **Then** it reports connected, marked as push, with no last sync time.
+4. **Given** a channel that receives mail by push (no polling), **When** the status is read, **Then** it reports unknown: "Receives by push; Ze does not monitor it." Ze sees no failures on that path, so it never claims connected.
+6. **Given** a channel that has never polled successfully (a fresh install with an expired token), **When** its first poll fails, **Then** it appears in the status as needs re-auth, and the next successful poll still fetches mail from the normal lookback window (nothing is skipped).
+7. **Given** a poll where some messages failed to fetch, **When** the status is read, **Then** it reports connected. Per-message failures are not counted in this phase.
 5. **Given** any channel, **When** the status is read, **Then** no token or secret appears.
 
 ---
@@ -136,19 +141,20 @@ The personal-state reset, which wipes tables it does not list, is deleted with i
 - Records with the same timestamp page in a stable order (time, then id).
 - A collision filter with a `since` after `until` returns an empty list, not an error.
 - The tier route during a config reload returns either the old or the new values, never a mix.
+- A Gmail token that is already dead at startup fails before Ze knows the account's address: the failure shows under the bare channel, keeps any known address, and the bare row disappears after the first successful poll once re-authorised, so the user sees one Gmail row.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST list action records over the product API, filterable by subject (goal, workflow, workflow run, workspace run), by a `since` time, and paged with a stable cursor, newest first. Each record shows action kind, actor, lifecycle, outcome, summary, the touched record's domain and id, and occurrence time.
+- **FR-001**: The workflow-finished action MUST record its workflow, and the system MUST list action records over the product API, filterable by subject (goal, workflow, workflow run, workspace run), by a `since` time, and paged with a stable cursor, newest first. Each record shows action kind, actor, lifecycle, outcome, summary, the touched record's domain and id, and occurrence time.
 - **FR-002**: The ledger read MUST live in the package that owns the ledger. The route only adapts it.
 - **FR-003**: The collisions list MUST move from the eval router to the product API with the same filters and limits. The eval route MUST be removed (no eval client depends on it).
 - **FR-004**: The system MUST report the configured tier state (light tier on or off, its threshold, and each agent's full and light model) from the same configuration the routing step reads, reflecting a config reload without restart, with no secrets.
 - **FR-005**: Every new route MUST declare its response model, summary, description and operation id, and the generated web client MUST be regenerated.
 - **FR-006**: Public docs MUST describe the three routes (native interface, memory, System One docs) and the phase row.
-- **FR-007**: Loops MUST be listable by a `since` time on their last change, without changing the unfiltered list.
-- **FR-008**: The system MUST report each messaging channel's and the Gmail connection's state (connected, needs re-auth, error, off) and last sync time over the product API, read-only, with no secrets.
+- **FR-007**: Loops MUST be listable by one or more states and a `since` time on their last change, without changing the unfiltered list.
+- **FR-008**: The system MUST report each messaging channel's and the Gmail connection's state (connected, needs re-auth, error, off, or unknown for push channels and channels with no outcome yet) and last sync time over the product API, read-only, with no secrets. Recording an outcome MUST NOT move the sync position.
 - **FR-009**: The personal-state reset service, its script and its make target MUST be removed, with every doc reference.
 
 ### Key Entities
@@ -176,6 +182,6 @@ The personal-state reset, which wipes tables it does not list, is deleted with i
 
 ## Assumptions
 
-- The ledger already records the goal, workflow, workflow run and workspace run on each record's context, so subject filtering needs no new data. If a producer does not record its subject, its records are listed only in the unfiltered list.
+- Goal-trace, workflow and workspace producers record their subject on the record's context. The workflow-finished record gains its workflow id in this phase. Calendar, reminder and prospecting producers record no goal, workflow or run, and their records list only unfiltered or by their own domain.
 - A new settings route is cleaner than extending the version route. The plan decides the exact path.
 - Web pages that show these surfaces come later. 188 and 190 add the modules after this lands.

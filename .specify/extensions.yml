@@ -1,4 +1,23 @@
-installed: []
+installed:
+- process
 settings:
   auto_execute_hooks: true
-hooks: {}
+hooks:
+  after_tasks:
+  - extension: process
+    command: speckit.process.after-tasks
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.process.after-tasks?
+    description: Check the Lane Plan (disjoint lanes, lead, reviewers) and the speckit flow artifacts
+    condition: null
+  after_implement:
+  - extension: process
+    command: speckit.process.after-implement
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.process.after-implement?
+    description: Check that a fully ticked phase reads Implemented in spec.md, AGENTS.md and specs/README.md
+    condition: null

@@ -1,100 +1,121 @@
 # Implementation Plan: Accountability Surfaces (B4)
 
-**Branch**: `194-accountability-surfaces` | **Date**: 2026-10-18 | **Spec**: [spec.md](./spec.md)
+**Branch**: `194-accountability-surfaces` | **Date**: 2026-10-18 (revised after Gauge's review A-1, A-2, C-1..C-3, R-1, T-1, Co-1, L-1, K-1) | **Spec**: [spec.md](./spec.md)
 
-**Input**: spec.md with the 2026-10-18 clarifications (user: all recommended), `main` at ab334b60.
+**Input**: spec.md with the 2026-10-18 clarifications (user: all recommended), `main` at ab334b60. `zc040` reserved for this phase by the Maestro.
 
 ## Summary
 
-Five read surfaces and one deletion, all over data that already exists:
+Five read surfaces and one deletion:
 
-1. **Action records.** A ledger read by subject in ze-memory, and `GET /api/v0/actions` (`listActionRecords`) with keyset paging.
-2. **Collisions.** `GET /api/v0/collisions` moves from the dev/eval router to the product router; the eval copy is deleted.
-3. **Tier settings.** `GET /api/v0/system/models` (`getModelSettings`) reads the same `complexity_surface_config` and `resolve_agent_model` that `choose_tier` uses.
-4. **Loops `since`.** A `since` filter on `listLoops`, on the loop's last change.
-5. **Channel status.** `GET /api/v0/channels/status` (`listChannelStatus`): each user channel's state and last sync. "Needs re-auth" requires recording the last poll outcome, which is only logged today, so the watermark row gains `last_outcome` and `last_outcome_at` (migration `zc040`, ze-personal) and the inbound poll job writes them.
-6. **Reset deletion.** `ResetService`, `scripts/reset_personal_state.py` and `make reset-personal-state` are removed, with their tests and doc lines.
+1. **Action records.** A ledger read by subject in ze-memory, and `GET /api/v0/actions` (`listActionRecords`) with keyset paging. The workflow-finished record now carries its workflow id (A-1), so a workflow's list shows each run's outcome.
+2. **Collisions.** `GET /api/v0/collisions` moves to the product router, with bad input returning 422.
+3. **Tier settings.** `GET /api/v0/system/models` (`getModelSettings`) reports `complexity_enabled` as `ComplexitySurfaceConfig.calibrated`.
+4. **Loops `since`.** `listLoops` accepts repeated `state` values and a `since` on `updated_at`.
+5. **Channel status.** `GET /api/v0/channels/status` (`listChannelStatus`). Poll outcomes are recorded on the watermark row (`zc040`) without moving the watermark. A channel that never worked is registered on its first failure, and push channels report `unknown`.
+6. **Reset deletion.** `ResetService`, its script, its make target and its tests are removed.
 
 ## Technical Context
 
 **Language/Version**: Python 3.12.
-**Primary Dependencies**: existing only (asyncpg, FastAPI, google-auth for the `RefreshError` class).
-**Storage**: one migration, `zc040_channel_poll_outcome` in ze-personal: `ALTER TABLE user_channel_watermarks ADD COLUMN last_outcome TEXT NULL, ADD COLUMN last_outcome_at TIMESTAMPTZ NULL`. Values are `ok`, `auth_failed` and `failed`. `zc039` is the current `zc` head (195); `zc040` must be reserved with the Maestro, since the `zc` chain is shared.
-**Testing**: pytest, `AsyncMock` pools; one `@pytest.mark.pg` test for the ledger subject filter (JSON context query) and one for the loops `since` filter.
-**Target Platform**: Linux container, macOS dev.
-**Project Type**: web service (backend; regenerated client only).
-**Performance Goals**: the action list returns 50 rows in under 100 ms with an index on the subject keys (see research R2).
-**Constraints**: no secrets in responses; keyset paging stable on `(occurred_at, id)`.
-**Scale/Scope**: single user; the ledger grows by tens of rows a day.
+**Primary Dependencies**: existing. ze-google gains `is_auth_failure(exc) -> bool`, which hides `google.auth.exceptions.RefreshError` from the messenger plugin.
+**Storage**: `zc040_channel_poll_outcome` (ze-personal, revises `zc039`) adds `last_outcome TEXT NULL` and `last_outcome_at TIMESTAMPTZ NULL` to `user_channel_watermarks`.
+**Testing**: pytest with mocked pools; `@pytest.mark.pg` for the ledger subject filter, the loops filter and the watermark outcome upsert.
+**Target Platform / Project Type**: Linux container; web service (backend; regenerated client).
+**Performance Goals**: action list of 50 rows in under 100 ms at single-user volume (no index needed: the `occurred_at DESC` index exists).
+**Constraints**: no secrets in responses; keyset paging on `(occurred_at, id)`; poll outcomes never move `last_polled_at`.
+**Scale/Scope**: single user.
 
 ## Constitution Check
 
 | Principle | Check |
 |---|---|
-| I Spec-first | spec + clarifications; plan, research, data model, contracts, quickstart, tasks. |
+| I Spec-first | spec, clarifications, plan, research, data model, contracts, quickstart, tasks, checklist. |
 | II Single-user | no scoping added. |
-| III Layered packages | Ledger read in ze-memory (owner of `action_records`). Loops filter in ze-worldstate. Channel outcome in ze-personal (owner of `user_channel_watermarks`), written by ze-messenger through its existing `ChannelWatermarkStore` dependency (ze-messenger → ze-personal is a declared edge). Routes only in ze-api. Tier settings read ze-core's `tier.py` from ze-api, which is allowed. |
-| IV Typed Python | `ActionSubject`, `ChannelStatus`, `PollOutcome` dataclasses and enums; route errors typed. |
-| V Tests | Fail-first; pg-marked tests for the two SQL filters. |
-| VI Persistence | `zc040` raw SQL in ze-personal's chain, with `depends_on` none (it continues `zc039`). |
-| VII Gateway | no LLM. |
-| VIII Hard cuts | eval collisions route and `ResetService` deleted, no copy kept. |
+| III Layered packages | Ledger read in ze-memory. The workflow id is stamped in ze-automation, the record's producer. Loops in ze-worldstate. Watermark outcome in ze-personal, written by ze-messenger (declared edge). The auth-failure check is in ze-google, which ze-messenger already depends on, so the plugin never imports `google.auth`. Routes and DI live in ze-api. |
+| IV Typed Python | `ActionSubjectKind`, `PollOutcome`, `ChannelPollStatus`; typed errors; 422s for bad input. |
+| V Tests | fail-first; pg tests for the three SQL changes. |
+| VI Persistence | `zc040` in ze-personal's `zc` chain. |
+| VIII Hard cuts | eval collisions route and `ResetService` deleted; manifest unchanged. |
 
 Gate: pass.
 
 ## Blast radius
 
-`graphify affected` (after `graphify update .`) plus grep:
-
 | Symbol | Callers | Change |
 |---|---|---|
-| `ActionRecordStore.list` (`ze_memory/action_records/store.py:40`) | procedure store, recorder tests | unchanged; new `list_by_subject` beside it on the Protocol and `PostgresActionRecordStore` |
-| `api/eval/collisions.py` `list_collisions` | `api/eval/__init__.py` (dev router), `tests/api/test_collisions_route.py`, `test_dev_only_routes.py`, `test_openapi_export.py` | moves to `api/v0/collisions/`; the dev router drops it; tests updated (the dev-only test no longer lists collisions; the export test expects `listCollisions` on the product spec) |
-| `CollisionLogEntrySchema` (`api/eval/schemas.py`) | eval collisions route | moves to `api/v0/collisions/schemas.py` |
-| `LoopStore.list(states)` (`ze_worldstate/store.py:98,199`) | loops router, surfacers, priority view, recap | gains `since: datetime | None = None` (keyword, default keeps every caller) |
-| `list_loops` (`api/v0/loops/router.py:26`) | web `useLoopsQuery` | gains `since` query |
-| `ChannelWatermarkStore` (`ze_personal/channels/watermark_store.py`) | inbound poll job, webhook path | gains `record_outcome(channel_id, outcome, at)` and `get_status_many(ids)` |
-| `InboundPollingJob._poll` (`ze_messenger/jobs/inbound_poll.py`) | proactive scheduler | records `ok` / `auth_failed` / `failed` |
-| `complexity_surface_config`, `resolve_agent_model` (`ze_core/routing/tier.py`) | `choose_tier` | read by the new settings route (no change) |
-| `ResetService` (`ze_onboarding/reset.py`) | `ze_onboarding/__init__.py` export, `ze_api/wiring/container.py`, `scripts/reset_personal_state.py`, `Makefile` (`reset-personal-state`, help line), `apps/ze-api/tests/onboarding/test_reset.py`, `docs/onboarding.md` | all deleted or lines removed |
+| `ActionRecordStore.list` | procedure store, tests | unchanged; `list_by_subject` added |
+| `emit_workflow_finished(execution_id, status)` (`ze_automation/action_records.py:75`) | `PostgresWorkflowStore.finish_execution` (`workflow/postgres.py:435`) | gains `workflow_id`; `finish_execution` uses `UPDATE … RETURNING workflow_id` and passes it (A-1) |
+| `api/eval/collisions.py` | `api/eval/__init__.py:3,10`, `tests/api/test_collisions_route.py`, `test_dev_only_routes.py`, `test_openapi_export.py`, `apps/ze-api/README.md:36` | moved to `api/v0/collisions/`; the README is updated |
+| `LoopStore.list(states)` | loops router, surfacers, priority, recap | gains `since` (keyword) |
+| `list_loops` | web `useLoopsQuery`, World Touched (`useWorld.ts:66`, `state=closed`) | `state` becomes repeatable; `since` added. Web adoption (closed and dropped in one call) is a later web change. |
+| `ChannelWatermarkStore` | inbound poll job | gains `record_outcome`, `get_status_many` |
+| `InboundPollingJob._poll` | scheduler | records outcomes; registers the channel on first failure |
+| `ZeContainer` (`ze_api/wiring/container.py`) | routes, endpoint | gains `action_record_store`, `user_channel_store`, `watermark_store` fields (today only in `wiring/stores.py` and the agent DI map, `wiring/agents.py:93-94`); loses `reset_service` (import line 77, field 265, construction 670) |
+| `ze_api/api/deps.py` | routes | adds `get_action_record_store`, `get_user_channel_store`, `get_watermark_store`, `get_channel_registry` |
+| `complexity_surface_config` (`.calibrated`), `resolve_agent_model` | `choose_tier` | read by the settings route |
+| `ResetService` | `ze_onboarding/{reset.py,__init__.py}`, container (three sites), `scripts/reset_personal_state.py`, Makefile (target, `.PHONY` line 153, help line), `apps/ze-api/tests/onboarding/test_reset.py`, `apps/ze-api/tests/api/test_ws_commands_reset_removed.py:38-39` (asserts on `container.reset_service`), `docs/onboarding.md:164-181` (the "Reset Scopes" section) | all deleted or edited |
+| Phase 192 | adds `transcription_registry` to `wiring/container.py` | merge order: the second floor to land rebases that file |
 
 ## Design
 
-### Action records (ze-memory + ze-api)
+### Action records
 
-- `ze_memory/action_records/types.py`: `ActionSubjectKind = Literal["goal", "workflow", "workflow_run", "workspace_run"]` mapped to context keys `goal_id`, `workflow_id`, `workflow_run_id`, `workspace_run_id`.
-- `store.py`: `list_by_subject(*, kind: ActionSubjectKind | None, subject_id: UUID | None, since: datetime | None, cursor: tuple[datetime, UUID] | None, limit: int) -> list[ActionRecord]`. SQL: `WHERE ($kind IS NULL OR context->>$key = $id::text) AND ($since IS NULL OR occurred_at > $since) AND (occurred_at, id) < ($c_at, $c_id) ORDER BY occurred_at DESC, id DESC LIMIT $n`. Key names come from a closed map, never interpolated from input. The workflow subject also matches records whose context has only `workflow_run_id`, when that run belongs to the workflow: research R1 decides on context-only matching.
-- Index: research R2 (an expression index in a `zm025` migration, only if T001 measures a need; default: none, given the single-user volume).
-- ze-api `api/v0/actions/`: `GET /actions` with `subject_type`, `subject_id` (both or neither, else 422), `since`, `cursor` (opaque base64 of `occurred_at|id`), `limit` (1..200, default 50). Response `ActionRecordPage { items: [ActionRecordItem], next_cursor }`. Each item has id, action_type, actor, producer_plugin, lifecycle, outcome, summary, `touched {domain, record_id}`, occurred_at and failure_code.
+- **ze-memory `types.py`:** `ActionSubjectKind` and a closed map to the context keys `goal_id`, `workflow_id`, `workflow_run_id` and `workspace_run_id`.
+- **ze-memory `store.py`:** `list_by_subject(*, kind=None, subject_id=None, since=None, cursor=None, limit=50)`. The SQL is assembled from fixed fragments:
+  - `context->>'<mapped key>' = $n::text` when a subject is given (the key comes from the closed map, never from input);
+  - `occurred_at > $n::timestamptz` when `since` is given;
+  - `(occurred_at, id) < ($a::timestamptz, $b::uuid)` only when a cursor is present (K-1);
+  - then `ORDER BY occurred_at DESC, id DESC LIMIT $n`.
+- **ze-automation (A-1):** `finish_execution` runs `UPDATE workflow_executions … RETURNING workflow_id`. `emit_workflow_finished(execution_id, status, workflow_id)` stamps `ActionContext(workflow_id=…, workflow_run_id=…)`.
+- **Coverage limit (spec US1, assumptions).** Goal-trace, workflow and workspace records carry their subject. Calendar, reminder and prospecting records carry only their own keys, so what Ze did through those tools during a goal or workflow does not list under that subject.
+- **ze-api `api/v0/actions/`:** `GET /actions`. `subject_type` and `subject_id` must be given together, else 422. `since`; `cursor` (base64 of `occurred_at|id`, 422 if invalid); `limit` 1..200, default 50. Returns `ActionRecordPage`.
 
-### Collisions (ze-api)
+### Collisions
 
-- `api/v0/collisions/router.py` and `schemas.py`: the same handler, filters and schema, `operation_id="listCollisions"`, on the product router with `require_api_key`. `api/eval/collisions.py` and its `dev_router.include_router` line are deleted.
+- `api/v0/collisions/router.py`: the same filters on the product router. An unknown `source_function` returns 422 (no `ValueError` escapes), and `limit` is 1..200. `api/eval/collisions.py` is deleted along with its include line and its schema in `api/eval/schemas.py`. `apps/ze-api/README.md` is updated.
 
-### Tier settings (ze-api)
+### Tier settings
 
-- `api/v0/system/models.py` (new router file in the system package): `GET /system/models`, `operation_id="getModelSettings"`. It reads `container.settings` on each request (hot reload) and returns `{complexity_enabled, simple_max, agents: [{name, model, model_simple}]}`. `model` is `resolve_agent_model(name, "full", app_config)`; `model_simple` is `resolve_agent_model(name, "simple", app_config)` when the agent declares `model_simple`, else null. Agents come from the registry, sorted by name. No API keys or base URLs are included.
+- `api/v0/system/models.py`: `GET /system/models`. `complexity_enabled` is `complexity_surface_config(settings).calibrated` (enabled and a bar, T-1), and `simple_max` is the bar or null. Agents are sorted by name, with `model` and `model_simple` from `resolve_agent_model`. No secrets.
 
-### Loops since (ze-worldstate + ze-api)
+### Loops
 
-- `PostgresLoopStore.list(states=None, *, since=None)` adds `AND updated_at > $since` (`updated_at` moves on every transition: verify at T001 that `close`/`drop`/`transition` set it; if one does not, that statement gains `updated_at = now()`). The `listLoops` route gains a `since: datetime | None` query.
+- `PostgresLoopStore.list(states=None, *, since=None)` adds `AND updated_at > $n` (every transition sets `updated_at`).
+- The `listLoops` route takes `state: list[str] | None = Query(None)` (repeatable) and `since`. One call returns closed and dropped loops (L-1).
 
-### Channel status (ze-personal + ze-messenger + ze-api)
+### Channel status
 
-- `zc040_channel_poll_outcome.py` (ze-personal `migrations/versions/`): the two columns, nullable.
-- `ChannelWatermarkStore.record_outcome(channel_id, outcome: PollOutcome, at)` upserts the outcome columns without moving the watermark. `get_status_many(ids) -> dict[str, ChannelPollStatus(watermark, last_outcome, last_outcome_at)]`.
-- `InboundPollingJob._poll`: on success, records `ok` (beside the existing watermark set). On exception, records `auth_failed` when the exception is (or wraps) `google.auth.exceptions.RefreshError`, else `failed`. Push channels (Gmail via webhook) are skipped by the poll job and never move a watermark today, so their status reads "connected" with `last_sync_at` null and `push: true`. Recording webhook outcomes is out of scope.
-- ze-api `api/v0/channels/`: `GET /channels/status`, `operation_id="listChannelStatus"`. It reads `UserChannelStore.list_all()` and `get_status_many()`, and maps each channel to one of:
+- **Migration `zc040`:** the two nullable columns.
+- **`ChannelWatermarkStore.record_outcome(channel_id, outcome, at)`** (C-1):
+  - `UPDATE user_channel_watermarks SET last_outcome, last_outcome_at WHERE channel_id = $1`.
+  - If no row is updated, `INSERT … (channel_id, last_polled_at, last_outcome, last_outcome_at) VALUES ($1, now() - DEFAULT_LOOKBACK, …)`, so the next successful poll starts from the normal 24 h lookback and no mail in the failure window is skipped.
+  - The watermark is never moved forward by an outcome.
+- **`get_status_many(ids)`** returns `ChannelPollStatus` per id.
+- **ze-google:** `is_auth_failure(exc)` walks `__cause__` and `__context__` up to depth 5, looking for `google.auth.exceptions.RefreshError`.
+- **`InboundPollingJob._poll`:**
+  - **Success:** the existing watermark set and `user_channels` upsert, then `record_outcome(ok)`.
+  - **Exception:** first `UserChannelStore.ensure(channel)`, a new insert-if-absent (`INSERT … ON CONFLICT (channel_id) DO NOTHING`), so the FK holds and `list_all()` includes the channel without overwriting a good handle (N-1: after a restart with an expired token `_user_email` is None and the job's handle falls back to the bare channel id; the success path's `upsert` would replace `me@x` with it). Then `record_outcome(auth_failed if is_auth_failure(exc) else failed)`.
+  - **Key (N-2):** an outcome is recorded under `channel.channel_id` as it stands when the poll ends. A Gmail channel whose email never resolved (the dead-token case: `_resolve_user_email` is the call that raises) reports its bare type value (`email`), so the first failure lands under `email`. On every successful poll whose `channel_id` differs from `channel.channel_type.value`, the job calls `UserChannelStore.drop_unkeyed(channel_type.value)`, which deletes the bare-key watermark row and then the bare-key `user_channels` row in one transaction (a no-op when none exists). After re-auth the user sees one row, `connected`. Single-user Ze has one account per channel type, so the bare key never stands for a second account.
+  - **Partial failures:** per-message `get` failures inside `poll_new_messages` are swallowed by the channel and still count as `ok` (stated in the spec).
+  - **Outcome-recording failures** are logged and never break the poll.
+- **ze-api `api/v0/channels/`:** `GET /channels/status`. Channels come from `UserChannelStore.list_all()` merged with the `ChannelRegistry` inbound channels. A registry channel that is not yet in `user_channels` is listed with no handle and `unknown` if it never polled. States:
   - `off` when `poll_enabled` is false;
-  - `needs_reauth` when `last_outcome == auth_failed`;
-  - `error` when `failed`;
-  - `connected` otherwise.
+  - `unknown` for push channels (C-2: "Receives by push; Ze does not monitor it."). Gmail with `PUBLIC_URL` set is the usual deployment;
+  - `needs_reauth` for `auth_failed`;
+  - `error` for `failed`;
+  - `connected` for `ok`;
+  - `unknown` when there is no outcome yet.
+  
+  Fields: `last_sync_at` (the watermark row's `last_polled_at` when the row exists and the last outcome was `ok`, else null), `push`, `google_configured`. No tokens.
 
-  Each item carries `last_sync_at` (the watermark), `channel_type`, `handle` and `display_name`. If Google credentials are not configured at all, the response carries `google_configured: false` and the list is empty or only non-Google channels. No tokens.
+### DI (lead, contract step)
+
+- `ZeContainer` gains `action_record_store`, `user_channel_store` and `watermark_store` fields, from the instances `wiring/stores.py` already builds. `api/deps.py` gains `get_action_record_store`, `get_user_channel_store`, `get_watermark_store` and `get_channel_registry`, each with a resolve test.
 
 ### Reset deletion
 
-- Delete `core/ops/ze-onboarding/ze_onboarding/reset.py` and its export, the `reset_service` wiring in `ze_api/wiring/container.py`, `scripts/reset_personal_state.py`, the Makefile target and its help line, `apps/ze-api/tests/onboarding/test_reset.py`, and the `docs/onboarding.md` paragraph (it then points to `make db-reset` + `make db-reset-seed`).
+- `jr1` deletes the files and lines outside the container. `lead` removes the three container sites, because `lead` owns `container.py`.
 
 ## Project Structure
 
@@ -104,53 +125,58 @@ Gate: pass.
 specs/phases/194-accountability-surfaces/
 ├── spec.md, plan.md, research.md, data-model.md, quickstart.md, tasks.md
 ├── contracts/rest.md
-└── checklists/requirements.md
+└── checklists/{requirements.md,api.md}
 ```
 
 ### Source Code
 
 ```text
 core/cognition/ze-memory/ze_memory/action_records/{types.py,store.py}
+core/automation/ze-automation/ze_automation/{action_records.py,workflow/postgres.py}
 core/cognition/ze-worldstate/ze_worldstate/store.py
-plugins/ze-personal/ze_personal/channels/{watermark_store.py,types.py} ; plugins/ze-personal/ze_personal/migrations/versions/zc040_channel_poll_outcome.py
+integrations/ze-google/ze_google/auth_errors.py (new: is_auth_failure)
+plugins/ze-personal/ze_personal/channels/{watermark_store.py,types.py} ; .../migrations/versions/zc040_channel_poll_outcome.py
 plugins/ze-messenger/ze_messenger/jobs/inbound_poll.py
-apps/ze-api/ze_api/api/v0/{actions,collisions,channels}/ (new) ; apps/ze-api/ze_api/api/v0/system/models.py (new)
-apps/ze-api/ze_api/api/v0/{__init__.py,loops/router.py} ; apps/ze-api/ze_api/api/eval/{__init__.py,collisions.py (deleted),schemas.py}
-core/ops/ze-onboarding/ze_onboarding/{reset.py (deleted),__init__.py} ; apps/ze-api/ze_api/wiring/container.py ; scripts/reset_personal_state.py (deleted) ; Makefile
+apps/ze-api/ze_api/api/v0/{actions,collisions,channels}/ (new) ; api/v0/system/models.py (new)
+apps/ze-api/ze_api/api/{deps.py,v0/__init__.py,v0/loops/router.py,eval/__init__.py,eval/collisions.py (deleted),eval/schemas.py}
+apps/ze-api/ze_api/wiring/container.py ; apps/ze-api/README.md
+core/ops/ze-onboarding/ze_onboarding/{reset.py (deleted),__init__.py} ; scripts/reset_personal_state.py (deleted) ; Makefile
 packages/ze-client/src/generated/*
 ```
 
 ## Docs touched
 
-- `docs/native-interface.md`: REST surfaces `listActionRecords`, `listCollisions`, `getModelSettings`, `listChannelStatus`, `listLoops?since`.
-- `docs/memory.md`: ledger read by subject.
+- `docs/native-interface.md`: the five surfaces.
+- `docs/memory.md`: ledger read by subject and which producers carry a subject.
 - `docs/system-one.md`: the tier settings route.
-- `docs/onboarding.md`: reset paragraph replaced by the database reset.
+- `docs/onboarding.md` (lines ~164-181): the "Reset Scopes" section replaced by `make db-reset` / `make db-reset-seed`.
 - `docs/architecture.md`: REST table; migration table row for `zc040`.
-- `CONTRIBUTING.md` / `README.md` if they mention `reset-personal-state` (grep at T001).
-- `AGENTS.md`: phase row 194; migration ownership row for ze-personal (`user_channel_watermarks.last_outcome`, `zc040`); `specs/README.md` row 194.
+- `apps/ze-api/README.md` (~36): collisions under `api/v0`.
+- `AGENTS.md`: phase row 194; migration ownership (ze-personal `user_channel_watermarks.last_outcome`, `zc040`); `specs/README.md` row 194.
 
 ## Lane Plan (Maestri crew)
 
 **Contract step** (lane `lead`, lands first; T002–T004):
-- **Pydantic response schemas** for all five surfaces in their new package `schemas.py` files (`api/v0/actions/schemas.py`, `api/v0/collisions/schemas.py`, `api/v0/channels/schemas.py`, `api/v0/system/schemas.py` additions), with route stubs returning 501 under their final operation ids.
-- **Router registration** in `api/v0/__init__.py`, and the `since` query added to `listLoops` as a pass-through stub.
-- **Domain type stubs**: `ActionSubjectKind` (ze-memory types), `PollOutcome` and `ChannelPollStatus` (ze-personal types), and the `list_by_subject` / `record_outcome` / `get_status_many` Protocol signatures.
+- **Pydantic schemas** for the five surfaces, plus 501 route stubs with final operation ids, registered.
+- **Domain type stubs** and Protocol signatures.
+- **Container fields** and `deps.py` getters with resolve tests.
+- **Container reset sites** removed.
 - `make codegen`.
 
 | Lane | Model / role | Owns (disjoint) | Tasks | Starts after | Reviewer |
 |---|---|---|---|---|---|
-| lead | Sonnet ENG lead | `api/v0/__init__.py`, all new `schemas.py` files, the domain type stubs, `packages/ze-client/src/generated/*`; merges and gates | T001–T004, T019, T020 | - | Gauge |
-| ledger | Sonnet ENG | `ze_memory/action_records/store.py` (body), `api/v0/actions/router.py`, their tests | T005–T007 | contract step | floor Reviewer |
-| reads | Sonnet ENG | `api/v0/collisions/router.py`, `api/eval/{__init__,collisions,schemas}.py`, `api/v0/system/models.py`, `ze_worldstate/store.py`, `api/v0/loops/router.py`, their tests | T008–T012 | contract step | floor Reviewer |
-| channels | Sonnet ENG | `zc040` migration, `ze_personal/channels/watermark_store.py` (body), `ze_messenger/jobs/inbound_poll.py` (and the webhook watermark line if any), `api/v0/channels/router.py`, their tests | T013–T016 | contract step | floor Reviewer |
-| jr1 | Haiku JR | the reset deletion: `ze_onboarding/reset.py`, `ze_onboarding/__init__.py`, `ze_api/wiring/container.py` (reset lines only), `scripts/reset_personal_state.py`, `Makefile` (two lines), `apps/ze-api/tests/onboarding/test_reset.py` | T017 | contract step | floor Reviewer |
-| docs | Haiku DOCS | the files in "Docs touched" | T021–T023 | lanes merged | floor Reviewer |
+| lead | Sonnet ENG lead | `api/v0/__init__.py`, `api/deps.py`, `wiring/container.py`, all new `schemas.py`, domain type stubs, `packages/ze-client/src/generated/*`; merges and gates | T001–T004, T019, T020 | - | Gauge |
+| ledger | Sonnet ENG | `ze_memory/action_records/store.py`, `ze_automation/action_records.py`, `ze_automation/workflow/postgres.py` (`finish_execution` only), `api/v0/actions/router.py`, their tests | T005, T005a, T006, T007, T018 | contract step | floor Reviewer |
+| reads | Sonnet ENG | `api/v0/collisions/router.py`, `api/eval/{__init__,collisions,schemas}.py`, `apps/ze-api/README.md`, `api/v0/system/models.py`, `ze_worldstate/store.py`, `api/v0/loops/router.py`, their tests | T008–T012 | contract step | floor Reviewer |
+| channels | Sonnet ENG | `zc040`, `ze_personal/channels/{watermark_store,user_channel_store}.py`, `ze_google/auth_errors.py`, `ze_messenger/jobs/inbound_poll.py`, `api/v0/channels/router.py`, their tests | T013–T016 | contract step | floor Reviewer |
+| jr1 | Haiku JR | `ze_onboarding/reset.py`, `ze_onboarding/__init__.py`, `scripts/reset_personal_state.py`, `Makefile` (target, `.PHONY`, help), `apps/ze-api/tests/onboarding/test_reset.py`, `apps/ze-api/tests/api/test_ws_commands_reset_removed.py` (the `reset_service` assertions) | T017 | contract step | floor Reviewer |
+| docs | Haiku DOCS | the files in "Docs touched" except `apps/ze-api/README.md` (lane `reads`) | T021–T023 | lanes merged | floor Reviewer |
 
-**Rules**: one lane per file. `ze_api/wiring/container.py` is touched only by `jr1` (reset lines). `lead` merges in the order ledger, reads, channels, jr1, re-runs `make codegen`, then runs the gates. `jr1`'s task is a fully specified deletion with its grep check written in the task.
+**Rules**: one lane per file. `lead` merges ledger, reads, channels and jr1, then re-runs codegen and the gates. If phase 192 lands first, `lead` rebases `wiring/container.py` onto its `transcription_registry` line.
 
 ## Complexity Tracking
 
 | Item | Why | Simpler alternative rejected |
 |---|---|---|
-| `zc040` migration | "Needs re-auth" (spec US5) cannot be read from anything stored: poll failures are only logged. | A stale-sync heuristic (it cannot tell expired credentials from no new mail); an in-memory flag (lost on restart, and the user reads Governance after a restart). |
+| `zc040` | "Needs re-auth" cannot be read from anything stored. | A stale-sync heuristic; an in-memory flag. |
+| Push channels report `unknown` | Ze does not see failures on the push path (the webhook swallows errors, watches lapse), so "connected" would be a false green. | Recording webhook and renewal outcomes (needs a callback from ze-google into ze-personal; left for a messaging phase). |

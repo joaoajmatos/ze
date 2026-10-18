@@ -679,7 +679,7 @@ h2.lbl {
 
 .ask {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   border: 1px solid var(--hair-strong);
   background: var(--wash);
 }
@@ -2079,6 +2079,203 @@ input[type="checkbox"] {
     animation: none;
   }
 }
+
+/* ---------- primitive atoms in the HUD system (the classNames map passed to @myguyze/ze-ui) ---------- */
+.pr-heading {
+  font-family: var(--font-body);
+  font-weight: 200;
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--cream);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+.pr-sub {
+  font-weight: 400;
+  color: var(--l1);
+  margin: 0;
+}
+.pr-body {
+  color: var(--ink-2);
+  line-height: 1.5;
+  margin: 0;
+}
+.pr-caption {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--dim);
+  margin: 0;
+}
+.pr-code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--wash);
+  padding: 0 4px;
+}
+.pr-body.pr-muted,
+.pr-sub.pr-muted {
+  color: var(--dim);
+}
+.pr-badge {
+  display: inline-block;
+  font-family: var(--font-label);
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  border: 1px solid var(--hair);
+  padding: 4px 7px;
+}
+.pr-badge.is-success,
+.pr-badge.is-info {
+  color: var(--main);
+}
+.pr-badge.is-warning,
+.pr-badge.is-error {
+  color: var(--coral);
+  border-color: color-mix(in oklab, var(--coral) 45%, transparent);
+}
+.pr-card {
+  border: 1px solid var(--hair);
+  background: color-mix(in oklab, var(--wash) 70%, transparent);
+  padding: 12px 14px;
+  min-width: 0;
+}
+.pr-track {
+  height: 3px;
+  width: 100%;
+  background: color-mix(in oklab, var(--main) 18%, transparent);
+}
+.pr-fill {
+  height: 100%;
+  background: var(--main);
+  transition: width 420ms var(--ease-out);
+}
+.pr-label {
+  font-family: var(--font-label);
+  font-size: var(--label);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--dim);
+  line-height: 1.2;
+  margin: 0;
+}
+.pr-table,
+.pr-steps,
+.pr-connections {
+  border: 1px solid var(--hair);
+  background: color-mix(in oklab, var(--wash) 70%, transparent);
+  border-radius: 0;
+  min-width: 0;
+}
+.pr-table :is(th, td) {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--l1);
+  border-color: var(--hair);
+}
+.pr-table th {
+  font-family: var(--font-label);
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.pr-steps :is(p, span) {
+  color: inherit;
+}
+.pr-steps {
+  color: var(--ink-2);
+}
+.pr-connections {
+  color: var(--ink-2);
+}
+.pr-divider {
+  border: 0;
+  border-top: 1px solid var(--hair);
+  margin: 4px 0;
+}
+.pr-claim {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--hair);
+  background: color-mix(in oklab, var(--wash) 70%, transparent);
+  padding: 12px 14px;
+  min-width: 0;
+  color: var(--ink-2);
+}
+.pr-claim[data-tone="cream"] {
+  border-color: color-mix(in oklab, var(--cream) 40%, transparent);
+}
+.pr-claim[data-tone="hot"] {
+  border-color: color-mix(in oklab, var(--coral) 45%, transparent);
+}
+.pr-claim[data-tone="dotted"] {
+  border-style: dashed;
+}
+.pr-claim :is(p, dt, dd) {
+  margin: 0;
+}
+.pr-claim > div:first-child p {
+  color: var(--l1);
+  font-weight: 400;
+}
+.pr-claim p[class*="text-[11px]"] {
+  font-family: var(--font-label);
+  font-size: 0.5625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.pr-claim dd {
+  font-family: var(--font-mono);
+  color: var(--l1);
+}
+.pr-claim dt {
+  color: var(--dim);
+}
+.pr-claim [class*="text-ember"] {
+  color: var(--coral);
+}
+.pr-claim button:not(.chat-about) {
+  font-family: var(--font-label);
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--l2);
+  background: none;
+  border: 1px solid var(--hair);
+  border-radius: 0;
+  min-height: 44px;
+  padding: 0 14px;
+}
+.pr-claim button:not(.chat-about):hover:not(:disabled) {
+  border-color: var(--hair-strong);
+  color: var(--cream);
+}
+.pr-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-2);
+}
+.pr-timeline p {
+  font-family: var(--font-label);
+  font-size: var(--label);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin: 0;
+}
+.pr-timeline ol {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--l1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 
 /* ---------- doing (phase 188) ---------- */
 .doing-grid {
