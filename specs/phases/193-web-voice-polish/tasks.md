@@ -58,13 +58,13 @@
 
 ## Phase 3: User Story 1 - Speak, correct, send (P1) 🎯 MVP
 
-- [ ] T005 [P] [L:voice] [US1] Tests first `features/voice-input/lib/mime.test.ts` and `lib/level.test.ts`:
+- [x] T005 [P] [L:voice] [US1] Tests first `features/voice-input/lib/mime.test.ts` and `lib/level.test.ts`:
   - `pickMime` returns `audio/webm;codecs=opus` when everything is supported, `audio/ogg;codecs=opus` without WebM, `audio/mp4` with only MP4, and `null` with none; `extensionFor` gives `webm`, `ogg`, `m4a`;
   - `levelFromSamples`: all zeros → 0; a full-scale square wave → 1; an RMS of 0.01 (−40 dBFS) → 0.4; output clamped to 0–1.
 
   Implement both.
-- [ ] T006 [L:voice] [US1] Tests first `features/voice-input/lib/recorder.test.ts` with a fake `MediaRecorder`, `getUserMedia` and `AudioContext`: `startRecorder` asks for `{ audio: true }`, starts the recorder with the chosen mime, 64000 bit/s and a 250 ms timeslice; levels from the analyser reach the module ref; `stop()` resolves one `Blob` of the chunks with the mime, and stops every track and closes the audio context. Implement `recorder.ts`.
-- [ ] T007 [L:voice] [US1] Tests first `features/voice-input/model/store.test.ts` and `api/transcribe.test.ts` (SDK mocked, fake timers):
+- [x] T006 [L:voice] [US1] Tests first `features/voice-input/lib/recorder.test.ts` with a fake `MediaRecorder`, `getUserMedia` and `AudioContext`: `startRecorder` asks for `{ audio: true }`, starts the recorder with the chosen mime, 64000 bit/s and a 250 ms timeslice; levels from the analyser reach the module ref; `stop()` resolves one `Blob` of the chunks with the mime, and stops every track and closes the audio context. Implement `recorder.ts`.
+- [x] T007 [L:voice] [US1] Tests first `features/voice-input/model/store.test.ts` and `api/transcribe.test.ts` (SDK mocked, fake timers):
   - start → `recording`, `presenceActions.voice("recording")`; stop → `transcribing`, then the registered callback gets (transcript, id) and the status is `idle`;
   - 115 s after recording actually began (fake timers and a faked `performance.now`; `getUserMedia` resolving 5 s after `start()` does not eat the budget), it stops and transcribes on its own; with ticks delayed (a throttled tab), it still stops at the first tick past 115 s of elapsed time; at 104 s the mic shows elapsed time, from 105 s the seconds left;
   - `currentLevel()` is 0 when not recording, even with a stale level in the module ref;
@@ -76,7 +76,7 @@
   - `transcribe` sends a `File` named `recording.<ext>` with the mime as its type.
 
   Implement `store.ts` (replacing the stub's no-ops; the exported signatures do not change) and `transcribe.ts`.
-- [ ] T008 [L:voice] [US1] Tests first `features/voice-input/ui/VoiceMic.test.tsx`, `ui/VoiceStatus.test.tsx` and `model/useHoldToTalk.test.ts`:
+- [x] T008 [L:voice] [US1] Tests first `features/voice-input/ui/VoiceMic.test.tsx`, `ui/VoiceStatus.test.tsx` and `model/useHoldToTalk.test.ts`:
   - idle: label "Speak to Ze (hold V)", 44 px class; press → `start`; recording: stop icon, elapsed `0:12` after 12 s, `aria-pressed="true"`, label "Stop recording", press → `stop`; transcribing: disabled, `aria-busy="true"`; `blocked` or unavailable: disabled with the reason as label and title;
   - the status line (`VoiceStatus`): "Transcribing…"; a `retryable` failure shows its `detail` with Retry and Dismiss (both 44 px) calling `retry` and `dismiss`; a `rerecord` failure shows its `detail` with Record again (calls `dismiss` then `start`) and Dismiss, and no Retry; "Ze heard nothing"; the line has `role="status"` and `aria-live="polite"`;
   - hold-to-talk: keydown `v` outside a text field → `start`; keyup → `stop`; a keyup within 300 ms discards (no upload); keydown with a modifier, a repeat, focus in an input, a textarea or a contenteditable, or an open dialog does nothing; `enabled` false does nothing; window blur during a hold → `stop`.
