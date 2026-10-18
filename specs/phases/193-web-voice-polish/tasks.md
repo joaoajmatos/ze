@@ -64,7 +64,7 @@
 
   Implement both.
 - [x] T006 [L:voice] [US1] Tests first `features/voice-input/lib/recorder.test.ts` with a fake `MediaRecorder`, `getUserMedia` and `AudioContext`: `startRecorder` asks for `{ audio: true }`, starts the recorder with the chosen mime, 64000 bit/s and a 250 ms timeslice; levels from the analyser reach the module ref; `stop()` resolves one `Blob` of the chunks with the mime, and stops every track and closes the audio context. Implement `recorder.ts`.
-- [ ] T007 [L:voice] [US1] Tests first `features/voice-input/model/store.test.ts` and `api/transcribe.test.ts` (SDK mocked, fake timers):
+- [x] T007 [L:voice] [US1] Tests first `features/voice-input/model/store.test.ts` and `api/transcribe.test.ts` (SDK mocked, fake timers):
   - start → `recording`, `presenceActions.voice("recording")`; stop → `transcribing`, then the registered callback gets (transcript, id) and the status is `idle`;
   - 115 s after recording actually began (fake timers and a faked `performance.now`; `getUserMedia` resolving 5 s after `start()` does not eat the budget), it stops and transcribes on its own; with ticks delayed (a throttled tab), it still stops at the first tick past 115 s of elapsed time; at 104 s the mic shows elapsed time, from 105 s the seconds left;
   - `currentLevel()` is 0 when not recording, even with a stale level in the module ref;
