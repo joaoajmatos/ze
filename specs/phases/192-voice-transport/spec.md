@@ -20,6 +20,15 @@
 
 The engine can already turn audio into text: when a turn's raw input carries audio bytes, the first graph step transcribes them with the configured speech model and marks the turn as voice. Nothing in the API fills that input today. The WebSocket `message` frame carries text only; the audio path was built for Telegram, which has since been removed. The web app also needs the transcript back before the turn runs, so the user can correct what Ze heard (overhaul plan section c). This phase replaces the dead audio-in-the-turn path with one voice path: transcribe first, let the user correct, then send an ordinary text turn marked as voice.
 
+## Clarifications
+
+### Session 2026-10-18 (user answers through the Maestro: all recommended)
+
+- Q: Can a voice note be sent without the correction step? → A: No. Always transcribe, show the text, the user sends it.
+- Q: What does the trace keep from a voice turn? → A: Modality, duration and an edited flag only; never the raw transcript.
+- Q: If the server cannot tell a recording's length? → A: Reject it as unreadable ("I couldn't make out the recording").
+- Q: Drop the language field? → A: Yes, drop it.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Transcribe, correct, then send (Priority: P1)
@@ -71,6 +80,7 @@ Each transcription is counted in Ze's spend like any other model call, so Govern
 ### Edge Cases
 
 - A recording in a format the speech model does not accept directly is converted on the server first. If conversion fails, the user gets the "couldn't make out" failure, not a crash.
+- A recording whose length cannot be determined (no length metadata and it cannot be decoded) is rejected as unreadable with the "couldn't make out" failure.
 - An empty or silent recording returns an empty transcript. The client shows "Ze heard nothing" and does not send a message (193).
 - The same reference sent twice: the second turn is also voice. The reference stays valid until it expires and is not consumed.
 - A server restart drops unexpired references. Turns that name them run as text (Story 1, scenario 3).
@@ -84,7 +94,7 @@ Each transcription is counted in Ze's spend like any other model call, so Govern
 - **FR-002**: The system MUST reject other types, oversized files and over-long recordings with distinct plain errors that state the limit or the accepted types.
 - **FR-003**: The system MUST transcribe with the same speech model the engine uses today (the configured `whisper` model), and record the call in spend under the transcription flow.
 - **FR-004**: The system MUST NOT store audio. The transcription reference MUST map, in memory and for 10 minutes, to the transcript and duration, so a later turn can record them without trusting the client.
-- **FR-005**: A message that names a live transcription reference MUST run as a voice turn. Its trace MUST carry an input section: modality, duration in seconds, and whether the sent text differs from the transcript.
+- **FR-005**: A message that names a live transcription reference MUST run as a voice turn. Its trace MUST carry an input section: modality, duration in seconds, and whether the sent text differs from the transcript. The raw transcript MUST NOT be kept on the trace.
 - **FR-006**: The old path that carries audio bytes inside a turn MUST be removed: raw-input audio fields, the graph state audio fields and the first step's audio branch. Image captioning in that step stays. Pre-v1 hard cut: one voice path.
 - **FR-007**: The generated web client MUST expose the transcription call, and the message context MUST accept the voice reference in its schema.
 - **FR-008**: Public docs MUST describe the transcription route, the voice message context and the speech-model configuration.

@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Accountability Surfaces (B4)": Maestro brief 2026-10-17, backend floor B4; overhaul plan section d, gaps 7, 8 and 11. Gap 13 (screen context on the trace) moved to phase 195 on 2026-10-17. The gaps logged while planning 185–190 (2026-10-17/18) are candidates, scoped by clarification.
+**Input**: User description: "Accountability Surfaces (B4)": Maestro brief 2026-10-17, backend floor B4; overhaul plan section d, gaps 7, 8 and 11. Gap 13 (screen context on the trace) moved to phase 195 on 2026-10-17. Two gaps logged while planning 185–190 (loops `since`, channel status) and the reset deletion joined by clarification.
 
 **Governed by**: `PRODUCT.md` principle 4 ("Unattended work is accountable"), phases 135–136 (action-record ledger and instrumentation), 126–127 (contribution collisions), 182 (model tier on the trace), `specs/arch/pre-v1-hard-cuts.md`.
 
@@ -14,7 +14,7 @@
 
 **Doctrine functions served**: action (what Ze did on its own), governance (disagreements between the user and the executive are observable; the tier Ze runs is printed honestly).
 
-**Owning packages** (for planning): ze-memory (ledger read), ze-collision (unchanged store), ze-api (routes), ze-worldstate (loops filter, if in scope), ze-onboarding (reset, if in scope). No migration expected.
+**Owning packages** (for planning): ze-memory (ledger read), ze-collision (unchanged store), ze-api (routes), ze-worldstate (loops filter), ze-personal / ze-google (channel status), ze-onboarding (reset deleted). No migration expected.
 
 ## Context
 
@@ -24,7 +24,15 @@ Three small read surfaces sit over data that already exists, and none of them re
 2. **Disagreements (gap 8).** Contribution collisions (the executive and the user disagreeing, for example on a priority) are listed only on the developer/eval router.
 3. **The configured tier (gap 11).** Each reply's trace shows which model tier ran. Governance cannot print the configured state: whether the light tier is on, its threshold, and which agents have a light model.
 
-Planning phases 185–190 against the code logged further gaps. They are listed under Candidate gaps and scoped in by clarification.
+Planning phases 185–190 against the code logged further gaps. Where each went is listed under Logged gaps.
+
+## Clarifications
+
+### Session 2026-10-18 (user answers through the Maestro: all recommended)
+
+- Q: Which logged gaps join 194? → A: The three core routes plus the loops `since` filter and read-only channel status. The component→call link and the screen-context resolver kinds go to trace and screen-context follow-ups (187b or a 195 follow-up).
+- Q: The personal-state reset bug? → A: Delete `ResetService`, `scripts/reset_personal_state.py` and `make reset-personal-state`; `make db-reset` (+ seed) covers a developer's wipe.
+- Q: Action list subjects? → A: Goal, workflow, workflow run and workspace run, plus `since`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -76,11 +84,49 @@ Governance shows whether the light tier is on, the threshold under which a turn 
 
 ---
 
-### User Story 4 - Candidate gaps (Priority: P3, scope set by clarification)
+### User Story 4 - Closed loops by time (Priority: P2)
 
-[NEEDS CLARIFICATION: which candidate gaps (below) join this phase? Recommended: the loops `since` filter and read-only channel status here; the component-to-call link and the screen-context resolver kinds go to a trace and screen-context follow-up (187b or a 195 follow-up).]
+World's "Touched · 7 d" asks only for loops closed or dropped since a time, instead of downloading every closed loop and filtering in the browser.
 
-[NEEDS CLARIFICATION: the reset cascade bug: delete the personal-state reset (service, script and make target), fix it, or leave it? Recommended: delete. Nothing in the product uses it since 190, and `make db-reset` covers a developer's full wipe.]
+**Why this priority**: small, and it removes an unbounded download from the home place.
+
+**Independent Test**: seed closed loops across 30 days; listing closed loops since 7 days ago returns only those touched in the window.
+
+**Acceptance Scenarios**:
+
+1. **Given** closed and dropped loops across 30 days, **When** World lists them since 7 days ago, **Then** only loops whose last change falls in the window return.
+2. **Given** no `since`, **When** loops are listed, **Then** the behaviour is unchanged.
+
+---
+
+### User Story 5 - Connection status in Governance (Priority: P3)
+
+Governance › Connections shows each messaging channel and the Gmail connection, with its state (connected, needs re-auth, off) and when it last synced, read-only.
+
+**Why this priority**: Governance omits it today; read-only and small.
+
+**Independent Test**: with one connected Gmail channel and one channel whose credentials have expired, the route returns both with the right states and last-sync times, and no secret.
+
+**Acceptance Scenarios**:
+
+1. **Given** a connected Gmail channel, **When** the status is read, **Then** it reports connected with its last sync time.
+2. **Given** expired credentials, **When** the status is read, **Then** it reports needs re-auth.
+3. **Given** any channel, **When** the status is read, **Then** no token or secret appears.
+
+---
+
+### User Story 6 - The broken reset is removed (Priority: P3)
+
+The personal-state reset, which wipes tables it does not list, is deleted with its script and make target. A developer resets with the database reset.
+
+**Why this priority**: removes a tool that destroys more than it reports (user decision).
+
+**Independent Test**: no code, script, make target or doc refers to the reset service; the database reset target still works.
+
+**Acceptance Scenarios**:
+
+1. **Given** the cut, **When** the repository is searched, **Then** no reference to the reset service, its script or its make target remains outside history.
+2. **Given** a developer, **When** they run the database reset and seed, **Then** they get a clean dev database as before.
 
 ### Edge Cases
 
@@ -99,7 +145,9 @@ Governance shows whether the light tier is on, the threshold under which a turn 
 - **FR-004**: The system MUST report the configured tier state (light tier on or off, its threshold, and each agent's full and light model) from the same configuration the routing step reads, reflecting a config reload without restart, with no secrets.
 - **FR-005**: Every new route MUST declare its response model, summary, description and operation id, and the generated web client MUST be regenerated.
 - **FR-006**: Public docs MUST describe the three routes (native interface, memory, System One docs) and the phase row.
-- **FR-007**: Candidate gaps in scope (per clarification) MUST each carry their own acceptance tests.
+- **FR-007**: Loops MUST be listable by a `since` time on their last change, without changing the unfiltered list.
+- **FR-008**: The system MUST report each messaging channel's and the Gmail connection's state (connected, needs re-auth, off) and last sync time over the product API, read-only, with no secrets.
+- **FR-009**: The personal-state reset service, its script and its make target MUST be removed, with every doc reference.
 
 ### Key Entities
 
@@ -107,13 +155,13 @@ Governance shows whether the light tier is on, the threshold under which a turn 
 - **Collision**: a logged disagreement between two contributing functions over one entity.
 - **Tier configuration**: light-tier switch, threshold, and per-agent full and light models.
 
-### Candidate gaps (logged while planning 185–190)
+### Logged gaps and where they went
 
-- **Reset cascade (user decision 2026-10-18: log for 194).** The personal-state reset truncates its tables with cascade. It silently wipes every table that references them (open loops through goals, then their sources) without counting them in its preview. Its table lists predate phases 128–184, so sessions survive with their messages gone, and its full-dev scope always fails. Only a developer script and its make target still use it.
-- **Component → tool call link (from 187).** Top-level message components carry no call index, so Ask's "Why?" opens the trace section by origin, not the exact call.
-- **Loops `since` filter (from 186).** World's "Touched · 7 d" downloads every closed loop and filters in the browser.
-- **Channel and Gmail connection status (from 190).** Governance › Connections omits it: no REST reports it.
-- **Screen-context resolver kinds for cost anomalies, data domains and workspace files (from 190).** Governance publishes only its place and focused module.
+- **Reset cascade → deleted here (User Story 6).** The personal-state reset truncates its tables with cascade. It silently wipes every table that references them (open loops through goals, then their sources) without counting them in its preview. Its table lists predate phases 128–184, so sessions survive with their messages gone, and its full-dev scope always fails. Only a developer script and its make target still use it.
+- **Component → tool call link (from 187) → trace follow-up (187b), not here.** Top-level message components carry no call index, so Ask's "Why?" opens the trace section by origin, not the exact call.
+- **Loops `since` filter (from 186) → here (User Story 4).** World's "Touched · 7 d" downloads every closed loop and filters in the browser.
+- **Channel and Gmail connection status (from 190) → here (User Story 5).** Governance › Connections omits it: no REST reports it.
+- **Screen-context resolver kinds for cost anomalies, data domains and workspace files (from 190) → screen-context follow-up, not here.** Governance publishes only its place and focused module.
 
 ## Success Criteria *(mandatory)*
 

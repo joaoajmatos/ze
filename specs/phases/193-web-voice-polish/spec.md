@@ -20,6 +20,13 @@
 
 Two things close the web overhaul. First, voice input. The Ask bar has had a disabled mic since 183 ("Voice input arrives later"), and 192 adds a transcription service that returns what Ze heard before the turn runs. Second, polish. The prototype (`/jarvis`) still carries the ambient sound and the last pieces the places were built from. It and its notes go, the design document is refreshed, and every place gets a final critique.
 
+## Clarifications
+
+### Session 2026-10-18 (user answers through the Maestro: all recommended)
+
+- Q: Where does the ambience toggle live? → A: In the Presence module's head, beside the orb.
+- Q: Push-to-talk from the keyboard? → A: Hold `v` to talk, only when no text field has focus; the mic button toggles anywhere.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Speak, correct, send (Priority: P1)
@@ -99,11 +106,11 @@ Nothing named after the prototype remains in the web app. The design document de
 
 ### Functional Requirements
 
-- **FR-001**: The Ask bar's mic MUST record audio in a format the transcription service accepts, show elapsed time, stop on press or at 120 seconds, and upload the recording for transcription.
+- **FR-001**: The Ask bar's mic MUST record audio in a format the transcription service accepts, show elapsed time, stop on press or at 120 seconds, support hold-`v` to talk when no text field has focus, and upload the recording for transcription.
 - **FR-002**: While recording, Presence MUST be listening with the live input level driving the orb, and MUST show "transcribing" while the upload runs.
 - **FR-003**: The transcript MUST land in the Ask bar, focused and editable. Sending MUST carry the voice reference and whether the text differs from the transcript, through the single send path.
 - **FR-004**: Failures MUST show plain lines (couldn't make out with Retry; heard nothing; permission denied; no microphone; unsupported browser). Retry MUST reuse the same recording.
-- **FR-005**: An ambience toggle MUST play the existing quiet drone, off by default, remembered per browser, never auto-starting under reduced motion, ducked while recording.
+- **FR-005**: An ambience toggle in the Presence module's head MUST play the existing quiet drone, off by default, remembered per browser, never auto-starting under reduced motion, ducked while recording.
 - **FR-006**: The prototype MUST be removed: every prototype route and file, its surface notes under `.impeccable/surfaces`, and any interim file or leftover style mapping from 186–190.
 - **FR-007**: The design document MUST be refreshed through the impeccable document flow (Navigation, Components; prototype-only notes removed).
 - **FR-008**: Each place MUST score at least 30/40 on the critique, with keyboard and reduced-motion paths verified and captures at 1440 and 390 recorded.
@@ -125,7 +132,7 @@ Nothing named after the prototype remains in the web app. The design document de
 
 ## Assumptions
 
-- Push-to-talk by holding a key is offered only when no text field has focus (see clarifications).
+- Holding `v` records only when no text field has focus; releasing it stops and transcribes.
 - The transcription service's limits (10 MB, 120 seconds, accepted types) are the ones 192 sets. The client enforces 120 seconds and picks a supported format.
 - The ambience sound is the prototype's synthesized drone, moved as is.
 - Spoken output stays out of scope (user decision 6).

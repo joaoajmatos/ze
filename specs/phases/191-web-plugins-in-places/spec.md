@@ -20,6 +20,14 @@
 
 Plugins declare UI contributions in a manifest the web app reads at runtime: navigation entries with a server-driven page, and settings sections. The five places now own the app frame (183), and 186, 189 and 190 moved Reminders, Contacts and plugin settings into places. One plugin page is left: News, shown at a top-level route outside the places. The web app still has a catch-all top-level route for any plugin page. This phase ties every plugin page to a place, turns News into an Ask preset, and closes the top-level plugin route.
 
+## Clarifications
+
+### Session 2026-10-18 (user answers through the Maestro: all recommended)
+
+- Q: Keep place-aware plugin pages with no current consumer? → A: Yes. Keep the page contribution with a required place, tested with a fixture plugin.
+- Q: What does the News chip send? → A: A plain question ("What's new in my sources?") routed like a typed one; no new composed-answer type.
+- Q: Where does `/news` go? → A: It redirects to Ask.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Plugin pages live inside a place (Priority: P1)
