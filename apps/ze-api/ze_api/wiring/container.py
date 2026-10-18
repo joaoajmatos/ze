@@ -301,6 +301,8 @@ class ZeContainer(CoreContainer):
     procedure_activator: Any = None
     tier_judge: Any = None
     screen_resolvers: Any = None
+    # Set by the workspace stack (T031); None keeps run_tool_script off.
+    script_runner: Any = None
     transcription_registry: TranscriptionRegistry = field(
         default_factory=TranscriptionRegistry
     )
@@ -348,6 +350,7 @@ class ZeContainer(CoreContainer):
             "procedure_discovery": self.procedure_discovery,
             "procedure_activator": self.procedure_activator,
             "screen_resolvers": self.screen_resolvers,
+            "script_runner": self.script_runner,
             **plugin_services,
         }
         configurable["memory_hooks"] = [*plugin_services.get("memory_hooks", [])]

@@ -31,7 +31,7 @@
 - [x] T005 [L:lead] `ProcedureSourceKind.TOOL_SCRIPT = "tool_script"` and `ProcedureMatch.source_kind: str | None = None` in `ze_memory/procedures/types.py`, with a test that a `TOOL_SCRIPT` candidate with `preconditions=[]` constructs.
 - [x] T006 [L:lead] Add the `workspace.scripts` block to `apps/ze-api/config/config.yaml` exactly as in [data-model.md](./data-model.md); `apps/ze-api/tests/test_config_scripts.py` loads the real file (copied to `tmp_path`) and gets the defaults through `ScriptLimits.from_config`.
 - [x] T007 [L:lead] Write the frame contract fixture `core/ops/ze-workspace/tests/fixtures/script_frames.py`: builders for every frame in [contracts/scripts.md](./contracts/scripts.md) plus a scripted fake sidecar that plays a list of frames over an in-memory socket and records what Ze sent.
-- [ ] T008 [L:lead] `ze_api/wiring/container.py` `_build_config` adds `"script_runner": None` (placeholder until T031); a test asserts the key is present.
+- [x] T008 [L:lead] `ze_api/wiring/container.py` `_build_config` adds `"script_runner": None` (placeholder until T031); a test asserts the key is present.
 
 **Checkpoint**: contract merged; lanes start.
 
