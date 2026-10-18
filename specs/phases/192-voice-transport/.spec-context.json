@@ -1,0 +1,16 @@
+{
+  "workflow": "speckit",
+  "specName": "Voice Input Transport (B3)",
+  "branch": "web-overhaul-specs",
+  "currentStep": "specify",
+  "status": "specified",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-18T00:00:14.349Z"
+    }
+  ]
+}
