@@ -58,7 +58,7 @@
 
 ## Phase 3: User Story 1 - Speak, correct, send (P1) 🎯 MVP
 
-- [ ] T005 [P] [L:voice] [US1] Tests first `features/voice-input/lib/mime.test.ts` and `lib/level.test.ts`:
+- [x] T005 [P] [L:voice] [US1] Tests first `features/voice-input/lib/mime.test.ts` and `lib/level.test.ts`:
   - `pickMime` returns `audio/webm;codecs=opus` when everything is supported, `audio/ogg;codecs=opus` without WebM, `audio/mp4` with only MP4, and `null` with none; `extensionFor` gives `webm`, `ogg`, `m4a`;
   - `levelFromSamples`: all zeros → 0; a full-scale square wave → 1; an RMS of 0.01 (−40 dBFS) → 0.4; output clamped to 0–1.
 
