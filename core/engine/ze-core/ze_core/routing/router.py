@@ -55,6 +55,14 @@ class EmbeddingRouter:
     def screen_hint(self) -> bool:
         return self._surface.screen_hint
 
+    @property
+    def config(self) -> RouterConfig:
+        return self._config
+
+    @property
+    def surface(self) -> RoutingSurfaceConfig:
+        return self._surface
+
     # ── Public ────────────────────────────────────────────────────────────────
 
     async def route(
@@ -107,6 +115,8 @@ class EmbeddingRouter:
             ],
             requires_synthesis=False,
             raw_scores={agent_name: 1.0},
+            threshold=self._config.threshold,
+            gap_threshold=self._config.gap_threshold,
         )
         if self._store is not None:
             fire_and_forget(
@@ -142,6 +152,8 @@ class EmbeddingRouter:
             subtasks=[SubTask(agent=agent_name, prompt=prompt, model=model)],
             requires_synthesis=False,
             raw_scores={agent_name: 1.0},
+            threshold=self._config.threshold,
+            gap_threshold=self._config.gap_threshold,
         )
 
     async def _judge(
@@ -201,6 +213,8 @@ class EmbeddingRouter:
             requires_synthesis=False,
             raw_scores=raw_scores,
             judgment=judgment,
+            threshold=self._config.threshold,
+            gap_threshold=self._config.gap_threshold,
         )
 
     async def _score_and_route(

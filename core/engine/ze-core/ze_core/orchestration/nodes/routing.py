@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from langchain_core.runnables import RunnableConfig
 from ze_logging import get_logger
 from ze_core.conversation.messages.judgments import judgments_from_result
@@ -122,6 +124,13 @@ async def decompose(state: AgentState, config: RunnableConfig) -> dict:
         logger=log,
     )
 
+    if router is not None:
+        new_envelope = replace(
+            new_envelope,
+            threshold=router.config.threshold,
+            gap_threshold=router.config.gap_threshold,
+        )
+
     log.info(
         "orchestration_decomposed",
         session_id=state["session_id"],
@@ -178,5 +187,7 @@ def apply_conductor_rewrite(
         requires_synthesis=False,
         raw_scores=envelope.raw_scores,
         is_sequential=True,
+        threshold=envelope.threshold,
+        gap_threshold=envelope.gap_threshold,
     )
     return rewritten, hint

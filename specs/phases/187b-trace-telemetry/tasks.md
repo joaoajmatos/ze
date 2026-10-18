@@ -84,7 +84,7 @@
 
 ## Phase 5: User Story 3 - Routing and judgment bars (P2)
 
-- [ ] T010 [P] [L:bars] [US3] Tests first `core/engine/ze-core/tests/routing/test_router_thresholds.py`: every envelope the router builds (embedding, haiku fallback, forced, and the screen, preset and open-query envelopes built in their nodes) carries `threshold` and `gap_threshold` from `RouterConfig`; `embed_route`'s output envelope keeps `raw_scores`. Implement in `routing/router.py` and any node that builds an envelope (list them in the Handoffs note).
+- [x] T010 [P] [L:bars] [US3] Tests first `core/engine/ze-core/tests/routing/test_router_thresholds.py`: every envelope the router builds (embedding, haiku fallback, forced, and the screen, preset and open-query envelopes built in their nodes) carries `threshold` and `gap_threshold` from `RouterConfig`; `embed_route`'s output envelope keeps `raw_scores`. Implement in `routing/router.py` and any node that builds an envelope (list them in the Handoffs note).
 - [ ] T011 [L:bars] [US3] Tests first `tests/orchestration/nodes/test_judgment_bars.py`: with each surface configured, the trace rows carry `surface` and the bar per plan.md's maps (routing: `choice_trust`, `multi_specialist_hold`; skills: `choice_trust`, `needs_skill_hold`; complexity: `simple_max`; commitment intake: the six holds; `_outcome_row`: surface, no bar); with a surface's bars null (uncalibrated), the rows have `surface` set and `bar` null; a reloaded config changes the bar on the next turn only. Implement the bar maps in `nodes/{routing,skills,tier,memory}.py`.
 
 ---
