@@ -240,7 +240,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | ✅ Implemented (zc040, zm025) |
 | 195 | [Screen Context Awareness](phases/195-screen-context-awareness/spec.md) | ✅ Implemented (live eval: first run 10 of 26, chat_about 9 of 15 after owner routing; chip capture deferred to 193) |
 | 196 | [OpenRouter Server Tools](phases/196-openrouter-server-tools/spec.md) | 🔲 Ready to implement (open fetch, risk accepted 2026-10-18; builds after 187b) |
-| 197 | [Programmatic Tool Use](phases/197-programmatic-tool-use/spec.md) | 🔲 In review (plan + tasks; builds after 187b) |
+| 197 | [Programmatic Tool Use](phases/197-programmatic-tool-use/spec.md) | 🔲 Ready to implement (builds after 187b) |
 
 ## Ze Core specs (`core/`)
 

@@ -34,7 +34,7 @@
 
 ## R7 — Data leaving through tools (lesson from 196 S-1)
 
-- **Finding**: a script has no network, so it cannot send data out itself. It can only call the agent's read tools, and scripts are a capability of every agent (user answer), so a data read tool that reaches the network (for example a browser extract tool) is reachable from a script exactly as from a direct call: same gates, every inner call on the trace. Scripts grant no tool the agent lacks and add no network of their own. Server tools (`openrouter:*`) are never in the stub. The ADR states this so a new outbound read tool is reviewed knowing scripts can loop over it within the script caps.
+- **Finding**: a script has no network, so it cannot send data out itself. It can only call the agent's read tools, and scripts are a capability of every agent (user answer), and at least one READ tool reaches a caller-chosen URL (`browser_extract`, ze-browser). Decision (Gauge R-1, Maestro): such tools carry `egress` and are excluded from the stub, so scripts have no network directly or through a tool; a registry sweep flags any READ tool with a URL-like parameter that lacks `egress` or a stated exemption. Server tools (`openrouter:*`) are never in the stub.
 
 ## R8 — Eval
 

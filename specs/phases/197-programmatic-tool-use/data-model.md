@@ -18,7 +18,7 @@ No migration.
 
 **ScriptBudget**: `limit_usd: float`, `spent_usd: float`; `current_script_budget` ContextVar; `charge_script(usd)`. **`in_script_call`**: ContextVar[bool], set around each inner call; `ToolCallCapHook` skips counting while it is set.
 
-**ToolSpec** addition: `produces_ui: bool = False` (`@tool(produces_ui=True)`; every `render_*` tool and the `show_*` compose tools).
+**ToolSpec** additions: `produces_ui: bool = False` (`@tool(produces_ui=True)`; every `render_*` tool and the `show_*` compose tools); `egress: bool = False` (`@tool(egress=True)`; READ tools that reach a caller-chosen URL or host, `browser_extract` today). Both are excluded from the script stub.
 
 **ToolCall** additions: `parent_call_id: str | None = None`, `inner_calls: list[ToolCall] = []`, `script: dict | None = None` (`source`, `source_cut`, `outcome`, `limit`, `source_hash`, `procedure_id`). Checkpointed with `ParkedLoop.accumulated` like other fields.
 
@@ -42,7 +42,7 @@ Same fields on `ToolCallTraceResponse` and the `trace_update` tool rows.
 
 **ProcedureMatch** addition: `source_kind: str | None = None`.
 
-**Script procedure candidate**: `source_kind = tool_script`, `name = "script:<script_key[:12]>"`, `trigger` = first 120 chars of the user turn, `preconditions = []`, `steps = [latest successful source]`, `success_criteria = ["script ends ok"]`, `limits` = ordered inner tool names, `evidence_refs` = the three action record ids. `validate_candidate` requires evidence and one step of at most 8,000 chars for this kind.
+**Script procedure candidate**: `source_kind = tool_script`, `name = "Script: <tool1 → tool2 …> [<script_key[:8]>]"` (≤ 120 chars), `trigger` = first 120 chars of the user turn, `preconditions = []`, `steps = [latest successful source]`, `success_criteria = ["script ends ok"]`, `limits` = ordered inner tool names, `evidence_refs` = the three action record ids. `validate_candidate` requires evidence and one step of at most 8,000 chars for this kind.
 
 ## Config
 

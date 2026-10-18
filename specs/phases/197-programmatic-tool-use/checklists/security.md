@@ -31,7 +31,7 @@
 
 ## Data leaving Ze
 
-- [x] CHK014 Is it stated why a script cannot send data to a third party (no network; read tools of opted-in agents do not call out; server tools excluded) and that a future outbound read tool must be reviewed against it? [Assumption, research R7, ADR]
+- [x] CHK014 Is it stated why a script cannot send data to a third party: no network of its own, tools that reach a caller-chosen URL (`egress`, e.g. `browser_extract`) and server tools excluded from the stub, and a registry sweep that catches an unflagged URL-taking read tool? [Coverage, Spec §FR-003, research R7, ADR; re-ticked after Gauge R-1]
 
 ## Accountability
 
