@@ -143,7 +143,7 @@
   - one `@pytest.mark.pg` test: three runs of one key leave three `action_records` rows, and `list_by_script_key` returns them newest first.
 
   Implement `ze_workspace/script_learning.py` (copying `ze_workspace/action_records.py`'s pattern) and `ActionRecordStore.list_by_script_key` in `ze_memory/action_records/store.py`; the runner calls learning fire-and-forget after each run.
-- [ ] T025 [L:runner] [US5] Tests first:
+- [x] T025 [L:runner] [US5] Tests first:
   - `procedures/store.py`: `list_active_versions` returns `source_kind` per version through one LEFT JOIN (`admission_id → candidate_id`, NULL without an admission), with no extra query per version; `candidate_exists(name)`; one `@pytest.mark.pg` test for the join;
   - `discovery.py` fills `ProcedureMatch.source_kind`, and `format_procedure_guidance` prints a `tool_script` match as one line pointing to `run_tool_script(procedure_id="<id>")` with no steps;
   - `validate_candidate` rejects a `tool_script` candidate without `evidence_refs`, with two steps, or with a step over 8,000 chars;

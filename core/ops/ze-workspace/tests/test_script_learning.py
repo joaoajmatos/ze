@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from uuid import UUID, uuid4
 
-import pytest
 from ze_agents.scripts import ScriptOutcome
 from ze_memory.action_records.types import (
     ActionLifecycle,

@@ -13,7 +13,11 @@ from ze_memory.procedures.errors import (
     BlockedProcedureError,
     IneligibleProcedureError,
 )
-from ze_memory.procedures.types import MatchState, ProcedureInvocationOrigin
+from ze_memory.procedures.types import (
+    MatchState,
+    ProcedureInvocationOrigin,
+    ProcedureSourceKind,
+)
 
 log = get_logger(__name__)
 
@@ -62,6 +66,11 @@ async def invoke_procedure(procedure_id: str, ctx: AgentContext | None = None) -
     ctx.procedure_invoked_id = str(match.procedure_id)
     ctx.procedure_invoked_version_id = str(match.version_id)
     ctx.procedure_tool_names = sorted(match.effective_tool_names)
+    if match.source_kind == ProcedureSourceKind.TOOL_SCRIPT.value:
+        return (
+            "This is a script procedure: run it with "
+            f'run_tool_script(procedure_id="{match.procedure_id}").'
+        )
     return (
         f"Invoked procedure {match.name} version {match.version_number}. "
         "Follow its steps using only the now-narrowed tools. "
