@@ -19,7 +19,7 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main`. `make install`; `graphify update .`; `graphify affected` on `ActionRecordStore`, `LoopStore`, `ChannelWatermarkStore`, `InboundPollingJob`, `ResetService`, `list_collisions`, `complexity_surface_config`, `resolve_agent_model`. Grep `reset_personal_state\|reset-personal-state\|ResetService` across the repo (docs, CONTRIBUTING, README, Makefile). Run `EXPLAIN` for the planned ledger query on the dev DB (research R2). Ask the Maestro to reserve `zc040`. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
+- [ ] T001 [L:lead] Branch from `main`. `make install`; `graphify update .`; `graphify affected` on `ActionRecordStore`, `LoopStore`, `ChannelWatermarkStore`, `InboundPollingJob`, `ResetService`, `list_collisions`, `complexity_surface_config`, `resolve_agent_model`. Grep `reset_personal_state\|reset-personal-state\|ResetService` across the repo (docs, CONTRIBUTING, README, Makefile). Run `EXPLAIN` for the planned ledger query on the dev DB (research R2). Ask the Maestro to reserve `zc040`. Name the migration chain test file (the one asserting a single head) for T013. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
 
 ---
 
@@ -82,7 +82,7 @@
 
 ## Phase 7: User Story 5 - Connection status in Governance (P3)
 
-- [ ] T013 [L:channels] [US5] Migration `plugins/ze-personal/ze_personal/migrations/versions/zc040_channel_poll_outcome.py` (revises `zc039`; the two nullable columns per [data-model.md](./data-model.md); downgrade drops them). Extend `apps/ze-api/tests/test_migrate.py` (or its equivalent chain test) so `zc040` is on the single head.
+- [ ] T013 [L:channels] [US5] Migration `plugins/ze-personal/ze_personal/migrations/versions/zc040_channel_poll_outcome.py` (revises `zc039`; the two nullable columns per [data-model.md](./data-model.md); downgrade drops them). Extend the migration chain test that T001 names in the Handoffs note (the test that asserts one head across `version_locations`) so `zc040` is on the single head.
 - [ ] T014 [L:channels] [US5] Tests first `plugins/ze-personal/tests/channels/test_watermark_outcome.py`: `record_outcome` upserts `last_outcome`/`last_outcome_at` without changing the watermark (and creates the row with a null watermark if absent); `get_status_many` returns one `ChannelPollStatus` per id, with nulls for unknown ids. Implement in `watermark_store.py`.
 - [ ] T015 [L:channels] [US5] Tests first `plugins/ze-messenger/tests/jobs/test_inbound_poll_outcome.py`:
   - a successful poll records `ok`;

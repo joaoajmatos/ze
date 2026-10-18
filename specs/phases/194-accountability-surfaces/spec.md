@@ -64,7 +64,7 @@ Governance lists the logged contribution collisions from the product API, the sa
 **Acceptance Scenarios**:
 
 1. **Given** logged collisions, **When** Governance lists them with an entity, source or time filter, **Then** the matching entries return (limit at most 200).
-2. **Given** the change has landed, **When** anything calls the old eval-only route, **Then** it is not found. The eval client uses the product route (pre-v1 hard cut, no copy kept).
+2. **Given** the change has landed, **When** anything calls the old eval-only route, **Then** it is not found (pre-v1 hard cut, no copy kept). No eval client or tool calls it today; only the API tests move.
 
 ---
 
@@ -101,7 +101,7 @@ World's "Touched · 7 d" asks only for loops closed or dropped since a time, ins
 
 ### User Story 5 - Connection status in Governance (Priority: P3)
 
-Governance › Connections shows each messaging channel and the Gmail connection, with its state (connected, needs re-auth, off) and when it last synced, read-only.
+Governance › Connections shows each messaging channel and the Gmail connection, with its state (connected, needs re-auth, error, off) and when it last synced, read-only.
 
 **Why this priority**: Governance omits it today; read-only and small.
 
@@ -111,7 +111,9 @@ Governance › Connections shows each messaging channel and the Gmail connection
 
 1. **Given** a connected Gmail channel, **When** the status is read, **Then** it reports connected with its last sync time.
 2. **Given** expired credentials, **When** the status is read, **Then** it reports needs re-auth.
-3. **Given** any channel, **When** the status is read, **Then** no token or secret appears.
+3. **Given** a poll that failed for another reason, **When** the status is read, **Then** it reports error.
+4. **Given** a channel that receives mail by push (no polling), **When** the status is read, **Then** it reports connected, marked as push, with no last sync time.
+5. **Given** any channel, **When** the status is read, **Then** no token or secret appears.
 
 ---
 
@@ -141,12 +143,12 @@ The personal-state reset, which wipes tables it does not list, is deleted with i
 
 - **FR-001**: The system MUST list action records over the product API, filterable by subject (goal, workflow, workflow run, workspace run), by a `since` time, and paged with a stable cursor, newest first. Each record shows action kind, actor, lifecycle, outcome, summary, the touched record's domain and id, and occurrence time.
 - **FR-002**: The ledger read MUST live in the package that owns the ledger. The route only adapts it.
-- **FR-003**: The collisions list MUST move from the eval router to the product API with the same filters and limits. The eval route MUST be removed and the eval client updated.
+- **FR-003**: The collisions list MUST move from the eval router to the product API with the same filters and limits. The eval route MUST be removed (no eval client depends on it).
 - **FR-004**: The system MUST report the configured tier state (light tier on or off, its threshold, and each agent's full and light model) from the same configuration the routing step reads, reflecting a config reload without restart, with no secrets.
 - **FR-005**: Every new route MUST declare its response model, summary, description and operation id, and the generated web client MUST be regenerated.
 - **FR-006**: Public docs MUST describe the three routes (native interface, memory, System One docs) and the phase row.
 - **FR-007**: Loops MUST be listable by a `since` time on their last change, without changing the unfiltered list.
-- **FR-008**: The system MUST report each messaging channel's and the Gmail connection's state (connected, needs re-auth, off) and last sync time over the product API, read-only, with no secrets.
+- **FR-008**: The system MUST report each messaging channel's and the Gmail connection's state (connected, needs re-auth, error, off) and last sync time over the product API, read-only, with no secrets.
 - **FR-009**: The personal-state reset service, its script and its make target MUST be removed, with every doc reference.
 
 ### Key Entities
