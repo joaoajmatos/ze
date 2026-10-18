@@ -947,6 +947,7 @@ class BaseAgent(ABC):
                         duration_ms=0,
                         success=True,
                     )
+                    _finish(ctx, tool_call)
                     accumulated.append(tool_call)
                     messages.append(
                         {
@@ -965,6 +966,7 @@ class BaseAgent(ABC):
                             success=True,
                         )
                     else:
+                        delegate_started = time.monotonic()
                         tool_call = await run_delegate(
                             tc["arguments"],
                             ctx,
@@ -976,6 +978,8 @@ class BaseAgent(ABC):
                             child_call_id = tc["id"]
                             child_arguments = dict(tc["arguments"])
                             continue
+                        tool_call.started_at = delegate_started
+                        _finish(ctx, tool_call)
                     accumulated.append(tool_call)
                     messages.append(
                         {

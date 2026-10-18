@@ -87,3 +87,44 @@ async def test_two_delegates_with_colliding_provider_ids_get_distinct_ids() -> N
     await _delegate("calendar", seen)
     await _delegate("messenger", seen)
     assert len({c.call_id for c in seen}) == 2
+
+
+async def test_the_delegate_call_itself_reaches_the_sink_once_with_a_start() -> None:
+    from ze_agents.delegate import DELEGATE_TOOL_NAME
+
+    _register("calendar")
+    client = MagicMock()
+    client.complete_with_tools = AsyncMock(
+        side_effect=[
+            (
+                None,
+                [
+                    {
+                        "id": "d1",
+                        "name": DELEGATE_TOOL_NAME,
+                        "arguments": {"agent_name": "calendar", "objective": "x"},
+                    }
+                ],
+            ),
+            ("done", None),
+        ]
+    )
+
+    class _Companion(BaseAgent):
+        name = "companion"
+        description = "c"
+        tools: list[str] = []
+
+        async def run(self, ctx):  # pragma: no cover
+            raise NotImplementedError
+
+    seen: list[ToolCall] = []
+    ctx = AgentContext(session_id="s", prompt="p", tool_sink=seen.append)
+    _, calls = await _Companion().agentic_loop(
+        ctx, client, [{"role": "user", "content": "x"}], system="s"
+    )
+    wrapper = [c for c in calls if c.tool_name == DELEGATE_TOOL_NAME]
+    assert len(wrapper) == 1
+    assert [c for c in seen if c.tool_name == DELEGATE_TOOL_NAME] == wrapper
+    assert wrapper[0].started_at is not None
+    assert [c.tool_name for c in seen].count("list_events") == 1
