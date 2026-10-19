@@ -11,7 +11,6 @@ New users (or fresh installs) go through a multi-step onboarding flow before Ze 
 - `OnboardingCoordinator` — drives the multi-plugin setup sequence
 - `OnboardingProvider` protocol — plugins declare steps and seed data
 - Session persistence and step-level progress tracking
-- Reset domain types — scoped data deletion for "start over" flows
 
 ### Integration
 
@@ -23,7 +22,9 @@ Plugins return an `OnboardingProvider` from `ZePlugin.onboarding()`. `ze-api` ow
 |---|---|
 | `coordinator.py` | `OnboardingCoordinator` — orchestrates multi-plugin setup flows |
 | `providers.py` | `CoreOnboardingProvider`, `OnboardingProvider` protocol |
-| `types.py` | Steps, seeds, sessions, reset scope, persistence contracts |
+| `store.py` | `OnboardingStore` — Postgres-backed session, step, and seed storage |
+| `persistence.py` | `OnboardingPersistence` — writes submitted steps and seeds back to the store |
+| `types.py` | Steps, seeds, sessions, store and persistence contracts |
 
 ## Dependencies
 

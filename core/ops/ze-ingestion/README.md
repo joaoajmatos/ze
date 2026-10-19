@@ -43,7 +43,7 @@ is discovered automatically by `ze_api/migrate.py`.
 | `extractors/` | `Extractor` protocol, `LLMExtractor` (default — JSON summary/facts/entities/tags) |
 | `pipeline.py` | `IngestionPipeline` — orchestrates classify → fetch → process → extract → store → sink |
 | `store.py` | `IngestionStore` — writes to `ingested_content` table |
-| `sink.py` | `MemorySink` — proposes extracted facts to `ze-memory` |
+| `sink.py` | `MemorySink` — submits extracted facts to `ze-memory` through the contribution seam (`submit_perception_facts`) |
 | `agent.py` | `IngestionAgent` + `ingest_url` and `ingest_text` tools |
 | `locales/en.yaml` | Progress message translations (per-stage keys) |
 | `migrations/versions/zi001_ingested_content.py` | `ingested_content` table + indexes |
