@@ -427,9 +427,9 @@ See [docs/goals.md](goals.md) for conversational usage and gate behavior.
 
 **Package:** `ze-onboarding`
 
-The onboarding system owns first-run setup, seed questions, review-before-save, and
-reset scopes. `ze-api` adapts those protocols to WebSocket commands and persists the
-state in Postgres.
+The onboarding system owns first-run setup, seed questions, and review-before-save.
+It persists state in Postgres itself (`ze_onboarding.store`); `ze-api` adapts its
+protocols to WebSocket commands.
 
 See [docs/onboarding.md](onboarding.md) for the walkthrough and [docs/package-architecture.md](package-architecture.md) for the package boundary.
 

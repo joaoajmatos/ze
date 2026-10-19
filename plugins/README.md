@@ -51,7 +51,7 @@ ze-finance     ←  ze-sdk, ze-ingestion, ze-trading212
 6. Override plugin hooks as needed: `agent_module_paths()`, `memory_policies()`,
    `checkpoint_serde_modules()`, `rest_stores()`, `register_proactive_jobs()`.
 7. If the plugin constructor needs a new shared service type, add it to `plugin_deps`
-   in `apps/ze-api/ze_api/container.py` (see [docs/extending-ze.md](../docs/extending-ze.md)).
+   in `apps/ze-api/ze_api/wiring/container.py` (see [docs/extending-ze.md](../docs/extending-ze.md)).
 8. See [docs/adding-an-agent.md](../docs/adding-an-agent.md) and
    [docs/package-architecture.md](../docs/package-architecture.md) for the full checklist.
 

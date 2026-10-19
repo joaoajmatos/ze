@@ -127,22 +127,21 @@ Plugin authors list `ze-sdk` as their only Ze dependency and import everything f
 ## ze-onboarding — Setup Flow
 
 `ze_onboarding` owns the reusable onboarding domain: provider contracts, step/seed
-dataclasses, coordinator flow, review-before-save behavior, and reset scope/result
-types. It has no Ze dependencies. It does not know about Postgres, WebSocket, FastAPI,
-memory stores, or the web client.
+dataclasses, coordinator flow, review-before-save behavior, and the Postgres-backed
+store and persistence layer. It depends on `ze-agents`, `ze-memory`, and `ze-plugin`.
+It does not know about WebSocket, FastAPI, or the web client.
 
 | Module | What it provides |
 |--------|-----------------|
-| `types.py` | `OnboardingProvider`, `OnboardingStep`, `OnboardingSeed`, `OnboardingStore`, `OnboardingPersistence`, `ResetScope` |
+| `types.py` | `OnboardingProvider`, `OnboardingStep`, `OnboardingSeed`, `OnboardingStore` and `OnboardingPersistence` protocols |
+| `store.py` | `OnboardingStore` — Postgres-backed session, step, and seed storage |
+| `persistence.py` | `OnboardingPersistence` — writes submitted steps and seeds back to the store |
 | `coordinator.py` | `OnboardingCoordinator` — orders providers, dispatches submissions, inserts review step, applies approved seeds through protocols |
 | `providers.py` | `CoreOnboardingProvider` — minimal built-in setup for name/timezone |
 
-Concrete adapters live elsewhere:
-
-- `ze_api.onboarding.store` implements the `OnboardingStore` protocol with Postgres.
-- `ze_api.onboarding.persistence` applies approved seeds to memory/plugin stores.
-- `ze_api.onboarding.reset` executes SQL reset scopes.
-- `ze_api.api.ws` maps WebSocket commands and `component_submit` frames to the coordinator.
+`ze_api.api.ws` maps WebSocket commands and `component_submit` frames to the
+coordinator. There is no reset flow: `ResetService` and its scoped reset types were
+removed in phase 194.
 
 ---
 

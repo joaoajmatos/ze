@@ -79,8 +79,8 @@ imports from the same module (no second download).
 - Synthetic fact confidence decay: non-corroborated synthesized facts lose 0.03 confidence per run after 30 days; contradicted at < 0.25.
 - `valid_until` hard expiry: synthesized facts past their 90-day window that have not been corroborated by a raw episode are contradicted on each morning integration.
 - Morning briefing: a "Ze dreamed" section with processed-episode count, insights
-  promoted, plan risks surfaced, and items pending review (skipped when there is
-  nothing to report).
+  promoted, plan risks surfaced, and items pending review (skipped only when both
+  insights promoted and items pending review are zero).
 
 ---
 
@@ -179,6 +179,10 @@ directly until a review route and a `ze-web` page ship.
   markers in the stored prompt/response; (3) response-phrase detection for research
   summaries. `user_asserted` episodes score lower and cap at 1 toward `support_count`.
 - **Sensitive exclusion** — episodes linked to sensitive entities skip all dream passes.
+- **Session contamination** — `_record_session_contamination` sets
+  `memory_session_summaries.dream_influenced = true` on any session that fetched
+  synthesized facts, and the schema- and policy-candidate detectors exclude those
+  sessions from the dream source pool. Nothing clears the flag once set.
 - **Synthetic expiry** — the next morning integration run contradicts synthesized facts
   past `valid_until` (default 90 days) that no raw episode has corroborated.
 - **Rollback** — every promoted fact carries `dream_run_id` and `derived_from` lineage, so a
