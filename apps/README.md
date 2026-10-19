@@ -50,7 +50,8 @@ ze-api  ←  ze-core, ze-automation, ze-worldstate, ze-priority, ze-skills, ze-w
             ze-collision, ze-data, ze-ingestion, ze-yt, ze-logging, ze-memory,
             ze-correlation, ze-personal, ze-messenger, ze-prospecting, ze-browser,
             ze-news, ze-finance, ze-notifications, ze-components, ze-onboarding,
-            ze-calendar, ze-seed, ze-google
+            ze-calendar, ze-seed, ze-google, ze-agents, ze-communication, ze-plugin,
+            ze-proactive
 ze-web  ←  (React — connects to ze-api over WebSocket, no Python deps)
 ```
 

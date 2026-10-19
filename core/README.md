@@ -59,24 +59,29 @@ they're thin external-service wrappers (browser sidecar, ntfy), the same shape a
 ```
 ze-logging        ←  no ze deps                                              kernel/
 ze-data           ←  no ze deps                                              kernel/
-ze-components     ←  ze-agents                                               kernel/
-ze-agents         ←  ze-logging, ze-onboarding                               contracts/  (cycle with ze-onboarding)
+ze-components     ←  ze-agents, ze-logging                                   kernel/
+ze-agents         ←  ze-logging                                              contracts/
 ze-communication  ←  ze-agents                                               contracts/
-ze-plugin         ←  ze-agents, ze-data, ze-logging                          contracts/
-ze-proactive      ←  ze-agents, ze-logging                                   contracts/
-ze-core           ←  ze-agents, ze-communication, ze-components, ze-data,
-                      ze-logging, ze-memory, ze-plugin                        engine/
+ze-plugin         ←  ze-agents, ze-logging, ze-data, ze-communication        contracts/
+ze-proactive      ←  ze-agents, ze-data, ze-logging                          contracts/
+ze-core           ←  ze-agents, ze-communication, ze-logging, ze-plugin,
+                      ze-components, ze-data, ze-memory                      engine/
 ze-collision      ←  ze-agents, ze-plugin, ze-logging                        seam/
-ze-memory         ←  ze-agents, ze-plugin, ze-collision, ze-logging          cognition/
-ze-correlation    ←  ze-agents, ze-logging, ze-memory, ze-plugin, ze-collision cognition/
-ze-worldstate     ←  ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation, ze-plugin, ze-collision  cognition/
-ze-automation     ←  ze-agents, ze-logging, ze-proactive, ze-memory, ze-data, ze-components  automation/
-ze-skills         ←  ze-agents, ze-proactive, ze-logging, ze-data, ze-memory  automation/
-ze-priority       ←  ze-agents, ze-proactive, ze-worldstate, ze-automation, ze-correlation, ze-plugin, ze-collision  arbitration/
-ze-workspace      ←  ze-agents, ze-logging, ze-data, ze-memory, ze-plugin    ops/
-ze-onboarding     ←  ze-agents, ze-memory                                    ops/  (cycle with ze-agents)
-ze-ingestion      ←  ze-agents, ze-memory, ze-browser                        ops/
-ze-seed           ←  ze-memory, ze-automation, ze-core, ze-logging, ze-onboarding  ops/
+ze-memory         ←  ze-agents, ze-data, ze-logging, ze-plugin, ze-collision,
+                      ze-proactive                                           cognition/
+ze-correlation    ←  ze-agents, ze-logging, ze-memory, ze-plugin, ze-collision,
+                      ze-proactive                                           cognition/
+ze-worldstate     ←  ze-agents, ze-logging, ze-proactive, ze-memory, ze-data,
+                      ze-correlation, ze-plugin, ze-collision                 cognition/
+ze-automation     ←  ze-agents, ze-logging, ze-proactive, ze-memory, ze-data,
+                      ze-components, ze-plugin                               automation/
+ze-skills         ←  ze-agents, ze-proactive, ze-logging, ze-memory, ze-plugin  automation/
+ze-priority       ←  ze-agents, ze-components, ze-worldstate, ze-automation,
+                      ze-correlation, ze-plugin, ze-collision, ze-logging     arbitration/
+ze-workspace      ←  ze-agents, ze-logging, ze-memory, ze-plugin, ze-proactive  ops/
+ze-onboarding     ←  ze-agents, ze-memory, ze-plugin                         ops/
+ze-ingestion      ←  ze-agents, ze-logging, ze-memory, ze-browser, ze-plugin  ops/
+ze-seed           ←  ze-core, ze-logging                                     ops/
 ze-eval           ←  no ze deps                                              ops/
 ```
 

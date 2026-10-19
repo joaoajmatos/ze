@@ -260,7 +260,7 @@ news:
   personalization:
     enabled: true
     explore_ratio: 0.2             # fraction of briefing reserved for discovery
-    candidate_multiplier: 3        # over-fetch multiplier before scoring
+    candidate_multiplier: 4        # over-fetch multiplier before scoring
     briefing_limit: 8              # total articles in morning briefing (≥ 8 recommended)
     min_facts: 5                   # min user facts before scoring; below → recency fallback
 

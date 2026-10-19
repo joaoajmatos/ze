@@ -27,7 +27,7 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 ```
 ze-google         ←  ze-communication
 ze-trading212     ←  no ze deps
-ze-browser        ←  ze-core
+ze-browser        ←  ze-agents
 ze-notifications  ←  no ze deps
 ze-yt             ←  ze-ingestion
 ```

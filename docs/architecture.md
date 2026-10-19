@@ -130,7 +130,7 @@ Ze builds the allowlist automatically in `build_checkpoint_serde()` (`ze_core/ch
    `ze_memory.types` for dataclasses and enums on every startup.
 2. **Plugin modules** — each `ZePlugin` may override `checkpoint_serde_modules()` to
    return its `types.py` module paths (e.g. `ze_automation.workflow.types`). Ze scans
-   those modules the same way — no manual list in `ze_api/container.py`.
+   those modules the same way — no manual list in `ze_api/wiring/container.py`.
 3. **Driver extras** — types like `asyncpg.pgproto.pgproto.UUID` that appear in
    payloads but live outside domain modules.
 
@@ -427,9 +427,9 @@ See [docs/goals.md](goals.md) for conversational usage and gate behavior.
 
 **Package:** `ze-onboarding`
 
-The onboarding system owns first-run setup, seed questions, review-before-save, and
-reset scopes. `ze-api` adapts those protocols to WebSocket commands and persists the
-state in Postgres.
+The onboarding system owns first-run setup, seed questions, and review-before-save.
+It persists state in Postgres itself (`ze_onboarding.store`); `ze-api` adapts its
+protocols to WebSocket commands.
 
 See [docs/onboarding.md](onboarding.md) for the walkthrough and [docs/package-architecture.md](package-architecture.md) for the package boundary.
 
@@ -699,7 +699,7 @@ agent registry as workflow steps — agents remain peers.
 
 `GoalExecutor.advance(goal_id)` runs from:
 
-- `goal_advance_sweep` — cron `*/15 * * * *`, registered in `ze_api/container.py`
+- `goal_advance_sweep` — cron `*/15 * * * *`, registered by `ze_automation.bootstrap.register_proactive_jobs()` via `ze_api/wiring/jobs.py`
 - Gate approval / redirect flows in the WebSocket handler
 - Plan approval after `GoalAgent` creates a goal
 
@@ -996,8 +996,8 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 | `ze_api/db.py` | asyncpg pool factory — lifespan-managed |
 | `ze_plugin/bootstrap.py` | Plugin discovery, DI resolution, `build_integrations()` |
 | `ze_agents/bootstrap.py` | `bootstrap_agents()` — agent registration via plugin `agent_module_paths()` |
-| `ze_api/compose.py` | `register_all_proactive_jobs()` — fans out core + plugin cron registration |
-| `ze_api/container.py` | `ZeContainer` — subclasses `ze_core.Container`, wires all ZePlugins |
+| `ze_api/wiring/jobs.py` | `register_all_proactive_jobs()` — fans out core + plugin cron registration |
+| `ze_api/wiring/container.py` | `ZeContainer` — subclasses `ze_core.Container`, wires all ZePlugins |
 | `ze_personal/persona/` | `PostgresPersonaStore` — named profiles, dial overrides, DB persistence |
 | `ze_google/gmail_channel.py` | `GmailChannel` — Gmail API channel (owned by `ze-google`) |
 | `ze_api/interface/native.py` | `NativeAppInterface` — WebSocket frame delivery + ntfy fallback |

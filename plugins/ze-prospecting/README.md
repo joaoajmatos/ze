@@ -15,7 +15,7 @@ Prospecting is Ze's autonomous outreach research mode. Given a target profile, t
 
 ### Integration
 
-Entry point `ze_prospecting`. Depends on `ze-browser` for web fetching and `ze-personal` for contact linking. Contributes the prospecting agent, campaign REST store, data domains for reset, and a proactive recovery job. Requires the browser sidecar running for web research.
+Entry point `ze_prospecting`. Depends on `ze-browser` for web fetching and `ze-personal` for contact linking. Contributes the prospecting agent, campaign REST store, data domains for export/import, and a proactive recovery job. Requires the browser sidecar running for web research.
 
 ```python
 from ze_prospecting.plugin import ProspectingPlugin
