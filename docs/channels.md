@@ -220,6 +220,14 @@ received or sent the first message in that thread.
 |---|---|---|
 | `GET` | `/api/v0/channels` | List connected channels with poll state and last poll time |
 | `PATCH` | `/api/v0/channels/{channel_id}` | Toggle `poll_enabled`, set `is_default_outbound`, update `display_name` |
+| `GET` | `/api/v0/channels/status` | Report each channel's connection state (`connected`, `needs_reauth`, `error`, `off`, `unknown`) and last sync time |
+
+`GET /api/v0/channels/status` reads the poll outcome each `InboundPollingJob` run
+records on `user_channel_watermarks` (`last_outcome`, `last_outcome_at`): `ok`,
+`auth_failed`, or `failed`. The job never moves the watermark on a failure, so a
+channel that has never worked still shows up — it is registered on its first
+failed poll, not only on success. Push channels always report `unknown`. A 401
+from Google counts as `needs_reauth` (`ze_google.is_auth_failure`).
 
 Sample `GET` response:
 
