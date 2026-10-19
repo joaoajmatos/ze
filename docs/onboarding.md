@@ -17,11 +17,11 @@ Reusable onboarding logic lives in `core/ops/ze-onboarding`:
 
 Deployment adapters live in `apps/ze-api`:
 
-- `ze_api.api.websocket.onboarding.send_onboarding_view()` serializes onboarding views
+- `ze_api.api.ws.onboarding.send_onboarding_view()` serializes onboarding views
   into WebSocket `message` frames.
-- `ze_api.api.websocket.component_submit.handle_component_submit()` routes onboarding
+- `ze_api.api.ws.component_submit.handle_component_submit()` routes onboarding
   submissions back into the coordinator.
-- `ze_api.api.websocket.commands.handle_command()` starts onboarding on demand.
+- `ze_api.api.ws.commands.handle_command()` starts onboarding on demand.
 - `ze_api.wiring.container` builds the `OnboardingCoordinator` from `ze_onboarding`'s
   own Postgres-backed store and persistence adapter. There is no reset service.
 
