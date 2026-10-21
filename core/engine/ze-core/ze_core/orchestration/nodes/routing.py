@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from langchain_core.runnables import RunnableConfig
 from ze_logging import get_logger
 from ze_core.conversation.messages.judgments import judgments_from_result
+from ze_core.orchestration.judgment_bars import bar_map
 from ze_core.orchestration.state import AgentState
 from ze_core.orchestration.judgment_state import build_judgment_state, history_hint
 from ze_agents.registry import get_enabled_agents
@@ -78,6 +81,11 @@ async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
             question_kinds=judgment.question_kinds,
             consumed=judgment.consumed,
             skip_reason=judgment.skip_reason,
+            surface="routing",
+            bars=bar_map(
+                router.surface,
+                {"agent": "choice_trust", "multi_specialist": "multi_specialist_hold"},
+            ),
         )
         if judgment is not None
         else []
@@ -119,6 +127,13 @@ async def decompose(state: AgentState, config: RunnableConfig) -> dict:
         fallback_model=fallback_model,
         logger=log,
     )
+
+    if router is not None:
+        new_envelope = replace(
+            new_envelope,
+            threshold=router.config.threshold,
+            gap_threshold=router.config.gap_threshold,
+        )
 
     log.info(
         "orchestration_decomposed",
@@ -176,5 +191,7 @@ def apply_conductor_rewrite(
         requires_synthesis=False,
         raw_scores=envelope.raw_scores,
         is_sequential=True,
+        threshold=envelope.threshold,
+        gap_threshold=envelope.gap_threshold,
     )
     return rewritten, hint

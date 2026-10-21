@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol, runtime_checkable
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from ze_agents.claims import ClaimKind, Provenance
 from ze_agents.park import ParkedLoop, ParkedWrite, WriteDecision
@@ -86,6 +86,10 @@ class ToolCall:
     approval: dict[str, Any] | None = None
     agent: str | None = None
     undo: dict[str, Any] | None = None
+    # call_id joins a live tool row to its committed row; a parked call and its approved
+    # run share ParkedWrite.trace_call_id. started_at is time.monotonic() seconds.
+    call_id: str = field(default_factory=lambda: uuid4().hex)
+    started_at: float | None = None
 
 
 @dataclass
@@ -113,6 +117,9 @@ class AgentContext:
     # token_sink is runtime-only; when set, agentic_loop streams tokens to it.
     # Signature: async (chunk: str) -> None. Never checkpoint.
     token_sink: Any | None = field(default=None, repr=False)
+    # tool_sink is runtime-only; call_tool hands every finished ToolCall to it.
+    # Signature: (call: ToolCall) -> None, must not block. Never checkpoint.
+    tool_sink: Any | None = field(default=None, repr=False)
     # sources collects web citations reported while this context's agent runs
     # (appended by agentic_loop, merged upward by delegate_to_agent). Empty in
     # any stored context.

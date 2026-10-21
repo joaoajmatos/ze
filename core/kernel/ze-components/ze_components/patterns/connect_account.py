@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ze_components.actions import NavigateAction
 from ze_components.atoms import caption, error, primary, subheading, success
 from ze_components.atoms.badge import badge
 from ze_components.molecules import between, card
@@ -21,5 +22,7 @@ def connect_account(
         caption(description),
     ]
     if status != "connected":
-        children.append(primary(action_label, f"connect:{provider}:{id}"))
+        children.append(
+            primary(action_label, NavigateAction("/governance#connections"))
+        )
     return card(children)

@@ -9,29 +9,29 @@ Some agents need to read web pages that have no API — prospect research, compa
 ### Key features
 
 - `BrowserClient` — async HTTP client for the sidecar service
-- `browse` `@tool` — registered in the prospecting agent's tool set
+- `browser_extract` `@tool` — registered in the prospecting agent's tool set
 - Configurable timeouts, text truncation, and request delay for rate limiting
 
 ### Integration
 
-The sidecar runs as a separate Docker service (`sidecar/browser/`). `BrowserClient` is injected into `ProspectingPlugin` via `ze-api`'s container. Only `ze-prospecting` depends on this package today.
+The sidecar runs as a separate Docker service (`sidecar/browser/`). `BrowserClient` is injected into `ProspectingPlugin` via `ze-api`'s container, and `ze-ingestion`'s bootstrap wires the same client for fetched-page extraction.
 
 ## Responsibilities
 
 | Module | What it provides |
 |---|---|
 | `client.py` | `BrowserClient` — async HTTP client for the sidecar service |
-| `tool.py` | `browse` `@tool` — registered in the agent tool registry |
-| `types.py` | Request/response types |
+| `tool.py` | `browser_extract` `@tool` — registered in the agent tool registry |
+| `types.py` | `BrowserResult` — request/response types |
 | `errors.py` | `BrowserError` and subtypes |
 
 ## Dependencies
 
-No Ze package dependencies. Depends only on: `aiohttp`.
+`ze-agents`. Third-party: `httpx`.
 
 ## Usage
 
-The sidecar runs as a separate Docker service (`sidecar/browser/`). `BrowserClient` is injected into the prospecting agent via the container in `ze-api`.
+The sidecar runs as a separate Docker service (`sidecar/browser/`). `BrowserClient` is injected into the prospecting agent and the ingestion pipeline via the container in `ze-api`.
 
 ```python
 from ze_browser import BrowserClient

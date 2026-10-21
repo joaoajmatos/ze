@@ -1,0 +1,20 @@
+[
+  {
+    "type": "table",
+    "title": "Sources",
+    "headers": ["Name", "Unread"],
+    "rows": [["Hacker News", "4"], ["Lobsters", "0"]],
+    "keys": ["s-1", "s-2"],
+    "row_actions": [
+      {
+        "label": "Mark read",
+        "action": {
+          "kind": "tool",
+          "owner": "news",
+          "tool": "mark_source_read",
+          "args": { "source_id": "{key}" }
+        }
+      }
+    ]
+  }
+]

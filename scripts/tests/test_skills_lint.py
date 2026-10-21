@@ -7,7 +7,7 @@ from conftest import load_process_module
 REPO = Path(__file__).parents[2]
 SKILLS = sorted((REPO / ".claude" / "skills").glob("ze-*/SKILL.md"))
 MAKEFILE = (REPO / "Makefile").read_text()
-SIDE_EFFECTING = {"ze-land-floor", "ze-recruit"}
+SIDE_EFFECTING = {"ze-land-floor", "ze-recruit", "ze-pause", "ze-continue"}
 
 
 def frontmatter(text: str) -> tuple[dict[str, str], str]:

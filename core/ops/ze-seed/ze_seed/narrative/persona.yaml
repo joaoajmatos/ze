@@ -1372,7 +1372,7 @@ messages:
           result_snippet: "1 active goal: Reach B1 Portuguese"
           duration_ms: 45
           success: true
-      total_duration_ms: 1200
+      tool_duration_ms: 1200
   - id: "00000008-0001-4000-8000-000000000003"
     role: user
     text: What do I have tomorrow?
@@ -1397,7 +1397,7 @@ messages:
           result_snippet: "Prep standup notes for Marco"
           duration_ms: 32
           success: true
-      total_duration_ms: 980
+      tool_duration_ms: 980
   - id: "00000008-0001-4000-8000-000000000005"
     role: user
     text: Who is Ana?
@@ -1418,7 +1418,7 @@ messages:
           score: 0.91
           source: fact
       tool_calls: []
-      total_duration_ms: 850
+      tool_duration_ms: 850
   - id: "00000008-0001-4000-8000-000000000007"
     role: user
     text: Thanks, that's helpful
@@ -1436,4 +1436,4 @@ messages:
       subtasks: [companion]
       memory_chunks: []
       tool_calls: []
-      total_duration_ms: 620
+      tool_duration_ms: 620

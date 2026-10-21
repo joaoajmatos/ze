@@ -1204,6 +1204,20 @@ export type InputTraceResponse = {
 };
 
 /**
+ * JudgmentBarResponse
+ */
+export type JudgmentBarResponse = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Value
+     */
+    value: number;
+};
+
+/**
  * JudgmentTraceResponse
  */
 export type JudgmentTraceResponse = {
@@ -1249,6 +1263,11 @@ export type JudgmentTraceResponse = {
      * Skip Reason
      */
     skip_reason?: string | null;
+    /**
+     * Surface
+     */
+    surface?: string | null;
+    bar?: JudgmentBarResponse | null;
 };
 
 /**
@@ -1672,9 +1691,9 @@ export type MessageTraceResponse = {
      */
     tool_calls: Array<ToolCallTraceResponse>;
     /**
-     * Total Duration Ms
+     * Tool Duration Ms
      */
-    total_duration_ms: number;
+    tool_duration_ms: number;
     /**
      * Skills Used
      */
@@ -1719,6 +1738,28 @@ export type MessageTraceResponse = {
     write_confirmations?: Array<WriteConfirmationOutcomeResponse>;
     tier?: TierTraceResponse | null;
     screen?: ScreenTraceResponse | null;
+    /**
+     * Turn Duration Ms
+     */
+    turn_duration_ms?: number | null;
+    /**
+     * Paused Ms
+     */
+    paused_ms?: number;
+    /**
+     * Stages
+     */
+    stages?: Array<StageTimingResponse>;
+    usage?: TurnUsageResponse | null;
+    /**
+     * Routing Scores
+     */
+    routing_scores?: Array<RoutingScoreResponse>;
+    routing_thresholds?: RoutingThresholdsResponse | null;
+    /**
+     * Telemetry Partial
+     */
+    telemetry_partial?: boolean;
     input?: InputTraceResponse | null;
 };
 
@@ -1790,6 +1831,40 @@ export type ModelSettingsResponse = {
      * Agents
      */
     agents: Array<AgentModelSetting>;
+};
+
+/**
+ * ModelUsageResponse
+ */
+export type ModelUsageResponse = {
+    /**
+     * Model
+     */
+    model: string;
+    /**
+     * Calls
+     */
+    calls: number;
+    /**
+     * Prompt Tokens
+     */
+    prompt_tokens: number;
+    /**
+     * Completion Tokens
+     */
+    completion_tokens: number;
+    /**
+     * Max Prompt Tokens
+     */
+    max_prompt_tokens: number;
+    /**
+     * Cost Usd
+     */
+    cost_usd: number;
+    /**
+     * Estimated
+     */
+    estimated?: boolean;
 };
 
 /**
@@ -1882,6 +1957,10 @@ export type PluginPageResponse = {
     tree: Array<{
         [key: string]: unknown;
     }>;
+    /**
+     * Ui Version
+     */
+    ui_version?: string;
 };
 
 /**
@@ -2496,6 +2575,34 @@ export type RollbackTraceResponse = {
 };
 
 /**
+ * RoutingScoreResponse
+ */
+export type RoutingScoreResponse = {
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Score
+     */
+    score: number;
+};
+
+/**
+ * RoutingThresholdsResponse
+ */
+export type RoutingThresholdsResponse = {
+    /**
+     * Threshold
+     */
+    threshold: number;
+    /**
+     * Gap
+     */
+    gap: number;
+};
+
+/**
  * ScreenResolverTraceResponse
  */
 export type ScreenResolverTraceResponse = {
@@ -2914,6 +3021,28 @@ export type SourceTraceResponse = {
 };
 
 /**
+ * StageTimingResponse
+ */
+export type StageTimingResponse = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Start Ms
+     */
+    start_ms: number;
+    /**
+     * Duration Ms
+     */
+    duration_ms: number;
+    /**
+     * Run
+     */
+    run?: number;
+};
+
+/**
  * StepResultResponse
  */
 export type StepResultResponse = {
@@ -3030,7 +3159,7 @@ export type ToolCallTraceResponse = {
     /**
      * Gate
      */
-    gate?: 'none' | 'approved' | 'pre_approved' | 'denied' | 'refused' | 'refused_over_cap' | 'expired' | 'duplicate';
+    gate?: 'none' | 'approved' | 'pre_approved' | 'parked' | 'denied' | 'refused' | 'refused_over_cap' | 'expired' | 'duplicate';
     /**
      * Effect Phrase
      */
@@ -3043,6 +3172,14 @@ export type ToolCallTraceResponse = {
      * Call Index
      */
     call_index?: number;
+    /**
+     * Call Id
+     */
+    call_id?: string;
+    /**
+     * Start Offset Ms
+     */
+    start_offset_ms?: number | null;
 };
 
 /**
@@ -3082,6 +3219,36 @@ export type TriggerWorkflowResponse = {
 };
 
 /**
+ * TurnUsageResponse
+ */
+export type TurnUsageResponse = {
+    /**
+     * Main Model
+     */
+    main_model?: string | null;
+    /**
+     * Models
+     */
+    models?: Array<ModelUsageResponse>;
+    /**
+     * Context Fill
+     */
+    context_fill?: number | null;
+    /**
+     * Context Window
+     */
+    context_window?: number | null;
+    /**
+     * Estimated
+     */
+    estimated?: boolean;
+    /**
+     * System One Tokens
+     */
+    system_one_tokens?: number;
+};
+
+/**
  * UiContributionSchema
  */
 export type UiContributionSchema = {
@@ -3096,7 +3263,7 @@ export type UiContributionSchema = {
     /**
      * Kind
      */
-    kind: 'nav' | 'settings_section';
+    kind: 'module' | 'preset' | 'settings_section';
     /**
      * Label
      */
@@ -3106,13 +3273,13 @@ export type UiContributionSchema = {
      */
     icon: string;
     /**
-     * Path
+     * Slot
      */
-    path?: string | null;
+    slot?: 'mind.entity' | 'doing.run' | 'governance.connections' | null;
     /**
-     * Page Operation Id
+     * Prompt
      */
-    page_operation_id?: string | null;
+    prompt?: string | null;
     /**
      * Settings Operation Id
      */
@@ -3121,10 +3288,6 @@ export type UiContributionSchema = {
      * Priority
      */
     priority?: number;
-    /**
-     * Show In Mobile Nav
-     */
-    show_in_mobile_nav?: boolean;
 };
 
 /**
@@ -3132,13 +3295,41 @@ export type UiContributionSchema = {
  */
 export type UiManifestResponse = {
     /**
-     * Nav
+     * Modules
      */
-    nav: Array<UiContributionSchema>;
+    modules: Array<UiContributionSchema>;
+    /**
+     * Presets
+     */
+    presets: Array<UiContributionSchema>;
     /**
      * Settings Sections
      */
     settings_sections: Array<UiContributionSchema>;
+};
+
+/**
+ * UiModuleResponse
+ */
+export type UiModuleResponse = {
+    /**
+     * Module Id
+     */
+    module_id: string;
+    /**
+     * Applies
+     */
+    applies: boolean;
+    /**
+     * Components
+     */
+    components: Array<{
+        [key: string]: unknown;
+    }>;
+    /**
+     * Ui Version
+     */
+    ui_version: string;
 };
 
 /**
@@ -6161,6 +6352,67 @@ export type GetUiManifestResponses = {
 
 export type GetUiManifestResponse = GetUiManifestResponses[keyof GetUiManifestResponses];
 
+export type GetUiModuleData = {
+    body?: never;
+    path: {
+        /**
+         * Module Id
+         */
+        module_id: string;
+    };
+    query: {
+        /**
+         * Subject Kind
+         *
+         * What the slot passes: an entity, a workflow run, or nothing
+         */
+        subject_kind: 'entity' | 'workflow_run' | 'none';
+        /**
+         * Subject Id
+         *
+         * Entity or run id
+         */
+        subject_id?: string | null;
+        /**
+         * Parent Id
+         *
+         * Workflow id, for a run
+         */
+        parent_id?: string | null;
+    };
+    url: '/api/v0/ui/modules/{module_id}';
+};
+
+export type GetUiModuleErrors = {
+    /**
+     * Unknown module or subject
+     */
+    404: unknown;
+    /**
+     * Validation error (unknown agent/intent or invalid request body)
+     */
+    422: ErrorDetail;
+    /**
+     * The module failed or sent a view Ze cannot show
+     */
+    502: unknown;
+    /**
+     * The module took too long
+     */
+    504: unknown;
+};
+
+export type GetUiModuleError = GetUiModuleErrors[keyof GetUiModuleErrors];
+
+export type GetUiModuleResponses = {
+    /**
+     * Successful Response
+     */
+    200: UiModuleResponse;
+};
+
+export type GetUiModuleResponse = GetUiModuleResponses[keyof GetUiModuleResponses];
+
 export type TranscribeVoiceData = {
     body?: BodyTranscribeVoice;
     path?: never;
@@ -6219,38 +6471,6 @@ export type ReceiveWebhookResponses = {
 };
 
 export type ReceiveWebhookResponse = ReceiveWebhookResponses[keyof ReceiveWebhookResponses];
-
-export type GetNewsPageData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Limit
-         *
-         * Maximum articles to return
-         */
-        limit?: number;
-    };
-    url: '/api/v0/news/page';
-};
-
-export type GetNewsPageErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetNewsPageError = GetNewsPageErrors[keyof GetNewsPageErrors];
-
-export type GetNewsPageResponses = {
-    /**
-     * Successful Response
-     */
-    200: PluginPageResponse;
-};
-
-export type GetNewsPageResponse = GetNewsPageResponses[keyof GetNewsPageResponses];
 
 export type GetNewsSettingsData = {
     body?: never;

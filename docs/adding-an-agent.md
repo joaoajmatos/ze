@@ -227,6 +227,7 @@ class MyAgent(BaseAgent):
     model_simple = "anthropic/claude-haiku-4-5"  # optional — used only for a turn System One judges light (complexity surface, on in the shipped config); omit if the agent already uses Haiku
     vision_capable = False                         # set True if agent should receive image data
     timeout = 30
+    workspace_opt_out = False                      # True keeps the workspace_* tools off a store-backed specialist
     tools = ["tool_one", "tool_two"]               # must match @tool-registered names
 
     def __init__(self, openrouter_client: LLMClient, settings: Settings) -> None:
@@ -365,7 +366,7 @@ async def shutdown(self) -> None:
 
 Agents are discovered at startup by importing every module listed in the owning
 plugin's `agent_module_paths()`. Goal and workflow agents are imported directly in
-`ze_api/container.py` because `ze-automation` is a core package, not a plugin. The
+`ze_api/wiring/container.py` because `ze-automation` is a core package, not a plugin. The
 bootstrapper then resolves each `@agent` class's
 `__init__` parameters by type-matching against the shared `_dep_map` of services.
 
@@ -390,7 +391,7 @@ registered — the discrepancy is caught before the app accepts traffic.
 `AgentConfigError` at startup.
 
 **If your agent needs a dependency not already in `_dep_map`**, add it to the map
-in `ze_api/container.py`'s `build_container()` where the dep_map is built, then
+in `ze_api/wiring/container.py`'s `build_container()` where the dep_map is built, then
 pass it to `bootstrap_agents(deps=...)`. The dep_map keys are Python types; values
 are the live instances.
 

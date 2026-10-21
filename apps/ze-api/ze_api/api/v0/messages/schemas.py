@@ -61,6 +61,7 @@ class ToolCallTraceResponse(BaseModel):
         "none",
         "approved",
         "pre_approved",
+        "parked",
         "denied",
         "refused",
         "refused_over_cap",
@@ -70,6 +71,8 @@ class ToolCallTraceResponse(BaseModel):
     effect_phrase: str | None = None
     agent: str | None = None
     call_index: int = 0
+    call_id: str = ""
+    start_offset_ms: int | None = None
 
 
 class SkillUsageTraceResponse(BaseModel):
@@ -114,6 +117,11 @@ class WorkspaceUsageTraceResponse(BaseModel):
     planned: list[str] | None = None
 
 
+class JudgmentBarResponse(BaseModel):
+    name: str
+    value: float
+
+
 class JudgmentTraceResponse(BaseModel):
     question_id: str
     kind: str
@@ -125,6 +133,44 @@ class JudgmentTraceResponse(BaseModel):
     input_tokens: int | None = None
     consumed: bool = False
     skip_reason: str | None = None
+    surface: str | None = None
+    bar: JudgmentBarResponse | None = None
+
+
+class StageTimingResponse(BaseModel):
+    name: str
+    start_ms: int
+    duration_ms: int
+    run: int = 1
+
+
+class ModelUsageResponse(BaseModel):
+    model: str
+    calls: int
+    prompt_tokens: int
+    completion_tokens: int
+    max_prompt_tokens: int
+    cost_usd: float
+    estimated: bool = False
+
+
+class TurnUsageResponse(BaseModel):
+    main_model: str | None = None
+    models: list[ModelUsageResponse] = []
+    context_fill: float | None = None
+    context_window: int | None = None
+    estimated: bool = False
+    system_one_tokens: int = 0
+
+
+class RoutingScoreResponse(BaseModel):
+    agent: str
+    score: float
+
+
+class RoutingThresholdsResponse(BaseModel):
+    threshold: float
+    gap: float
 
 
 class CompactionTraceResponse(BaseModel):
@@ -200,7 +246,7 @@ class MessageTraceResponse(BaseModel):
     subtasks: list[str]
     memory_chunks: list[MemoryChunkTraceResponse]
     tool_calls: list[ToolCallTraceResponse]
-    total_duration_ms: int
+    tool_duration_ms: int
     skills_used: list[SkillUsageTraceResponse] = []
     workspace: WorkspaceUsageTraceResponse | None = None
     procedure: ProcedureUsageTraceResponse | None = None
@@ -216,6 +262,13 @@ class MessageTraceResponse(BaseModel):
     write_confirmations: list[WriteConfirmationOutcomeResponse] = []
     tier: TierTraceResponse | None = None
     screen: ScreenTraceResponse | None = None
+    turn_duration_ms: int | None = None
+    paused_ms: int = 0
+    stages: list[StageTimingResponse] = []
+    usage: TurnUsageResponse | None = None
+    routing_scores: list[RoutingScoreResponse] = []
+    routing_thresholds: RoutingThresholdsResponse | None = None
+    telemetry_partial: bool = False
     input: InputTraceResponse | None = None
 
 

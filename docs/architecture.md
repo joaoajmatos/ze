@@ -84,6 +84,9 @@ mixes gathering and acting, becomes a companion-primary turn (`apply_conductor_r
 The decomposed subtasks stay as a hint. Companion then calls specialists through
 `delegate_to_agent`, one at a time, each with its own write confirmation check.
 Only independent compound requests keep the parallel fan-out and `synthesize`.
+A conductor turn has a time budget (`conductor:` in config, `ze_agents/budget.py`). Past the soft
+deadline `delegate_to_agent` refuses new work, the loop stops calling tools, and companion answers
+with what is done and what is not. A hard timeout answers from the specialist ledger.
 
 **Model tier** (`ze_core.routing.tier`): routing always assigns the agent's full model.
 After `match_skills`, the `choose_tier` node asks one System One Noul whether the task
@@ -127,7 +130,7 @@ Ze builds the allowlist automatically in `build_checkpoint_serde()` (`ze_core/ch
    `ze_memory.types` for dataclasses and enums on every startup.
 2. **Plugin modules** — each `ZePlugin` may override `checkpoint_serde_modules()` to
    return its `types.py` module paths (e.g. `ze_automation.workflow.types`). Ze scans
-   those modules the same way — no manual list in `ze_api/container.py`.
+   those modules the same way — no manual list in `ze_api/wiring/container.py`.
 3. **Driver extras** — types like `asyncpg.pgproto.pgproto.UUID` that appear in
    payloads but live outside domain modules.
 
@@ -245,6 +248,28 @@ marks a tool the registry did not know, and Retry treats it as unavailable.
 metadata. Older traces parse to `false`.
 
 The trace stores these values so that Retry never depends on registry state at retry time.
+
+### Turn telemetry in the trace
+
+`invoke_raw_turn` and `resume_turn` start or continue one `TurnTelemetry` per thread. The
+recorder lives in process, uses `time.monotonic()` for every stage and tool offset, and
+survives a confirmation pause, so a resumed turn counts the wait as `paused_ms` and keeps its
+earlier stages (`run` 1, then 2). A resume that finds no recorder (a restart) starts one and
+marks the trace `telemetry_partial`.
+
+`timed(name, fn)` in `ze_core/orchestration/timing.py` wraps every node the graph builders add:
+core nodes, overrides, plugin nodes and the workflow graph. Each wrapper records the stage in a
+`finally` and queues a partial `stages` frame. One sender task sends the queue in order, drops a
+frame that cannot go within 1 s, and never delays a node. Before the stamp, the turn drains the
+queue (at most 1 s), so no stage frame follows the committed trace. A slow client can hold the reply commit for that long. Cost in `usage` is the static price table, not the bill, and model calls after the stamp are not counted. Plugin graph nodes must be async: `timed()` calls a sync node inline on the event loop.
+
+`CostTracker.record` adds each chat completion to the recorder. The stamp writes `stages`,
+`turn_duration_ms` (includes `paused_ms`), `tool_duration_ms` (the sum of tool durations, formerly
+`total_duration_ms`), and `usage`: tokens and cost per model, the largest main-model prompt over
+its context window, and System One tokens kept apart. `routing_scores` (top 9) and
+`routing_thresholds` come from the routing envelope; each judgment row names its `surface` and
+the `bar` in force. Tool calls carry `call_id` and `start_offset_ms`. Older traces lack these
+fields and read as empty.
 
 ### Model tier in the trace
 
@@ -402,9 +427,9 @@ See [docs/goals.md](goals.md) for conversational usage and gate behavior.
 
 **Package:** `ze-onboarding`
 
-The onboarding system owns first-run setup, seed questions, review-before-save, and
-reset scopes. `ze-api` adapts those protocols to WebSocket commands and persists the
-state in Postgres.
+The onboarding system owns first-run setup, seed questions, and review-before-save.
+It persists state in Postgres itself (`ze_onboarding.store`); `ze-api` adapts its
+protocols to WebSocket commands.
 
 See [docs/onboarding.md](onboarding.md) for the walkthrough and [docs/package-architecture.md](package-architecture.md) for the package boundary.
 
@@ -634,6 +659,8 @@ Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompti
 | Goal milestone progress | After each milestone | Short completion line, accountability push via `ProactiveNotifier` |
 | News fetch | Every 30 min | Ingest and embed new RSS articles |
 
+Ze keeps the sent briefing as a notification. Ask "how did the briefing do?" and the companion reads it with `get_briefing`: when it was sent, whether it was held, whether you marked it read in the notification center, and what it covered.
+
 See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full lifecycle and config.
 
 ---
@@ -672,7 +699,7 @@ agent registry as workflow steps — agents remain peers.
 
 `GoalExecutor.advance(goal_id)` runs from:
 
-- `goal_advance_sweep` — cron `*/15 * * * *`, registered in `ze_api/container.py`
+- `goal_advance_sweep` — cron `*/15 * * * *`, registered by `ze_automation.bootstrap.register_proactive_jobs()` via `ze_api/wiring/jobs.py`
 - Gate approval / redirect flows in the WebSocket handler
 - Plan approval after `GoalAgent` creates a goal
 
@@ -969,8 +996,8 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 | `ze_api/db.py` | asyncpg pool factory — lifespan-managed |
 | `ze_plugin/bootstrap.py` | Plugin discovery, DI resolution, `build_integrations()` |
 | `ze_agents/bootstrap.py` | `bootstrap_agents()` — agent registration via plugin `agent_module_paths()` |
-| `ze_api/compose.py` | `register_all_proactive_jobs()` — fans out core + plugin cron registration |
-| `ze_api/container.py` | `ZeContainer` — subclasses `ze_core.Container`, wires all ZePlugins |
+| `ze_api/wiring/jobs.py` | `register_all_proactive_jobs()` — fans out core + plugin cron registration |
+| `ze_api/wiring/container.py` | `ZeContainer` — subclasses `ze_core.Container`, wires all ZePlugins |
 | `ze_personal/persona/` | `PostgresPersonaStore` — named profiles, dial overrides, DB persistence |
 | `ze_google/gmail_channel.py` | `GmailChannel` — Gmail API channel (owned by `ze-google`) |
 | `ze_api/interface/native.py` | `NativeAppInterface` — WebSocket frame delivery + ntfy fallback |

@@ -68,3 +68,13 @@
 {"id": "train-loops-list-pt-1", "lang": "pt", "prompt": "Com o que é que ainda ando às voltas?", "gold_agent": "loops", "gold_multi": false}
 {"id": "train-loops-track-en", "lang": "en", "prompt": "put the lease renewal on my radar, I haven't decided yet", "gold_agent": "loops", "gold_multi": false}
 {"id": "train-loops-track-pt", "lang": "pt", "prompt": "põe a renovação do contrato no meu radar, ainda não decidi", "gold_agent": "loops", "gold_multi": false}
+{"id": "tuned-companion-briefing-en", "lang": "en", "prompt": "how did the latest morning briefing do?", "gold_agent": "companion", "gold_multi": false}
+{"id": "tuned-companion-briefing-contents-en", "lang": "en", "prompt": "what was in this morning's briefing?", "gold_agent": "companion", "gold_multi": false}
+{"id": "tuned-companion-briefing-sent-en", "lang": "en", "prompt": "did you send my briefing today?", "gold_agent": "companion", "gold_multi": false}
+{"id": "tuned-companion-briefing-pt", "lang": "pt", "prompt": "o que é que estava no briefing desta manhã?", "gold_agent": "companion", "gold_multi": false}
+{"id": "single-news-sources-en", "lang": "en", "prompt": "What's new in my sources?", "gold_agent": "news", "gold_multi": false}
+{"id": "single-news-sources-pt", "lang": "pt", "prompt": "O que há de novo nas minhas fontes?", "gold_agent": "news", "gold_multi": false}
+{"id": "train-companion-render-briefing-en", "lang": "en", "prompt": "render my morning briefing", "gold_agent": "companion", "gold_multi": false}
+{"id": "train-companion-render-reply-en", "lang": "en", "prompt": "can you show me the reply using the render tools available to you?", "gold_agent": "companion", "gold_multi": false}
+{"id": "train-companion-render-table-pt", "lang": "pt", "prompt": "mostra-me essa resposta numa tabela", "gold_agent": "companion", "gold_multi": false}
+{"id": "train-companion-render-briefing-pt", "lang": "pt", "prompt": "mostra-me o resumo da manhã em cartões", "gold_agent": "companion", "gold_multi": false}

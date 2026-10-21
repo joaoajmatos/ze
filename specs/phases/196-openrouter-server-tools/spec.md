@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-18
 
-**Status**: Ready to implement (Gauge APPROVED 2026-10-18 at d6b2ccfb; open fetch per the user's S-1 decision, delta re-sent to Gauge)
+**Status**: Halted by the user 2026-10-21 (Ze should not depend this much on OpenRouter; the 196 build found chat completions return no fetch targets or per-kind counts, see research R9). Was: Ready to implement, Gauge APPROVED at d6b2ccfb.
 
 **Input**: User description (approved 2026-10-18, "yes do all of that"): adopt `openrouter:web_fetch` for the research agent; document that Ze requests only the server tools it declares and recommend the user switch off the unused OpenRouter workspace tools, with a decision record saying why; check that no code path can request other server tools and add a test that only allowed `openrouter:*` tools are ever sent.
 

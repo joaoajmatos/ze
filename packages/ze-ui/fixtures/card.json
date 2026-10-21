@@ -1,0 +1,42 @@
+[
+  {
+    "type": "card",
+    "title": "Goal: run 5k",
+    "body": "Two of four milestones done.",
+    "children": [
+      {
+        "type": "text",
+        "content": "On track"
+      },
+      {
+        "type": "badge",
+        "label": "active",
+        "color": "success"
+      }
+    ],
+    "actions": [
+      {
+        "type": "button",
+        "label": "Open",
+        "action": {
+          "kind": "navigate",
+          "route": "/doing"
+        }
+      },
+      {
+        "type": "button",
+        "label": "Pause",
+        "style": "danger",
+        "action": {
+          "kind": "ask",
+          "text": "Pause the 5k goal"
+        }
+      }
+    ]
+  },
+  {
+    "type": "card",
+    "title": "Bare",
+    "children": []
+  }
+]

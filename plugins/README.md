@@ -26,14 +26,14 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 
 ## Dependency graph
 
-Each package's `pyproject.toml` declares these dependencies. Note the cycle: `ze-personal` and `ze-news` depend on each other.
+Each package's `pyproject.toml` declares these dependencies.
 
 ```
 ze-personal    ←  ze-sdk, ze-news, ze-automation, ze-priority, ze-components, ze-seed
 ze-messenger   ←  ze-sdk, ze-google, ze-personal
 ze-calendar    ←  ze-sdk, ze-google, ze-personal, ze-components, ze-seed
 ze-prospecting ←  ze-sdk, ze-browser, ze-personal
-ze-news        ←  ze-sdk, ze-personal, ze-components
+ze-news        ←  ze-sdk, ze-components
 ze-finance     ←  ze-sdk, ze-ingestion, ze-trading212
 ```
 
@@ -51,7 +51,7 @@ ze-finance     ←  ze-sdk, ze-ingestion, ze-trading212
 6. Override plugin hooks as needed: `agent_module_paths()`, `memory_policies()`,
    `checkpoint_serde_modules()`, `rest_stores()`, `register_proactive_jobs()`.
 7. If the plugin constructor needs a new shared service type, add it to `plugin_deps`
-   in `apps/ze-api/ze_api/container.py` (see [docs/extending-ze.md](../docs/extending-ze.md)).
+   in `apps/ze-api/ze_api/wiring/container.py` (see [docs/extending-ze.md](../docs/extending-ze.md)).
 8. See [docs/adding-an-agent.md](../docs/adding-an-agent.md) and
    [docs/package-architecture.md](../docs/package-architecture.md) for the full checklist.
 

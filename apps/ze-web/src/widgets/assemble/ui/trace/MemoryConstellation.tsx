@@ -18,7 +18,7 @@ function Mark({ p, active }: { p: MemoryPoint; active: boolean }) {
   return <circle className={cls} cx={cx} cy={cy} r={1.8} />;
 }
 
-/** What Ze remembered for this reply: relevance across, extraction confidence up. Committed traces only. */
+/** What Ze remembered for this reply: relevance across, extraction confidence up. Live partials carry the confidence too. */
 export function MemoryConstellation({ chunks }: { chunks: WsTraceUpdateFrame["memory_chunks"] | undefined }) {
   const narrow = useNarrow();
   const { points, ranked } = memoryPoints(chunks);

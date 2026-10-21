@@ -7,8 +7,24 @@ import { GovernancePage } from "./GovernancePage";
 vi.mock("@/widgets/spend", () => ({ Spend: () => <section aria-label="spend-stub"><button>in spend</button></section> }));
 vi.mock("@/widgets/attention", () => ({ Attention: () => <section aria-label="attention-stub"><button>in attention</button></section> }));
 vi.mock("@/widgets/data", () => ({ Data: () => <div id="data" aria-label="data-stub" /> }));
-vi.mock("@/widgets/connections", () => ({ Connections: () => <div id="connections" aria-label="connections-stub" /> }));
+vi.mock("@/widgets/connections", () => ({
+  Connections: ({ extra }: { extra?: React.ReactNode }) => (
+    <div id="connections" aria-label="connections-stub">
+      {extra}
+    </div>
+  ),
+}));
+vi.mock("@/widgets/plugin-module", () => ({
+  PluginModuleSlot: (props: { slot: string; subject: { kind: string } }) => <section aria-label={`slot ${props.slot}`} data-subject={props.subject.kind} />,
+}));
 vi.mock("@/widgets/files", () => ({ Files: () => <div id="files" aria-label="files-stub" /> }));
+
+it("mounts the governance.connections slot with no subject inside Connections", () => {
+  view();
+  const slot = screen.getByRole("region", { name: "slot governance.connections" });
+  expect(slot).toHaveAttribute("data-subject", "none");
+  expect(screen.getByLabelText("connections-stub")).toContainElement(slot);
+});
 
 afterEach(() => useScreenContextStore.getState().reset());
 

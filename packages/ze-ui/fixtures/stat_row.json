@@ -1,0 +1,28 @@
+[
+  {
+    "type": "stat_row",
+    "items": [
+      {
+        "label": "Spent",
+        "value": "€42",
+        "delta": "+€8",
+        "direction": "up"
+      },
+      {
+        "label": "Runs",
+        "value": "12",
+        "delta": "-3",
+        "direction": "down"
+      },
+      {
+        "label": "Held",
+        "value": "0",
+        "direction": "flat"
+      },
+      {
+        "label": "Plain",
+        "value": "7"
+      }
+    ]
+  }
+]

@@ -20,7 +20,7 @@ export const places: readonly Place[] = [
   { id: "governance", path: "/governance", label: "Governance", icon: ShieldCheck },
 ];
 
-/** The place owning `pathname`, or null for plugin pages, the design reference and unknown paths. */
+/** The place owning `pathname`, or null for the design reference and unknown paths. */
 export function placeOf(pathname: string): Place | null {
   if (pathname === "/") return places[0];
   const segment = pathname.split("/")[1];
@@ -54,6 +54,7 @@ export const redirects: readonly Redirect[] = [
   { from: "/procedures", to: "/mind" },
   { from: "/doing/procedures", to: "/mind" },
   { from: "/contacts", to: "/mind" },
+  { from: "/news", to: "/ask" },
   { from: "/mind/graph", to: "/mind" },
   { from: "/workspace", to: "/governance", hint: "files" },
   { from: "/doing/workspace", to: "/governance", hint: "files" },

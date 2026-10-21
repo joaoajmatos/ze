@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
+import type { PrimitiveAction } from "../generated/types.gen";
 
 export interface CardActionEvent {
   intent: string;
@@ -32,8 +33,6 @@ export interface PrimitiveClassNames {
   badge?: string;
   /** A `col` with `variant: "card"` or `"section"`. */
   card?: string;
-  progressTrack?: string;
-  progressFill?: string;
   table?: string;
   steps?: string;
   connections?: string;
@@ -49,7 +48,8 @@ export interface PrimitiveRendererActions {
   classNames?: PrimitiveClassNames;
   /** Draws a `headline`; the host passes its dot-matrix. Plain text when absent. */
   renderHeadline?: (text: string) => ReactNode;
-  onButtonAction?: (action: string) => boolean | void;
+  /** Runs a typed action. Resolves false when it was not accepted, so the button stays usable. */
+  onAction?: (action: PrimitiveAction) => boolean | void | Promise<boolean | void>;
   onFormSubmit?: (formId: string, values: Record<string, string>) => boolean | void;
   onDisconnected?: () => void;
   /** Resolves false when the action was not accepted, so the card keeps its buttons. */

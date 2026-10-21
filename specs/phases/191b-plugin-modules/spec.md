@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-18
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description (2026-10-18, phase 191 reopened): "Plugins are data and behavior sources... I dont know if they should contribute complete pages... they could contribute visual components and/or primitives that can be used to render information." The agreed plugin UI model is summarized in `PRODUCT.md` › Plugin UI model. This phase is its second half; 191a supplies the primitives, typed actions and fallback it builds on.
 

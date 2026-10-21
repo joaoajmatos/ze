@@ -56,3 +56,20 @@ describe("describeIntakeOutcome", () => {
     expect(describeIntakeOutcome(null)).toBeNull();
   });
 });
+
+describe("judgment bars", () => {
+  it("marks each gauge with its bar", () => {
+    const row = describeJudgments(richTrace().judgments).groups[0].rows[0];
+    expect(row).toMatchObject({ surface: "routing", bar: { name: "choice_trust", value: 0.5 }, uncalibrated: false });
+  });
+
+  it("reads a surface with a null bar as uncalibrated", () => {
+    const tier = describeJudgments(richTrace().judgments).groups[1].rows[0];
+    expect(tier).toMatchObject({ surface: "complexity", bar: null, uncalibrated: true });
+  });
+
+  it("does not call a row without a surface uncalibrated", () => {
+    const row = describeJudgments([{ question_id: "family", kind: "noul", answer: 0.4, latency_ms: 1 }]).groups[0].rows[0];
+    expect(row).toMatchObject({ bar: null, uncalibrated: false });
+  });
+});

@@ -1,0 +1,7 @@
+[
+  {
+    "type": "button",
+    "label": "Go",
+    "action": "rest:getNewsPage"
+  }
+]

@@ -1,0 +1,11 @@
+[
+  {
+    "type": "button",
+    "label": "Go",
+    "action": {
+      "kind": "compose",
+      "compose": "topic",
+      "topic": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+  }
+]

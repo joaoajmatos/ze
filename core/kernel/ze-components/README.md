@@ -12,7 +12,11 @@ Text-only responses aren't enough for structured data — goal cards, confirmati
 - JSON schema generation from Python dataclasses for LLM tool schemas
 - Claim posture — `claims.py` defines `ClaimPosture`, set by code from a stored record. The `claim` field is on every primitive. Ze omits it from every `render_*` tool schema and drops it with a `render_tool_claim_dropped` warning if a model supplies one
 - `headline`, `claim_card`, and `claim_timeline` primitives show what Ze knows, how sure it is, and where it learned it
-- Code generation pipeline — `make generate-components` produces schemas and TypeScript types
+- Typed actions — `actions.py` defines `AskAction`, `ToolAction`, `NavigateAction` and `ComposeAction`. A `Button.action` takes one of these. A string action raises `InvalidComponentError`. A `ToolAction` names an agent (`owner`) and one of its write tools that opted in with `@tool(ui_action=True)`; the press runs through the normal write gates
+- Slot primitives — `entity_facet`, `stat_row`, `claim_list`, `sparkline` and `card`, plus a keyed `table` (`keys`, `row_actions`)
+- Render tools for agents: `render_stat_row`, `render_keyed_table` and `render_sparkline` join the older ones. Claim posture and tool, navigate and compose actions never appear in a render tool schema. `render_confirm` and `render_choice_group` keep model-written `value`s as chat choices (`AskAction`)
+- `UI_CONTRACT_VERSION` is `"2.0"`. Transports that carry newly built trees send it as `ui_version`
+- Code generation pipeline — `make codegen` produces schemas and TypeScript types
 
 ### Integration
 
@@ -23,7 +27,8 @@ Agents call component tools during execution. A harness hook in `ze-api` collect
 | Module | What it provides |
 |---|---|
 | `schema.py` | JSON schema generation from Python dataclasses — used to build LLM tool schemas |
-| `types.py` | Component descriptor dataclasses |
+| `actions.py` | The four typed actions and their bounds |
+| `atoms/`, `molecules/`, `organisms/`, `patterns/` | Component descriptor dataclasses and helpers |
 | `claims.py` | `ClaimPosture`, `Readout`, `CardAction`, `TimelineEntry`, `headline_text()`, `claim_tone()` |
 | `context.py` | Component context helpers, including `append_serialized()` for components that are already dicts |
 | `tools.py` | Agent tool integration for emitting components |
@@ -49,7 +54,7 @@ descriptor = ComponentDescriptor(type="goal_card", props={"title": "...", "statu
 Component schemas are generated from Python dataclasses:
 
 ```bash
-make generate-components
+make codegen
 ```
 
 TypeScript types for the web client are generated alongside the JSON schema.

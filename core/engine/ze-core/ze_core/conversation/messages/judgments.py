@@ -6,7 +6,7 @@ from collections.abc import Mapping
 
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult
 
-from ze_core.conversation.messages.types import JudgmentTrace
+from ze_core.conversation.messages.types import JudgmentBar, JudgmentTrace
 
 
 def judgments_from_result(
@@ -15,6 +15,8 @@ def judgments_from_result(
     question_kinds: Mapping[str, str],
     consumed: frozenset[str],
     skip_reason: str | None = None,
+    surface: str,
+    bars: Mapping[str, JudgmentBar | None],
 ) -> list[JudgmentTrace]:
     if result.outcome != "ok":
         reason = result.skip_reason or skip_reason
@@ -24,6 +26,8 @@ def judgments_from_result(
                 kind=kind,
                 latency_ms=result.latency_ms,
                 skip_reason=reason,
+                surface=surface,
+                bar=bars.get(qid),
             )
             for qid, kind in question_kinds.items()
         ]
@@ -37,6 +41,8 @@ def judgments_from_result(
                     kind=kind,
                     latency_ms=result.latency_ms,
                     skip_reason=skip_reason,
+                    surface=surface,
+                    bar=bars.get(qid),
                 )
             )
             continue
@@ -53,6 +59,8 @@ def judgments_from_result(
                 input_tokens=result.input_tokens,
                 consumed=qid in consumed,
                 skip_reason=skip_reason,
+                surface=surface,
+                bar=bars.get(qid),
             )
         )
     return rows

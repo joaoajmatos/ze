@@ -12,6 +12,7 @@ from functools import cached_property
 from typing import Any, AsyncIterator
 
 from ze_agents.client import LLMClient
+from ze_agents import budget
 from ze_agents.defaults import MODEL_AGENT_DEFAULT, MODEL_AGENT_TIMEOUT
 from ze_agents.errors import (
     AgentAbortedError,
@@ -19,6 +20,7 @@ from ze_agents.errors import (
     AgentError,
     HookAbort,
     LoopParked,
+    UnknownToolError,
 )
 from ze_agents.hooks import (
     LoopEndEvent,
@@ -350,6 +352,49 @@ class BaseAgent(ABC):
             tool, ctx, _lm_args=args, _approval=ApprovedCall("undo"), **merged
         )
 
+    async def run_action(
+        self,
+        tool: str,
+        args: dict[str, Any],
+        ctx: AgentContext,
+        *,
+        approval: ApprovedCall | None = None,
+        approval_request_id: str | None = None,
+    ) -> ToolCall:
+        """Run a tool a screen button named, through `call_tool`, outside the model loop.
+
+        Only a WRITE tool with `ui_action=True` and only its model-visible scalar
+        parameters can be named; anything else raises `UiActionRefusedError` before
+        the tool runs. An asks-first tool comes back parked (with a real `call_id`) so
+        the caller can ask the user; the approved re-run passes `approval`.
+        """
+        from ze_agents.errors import UiActionRefusedError, UnknownToolError
+        from ze_agents.tool import get_tool
+
+        try:
+            spec = get_tool(tool)
+        except UnknownToolError:
+            raise UiActionRefusedError(f"unknown tool {tool!r}") from None
+        if spec.access.value != "write" or not spec.ui_action:
+            raise UiActionRefusedError(f"tool {tool!r} is not a screen action")
+        _check_action_args(spec, args)
+        call_id = approval.call_id if approval is not None else uuid4().hex
+        ctx.approval_request_id = approval_request_id
+        merged = _merge_deps(tool, args, {**self.tool_deps(), "ctx": ctx})
+        previous_active = ctx.loop_active
+        ctx.loop_active = True
+        try:
+            return await self.call_tool(
+                tool,
+                ctx,
+                _lm_args=dict(args),
+                _call_id=call_id,
+                _approval=approval,
+                **merged,
+            )
+        finally:
+            ctx.loop_active = previous_active
+
     # ── Tool execution ────────────────────────────────────────────────────────
 
     async def call_tool(
@@ -361,6 +406,7 @@ class BaseAgent(ABC):
         _lm_args: dict | None = None,
         _call_id: str | None = None,
         _approval: ApprovedCall | None = None,
+        _trace_call_id: str | None = None,
         **kwargs: Any,
     ) -> ToolCall:
         """Execute a registered tool with write confirmation and hook dispatch.
@@ -368,8 +414,46 @@ class BaseAgent(ABC):
         An asks-first WRITE tool is parked, not run, unless the user approved this
         exact call (`_approval`, built by the resume path) or a plan pre-approved the
         tool. Model arguments never reach the private parameters: the loop strips
-        `_`-prefixed keys (`_model_args`).
+        `_`-prefixed keys (`_model_args`). Every finished call goes to `ctx.tool_sink`;
+        `_trace_call_id` is the parked row's id, so its approved run shares it.
         """
+        try:
+            tool_call = await self._run_tool_call(
+                name,
+                ctx,
+                _iteration,
+                _lm_args,
+                _call_id,
+                _approval,
+                kwargs,
+            )
+        except UnknownToolError as exc:
+            _finish(
+                ctx,
+                ToolCall(
+                    agent=self.name,
+                    tool_name=name,
+                    args=_lm_args if _lm_args is not None else kwargs,
+                    result=None,
+                    duration_ms=0,
+                    success=False,
+                    error=str(exc),
+                ),
+                _trace_call_id,
+            )
+            raise
+        return _finish(ctx, tool_call, _trace_call_id)
+
+    async def _run_tool_call(
+        self,
+        name: str,
+        ctx: AgentContext,
+        _iteration: int,
+        _lm_args: dict | None,
+        _call_id: str | None,
+        _approval: ApprovedCall | None,
+        kwargs: dict[str, Any],
+    ) -> ToolCall:
         from ze_agents.tool import get_tool
 
         spec = get_tool(name)
@@ -515,6 +599,7 @@ class BaseAgent(ABC):
                 error=str(exc),
                 gate=confirmation_gate,
                 approval=approval,
+                started_at=start,
             )
             await _dispatch_tool_end(hooks, name, tool_call, ctx, _iteration)
             return tool_call
@@ -534,6 +619,7 @@ class BaseAgent(ABC):
             gate=confirmation_gate,
             approval=approval,
             undo=undo,
+            started_at=start,
         )
 
         # ── Hook: after ───────────────────────────────────────────────────────
@@ -576,6 +662,7 @@ class BaseAgent(ABC):
                     _iteration=resume.iteration,
                     _lm_args=args,
                     _approval=ApprovedCall(pw.call_id),
+                    _trace_call_id=pw.trace_call_id,
                     **merged,
                 )
             elif decision is not None and decision.outcome == "duplicate":
@@ -587,6 +674,7 @@ class BaseAgent(ABC):
                     success=True,
                     gate="duplicate",
                 )
+                _finish(ctx, tool_call, pw.trace_call_id)
             else:
                 tool_call = ToolCall(
                     tool_name=pw.tool,
@@ -597,6 +685,7 @@ class BaseAgent(ABC):
                     error="denied by user",
                     gate="denied",
                 )
+                _finish(ctx, tool_call, pw.trace_call_id)
             accumulated.append(tool_call)
             messages.append(
                 {
@@ -784,9 +873,17 @@ class BaseAgent(ABC):
             await self._apply_resume(ctx, resume, messages, accumulated, _deps)
             start_iteration = resume.iteration + 1
 
+        wrapped_up = False
+        reached = max_iterations
         for iteration in range(start_iteration, max_iterations):
             if ctx.abort_token is not None and ctx.abort_token.is_set:
                 raise AgentAbortedError(ctx.abort_token.reason)
+
+            if iteration > start_iteration and budget.exhausted(ctx):
+                messages.append({"role": "user", "content": budget.WRAP_UP_NOTE})
+                wrapped_up = True
+                reached = iteration
+                break
 
             visible = self._visible_tool_names(ctx, names)
             tool_schemas = [
@@ -902,6 +999,7 @@ class BaseAgent(ABC):
                         duration_ms=0,
                         success=True,
                     )
+                    _finish(ctx, tool_call)
                     accumulated.append(tool_call)
                     messages.append(
                         {
@@ -920,6 +1018,7 @@ class BaseAgent(ABC):
                             success=True,
                         )
                     else:
+                        delegate_started = time.monotonic()
                         tool_call = await run_delegate(
                             tc["arguments"],
                             ctx,
@@ -931,6 +1030,8 @@ class BaseAgent(ABC):
                             child_call_id = tc["id"]
                             child_arguments = dict(tc["arguments"])
                             continue
+                        tool_call.started_at = delegate_started
+                        _finish(ctx, tool_call)
                     accumulated.append(tool_call)
                     messages.append(
                         {
@@ -976,15 +1077,16 @@ class BaseAgent(ABC):
                     )
                 )
 
-        log.warning(
-            "agentic_loop_max_iterations",
-            agent=self.name,
-            max_iterations=max_iterations,
-        )
+        if not wrapped_up:
+            log.warning(
+                "agentic_loop_max_iterations",
+                agent=self.name,
+                max_iterations=max_iterations,
+            )
         await _dispatch_loop_hooks(
             hooks,
             "on_loop_end",
-            LoopEndEvent(self.name, ctx, accumulated, iterations_used=max_iterations),
+            LoopEndEvent(self.name, ctx, accumulated, iterations_used=reached),
         )
         text = await client.complete(
             messages=messages,
@@ -1004,6 +1106,23 @@ class _AskResolution:
     result: Any = None
     text: str = ""
     reason: ParkReason = "asks_first"
+
+
+def _finish(
+    ctx: AgentContext, tool_call: ToolCall, trace_call_id: str | None = None
+) -> ToolCall:
+    """Stamp the call's trace id and hand it to the turn's tool sink, once."""
+    if tool_call.parked is not None:
+        tool_call.call_id = tool_call.parked.trace_call_id
+    elif trace_call_id:
+        tool_call.call_id = trace_call_id
+    sink = ctx.tool_sink
+    if sink is not None:
+        try:
+            sink(tool_call)
+        except Exception as exc:
+            log.warning("tool_sink_failed", tool=tool_call.tool_name, error=str(exc))
+    return tool_call
 
 
 def _refusal(
@@ -1132,6 +1251,41 @@ def _split_undo(spec: Any, result: Any) -> tuple[Any, dict[str, Any] | None]:
         return stripped, payload
     log.warning("undo_payload_dropped", tool=spec.name)
     return stripped, None
+
+
+_JSON_SCALARS: dict[str, tuple[type, ...]] = {
+    "string": (str,),
+    "integer": (int,),
+    "number": (int, float),
+    "boolean": (bool,),
+}
+
+
+def _check_action_args(spec: Any, args: dict[str, Any]) -> None:
+    """Refuse screen-action args that are not the tool's visible scalar parameters."""
+    from ze_agents.errors import UiActionRefusedError
+
+    params = spec.llm_schema()["function"]["parameters"]
+    properties = params.get("properties", {})
+    for key in args:
+        if key.startswith("_") or key not in properties:
+            raise UiActionRefusedError(f"argument {key!r} is not available")
+    for key in params.get("required", []):
+        if key not in args:
+            raise UiActionRefusedError(f"argument {key!r} is required")
+    for key, value in args.items():
+        declared = properties[key].get("type", "")
+        if value is None:
+            if "null" in (declared if isinstance(declared, list) else [declared]):
+                continue
+            raise UiActionRefusedError(f"argument {key!r} cannot be null")
+        allowed = _JSON_SCALARS.get(declared)
+        if (
+            allowed is None
+            or not isinstance(value, allowed)
+            or (isinstance(value, bool) and bool not in allowed)
+        ):
+            raise UiActionRefusedError(f"argument {key!r} has the wrong type")
 
 
 def _merge_deps(tool_name: str, llm_args: dict, deps: dict[str, Any]) -> dict:

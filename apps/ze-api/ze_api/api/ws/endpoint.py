@@ -17,6 +17,7 @@ from ze_api.api.ws.rollback_state import (
     undone_phrases,
 )
 from ze_api.api.ws.turns import handle_message, handle_retry
+from ze_api.api.ws.ui_actions import handle_ui_action, handle_ui_confirm
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -99,6 +100,7 @@ async def websocket_endpoint(
     pending_configs: dict[str, dict] = {}
     # Derived index: thread_id -> {request_id, ...} of gates open on that thread.
     thread_pending_requests: dict[str, set[str]] = {}
+    ui_tasks: set[asyncio.Task] = set()
 
     try:
         while True:
@@ -176,6 +178,8 @@ async def websocket_endpoint(
                     )
                     continue
                 request_id = data.get("id") or ""
+                if await handle_ui_confirm(data, container, conn_mgr):
+                    continue
                 result = await handle_confirm(
                     ws,
                     data,
@@ -200,6 +204,11 @@ async def websocket_endpoint(
                         thread_id,
                         new_config,
                     )
+
+            elif frame_type == "ui_action":
+                task = asyncio.create_task(handle_ui_action(data, container, conn_mgr))
+                ui_tasks.add(task)
+                task.add_done_callback(ui_tasks.discard)
 
             elif frame_type == "action":
                 await handle_action(ws, data, container, conn_mgr)

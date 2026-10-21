@@ -24,6 +24,16 @@ function lazyPage(loader: () => Promise<{ default: ComponentType }>) {
   );
 }
 
+// Only a development build routes the gallery; the production build drops the branch and its fixtures.
+const devRoutes: RouteObject[] = import.meta.env.DEV
+  ? [
+      {
+        path: "dev/primitives",
+        element: lazyPage(() => import("@/pages/dev-primitives").then((m) => ({ default: m.DevPrimitivesPage }))),
+      },
+    ]
+  : [];
+
 const notFound = <ZeErrorFallback error={new Error("Nothing lives at this address.")} />;
 
 export const routes: RouteObject[] = [
@@ -46,8 +56,8 @@ export const routes: RouteObject[] = [
         path: "jarvis/*",
         element: lazyPage(() => import("@/pages/jarvis").then((m) => ({ default: m.JarvisApp }))),
       },
+      ...devRoutes,
       ...redirects.map((r) => ({ path: r.from.slice(1), element: <RedirectTo to={r.to} hint={r.hint} hintMap={r.hintMap} /> })),
-      { path: ":pluginPath", element: lazyPage(() => import("@/pages/plugin-page").then((m) => ({ default: m.PluginPage }))) },
       { path: "*", element: notFound },
     ],
   },

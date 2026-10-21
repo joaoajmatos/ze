@@ -1,0 +1,21 @@
+[
+  {
+    "type": "chart",
+    "chart_type": "line",
+    "title": "Trend",
+    "data": [
+      {
+        "x": "Mon",
+        "y": 1
+      },
+      {
+        "x": "Tue",
+        "y": 3
+      },
+      {
+        "x": "Wed",
+        "y": 2
+      }
+    ]
+  }
+]

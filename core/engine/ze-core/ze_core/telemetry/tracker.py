@@ -5,6 +5,7 @@ from ze_logging import get_logger
 from ze_agents.tasks import fire_and_forget
 from ze_core.telemetry.context import get_cost_context
 from ze_core.telemetry.store import CostStore
+from ze_core.telemetry.turn import current_turn_telemetry
 from ze_core.telemetry.types import CostRecord
 
 log = get_logger(__name__)
@@ -28,6 +29,16 @@ class CostTracker:
 
         If no store is configured, the record is logged but not persisted.
         """
+        telemetry = current_turn_telemetry.get()
+        if telemetry is not None:
+            try:
+                telemetry.record_call(
+                    model, prompt_tokens, completion_tokens, audio_seconds
+                )
+            except Exception as exc:
+                log.warning(
+                    "turn_telemetry_failed", method="record_call", error=str(exc)
+                )
         ctx = get_cost_context()
         rec = CostRecord(
             agent=ctx.agent,

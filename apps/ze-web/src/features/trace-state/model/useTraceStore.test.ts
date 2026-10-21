@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { tracesForThread, useTraceStore } from "./useTraceStore";
 
@@ -19,7 +19,7 @@ function frame(
     subtasks: [],
     memory_chunks: [],
     tool_calls: [],
-    total_duration_ms: 10,
+    tool_duration_ms: 10,
     skills_used: [],
     conductor_hint: extra.conductor_hint ?? null,
     conductor_ledger: extra.conductor_ledger ?? [],
@@ -86,53 +86,60 @@ describe("per-thread trace isolation", () => {
   });
 });
 
-describe("arrival stamps (trace instruments)", () => {
-  beforeEach(() => {
-    useTraceStore.setState({ byThread: {} });
-    vi.useFakeTimers();
-    vi.setSystemTime(10_000);
-  });
-  afterEach(() => vi.useRealTimers());
+describe("partial telemetry frames", () => {
+  beforeEach(() => useTraceStore.setState({ byThread: {} }));
 
-  const partial = (extra: Partial<WsTraceUpdateFrame>) => useTraceStore.getState().mergePartialTrace({ thread_id: "t", ...extra });
+  const partial = (extra: Partial<WsTraceUpdateFrame>) => useTraceStore.getState().mergePartialTrace({ thread_id: "t", message_id: "m1", ...extra });
   const bucket = () => useTraceStore.getState().byThread.t;
+  const stage = (name: string, start_ms: number, run = 1) => ({ name, start_ms, duration_ms: 10, run });
 
-  it("stamps each stage once, by the fields the partial carries", () => {
-    partial({ agent: "companion", routing_method: "embedding" });
-    vi.setSystemTime(10_400);
-    partial({ screen: { route: "/doing" } as never });
-    vi.setSystemTime(10_900);
-    partial({ memory_chunks: [{ text: "a", score: 0.9, source: "fact", extraction_confidence: null }] });
-    vi.setSystemTime(11_000);
-    partial({ memory_chunks: [{ text: "b", score: 0.8, source: "fact", extraction_confidence: null }] });
-    partial({ tier: { agent: "companion", tier: "full", decided_by: "default", model: "m" } as never });
-    partial({ tool_calls: [{ name: "x", call_index: 0 } as never] });
-    expect(bucket().pendingArrivals).toEqual({ route: 10_000, screen: 10_400, memory: 10_900, tier: 11_000, "tool:0": 11_000 });
+  it("appends stages in arrival order", () => {
+    partial({ stages: [stage("fetch_context", 200)] });
+    partial({ stages: [stage("embed_route", 50)] });
+    expect(bucket().pendingTrace?.stages?.map((x) => x.name)).toEqual(["fetch_context", "embed_route"]);
   });
 
-  it("moves the stamps to arrivalsByMessage on commit and clears the pending ones", () => {
+  it("keeps a stage repeated with the same run, name and start once", () => {
+    partial({ stages: [stage("embed_route", 50)] });
+    partial({ stages: [stage("embed_route", 50)] });
+    partial({ stages: [stage("embed_route", 50, 2)] });
+    partial({ stages: [stage("embed_route", 90)] });
+    expect(bucket().pendingTrace?.stages).toHaveLength(3);
+  });
+
+  it("merges tool rows by call_id: a second row with the same id replaces the first in place", () => {
+    const call = (call_id: string, gate: string, name = "send_email") => ({ call_id, name, gate, duration_ms: 0, success: true, result_snippet: "" });
+    partial({ tool_calls: [call("a", "none", "list_events"), call("b", "parked")] as never });
+    partial({ tool_calls: [{ ...call("b", "approved"), duration_ms: 300 }] as never });
+    expect(bucket().pendingTrace?.tool_calls?.map((c) => [c.call_id, c.gate])).toEqual([["a", "none"], ["b", "approved"]]);
+    expect(bucket().pendingTrace?.tool_calls?.[1].duration_ms).toBe(300);
+  });
+
+  it("ignores a partial that arrives after the message's committed trace", () => {
+    useTraceStore.getState().commitPendingTrace(frame("t", "m1", { agent: "companion" }));
+    partial({ stages: [stage("fetch_context", 200)], agent: "late" });
+    expect(bucket().pendingTrace).toBeNull();
+    expect(bucket().traces[0].agent).toBe("companion");
+  });
+
+  it("replaces the pending trace with the committed one and its server stages", () => {
+    partial({ stages: [stage("fetch_context", 200)] });
+    useTraceStore.getState().commitPendingTrace(frame("t", "m1", { stages: [stage("fetch_context", 200), stage("synthesize", 900)] }));
+    expect(bucket().pendingTrace).toBeNull();
+    expect(bucket().traces[0].stages?.map((x) => x.name)).toEqual(["fetch_context", "synthesize"]);
+  });
+
+  it("holds no client arrival stamps", () => {
     partial({ agent: "companion" });
     useTraceStore.getState().commitPendingTrace(frame("t", "m1"));
-    expect(bucket().arrivalsByMessage.m1).toEqual({ route: 10_000 });
-    expect(bucket().pendingArrivals).toEqual({});
+    useTraceStore.getState().resetPending("t");
+    const keys = Object.keys(bucket());
+    for (const gone of ["pendingArrivals", "arrivalsByMessage", "pendingSentAt", "sentAtByMessage"]) expect(keys).not.toContain(gone);
   });
 
-  it("gives a hydrated trace no arrivals and starts a second turn fresh", () => {
-    useTraceStore.getState().mergeTraces("t", [frame("t", "old")], ["old"]);
-    expect(bucket().arrivalsByMessage.old).toBeUndefined();
-    partial({ agent: "companion" });
-    useTraceStore.getState().commitPendingTrace(frame("t", "m1"));
-    vi.setSystemTime(20_000);
-    partial({ agent: "research" });
-    useTraceStore.getState().commitPendingTrace(frame("t", "m2"));
-    expect(bucket().arrivalsByMessage.m2).toEqual({ route: 20_000 });
-    expect(bucket().arrivalsByMessage.m1).toEqual({ route: 10_000 });
-  });
-
-  it("resetPending drops a stale pending trace so a refused turn never lends its stamps", () => {
+  it("resetPending drops a stale pending trace", () => {
     partial({ agent: "companion" });
     useTraceStore.getState().resetPending("t");
     expect(bucket().pendingTrace).toBeNull();
-    expect(bucket().pendingArrivals).toEqual({});
   });
 });

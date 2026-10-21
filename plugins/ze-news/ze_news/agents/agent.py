@@ -74,7 +74,10 @@ Guidelines:
 - Apply retrieved facts silently when they change which stories or tone to emphasise.
 - Do not announce "I remember that you…" or dump the biography unsolicited.
 - If the user asks what you know about them, answer from the biography block without claiming a memory write.
-- Do not claim remember_fact or forget_fact success; those tools are not on this agent.\
+- Do not claim remember_fact or forget_fact success; those tools are not on this agent.
+- You have no file or render tools. Never write a reply to a file and never say you cannot
+  render: if the user asks to render or show something as cards, a table or a chart, answer
+  the headlines in text and say the conversation agent can lay them out on request.\
 """
 
 _CANDIDATE_LIMIT = 8
@@ -120,14 +123,21 @@ class NewsAgent(BaseAgent):
     name = "news"
     display_name = "News"
     description = """
-      News headlines and daily briefings from curated sources.
-      Use for: "what's in the news today", "any headlines", "morning news briefing",
+      News headlines and digests from curated sources.
+      Use for: "what's in the news today", "any headlines",
       "latest news", "news digest", "what's happening in the world", "tech news today",
       "give me a news summary", "what's trending", "top stories today".
       For news digest and headline summaries only — not for factual research or web search.
     """
+    routing_criteria = """
+      Use for: fetching news headlines and digests from the curated sources.
+      Not for: rendering, showing or reformatting something already said (a previous
+      reply, a briefing Ze already sent) as cards, a table or a chart; questions about
+      a briefing Ze already sent; factual research or web search.
+    """
     model = "openai/gpt-4o-mini"
     timeout = 30
+    workspace_opt_out = True
     tools = ["refresh_news", "get_headlines", "search_news"]
 
     def __init__(

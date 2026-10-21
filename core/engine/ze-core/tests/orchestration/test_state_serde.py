@@ -232,7 +232,7 @@ def test_full_agent_state_dict_round_trips(serde: JsonPlusSerializer) -> None:
                     success=True,
                 )
             ],
-            total_duration_ms=85,
+            tool_duration_ms=85,
         ),
     }
 
@@ -277,3 +277,94 @@ def test_non_serializable_identity_builder_raises(serde: JsonPlusSerializer) -> 
     )
     with pytest.raises((TypeError, Exception)):
         serde.dumps_typed(ctx)
+
+
+def test_trace_with_telemetry_fields_round_trips(serde: JsonPlusSerializer) -> None:
+    from ze_core.conversation.messages.types import (
+        JudgmentBar,
+        JudgmentTrace,
+        ModelUsage,
+        RoutingScore,
+        RoutingThresholds,
+        StageTiming,
+        TurnUsage,
+    )
+
+    trace = MessageTrace(
+        agent="calendar",
+        routing_method="embedding",
+        confidence=0.9,
+        score_gap=0.2,
+        is_compound=False,
+        subtasks=["calendar"],
+        tool_calls=[
+            ToolCallTrace(
+                name="list_events",
+                result_snippet="x",
+                duration_ms=12,
+                success=True,
+                call_id="abc",
+                start_offset_ms=640,
+            )
+        ],
+        judgments=[
+            JudgmentTrace(
+                question_id="agent",
+                kind="choice",
+                latency_ms=5,
+                surface="routing",
+                bar=JudgmentBar("choice_trust", 0.5),
+            )
+        ],
+        tool_duration_ms=12,
+        turn_duration_ms=2140,
+        paused_ms=20000,
+        stages=[StageTiming("fetch_context", 212, 88, 1)],
+        usage=TurnUsage(
+            main_model="m",
+            models=[ModelUsage("m", 2, 9120, 410, 5200, 0.03, False)],
+            context_fill=0.026,
+            context_window=200000,
+            system_one_tokens=1840,
+        ),
+        routing_scores=[RoutingScore("calendar", 0.83)],
+        routing_thresholds=RoutingThresholds(0.78, 0.05),
+        telemetry_partial=True,
+    )
+    assert round_trip(serde, trace) == trace
+
+
+def test_parked_loop_keeps_call_id_and_started_at(serde: JsonPlusSerializer) -> None:
+    from ze_agents.park import ParkedLoop, ParkedWrite
+
+    call = ToolCall(
+        tool_name="list_events",
+        args={},
+        result="ok",
+        duration_ms=3,
+        success=True,
+        call_id="fixed-id",
+        started_at=1234.5,
+    )
+    write = ParkedWrite(
+        item_id="i",
+        call_id="call_0",
+        tool="send",
+        args={},
+        effect_phrase="sent",
+        summary="s",
+        agent="messenger",
+        trace_call_id="trace-id",
+    )
+    loop = ParkedLoop(
+        agent="messenger",
+        messages=[],
+        accumulated=[call],
+        iteration=1,
+        parked=[write],
+    )
+    restored = round_trip(serde, loop)
+    assert restored == loop
+    assert restored.accumulated[0].call_id == "fixed-id"
+    assert restored.accumulated[0].started_at == 1234.5
+    assert restored.parked[0].trace_call_id == "trace-id"

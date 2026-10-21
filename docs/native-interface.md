@@ -325,6 +325,25 @@ Each inbound frame has one state owner in ze-web. `features/turn-stream/model/fr
 | `refresh`, `notification` | query invalidation (`features/invalidate-on-ws-refresh`) |
 | `pong` | none |
 
+### Trace telemetry frames
+
+`trace_update` frames with `partial: true` are best effort. The server sends one per finished node
+(`stages: [{name, start_ms, duration_ms, run}]`). The `embed_route` frame adds `routing_scores` and
+`routing_thresholds`. The memory frame adds `extraction_confidence` per fact chunk. Each finished
+tool call adds a row to `tool_calls` (`call_id`, `name`, `agent`, `gate`, `start_offset_ms`,
+`duration_ms`, `success`, `result_snippet`). A `gate: "parked"` row waits for the user, and its
+approved run arrives later with the same `call_id`. A frame that cannot go within 1 s is dropped.
+
+Clients append stages (one per `run`, `name` and `start_ms`), merge tool rows by `call_id`, and
+ignore a partial for a message whose committed trace has arrived. The server drains queued partials
+(at most 1 s) before it sends the committed frame. The committed trace, also at
+`GET /api/v0/messages/{id}/trace`, is the complete record: `tool_duration_ms` (renamed from
+`total_duration_ms`), `turn_duration_ms`, `paused_ms`, `stages`, `usage`, `routing_scores`,
+`routing_thresholds`, `telemetry_partial`, `call_id` and `start_offset_ms` on each tool row, and
+`surface` and `bar` on each judgment.
+
+`usage.models[].cost_usd` comes from Ze's price table, not from the OpenRouter bill. The cost reconciler corrects the ledger later, and the trace keeps the table figure. `usage` counts only the model calls made before the trace is stamped. Work that runs after it, such as the loop title writer, adds nothing, so `usage` is not all the spend a turn caused. The server waits up to 1 s for queued partial frames before it commits the reply, so a slow client can delay the commit by that long.
+
 A `confirm_request` for a busy thread pauses the delivery watchdog, and an approve or deny restarts it. A confirmation is placed in the canvas under the latest exchange, in `/ask` and in the overlay. A prompt-kind confirmation shows its actions as command chips that send `action`.
 
 Close code `4000` means another window took the connection. The client does not reconnect on its own. It shows "Ze is open in another window" with a Use here control, which reconnects at once.
@@ -457,6 +476,48 @@ hides it unless you pass `include_superseded=true`, and later turns never see it
 A retried reply is itself rateable and retryable.
 
 ---
+
+## Screen tool actions
+
+A button in a server-built tree can carry a tool action. The browser sends it as a `ui_action` frame:
+
+```json
+{ "type": "ui_action", "id": "6c1…", "thread_id": "t-1",
+  "action": { "kind": "tool", "owner": "news", "tool": "mark_source_read", "args": { "source_id": "s-12" } } }
+```
+
+This frame differs from the `action` frame, which answers prompt-frame choices such as goal gates. Only a WRITE tool that declares `ui_action=True` and belongs to the named agent can run. Anything else gets "That action is not available."
+
+The server runs the tool through the owning agent's `call_tool`, so the constraint veto, hooks and write gates apply as in chat. It answers with `ui_action_result` (`id`, `thread_id`, `ok`, `line`, and `code: "busy"` when the thread is busy). A success line is the tool's `done_phrase` or "Done."; a failure is "Couldn't <effect>." and never raw error text.
+
+An asks-first write sends one normal `confirm_request` (`kind: "write"`, one item, no edit field), and the client answers with the usual `confirm` frame. The gate:
+
+- pops on the first `confirm`, so a second one finds nothing;
+- on deny, timeout (`CONFIRM_TIMEOUT_SECONDS`) or a new turn on the thread, answers "Okay, I didn't <effect>.";
+- is sent again after a reconnect, and a disconnect does not cancel it;
+- lives in process memory. A restart drops it, and a later `confirm` gets "That request expired." It gets no ntfy push.
+
+Every run writes one `ui.tool_action` record to the action ledger.
+
+### Versions and legacy trees
+
+A live `message` frame with components carries `ui_version: "2.0"`, as do plugin settings and module responses. Replayed and stored messages carry none, so the client renders them as legacy: string-action buttons are disabled and an unreadable tree shows "This older view can't be shown."
+
+## Plugin modules
+
+`GET /api/v0/ui/manifest` (`getUiManifest`) returns `modules` (id, plugin, label, icon, slot, priority), `presets` (label and prompt) and `settings_sections`. The manifest is built at startup, so a plugin enabled or disabled in config appears or disappears after a restart.
+
+`GET /api/v0/ui/modules/{module_id}` (`getUiModule`) takes `subject_kind` (`entity`, `workflow_run` or `none`), `subject_id` and `parent_id` (the workflow, for a run). Ze reads the subject's label and type from its own records and ignores any other value in the query. The plugin's provider answers within 3 seconds. Ze then checks the tree against the primitive schema, binds every tool action to an agent the plugin registered, accepts only claim postures a plugin may state, and recomputes card tone itself.
+
+| Status | Meaning |
+|---|---|
+| 200 | `{ module_id, applies, components, ui_version }`. `applies: false` means nothing to show. |
+| 404 | Unknown module or subject. |
+| 422 | The subject kind does not fit the slot. |
+| 502 | "<Plugin> could not load." or "<Plugin> sent a view Ze cannot show." |
+| 504 | "<Plugin> took too long." |
+
+A plugin asks for a refetch with `request_module_refresh(interface, module_id)` (`ze_sdk.ui`). It sends `{"type": "refresh", "screen": "module:<id>"}`, and the client refetches every subject's copy of that module.
 
 ## Unread message replay
 

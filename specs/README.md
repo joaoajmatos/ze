@@ -229,17 +229,17 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 185 | [World Data Gaps (B2)](phases/185-world-data-gaps/spec.md) | ✅ Implemented |
 | 186 | [World (W2)](phases/186-web-world/spec.md) | ✅ Implemented |
 | 187 | [Ask / Assemble (W3)](phases/187-web-ask-assemble/spec.md) | ✅ Implemented |
-| 187b | [Trace Telemetry](phases/187b-trace-telemetry/spec.md) | 🔲 Ready to implement (after 187; parallel with the web phases) |
+| 187b | [Trace Telemetry](phases/187b-trace-telemetry/spec.md) | ✅ Implemented |
 | 188 | [Doing (W4)](phases/188-web-doing/spec.md) | ✅ Implemented |
 | 189 | [Mind (W5)](phases/189-web-mind/spec.md) | ✅ Implemented |
 | 190 | [Governance (W6)](phases/190-web-governance/spec.md) | ✅ Implemented |
-| 191a | [UI Primitives v2](phases/191a-ui-primitives-v2/spec.md) | 🔲 Ready to implement (runs now; replaces the parked 191) |
-| 191b | [Plugin Modules in Slots](phases/191b-plugin-modules/spec.md) | 🔲 Ready to implement (after 191a; run slot needs 188) |
+| 191a | [UI Primitives v2](phases/191a-ui-primitives-v2/spec.md) | ✅ Implemented |
+| 191b | [Plugin Modules in Slots](phases/191b-plugin-modules/spec.md) | ✅ Implemented |
 | 192 | [Voice Input Transport (B3)](phases/192-voice-transport/spec.md) | ✅ Implemented (before 193) |
 | 193 | [Voice and Polish (W8)](phases/193-web-voice-polish/spec.md) | 🔲 Ready to implement (after 186–190, 192) |
 | 194 | [Accountability Surfaces (B4)](phases/194-accountability-surfaces/spec.md) | ✅ Implemented (zc040, zm025) |
 | 195 | [Screen Context Awareness](phases/195-screen-context-awareness/spec.md) | ✅ Implemented (live eval: first run 10 of 26, chat_about 9 of 15 after owner routing; chip capture deferred to 193) |
-| 196 | [OpenRouter Server Tools](phases/196-openrouter-server-tools/spec.md) | 🔲 Ready to implement (open fetch, risk accepted 2026-10-18; builds after 187b) |
+| 196 | [OpenRouter Server Tools](phases/196-openrouter-server-tools/spec.md) | ⏸ Halted by the user 2026-10-21 (too tied to OpenRouter; see research R9) |
 | 197 | [Programmatic Tool Use](phases/197-programmatic-tool-use/spec.md) | 🔲 Ready to implement (builds after 187b) |
 
 ## Ze Core specs (`core/`)

@@ -29,6 +29,21 @@ export function RoutingInstrument({ trace, settled = true }: { trace: Partial<Ws
           )}
         </div>
       )}
+      {r.scores.length > 0 && (
+        <ul className="tr-shortlist" aria-label="Shortlist scores">
+          {r.scores.map((sc) => (
+            <li key={sc.agent} data-chosen={sc.chosen ? "" : undefined}>
+              <span className="ro">{sc.agent}</span>
+              <div className="tr-bar" role="meter" aria-label={`${sc.agent} score`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(sc.score * 100)}>
+                <i className="tr-fill" style={{ width: pct(sc.score) }} />
+                {r.thresholds && <i className="tr-threshold" style={{ left: pct(r.thresholds.threshold) }} aria-hidden="true" />}
+              </div>
+              <span className="ro">{pct(sc.score)}</span>
+            </li>
+          ))}
+          {r.thresholds && <li className="ro muted">{`threshold ${pct(r.thresholds.threshold)} · gap ${pct(r.thresholds.gap)}`}</li>}
+        </ul>
+      )}
       {r.options.length > 0 && (
         <ul className="tr-needles" aria-label="Options considered">
           {r.options.map((o) => (

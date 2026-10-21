@@ -228,7 +228,8 @@ def build_ui_manifest(plugins: list) -> Any:
     )
     log.info(
         "ui_manifest_built",
-        nav=[item.id for item in ui_manifest.nav],
+        modules=[item.id for item in ui_manifest.modules],
+        presets=[item.id for item in ui_manifest.presets],
         settings=[item.id for item in ui_manifest.settings_sections],
     )
     return ui_manifest

@@ -14,7 +14,6 @@ from ze_automation.goals.types import (
 from ze_memory.types import MemoryContext
 
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -63,6 +62,14 @@ def make_agent(client=None, store=None) -> GoalAgent:
 
 
 # ── Registry ──────────────────────────────────────────────────────────────────
+
+
+def test_instructions_draw_no_gate_buttons():
+    from ze_automation.agents.goals.agent import _AGENT_INSTRUCTIONS
+
+    assert "goal:approve:" not in _AGENT_INSTRUCTIONS
+    assert "goal:redirect:" not in _AGENT_INSTRUCTIONS
+    assert "resolves the gate directly" not in _AGENT_INSTRUCTIONS
 
 
 def test_goal_agent_is_registered():
