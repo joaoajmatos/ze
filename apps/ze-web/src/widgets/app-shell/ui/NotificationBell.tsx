@@ -37,8 +37,19 @@ export function NotificationBell() {
         setOpen(false);
       }
     }
-    if (open) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      containerRef.current?.querySelector<HTMLButtonElement>("button.bell")?.focus();
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscape);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, [open]);
 
   const items = data?.pages.flatMap((p) => p.items ?? []) ?? [];
