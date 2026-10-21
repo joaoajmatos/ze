@@ -410,7 +410,7 @@ def tool(
     with a `no_ask_reason`. A WRITE tool with `ui_action=True` can be named by a screen
     button (`ToolAction`); `done_phrase` is the line shown after it ran. `produces_ui`
     marks a tool whose effect is drawing on screen, and `egress` a READ tool that reaches a
-    caller-chosen URL or host; neither appears in a tool script's stub.
+    caller-chosen URL or host, or fetches from the network on every call; neither appears in a tool script's stub.
     """
     access_val = ToolAccess(access) if isinstance(access, str) else access
     reversibility_val = (
