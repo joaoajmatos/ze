@@ -73,3 +73,4 @@
 {"id": "tuned-companion-briefing-sent-en", "lang": "en", "prompt": "did you send my briefing today?", "gold_agent": "companion", "gold_multi": false}
 {"id": "tuned-companion-briefing-pt", "lang": "pt", "prompt": "o que é que estava no briefing desta manhã?", "gold_agent": "companion", "gold_multi": false}
 {"id": "single-news-sources-en", "lang": "en", "prompt": "What's new in my sources?", "gold_agent": "news", "gold_multi": false}
+{"id": "single-news-sources-pt", "lang": "pt", "prompt": "O que há de novo nas minhas fontes?", "gold_agent": "news", "gold_multi": false}

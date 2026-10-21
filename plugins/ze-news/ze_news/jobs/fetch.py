@@ -76,6 +76,7 @@ class NewsFetchJob:
 
     async def run(self, *, force: bool = False) -> None:
         now = datetime.now(timezone.utc)
+        stored_any = False
         for source in self._registry.all():
             if not force and await self._should_skip_source(source.key, now):
                 continue
@@ -103,8 +104,7 @@ class NewsFetchJob:
                 new=len(new_articles),
             )
 
-            if new_articles and self._interface is not None:
-                await request_module_refresh(self._interface, "ze_news.sources")
+            stored_any = stored_any or bool(new_articles)
 
             if new_articles and self._credibility_enabled and self._client is not None:
                 asyncio.create_task(self._score_new_articles(new_articles))
@@ -121,6 +121,9 @@ class NewsFetchJob:
                 and self._admission_gate is not None
             ):
                 asyncio.create_task(self._emit_via_source(new_articles))
+
+        if stored_any and self._interface is not None:
+            await request_module_refresh(self._interface, "ze_news.sources")
 
         pruned = await self._store.prune(older_than_days=self._retention_days)
         if pruned:

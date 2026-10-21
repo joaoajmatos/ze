@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from functools import lru_cache
 from typing import Any, Literal
 from uuid import UUID
 
@@ -39,6 +40,7 @@ def _fail(module: UiContribution, status: int, reason: str, detail: str, **extra
     return HTTPException(status_code=status, detail=detail)
 
 
+@lru_cache(maxsize=1)
 def _tree_schema() -> dict:
     return {"$ref": "#/$defs/PrimitiveTree", "$defs": export_json_schema()["$defs"]}
 
