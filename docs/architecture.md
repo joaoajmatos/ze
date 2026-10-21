@@ -253,7 +253,7 @@ turn instead of one per call. The script runs in the workspace sidecar with no n
    can run again.
 
 See [workspace.md](workspace.md#tool-scripts) for the sandbox limits and
-`specs/arch/programmatic-tool-use.md` for the decision record.
+`specs/phases/197-programmatic-tool-use/research.md` for the decision record.
 
 ### Message trace effect metadata
 
