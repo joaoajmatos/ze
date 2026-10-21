@@ -21,7 +21,7 @@ function GoalLine({ goal, offline, gate, onChatAbout }: { goal: GoalListItem } &
   const state = gate.stateOf(goal.id);
   const err = gate.errorOf(goal.id);
   const inFlight = state === "in_flight";
-  const ref = { kind: "goal", id: goal.id } as WsScreenRef;
+  const ref = { kind: "goal", id: goal.id, label: goal.title } as WsScreenRef;
   const openChat = () => onChatAbout?.(ref, null);
 
   return (

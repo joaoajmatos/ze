@@ -48,7 +48,7 @@ export function DoingNeedsYou({ goals, held, loading, error, now, offline, gate,
                   Start
                 </button>
               </span>
-              {chat(g.title, { kind: "goal", id: g.id } as WsScreenRef)}
+              {chat(g.title, { kind: "goal", id: g.id, label: g.title } as WsScreenRef)}
             </div>
           ))}
           {gates.map((g) => {
@@ -76,7 +76,7 @@ export function DoingNeedsYou({ goals, held, loading, error, now, offline, gate,
                     className="ctl"
                     disabled={offline || inFlight}
                     onClick={() => {
-                      if (gate.redirect(id)) onChatAbout?.({ kind: "goal_gate", id, parent_id: g.id } as WsScreenRef, null);
+                      if (gate.redirect(id)) onChatAbout?.({ kind: "goal_gate", id, parent_id: g.id, label: g.gate_title ?? g.title } as WsScreenRef, null);
                     }}
                   >
                     Redirect
@@ -87,14 +87,14 @@ export function DoingNeedsYou({ goals, held, loading, error, now, offline, gate,
                     {err}
                   </p>
                 )}
-                {chat(g.gate_title ?? g.title, { kind: "goal_gate", id, parent_id: g.id } as WsScreenRef)}
+                {chat(g.gate_title ?? g.title, { kind: "goal_gate", id, parent_id: g.id, label: g.gate_title ?? g.title } as WsScreenRef)}
               </div>
             );
           })}
           {held.map((h) => (
             <div key={`h${h.request_id}`} className="row">
               <HeldWriteCard held={h} disabled={offline} />
-              {chat(h.source_name, { kind: "held_write", id: h.request_id } as WsScreenRef)}
+              {chat(h.source_name, { kind: "held_write", id: h.request_id, label: h.source_name } as WsScreenRef)}
             </div>
           ))}
         </>

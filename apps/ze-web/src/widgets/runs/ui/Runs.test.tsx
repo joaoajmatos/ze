@@ -112,7 +112,7 @@ describe("Runs", () => {
     const onChatAbout = vi.fn();
     view({ onChatAbout });
     fireEvent.click(screen.getByRole("button", { name: "Chat about python build.py" }));
-    expect(onChatAbout).toHaveBeenCalledWith({ kind: "workspace_run", id: "r1" }, expect.anything());
+    expect(onChatAbout).toHaveBeenCalledWith(expect.objectContaining({ kind: "workspace_run", id: "r1", label: expect.any(String) }), expect.anything());
   });
 
   it("says so when the workspace status could not be read", () => {

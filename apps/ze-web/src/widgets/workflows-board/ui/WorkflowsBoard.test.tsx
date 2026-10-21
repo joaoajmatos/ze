@@ -70,7 +70,7 @@ describe("WorkflowsBoard", () => {
     const onChatAbout = vi.fn();
     view({ onChatAbout });
     fireEvent.click(screen.getByRole("button", { name: "Chat about Weekly digest" }));
-    expect(onChatAbout).toHaveBeenCalledWith({ kind: "workflow", id: "w1" }, expect.anything());
+    expect(onChatAbout).toHaveBeenCalledWith(expect.objectContaining({ kind: "workflow", id: "w1", label: expect.any(String) }), expect.anything());
   });
 
   it("shows a dash, not Never run, for a workflow whose executions were not fetched", () => {

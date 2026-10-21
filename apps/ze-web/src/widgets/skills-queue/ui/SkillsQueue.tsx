@@ -62,7 +62,7 @@ function Row({ skill, onChatAbout }: { skill: SkillResponse; onChatAbout?: Props
           That didn't go through.
         </span>
       )}
-      {onChatAbout && <ChatAboutChip label={skill.name} onClick={(chip) => onChatAbout({ kind: "skill", id: skill.id } as WsScreenRef, chip.closest(".row"))} />}
+      {onChatAbout && <ChatAboutChip label={skill.name} onClick={(chip) => onChatAbout({ kind: "skill", id: skill.id, label: skill.name } as WsScreenRef, chip.closest(".row"))} />}
     </li>
   );
 }

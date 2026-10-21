@@ -51,8 +51,8 @@ describe("Away", () => {
     const chips = screen.getAllByRole("button", { name: /Chat about/ });
     fireEvent.click(chips[0]);
     fireEvent.click(chips[1]);
-    expect(onChatAbout).toHaveBeenNthCalledWith(1, { kind: "notification", id: "1" }, null);
-    expect(onChatAbout).toHaveBeenNthCalledWith(2, { kind: "workflow_execution", id: "e1", parent_id: "w1" }, null);
+    expect(onChatAbout).toHaveBeenNthCalledWith(1, expect.objectContaining({ kind: "notification", id: "1", label: expect.any(String) }), null);
+    expect(onChatAbout).toHaveBeenNthCalledWith(2, expect.objectContaining({ kind: "workflow_execution", id: "e1", parent_id: "w1", label: expect.any(String) }), null);
   });
 
   it("says Quiet when nothing happened, and shows the error state", () => {

@@ -71,6 +71,6 @@ describe("SkillsQueue", () => {
     const onChatAbout = vi.fn();
     render(<SkillsQueue {...base} skills={[skill({})]} onChatAbout={onChatAbout} />);
     fireEvent.click(screen.getByRole("button", { name: "Chat about Summarise" }));
-    expect(onChatAbout).toHaveBeenCalledWith({ kind: "skill", id: "s1" }, expect.anything());
+    expect(onChatAbout).toHaveBeenCalledWith(expect.objectContaining({ kind: "skill", id: "s1", label: expect.any(String) }), expect.anything());
   });
 });
