@@ -32,8 +32,8 @@ The app has five places: World, Ask, Doing, Mind and Governance. `shared/config/
 
 - **Top bar:** the dot-matrix brand, the five place tabs, the notification bell and a connection dot.
 - **Strip:** the claim legend, today's date and a dot-matrix clock.
-- **Left rail:** the Presence module with the orb. The place fills the column beside it.
-- **Ask bar:** sticky at the bottom of every place, Ask included. A paperclip hands Ze a file through the workspace. On Ask the bar sends to the selected thread. On every other place it opens the Ask overlay (see [native-interface.md](native-interface.md#ask-from-any-screen)).
+- **Left rail:** the Presence module with the orb and an ambience toggle in its head. The place fills the column beside it.
+- **Ask bar:** sticky at the bottom of every place, Ask included. A paperclip hands Ze a file through the workspace, and a mic records your voice (see [Voice input](#voice-input)). On Ask the bar sends to the selected thread. On every other place it opens the Ask overlay (see [native-interface.md](native-interface.md#ask-from-any-screen)).
 - **Displaced window:** when another window takes the connection, every place shows "Ze is open in another window" with a Use here control. The orb rests, the connection dot says "Open in another window", and the Ask bar is disabled with that reason.
 - **Phone width (1023 px and below):** one column, a compact Presence, and a bottom bar with the five places as icons and labels. The Ask bar sits above it.
 
@@ -46,8 +46,8 @@ Tokens, type and every shell class live in `shared/styles/ze.css`. Fonts (Saira,
 | Orb state | Signal |
 |-----------|--------|
 | `idle` | Connected, nothing in flight. The idle orb watches the pointer and keyboard focus like a curious pet: it follows, peers, glances at new things, startles on a fast flick, blinks when it switches target, and dozes after a minute. Reduced motion turns the gaze off. |
-| `listening` | The Ask bar has focus and text |
-| `thinking` | A `typing` frame, or the thread is marked thinking, until the first token |
+| `listening` | The Ask bar has focus and text, or the mic is recording. While recording, the orb gathers and brightens with your voice level. |
+| `thinking` | A `typing` frame, or the thread is marked thinking, until the first token. Also "transcribing" while a recording uploads. |
 | `speaking` | `token` frames for the thread |
 | `done` | The `message` frame that closes the turn, for one second |
 | `error` | The WebSocket is closed. The phrase reads "Offline". A window another window displaced stays `idle`. |
@@ -68,7 +68,22 @@ Ask is the Assemble canvas. The try chips and the conversations list are portall
 
 The trace is a rail of instruments, drawn only from `MessageTrace` and `trace_update`: a Signal path (one tick per stage that arrived, lit live), Routing (a bar labelled by what produced it), Memory (relevance across, extraction confidence up), Tools (one lane per agent), Judgments (grouped by where the answer was used), Reversal (what a retry undid), and readouts. Nothing in it is estimated. Missing data reads "not recorded".
 
-### Old routes and interim places
+### Voice input
+
+The mic in the Ask bar records your voice and puts the text in the bar for you to correct before you send it. `features/voice-input` owns it. The shell wires it to the bar and to Presence, because features never import each other.
+
+- **Record.** Press the mic, or hold `V` while no text field has focus. The orb listens, and the mic shows the elapsed time. Press again, or release `V`, to stop. A hold shorter than 300 ms is dropped. Closing the Ask overlay stops a recording and transcribes it. Changing place does not.
+- **Limit.** A recording stops by itself at 115 seconds. The mic counts down from 105 seconds, and the status line says "10 seconds left" once.
+- **Transcribe.** The recording goes to `POST /api/v0/voice/transcriptions`. Presence reads "transcribing". The text lands in the bar, focused, with the caret at the end. An empty transcript shows "Ze heard nothing" and sends nothing.
+- **Send.** The next send carries `context.voice.transcription_id`, from Ask and from the overlay on every other place. The server compares the sent text with the transcript and records whether you edited it on the trace. The client sends no flag of its own. An unsent message keeps its voice reference when it returns to the bar.
+- **Failures.** The status line shows the server's own plain line. It offers Retry (same recording, no new take) when a second try can work, and Record again when the recording is too large, too long or in a format the server refuses. A browser-side problem (permission blocked, no microphone, no recording support) shows its line with Try again. A server that has no voice support (503, or an older server that answers 404) leaves the mic disabled until you reload.
+- **Browsers.** Chrome and Edge record WebM, Firefox WebM or Ogg, Safari MP4. All use Opus or AAC at 64 kbit/s, so a full recording is about 1 MB.
+
+### Ambience
+
+The toggle in the Presence head plays a quiet synthesized drone. It is off by default and the browser remembers your choice (`localStorage` key `ze.ambience`). A remembered "on" starts at your first click or key press, because browsers block sound before a gesture. With reduced motion set, a remembered "on" reads off until you press the toggle. The drone goes silent while you record, so it never reaches the transcript.
+
+### Old routes
 
 Old paths redirect to their place and keep params, query and hash. The table is `redirects` in `places.ts`.
 
@@ -87,6 +102,8 @@ Old paths redirect to their place and keep params, query and hash. The table is 
 | `/data`, `/governance/data` | `/governance#data` |
 | `/settings`, `/governance/settings` | `/governance#connections` |
 | `/workspace`, `/doing/workspace` | `/governance#files` |
+
+The prototype route is gone and has no redirect: an old prototype link shows the not-found page.
 
 A redirect entry can carry a `hint`. `RedirectTo` then replaces the incoming hash with the hint and keeps the query. An entry can also carry a `hintMap`, which lets an old hash win (`#your-data` becomes `#data`).
 
