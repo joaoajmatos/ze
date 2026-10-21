@@ -2,6 +2,11 @@ import re
 from typing import AsyncIterator
 
 from ze_agents.base_agent import BaseAgent
+from ze_agents.budget import (
+    DEFAULT_BUDGET_SECONDS,
+    conductor_budget,
+    set_soft_deadline,
+)
 from ze_agents.registry import agent
 from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_priority import WorldComposer
@@ -11,6 +16,7 @@ from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
 from ze_sdk import hold_token_sink, publish_honest_reply
 from ze_sdk.memory import PostgresMemoryStore
+from ze_sdk.proactive import NotificationStore
 
 _AGENT_INSTRUCTIONS = """\
 You reason from what you know and what the user tells you — you do not search the web.
@@ -102,6 +108,20 @@ empty, say which part you could not read.
 - When a "Composed answer" note is already in this turn, the modules are on screen \
 already: do not call the tool again, just write the sentence.
 
+Briefings:
+- Any question about a briefing Ze already sent ("how did the morning briefing do", \
+"what was in it", "did you send it today"): call get_briefing and answer from it \
+only: when it was sent, delivered or held, whether it was marked read in the notification centre \
+(never say the user opened or read it), and what it covered. If delivery_status is \
+"not confirmed as delivered", say that. If found is false, say no briefing is on record. For a briefing question \
+never fetch news or delegate to news.
+- "Render / show my morning briefing": call get_briefing, then render the stories with \
+render_table (or another render_* that fits) from its body. Never fetch fresh news for it. \
+If found is false, say no briefing is on record.
+- "Render / show the previous reply as cards, a table or a chart": use the earlier \
+assistant message in this conversation as the data and call the matching render_* tool \
+yourself; delegate only if the data is missing. Never say you cannot render.
+
 Using what you already know:
 - Apply retrieved facts silently when they change the answer (tone, constraints, names).
 - Do not announce "I remember that you…" or dump the biography unsolicited.
@@ -140,17 +160,22 @@ class CompanionAgent(BaseAgent):
       fire time are open loops.
     """
     routing_criteria = """
-      Use for: chat and greetings, emotional check-ins, reasoning about the user's own
-      situation or decisions, writing help, questions about what you know of the user,
+      Use for: any request to render, show, display or lay out something as cards, a
+      table, a chart or a timeline, including the previous reply or the morning briefing
+      ("render my morning briefing", "show me that as a table"); chat and greetings,
+      emotional check-ins, reasoning about the user's own situation or decisions, writing help, questions about a briefing Ze already
+      sent (when, what it covered, whether it was marked read), questions about what you know of the user,
       and requests that need several specialists in turn.
       Not for: a matter the user is undecided about and asks you to keep on their radar
       or keep an eye on (open loops), anything that needs facts from the web, a
       comparison, a how-to, or recent events. Those go to the agent that searches the web, even when you could
       answer from memory. Not for calendar, email, reminders or news either.
+      A question about a briefing Ze already sent, even worded "did you send it",
+      is yours, not email.
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"
-    timeout = 60
+    timeout = DEFAULT_BUDGET_SECONDS
     tools = [
         "remember_fact",
         "forget_fact",
@@ -168,6 +193,7 @@ class CompanionAgent(BaseAgent):
         "show_slipping",
         "show_decisions",
         "show_topic",
+        "get_briefing",
     ]
 
     def __init__(
@@ -178,19 +204,26 @@ class CompanionAgent(BaseAgent):
         memory_store: PostgresMemoryStore,
         outreach_log: OutreachLog | None = None,
         world_composer: WorldComposer | None = None,
+        notification_store: NotificationStore | None = None,
     ) -> None:
         self._settings = settings
+        self.timeout, self._wrap_up_reserve = conductor_budget(settings.config)
         self._client = openrouter_client
         self._person_store = person_store
         self._outreach_log = outreach_log
         self._memory_store = memory_store
         self._world_composer = world_composer
+        self._notification_store = notification_store
 
     def tool_deps(self) -> dict:
-        return {"memory_store": self._memory_store}
+        return {
+            "memory_store": self._memory_store,
+            "notification_store": self._notification_store,
+        }
 
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "companion.thinking")
+        set_soft_deadline(ctx, self.timeout - self._wrap_up_reserve)
         original_sink = hold_token_sink(ctx)
         try:
             response, loop_tool_calls = await self.agentic_loop(
@@ -202,6 +235,7 @@ class CompanionAgent(BaseAgent):
                     **self.tool_deps(),
                     "world_composer": self._world_composer,
                     "preset": ctx.preset,
+                    "notification_store": self._notification_store,
                 },
             )
         finally:
@@ -229,16 +263,25 @@ class CompanionAgent(BaseAgent):
         event = _detect_outreach_event(ctx.prompt)
         if event is None:
             return None
+        contact_name = await self._known_contact(event["candidates"])
+        if contact_name is None:
+            return None
         return await self.call_tool(
             "log_outreach_event",
             ctx,
-            contact_name=event["contact_name"],
+            contact_name=contact_name,
             event_type=event["event_type"],
             channel=event["channel"],
             notes=ctx.prompt,
             campaign_store=self._outreach_log,
             person_store=self._person_store,
         )
+
+    async def _known_contact(self, candidates: list[str]) -> str | None:
+        for name in candidates:
+            if await self._person_store.get_by_name(name):
+                return name
+        return None
 
 
 def _detect_outreach_event(text: str) -> dict | None:
@@ -266,4 +309,9 @@ def _detect_outreach_event(text: str) -> dict | None:
             channel = ch
             break
 
-    return {"contact_name": names[0], "event_type": event_type, "channel": channel}
+    return {
+        "contact_name": names[0],
+        "candidates": names,
+        "event_type": event_type,
+        "channel": channel,
+    }

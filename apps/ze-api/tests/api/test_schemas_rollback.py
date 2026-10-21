@@ -160,7 +160,7 @@ def test_trace_response_maps_rollback():
         subtasks=[],
         memory_chunks=[],
         tool_calls=[],
-        total_duration_ms=0,
+        tool_duration_ms=0,
         rollback=RollbackTrace(
             replaces="m1",
             entries=[

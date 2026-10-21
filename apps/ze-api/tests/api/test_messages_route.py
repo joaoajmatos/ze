@@ -36,7 +36,7 @@ def _trace(skills_used: list[SkillUsageTrace] | None = None) -> MessageTrace:
                 name="search", result_snippet="ok", duration_ms=10, success=True
             )
         ],
-        total_duration_ms=100,
+        tool_duration_ms=100,
         skills_used=skills_used or [],
     )
 
@@ -404,3 +404,48 @@ async def test_get_message_trace_screen_is_null_when_absent():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get(f"/api/v0/messages/{uuid4()}/trace", headers={"Authorization": f"Bearer {API_KEY}"})
     assert resp.json()["screen"] is None
+
+
+@pytest.mark.asyncio
+async def test_script_step_and_its_children_reach_the_trace_route() -> None:
+    from ze_core.conversation.messages.types import ScriptTrace
+
+    trace = _trace()
+    trace.tool_calls = [
+        ToolCallTrace(
+            name="run_tool_script",
+            result_snippet="{}",
+            duration_ms=9,
+            success=True,
+            access="script",
+            call_id="step",
+            script=ScriptTrace(
+                source="x = 1",
+                source_cut=False,
+                outcome="limit",
+                limit="inner_calls",
+                source_hash="abc",
+                procedure_id=None,
+            ),
+        ),
+        ToolCallTrace(
+            name="get_transactions",
+            result_snippet="[]",
+            duration_ms=2,
+            success=True,
+            parent_call_id="step",
+        ),
+    ]
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=trace)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=_make_app(store)), base_url="http://test"
+    ) as client:
+        resp = await client.get(f"/api/v0/messages/{uuid4()}/trace")
+
+    assert resp.status_code == 200
+    step, child = resp.json()["tool_calls"]
+    assert step["access"] == "script" and step["parent_call_id"] is None
+    assert step["script"]["limit"] == "inner_calls" and step["script"]["source"] == "x = 1"
+    assert child["parent_call_id"] == "step" and child["script"] is None

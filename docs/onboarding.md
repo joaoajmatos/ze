@@ -17,13 +17,13 @@ Reusable onboarding logic lives in `core/ops/ze-onboarding`:
 
 Deployment adapters live in `apps/ze-api`:
 
-- `ze_api.api.websocket.onboarding.send_onboarding_view()` serializes onboarding views
+- `ze_api.api.ws.onboarding.send_onboarding_view()` serializes onboarding views
   into WebSocket `message` frames.
-- `ze_api.api.websocket.component_submit.handle_component_submit()` routes onboarding
+- `ze_api.api.ws.component_submit.handle_component_submit()` routes onboarding
   submissions back into the coordinator.
-- `ze_api.api.websocket.commands.handle_command()` starts onboarding on demand.
-- `ze_api.container` wires the Postgres-backed store, persistence adapter, and reset
-  service into `OnboardingCoordinator`.
+- `ze_api.api.ws.commands.handle_command()` starts onboarding on demand.
+- `ze_api.wiring.container` builds the `OnboardingCoordinator` from `ze_onboarding`'s
+  own Postgres-backed store and persistence adapter. There is no reset service.
 
 Plugin authors should import from `ze_sdk.onboarding`, not from `ze_api`.
 
@@ -161,19 +161,8 @@ Interactive onboarding components submit structured payloads:
 Outside onboarding, existing form and confirm components still fall back to chat-text
 submission for compatibility.
 
-## Reset Scopes
+## Resetting a dev database
 
-`ResetService` previews and runs scoped resets. Only the developer script
-`scripts/reset_personal_state.py` uses it. The WebSocket `reset_preview` and `reset`
-commands are gone, and the web app has no reset control. Delete all data in
-Governance › Data is the one destructive action in the app. Execution requires
-`confirm: "RESET"`.
-
-- `memory`: memory entities, facts, episodes, events, relationships, task state, profile facets, and the procedure tables.
-- `personal_state`: memory plus messages, pending confirmations, prospecting campaigns and outreach,
-  contacts, goals (with their learnings and traces), workflows, reminders, insights,
-  news cache, checkpoints, and onboarding tables.
-- `full_dev`: reserved for external database recreate tooling; not executed through
-  `ResetService`.
+Ze has no reset service. To start over in development, run `make db-reset`, or `make db-reset-seed` to also apply the dev seed data. Delete all data in Governance › Data is the one destructive action in the app.
 
 Do not log raw onboarding submissions; they may contain sensitive user data.

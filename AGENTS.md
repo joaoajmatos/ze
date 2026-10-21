@@ -21,7 +21,6 @@ ze/                           # monorepo root
 │   │   │   └── ze_agents/
 │   │   │       ├── interface/   # AppInterface ABC, InputPreprocessor, validation, types
 │   │   │       ├── progress/    # ProgressReporter, translations
-│   │   │       ├── onboarding/  # Re-exports ze_onboarding types for agents
 │   │   │       ├── base_agent.py # BaseAgent ABC with agentic_loop; optional routing_criteria (Choice text, falls back to description)
 │   │   │       ├── claims.py    # Shared ClaimKind / Provenance / Confidence / decay() vocabulary
 │   │   │       ├── client.py    # LLMClient Protocol
@@ -37,7 +36,10 @@ ze/                           # monorepo root
 │   │   │       ├── system_one.py # SystemOneClient Protocol — typed judgments (noul / choice / score)
 │   │   │       ├── park.py      # Parked writes, loops and subtasks; WriteConfirmation
 │   │   │       ├── effects.py   # effect_imperative, ensure_declined_lines
-│   │   │       └── tool.py      # @tool decorator, ToolAccess, asks_first
+│   │   │       ├── scripts.py   # run_tool_script contract: ScriptLimits, ScriptRunner Protocol, budget ContextVars
+│   │   │       ├── script_stub.py # ze_tools stub builder, normalize_source, tool_signature (pure)
+│   │   │       ├── script_step.py # run_script_step — dispatcher, result shaping, proposed writes
+│   │   │       └── tool.py      # @tool decorator, ToolAccess, asks_first, produces_ui, egress
 │   │   ├── ze-communication/    # Channel contract — types, outbound/inbound ABCs, registry
 │   │   │   └── ze_communication/
 │   │   │       ├── types.py     # ChannelType, ChannelHandle, Message, SentMessage, Thread, InboundMessage
@@ -56,10 +58,10 @@ ze/                           # monorepo root
 │   │       └── ze_core/
 │   │           ├── conversation/# invoke_raw_turn (turn.py) — streamed graph turn entry point; retry.py (Retry eligibility), rewind.py, rollback.py (run_rollback — undo a reply's actions before a retry)
 │   │           ├── openrouter/  # OpenRouterClient, System One client (engine internal — plugins use the Protocols)
-│   │           ├── orchestration/# graph_builder, graph nodes, AgentState, edges, judgment_state (shared System One state)
+│   │           ├── orchestration/# graph_builder, graph nodes, AgentState, edges, judgment_state (shared System One state), timing.py (timed() wraps every node)
 │   │           ├── screen/      # Screen resolver registry + build_screen_note (the 1,200-character screen note built before routing)
 │   │           ├── routing/     # EmbeddingRouter, tier.py (System One model tier), fallback, store
-│   │           ├── telemetry/   # CostTracker, CostReconciler, PostgresCostStore, ContextVar
+│   │           ├── telemetry/   # CostTracker, CostReconciler, PostgresCostStore, ContextVar, turn.py (TurnTelemetry per-turn recorder)
 │   │           ├── container.py # Base Container with DI wiring and invoke/resume entry points
 │   │           ├── voice.py     # transcribe_audio — measure, limit and transcribe one voice recording (route)
 │   │           ├── embeddings.py # Shared intfloat/multilingual-e5-base singleton
@@ -123,6 +125,8 @@ ze/                           # monorepo root
 │       ├── ze-workspace/         # Isolated computer — files, shell, skill scripts
 │       │   └── ze_workspace/
 │       │       ├── client.py    # WorkspaceClient HTTP to sidecar
+│       │       ├── scripts.py   # WorkspaceScriptRunner — WS /scripts relay for run_tool_script
+│       │       ├── script_learning.py # tool_script procedure candidates from script action records
 │       │       ├── gate.py      # WorkspaceGate (action × origin; no execution modes since phase 161)
 │       │       ├── tools.py     # workspace_* @tools (not imported by ze-core/ze-agents)
 │       │       ├── store.py     # workspace_state + workspace_runs
@@ -177,9 +181,8 @@ ze/                           # monorepo root
 │   │   │   ├── api/          # FastAPI app, WebSocket endpoint, REST routes
 │   │   │   ├── interface/    # NativeAppInterface (WebSocket + ntfy delivery)
 │   │   │   ├── migrations/   # Alembic env.py + meta-runner entry (no owned tables)
-│   │   │   ├── compose.py    # Proactive job registration fan-out
-│   │   │   ├── container.py  # ZeContainer (registers all ZePlugins)
-│   │   │   ├── migrate.py    # Meta-runner: discovers all package migration paths
+│   │   │   ├── wiring/       # container.py (ZeContainer, registers all ZePlugins), jobs.py (proactive job registration), hooks, stores, agents
+│   │   │   ├── cli/          # migrate.py (meta-runner: discovers all package migration paths), seed.py, openapi_export.py
 │   │   │   └── settings.py   # ZeApiSettings (shell env + YAML)
 │   │   ├── config/
 │   │   │   ├── config.yaml   # Models, contacts, proactive schedules (secrets in .env)
@@ -205,39 +208,40 @@ Declared `ze-*` dependencies from each package's `pyproject.toml`:
 ```
 ze-logging        (no ze deps)             core/kernel/
 ze-data           (no ze deps)             core/kernel/
-ze-components   → ze-agents                core/kernel/
-ze-agents       → ze-logging, ze-onboarding  core/contracts/  ← cycle: ze-agents ↔ ze-onboarding
+ze-components   → ze-agents, ze-logging  core/kernel/
+ze-agents       → ze-logging  core/contracts/
 ze-communication→ ze-agents                core/contracts/  ← channel types, ABCs, registry
-ze-plugin       → ze-agents, ze-data, ze-logging  core/contracts/
-ze-proactive    → ze-agents, ze-logging    core/contracts/
+ze-plugin       → ze-agents, ze-communication, ze-data, ze-logging  core/contracts/
+ze-proactive    → ze-agents, ze-data, ze-logging  core/contracts/
 ze-core         → ze-agents, ze-communication, ze-components, ze-data, ze-logging, ze-memory, ze-plugin  core/engine/  ← engine; never a plugin dep
-ze-collision    → ze-agents, ze-plugin, ze-logging  core/seam/  ← contribution collision detection; wired by ze-api directly
-ze-memory       → ze-agents, ze-plugin, ze-collision, ze-logging  core/cognition/  ← ze-plugin: Contribution seam (Signal write path)
-ze-correlation  → ze-agents, ze-logging, ze-memory, ze-proactive, ze-plugin, ze-collision  core/cognition/  ← cross-domain hypothesis formation; ze-plugin: Contribution seam
-ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation, ze-plugin, ze-collision, ze-logging  core/cognition/  ← open loops; wired by ze-api directly; ze-plugin: Contribution seam (loop write path)
-ze-automation   → ze-agents, ze-proactive, ze-memory, ze-components, ze-data, ze-logging  core/automation/  ← goals + workflows; wired by ze-api directly
-ze-skills       → ze-agents, ze-proactive, ze-logging, ze-data, ze-memory  core/automation/  ← agent skills; wired by ze-api directly
-ze-priority     → ze-agents, ze-components, ze-proactive, ze-worldstate, ze-automation, ze-correlation, ze-plugin, ze-collision  core/arbitration/  ← attention arbitration (PriorityView + shared push budget) + user-directed priority override; wired by ze-api directly; ze-plugin: Contribution seam (reprioritization write path)
-ze-workspace    → ze-agents, ze-logging, ze-data, ze-memory, ze-plugin  core/ops/  ← isolated computer; wired by ze-api; ze-core/ze-agents must not import it
-ze-onboarding   → ze-agents, ze-memory     core/ops/  ← cycle: ze-onboarding ↔ ze-agents
-ze-ingestion    → ze-agents, ze-browser, ze-logging, ze-memory  core/ops/  ← imports ze_yt optionally (try/except ImportError)
-ze-seed         → ze-automation, ze-core, ze-logging, ze-memory, ze-onboarding  core/ops/
+ze-collision    → ze-agents, ze-logging, ze-plugin  core/seam/  ← contribution collision detection; wired by ze-api directly
+ze-memory       → ze-agents, ze-collision, ze-data, ze-logging, ze-plugin, ze-proactive  core/cognition/  ← ze-plugin: Contribution seam (Signal write path)
+ze-correlation  → ze-agents, ze-collision, ze-logging, ze-memory, ze-plugin, ze-proactive  core/cognition/  ← cross-domain hypothesis formation; ze-plugin: Contribution seam
+ze-worldstate   → ze-agents, ze-collision, ze-correlation, ze-data, ze-logging, ze-memory, ze-plugin, ze-proactive  core/cognition/  ← open loops; wired by ze-api directly; ze-plugin: Contribution seam (loop write path)
+ze-automation   → ze-agents, ze-components, ze-data, ze-logging, ze-memory, ze-plugin, ze-proactive  core/automation/  ← goals + workflows; wired by ze-api directly
+ze-skills       → ze-agents, ze-logging, ze-memory, ze-plugin, ze-proactive  core/automation/  ← agent skills; wired by ze-api directly
+ze-priority     → ze-agents, ze-automation, ze-collision, ze-components, ze-correlation, ze-logging, ze-plugin, ze-worldstate  core/arbitration/  ← attention arbitration (PriorityView + shared push budget) + user-directed priority override; wired by ze-api directly; ze-plugin: Contribution seam (reprioritization write path)
+ze-workspace    → ze-agents, ze-logging, ze-memory, ze-plugin, ze-proactive  core/ops/  ← isolated computer; wired by ze-api; ze-core/ze-agents must not import it
+ze-onboarding   → ze-agents, ze-memory, ze-plugin  core/ops/
+ze-ingestion    → ze-agents, ze-browser, ze-logging, ze-memory, ze-plugin  core/ops/  ← imports ze_yt optionally (try/except ImportError)
+ze-seed         → ze-core, ze-logging  core/ops/
 ze-eval           (no ze deps — HTTP only) core/ops/  ← eval infrastructure
 ze-sdk          → ze-agents, ze-automation, ze-collision, ze-communication, ze-correlation, ze-data, ze-logging, ze-memory, ze-onboarding, ze-plugin, ze-proactive  packages/  ← plugin entry point
-ze-browser      → ze-core                  integrations/  ← code imports only ze_agents
+ze-browser      → ze-agents  integrations/
 ze-notifications  (no ze deps)             integrations/
 ze-trading212     (no ze deps)             integrations/
-ze-google       → ze-communication         integrations/  ← GmailChannel now lives here
-ze-yt           → ze-ingestion             integrations/  ← also imports ze_logging (undeclared)
-ze-personal     → ze-sdk, ze-news, ze-automation, ze-priority, ze-components, ze-seed   plugins/
-ze-messenger    → ze-sdk, ze-google, ze-personal            plugins/
-ze-prospecting  → ze-sdk, ze-browser, ze-personal           plugins/
-ze-calendar     → ze-sdk, ze-google, ze-personal, ze-components, ze-seed   plugins/
-ze-news         → ze-sdk, ze-personal, ze-components        plugins/  ← cycle: ze-personal ↔ ze-news
-ze-finance      → ze-sdk, ze-ingestion, ze-trading212       plugins/
-ze-api          → ze-automation, ze-browser, ze-calendar, ze-collision, ze-components, ze-core, ze-correlation, ze-data,
-                    ze-finance, ze-google, ze-ingestion, ze-logging, ze-memory, ze-messenger, ze-news, ze-notifications,
-                    ze-onboarding, ze-personal, ze-priority, ze-prospecting, ze-seed, ze-skills, ze-workspace, ze-worldstate, ze-yt   apps/
+ze-google       → ze-agents, ze-communication  integrations/  ← GmailChannel lives here
+ze-yt           → ze-ingestion, ze-logging  integrations/
+ze-personal     → ze-automation, ze-components, ze-news, ze-priority, ze-sdk, ze-seed  plugins/
+ze-messenger    → ze-google, ze-personal, ze-sdk  plugins/
+ze-prospecting  → ze-browser, ze-personal, ze-sdk  plugins/
+ze-calendar     → ze-components, ze-google, ze-personal, ze-sdk, ze-seed  plugins/
+ze-news         → ze-components, ze-sdk  plugins/
+ze-finance      → ze-ingestion, ze-sdk, ze-trading212  plugins/
+ze-api          → ze-agents, ze-automation, ze-browser, ze-calendar, ze-collision, ze-communication, ze-components, ze-core,
+                    ze-correlation, ze-data, ze-finance, ze-google, ze-ingestion, ze-logging, ze-memory, ze-messenger, ze-news,
+                    ze-notifications, ze-onboarding, ze-personal, ze-plugin, ze-priority, ze-proactive, ze-prospecting, ze-seed,
+                    ze-skills, ze-workspace, ze-worldstate, ze-yt   apps/
 ze-web            (React — connects to ze-api over WebSocket, no Python deps)         apps/
 ```
 
@@ -446,21 +450,21 @@ See `docs/adding-an-agent.md` for the full authoring guide.
    `migrations_path()` — see "Migration ownership" below.
 
 Plugin discovery, topological ordering, and graph hook merging are automatic.
-Add types to `plugin_deps` in `ze_api/container.py` only when the plugin
+Add types to `plugin_deps` in `ze_api/wiring/container.py` only when the plugin
 constructor needs a shared service not already in the dep map (phase 47b).
 
 ## Migration ownership
 
 Every package that owns database tables owns its own Alembic migration chain.
-`ze_api/migrate.py` is a meta-runner: it discovers all chains via `version_locations`
+`ze_api/cli/migrate.py` is a meta-runner: it discovers all chains via `version_locations`
 and runs them against a single `alembic_version` table.
 
 | Package | Branch prefix | Tables |
 |---|---|---|
 | ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, LangGraph checkpoints, messages, sessions, pending_confirmations, messages.rollback (`zc032`), messages.screen_context (`zc039`); capability_overrides dropped (`zc034`); routing_log.complexity and routing_log.model_selected dropped (`zc035`, phase 182) |
 | ze-automation | `zc` (continues ze-core chain) | held_writes (`zc033`), goal_execution_traces, goal_suggestions (stuck goals col, reuse hint col), workflows, workflow_executions, workflow_revisions, accountability_anomalies, goal_learning_* (`zc030`; drops the old goal_learnings) |
-| ze-personal | `zc` (continues ze-automation chain) | contacts, contact_channels, contact_sources, insights, episodes.contacts_extracted, user_channels, user_channel_watermarks, thread_channel_map (contact_relationships dropped in `zc029`) |
-| ze-memory | `zm` | memory_entities, memory_facts, memory_episodes, memory_events, memory_task_state, memory_profile_facets, memory_relationships, memory_signals, memory_session_summaries, memory_retrieval_cache, memory_dream_*, memory_episode_metadata, action_records, procedure_* (`zm022`–`zm023`; replace memory_procedures), feedback_records (`zm024`) |
+| ze-personal | `zc` (continues ze-automation chain) | contacts, contact_channels, contact_sources, insights, episodes.contacts_extracted, user_channels, user_channel_watermarks (`last_outcome`, `last_outcome_at` in `zc040`), thread_channel_map (contact_relationships dropped in `zc029`) |
+| ze-memory | `zm` | memory_entities, memory_facts, memory_episodes, memory_events, memory_task_state, memory_profile_facets, memory_relationships, memory_signals, memory_session_summaries, memory_retrieval_cache, memory_dream_*, memory_episode_metadata, action_records, procedure_* (`zm022`–`zm023`; replace memory_procedures), feedback_records (`zm024`), action_records JSON repair + subject-key indexes (`zm025`) |
 | ze-onboarding | `zo` | onboarding_sessions, onboarding_steps, onboarding_seeds |
 | ze-correlation | `zcor` | correlation_hypothesis |
 | ze-worldstate | `zw` | open_loops, open_loop_sources (`zw003`), open_loops.reminder_id (`zw004`), open_loops.confidence_prior / confidence_changed_at (`zw005`) |
@@ -487,7 +491,7 @@ and runs them against a single `alembic_version` table.
 - ze-api runs migrations but owns no tables.
 - Never add plugin-owned tables to ze-api migrations.
 - For `ZePlugin` subclasses: create `<pkg>/migrations/` and override `migrations_path()` — the runner discovers it automatically.
-- For non-plugin core packages (ze-core, ze-memory, ze-onboarding, ze-correlation, ze-proactive, ze-ingestion, ze-automation, ze-worldstate, ze-skills, ze-workspace, ze-collision, ze-priority): add an explicit `_ZE_*_VERSIONS` constant in `ze_api/migrate.py`.
+- For non-plugin core packages (ze-core, ze-memory, ze-onboarding, ze-correlation, ze-proactive, ze-ingestion, ze-automation, ze-worldstate, ze-skills, ze-workspace, ze-collision, ze-priority): add an explicit `_ZE_*_VERSIONS` constant in `ze_api/cli/migrate.py`.
 - Use `depends_on` in migration files for cross-package ordering (e.g. ze-prospecting depends on `zc005` for the contacts table).
 
 ## LangGraph graph flow
@@ -657,6 +661,7 @@ preflight → blocked (disabled agent) → END
 | 184 | Composed Answers and Claim Posture (B1) — `ClaimPosture` on every primitive, set only by code from the stored record (a model-supplied `claim` is dropped); new `headline`, `claim_card`, `claim_timeline` primitives; `ze_priority/compose/` `WorldComposer` builds slipping, decisions and topic answers from stored records (parallel read, per-source failure named); preset chips send `context.compose`/`topic` and `fetch_context` reroutes to companion under a 2 s timeout, typed questions use `show_slipping`/`show_decisions`/`show_topic`; topic matching keeps an item that shares a topic word or has E5 cosine ≥ 0.90; derived `failure_summary` on workflow runs; goal list progress fields and `STUCK_IDLE_DAYS`; `notifications.target_parent_id` (`zpro005`) and notification deep links; inline loop mentions are claim cards (`open_items` removed) | Implemented |
 | 190 | Governance (W6) — `/governance` answers "is Ze behaving?" in five modules (Spend, Attention, Data, Connections, Files) under `pages/governance` and `widgets/{spend,attention,data,connections,files}`; new `SeriesSpark` in `shared/ui/hud`; redirect entries gain `hint`/`hintMap` so `/settings`, `/data`, `/workspace` land on `/governance#connections`, `#data`, `#files`; Spend compares the last 7 days' daily average with the 30-day average; Attention shows the 185 push budget as `Dots`, held count and recent push outcomes beside the quiet-hours form; Files is read-only; hard cuts: WS `reset_preview`/`reset`, `GET /api/v0/activity/heatmap` and its aggregator, the costs/data/settings/workspace pages and widgets, `heatmap-chart`; the local "Reset configuration" became "Forget this server"; Governance publishes `focused_module` (195); no migration | Implemented |
 | 187 | Ask / Assemble (W3) — `/ask` is the Assemble canvas. `entities/conversation` (one reducer per thread, the seven conversation frames) replaces the per-instance `useChatWorkspace`; `features/turn-stream` mounts one `TurnFrameHandler` in the shell (rail flags, orb, ack, delivery watchdog that pauses on a confirmation), `sendTurn` is the one send path, and a frame registry test enforces one state owner per frame. `widgets/assemble` draws each reply as a sentence plus a module per component (A·NN ids, pin, dismiss, cascade from the orb, Chat about this), places confirmations and Retry in the canvas and the overlay, and the Ask bar is on every place with a workspace attach. `@myguyze/ze-ui` takes a `classNames` map and `renderHeadline`. The trace is a rail of instruments (Signal path, Routing, Memory, Tools, Judgments, Reversal, readouts) drawn only from `MessageTrace` and `trace_update`; `ToolCallTraceResponse` gains `agent` and `call_index`, and `trace_update` gains `compaction` and `resume_recap_applied`. A displaced window shows "Ze is open in another window · Use here". Deleted: `widgets/chat-workspace`, `features/chat-side-panel`, `features/load-chat-history`, `pages/chat`, the starfield effects, the `/jarvis` composition; no migration | Implemented |
+| 187b | Trace Telemetry — one in-process `TurnTelemetry` recorder per turn (`ze_core/telemetry/turn.py`, a registry keyed by thread that survives a confirmation pause) measures the turn on the server on one monotonic clock; `timed()` (`orchestration/timing.py`) wraps every graph node, including plugin and workflow nodes, and sends one partial `stages` frame per node through a non-blocking ordered sender (a frame stuck for 1 s is dropped; the committed trace is the complete record, drained before it goes out); `CostTracker.record` adds each model call, so the stamped trace carries `stages`, `turn_duration_ms`, `paused_ms`, `usage` (tokens and cost per model, largest-prompt context fill, System One tokens apart) and `telemetry_partial`; `total_duration_ms` is hard-cut to `tool_duration_ms`; the router puts `threshold`/`gap_threshold` on every envelope and the trace carries `routing_scores` (top 9) and `routing_thresholds`; judgment rows carry `surface` and the `bar` in force (routing, skills, complexity, commitment intake); `ToolCall` gains `call_id` and `started_at`, `ParkedWrite.trace_call_id` makes a parked call and its approved run one id, and `call_tool` hands every finished call (delegate wrapper included) to `AgentContext.tool_sink`, which ze-core sends as truthful live tool rows (the `on_tool_end` partial is deleted); the memory partial gains `extraction_confidence`; web: `toTraceFrame` and `useTraceStore` merge server stages and tool rows by `call_id`, the arrival stamps and `MessageTracePanel` are deleted, and the six instruments read the server fields; no migration | Implemented |
 | 186 | World (W2) — the home at `/` (`pages/world`, `useWorld` joins nine queries plus the pending-confirmation store): the Field (`widgets/world-field`: time left × how sure, claim-kind marks, a Slipped band that wins over the deadline, a trail only from `confidence_prior`, reorder and pin by drag or keyboard, a ranked list on phones), Needs you (held writes through one `HeldWriteCard`, goal gates through `features/answer-gate`, suspected loops, chat confirmations), Doing now, Loops, Touched and While you were away; `?focus=<kind>:<id>` links (`focusHref`, `notificationHref` in `shared/lib`); the shell's `rail-slot` takes Needs you and Doing now under Presence; World invalidates on `message`, `notification` and `refresh` frames; the four priority hooks throw on a failed read so an error never reads as "nothing tracked"; deleted: `pages/loops`, `pages/priority`, `widgets/loop-review`, `widgets/priority-snapshot`, `WorldInterim`, the bell's held-write list and `?confirm=`, and ze-calendar's Reminders page and `getRemindersPage`; no migration | Implemented |
 | 188 | Doing (W4) — `/doing` answers what runs without the user, what it did and what waits for it, in five modules (Needs you, Goals, Workflows, Runs, Skills) under `pages/doing` and `widgets/{doing-needs-you,goals-board,workflows-board,runs,skills-queue}`; `/doing/goals/:id` (gate first, `milestone-field`, learnings with review, traces as a readout, linked loops with their reminders) and `/doing/workflows/:id` (restyled flowchart, live execution, runs with `failure_summary`, revisions); `features/answer-gate` gains the `goal_stuck` variant (Redirect, Pause, Abandon asks once, 15 s timeout line); workspace runs are new in the web app (`useWorkspaceRunsQuery` polls every 5 s while one runs, `useCancelWorkspaceRunMutation` treats 404/409 as a plain outcome, `isAlarm` is coral only for unattended `failed`/`timed_out`); hard cuts: the Goals, Workflows and Skills pages and widgets, `GoalCard`, the "Current definition" banner, `stepsDifferFromSnapshot`, `DoingInterim`; `goalsPath()`/`workflowsPath()` return `/doing#goals|workflows`; no backend change, no migration | Implemented |
 | 185 | World Data Gaps (B2) — four values the new places need over REST. `ze_proactive.attention_budget.budget_status()` is the one rolling-24-hour budget count (`PushLogStore.window_sent_at` replaces `count_sent_within_hours`); `GET /api/v0/notifications/budget` (`used`, `remaining`, `next_slot_at`, `held_count`, `quiet_hours_active`) and the budget fields leave `QuietHoursResponse`; `listNotifications` gains `delivery`/`push_class`/`since` and `urgency`/`delivered_at`; `GET /api/v0/proactive/job-runs` lists the last run per job; `zw005` stamps `open_loops.confidence_prior`/`confidence_changed_at` on a real confidence change (corroboration's promote path writes once) and loop rows gain `drift_deadline`/`confirmed_at`; loop claim postures fill `confidence_from`; `GET /api/v0/hypotheses` + `POST .../feedback` (feedback now filters the push sweep, `PriorityView` and `who_is_on_project`); `GET /api/v0/reminders` in ze-calendar | Implemented |
@@ -664,6 +669,10 @@ preflight → blocked (disabled agent) → END
 | 192 | Voice Input Transport (B3) — `POST /api/v0/voice/transcriptions` (`transcribeVoice`) measures a recording with `ffprobe`, transcribes it with `whisper` and returns a `transcription_id` valid 10 minutes; a message that names a live id runs as a voice turn with `MessageTrace.input` (modality, duration, edited), and no transcript is kept; the audio-in-turn path is cut (`RawInput.audio`, `AgentState.audio_data`); `ffmpeg` in the ze-api image; spend flow `transcription`; no migration | Implemented |
 | 193 | Voice and Polish (W8) — voice input in the Ask bar (`features/voice-input`: `MediaRecorder` in WebM/Ogg/MP4, an analyser level the orb reads per frame, upload to `transcribeVoice`, the transcript fills the bar and the next send carries `context.voice.transcription_id` from Ask and through the overlay outbox; 115 s stop with a countdown from 105 s, hold `V`, Retry vs Record again vs Try again, a generation number per start); Presence `voice` states (`listening` while recording, `thinking` "transcribing"); `features/ambience` (the drone moved from the prototype, toggle in the Presence head, `ze.ambience`, gesture arming, no auto-start under reduced motion, ducked while recording); the Jarvis prototype, its route (no redirect), notes and palette test case are deleted; client queries throw on error; unreferenced style rules and layout components removed; DESIGN.md refreshed; no backend change, no migration; the critique ran as one single-context pass per place (scores 30-33 of 40); focus rings asserted per control on every place; the reduced-motion Ask run used a stubbed websocket (the test API's model key was over its limit) | Implemented |
 | 195 | Screen Context Awareness — the web app sends a typed `ScreenContext` (place, route, `subject`/`selection`/`visible` refs, focused module, canvas, `captured_at`; `ze_agents/screen.py`, `from_wire` never raises) and a `resolve_screen` node runs before `embed_route` on both pre-route branches (and the workflow graph). `ZePlugin.screen_resolvers()` registers one resolver per ref kind (`ze_core/screen/registry.py`, a duplicate kind fails startup; 16 kinds across automation, worldstate, memory, skills, workspace, correlation, proactive, personal, calendar, news); `build_screen_note` writes one honest note of at most 1,200 characters (300 ms per resolver, 800 ms total, first subject never cut, `missing`/`changed`/`failed`/`timeout`/`cut` stated) that `fetch_context` hands to the agent as `screen_context_note` (184's preset summary moved to `preset_note`). The context is stored on each user message (`messages.screen_context`, `zc039`) so Retry replays it; `MessageTrace.screen` reaches REST, the `trace_update` frame and the trace panel. A `chat_about` turn with a subject routes to the subject kind's owner agent (`ze_core/screen/owners.py`, `routing_method: screen`); the routing judge reads one subject line for typed asks only when `system_one.surfaces.routing.screen_hint` is true (ships off). Web: `entities/screen-context` store and `useScreenPublisher`, one send path in `useChatWorkspace`, the "Chat about this" chip (`Module.onChatAbout`, `c` key, `claim_card`) opening the overlay with suggestions and a curious-pet orb glance. Old `screen`/`goal_id`/`workflow_id`/`execution_id` fields and `_build_screen_context_note` deleted. Eval: scenario `setup:` rows and `{{name.field}}` substitution (`ze_eval/fixtures.py`), `eval/scenarios/screen_context.yaml`, `make calibrate-routing ARGS=--check-sets` and `eval/calibration/routing_screen.jsonl` (offline; no live calibration run). The screen_context scenarios ran live (first run 10 of 26 passed; chat_about 9 of 15 after owner routing; see the phase Handoffs); the chip capture is deferred to phase 193 | Implemented |
+| 194 | Accountability Surfaces (B4) — five read routes for the web places: `GET /api/v0/actions` (`listActionRecords`: the action ledger by goal, workflow, workflow run or workspace run, keyset cursor on `(occurred_at, id)`; `ActionRecordStore.list_by_subject` and the closed `ActionSubjectKind` map in ze-memory; the workflow-finished record now carries `workflow_id`), `GET /api/v0/collisions` (moved from the eval router to the product API, bad input is 422), `GET /api/v0/system/models` (`getModelSettings`: `complexity_enabled` is `ComplexitySurfaceConfig.calibrated`), `listLoops` with repeatable `state` and `since`, and `GET /api/v0/channels/status` (`listChannelStatus`); the inbound poll job records `ok`/`auth_failed`/`failed` on `user_channel_watermarks` (`zc040`, never moves the watermark; a never-working channel is registered on its first failure; push channels report `unknown`); `ze_google.is_auth_failure` keeps `google.auth` out of the messenger plugin; `ResetService`, its script and `make reset-personal-state` are deleted; fix: action records were written as double-encoded jsonb under the pool codec, repaired by `zm025` (which also adds the per-subject-key partial indexes); datetime query values need a timezone offset (422); a 401 from Google counts as `needs_reauth` | Implemented |
+| 191a | UI Primitives v2 — typed `PrimitiveAction` (`ask`, `tool`, `navigate`, `compose`) replaces string button actions; a `tool` action names an agent and one of its write tools that opted in with `@tool(ui_action=True, done_phrase=…)` and runs as a `ui_action` WS frame through `BaseAgent.run_action` and `call_tool`, so every write gate applies (asks-first writes send a `confirm_request`; the in-process gate pops on first confirm, times out, is superseded by a new turn, replays on reconnect; one `ui.tool_action` ledger record per run); `ui_action_result` frame; `ui_version` "2.0" on live message frames and plugin pages, unversioned stored trees render as legacy; `parsePrimitiveTree` validates node by node with a fallback node for unknown types; new `entity_facet`, `stat_row`, `claim_list`, `sparkline`, `card` and keyed `table`; render tools for stat row, keyed table and sparkline; `ProgressBar` removed; shared fixtures in `packages/ze-ui/fixtures/` and the dev-only `/dev/primitives` gallery; no migration | Implemented |
+| 191b | Plugin Modules in Slots — plugins add no pages. `UiContribution.kind` is `module` (a `slot` — `mind.entity`, `doing.run`, `governance.connections` — and an async `provider(ModuleSubject) -> ModuleResult`), `preset` (an Ask Try chip, at most two show) or `settings_section`; the page kind, `path`, `page_operation_id`, `show_in_mobile_nav` and `CORE_RESERVED_NAV_PATHS` are cut and an unknown kind fails startup; `GET /api/v0/ui/modules/{module_id}` (`getUiModule`) resolves the subject from Ze's own records, calls the provider under 3 s and refuses a view whose tool action names another plugin's agent, whose posture is not licensed for plugins, or that fails the primitive schema (502/504 plain lines); `request_module_refresh` sends a `module:<id>` refresh frame (`AppInterface.send_refresh`); ze-news contributes the preset, a Mind `Sources` module (articles tagged with a topic entity's name) and settings, its page is deleted; web `widgets/plugin-module` (`PluginModuleSlot`), 60 s visible polling, `/news` → `/ask`, the `:pluginPath` route, `pages/plugin-page`, `widgets/plugin-screen` and the `plugin` place are deleted; ze-personal's Contacts page stays for Mind › People; no migration | Implemented |
+| 197 | Programmatic Tool Use — `run_tool_script` gives every agent with a data read tool one short Python script that calls those reads in one model turn; the script runs in the workspace sidecar as the `zescript` user with no network, resource limits and scratch only, and the sidecar fails closed (scripts are `unavailable` unless it runs as root with `zescript` and reports `scripts_isolated`; `ZE_SCRIPTS_ALLOW_UNISOLATED=1` is test-only); each inner call runs through `call_tool`, so every gate applies; writes are proposed in `finish(...)` and run after the script under the confirmation rules; `produces_ui` and `egress` keep screen and URL-reaching tools out of the stub; `workspace.scripts` limits; `max_llm_calls` eval cap; three successes with one tool signature propose a `tool_script` procedure for review in Mind › Procedures; no migration | Implemented |
 
 ## graphify
 
@@ -749,9 +758,9 @@ before adding one.
 
 - `core/ops/ze-seed` (Phase 96) seeds dev data when `AUTO_SEED_DEV_DATA=true` (default on `make dev` / `make dev-full`); each run wipes the `seed-dev-*` namespace and re-applies narrative fixtures; plugins extend via `ZePlugin.seed_domains()`.
 - `ze-email` was renamed to `ze-messenger` (`plugins/ze-messenger/`); Gmail inbound channel lives in `integrations/ze-google`.
-- Plugin management UI registers via `ZePlugin.ui_contributions()`; `ze-web` loads nav/settings from `GET /api/v0/ui/manifest`; plugin REST routes mount via `rest_routes()`.
+- Plugins add no pages. `ZePlugin.ui_contributions()` returns modules (bound to a slot: `mind.entity`, `doing.run`, `governance.connections`), Ask presets and settings sections; `ze-web` reads them from `GET /api/v0/ui/manifest` and loads a module's tree from `GET /api/v0/ui/modules/{module_id}`; plugin REST routes mount via `rest_routes()`.
 - `apps/ze-web` follows Feature-Sliced Design: `pages → widgets → features → entities → shared`; query hooks live in `entities/<name>/api/`.
-- Chat inline UI uses `ze-components` `render_*` tools (table, metric, list, timeline, progress, confirm, form) rendered by `PrimitiveRenderer` below message bubbles.
+- Chat inline UI uses `ze-components` `render_*` tools (stat row, keyed table, sparkline, table, metric, list, timeline, progress, confirm, form) rendered by `PrimitiveRenderer` below message bubbles. Button actions are typed (`ask`, `tool`, `navigate`, `compose`); a tool action runs through the write gates via the `ui_action` frame.
 - `journal/` and `brag-output/` are gitignored local writing; treat as authoring notes, not product source.
 - Web places (phase 183): World, Ask, Doing, Mind, Governance. All five have their own pages, no interim file remains and the prototype route is gone: `/` is the World page (Needs you and Doing now sit in the shell rail under Presence); Ask is the Assemble canvas in `pages/ask/ui/AskPage.tsx` (187); `/doing` holds Needs you, Goals, Workflows, Runs and Skills, `/doing/goals/:id` and `/doing/workflows/:id` the detail pages, and `/doing/goals`, `/doing/workflows`, `/doing/skills` redirect to `/doing#goals|workflows|skills`; `/mind` holds Beliefs, People, entity search and Procedures, and `/mind/:entityId` the entity view. The Ask bar on every place but Ask opens a contextual overlay that sends on the thread selected in Ask.
 - Keep the phase 115 workspace sidecar (`core/ops/ze-workspace` + `sidecar/workspace`); chat-first map at `/workspace`; do not replace with Cloudflare Computer — borrow run-handle / exec-journal ideas instead.
@@ -759,4 +768,5 @@ before adding one.
 - Experiential learning is phases 135–139 (action-record ledger, instrumentation, evidence-backed learning, procedure lifecycle/activation); procedures are first-class, not only goal/workflow steps.
 - Memory honesty is phases 140–150 in `specs/arch/memory-honesty-roadmap.md`. Companion-conductor is `specs/arch/companion-conductor-roadmap.md` (151–161): companion sole speaker/conductor, fat `delegate_to_agent`, no `plan_sequential`/swarm; phase dir 151 is conductor ACI, not memory-honesty.
 - Every `WRITE` `@tool` declares `reversibility` (plus `undo_tool`/`undo_note` when reversible, and `effect_phrase`); an undeclared WRITE tool fails registration. Retry eligibility reads it. IRREVERSIBLE tools ask first unless they declare `asks_first=False` with a reason. A `REVERSIBLE` tool returns `undo_payload(...)` per call, only in the clean case, so Retry can undo that exact call. Perception holds two licences: `FACT` and `FEEDBACK_RECORD`.
+- Tool scripts (phase 197): `run_tool_script` is a harness capability with no opt-in; the stub is the agent's data read tools minus writes, `produces_ui` and `egress` tools. The script runs in the workspace sidecar (`zescript` user, no network; the sidecar fails closed and refuses unless isolated, and `ZE_SCRIPTS_ALLOW_UNISOLATED=1` is test-only) and needs `cap_add: [NET_ADMIN]` locally; without it `scripts_isolated` is false and scripts report `sandbox_unavailable`. Scripts are not verified on Fly: `fly.toml` sets no `NET_ADMIN`, and Ze runs locally. Unattended goal and workflow runs have no script runner.
 - `.cursor/rules/` is gitignored; do not commit Cursor rules.

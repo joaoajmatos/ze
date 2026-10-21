@@ -125,7 +125,7 @@ class Procedure:
     source_refs: list[UUID] = ...
 ```
 
-**Tables:** `procedure_candidates`, `procedure_versions` — pgvector embedding on `trigger + name` of admitted versions. Direct writes to a procedure table are hard-cut; sources submit candidates through `ProcedureAdmissionService`. `ProcedureDiscovery.match` returns ready or blocked guidance for agents and planners. Invocation is explicit (`invoke_procedure`) and never grants tools.
+**Tables:** `procedure_candidates`, `procedure_versions` — pgvector embedding on `trigger + name` of admitted versions. Direct writes to a procedure table are hard-cut; sources submit candidates through `ProcedureAdmissionService`. `ProcedureDiscovery.match` returns ready or blocked guidance for agents and planners. Invocation is explicit (`invoke_procedure`) and never grants tools. A `tool_script` candidate (source kind added in phase 197) holds one tool script; after approval, `run_tool_script(procedure_id=...)` reruns it.
 
 ### `TaskState`
 
@@ -455,7 +455,7 @@ memory:
 ## Nightly consolidation (2 AM UTC)
 
 **Module:** `ze_memory/consolidator.py`  
-**Scheduled in:** `ze_api/container.py` via `proactive_scheduler`
+**Scheduled in:** `ze_memory/bootstrap.py` (job id `memory_consolidation`, gated by `consolidation_enabled`), called from `ze_api/wiring/jobs.py`
 
 `MemoryConsolidator.run()` executes four passes in sequence:
 
@@ -521,6 +521,8 @@ Synthesis is skipped if fewer than `profile.min_facts` (3 default) reviewed fact
 | `GET /api/v0/memory/profile` | Current profile facets (latest synthesis) |
 | `POST /api/v0/memory/facts/review` | Confirm, reject, or edit a proposed fact |
 | `POST /api/v0/memory/consolidate` | Trigger a consolidation run manually |
+
+The action ledger has its own read: `GET /api/v0/actions` lists records newest first, for one goal, workflow, workflow run or workspace run, with keyset paging on `(occurred_at, id)`. A record belongs to a subject when its context holds that subject's id. Goal, workflow and workspace records carry one. The workflow-finished record carries both the workflow id and the run id, so a workflow's list shows each run's outcome. Calendar, reminder and prospecting records do not. See [Accountability surfaces](native-interface.md#accountability-surfaces).
 
 ### Manual consolidation
 

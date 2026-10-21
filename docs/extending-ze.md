@@ -153,8 +153,8 @@ Plugin discovery is automatic via the `ze.plugins` entry point. If your agent's
 `__init__` takes a type that is not already in the bootstrap dep map, either:
 
 - contribute it from an existing plugin via `agent_deps()`, or
-- add the service to `plugin_deps` in `ze_api/container.py` inside `build_container()`
-  when it is a shared infra type constructed before plugins load.
+- add the service to `plugin_deps` in `ze_api/wiring/container.py` inside
+  `build_container()` when it is a shared infra type constructed before plugins load.
 
 `NLIClient`, `LLMClient`, `SentenceTransformer` (embedder), and `asyncpg.Pool` are
 already in the dep map — annotate them on your `ZePlugin.__init__` when a job or
@@ -185,6 +185,37 @@ plugins/<pkg>/tests/agents/<name>/
 - Build `AgentContext` directly (it's a dataclass).
 - Test the park path: call each asks-first tool through `agentic_loop`, assert that it
   parks with its exact arguments, and assert that the function body did not run.
+
+---
+
+## Adding UI to a plugin
+
+A plugin is a source of data and behavior. It does not add screens. The five places (World, Ask, Doing, Mind, Governance) show what a plugin feeds into claims, loops, signals and actions. When a plugin needs a visual of its own, `ui_contributions()` returns one of three kinds:
+
+| Kind | What it is | Where it shows |
+|---|---|---|
+| `module` | A title, a `slot` and a `provider`, an async function `(ModuleSubject) -> ModuleResult(applies, components)`. | `mind.entity` (entity page), `doing.run` (workflow run), `governance.connections` (Connections card). |
+| `preset` | A label (40 characters or fewer) and a prompt (300 or fewer). | A chip in Ask's Try chips. Pressing it sends an ordinary turn. At most two plugin presets show. |
+| `settings_section` | A `settings_operation_id` for a route the plugin owns. | Governance › Connections. |
+
+```python
+def ui_contributions(self) -> list[UiContribution]:
+    return [
+        UiContribution(
+            id="ze_news.sources", plugin="ze_news", kind="module",
+            label="Sources", icon="newspaper", slot="mind.entity",
+            provider=self._sources,
+        ),
+    ]
+```
+
+Rules:
+
+- The provider reads its stores when called, never when `ui_contributions()` runs. Return `ModuleResult(applies=False)` when the store is not ready or the module does not cover the subject.
+- Ze builds the `ModuleSubject` from its own records. A plugin never receives client text.
+- Return serialized `ze_components` primitives. A `tool` action must name an agent the plugin registered and one of that agent's tools. Claim postures use kind `identity`, `fact`, `inference` or `suspicion`, subject `fact` or `person`, and a source from the shared provenance list. Ze refuses any other view and shows the plugin's failure line. Run `validate_plugin_tree(plugin, components)` (from `ze_sdk.ui`) in your own routes, such as a settings route.
+- A plugin contributes no browser script, no page and no route. A `page` kind or an unknown kind fails startup with an `AgentConfigError` that names the contribution.
+- After data changes, call `await request_module_refresh(interface, module_id)` so an open module updates.
 
 ---
 
@@ -425,6 +456,17 @@ email, creating or deleting a calendar event, or spending money.
 
 ---
 
+## Let a screen run your tool
+
+A button in a tree you build can run one of your agent's write tools. Opt the tool in and give it a line to show on success:
+
+```python
+@tool(access=ToolAccess.WRITE, ui_action=True, done_phrase="Marked as read.")
+async def mark_source_read(source_id: str, ...): ...
+```
+
+Then build the button with `ToolAction(owner="news", tool="mark_source_read", args={"source_id": "s-12"})`. Args are scalars. The press goes through the same write gates as chat, including the confirmation for an irreversible tool. A READ tool cannot opt in. See [native-interface.md](native-interface.md#screen-tool-actions).
+
 ## Error handling
 
 Raise typed errors from `ze_sdk.errors`. Never raise bare `Exception` or `ValueError`.
@@ -459,7 +501,7 @@ The error hierarchy:
 - [ ] `tools.py` with `@tool` functions — `access` and `description` set on each; `reversibility` and `effect_phrase` set on each `WRITE` tool
 - [ ] Module paths added to `plugin.agent_module_paths()` (tools module listed first)
 - [ ] All `__init__` parameters type-annotated
-- [ ] New shared dependencies added to `plugin_deps` in `ze_api/container.py` (only when no plugin already provides the type)
+- [ ] New shared dependencies added to `plugin_deps` in `ze_api/wiring/container.py` (only when no plugin already provides the type)
 - [ ] Progress keys added to `locales/en.yaml` (and `pt.yaml`) in the plugin package
 - [ ] Tests cover the golden path and the park path for asks-first tools
 

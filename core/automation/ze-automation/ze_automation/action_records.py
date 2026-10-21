@@ -72,7 +72,9 @@ async def emit_workflow_started(execution_id: UUID, workflow_id: UUID | None) ->
     )
 
 
-async def emit_workflow_finished(execution_id: UUID, status: str) -> None:
+async def emit_workflow_finished(
+    execution_id: UUID, status: str, workflow_id: UUID | None
+) -> None:
     mapping = {
         "completed": (ActionLifecycle.SUCCEEDED, ActionOutcome.SUCCESS, None),
         "success": (ActionLifecycle.SUCCEEDED, ActionOutcome.SUCCESS, None),
@@ -94,6 +96,6 @@ async def emit_workflow_finished(execution_id: UUID, status: str) -> None:
         producer_plugin="ze-automation",
         occurred_at=datetime.now(timezone.utc),
         summary=f"workflow execution {lifecycle.value}",
-        context=ActionContext(workflow_run_id=execution_id),
+        context=ActionContext(workflow_id=workflow_id, workflow_run_id=execution_id),
         failure_code=failure_code,
     )

@@ -62,6 +62,7 @@ describe("redirects", () => {
     ["/procedures", "/mind"],
     ["/doing/procedures", "/mind"],
     ["/contacts", "/mind"],
+    ["/news", "/ask"],
     ["/mind/graph", "/mind"],
     ["/workspace", "/governance"],
     ["/doing/workspace", "/governance"],
@@ -101,7 +102,7 @@ describe("redirects", () => {
 
   it("covers every old core route once", () => {
     expect(new Set(redirects.map((r) => r.from)).size).toBe(redirects.length);
-    expect(redirects).toHaveLength(25);
+    expect(redirects).toHaveLength(26);
   });
 });
 

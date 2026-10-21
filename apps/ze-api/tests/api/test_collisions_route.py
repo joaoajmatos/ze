@@ -1,4 +1,4 @@
-"""Integration-style tests for /api/v0/collisions (Phase 126)."""
+"""Integration-style tests for /api/v0/collisions (Phases 126, 194)."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from httpx import ASGITransport, AsyncClient
 from ze_agents.claims import ClaimKind
 from ze_plugin.contribution import SourceFunction, TargetFace
 
-from ze_api.api.eval.collisions import router
+from ze_api.api.v0.collisions.router import router
 from ze_collision.types import CollisionLogEntry
 
 API_KEY = "test-key"
@@ -117,3 +117,53 @@ async def test_list_collisions_applies_query_params():
     assert kwargs["entity_id"] == entity_id
     assert kwargs["source_function"] == SourceFunction.REFLECTION
     assert kwargs["limit"] == 10
+
+
+async def _get(app, params):
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        return await client.get(
+            "/api/v0/collisions",
+            params=params,
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+
+@pytest.mark.asyncio
+async def test_unknown_source_function_is_422_not_500():
+    app, store = _make_app()
+
+    resp = await _get(app, {"source_function": "nonsense"})
+
+    assert resp.status_code == 422
+    store.list.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("limit", [0, 201])
+async def test_limit_outside_range_is_422(limit):
+    app, _ = _make_app()
+
+    resp = await _get(app, {"limit": limit})
+
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_since_after_until_is_empty_list_without_a_query():
+    app, store = _make_app()
+
+    resp = await _get(
+        app, {"since": "2026-03-01T00:00:00Z", "until": "2026-02-01T00:00:00Z"}
+    )
+
+    assert resp.status_code == 200
+    assert resp.json() == []
+    store.list.assert_not_called()
+
+
+def test_dev_router_no_longer_serves_collisions():
+    from ze_api.api.eval import dev_router
+
+    assert not [r for r in dev_router.routes if "collisions" in r.path]

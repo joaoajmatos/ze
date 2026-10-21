@@ -127,6 +127,9 @@ Structured record of a single tool invocation.
 | `duration_ms` | `int` | Wall-clock execution time. |
 | `success` | `bool` | Whether the tool ran without exception. |
 | `error` | `str \| None` | Error message if `success=False`. |
+| `parent_call_id` | `str \| None` | For a call a script made, or a proposed write: the `run_tool_script` call that made it. |
+| `inner_calls` | `list[ToolCall]` | For a `run_tool_script` call: the reads the script made, in order. |
+| `script` | `dict \| None` | For a `run_tool_script` call: the step summary (source, outcome, limit, source hash, procedure id). |
 
 ### `AskDecision`
 
@@ -319,6 +322,28 @@ The declaration decides whether Retry is available. Retry is unavailable after a
 | Simple scalar types (`str`, `int`, `bool`) | LLM |
 | Clients, stores, settings | `deps` dict in `agentic_loop` or explicit kwargs in `call_tool` |
 
+### Tool scripts: `produces_ui` and `egress`
+
+Tool scripts are a harness capability. You do not opt an agent in. Every agent with a data
+read tool gets `run_tool_script`, and the script stub holds that agent's data read tools.
+Two flags keep a tool out of the stub:
+
+| Argument | Set it when |
+|---|---|
+| `produces_ui=True` | The tool's effect is drawing on screen, such as a render tool or a `show_*` compose tool. A UI tool is never a data read. |
+| `egress=True` | A `READ` tool reaches a caller-chosen URL or host, such as `browser_extract`, or fetches from the network on every call, such as `refresh_news`. A script has no network when the sandbox is isolated, so Ze never gives it such a tool. |
+
+A `READ` tool with a URL-like parameter (`url`, `uri`, `link`, `host`, `endpoint`, `domain`)
+must set `egress=True` or carry an explicit exemption with a reason. Otherwise the registry
+sweep fails.
+
+In a script, each stub tool is a function that takes keyword arguments and returns the
+tool's JSON result: dicts, lists or strings. A result that JSON cannot encode, such as a
+dataclass or a `Decimal`, arrives as its `str()`. A `datetime` or `date` arrives as an ISO
+string. Numbers, booleans and `None` arrive unchanged. Scripts reach a `WRITE` tool only through
+`propose(tool, **args)` inside `finish(...)`. Calling a write tool directly from a script is
+refused with `writes_must_be_proposed`.
+
 ### OpenRouter web search
 
 Declare `"openrouter:web_search"` in `tools` to let the model trigger a web search. No Python tool function is needed — OpenRouter executes it and the result appears in the conversation automatically.
@@ -356,7 +381,7 @@ Override only the hooks your plugin needs. All methods have no-op defaults.
 | `channels()` | `-> list[Any]` | Communication channel instances, collected into the `ChannelRegistry`. |
 | `data_domains()` | `-> list[DataDomain]` | Export, import, and delete contract for the plugin's tables. |
 | `ingestion_fetchers()` / `ingestion_extractors()` | `-> list` | Custom content fetchers and extractors for `ze-ingestion`. |
-| `ui_contributions()` | `-> list` | Nav items, settings sections, and pages for ze-web, served at `GET /api/v0/ui/manifest`. |
+| `ui_contributions()` | `-> list` | Modules, Ask presets and settings sections for ze-web, served at `GET /api/v0/ui/manifest`. Plugins add no pages. See [Adding UI to a plugin](extending-ze.md#adding-ui-to-a-plugin). |
 | `rest_routes()` | `-> list` | FastAPI routers the plugin owns. |
 | `rest_stores()` | `-> dict[str, Any]` | Named stores that REST routes can reach. |
 | `screen_resolvers()` | `-> list[ScreenResolver]` | Readers that turn a screen ref (`kind`, `id`) into a short line for the screen note. One resolver per `kind`; a duplicate `kind` fails at startup. See [Screen resolvers](#screen-resolvers). |
@@ -371,7 +396,7 @@ Override only the hooks your plugin needs. All methods have no-op defaults.
 | `checkpoint_serde_modules()` | `-> tuple[str, ...]` | `types.py` module paths scanned for checkpoint-serializable dataclasses/enums. |
 | `memory_policies()` | `-> dict[str, Any]` | Agent name → retrieval policy for this plugin's agents. |
 | `pre_route_node()` | `-> Callable \| None` | An async graph node inserted between preprocess and embed_route. |
-| `graph_nodes()` | `-> dict[str, Callable]` | Additional LangGraph nodes keyed by node name. |
+| `graph_nodes()` | `-> dict[str, Callable]` | Additional LangGraph nodes keyed by node name. Write them async: the turn timer calls a sync node inline on the event loop. |
 | `graph_edges(builder)` | `-> None` | Wire plugin nodes into the graph at build time. |
 | `configurable_services()` | `-> dict[str, Any]` | Services injected into `config["configurable"]` every turn. |
 

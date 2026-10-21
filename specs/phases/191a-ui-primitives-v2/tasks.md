@@ -19,7 +19,7 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main` (29f7f307 or later). `make install && make web-install`; `graphify update .`; `graphify affected` on `Button`, `PRIMITIVE_TYPES`, `render_tool`, `parsePrimitiveTree`, `PrimitiveRenderer`, `PrimitiveRendererActions`, `usePrimitiveRendererActions`, `usePluginScreenActions`, `run_undo`, `handle_confirm`. Then:
+- [x] T001 [L:lead] Branch from `main` (29f7f307 or later). `make install && make web-install`; `graphify update .`; `graphify affected` on `Button`, `PRIMITIVE_TYPES`, `render_tool`, `parsePrimitiveTree`, `PrimitiveRenderer`, `PrimitiveRendererActions`, `usePrimitiveRendererActions`, `usePluginScreenActions`, `run_undo`, `handle_confirm`. Then:
   - list every producer of `Button` and of each primitive type outside tests (the audit);
   - list every transport that carries `components` (WS message frame, `PluginPageResponse`, composed answers, anything else);
   - list every caller of `onButtonAction` and of `parsePrimitiveTree` (including `PluginSettingsSection`);
@@ -32,7 +32,7 @@
 
 ## Phase 2: Foundational (contract step, lane `lead`)
 
-- [ ] T002 [L:lead] Tests first in `core/kernel/ze-components/tests/test_actions.py` and `test_schema.py` (extend):
+- [x] T002 [L:lead] Tests first in `core/kernel/ze-components/tests/test_actions.py` and `test_schema.py` (extend):
   - each action kind serializes with `kind` and its fields; a `NavigateAction` route without a leading `/` raises `InvalidComponentError` (a `ZeError`);
   - `ToolAction.args` accepts only scalar values;
   - `Button(label, action=AskAction("hi"))` serializes `action` as an object; a string action raises;
@@ -41,8 +41,8 @@
   - `UI_CONTRACT_VERSION == "2.0"`.
 
   Implement `ze_components/actions.py`, the new organisms, the `Table` fields, `Button.action: Action` and the helpers, and switch every pattern producer from T001's list (chat choices become `AskAction`). Remove the primitive types the audit marked unused, with their tests. Update the registries. Edit `ze_automation/agents/goals/agent.py`'s instructions: drop the `render_confirm` gate-button example and the "tapping a button resolves the gate directly" claim (gates are answered through 181's prompt frame and Doing's answer-gate); test that the instructions no longer contain `goal:approve:`.
-- [ ] T003 [L:lead] Run `make codegen` (ze-ui generated types, schema, validators; ze-client). Change `PrimitiveRendererActions` in `packages/ze-ui/src/react/context.tsx` to `onAction(action: Action)`, removing `onButtonAction`. Add `ui_version: "2.0"` to the WS `message` frame (`api/ws/schemas.py`, `interface/native.py`), `PluginPageResponse` and each composed-answer payload from T001's list, plus the WS frames `ui_action` (client) and `ui_action_result` (server). Tests: `apps/ze-api/tests/api/test_ws_schemas.py` (the new frames round-trip; the message frame carries `ui_version`). Commit the generated code with the task.
-- [ ] T004 [L:lead] Create `packages/ze-ui/fixtures/` with one fixture per existing primitive type (after the audit), each with a sibling `<name>.expect.json` (`server` and `client` outcomes per plan.md, error paths as JSON pointers). Add: a string button action (server invalid at `/0/action`), a navigate route without `/`, a `table` row count different from `keys`, an unknown type (server invalid, client tolerated), and a pre-191a stored tree with no version, a string-action button and a plain table (client legacy). Add `core/kernel/ze-components/tests/test_fixtures.py`: every fixture matches its `server` expectation with the path normalised to a JSON pointer, and every type in `PRIMITIVE_TYPES` has a server-valid fixture (this fails until lane `ui` adds the new types' fixtures; mark those types `xfail` with the reason, and lane `ui` removes the marks).
+- [x] T003 [L:lead] Run `make codegen` (ze-ui generated types, schema, validators; ze-client). Change `PrimitiveRendererActions` in `packages/ze-ui/src/react/context.tsx` to `onAction(action: Action)`, removing `onButtonAction`. Add `ui_version: "2.0"` to the WS `message` frame (`api/ws/schemas.py`, `interface/native.py`), `PluginPageResponse` and each composed-answer payload from T001's list, plus the WS frames `ui_action` (client) and `ui_action_result` (server). Tests: `apps/ze-api/tests/api/test_ws_schemas.py` (the new frames round-trip; the message frame carries `ui_version`). Commit the generated code with the task.
+- [x] T004 [L:lead] Create `packages/ze-ui/fixtures/` with one fixture per existing primitive type (after the audit), each with a sibling `<name>.expect.json` (`server` and `client` outcomes per plan.md, error paths as JSON pointers). Add: a string button action (server invalid at `/0/action`), a navigate route without `/`, a `table` row count different from `keys`, an unknown type (server invalid, client tolerated), and a pre-191a stored tree with no version, a string-action button and a plain table (client legacy). Add `core/kernel/ze-components/tests/test_fixtures.py`: every fixture matches its `server` expectation with the path normalised to a JSON pointer, and every type in `PRIMITIVE_TYPES` has a server-valid fixture (this fails until lane `ui` adds the new types' fixtures; mark those types `xfail` with the reason, and lane `ui` removes the marks).
 
 **Checkpoint**: lanes start.
 
@@ -50,7 +50,7 @@
 
 ## Phase 3: User Story 1 - Actions ask first, like chat (P1) 🎯 MVP
 
-- [ ] T005 [L:server] [US1] Tests first `core/contracts/ze-agents/tests/test_run_action.py` and `tests/test_tool_ui_action.py`, with tools registered through the real `@tool` decorator (not stubs):
+- [x] T005 [L:server] [US1] Tests first `core/contracts/ze-agents/tests/test_run_action.py` and `tests/test_tool_ui_action.py`, with tools registered through the real `@tool` decorator (not stubs):
   - an asks-first IRREVERSIBLE tool returns a parked `ToolCall` (no `AgentConfigError`), whose `ParkedWrite` has a non-empty `call_id`, an `item_id`, a `summary` and an `effect_phrase`, the same fields the loop produces;
   - `run_action(..., approval=ApprovedCall(parked.call_id), approval_request_id="r1")` runs it once and records `r1` as the approval;
   - a reversible write runs; the constraint veto still applies; `ctx.loop_active` is restored after the call;
@@ -58,7 +58,7 @@
   - `@tool(access=READ, ui_action=True)` fails registration; `done_phrase` is stored on the spec.
 
   Implement `BaseAgent.run_action` and the `ui_action`/`done_phrase` arguments in `ze_agents/tool.py`.
-- [ ] T006 [L:server] [US1] Tests first `apps/ze-api/tests/api/ws/test_ui_actions.py` (fake agent registry and connection manager):
+- [x] T006 [L:server] [US1] Tests first `apps/ze-api/tests/api/ws/test_ui_actions.py` (fake agent registry and connection manager):
   - a reversible opted-in write runs once and sends `ui_action_result` with `ok: true` and its `done_phrase` (or "Done."); a failing one sends "Couldn't <effect>." and never the raw error;
   - an irreversible opted-in write sends one `confirm_request` (`kind: "write"`, one item with the summary); a `confirm` approve runs it once; two `confirm` frames for the same id run it once (the gate is popped first); deny sends "Okay, I didn't <effect>.";
   - the timeout (fake clock) sends "Okay, I didn't <effect>." and a later `confirm` for that id gets "That request expired."; a `confirm` for an id no gate knows (restart) gets "That request expired.";
@@ -71,13 +71,13 @@
   - the gate's `confirm_request` item has no `editable_field`, and a `confirm` with `edits` runs the original args;
 
   Implement `api/ws/ui_actions.py`, the `ui_action` and `confirm` branches and the reconnect replay in `api/ws/endpoint.py`, and the supersede call in `api/ws/turns.py`.
-- [ ] T007 [L:server] [US3] Tests first `core/kernel/ze-components/tests/test_render_tools.py` (extend): `render_stat_row`, `render_keyed_table` and `render_sparkline` register as READ render tools; their schemas omit `claim`, `row_actions` and any tool, navigate or compose action; `render_confirm` and `render_choice_group` keep `actions: [{label, value, style}]` and each `value` becomes `AskAction(text=value)` in the built tree; a keyed table whose `keys` length differs from its rows raises; a sparkline over 60 points is truncated. Implement in `ze_components/tools.py`.
+- [x] T007 [L:server] [US3] Tests first `core/kernel/ze-components/tests/test_render_tools.py` (extend): `render_stat_row`, `render_keyed_table` and `render_sparkline` register as READ render tools; their schemas omit `claim`, `row_actions` and any tool, navigate or compose action; `render_confirm` and `render_choice_group` keep `actions: [{label, value, style}]` and each `value` becomes `AskAction(text=value)` in the built tree; a keyed table whose `keys` length differs from its rows raises; a sparkline over 60 points is truncated. Implement in `ze_components/tools.py`.
 
 ---
 
 ## Phase 4: User Story 2 - Unknown views degrade to a table (P1)
 
-- [ ] T008 [L:ui] [US2] Tests first `packages/ze-ui/src/parse.test.ts` (extend) and `src/react/PrimitiveRenderer.test.tsx` (extend):
+- [x] T008 [L:ui] [US2] Tests first `packages/ze-ui/src/parse.test.ts` (extend) and `src/react/PrimitiveRenderer.test.tsx` (extend):
   - a tree with a known and an unknown node parses, and the unknown one becomes `__fallback` with its first 12 scalar fields, nested object arrays parsed as children;
   - a known node missing a required field fails, and the error names the node path and field;
   - `"2.3"` parses (unknown types fall back); no version and `"1.4"` parse in legacy mode: the pre-191a fixture renders its table, and its string-action button renders disabled with the title "This older button no longer works."; a legacy tree that still cannot parse throws `PrimitiveLegacyError`;
@@ -91,7 +91,7 @@
 
 ## Phase 5: User Story 3 - Slot primitives (P2)
 
-- [ ] T009 [L:ui] [US3] Add valid fixtures for each new primitive in every state (empty where allowed, normal, long text, each posture tone, with and without actions), then tests first in `PrimitiveRenderer.test.tsx` (extend):
+- [x] T009 [L:ui] [US3] Add valid fixtures for each new primitive in every state (empty where allowed, normal, long text, each posture tone, with and without actions), then tests first in `PrimitiveRenderer.test.tsx` (extend):
   - `entity_facet` shows each fact with its posture tone and source;
   - `stat_row` shows value and change with a direction word or icon label (not color alone);
   - `claim_list` shows each item's posture;
@@ -107,7 +107,7 @@
 
 ## Phase 6: Web host and gallery (US1, US4)
 
-- [ ] T010 [L:web] [US1] Tests first `features/primitive-tree/api/usePrimitiveActions.test.ts`:
+- [x] T010 [L:web] [US1] Tests first `features/primitive-tree/api/usePrimitiveActions.test.ts`:
   - `navigate` to `/governance#connections` navigates to that section;
   - `ask` calls `sendTurn` on the selected thread;
   - `navigate` to `/mind/x` navigates, while a route not starting with `/` or not a place route shows a notice;
@@ -116,18 +116,18 @@
   - a second press while one is pending is ignored.
 
   Implement `usePrimitiveActions.ts`, delete `usePrimitiveRendererActions.ts` and `usePluginScreenActions.ts` (with the `rest:`/`msg:`/goal-regex branches), and switch `ConnectedPrimitiveTree`, `PluginScreen` and `PluginSettingsSection` to it. Route `ui_action_result` frames from the ws client to the pending action.
-- [ ] T011 [L:web] [US4] Tests first `pages/dev-primitives/ui/DevPrimitivesPage.test.tsx` and `app/router/routes.test.tsx` (extend): the page renders one section per primitive type with each fixture state and a 390 px frame; the route exists when `import.meta.env.DEV` is true and is absent otherwise (mock the env). Implement `pages/dev-primitives` and the conditional route. Verify with a production build: `make web-build`, then `rtk proxy grep -rl "dev-primitives\|fixtures/" apps/ze-web/dist` returns nothing.
-- [ ] T012 [L:web] [US2] Tests: `ConnectedPrimitiveTree.test.tsx`, `PluginScreen.test.tsx` and `PluginSettingsSection.test.tsx` (extend) render trees from the shared fixtures with `ui_version`; a stored message with the pre-191a tree (no version) shows its text and the tree in legacy mode; a legacy tree that throws `PrimitiveLegacyError` is replaced by "This older view can't be shown." while the message text renders. Implement the version pass-through from each transport (absent stays absent).
+- [x] T011 [L:web] [US4] Tests first `pages/dev-primitives/ui/DevPrimitivesPage.test.tsx` and `app/router/routes.test.tsx` (extend): the page renders one section per primitive type with each fixture state and a 390 px frame; the route exists when `import.meta.env.DEV` is true and is absent otherwise (mock the env). Implement `pages/dev-primitives` and the conditional route. Verify with a production build: `make web-build`, then `rtk proxy grep -rl "dev-primitives\|fixtures/" apps/ze-web/dist` returns nothing.
+- [x] T012 [L:web] [US2] Tests: `ConnectedPrimitiveTree.test.tsx`, `PluginScreen.test.tsx` and `PluginSettingsSection.test.tsx` (extend) render trees from the shared fixtures with `ui_version`; a stored message with the pre-191a tree (no version) shows its text and the tree in legacy mode; a legacy tree that throws `PrimitiveLegacyError` is replaced by "This older view can't be shown." while the message text renders. Implement the version pass-through from each transport (absent stays absent).
 
 ---
 
 ## Phase 7: Polish and cross-cutting
 
-- [ ] T013 [L:lead] Merge `server`, `ui`, then `web`. `make codegen` if a schema moved. Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. The quickstart grep returns nothing.
-- [ ] T014 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev-full`, with captures of the gallery at 1440 and 390 and of an irreversible action's confirmation; record them in the Handoffs note.
-- [ ] T015 [P] [L:docs] `packages/ze-ui/README.md`, `core/kernel/ze-components/README.md` (also replace `make generate-components` with `make codegen`), `docs/frontend.md`, `docs/native-interface.md` (how `ui_action` differs from the existing `action` frame; the UI gate lifecycle and its limits; legacy trees), `docs/extending-ze.md` (`@tool(ui_action=True, done_phrase=…)`); doc-style skill.
-- [ ] T016 [P] [L:docs] `AGENTS.md` phase row 191a and the Learned Workspace Facts line on chat inline UI; `specs/README.md` row 191a → Implemented; spec status.
-- [ ] T017 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
+- [x] T013 [L:lead] Merge `server`, `ui`, then `web`. `make codegen` if a schema moved. Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. The quickstart grep returns nothing.
+- [x] T014 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev-full`, with captures of the gallery at 1440 and 390 and of an irreversible action's confirmation; record them in the Handoffs note.
+- [x] T015 [P] [L:docs] `packages/ze-ui/README.md`, `core/kernel/ze-components/README.md` (also replace `make generate-components` with `make codegen`), `docs/frontend.md`, `docs/native-interface.md` (how `ui_action` differs from the existing `action` frame; the UI gate lifecycle and its limits; legacy trees), `docs/extending-ze.md` (`@tool(ui_action=True, done_phrase=…)`); doc-style skill.
+- [x] T016 [P] [L:docs] `AGENTS.md` phase row 191a and the Learned Workspace Facts line on chat inline UI; `specs/README.md` row 191a → Implemented; spec status.
+- [x] T017 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
 
 ---
 

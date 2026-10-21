@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-18
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description (2026-10-18, phase 191 reopened): "Plugins are data and behavior sources... I dont know if they should contribute complete pages... they could contribute visual components and/or primitives that can be used to render information." The agreed plugin UI model is summarized in `PRODUCT.md` › Plugin UI model. This phase is its second half; 191a supplies the primitives, typed actions and fallback it builds on.
 
@@ -119,7 +119,7 @@ Settings sections render and save in Governance › Connections as 190 built the
 - **FR-005c**: A plugin MUST be able to ask for its module to be refreshed; News MUST do so after a fetch that stored new articles.
 - **FR-006**: The manifest MUST carry modules, presets and settings sections, and the generated client MUST be regenerated.
 - **FR-007**: News MUST contribute a preset, a Mind sources facet module and its settings section, and no page; its page route and descriptor MUST be removed; `/news` MUST redirect to Ask.
-- **FR-008**: The top-level plugin page route, the reserved-paths list, the mobile-nav flag, the `plugin` place value, and every remaining plugin page route (News's page and ze-personal's Contacts page) MUST be removed (pre-v1 hard cut).
+- **FR-008**: The top-level plugin page route, the reserved-paths list, the mobile-nav flag, the `plugin` place value, and News's plugin page route MUST be removed (pre-v1 hard cut). ze-personal's `getContactsPage` stays: build T001 (2026-10-18) found Mind › People (189, `widgets/people/ui/People.tsx` through `entities/contact` `useContactsPageQuery`, its own `contactsPage` query key) renders it, and no typed contacts list route exists to replace it (`searchEntities` needs a query). Rebuilding People from a typed contacts route is logged as a follow-up, not done here.
 - **FR-009**: A fixture plugin MUST prove each slot in tests.
 - **FR-010**: Docs MUST describe the plugin UI model (modules, slots, presets, settings), and `PRODUCT.md` MUST carry a short Plugin UI model section.
 

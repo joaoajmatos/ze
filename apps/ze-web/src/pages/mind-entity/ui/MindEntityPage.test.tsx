@@ -9,6 +9,13 @@ vi.mock("@/widgets/entity-neighbourhood", () => ({
   Suspicions: ({ entityId }: { entityId: string }) => <section aria-label="I suspect">{entityId}</section>,
   EntityNeighbourhood: ({ detail }: { detail: { entity: { canonical_name: string } } }) => <section aria-label="Neighbourhood">{detail.entity.canonical_name}</section>,
 }));
+const { slot } = vi.hoisted(() => ({ slot: vi.fn() }));
+vi.mock("@/widgets/plugin-module", () => ({
+  PluginModuleSlot: (props: { slot: string }) => {
+    slot(props);
+    return <section aria-label={`slot ${props.slot}`} />;
+  },
+}));
 vi.mock("@/widgets/entity-search", () => ({ EntitySearch: () => <section aria-label="Find an entity" /> }));
 const { useScreenPublisher } = vi.hoisted(() => ({ useScreenPublisher: vi.fn() }));
 vi.mock("@/features/ask-bar", () => ({ useChatAbout: () => vi.fn() }));
@@ -45,6 +52,19 @@ describe("MindEntityPage", () => {
       focused_module: "Mind",
     });
     expect(screen.getByRole("region", { name: "I suspect" })).toHaveTextContent(UUID);
+  });
+
+  it("mounts the mind.entity slot with the entity as subject", () => {
+    useEntityDetailQuery.mockReturnValue({ data: { entity: { id: UUID, canonical_name: "Climate", entity_type: "topic" } }, isLoading: false, isError: false });
+    at(`/mind/${UUID}`);
+    expect(screen.getByRole("region", { name: "slot mind.entity" })).toBeInTheDocument();
+    expect(slot).toHaveBeenLastCalledWith({ slot: "mind.entity", subject: { kind: "entity", id: UUID, label: "Climate", entity_type: "topic" } });
+  });
+
+  it("mounts no slot while the entity is missing", () => {
+    useEntityDetailQuery.mockReturnValue({ data: null, isLoading: false, isError: false });
+    at(`/mind/${UUID}`);
+    expect(screen.queryByRole("region", { name: "slot mind.entity" })).toBeNull();
   });
 
   it("says there is no entity here for a 404 and keeps the search", () => {

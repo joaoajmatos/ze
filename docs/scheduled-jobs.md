@@ -237,7 +237,7 @@ repeatedly-failing workflows.
 
 ## Goal advance sweep (every 15 minutes)
 
-**Module:** `ze_automation/goals/executor.py` · registered in `ze_api/container.py`  
+**Module:** `ze_automation/goals/executor.py` · registered in `ze_automation/bootstrap.py`'s `register_goal_advance_sweep()`, called from `ze_api/wiring/jobs.py`  
 **Job id:** `goal_advance_sweep` · **Cron:** `*/15 * * * *`
 
 For each goal with status `ACTIVE`, the sweep calls `GoalExecutor.advance(goal_id)`.
@@ -401,7 +401,7 @@ but a one-time backlog won't visibly shrink there without a manual `VACUUM FULL`
 
 ## Cost reconciliation (every 15 minutes)
 
-**Module:** `ze_core/telemetry/reconciler.py` (`CostReconciler`) · registered in `ze_api/container.py`  
+**Module:** `ze_core/telemetry/reconciler.py` (`CostReconciler`) · registered in `ze_core/bootstrap.py`'s `register_engine_jobs()`, called from `ze_api/wiring/jobs.py`  
 **Job id:** `cost_reconciliation` · **Cron:** `*/15 * * * *`
 
 Pulls actual billed costs from the OpenRouter API and reconciles them against

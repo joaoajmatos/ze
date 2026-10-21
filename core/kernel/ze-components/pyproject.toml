@@ -12,6 +12,11 @@ dependencies = [
 ze-agents = { workspace = true }
 ze-logging = { workspace = true }
 
+[dependency-groups]
+dev = [
+    "jsonschema==4.26.0",
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

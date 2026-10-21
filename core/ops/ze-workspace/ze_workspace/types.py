@@ -90,6 +90,8 @@ class WorkspaceStat:
     busy: bool
     workspace_root: str = "/workspace"
     available: bool = True
+    scripts_busy: bool = False
+    scripts_isolated: bool = False
 
 
 @dataclass

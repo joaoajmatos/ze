@@ -1,0 +1,21 @@
+[
+  {
+    "type": "steps",
+    "title": "Reach B1",
+    "steps": [
+      {
+        "label": "A2 assessment",
+        "status": "done"
+      },
+      {
+        "label": "Conversation practice",
+        "status": "active",
+        "note": "2x weekly"
+      },
+      {
+        "label": "Mock exam",
+        "status": "pending"
+      }
+    ]
+  }
+]

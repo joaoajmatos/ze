@@ -11,6 +11,7 @@ from __future__ import annotations
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
+from uuid import uuid4
 
 if TYPE_CHECKING:
     from ze_agents.types import ToolCall
@@ -66,6 +67,8 @@ class ParkedWrite:
     editable_field: str | None = None
     conflict: str | None = None
     reason: ParkReason = "asks_first"
+    # The trace id of this call; the parked row and its approved run both use it.
+    trace_call_id: str = field(default_factory=lambda: uuid4().hex)
 
 
 @dataclass

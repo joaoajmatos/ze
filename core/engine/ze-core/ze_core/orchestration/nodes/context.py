@@ -238,6 +238,8 @@ def _companion_envelope(
         ],
         requires_synthesis=False,
         raw_scores={_COMPANION_AGENT: 1.0},
+        threshold=envelope.threshold,
+        gap_threshold=envelope.gap_threshold,
     )
 
 

@@ -42,7 +42,7 @@ export type {
 export { downloadExport, importArchive, healthCheck, type ImportResponse } from "./blob";
 
 // Plugin UI loaders — dispatch manifest operation IDs to generated SDK methods
-export { loadPluginPage, loadPluginSettings } from "./plugin-ui";
+export { loadPluginSettings } from "./plugin-ui";
 export { invokeSdkOperation, loadPluginOperation } from "./sdk-dispatch";
 
 // Error class for wrapping HTTP failures from blob helpers

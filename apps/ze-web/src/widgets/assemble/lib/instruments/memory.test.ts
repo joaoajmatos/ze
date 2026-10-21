@@ -23,3 +23,10 @@ describe("memoryPoints", () => {
     expect(memoryPoints(undefined).points).toEqual([]);
   });
 });
+
+describe("memoryPoints on a live trace", () => {
+  it("plots a fact chunk from a partial frame by its extraction confidence", () => {
+    const live = memoryPoints([{ text: "Runs on Tuesdays", score: 0.9, source: "fact", extraction_confidence: 0.8 }]);
+    expect(live.points[0]).toMatchObject({ x: 0.9, y: 0.8, glyph: "fact" });
+  });
+});

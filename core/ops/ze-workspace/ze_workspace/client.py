@@ -83,7 +83,20 @@ class WorkspaceClient:
             busy=bool(data.get("busy")),
             workspace_root=str(data.get("workspace_root") or "/workspace"),
             available=True,
+            scripts_busy=bool(data.get("scripts_busy")),
+            scripts_isolated=bool(data.get("scripts_isolated")),
         )
+
+    def scripts_url(self) -> str:
+        """WS /scripts on the same host as the HTTP API."""
+        if self._base_url.startswith("https://"):
+            return "wss://" + self._base_url[len("https://") :] + "/scripts"
+        if self._base_url.startswith("http://"):
+            return "ws://" + self._base_url[len("http://") :] + "/scripts"
+        return f"{self._base_url}/scripts"
+
+    def scripts_headers(self) -> dict[str, str]:
+        return self._headers()
 
     async def list_dir(self, path: str = "") -> list[WorkspaceFile]:
         data = await self._get_json("/fs", params={"path": path})

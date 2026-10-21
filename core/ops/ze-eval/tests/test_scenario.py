@@ -1,3 +1,5 @@
+import pytest
+
 from ze_eval.scenario import load_scenarios
 
 
@@ -129,3 +131,17 @@ def test_composed_answers_scenarios_send_a_valid_preset_on_their_last_turn() -> 
         )
         assert all(c is None for c in contexts[:-1])
         assert scenario["expected_agent"] == "companion"
+
+
+@pytest.mark.parametrize("bad", [0, -1, "3", True, 2.5])
+def test_max_llm_calls_must_be_a_positive_int(bad):
+    from ze_eval.scenario import max_llm_calls_limit
+
+    with pytest.raises(ValueError):
+        max_llm_calls_limit({"max_llm_calls": bad})
+
+
+def test_max_llm_calls_absent_is_none():
+    from ze_eval.scenario import max_llm_calls_limit
+
+    assert max_llm_calls_limit({"id": "x"}) is None

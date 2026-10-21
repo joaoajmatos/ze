@@ -18,17 +18,55 @@ describe("readoutsFor", () => {
     expect(readoutsFor(t).systemOne).toEqual({ requests: 2, latencyMs: 620, inputTokens: 1400 });
   });
 
-  it("reads total, model, compaction span and the recap, and no money", () => {
-    const r = readoutsFor(richTrace());
+  it("reads the total, active and tool time from the server", () => {
+    const r = readoutsFor(richTrace({ turn_duration_ms: 9000, paused_ms: 3000, tool_duration_ms: 4200 }));
+    expect(r.total).toEqual({ ms: 9000, partial: false });
+    expect(r.activeMs).toBe(6000);
     expect(r.toolMs).toBe(4200);
+  });
+
+  it("marks the total partial when the recorder lost the start of the turn", () => {
+    expect(readoutsFor(richTrace({ telemetry_partial: true })).total).toEqual({ ms: 6000, partial: true });
+  });
+
+  it("has no total or active time for a trace before 187b", () => {
+    const r = readoutsFor(richTrace({ turn_duration_ms: null, usage: null, stages: undefined }));
+    expect(r.total).toBeNull();
+    expect(r.activeMs).toBeNull();
+    expect(r.toolMs).toBe(4200);
+  });
+
+  it("sums tokens and cost over the models, and reads the context fill from usage", () => {
+    const r = readoutsFor(richTrace());
+    expect(r.usage).toMatchObject({ promptTokens: 9920, completionTokens: 500, costUsd: 0.0356, estimated: false, systemOneTokens: 1840 });
+    expect(r.usage?.fill).toEqual({ value: 0.026, bar: 0.026 });
     expect(r.model).toBe("anthropic/claude-sonnet");
+  });
+
+  it("clamps the fill bar at full while keeping the real number", () => {
+    const usage = { ...richTrace().usage!, context_fill: 1.4 };
+    expect(readoutsFor(richTrace({ usage })).usage?.fill).toEqual({ value: 1.4, bar: 1 });
+  });
+
+  it("flags estimated usage", () => {
+    const usage = { ...richTrace().usage!, estimated: true };
+    expect(readoutsFor(richTrace({ usage })).usage?.estimated).toBe(true);
+  });
+
+  it("shows the model name only when usage is null", () => {
+    const r = readoutsFor(richTrace({ usage: null }));
+    expect(r.usage).toBeNull();
+    expect(r.model).toBe("anthropic/claude-sonnet");
+  });
+
+  it("reads the compaction span and the recap", () => {
+    const r = readoutsFor(richTrace());
     expect(r.compaction).toBe("messages 0–6 summarised");
     expect(r.resumeRecap).toBe(true);
-    expect(JSON.stringify(r)).not.toMatch(/\$|usd|cost/i);
   });
 
   it("says 'not recorded' without a tier, and has no System One line without judgments", () => {
-    const r = readoutsFor(richTrace({ tier: null, judgments: [], compaction: null, resume_recap_applied: false }));
+    const r = readoutsFor(richTrace({ tier: null, usage: null, judgments: [], compaction: null, resume_recap_applied: false }));
     expect(r.model).toBe("not recorded");
     expect(r.systemOneText).toBeNull();
     expect(r.compaction).toBeNull();

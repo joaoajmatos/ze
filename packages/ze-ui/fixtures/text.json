@@ -1,0 +1,18 @@
+[
+  {
+    "type": "text",
+    "content": "Heading",
+    "style": "heading"
+  },
+  {
+    "type": "text",
+    "content": "Body copy that is long enough to wrap onto a second line on a phone-sized screen without breaking the layout.",
+    "style": "body"
+  },
+  {
+    "type": "text",
+    "content": "caption",
+    "style": "caption",
+    "color": "muted"
+  }
+]

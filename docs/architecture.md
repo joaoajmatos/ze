@@ -84,6 +84,9 @@ mixes gathering and acting, becomes a companion-primary turn (`apply_conductor_r
 The decomposed subtasks stay as a hint. Companion then calls specialists through
 `delegate_to_agent`, one at a time, each with its own write confirmation check.
 Only independent compound requests keep the parallel fan-out and `synthesize`.
+A conductor turn has a time budget (`conductor:` in config, `ze_agents/budget.py`). Past the soft
+deadline `delegate_to_agent` refuses new work, the loop stops calling tools, and companion answers
+with what is done and what is not. A hard timeout answers from the specialist ledger.
 
 **Model tier** (`ze_core.routing.tier`): routing always assigns the agent's full model.
 After `match_skills`, the `choose_tier` node asks one System One Noul whether the task
@@ -127,7 +130,7 @@ Ze builds the allowlist automatically in `build_checkpoint_serde()` (`ze_core/ch
    `ze_memory.types` for dataclasses and enums on every startup.
 2. **Plugin modules** — each `ZePlugin` may override `checkpoint_serde_modules()` to
    return its `types.py` module paths (e.g. `ze_automation.workflow.types`). Ze scans
-   those modules the same way — no manual list in `ze_api/container.py`.
+   those modules the same way — no manual list in `ze_api/wiring/container.py`.
 3. **Driver extras** — types like `asyncpg.pgproto.pgproto.UUID` that appear in
    payloads but live outside domain modules.
 
@@ -230,6 +233,28 @@ the writes.
 Interactive confirmations use the `confirm_request` and `confirm` frames. See
 [docs/native-interface.md](native-interface.md) for the full WebSocket protocol.
 
+### Tool scripts
+
+An agent with at least one data read tool also gets `run_tool_script`. The model writes
+one short Python script that calls those reads, so a multi-step read costs one model
+turn instead of one per call. The script runs in the workspace sidecar with no network, and the sidecar refuses to run it unless isolation holds.
+
+1. The model calls `run_tool_script` with `source` (or `procedure_id` for an approved
+   script). The agentic loop hands the call to `run_script_step`.
+2. Ze builds a stub from the agent's data read tools. Tools that write, draw on screen or
+   reach a caller-chosen URL are left out.
+3. Ze opens `WS /scripts` to the sidecar. The script runs as the `zescript` user.
+4. Each `ze_tools` call in the script comes back to Ze as a request. Ze runs it through
+   `call_tool`, so every gate and hook applies, and records it as an inner call.
+5. The script ends with `finish(result, writes=[...])`. Ze returns the result to the model
+   and runs each proposed write as an ordinary call, so the confirmation rules apply.
+6. The finished script is one action record. Three successes with the same tool signature
+   propose a `tool_script` procedure. The user approves it in Mind › Procedures before it
+   can run again.
+
+See [workspace.md](workspace.md#tool-scripts) for the sandbox limits and
+`specs/phases/197-programmatic-tool-use/research.md` for the decision record.
+
 ### Message trace effect metadata
 
 `record_trace` resolves every tool call against the tool registry when it writes the
@@ -245,6 +270,28 @@ marks a tool the registry did not know, and Retry treats it as unavailable.
 metadata. Older traces parse to `false`.
 
 The trace stores these values so that Retry never depends on registry state at retry time.
+
+### Turn telemetry in the trace
+
+`invoke_raw_turn` and `resume_turn` start or continue one `TurnTelemetry` per thread. The
+recorder lives in process, uses `time.monotonic()` for every stage and tool offset, and
+survives a confirmation pause, so a resumed turn counts the wait as `paused_ms` and keeps its
+earlier stages (`run` 1, then 2). A resume that finds no recorder (a restart) starts one and
+marks the trace `telemetry_partial`.
+
+`timed(name, fn)` in `ze_core/orchestration/timing.py` wraps every node the graph builders add:
+core nodes, overrides, plugin nodes and the workflow graph. Each wrapper records the stage in a
+`finally` and queues a partial `stages` frame. One sender task sends the queue in order, drops a
+frame that cannot go within 1 s, and never delays a node. Before the stamp, the turn drains the
+queue (at most 1 s), so no stage frame follows the committed trace. A slow client can hold the reply commit for that long. Cost in `usage` is the static price table, not the bill, and model calls after the stamp are not counted. Plugin graph nodes must be async: `timed()` calls a sync node inline on the event loop.
+
+`CostTracker.record` adds each chat completion to the recorder. The stamp writes `stages`,
+`turn_duration_ms` (includes `paused_ms`), `tool_duration_ms` (the sum of tool durations, formerly
+`total_duration_ms`), and `usage`: tokens and cost per model, the largest main-model prompt over
+its context window, and System One tokens kept apart. `routing_scores` (top 9) and
+`routing_thresholds` come from the routing envelope; each judgment row names its `surface` and
+the `bar` in force. Tool calls carry `call_id` and `start_offset_ms`. Older traces lack these
+fields and read as empty.
 
 ### Model tier in the trace
 
@@ -402,9 +449,9 @@ See [docs/goals.md](goals.md) for conversational usage and gate behavior.
 
 **Package:** `ze-onboarding`
 
-The onboarding system owns first-run setup, seed questions, review-before-save, and
-reset scopes. `ze-api` adapts those protocols to WebSocket commands and persists the
-state in Postgres.
+The onboarding system owns first-run setup, seed questions, and review-before-save.
+It persists state in Postgres itself (`ze_onboarding.store`); `ze-api` adapts its
+protocols to WebSocket commands.
 
 See [docs/onboarding.md](onboarding.md) for the walkthrough and [docs/package-architecture.md](package-architecture.md) for the package boundary.
 
@@ -450,7 +497,7 @@ Each loop records its sources (`open_loop_sources`, migration `zw003`): its orig
 | Calendar | The event's `external_ref` |
 | Ingestion | The ingestion id |
 
-The `loops` agent, the `GET /api/v0/loops` surface, and the World page expose review. See [cognitive-architecture.md](cognitive-architecture.md) and the [package README](../core/cognition/ze-worldstate/README.md).
+The `loops` agent, the `GET /api/v0/loops` surface (`state` repeats; `since` filters on `updated_at`), and the World page expose review. See [cognitive-architecture.md](cognitive-architecture.md) and the [package README](../core/cognition/ze-worldstate/README.md).
 
 ---
 
@@ -634,6 +681,8 @@ Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompti
 | Goal milestone progress | After each milestone | Short completion line, accountability push via `ProactiveNotifier` |
 | News fetch | Every 30 min | Ingest and embed new RSS articles |
 
+Ze keeps the sent briefing as a notification. Ask "how did the briefing do?" and the companion reads it with `get_briefing`: when it was sent, whether it was held, whether you marked it read in the notification center, and what it covered.
+
 See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full lifecycle and config.
 
 ---
@@ -672,7 +721,7 @@ agent registry as workflow steps — agents remain peers.
 
 `GoalExecutor.advance(goal_id)` runs from:
 
-- `goal_advance_sweep` — cron `*/15 * * * *`, registered in `ze_api/container.py`
+- `goal_advance_sweep` — cron `*/15 * * * *`, registered by `ze_automation.bootstrap.register_proactive_jobs()` via `ze_api/wiring/jobs.py`
 - Gate approval / redirect flows in the WebSocket handler
 - Plan approval after `GoalAgent` creates a goal
 
@@ -760,6 +809,8 @@ patterns do not require frontend changes.
 4. `ComponentCollectionHook.on_loop_end` drains the side-channel into `AgentState.components`.
 5. `NativeAppInterface.send_message(components=[...])` delivers the trees alongside the text response.
 6. `PrimitiveRenderer` in `ze-web` renders each tree recursively.
+
+Render tools set `produces_ui=True`, so a tool script never calls them.
 
 ### Adding a new component pattern
 
@@ -877,6 +928,10 @@ import time, so codegen needs no running server.
 | `GET` | `/api/v0/news` | `listNews` |
 | `GET` | `/api/v0/costs/summary` | `getCostSummary` |
 | `GET` | `/api/v0/costs/detail` | `getCostDetail` |
+| `GET` | `/api/v0/actions` | `listActionRecords` (subject filter, keyset cursor) |
+| `GET` | `/api/v0/collisions` | `listCollisions` |
+| `GET` | `/api/v0/system/models` | `getModelSettings` |
+| `GET` | `/api/v0/channels/status` | `listChannelStatus` |
 
 ### Memory
 
@@ -965,8 +1020,8 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 | `ze_api/db.py` | asyncpg pool factory — lifespan-managed |
 | `ze_plugin/bootstrap.py` | Plugin discovery, DI resolution, `build_integrations()` |
 | `ze_agents/bootstrap.py` | `bootstrap_agents()` — agent registration via plugin `agent_module_paths()` |
-| `ze_api/compose.py` | `register_all_proactive_jobs()` — fans out core + plugin cron registration |
-| `ze_api/container.py` | `ZeContainer` — subclasses `ze_core.Container`, wires all ZePlugins |
+| `ze_api/wiring/jobs.py` | `register_all_proactive_jobs()` — fans out core + plugin cron registration |
+| `ze_api/wiring/container.py` | `ZeContainer` — subclasses `ze_core.Container`, wires all ZePlugins |
 | `ze_personal/persona/` | `PostgresPersonaStore` — named profiles, dial overrides, DB persistence |
 | `ze_google/gmail_channel.py` | `GmailChannel` — Gmail API channel (owned by `ze-google`) |
 | `ze_api/interface/native.py` | `NativeAppInterface` — WebSocket frame delivery + ntfy fallback |
@@ -1009,6 +1064,7 @@ it owns no tables and no revision files.
 | `accountability_anomalies` | Cost outliers flagged by `CostAnomalyJob` |
 | `messages` | Conversation messages for unread-replay on WebSocket connect; `replaces` / `replaced_by` link a retried reply to its replacement; `rollback` stores what a retry undid |
 | `feedback_records` | Append-only ratings and retry requests on assistant replies |
+| `user_channel_watermarks` | Per-channel poll watermark; `last_outcome` and `last_outcome_at` (`zc040`) record how the last poll ended without moving the watermark |
 
 ---
 

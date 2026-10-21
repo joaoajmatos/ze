@@ -5,6 +5,77 @@ export type ClientOptions = {
 };
 
 /**
+ * ActionRecordItem
+ */
+export type ActionRecordItem = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Action Type
+     */
+    action_type: string;
+    /**
+     * Actor
+     */
+    actor: string;
+    /**
+     * Producer Plugin
+     */
+    producer_plugin: string;
+    /**
+     * Lifecycle
+     */
+    lifecycle: string;
+    /**
+     * Outcome
+     */
+    outcome: string | null;
+    /**
+     * Summary
+     */
+    summary: string;
+    touched: ActionTouched;
+    /**
+     * Occurred At
+     */
+    occurred_at: string;
+    /**
+     * Failure Code
+     */
+    failure_code: string | null;
+};
+
+/**
+ * ActionRecordPage
+ */
+export type ActionRecordPage = {
+    /**
+     * Items
+     */
+    items: Array<ActionRecordItem>;
+    /**
+     * Next Cursor
+     */
+    next_cursor: string | null;
+};
+
+/**
+ * ActionTouched
+ */
+export type ActionTouched = {
+    /**
+     * Domain
+     */
+    domain: string;
+    /**
+     * Record Id
+     */
+    record_id: string;
+};
+
+/**
  * AgentCostBucket
  */
 export type AgentCostBucket = {
@@ -28,6 +99,24 @@ export type AgentCostBucket = {
      * Completion Tokens
      */
     completion_tokens: number;
+};
+
+/**
+ * AgentModelSetting
+ */
+export type AgentModelSetting = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Model
+     */
+    model: string;
+    /**
+     * Model Simple
+     */
+    model_simple: string | null;
 };
 
 /**
@@ -131,6 +220,82 @@ export type CancelWorkflowExecutionResponse = {
 };
 
 /**
+ * ChannelStatusItem
+ */
+export type ChannelStatusItem = {
+    /**
+     * Channel Id
+     */
+    channel_id: string;
+    /**
+     * Channel Type
+     */
+    channel_type: string;
+    /**
+     * Handle
+     */
+    handle: string | null;
+    /**
+     * Display Name
+     */
+    display_name: string | null;
+    /**
+     * State
+     */
+    state: 'connected' | 'needs_reauth' | 'error' | 'off' | 'unknown';
+    /**
+     * Last Sync At
+     */
+    last_sync_at: string | null;
+    /**
+     * Push
+     */
+    push: boolean;
+};
+
+/**
+ * ChannelStatusResponse
+ */
+export type ChannelStatusResponse = {
+    /**
+     * Google Configured
+     */
+    google_configured: boolean;
+    /**
+     * Channels
+     */
+    channels: Array<ChannelStatusItem>;
+};
+
+/**
+ * CollisionLogEntrySchema
+ */
+export type CollisionLogEntrySchema = {
+    /**
+     * Id
+     */
+    id: string;
+    contribution_a: ContributionRefSchema;
+    contribution_b: ContributionRefSchema;
+    /**
+     * Matched Entity Id
+     */
+    matched_entity_id: string | null;
+    /**
+     * Matched Target Face
+     */
+    matched_target_face: string;
+    /**
+     * Conflict Summary
+     */
+    conflict_summary: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
  * CompactionTraceResponse
  */
 export type CompactionTraceResponse = {
@@ -198,6 +363,28 @@ export type ConfirmItemOut = {
      * Proposed Text
      */
     proposed_text?: string | null;
+};
+
+/**
+ * ContributionRefSchema
+ */
+export type ContributionRefSchema = {
+    /**
+     * Domain Id
+     */
+    domain_id: string;
+    /**
+     * Producer Kind
+     */
+    producer_kind: string;
+    /**
+     * Source Function
+     */
+    source_function: string;
+    /**
+     * Claim Kind
+     */
+    claim_kind: string;
 };
 
 /**
@@ -1017,6 +1204,20 @@ export type InputTraceResponse = {
 };
 
 /**
+ * JudgmentBarResponse
+ */
+export type JudgmentBarResponse = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Value
+     */
+    value: number;
+};
+
+/**
  * JudgmentTraceResponse
  */
 export type JudgmentTraceResponse = {
@@ -1062,6 +1263,11 @@ export type JudgmentTraceResponse = {
      * Skip Reason
      */
     skip_reason?: string | null;
+    /**
+     * Surface
+     */
+    surface?: string | null;
+    bar?: JudgmentBarResponse | null;
 };
 
 /**
@@ -1485,9 +1691,9 @@ export type MessageTraceResponse = {
      */
     tool_calls: Array<ToolCallTraceResponse>;
     /**
-     * Total Duration Ms
+     * Tool Duration Ms
      */
-    total_duration_ms: number;
+    tool_duration_ms: number;
     /**
      * Skills Used
      */
@@ -1532,6 +1738,28 @@ export type MessageTraceResponse = {
     write_confirmations?: Array<WriteConfirmationOutcomeResponse>;
     tier?: TierTraceResponse | null;
     screen?: ScreenTraceResponse | null;
+    /**
+     * Turn Duration Ms
+     */
+    turn_duration_ms?: number | null;
+    /**
+     * Paused Ms
+     */
+    paused_ms?: number;
+    /**
+     * Stages
+     */
+    stages?: Array<StageTimingResponse>;
+    usage?: TurnUsageResponse | null;
+    /**
+     * Routing Scores
+     */
+    routing_scores?: Array<RoutingScoreResponse>;
+    routing_thresholds?: RoutingThresholdsResponse | null;
+    /**
+     * Telemetry Partial
+     */
+    telemetry_partial?: boolean;
     input?: InputTraceResponse | null;
 };
 
@@ -1585,6 +1813,58 @@ export type MilestoneResponse = {
      * Created At
      */
     created_at: string;
+};
+
+/**
+ * ModelSettingsResponse
+ */
+export type ModelSettingsResponse = {
+    /**
+     * Complexity Enabled
+     */
+    complexity_enabled: boolean;
+    /**
+     * Simple Max
+     */
+    simple_max: number | null;
+    /**
+     * Agents
+     */
+    agents: Array<AgentModelSetting>;
+};
+
+/**
+ * ModelUsageResponse
+ */
+export type ModelUsageResponse = {
+    /**
+     * Model
+     */
+    model: string;
+    /**
+     * Calls
+     */
+    calls: number;
+    /**
+     * Prompt Tokens
+     */
+    prompt_tokens: number;
+    /**
+     * Completion Tokens
+     */
+    completion_tokens: number;
+    /**
+     * Max Prompt Tokens
+     */
+    max_prompt_tokens: number;
+    /**
+     * Cost Usd
+     */
+    cost_usd: number;
+    /**
+     * Estimated
+     */
+    estimated?: boolean;
 };
 
 /**
@@ -1677,6 +1957,10 @@ export type PluginPageResponse = {
     tree: Array<{
         [key: string]: unknown;
     }>;
+    /**
+     * Ui Version
+     */
+    ui_version?: string;
 };
 
 /**
@@ -2291,6 +2575,34 @@ export type RollbackTraceResponse = {
 };
 
 /**
+ * RoutingScoreResponse
+ */
+export type RoutingScoreResponse = {
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Score
+     */
+    score: number;
+};
+
+/**
+ * RoutingThresholdsResponse
+ */
+export type RoutingThresholdsResponse = {
+    /**
+     * Threshold
+     */
+    threshold: number;
+    /**
+     * Gap
+     */
+    gap: number;
+};
+
+/**
  * ScreenResolverTraceResponse
  */
 export type ScreenResolverTraceResponse = {
@@ -2364,6 +2676,36 @@ export type ScreenTraceResponse = {
      * Resolvers
      */
     resolvers?: Array<ScreenResolverTraceResponse>;
+};
+
+/**
+ * ScriptTraceResponse
+ */
+export type ScriptTraceResponse = {
+    /**
+     * Source
+     */
+    source: string;
+    /**
+     * Source Cut
+     */
+    source_cut: boolean;
+    /**
+     * Outcome
+     */
+    outcome: string;
+    /**
+     * Limit
+     */
+    limit?: 'wall_time' | 'inner_calls' | 'spend' | 'result_size' | null;
+    /**
+     * Source Hash
+     */
+    source_hash: string;
+    /**
+     * Procedure Id
+     */
+    procedure_id?: string | null;
 };
 
 /**
@@ -2709,6 +3051,28 @@ export type SourceTraceResponse = {
 };
 
 /**
+ * StageTimingResponse
+ */
+export type StageTimingResponse = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Start Ms
+     */
+    start_ms: number;
+    /**
+     * Duration Ms
+     */
+    duration_ms: number;
+    /**
+     * Run
+     */
+    run?: number;
+};
+
+/**
  * StepResultResponse
  */
 export type StepResultResponse = {
@@ -2813,7 +3177,7 @@ export type ToolCallTraceResponse = {
     /**
      * Access
      */
-    access?: 'read' | 'write' | 'delegate' | 'unknown';
+    access?: 'read' | 'write' | 'delegate' | 'script' | 'unknown';
     /**
      * Reversibility
      */
@@ -2825,7 +3189,7 @@ export type ToolCallTraceResponse = {
     /**
      * Gate
      */
-    gate?: 'none' | 'approved' | 'pre_approved' | 'denied' | 'refused' | 'refused_over_cap' | 'expired' | 'duplicate';
+    gate?: 'none' | 'approved' | 'pre_approved' | 'parked' | 'denied' | 'refused' | 'refused_over_cap' | 'expired' | 'duplicate';
     /**
      * Effect Phrase
      */
@@ -2838,6 +3202,19 @@ export type ToolCallTraceResponse = {
      * Call Index
      */
     call_index?: number;
+    /**
+     * Call Id
+     */
+    call_id?: string;
+    /**
+     * Start Offset Ms
+     */
+    start_offset_ms?: number | null;
+    /**
+     * Parent Call Id
+     */
+    parent_call_id?: string | null;
+    script?: ScriptTraceResponse | null;
 };
 
 /**
@@ -2877,6 +3254,36 @@ export type TriggerWorkflowResponse = {
 };
 
 /**
+ * TurnUsageResponse
+ */
+export type TurnUsageResponse = {
+    /**
+     * Main Model
+     */
+    main_model?: string | null;
+    /**
+     * Models
+     */
+    models?: Array<ModelUsageResponse>;
+    /**
+     * Context Fill
+     */
+    context_fill?: number | null;
+    /**
+     * Context Window
+     */
+    context_window?: number | null;
+    /**
+     * Estimated
+     */
+    estimated?: boolean;
+    /**
+     * System One Tokens
+     */
+    system_one_tokens?: number;
+};
+
+/**
  * UiContributionSchema
  */
 export type UiContributionSchema = {
@@ -2891,7 +3298,7 @@ export type UiContributionSchema = {
     /**
      * Kind
      */
-    kind: 'nav' | 'settings_section';
+    kind: 'module' | 'preset' | 'settings_section';
     /**
      * Label
      */
@@ -2901,13 +3308,13 @@ export type UiContributionSchema = {
      */
     icon: string;
     /**
-     * Path
+     * Slot
      */
-    path?: string | null;
+    slot?: 'mind.entity' | 'doing.run' | 'governance.connections' | null;
     /**
-     * Page Operation Id
+     * Prompt
      */
-    page_operation_id?: string | null;
+    prompt?: string | null;
     /**
      * Settings Operation Id
      */
@@ -2916,10 +3323,6 @@ export type UiContributionSchema = {
      * Priority
      */
     priority?: number;
-    /**
-     * Show In Mobile Nav
-     */
-    show_in_mobile_nav?: boolean;
 };
 
 /**
@@ -2927,13 +3330,41 @@ export type UiContributionSchema = {
  */
 export type UiManifestResponse = {
     /**
-     * Nav
+     * Modules
      */
-    nav: Array<UiContributionSchema>;
+    modules: Array<UiContributionSchema>;
+    /**
+     * Presets
+     */
+    presets: Array<UiContributionSchema>;
     /**
      * Settings Sections
      */
     settings_sections: Array<UiContributionSchema>;
+};
+
+/**
+ * UiModuleResponse
+ */
+export type UiModuleResponse = {
+    /**
+     * Module Id
+     */
+    module_id: string;
+    /**
+     * Applies
+     */
+    applies: boolean;
+    /**
+     * Components
+     */
+    components: Array<{
+        [key: string]: unknown;
+    }>;
+    /**
+     * Ui Version
+     */
+    ui_version: string;
 };
 
 /**
@@ -3579,6 +4010,132 @@ export type HealthCheckResponses = {
 };
 
 export type HealthCheckResponse = HealthCheckResponses[keyof HealthCheckResponses];
+
+export type GetModelSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/system/models';
+};
+
+export type GetModelSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ModelSettingsResponse;
+};
+
+export type GetModelSettingsResponse = GetModelSettingsResponses[keyof GetModelSettingsResponses];
+
+export type ListActionRecordsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Subject Type
+         */
+        subject_type?: 'goal' | 'workflow' | 'workflow_run' | 'workspace_run' | null;
+        /**
+         * Subject Id
+         */
+        subject_id?: string | null;
+        /**
+         * Since
+         */
+        since?: string | null;
+        /**
+         * Cursor
+         */
+        cursor?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v0/actions';
+};
+
+export type ListActionRecordsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListActionRecordsError = ListActionRecordsErrors[keyof ListActionRecordsErrors];
+
+export type ListActionRecordsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ActionRecordPage;
+};
+
+export type ListActionRecordsResponse = ListActionRecordsResponses[keyof ListActionRecordsResponses];
+
+export type ListChannelStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/channels/status';
+};
+
+export type ListChannelStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: ChannelStatusResponse;
+};
+
+export type ListChannelStatusResponse = ListChannelStatusResponses[keyof ListChannelStatusResponses];
+
+export type ListCollisionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Entity Id
+         */
+        entity_id?: string | null;
+        /**
+         * Source Function
+         */
+        source_function?: string | null;
+        /**
+         * Since
+         */
+        since?: string | null;
+        /**
+         * Until
+         */
+        until?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v0/collisions';
+};
+
+export type ListCollisionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListCollisionsError = ListCollisionsErrors[keyof ListCollisionsErrors];
+
+export type ListCollisionsResponses = {
+    /**
+     * Response Listcollisions
+     *
+     * Successful Response
+     */
+    200: Array<CollisionLogEntrySchema>;
+};
+
+export type ListCollisionsResponse = ListCollisionsResponses[keyof ListCollisionsResponses];
 
 export type GetMemoryFeedData = {
     body?: never;
@@ -4938,7 +5495,11 @@ export type ListLoopsData = {
         /**
          * State
          */
-        state?: string | null;
+        state?: Array<'suspected' | 'active' | 'drifting' | 'closed' | 'dropped'> | null;
+        /**
+         * Since
+         */
+        since?: string | null;
     };
     url: '/api/v0/loops';
 };
@@ -5826,6 +6387,67 @@ export type GetUiManifestResponses = {
 
 export type GetUiManifestResponse = GetUiManifestResponses[keyof GetUiManifestResponses];
 
+export type GetUiModuleData = {
+    body?: never;
+    path: {
+        /**
+         * Module Id
+         */
+        module_id: string;
+    };
+    query: {
+        /**
+         * Subject Kind
+         *
+         * What the slot passes: an entity, a workflow run, or nothing
+         */
+        subject_kind: 'entity' | 'workflow_run' | 'none';
+        /**
+         * Subject Id
+         *
+         * Entity or run id
+         */
+        subject_id?: string | null;
+        /**
+         * Parent Id
+         *
+         * Workflow id, for a run
+         */
+        parent_id?: string | null;
+    };
+    url: '/api/v0/ui/modules/{module_id}';
+};
+
+export type GetUiModuleErrors = {
+    /**
+     * Unknown module or subject
+     */
+    404: unknown;
+    /**
+     * Validation error (unknown agent/intent or invalid request body)
+     */
+    422: ErrorDetail;
+    /**
+     * The module failed or sent a view Ze cannot show
+     */
+    502: unknown;
+    /**
+     * The module took too long
+     */
+    504: unknown;
+};
+
+export type GetUiModuleError = GetUiModuleErrors[keyof GetUiModuleErrors];
+
+export type GetUiModuleResponses = {
+    /**
+     * Successful Response
+     */
+    200: UiModuleResponse;
+};
+
+export type GetUiModuleResponse = GetUiModuleResponses[keyof GetUiModuleResponses];
+
 export type TranscribeVoiceData = {
     body?: BodyTranscribeVoice;
     path?: never;
@@ -5884,38 +6506,6 @@ export type ReceiveWebhookResponses = {
 };
 
 export type ReceiveWebhookResponse = ReceiveWebhookResponses[keyof ReceiveWebhookResponses];
-
-export type GetNewsPageData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Limit
-         *
-         * Maximum articles to return
-         */
-        limit?: number;
-    };
-    url: '/api/v0/news/page';
-};
-
-export type GetNewsPageErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetNewsPageError = GetNewsPageErrors[keyof GetNewsPageErrors];
-
-export type GetNewsPageResponses = {
-    /**
-     * Successful Response
-     */
-    200: PluginPageResponse;
-};
-
-export type GetNewsPageResponse = GetNewsPageResponses[keyof GetNewsPageResponses];
 
 export type GetNewsSettingsData = {
     body?: never;

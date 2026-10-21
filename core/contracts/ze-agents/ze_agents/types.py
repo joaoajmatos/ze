@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol, runtime_checkable
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from ze_agents.claims import ClaimKind, Provenance
 from ze_agents.park import ParkedLoop, ParkedWrite, WriteDecision
@@ -86,6 +86,16 @@ class ToolCall:
     approval: dict[str, Any] | None = None
     agent: str | None = None
     undo: dict[str, Any] | None = None
+    # call_id joins a live tool row to its committed row; a parked call and its approved
+    # run share ParkedWrite.trace_call_id. started_at is time.monotonic() seconds.
+    call_id: str = field(default_factory=lambda: uuid4().hex)
+    started_at: float | None = None
+    # A script step holds the calls its script made; each inner call and each proposed
+    # write names the step through parent_call_id. `script` is the step's trace summary
+    # (source, source_cut, outcome, limit, source_hash, procedure_id).
+    parent_call_id: str | None = None
+    inner_calls: list[ToolCall] = field(default_factory=list)
+    script: dict[str, Any] | None = None
 
 
 @dataclass
@@ -113,6 +123,9 @@ class AgentContext:
     # token_sink is runtime-only; when set, agentic_loop streams tokens to it.
     # Signature: async (chunk: str) -> None. Never checkpoint.
     token_sink: Any | None = field(default=None, repr=False)
+    # tool_sink is runtime-only; call_tool hands every finished ToolCall to it.
+    # Signature: (call: ToolCall) -> None, must not block. Never checkpoint.
+    tool_sink: Any | None = field(default=None, repr=False)
     # sources collects web citations reported while this context's agent runs
     # (appended by agentic_loop, merged upward by delegate_to_agent). Empty in
     # any stored context.
@@ -146,6 +159,9 @@ class AgentContext:
     # Procedure discovery/activation (Phase 139). Matches are advisory until
     # invoke_procedure; procedure_tool_names only ever narrows. Never checkpoint.
     procedure_guidance: str | None = field(default=None, repr=False)
+    # script_runner is runtime-only; set from the turn config so agentic_loop can offer
+    # run_tool_script. Never checkpoint.
+    script_runner: Any | None = field(default=None, repr=False)
     procedure_matches: list[Any] | None = field(default=None, repr=False)
     procedure_tool_names: list[str] | None = field(default=None, repr=False)
     procedure_invocation_id: str | None = field(default=None, repr=False)

@@ -15,9 +15,9 @@ ui_router = APIRouter()
     operation_id="getUiManifest",
     summary="UI shell manifest",
     description=(
-        "Returns plugin-contributed nav entries and settings sections. "
-        "Core routes (chat, goals, settings) are not included — they are "
-        "hardcoded in the web client."
+        "Returns plugin-contributed modules (bound to a slot a place offers), "
+        "Ask preset chips and settings sections. Plugins contribute no pages; "
+        "the five places are hardcoded in the web client."
     ),
     tags=["ui"],
 )

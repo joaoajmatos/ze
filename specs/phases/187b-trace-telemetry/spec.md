@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-18
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "backend first: the trace fields 187's instruments need, e.g. per-node timings), to run after 187 lands, in parallel with 191 ... gaps taken from 187's instruments" (user, through the Maestro, 2026-10-18). The gaps come from Canvas, the 187 lead, in the floor's Handoffs note (2026-10-18).
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import datetime, timezone
 from typing import Any, Protocol
 from uuid import UUID, uuid4
@@ -62,6 +63,8 @@ class ProcedureStore(Protocol):
     async def list_versions(self, procedure_id: UUID) -> list[ProcedureVersion]: ...
 
     async def list_active_versions(self) -> list[ProcedureVersion]: ...
+
+    async def candidate_exists(self, name: str) -> bool: ...
 
     async def list_all_versions(self) -> list[ProcedureVersion]: ...
 
@@ -190,7 +193,19 @@ class InMemoryProcedureStore:
         return sorted(rows, key=lambda v: v.version_number)
 
     async def list_active_versions(self) -> list[ProcedureVersion]:
-        return [v for v in self.versions.values() if v.status is VersionStatus.ACTIVE]
+        return [
+            replace(v, source_kind=self._source_kind(v))
+            for v in self.versions.values()
+            if v.status is VersionStatus.ACTIVE
+        ]
+
+    def _source_kind(self, version: ProcedureVersion) -> str | None:
+        admission = self.admissions.get(version.admission_id)
+        candidate = self.candidates.get(admission.candidate_id) if admission else None
+        return candidate.source_kind.value if candidate else None
+
+    async def candidate_exists(self, name: str) -> bool:
+        return any(c.name == name for c in self.candidates.values())
 
     async def list_all_versions(self) -> list[ProcedureVersion]:
         return list(self.versions.values())
@@ -412,6 +427,7 @@ def _version_from_row(row: Any) -> ProcedureVersion:
         id=row["id"],
         created_at=row["created_at"],
         ended_at=row["ended_at"],
+        source_kind=row["source_kind"] if "source_kind" in row.keys() else None,
     )
 
 
@@ -689,9 +705,22 @@ class PostgresProcedureStore:
     async def list_active_versions(self) -> list[ProcedureVersion]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT * FROM procedure_versions WHERE status = 'active'"
+                "SELECT v.*, c.source_kind AS source_kind "
+                "FROM procedure_versions v "
+                "LEFT JOIN procedure_admissions a ON a.id = v.admission_id "
+                "LEFT JOIN procedure_candidates c ON c.id = a.candidate_id "
+                "WHERE v.status = 'active'"
             )
         return [_version_from_row(row) for row in rows]
+
+    async def candidate_exists(self, name: str) -> bool:
+        async with self._pool.acquire() as conn:
+            return bool(
+                await conn.fetchval(
+                    "SELECT EXISTS (SELECT 1 FROM procedure_candidates WHERE name = $1)",
+                    name,
+                )
+            )
 
     async def list_all_versions(self) -> list[ProcedureVersion]:
         async with self._pool.acquire() as conn:

@@ -9,29 +9,25 @@ The split makes clear where new code belongs and how the pieces fit together.
 
 ```
 ze/
-├── core/             # Shared infrastructure — no domain knowledge
-│   ├── ze-agents/    # Developer API — BaseAgent, @agent, @tool, ZePlugin, shared types
-│   ├── ze-plugin/    # Plugin extension framework — ZePlugin, channels, signal sources, data domains
-│   ├── ze-proactive/ # Job scheduling + interruption governor — ProactiveScheduler, ProactiveNotifier, PushKind
-│   ├── ze-automation/# Core automation engine — goals, workflows, accountability, agents, jobs
-│   ├── ze-core/      # Engine — routing, orchestration, telemetry, DI container
-│   ├── ze-data/      # Data portability layer — DataDomain, export/import/delete orchestration
-│   ├── ze-memory/    # Memory package — facts, episodes, graph, retrieval
-│   ├── ze-onboarding/# Onboarding coordinator, provider contracts, reset domain types
-│   ├── ze-ingestion/ # Content ingestion pipeline — fetch, process, extract, archive
-│   ├── ze-correlation/ # Cross-domain hypothesis engine — inline and proactive correlation
-│   ├── ze-browser/   # Browser sidecar HTTP client
-│   ├── ze-skills/    # Agent Skills — import, review, matching, script storage
-│   ├── ze-workspace/ # Isolated computer — files, shell, skill scripts
-│   ├── ze-notifications/ # Push notification abstraction (ntfy)
-│   └── ze-components/    # Server-driven UI component descriptors
+├── core/             # Shared infrastructure — no domain knowledge, grouped by role
+│   ├── kernel/         # ze-logging, ze-data, ze-components — pure infra leaves
+│   ├── contracts/      # ze-agents, ze-communication, ze-plugin, ze-proactive — developer-facing ABCs
+│   ├── engine/         # ze-core — the orchestration engine itself
+│   ├── seam/           # ze-collision — cross-cutting contribution seam
+│   ├── cognition/      # ze-memory, ze-correlation, ze-worldstate — the "mind" substrate
+│   ├── automation/     # ze-automation, ze-skills — goals, workflows, skills
+│   ├── arbitration/    # ze-priority — attention ranking
+│   └── ops/            # ze-workspace, ze-onboarding, ze-ingestion, ze-seed, ze-eval
 ├── packages/         # Shared packages — Python SDK + frontend npm
 │   ├── ze-sdk/       # Public SDK surface — flat re-export layer for plugin authors
 │   ├── ze-client/    # @myguyze/ze-client — generated typed SDK for ze-web
 │   └── ze-ui/        # @myguyze/ze-ui — server-driven UI contract + React renderer
 ├── integrations/     # External service wrappers — no Ze domain knowledge
-│   └── ze-google/    # Google OAuth2 credentials and service client factories
-│   └── ze-trading212/ # Trading212 REST client for finance ingestion
+│   ├── ze-google/        # Google OAuth2 credentials and service client factories
+│   ├── ze-browser/       # Browser sidecar HTTP client
+│   ├── ze-notifications/ # Push notification abstraction (ntfy)
+│   ├── ze-trading212/    # Trading212 REST client for finance ingestion
+│   └── ze-yt/            # yt-dlp audio fetcher for video URLs
 ├── plugins/          # ZePlugin domain extensions
 │   ├── ze-personal/  # Personal-assistant domain layer — persona, contacts, onboarding
 │   ├── ze-messenger/ # Cross-channel messenger agent (ZePlugin)
@@ -44,6 +40,8 @@ ze/
     └── ze-web/       # React web client (Vite + TypeScript + Tailwind + shadcn/ui)
 ```
 
+See [core/README.md](../core/README.md) for the full package-by-tier table and the verified dependency graph.
+
 ### Dependency graph
 
 ![Layer stack showing Ze's four top-level directories in strict dependency order — core infrastructure at the bottom, integrations above it, plugins above that, and apps at the top — with the packages layer (ze-sdk and friends) drawn as a cross-cutting seam beside core, integrations, and plugins rather than a fifth stacked layer.](diagrams/docs/package-layers.svg)
@@ -51,9 +49,9 @@ ze/
 <sub>[Interactive version](diagrams/docs/package-layers.html)</sub>
 
 Hard rules:
-- `ze-onboarding` never imports from any other Ze package — it is the stable setup-flow foundation.
-- `ze-agents` depends only on `ze-onboarding` plus third-party utilities — it is the stable agent/plugin API foundation.
-- `ze-plugin` and `ze-data` stay free of application wiring; they own the reusable extension and portability seams.
+- `ze-agents` depends only on `ze-logging` plus third-party utilities — it is the stable agent/plugin API foundation.
+- `ze-onboarding` depends on `ze-agents`, `ze-memory`, and `ze-plugin` — it owns the setup-flow domain, not a dependency-free leaf.
+- `ze-data` stays free of application wiring; `ze-plugin` depends on `ze-agents`, `ze-logging`, `ze-data`, and `ze-communication`. Together they own the reusable extension and portability seams.
 - `ze-core` never imports from domain packages. It depends on `ze-agents` and `ze-plugin` for shared engine-facing types.
 - Plugin packages (`ze-personal`, `ze-messenger`, etc.) never import `ze-core` directly — use `ze-sdk`.
 - `ze-memory`, `ze-automation`, and `ze-personal` never import from `ze-api`. Violations break the abstraction.
@@ -71,27 +69,26 @@ Hard rules:
 | `registry.py` | `@agent` decorator + `AgentRegistry` |
 | `tool.py` | `@tool` decorator, `ToolAccess` enum, `validate_tool_declarations()` |
 | `reversibility.py` | `ToolReversibility` enum — required on every `WRITE` tool |
-| `plugin.py` | `ZePlugin` ABC — container and graph extension seam |
-| `onboarding/` | Compatibility re-export of `ze_onboarding` onboarding symbols |
 | `types.py` | `AgentContext`, `AgentResult`, `ToolCall`, `AbortToken` |
 | `client.py` | `LLMClient` Protocol — the interface `BaseAgent` calls; `OpenRouterClient` satisfies it |
 | `nli.py` | `NLIClient` Protocol — local cross-encoder entailment/contradiction; `LocalNLIClient` satisfies it |
 | `db.py` | `DBPool` Protocol — structural type for asyncpg pools |
-| `channels/` | `Channel` ABC, `ChannelRegistry`, `ChannelType`, `Message`, `SentMessage`, `Thread` |
-| `interface/` | `AppInterface` ABC, `InputPreprocessor`, `Action`, `Notification` |
+| `interface/` | `AppInterface` ABC, `InputPreprocessor`, validation, types |
 | `progress/` | `ProgressReporter`, locale translations |
 | `hooks.py` | `HarnessHook` ABC — step-level abort, pre/post tool hooks |
 | `errors.py` | Typed `ZeError` exception hierarchy |
-| `logging.py` | `get_logger(__name__)` wrapper |
 | `settings.py` | `Settings` dataclass — config bridge |
 | `defaults.py` | Framework-level constants (model names, thresholds) |
+
+`ZePlugin`, channels, and signal sources now live in `ze-plugin`, not `ze-agents`;
+`get_logger` comes from `ze-logging` directly (re-exported via `ze_sdk`).
 
 ---
 
 ## ze-proactive — Job Scheduling Framework
 
 `ze_proactive` owns the scheduling and notification plumbing for background jobs.
-Depends on `ze-agents` only.
+Depends on `ze-agents`, `ze-data`, and `ze-logging`.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -130,22 +127,21 @@ Plugin authors list `ze-sdk` as their only Ze dependency and import everything f
 ## ze-onboarding — Setup Flow
 
 `ze_onboarding` owns the reusable onboarding domain: provider contracts, step/seed
-dataclasses, coordinator flow, review-before-save behavior, and reset scope/result
-types. It has no Ze dependencies. It does not know about Postgres, WebSocket, FastAPI,
-memory stores, or the web client.
+dataclasses, coordinator flow, review-before-save behavior, and the Postgres-backed
+store and persistence layer. It depends on `ze-agents`, `ze-memory`, and `ze-plugin`.
+It does not know about WebSocket, FastAPI, or the web client.
 
 | Module | What it provides |
 |--------|-----------------|
-| `types.py` | `OnboardingProvider`, `OnboardingStep`, `OnboardingSeed`, `OnboardingStore`, `OnboardingPersistence`, `ResetScope` |
+| `types.py` | `OnboardingProvider`, `OnboardingStep`, `OnboardingSeed`, `OnboardingStore` and `OnboardingPersistence` protocols |
+| `store.py` | `OnboardingStore` — Postgres-backed session, step, and seed storage |
+| `persistence.py` | `OnboardingPersistence` — writes submitted steps and seeds back to the store |
 | `coordinator.py` | `OnboardingCoordinator` — orders providers, dispatches submissions, inserts review step, applies approved seeds through protocols |
 | `providers.py` | `CoreOnboardingProvider` — minimal built-in setup for name/timezone |
 
-Concrete adapters live elsewhere:
-
-- `ze_api.onboarding.store` implements the `OnboardingStore` protocol with Postgres.
-- `ze_api.onboarding.persistence` applies approved seeds to memory/plugin stores.
-- `ze_api.onboarding.reset` executes SQL reset scopes.
-- `ze_api.api.ws` maps WebSocket commands and `component_submit` frames to the coordinator.
+`ze_api.api.ws` maps WebSocket commands and `component_submit` frames to the
+coordinator. There is no reset flow: `ResetService` and its scoped reset types were
+removed in phase 194.
 
 ---
 
@@ -178,8 +174,8 @@ authoring API, it goes in `ze-agents`. If it's a job framework primitive, it goe
 ## ze-plugin — Extension Framework
 
 `ze_plugin` owns the reusable plugin seam: `ZePlugin`, channels, signal sources, and
-the integration protocol shared by engine and plugin code. It depends on `ze-agents`
-only and stays free of application wiring.
+the integration protocol shared by engine and plugin code. It depends on `ze-agents`,
+`ze-logging`, `ze-data`, and `ze-communication`, and stays free of application wiring.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -210,7 +206,7 @@ It has no Ze package dependencies and is reused by `ze-plugin` and `ze-sdk`.
 ## ze-ingestion — Content Ingestion
 
 `ze_ingestion` owns the generic content ingestion pipeline. It depends on `ze-agents`,
-`ze-memory`, and `ze-browser`.
+`ze-logging`, `ze-memory`, `ze-browser`, and `ze-plugin`.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -228,8 +224,8 @@ It has no Ze package dependencies and is reused by `ze-plugin` and `ze-sdk`.
 ## ze-correlation — Signal Correlation
 
 `ze_correlation` owns cross-domain hypothesis generation from memory and signal
-inputs. It depends on `ze-agents`, `ze-memory`, and `ze-proactive` (the shared
-attention budget and the `notify` path).
+inputs. It depends on `ze-agents`, `ze-logging`, `ze-memory`, `ze-plugin`,
+`ze-collision`, and `ze-proactive` (the shared attention budget and the `notify` path).
 
 | Module | What it provides |
 |--------|-----------------|
@@ -245,7 +241,8 @@ attention budget and the `notify` path).
 ## ze-memory — Memory Package
 
 `ze_memory` owns all memory persistence, retrieval, and consolidation logic. It
-depends on `ze-agents` for logging and settings abstractions.
+depends on `ze-agents`, `ze-data`, `ze-logging`, `ze-plugin`, `ze-collision`, and
+`ze-proactive`.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -269,9 +266,9 @@ depends on `ze-agents` for logging and settings abstractions.
 ## ze-automation — Core Automation Engine
 
 `ze_automation` owns the complete automation stack as a first-class core package. It
-is wired directly into `ze_api/container.py` — not via the plugin registry — so goals
-and workflows are always present. It depends on `ze-agents`, `ze-proactive`, and
-`ze-memory`.
+is wired directly into `ze_api`'s container — not via the plugin registry — so goals
+and workflows are always present. It depends on `ze-agents`, `ze-logging`,
+`ze-proactive`, `ze-memory`, `ze-data`, `ze-components`, and `ze-plugin`.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -296,7 +293,7 @@ and workflows are always present. It depends on `ze-agents`, `ze-proactive`, and
 | `accountability/` | `AccountabilityStore`, `ActivitySummary`, `AnomalyRecord`, `build_narrative` |
 | `graph/routing_context.py` | Goal-aware routing context injection |
 | `runtime/contracts.py` | `AutomationPlanner`, `AutomationStore` protocols |
-| `migrations/versions/` | `zc006`–`zc009` (goal traces/suggestions/stuck/reuse), `zc011` (workflows), `zc014` (accountability) |
+| `migrations/versions/` | `zc006`–`zc009` (goal traces/suggestions/stuck/reuse), `zc011` (workflows), `zc014` (accountability), `zc021`/`zc025` (workflow execution summary/snapshot), `zc026` (workflow revisions), `zc030` (goal learning claims), `zc033` (held writes), `zc038` (narrowed learning evidence checks) |
 
 `ze_automation` exposes agent registration via `ze_automation.agent_module_paths()`,
 imported in `ze-api`'s container alongside plugin paths from `ZePlugin.agent_module_paths()`.
@@ -534,8 +531,8 @@ their `ZePlugin` implementations.
 |--------|-----------------|
 | `api/` | FastAPI app, WebSocket endpoint (`/ws`), REST routes, message route |
 | `interface/native.py` | `NativeAppInterface` — WebSocket + ntfy delivery |
-| `container.py` | `ZeContainer` — composition entry; subclasses `ze_core.Container` |
-| `compose.py` | `register_all_proactive_jobs()` — core + plugin cron registration |
+| `wiring/container.py` | `ZeContainer` — composition entry; subclasses `ze_core.Container` |
+| `wiring/jobs.py` | `register_all_proactive_jobs()` — core + plugin cron registration |
 | `migrate.py` | Meta-migrator — discovers all package migration paths; ze-api owns no tables |
 | `settings.py` | `ZeApiSettings` — shell env + YAML; `to_core_settings()` bridge |
 | `migrations/env.py` | Alembic runner harness (no owned revision files) |
@@ -601,7 +598,7 @@ make web-test      # vitest
 ## The ZePlugin Extension Point
 
 `ZePlugin` is the seam that lets domain packages inject behavior into the engine
-without `ze-core` knowing about them. It lives in `ze_agents.plugin` and is imported
+without `ze-core` knowing about them. It lives in `ze_plugin.plugin` and is imported
 via `ze_sdk`.
 
 ```python
@@ -624,11 +621,12 @@ class ZePlugin(ABC):
     def register_proactive_jobs(self, scheduler, settings, *, consolidation_enabled=True): ...
 ```
 
-Five plugins are registered in `ze_api/container.py`:
+Six plugins declare a `ze.plugins` entry point and are discovered automatically —
+none of them is registered by name in `ze_api`:
 
 - **`PersonalPlugin`** (`ze_personal/plugin.py`) — identity builder, contact extraction
   hooks, research/companion agents, and proactive jobs (briefing, insights, contact review).
-  Goals, workflows, and accountability are wired directly by `ze_api/container.py` via
+  Goals, workflows, and accountability are wired directly into `ze_api`'s container via
   `ze_automation`, not through this plugin.
 - **`MessengerPlugin`** (`ze_messenger/plugin.py`) — cross-channel messenger agent,
   Gmail channel wiring, and inbound polling (when Google credentials are configured).
@@ -637,6 +635,8 @@ Five plugins are registered in `ze_api/container.py`:
 - **`CalendarPlugin`** (`ze_calendar/plugin.py`) — calendar and reminders agent paths.
 - **`NewsPlugin`** (`ze_news/plugin.py`) — conditionally loaded when `news.enabled: true`
   and sources are configured.
+- **`FinancePlugin`** (`ze_finance/plugin.py`) — finance agent, data sources, recurring
+  detection job, and signal source.
 
 ### Adding a new plugin
 
@@ -763,6 +763,6 @@ that belongs inside an existing package.
 - [ ] It does not import from `ze-api`, `ze-personal`, or any package above it in the dependency graph.
 - [ ] It owns at least one Postgres migration.
 - [ ] It has a `plugin.py` implementing `ZePlugin` (unless it is a pure library like `ze-google` or `ze-browser`).
-- [ ] Adding or removing the plugin from `ze_api/container.py` requires no other code changes.
+- [ ] Adding or removing the plugin's `ze.plugins` entry point requires no other code changes.
 - [ ] It has its own `pyproject.toml` and `tests/` directory.
 - [ ] A spec in `specs/phases/` or `specs/arch/` exists before any code is written.

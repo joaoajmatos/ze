@@ -29,8 +29,11 @@ from ze_skills.bootstrap import (
     build_skills_stack,
 )
 from ze_skills.store import SkillStore
+from ze_memory.action_records.store import PostgresActionRecordStore
 from ze_memory.feedback_records import PostgresFeedbackStore
 from ze_memory.feedback_records.data_domain import feedback_data_domains
+from ze_personal.channels.user_channel_store import UserChannelStore
+from ze_personal.channels.watermark_store import ChannelWatermarkStore
 from ze_priority import WorldComposer
 from ze_priority.store import PriorityOverrideStore
 from ze_api.voice.registry import TranscriptionRegistry
@@ -74,10 +77,7 @@ from ze_ingestion.bootstrap import (
 )
 from ze_memory.policies import build_policy_registry
 from ze_notifications.ntfy import NtfyConfig, NtfyNotifier
-from ze_onboarding import (
-    OnboardingCoordinator,
-    ResetService,
-)
+from ze_onboarding import OnboardingCoordinator
 from ze_plugin.bootstrap import discover_and_instantiate_plugins
 from ze_communication.registry import ChannelRegistry
 from ze_proactive.job_run_store import JobRunStore
@@ -264,7 +264,9 @@ class ZeContainer(CoreContainer):
     component_hook: ComponentCollectionHook
     confirmation_store: PendingConfirmationStore
     onboarding_coordinator: OnboardingCoordinator
-    reset_service: ResetService
+    action_record_store: PostgresActionRecordStore
+    user_channel_store: UserChannelStore
+    watermark_store: ChannelWatermarkStore
     _checkpointer: Any
     _push_log_store: PushLogStore
     interruption_settings_store: InterruptionSettingsStore
@@ -299,6 +301,8 @@ class ZeContainer(CoreContainer):
     procedure_activator: Any = None
     tier_judge: Any = None
     screen_resolvers: Any = None
+    # Set by the workspace stack (T031); None keeps run_tool_script off.
+    script_runner: Any = None
     transcription_registry: TranscriptionRegistry = field(
         default_factory=TranscriptionRegistry
     )
@@ -346,6 +350,7 @@ class ZeContainer(CoreContainer):
             "procedure_discovery": self.procedure_discovery,
             "procedure_activator": self.procedure_activator,
             "screen_resolvers": self.screen_resolvers,
+            "script_runner": self.script_runner,
             **plugin_services,
         }
         configurable["memory_hooks"] = [*plugin_services.get("memory_hooks", [])]
@@ -487,6 +492,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         turn_starter=turn_starter,
         push_sender=push_sender,
         action_record_store=stores.action_record_store,
+        procedure_admission=stores.procedure_admission,
     )
     wire_automation(automation, workspace, stores, shared, worldstate, skills_stack)
     install_contradiction_hook(shared, worldstate)
@@ -676,7 +682,9 @@ async def build_container(settings: Settings) -> ZeContainer:
         component_hook=component_hook,
         confirmation_store=stores.confirmation_store,
         onboarding_coordinator=onboarding_coordinator,
-        reset_service=ResetService(pool=pool),
+        action_record_store=stores.action_record_store,
+        user_channel_store=stores.user_channel_store,
+        watermark_store=stores.watermark_store,
         plugins=plugins,
         _checkpointer=checkpointer,
         _push_log_store=stores.push_log_store,
@@ -710,6 +718,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         procedure_discovery=stores.procedure_discovery,
         procedure_activator=stores.procedure_activator,
         screen_resolvers=screen_resolvers,
+        script_runner=workspace.script_runner,
         job_run_store=stores.job_run_store,
         hypothesis_store=correlation.hypothesis_store,
     )
@@ -774,7 +783,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         plugins=[type(plugin).__name__ for plugin in plugins],
         agents=sorted(get_registered_agents()),
         channels=list(channel_registry.available()),
-        ui_nav=len(ui_manifest.nav),
+        ui_modules=len(ui_manifest.modules),
+        ui_presets=len(ui_manifest.presets),
         ui_settings=len(ui_manifest.settings_sections),
         signal_sources=sorted(signal_sources),
         webhook_handlers=sorted(plugin_webhook_handlers),

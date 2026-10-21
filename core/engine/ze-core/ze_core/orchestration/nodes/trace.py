@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import time
 from dataclasses import replace
 from typing import Any
 
@@ -18,6 +19,9 @@ from ze_core.conversation.messages.types import (
     InputTrace,
     MessageTrace,
     ProcedureUsageTrace,
+    ScriptTrace,
+    RoutingScore,
+    RoutingThresholds,
     ScreenTrace,
     SkillUsageTrace,
     SourceTrace,
@@ -27,10 +31,13 @@ from ze_core.conversation.messages.types import (
 from ze_core.orchestration.loop_offer import with_loop_offer_line
 from ze_core.orchestration.promote import ledger_with_promote_offer
 from ze_core.orchestration.state import AgentState
+from ze_core.telemetry.turn import current_turn_telemetry
 from ze_logging import get_logger
 
 log = get_logger(__name__)
 
+
+ROUTING_SCORES_SHOWN = 9  # matches system_one routing shortlist_k
 
 _STILL_RUNNING_ID_PATTERN = re.compile(r"^\[still running\] run ([^:]+):")
 
@@ -59,8 +66,9 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
     tool_calls = _extract_tool_calls(
         agent_result,
         list(state.get("subtask_results") or []),
+        current_turn_telemetry.get(),
     )
-    total_duration_ms = sum(t.duration_ms for t in tool_calls)
+    tool_duration_ms = sum(t.duration_ms for t in tool_calls)
 
     subtask_agents = (
         [envelope.primary_agent]
@@ -84,7 +92,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         subtasks=subtask_agents,
         memory_chunks=memory_chunks,
         tool_calls=tool_calls,
-        total_duration_ms=total_duration_ms,
+        tool_duration_ms=tool_duration_ms,
         compaction=compaction,
         resume_recap_applied=bool(state.get("resume_recap_applied")),
         loop_offer_ids=list(state.get("loop_offer_ids") or []),
@@ -104,6 +112,8 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         ],
         tier=state.get("tier"),
         screen=_screen_trace(state.get("screen_trace")),
+        routing_scores=_routing_scores(envelope),
+        routing_thresholds=_routing_thresholds(envelope),
         input=_input_trace(state),
     )
     update: dict[str, Any] = {"message_trace": trace}
@@ -327,9 +337,46 @@ def _conductor_ledger(state: AgentState) -> list[dict[str, str]]:
     return list(state.get("conductor_ledger") or [])
 
 
+def _routing_scores(envelope: Any) -> list[RoutingScore]:
+    raw = getattr(envelope, "raw_scores", None) or {}
+    if len(raw) <= 1:
+        return []
+    ranked = sorted(raw.items(), key=lambda item: item[1], reverse=True)
+    return [
+        RoutingScore(agent=agent, score=float(score))
+        for agent, score in ranked[:ROUTING_SCORES_SHOWN]
+    ]
+
+
+def _routing_thresholds(envelope: Any) -> RoutingThresholds | None:
+    threshold = getattr(envelope, "threshold", None)
+    gap = getattr(envelope, "gap_threshold", None)
+    if threshold is None or gap is None:
+        return None
+    return RoutingThresholds(threshold=float(threshold), gap=float(gap))
+
+
+def _start_offset_ms(started_at: float | None, recorder: Any) -> int | None:
+    """Offset of a tool start from the turn start, or None when it cannot be trusted.
+
+    A partial recorder was recreated after a restart, so its monotonic base differs
+    from the run-1 `started_at` values that were checkpointed.
+    """
+    if started_at is None or recorder is None or getattr(recorder, "partial", False):
+        return None
+    base = getattr(recorder, "started", None)
+    if base is None:
+        return None
+    now = time.monotonic()
+    if not base <= started_at <= now:
+        return None
+    return round((started_at - base) * 1000)
+
+
 def _extract_tool_calls(
     agent_result: Any,
     subtask_results: list[Any] | None = None,
+    recorder: Any = None,
 ) -> list[ToolCallTrace]:
     """Resolve every call (nested delegate calls flattened) against the registry now,
     so retry eligibility never depends on registry state at retry time."""
@@ -338,6 +385,7 @@ def _extract_tool_calls(
         return []
     from ze_agents.delegate import DELEGATE_TOOL_NAME
     from ze_agents.nested_tools import flatten_tool_calls
+    from ze_agents.scripts import SCRIPT_TOOL_NAME
     from ze_agents.tool import ToolAccess, registered_tools
 
     registry = registered_tools()
@@ -350,6 +398,10 @@ def _extract_tool_calls(
         spec = registry.get(name)
         if name == DELEGATE_TOOL_NAME:
             access = "delegate"
+        elif name == SCRIPT_TOOL_NAME:
+            access = (
+                "script"  # the step reads nothing itself; its calls are their own rows
+            )
         elif name.startswith("openrouter:"):
             access = "read"  # OpenRouter server tools (web search) only read
         elif spec is None:
@@ -376,9 +428,28 @@ def _extract_tool_calls(
                 undo_args=getattr(tc, "undo", None),
                 undo_note=spec.undo_note if spec is not None else None,
                 call_index=call_index,
+                call_id=getattr(tc, "call_id", ""),
+                start_offset_ms=_start_offset_ms(
+                    getattr(tc, "started_at", None), recorder
+                ),
+                parent_call_id=getattr(tc, "parent_call_id", None),
+                script=_script_trace(getattr(tc, "script", None)),
             )
         )
     return result
+
+
+def _script_trace(raw: Any) -> ScriptTrace | None:
+    if not isinstance(raw, dict):
+        return None
+    return ScriptTrace(
+        source=str(raw.get("source") or ""),
+        source_cut=bool(raw.get("source_cut")),
+        outcome=str(raw.get("outcome") or ""),
+        limit=raw.get("limit"),
+        source_hash=str(raw.get("source_hash") or ""),
+        procedure_id=raw.get("procedure_id"),
+    )
 
 
 def _extract_procedure(agent_context: Any) -> ProcedureUsageTrace | None:

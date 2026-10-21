@@ -3,6 +3,7 @@ import { Attention } from "@/widgets/attention";
 import { Connections } from "@/widgets/connections";
 import { Data } from "@/widgets/data";
 import { Files } from "@/widgets/files";
+import { PluginModuleSlot } from "@/widgets/plugin-module";
 import { Spend } from "@/widgets/spend";
 import { useScreenPublisher } from "@/entities/screen-context";
 
@@ -26,7 +27,7 @@ export function GovernancePage() {
         <Spend />
       </div>
       <div className="gov-connections" data-module="Connections">
-        <Connections />
+        <Connections extra={<PluginModuleSlot slot="governance.connections" subject={{ kind: "none" }} />} />
       </div>
       <div className="gov-data" data-module="Data">
         <Data />

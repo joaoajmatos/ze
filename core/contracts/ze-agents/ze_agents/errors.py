@@ -88,6 +88,17 @@ class LoopParked(ZeCoreError):
         self.loop = loop
 
 
+# ── UI ────────────────────────────────────────────────────────────────────────
+
+
+class InvalidComponentError(ZeCoreError):
+    """A UI component descriptor or action was built with invalid fields."""
+
+
+class UiActionRefusedError(AgentError):
+    """A screen-pressed tool action was refused before the tool ran."""
+
+
 # ── Workflow ──────────────────────────────────────────────────────────────────
 
 

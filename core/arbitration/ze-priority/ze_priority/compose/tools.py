@@ -35,6 +35,7 @@ def _deliver(composition: Composition, *, own_key: str, preset: str | None) -> d
         "7 days. The modules appear on screen; you get a summary to write one or two "
         "sentences from."
     ),
+    produces_ui=True,
 )
 async def show_slipping(
     world_composer: WorldComposer,
@@ -51,6 +52,7 @@ async def show_slipping(
         "suspected loops. The modules appear on screen; you get a summary to write "
         "one or two sentences from."
     ),
+    produces_ui=True,
 )
 async def show_decisions(
     world_composer: WorldComposer,
@@ -67,6 +69,7 @@ async def show_decisions(
         "hypotheses. topic is the user's own words for it. The modules appear on "
         "screen; you get a summary to write one or two sentences from."
     ),
+    produces_ui=True,
 )
 async def show_topic(
     world_composer: WorldComposer,

@@ -18,7 +18,7 @@ function frame(
     subtasks: ["companion"],
     memory_chunks: [],
     tool_calls: [],
-    total_duration_ms: 10,
+    tool_duration_ms: 10,
     skills_used: [],
     ...overrides,
   };

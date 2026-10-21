@@ -1,0 +1,28 @@
+[
+  {
+    "type": "sparkline",
+    "label": "Daily spend",
+    "points": [
+      1,
+      3,
+      2,
+      5,
+      4,
+      6,
+      5
+    ],
+    "value": "€6"
+  },
+  {
+    "type": "sparkline",
+    "label": "Single",
+    "points": [
+      2
+    ]
+  },
+  {
+    "type": "sparkline",
+    "label": "Empty",
+    "points": []
+  }
+]

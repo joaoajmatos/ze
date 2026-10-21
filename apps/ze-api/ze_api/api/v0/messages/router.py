@@ -115,10 +115,14 @@ def _trace_to_response(trace) -> MessageTraceResponse:
                 "effect_phrase": t.effect_phrase,
                 "agent": t.agent,
                 "call_index": t.call_index,
+                "call_id": t.call_id,
+                "start_offset_ms": t.start_offset_ms,
+                "parent_call_id": t.parent_call_id,
+                "script": asdict(t.script) if t.script else None,
             }
             for t in trace.tool_calls
         ],
-        total_duration_ms=trace.total_duration_ms,
+        tool_duration_ms=trace.tool_duration_ms,
         skills_used=[
             {
                 "skill_id": s.skill_id,
@@ -157,6 +161,17 @@ def _trace_to_response(trace) -> MessageTraceResponse:
         ],
         tier=_tier_to_response(getattr(trace, "tier", None)),
         screen=_screen_to_response(getattr(trace, "screen", None)),
+        turn_duration_ms=getattr(trace, "turn_duration_ms", None),
+        paused_ms=int(getattr(trace, "paused_ms", 0) or 0),
+        stages=[asdict(s) for s in getattr(trace, "stages", None) or []],
+        usage=asdict(trace.usage) if getattr(trace, "usage", None) else None,
+        routing_scores=[asdict(r) for r in getattr(trace, "routing_scores", None) or []],
+        routing_thresholds=(
+            asdict(trace.routing_thresholds)
+            if getattr(trace, "routing_thresholds", None)
+            else None
+        ),
+        telemetry_partial=bool(getattr(trace, "telemetry_partial", False)),
         input=_dataclass_to_response(getattr(trace, "input", None)),
     )
 
@@ -208,6 +223,8 @@ def _judgments_to_response(judgments) -> list[dict]:
                 "input_tokens": item.input_tokens,
                 "consumed": item.consumed,
                 "skip_reason": item.skip_reason,
+                "surface": item.surface,
+                "bar": asdict(item.bar) if item.bar else None,
             }
         )
     return rows

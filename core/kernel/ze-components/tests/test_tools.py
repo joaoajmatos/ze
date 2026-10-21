@@ -79,7 +79,7 @@ async def test_render_confirm_appends_col_with_buttons():
     buttons_row = c["children"][1]
     assert buttons_row["type"] == "row"
     assert buttons_row["children"][0]["style"] == "danger"
-    assert buttons_row["children"][1]["action"] == "no"
+    assert buttons_row["children"][1]["action"] == {"kind": "ask", "text": "no"}
 
 
 async def test_render_chart_appends_chart_primitive():

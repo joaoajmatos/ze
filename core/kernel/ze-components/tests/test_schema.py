@@ -76,11 +76,6 @@ def test_export_json_schema_includes_discriminators_and_recursive_children():
     assert schema["$defs"]["PrimitiveTree"]["type"] == "array"
 
 
-def test_export_json_schema_maps_progress_bar_type():
-    schema = export_json_schema()
-    assert schema["$defs"]["ProgressBar"]["properties"]["type"] == {"const": "progress"}
-
-
 def test_export_json_schema_includes_steps():
     schema = export_json_schema()
     steps = schema["$defs"]["Steps"]

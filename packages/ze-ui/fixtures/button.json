@@ -1,0 +1,45 @@
+[
+  {
+    "type": "row",
+    "children": [
+      {
+        "type": "button",
+        "label": "Ask",
+        "style": "primary",
+        "action": {
+          "kind": "ask",
+          "text": "What's new?"
+        }
+      },
+      {
+        "type": "button",
+        "label": "Open",
+        "action": {
+          "kind": "navigate",
+          "route": "/mind/ent-42"
+        }
+      },
+      {
+        "type": "button",
+        "label": "Slipping",
+        "action": {
+          "kind": "compose",
+          "compose": "slipping"
+        }
+      },
+      {
+        "type": "button",
+        "label": "Mark read",
+        "style": "danger",
+        "action": {
+          "kind": "tool",
+          "owner": "news",
+          "tool": "mark_source_read",
+          "args": {
+            "source_id": "s-12"
+          }
+        }
+      }
+    ]
+  }
+]

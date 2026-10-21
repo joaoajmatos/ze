@@ -1,0 +1,19 @@
+[
+  {
+    "type": "col",
+    "variant": "card",
+    "gap": "md",
+    "children": [
+      {
+        "type": "text",
+        "content": "Weekly review",
+        "style": "heading"
+      },
+      {
+        "type": "text",
+        "content": "Three things moved.",
+        "color": "muted"
+      }
+    ]
+  }
+]

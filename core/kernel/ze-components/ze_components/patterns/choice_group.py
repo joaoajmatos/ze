@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ze_components.actions import AskAction
 from ze_components.atoms import caption, info, primary, spacer, subheading, text
 from ze_components.molecules import between, card, col
 from ze_components.molecules.col import Col
@@ -23,5 +24,7 @@ def choice_group(
         row_items: list = [col(inner, gap="none")]
         if opt.get("recommended"):
             row_items.append(info("recommended"))
-        children.append(between([col(row_items), primary(submit_label, opt["id"])]))
+        children.append(
+            between([col(row_items), primary(submit_label, AskAction(opt["id"]))])
+        )
     return card(children)

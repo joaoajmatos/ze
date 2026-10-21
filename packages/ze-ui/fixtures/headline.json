@@ -1,0 +1,14 @@
+[
+  {
+    "type": "headline",
+    "text": "2 SLIPPING",
+    "claim": {
+      "kind": "fact",
+      "subject": "goal",
+      "ref_id": "g-1",
+      "confidence": 0.8,
+      "source": "you said so",
+      "as_of": "2026-10-10"
+    }
+  }
+]

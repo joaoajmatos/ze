@@ -9,7 +9,10 @@ from uuid import UUID
 from ze_agents.claims import Confidence, Provenance
 from ze_plugin.contribution import EvidenceRef, TargetFace
 
-from ze_memory.action_records.errors import InvalidActionRecordStateError
+from ze_memory.action_records.errors import (
+    InvalidActionRecordStateError,
+    UnknownActionSubjectKindError,
+)
 from ze_memory.action_records.sanitize import (
     assert_safe_text,
     sanitize_failure_code,
@@ -50,6 +53,30 @@ _ALLOWED_OUTCOMES: dict[ActionLifecycle, ActionOutcome | None] = {
     ActionLifecycle.UNKNOWN: ActionOutcome.UNKNOWN,
 }
 
+class ActionSubjectKind(StrEnum):
+    GOAL = "goal"
+    WORKFLOW = "workflow"
+    WORKFLOW_RUN = "workflow_run"
+    WORKSPACE_RUN = "workspace_run"
+
+
+_SUBJECT_CONTEXT_KEYS: dict[ActionSubjectKind, str] = {
+    ActionSubjectKind.GOAL: "goal_id",
+    ActionSubjectKind.WORKFLOW: "workflow_id",
+    ActionSubjectKind.WORKFLOW_RUN: "workflow_run_id",
+    ActionSubjectKind.WORKSPACE_RUN: "workspace_run_id",
+}
+
+
+def subject_context_key(kind: ActionSubjectKind | str) -> str:
+    try:
+        return _SUBJECT_CONTEXT_KEYS[ActionSubjectKind(kind)]
+    except ValueError:
+        raise UnknownActionSubjectKindError(
+            f"unknown action subject kind: {kind!r}"
+        ) from None
+
+
 CausalKind = Literal[
     "fact",
     "episode",
@@ -89,6 +116,7 @@ class ActionContext:
     outreach_id: UUID | None = None
     calendar_ref: str | None = None
     reminder_id: UUID | None = None
+    script_key: str | None = None
 
 
 @dataclass(frozen=True)

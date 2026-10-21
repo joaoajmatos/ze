@@ -7,6 +7,7 @@ where None means the scenario did not declare that expectation.
 
 from __future__ import annotations
 
+from ze_eval.scenario import max_llm_calls_limit
 from ze_eval.types import VerifyResult
 
 
@@ -79,6 +80,15 @@ def _counts(call: dict, entry: dict) -> bool:
     if gate == "parked":
         return bool(entry.get("allow_parked"))
     return bool(call.get("success")) and gate not in _DID_NOT_RUN
+
+
+def llm_calls_correct(scenario: dict, llm_calls: int | None) -> bool | None:
+    """True when the run made no more LLM calls than `max_llm_calls`. None when the
+    scenario declares no cap or the run's call count is unknown."""
+    limit = max_llm_calls_limit(scenario)
+    if limit is None or llm_calls is None:
+        return None
+    return llm_calls <= limit
 
 
 def outcome_correct(verify_results: list[VerifyResult]) -> bool | None:

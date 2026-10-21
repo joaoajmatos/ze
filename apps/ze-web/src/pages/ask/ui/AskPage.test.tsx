@@ -1,12 +1,20 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { manifestFixture } from "@/test/fixtures/manifest";
 import { mockMatchMedia } from "@/test/match-media";
 
 const m = vi.hoisted(() => ({ sendTurn: vi.fn(() => true) }));
 vi.mock("@/features/turn-stream", () => ({ sendTurn: m.sendTurn }));
 vi.mock("@/widgets/assemble", () => ({
-  Canvas: ({ threadId }: { threadId: string }) => <div data-testid="canvas">{threadId}</div>,
+  Canvas: ({ threadId, onSelect }: { threadId: string; onSelect?: (id: string) => void }) => (
+    <div data-testid="canvas">
+      {threadId}
+      <button type="button" onClick={() => onSelect?.("m1")}>
+        trace this reply
+      </button>
+    </div>
+  ),
   ConfirmationPlacement: () => null,
   RetryControl: () => <div data-testid="retry" />,
   TraceModule: ({ messageId }: { messageId: string | null }) => <div data-testid="trace">{messageId ?? "latest"}</div>,
@@ -14,11 +22,15 @@ vi.mock("@/widgets/assemble", () => ({
 }));
 vi.mock("@/widgets/sessions-rail", () => ({ SessionsRail: () => <div data-testid="rail" /> }));
 vi.mock("@/widgets/try-chips", () => ({
-  TryChips: ({ onSend }: { onSend: (t: string, c: object) => boolean }) => (
-    <button type="button" onClick={() => onSend("What's slipping?", { compose: "slipping", origin: "preset" })}>
+  TryChips: ({ onSend, presets }: { onSend: (t: string, c: object) => boolean; presets?: { id: string }[] }) => (
+    <button type="button" data-presets={(presets ?? []).map((p) => p.id).join(",")} onClick={() => onSend("What's slipping?", { compose: "slipping", origin: "preset" })}>
       try
     </button>
   ),
+}));
+vi.mock("@/entities/ui-manifest", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/ui-manifest")>()),
+  useUiManifestQuery: () => ({ data: manifestFixture }),
 }));
 vi.mock("@/entities/conversation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/entities/conversation")>()),
@@ -57,6 +69,11 @@ beforeEach(() => {
 afterEach(() => mm.restore());
 
 describe("AskPage", () => {
+  it("passes the manifest's presets to the try chips", () => {
+    mount();
+    expect(screen.getByRole("button", { name: "try" })).toHaveAttribute("data-presets", "fixture.preset");
+  });
+
   it("lays out the rail, the canvas and the trace on a desktop", () => {
     mount();
     expect(screen.getByTestId("rail")).toBeInTheDocument();
@@ -86,6 +103,20 @@ describe("AskPage", () => {
     mount();
     expect(screen.queryByTestId("trace")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Open the trace of the selected reply" }));
+    expect(screen.getByTestId("sheet")).toBeInTheDocument();
+  });
+
+  it("fills the trace rail when a reply is selected on a desktop", () => {
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "trace this reply" }));
+    expect(screen.getByTestId("trace")).toHaveTextContent("m1");
+  });
+
+  it("opens the trace sheet when a reply is selected on a phone", () => {
+    mm.set("(max-width: 1023px)", true);
+    mount();
+    expect(screen.queryByTestId("sheet")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "trace this reply" }));
     expect(screen.getByTestId("sheet")).toBeInTheDocument();
   });
 

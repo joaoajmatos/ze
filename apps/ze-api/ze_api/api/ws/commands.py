@@ -43,6 +43,9 @@ async def handle_command(
         except Exception as exc:
             log.warning("ws_cancel_abort_failed", error=str(exc))
         _drop_thread_pendings(pending_configs, thread_pending_requests, thread_id)
+        telemetry = getattr(container, "turn_telemetry", None)
+        if telemetry is not None:
+            telemetry.finish(thread_id)
         await conn_mgr.send_frame({"type": "confirm_cancel", "id": ""}, thread_id)
         return
 

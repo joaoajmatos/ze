@@ -74,7 +74,7 @@ async def test_get_traces_returns_map():
         "subtasks": [],
         "memory_chunks": [],
         "tool_calls": [],
-        "total_duration_ms": 50,
+        "tool_duration_ms": 50,
     }
     row = MagicMock()
     row.__getitem__ = lambda self, key: {"id": msg_id, "trace": trace_data}[key]
@@ -384,3 +384,138 @@ async def test_unreadable_screen_context_loads_as_none():
     pool, _ = _make_pool_mock(rows=[_make_row(msg, screen_context="{not json")])
     loaded = await PostgresMessageStore(pool=pool).get_message(msg.id)
     assert loaded is not None and loaded.screen_context is None
+
+
+def test_parse_trace_reads_telemetry_fields():
+    from dataclasses import asdict
+
+    from ze_core.conversation.messages.store import _parse_trace
+    from ze_core.conversation.messages.types import (
+        JudgmentBar,
+        JudgmentTrace,
+        MessageTrace,
+        ModelUsage,
+        RoutingScore,
+        RoutingThresholds,
+        StageTiming,
+        ToolCallTrace,
+        TurnUsage,
+    )
+
+    trace = MessageTrace(
+        agent="calendar",
+        routing_method="embedding",
+        confidence=0.9,
+        score_gap=0.2,
+        is_compound=False,
+        subtasks=["calendar"],
+        tool_calls=[
+            ToolCallTrace(
+                name="t",
+                result_snippet="",
+                duration_ms=1,
+                success=True,
+                call_id="abc",
+                start_offset_ms=640,
+            )
+        ],
+        judgments=[
+            JudgmentTrace(
+                question_id="agent",
+                kind="choice",
+                latency_ms=5,
+                surface="routing",
+                bar=JudgmentBar("choice_trust", 0.5),
+            )
+        ],
+        tool_duration_ms=312,
+        turn_duration_ms=2140,
+        paused_ms=20000,
+        stages=[StageTiming("fetch_context", 212, 88, 2)],
+        usage=TurnUsage(
+            main_model="m",
+            models=[ModelUsage("m", 2, 9120, 410, 5200, 0.03, True)],
+            context_fill=0.026,
+            context_window=200000,
+            estimated=True,
+            system_one_tokens=1840,
+        ),
+        routing_scores=[RoutingScore("calendar", 0.83)],
+        routing_thresholds=RoutingThresholds(0.78, 0.05),
+        telemetry_partial=True,
+    )
+    assert _parse_trace(asdict(trace)) == trace
+
+
+def test_parse_trace_before_187b_has_empty_telemetry():
+    from ze_core.conversation.messages.store import _parse_trace
+
+    trace = _parse_trace(
+        {
+            "agent": "companion",
+            "routing_method": "embedding",
+            "confidence": 0.9,
+            "score_gap": 0.1,
+            "is_compound": False,
+            "subtasks": [],
+            "total_duration_ms": 50,
+        }
+    )
+    assert trace.tool_duration_ms == 0
+    assert trace.turn_duration_ms is None
+    assert trace.paused_ms == 0
+    assert trace.stages == [] and trace.usage is None
+    assert trace.routing_scores == [] and trace.routing_thresholds is None
+    assert trace.telemetry_partial is False
+
+
+def test_script_step_trace_round_trips_and_old_traces_read_none():
+    from dataclasses import asdict
+
+    from ze_core.conversation.messages.store import _parse_trace
+    from ze_core.conversation.messages.types import (
+        MessageTrace,
+        ScriptTrace,
+        ToolCallTrace,
+    )
+
+    trace = MessageTrace(
+        agent="finance",
+        routing_method="embedding",
+        confidence=0.9,
+        score_gap=0.2,
+        is_compound=False,
+        subtasks=[],
+        tool_calls=[
+            ToolCallTrace(
+                name="run_tool_script",
+                result_snippet="{}",
+                duration_ms=9,
+                success=True,
+                access="script",
+                call_id="step",
+                script=ScriptTrace(
+                    source="x = 1",
+                    source_cut=False,
+                    outcome="ok",
+                    limit=None,
+                    source_hash="abc",
+                    procedure_id=None,
+                ),
+            ),
+            ToolCallTrace(
+                name="get_transactions",
+                result_snippet="[]",
+                duration_ms=2,
+                success=True,
+                access="read",
+                parent_call_id="step",
+            ),
+        ],
+    )
+    parsed = _parse_trace(asdict(trace))
+    assert parsed == trace
+    assert isinstance(parsed.tool_calls[0].script, ScriptTrace)
+
+    old = ToolCallTrace(name="t", result_snippet="", duration_ms=1, success=True)
+    assert (old.parent_call_id, old.script) == (None, None)

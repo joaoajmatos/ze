@@ -7,13 +7,16 @@ conflicts with clear_tool_registry() in tests.
 
 from __future__ import annotations
 
+import asyncio
 import time
 from typing import Any
 
+from ze_agents.budget import BUDGET_EXHAUSTED_ERROR, remaining_seconds
 from ze_agents.errors import AgentAbortedError, LoopParked
 from ze_agents.park import ParkedLoop
 from ze_agents.registry import get_agent
 from ze_logging import get_logger
+from ze_agents.nested_tools import nested_row
 from ze_agents.types import AgentContext, ToolCall, add_sources
 
 log = get_logger(__name__)
@@ -281,16 +284,50 @@ async def run_delegate(
         approval_request_id=ctx.approval_request_id,
         write_decisions=ctx.write_decisions,
         resume=resume,
+        tool_sink=ctx.tool_sink,
+        script_runner=ctx.script_runner,
         extensions={"_delegate_depth": depth + 1},
     )
 
     _update_conductor_ledger(ctx, agent_name, "running")
     await _emit_conductor_progress(ctx, agent_name)
     log.info("delegate_start", from_agent=caller_name, to_agent=agent_name, depth=depth)
+    left = remaining_seconds(ctx)
+    if left is not None and left <= 0:
+        ctx.extensions[_stall_key(agent_name)] = "time budget used up"
+        _update_conductor_ledger(ctx, agent_name, "stalled")
+        return _failed(arguments, BUDGET_EXHAUSTED_ERROR)
     try:
-        result = await instance.run(sub_ctx)
+        if left is None:
+            result = await instance.run(sub_ctx)
+        else:
+            result = await asyncio.wait_for(instance.run(sub_ctx), timeout=left)
     except AgentAbortedError:
         raise
+    except asyncio.TimeoutError as exc:
+        duration_ms = int((time.monotonic() - start) * 1000)
+        remaining = remaining_seconds(ctx)
+        if remaining is None or remaining > 0:
+            # The specialist raised its own timeout (a socket, an HTTP call).
+            log.warning("delegate_error", to_agent=agent_name, error=str(exc))
+            ctx.extensions[_stall_key(agent_name)] = str(exc) or "timed out"
+            _update_conductor_ledger(ctx, agent_name, "stalled")
+            return _failed(arguments, str(exc) or "timed out", duration_ms=duration_ms)
+        log.warning("delegate_over_budget", to_agent=agent_name)
+        ctx.extensions[_stall_key(agent_name)] = "time budget used up"
+        _update_conductor_ledger(ctx, agent_name, "stalled")
+        return ToolCall(
+            tool_name=DELEGATE_TOOL_NAME,
+            args=arguments,
+            result={"tool_calls": [nested_row(c) for c in sub_ctx.tool_calls]},
+            duration_ms=duration_ms,
+            success=False,
+            error=(
+                f"{agent_name} did not finish in time and may have partly run: "
+                f"check before repeating anything it could have changed. "
+                f"{BUDGET_EXHAUSTED_ERROR}"
+            ),
+        )
     except LoopParked as parked:
         log.info("delegate_parked", to_agent=agent_name)
         _update_conductor_ledger(ctx, agent_name, "awaiting_confirmation")
@@ -313,20 +350,7 @@ async def run_delegate(
 
     add_sources(ctx.sources, sub_ctx.sources)
     duration_ms = int((time.monotonic() - start) * 1000)
-    nested = [
-        {
-            "tool_name": call.tool_name,
-            "args": call.args,
-            "result": call.result,
-            "duration_ms": call.duration_ms,
-            "success": call.success,
-            "error": call.error,
-            "gate": call.gate,
-            "agent": call.agent,
-            "undo": call.undo,
-        }
-        for call in result.tool_calls
-    ]
+    nested = [nested_row(call) for call in result.tool_calls]
     if _is_empty_response(result.response):
         log.warning("delegate_stalled_empty", to_agent=agent_name)
         ctx.extensions[_stall_key(agent_name)] = "empty response"

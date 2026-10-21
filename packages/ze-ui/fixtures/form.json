@@ -1,0 +1,25 @@
+[
+  {
+    "type": "form",
+    "id": "f1",
+    "title": "Quick note",
+    "fields": [
+      {
+        "id": "note",
+        "label": "Note",
+        "field_type": "textarea",
+        "required": true
+      },
+      {
+        "id": "kind",
+        "label": "Kind",
+        "field_type": "select",
+        "options": [
+          "a",
+          "b"
+        ],
+        "required": false
+      }
+    ]
+  }
+]

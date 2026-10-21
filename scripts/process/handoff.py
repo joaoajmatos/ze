@@ -1,6 +1,7 @@
 """Shared helpers: call the Maestri CLI and append a line to a floor's Handoffs note."""
 
 import os
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -40,8 +41,21 @@ def append_handoff(repo: Path, note: str, line: str) -> None:
         fh.write(entry + "\n")
     if not note:
         return
-    current = maestri("note", "read", note)
-    if current.returncode == 0:
-        maestri(
-            "note", "write", note, current.stdout.rstrip("\n") + "\n" + entry + "\n"
-        )
+    current = maestri("note", "read", note, timeout=30)
+    text = note_text(current.stdout) if current.returncode == 0 else None
+    if text is not None:
+        maestri("note", "write", note, text.rstrip("\n") + "\n" + entry + "\n")
+
+
+def note_text(raw: str) -> str | None:
+    """The note's content from `maestri note read` output, or None when the read failed.
+
+    The CLI prints a `[N lines total]` header and an `N<tab>` prefix on every line; both are
+    stripped so a write-back does not nest them. A read without the header (a timeout can
+    exit 0 with empty output) is a failed read: writing then would wipe the note, as it did
+    to the Web Overhaul Specs Handoffs note on 2026-10-21.
+    """
+    lines = raw.splitlines()
+    if not lines or not re.fullmatch(r"\[\d+ lines? total\]", lines[0].strip()):
+        return None
+    return "\n".join(re.sub(r"^\d+\t", "", line, count=1) for line in lines[1:])

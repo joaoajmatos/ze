@@ -23,6 +23,8 @@ export function JudgmentGauges({ trace }: { trace: Partial<WsTraceUpdateFrame> }
                     {row.options.map((o) => `${o.name} ${pct(o.probability)}`).join(" · ")}
                   </span>
                 )}
+                {row.bar && <span className="ro muted">{`bar ${row.bar.name} ${pct(row.bar.value)}`}</span>}
+                {row.uncalibrated && <span className="ro muted">uncalibrated</span>}
                 {row.status === "skipped" ? <span className="ro muted">skipped: {row.reason}</span> : <span className="ro muted">used</span>}
               </li>
             ))}

@@ -99,7 +99,7 @@ export function Canvas({ threadId, compact = false, selectedMessageId = null, on
             return (
               <div key={key} className={`cell span-${spanOf(componentType(component), compact)}`} data-type={componentType(component)}>
                 <Module label={label} index={instrumentId((numbering.get(r.id) ?? 1) + i)} tools={<ModuleTools label={label} pinned onPin={() => pin(key)} onDismiss={() => dismiss(key)} />}>
-                  <ConnectedPrimitiveTree components={[component]} />
+                  <ConnectedPrimitiveTree components={[component]} uiVersion={r.ui_version} />
                 </Module>
               </div>
             );

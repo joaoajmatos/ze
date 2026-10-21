@@ -1,0 +1,21 @@
+[
+  {
+    "type": "connections",
+    "title": "Connected to your history",
+    "connections": [
+      {
+        "summary": "Sleep and spend move together",
+        "narrative": "Late nights precede takeaway weeks.",
+        "relation": "pattern",
+        "confidence": 0.62,
+        "evidence": [
+          {
+            "label": "Sleep log",
+            "kind": "episode",
+            "date": "2026-10-02"
+          }
+        ]
+      }
+    ]
+  }
+]

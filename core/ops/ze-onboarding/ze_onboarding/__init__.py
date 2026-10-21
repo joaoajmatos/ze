@@ -3,7 +3,6 @@ from ze_onboarding.persistence import (
     OnboardingPersistence as PostgresOnboardingPersistence,
 )
 from ze_onboarding.providers import CoreOnboardingProvider
-from ze_onboarding.reset import ResetService
 from ze_onboarding.store import OnboardingStore as PostgresOnboardingStore
 from ze_onboarding.types import (
     OnboardingChoice,
@@ -21,9 +20,6 @@ from ze_onboarding.types import (
     OnboardingStoredStepStatus,
     OnboardingSubmission,
     OnboardingView,
-    ResetPreview,
-    ResetResult,
-    ResetScope,
     SeedKind,
     StoredOnboardingSeed,
     StoredOnboardingStep,
@@ -49,10 +45,6 @@ __all__ = [
     "OnboardingStoredStepStatus",
     "OnboardingSubmission",
     "OnboardingView",
-    "ResetPreview",
-    "ResetResult",
-    "ResetScope",
-    "ResetService",
     "SeedKind",
     "StoredOnboardingSeed",
     "StoredOnboardingStep",

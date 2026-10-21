@@ -36,3 +36,11 @@ function formatAjvPath(instancePath: string, params: Record<string, unknown>): s
   }
   return instancePath || "/";
 }
+
+/** A tree stored before the typed-action contract that cannot be shown even in legacy mode. */
+export class PrimitiveLegacyError extends PrimitiveValidationError {
+  constructor(cause: PrimitiveValidationError) {
+    super(cause.message, cause.path, cause.issues);
+    this.name = "PrimitiveLegacyError";
+  }
+}

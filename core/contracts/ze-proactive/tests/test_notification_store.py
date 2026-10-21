@@ -458,3 +458,24 @@ async def test_list_page_returns_urgency_and_delivered_at():
 
     assert items[0].urgency == "high"
     assert items[0].delivered_at == delivered
+
+
+# ── latest_by_event ─────────────────────────────────────────────────────────
+
+
+async def test_latest_by_event_returns_newest_first_rows():
+    rows = [_make_row(event_type="morning_brief"), _make_row(event_type="morning_brief")]
+    conn = make_conn(rows=rows)
+    store, conn = make_store(conn)
+
+    result = await store.latest_by_event("morning_brief", limit=2)
+
+    assert [r.event_type for r in result] == ["morning_brief", "morning_brief"]
+    sql, *params = conn.fetch.await_args.args
+    assert "event_type = $1" in sql and "ORDER BY created_at DESC" in sql
+    assert params == ["morning_brief", 2]
+
+
+async def test_latest_by_event_without_rows_is_empty():
+    store, _ = make_store()
+    assert await store.latest_by_event("morning_brief") == []

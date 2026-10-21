@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { fixture } from "../test/fixtures";
+import { parsePrimitiveTree } from "../parse";
 import { PrimitiveRendererContext } from "./context";
-import { PrimitiveRenderer } from "./PrimitiveRenderer";
+import { PrimitiveRenderer, PrimitiveTreeRenderer } from "./PrimitiveRenderer";
 
 describe("PrimitiveRenderer", () => {
   it("renders a text primitive", () => {
@@ -350,8 +352,6 @@ describe("PrimitiveRenderer classNames map (HUD restyle)", () => {
     muted: "x-muted",
     badge: "x-badge",
     card: "x-card",
-    progressTrack: "x-track",
-    progressFill: "x-fill",
     table: "x-table",
     steps: "x-steps",
     connections: "x-connections",
@@ -375,19 +375,17 @@ describe("PrimitiveRenderer classNames map (HUD restyle)", () => {
     expect(screen.getByText("dim")).toHaveClass("x-body", "x-muted");
   });
 
-  it("maps badge, card-style col, progress, table, steps, connections and button", () => {
+  it("maps badge, card-style col, table, steps, connections and button", () => {
     withMap({ type: "col", variant: "card", children: [
       { type: "badge", label: "b" },
-      { type: "progress", value: 0.5, label: "p" },
       { type: "table", headers: ["h"], rows: [["c"]] },
       { type: "steps", steps: [{ label: "s", status: "done" }] },
-      { type: "button", label: "go", action: "a", style: "primary" },
+      { type: "button", label: "go", action: { kind: "ask", text: "a" }, style: "primary" },
       { type: "divider" },
     ] });
     expect(screen.getByText("b")).toHaveClass("x-badge");
     expect(screen.getByText("go")).toHaveClass("x-button", "x-primary");
     expect(document.querySelector(".x-card")).not.toBeNull();
-    expect(document.querySelector(".x-track .x-fill")).not.toBeNull();
     expect(document.querySelector(".x-table")).not.toBeNull();
     expect(document.querySelector(".x-steps")).not.toBeNull();
     expect(document.querySelector(".x-divider")).not.toBeNull();
@@ -411,5 +409,297 @@ describe("PrimitiveRenderer classNames map (HUD restyle)", () => {
     expect(document.querySelector(".x-claim")).not.toBeNull();
     withMap({ type: "claim_timeline", title: "Ahead", entries: [{ title: "Pay rent", due_at: "2026-10-20T00:00:00Z" }] } as never);
     expect(document.querySelector(".x-timeline")).not.toBeNull();
+  });
+});
+
+describe("fallback and legacy nodes", () => {
+  it("renders an unknown node as a two-column table with its known children inside", () => {
+    const [node] = parsePrimitiveTree(
+      [
+        {
+          type: "gauge",
+          label: "Load",
+          value: 0.4,
+          children: [{ type: "text", content: "inside" }],
+        },
+      ],
+      { version: "2.0" },
+    );
+    render(<PrimitiveRenderer node={node!} />);
+    expect(screen.getByText("Unsupported view: gauge")).toBeInTheDocument();
+    expect(screen.getByText("label")).toBeInTheDocument();
+    expect(screen.getByText("Load")).toBeInTheDocument();
+    expect(screen.getByText("0.4")).toBeInTheDocument();
+    expect(screen.getByText("inside")).toBeInTheDocument();
+  });
+
+  it("renders a stored pre-191a tree: its table, and its string button disabled with a title", () => {
+    const tree = parsePrimitiveTree(
+      [
+        { type: "button", label: "Yes", action: "yes" },
+        { type: "table", headers: ["a", "b"], rows: [["1", "2"]] },
+      ],
+      { version: null },
+    );
+    const onAction = vi.fn();
+    render(<PrimitiveTreeRenderer nodes={tree} actions={{ onAction }} />);
+    const button = screen.getByRole("button", { name: "Yes" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("title", "This older button no longer works.");
+    fireEvent.click(button);
+    expect(onAction).not.toHaveBeenCalled();
+    expect(screen.getByText("1")).toBeInTheDocument();
+  });
+
+  it("renders no known node type as nothing", () => {
+    const fixtures = [
+      { type: "divider" },
+      { type: "spacer" },
+      { type: "col", children: [] },
+      { type: "row", children: [] },
+      { type: "headline", text: "H" },
+      { type: "sparkline", label: "S", points: [] },
+      { type: "claim_list", items: [] },
+      { type: "entity_facet", title: "E", facts: [] },
+      { type: "card", title: "C", children: [] },
+    ] as const;
+    for (const node of fixtures) {
+      const { container, unmount } = render(<PrimitiveRenderer node={node as never} />);
+      expect(container.firstChild).not.toBeNull();
+      unmount();
+    }
+  });
+});
+
+const posture = (kind: string, extra: object = {}) => ({
+  kind,
+  subject: "fact",
+  ref_id: "f-1",
+  source: "you said so",
+  confidence: 0.8,
+  ...extra,
+});
+
+function fixtureTree(name: string) {
+  return parsePrimitiveTree(fixture(name), { version: "2.0" });
+}
+
+describe("slot primitives", () => {
+  it("entity_facet shows each fact with its posture tone and source", () => {
+    render(
+      <PrimitiveRenderer
+        node={{
+          type: "entity_facet",
+          title: "Maria",
+          facts: [
+            { text: "Works in Lisbon", claim: posture("fact") as never, source: "email" },
+            { text: "May leave", claim: posture("suspicion", { confidence: 0.3 }) as never },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("Maria")).toBeInTheDocument();
+    const fact = screen.getByText("Works in Lisbon").closest("li")!;
+    expect(fact).toHaveTextContent("fact");
+    expect(fact).toHaveTextContent("email");
+    const suspicion = screen.getByText("May leave").closest("li")!;
+    expect(suspicion).toHaveAttribute("data-kind", "suspicion");
+    expect(suspicion).toHaveTextContent("30%");
+  });
+
+  it("entity_facet runs its 'more' action", () => {
+    const onAction = vi.fn();
+    render(
+      <PrimitiveRenderer
+        actions={{ onAction }}
+        node={{
+          type: "entity_facet",
+          title: "Maria",
+          facts: [],
+          more: { kind: "navigate", route: "/mind/ent-42" },
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /more/i }));
+    expect(onAction).toHaveBeenCalledWith({ kind: "navigate", route: "/mind/ent-42" });
+  });
+
+  it("stat_row shows value and change with a direction word, not color alone", () => {
+    render(
+      <PrimitiveRenderer
+        node={{
+          type: "stat_row",
+          items: [
+            { label: "Spent", value: "€42", delta: "+€8", direction: "up" },
+            { label: "Runs", value: "12", delta: "-3", direction: "down" },
+            { label: "Held", value: "0", direction: "flat" },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("€42")).toBeInTheDocument();
+    expect(screen.getByText("+€8")).toBeInTheDocument();
+    expect(screen.getByText(/up/i, { selector: ".sr-only, [data-direction-label]" })).toBeInTheDocument();
+    expect(screen.getByText(/down/i, { selector: ".sr-only, [data-direction-label]" })).toBeInTheDocument();
+  });
+
+  it("claim_list shows each item's posture and runs its action", () => {
+    const onAction = vi.fn();
+    render(
+      <PrimitiveRenderer
+        actions={{ onAction }}
+        node={{
+          type: "claim_list",
+          title: "Open",
+          items: [
+            {
+              text: "Call the dentist",
+              claim: posture("priority", { subject: "loop" }) as never,
+              action: { kind: "ask", text: "Tell me more" },
+            },
+            { text: "Renew passport", claim: posture("suspicion", { subject: "loop" }) as never },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("Call the dentist").closest("li")).toHaveAttribute("data-kind", "priority");
+    expect(screen.getByText("Renew passport").closest("li")).toHaveTextContent("suspicion");
+    fireEvent.click(screen.getByRole("button", { name: /Call the dentist/ }));
+    expect(onAction).toHaveBeenCalledWith({ kind: "ask", text: "Tell me more" });
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+  });
+
+  it("sparkline draws at most 60 points and shows its label", () => {
+    const points = Array.from({ length: 100 }, (_, i) => i);
+    const { container } = render(
+      <PrimitiveRenderer node={{ type: "sparkline", label: "Daily spend", points, value: "€6" }} />,
+    );
+    expect(screen.getByText("Daily spend")).toBeInTheDocument();
+    expect(screen.getByText("€6")).toBeInTheDocument();
+    const path = container.querySelector("svg polyline, svg path")!;
+    const raw = path.getAttribute("points") ?? path.getAttribute("d") ?? "";
+    expect(raw.trim().split(/[\sLM]+/).filter(Boolean)).toHaveLength(60);
+  });
+
+  it("sparkline with a single point or none still renders its label", () => {
+    render(<PrimitiveRenderer node={{ type: "sparkline", label: "One", points: [2] }} />);
+    expect(screen.getByText("One")).toBeInTheDocument();
+    render(<PrimitiveRenderer node={{ type: "sparkline", label: "None", points: [] }} />);
+    expect(screen.getByText("None")).toBeInTheDocument();
+  });
+
+  it("card renders children and its action buttons", () => {
+    const onAction = vi.fn();
+    const [card] = fixtureTree("card");
+    render(<PrimitiveRenderer node={card!} actions={{ onAction }} />);
+    expect(screen.getByText("Goal: run 5k")).toBeInTheDocument();
+    expect(screen.getByText("On track")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    expect(onAction).toHaveBeenCalledWith({ kind: "navigate", route: "/doing" });
+  });
+
+  it("a keyed table's row action fills {key} from the row", () => {
+    const onAction = vi.fn();
+    const [table] = fixtureTree("table-keyed");
+    render(<PrimitiveRenderer node={table!} actions={{ onAction }} />);
+    const buttons = screen.getAllByRole("button", { name: "Mark read" });
+    expect(buttons).toHaveLength(2);
+    fireEvent.click(buttons[1]!);
+    expect(onAction).toHaveBeenCalledWith({
+      kind: "tool",
+      owner: "news",
+      tool: "mark_source_read",
+      args: { source_id: "s-2" },
+    });
+  });
+
+  it("every button calls onAction with its typed action", () => {
+    const onAction = vi.fn();
+    const [row] = fixtureTree("button");
+    render(<PrimitiveRenderer node={row!} actions={{ onAction }} />);
+    const buttons = screen.getAllByRole("button");
+    buttons.forEach((b) => fireEvent.click(b));
+    expect(onAction.mock.calls.map(([a]) => a.kind)).toEqual(["ask", "navigate", "compose", "tool"]);
+  });
+
+  it("gives every interactive element a 44 px target", () => {
+    const nodes = [
+      ...fixtureTree("button"),
+      ...fixtureTree("card"),
+      ...fixtureTree("claim_list"),
+      ...fixtureTree("entity_facet"),
+      ...fixtureTree("table-keyed"),
+    ];
+    const { container } = render(
+      <PrimitiveTreeRenderer nodes={nodes} actions={{ onAction: vi.fn() }} />,
+    );
+    const interactive = container.querySelectorAll("button, a, input, select");
+    expect(interactive.length).toBeGreaterThan(5);
+    interactive.forEach((el) => expect(el).toHaveClass("min-h-11"));
+  });
+});
+
+describe("action results", () => {
+  const ask = { type: "button", label: "Go", action: { kind: "ask", text: "hi" } } as const;
+
+  it("awaits a Promise from onAction and marks the button used on success", async () => {
+    const onAction = vi.fn().mockResolvedValue(true);
+    render(<PrimitiveRenderer node={ask} actions={{ onAction }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Go" }));
+    expect(await screen.findByRole("button", { name: "✓ Go" })).toBeDisabled();
+  });
+
+  it("keeps the button usable when onAction resolves false", async () => {
+    const onAction = vi.fn().mockResolvedValue(false);
+    const onDisconnected = vi.fn();
+    render(<PrimitiveRenderer node={ask} actions={{ onAction, onDisconnected }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Go" }));
+    await vi.waitFor(() => expect(onDisconnected).toHaveBeenCalled());
+    const button = screen.getByRole("button", { name: "Go" });
+    expect(button).toBeEnabled();
+    fireEvent.click(button);
+    await vi.waitFor(() => expect(onAction).toHaveBeenCalledTimes(2));
+  });
+
+  it("keeps the button usable when onAction rejects", async () => {
+    const onAction = vi.fn().mockRejectedValue(new Error("x"));
+    render(<PrimitiveRenderer node={ask} actions={{ onAction }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Go" }));
+    await vi.waitFor(() => expect(onAction).toHaveBeenCalled());
+    expect(screen.getByRole("button", { name: "Go" })).toBeEnabled();
+  });
+
+  it("fires no row action for a row without a key", () => {
+    const onAction = vi.fn();
+    render(
+      <PrimitiveRenderer
+        actions={{ onAction }}
+        node={{
+          type: "table",
+          headers: ["a"],
+          rows: [["1"], ["2"]],
+          keys: ["k1"],
+          row_actions: [{ label: "Act", action: { kind: "ask", text: "x" } }],
+        }}
+      />,
+    );
+    const buttons = screen.getAllByRole("button", { name: "Act" });
+    expect(buttons).toHaveLength(1);
+    fireEvent.click(buttons[0]!);
+    expect(onAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows no row actions on an unkeyed table", () => {
+    render(
+      <PrimitiveRenderer
+        node={{
+          type: "table",
+          headers: ["a"],
+          rows: [["1"]],
+          row_actions: [{ label: "Act", action: { kind: "ask", text: "x" } }],
+        }}
+      />,
+    );
+    expect(screen.queryByRole("button")).toBeNull();
   });
 });

@@ -1,0 +1,21 @@
+[
+  {
+    "type": "table",
+    "title": "Spending",
+    "headers": [
+      "Day",
+      "Spent"
+    ],
+    "rows": [
+      [
+        "Mon",
+        "€4.20"
+      ],
+      [
+        "Tue",
+        "€12.00"
+      ]
+    ],
+    "caption": "Last two days"
+  }
+]

@@ -178,3 +178,21 @@ describe("pause, attention, bookkeeping", () => {
     expect(th(s).lastError).toMatchObject({ detail: "nope", at: 1010 });
   });
 });
+
+describe("ui_version", () => {
+  it("keeps the version a live message frame carried", () => {
+    const s = run([frame({ type: "message", message: msg(), ui_version: "2.0" })]);
+    expect(th(s).messages[0]).toMatchObject({ id: "m1", ui_version: "2.0" });
+  });
+
+  it("history does not strip the version of a reply seen live", () => {
+    let s = run([frame({ type: "message", message: msg(), ui_version: "2.0" })]);
+    s = run([{ type: "history_loaded", threadId: T, messages: [msg()] }], s);
+    expect(th(s).messages[0]).toMatchObject({ ui_version: "2.0" });
+  });
+
+  it("a message without a frame version has none", () => {
+    const s = run([frame({ type: "message", message: msg() })]);
+    expect(th(s).messages[0].ui_version).toBeUndefined();
+  });
+});

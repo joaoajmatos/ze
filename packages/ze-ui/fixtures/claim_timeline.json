@@ -1,0 +1,20 @@
+[
+  {
+    "type": "claim_timeline",
+    "title": "Past 7 days to next 7",
+    "entries": [
+      {
+        "title": "Send invoice",
+        "due_at": "2026-10-20",
+        "claim": {
+          "kind": "priority",
+          "subject": "loop",
+          "ref_id": "l-1"
+        }
+      }
+    ],
+    "days_before": 7,
+    "days_after": 7,
+    "span": 12
+  }
+]
