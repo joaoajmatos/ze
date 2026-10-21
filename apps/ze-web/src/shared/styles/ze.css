@@ -349,6 +349,11 @@ h2.lbl {
     min-height: 44px;
     min-width: 44px;
   }
+  .row .t.ctl-text {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .chat-about {
