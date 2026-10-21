@@ -88,7 +88,7 @@ describe("NeedsYou", () => {
     setup({ onChatAbout });
     fireEvent.click(screen.getByRole("button", { name: "Redirect" }));
     expect(m.send).toHaveBeenCalledWith({ type: "action", payload: "goal:redirect:gate1", thread_id: "t-1" });
-    expect(onChatAbout).toHaveBeenCalledWith({ kind: "goal_gate", id: "gate1", parent_id: "g1" }, null);
+    expect(onChatAbout).toHaveBeenCalledWith({ kind: "goal_gate", id: "gate1", parent_id: "g1", label: "Review the plan" }, null);
     act(() => useConversation.getState().apply({ type: "message", message: { id: "r1", role: "assistant", text: "x", components: [], read: true, created_at: "x", thread_id: "t-1" } }, { activeThreadId: "t-1" }));
     expect(await screen.findByText("Waiting for your instructions")).toBeTruthy();
     expect((screen.getByRole("button", { name: "Proceed" }) as HTMLButtonElement).disabled).toBe(false);
@@ -125,9 +125,9 @@ describe("NeedsYou", () => {
     setup({ onChatAbout });
     for (const name of ["Chat about Weekly summary", "Chat about Review the plan", "Chat about Learn Rust"]) fireEvent.click(screen.getByRole("button", { name }));
     expect(onChatAbout.mock.calls.map((c) => c[0])).toEqual([
-      { kind: "held_write", id: "req-1" },
-      { kind: "goal_gate", id: "gate1", parent_id: "g1" },
-      { kind: "loop", id: "l1" },
+      { kind: "held_write", id: "req-1", label: "Weekly summary" },
+      { kind: "goal_gate", id: "gate1", parent_id: "g1", label: "Review the plan" },
+      { kind: "loop", id: "l1", label: "Learn Rust" },
     ]);
   });
 
