@@ -27,37 +27,77 @@ def tool_payload(result: Any) -> dict[str, Any] | None:
     return None
 
 
+def nested_row(call: ToolCall) -> dict[str, Any]:
+    """A call as the plain dict a delegate keeps in its result payload."""
+    return {
+        "tool_name": call.tool_name,
+        "args": call.args,
+        "result": call.result,
+        "duration_ms": call.duration_ms,
+        "success": call.success,
+        "error": call.error,
+        "gate": call.gate,
+        "agent": call.agent,
+        "undo": call.undo,
+        "call_id": call.call_id,
+        "started_at": call.started_at,
+        "parent_call_id": call.parent_call_id,
+        "script": call.script,
+        "inner_calls": [nested_row(inner) for inner in call.inner_calls],
+    }
+
+
+def _from_row(item: dict[str, Any]) -> ToolCall:
+    return ToolCall(
+        tool_name=str(item.get("tool_name") or ""),
+        args=item.get("args") or {},
+        result=item.get("result"),
+        duration_ms=int(item.get("duration_ms") or 0),
+        success=bool(item.get("success")),
+        error=item.get("error"),
+        gate=str(item.get("gate") or "none"),
+        agent=item.get("agent"),
+        undo=item.get("undo"),
+        call_id=str(item.get("call_id") or uuid4().hex),
+        started_at=item.get("started_at"),
+        parent_call_id=item.get("parent_call_id"),
+        script=item.get("script"),
+        inner_calls=[
+            _from_row(inner)
+            for inner in item.get("inner_calls") or []
+            if isinstance(inner, dict)
+        ],
+    )
+
+
 def flatten_tool_calls(tool_calls: list[ToolCall]) -> list[ToolCall]:
+    """Every call, depth-first: a call, then the calls inside it, then the next one.
+
+    A script step's rows come from `inner_calls` only. Its result and its inner
+    results are script-authored JSON, so a `tool_calls` key in them is never read.
+    """
     out: list[ToolCall] = []
-    stack = list(tool_calls)
-    while stack:
-        call = stack.pop(0)
+
+    def visit(call: ToolCall) -> None:
         out.append(call)
+        if getattr(call, "script", None) is not None:
+            for inner in call.inner_calls:
+                if inner.parent_call_id is None:
+                    inner.parent_call_id = call.call_id
+                out.append(inner)
+            return
         payload = tool_payload(call.result)
-        if not payload:
-            continue
-        nested = payload.get("tool_calls")
+        nested = payload.get("tool_calls") if payload else None
         if not isinstance(nested, list):
-            continue
+            return
         for item in nested:
             if isinstance(item, ToolCall):
-                stack.append(item)
+                visit(item)
             elif isinstance(item, dict):
-                stack.append(
-                    ToolCall(
-                        tool_name=str(item.get("tool_name") or ""),
-                        args=item.get("args") or {},
-                        result=item.get("result"),
-                        duration_ms=int(item.get("duration_ms") or 0),
-                        success=bool(item.get("success")),
-                        error=item.get("error"),
-                        gate=str(item.get("gate") or "none"),
-                        agent=item.get("agent"),
-                        undo=item.get("undo"),
-                        call_id=str(item.get("call_id") or uuid4().hex),
-                        started_at=item.get("started_at"),
-                    )
-                )
+                visit(_from_row(item))
+
+    for call in tool_calls:
+        visit(call)
     return out
 
 

@@ -19,6 +19,7 @@ from ze_core.conversation.messages.types import (
     InputTrace,
     MessageTrace,
     ProcedureUsageTrace,
+    ScriptTrace,
     RoutingScore,
     RoutingThresholds,
     ScreenTrace,
@@ -384,6 +385,7 @@ def _extract_tool_calls(
         return []
     from ze_agents.delegate import DELEGATE_TOOL_NAME
     from ze_agents.nested_tools import flatten_tool_calls
+    from ze_agents.scripts import SCRIPT_TOOL_NAME
     from ze_agents.tool import ToolAccess, registered_tools
 
     registry = registered_tools()
@@ -396,6 +398,10 @@ def _extract_tool_calls(
         spec = registry.get(name)
         if name == DELEGATE_TOOL_NAME:
             access = "delegate"
+        elif name == SCRIPT_TOOL_NAME:
+            access = (
+                "script"  # the step reads nothing itself; its calls are their own rows
+            )
         elif name.startswith("openrouter:"):
             access = "read"  # OpenRouter server tools (web search) only read
         elif spec is None:
@@ -426,9 +432,24 @@ def _extract_tool_calls(
                 start_offset_ms=_start_offset_ms(
                     getattr(tc, "started_at", None), recorder
                 ),
+                parent_call_id=getattr(tc, "parent_call_id", None),
+                script=_script_trace(getattr(tc, "script", None)),
             )
         )
     return result
+
+
+def _script_trace(raw: Any) -> ScriptTrace | None:
+    if not isinstance(raw, dict):
+        return None
+    return ScriptTrace(
+        source=str(raw.get("source") or ""),
+        source_cut=bool(raw.get("source_cut")),
+        outcome=str(raw.get("outcome") or ""),
+        limit=raw.get("limit"),
+        source_hash=str(raw.get("source_hash") or ""),
+        procedure_id=raw.get("procedure_id"),
+    )
 
 
 def _extract_procedure(agent_context: Any) -> ProcedureUsageTrace | None:

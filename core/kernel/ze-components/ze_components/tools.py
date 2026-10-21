@@ -220,6 +220,7 @@ def render_tool(schema_cls: type, *, description: str) -> Callable:
             description=description,
             func=_wrapper,
             _schema_override=schema,
+            produces_ui=True,
         )
         return _wrapper
 

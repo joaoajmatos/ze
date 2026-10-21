@@ -14,7 +14,7 @@ No migration.
 
 **ScriptOutcome**: `status: "ok" | "exception" | "timeout" | "killed" | "bad_request" | "busy" | "unavailable" | "resource_limit"`, `value: Any`, `writes: list[{"tool": str, "args": dict}]`, `stderr_tail: str`, `exception: str | None`.
 
-**ScriptRunner** (Protocol): `run(*, script_id, source, stub, limits, dispatch) -> ScriptOutcome`.
+**ScriptRunner** (Protocol): `run(*, script_id, agent, source, stub, limits, dispatch, procedure_id=None, context=None) -> ScriptOutcome`. `procedure_id` marks a rerun, which never submits a candidate; `context` is `ScriptContext(user_turn, message_id, thread_id)` for the ledger and the candidate trigger.
 
 **ScriptBudget**: `limit_usd: float`, `spent_usd: float`; `current_script_budget` ContextVar; `charge_script(usd)`. **`in_script_call`**: ContextVar[bool], set around each inner call; `ToolCallCapHook` skips counting while it is set.
 

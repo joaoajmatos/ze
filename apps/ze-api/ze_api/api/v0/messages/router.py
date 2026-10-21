@@ -117,6 +117,8 @@ def _trace_to_response(trace) -> MessageTraceResponse:
                 "call_index": t.call_index,
                 "call_id": t.call_id,
                 "start_offset_ms": t.start_offset_ms,
+                "parent_call_id": t.parent_call_id,
+                "script": asdict(t.script) if t.script else None,
             }
             for t in trace.tool_calls
         ],

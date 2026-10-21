@@ -436,6 +436,25 @@
 .tr-tools li[data-highlight] .key {
   color: var(--cream);
 }
+.tr-script-toggle {
+  min-height: 44px;
+  padding: 0 8px;
+  background: none;
+  border: 1px solid var(--hair);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.tr-script-src {
+  max-height: 240px;
+  overflow: auto;
+  margin: 4px 0;
+  padding: 8px;
+  border: 1px solid var(--hair);
+  font-family: var(--mono, "JetBrains Mono", monospace);
+  font-size: 11px;
+  white-space: pre;
+}
 .tr-flag {
   border: 1px solid var(--hair);
   padding: 1px 5px;

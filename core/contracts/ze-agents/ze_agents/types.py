@@ -90,6 +90,12 @@ class ToolCall:
     # run share ParkedWrite.trace_call_id. started_at is time.monotonic() seconds.
     call_id: str = field(default_factory=lambda: uuid4().hex)
     started_at: float | None = None
+    # A script step holds the calls its script made; each inner call and each proposed
+    # write names the step through parent_call_id. `script` is the step's trace summary
+    # (source, source_cut, outcome, limit, source_hash, procedure_id).
+    parent_call_id: str | None = None
+    inner_calls: list[ToolCall] = field(default_factory=list)
+    script: dict[str, Any] | None = None
 
 
 @dataclass
@@ -153,6 +159,9 @@ class AgentContext:
     # Procedure discovery/activation (Phase 139). Matches are advisory until
     # invoke_procedure; procedure_tool_names only ever narrows. Never checkpoint.
     procedure_guidance: str | None = field(default=None, repr=False)
+    # script_runner is runtime-only; set from the turn config so agentic_loop can offer
+    # run_tool_script. Never checkpoint.
+    script_runner: Any | None = field(default=None, repr=False)
     procedure_matches: list[Any] | None = field(default=None, repr=False)
     procedure_tool_names: list[str] | None = field(default=None, repr=False)
     procedure_invocation_id: str | None = field(default=None, repr=False)

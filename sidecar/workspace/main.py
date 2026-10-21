@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hmac
 import json
 import os
 import shutil
@@ -12,10 +13,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Query,
+    UploadFile,
+    WebSocket,
+    WebSocketException,
+)
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
+import scripts
 import supervisor
 
 
@@ -27,7 +40,12 @@ API_TOKEN = os.environ.get("WORKSPACE_API_TOKEN", "")
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     WORKSPACE_ROOT.mkdir(parents=True, exist_ok=True)
-    supervisor.apply_network_isolation()
+    scripts.isolation.rule_verified = supervisor.apply_network_isolation()
+    try:
+        os.chmod(WORKSPACE_ROOT, 0o750)
+        scripts.isolation.mode_set = True
+    except OSError:
+        scripts.isolation.mode_set = False
     yield
     await supervisor.shutdown()
 
@@ -110,6 +128,8 @@ async def stat():
         "bytes_used": supervisor.bytes_used(),
         "bytes_ceiling": STORAGE_CEILING,
         "busy": supervisor.busy(),
+        "scripts_busy": scripts.slot.busy(),
+        "scripts_isolated": scripts.isolation.ok,
         "workspace_root": str(WORKSPACE_ROOT),
     }
 
@@ -284,3 +304,13 @@ async def cancel_run(run_id: UUID):
 async def reset():
     await supervisor.reset_workspace()
     return {"ok": True}
+
+
+@app.websocket("/scripts")
+async def scripts_socket(ws: WebSocket):
+    expected = f"Bearer {API_TOKEN}"
+    if not API_TOKEN or not hmac.compare_digest(
+        (ws.headers.get("authorization") or "").encode(), expected.encode()
+    ):
+        raise WebSocketException(code=1008)
+    await scripts.handle(ws)

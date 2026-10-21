@@ -6,6 +6,7 @@ import asyncio
 import os
 import pwd
 import shutil
+import subprocess
 import signal
 import time
 from dataclasses import dataclass, field
@@ -270,8 +271,43 @@ def _workspace_uids() -> tuple[int | None, int | None]:
         return None, None
 
 
-def apply_network_isolation() -> None:
-    """Deny the workspace uid RFC1918, loopback, and Fly 6PN. Best-effort."""
+def _shell(command: str) -> tuple[int, str]:
+    done = subprocess.run(command, shell=True, capture_output=True, text=True)
+    return done.returncode, done.stdout
+
+
+def apply_script_isolation(uid: int, *, runner=_shell, which=shutil.which) -> bool:
+    """Reject all output from the script uid; True only when the chain listing shows the rule."""
+    if which("nft"):
+        runner("nft add table inet workspace_filter")
+        runner("nft add chain inet workspace_filter output { type filter hook output priority 0 \\; }")
+        runner(f"nft add rule inet workspace_filter output meta skuid {uid} reject")
+        _code, listing = runner("nft list chain inet workspace_filter output")
+        return f"meta skuid {uid} reject" in listing
+    if which("iptables"):
+        runner(f"iptables -I OUTPUT -m owner --uid-owner {uid} -j REJECT")
+        _code, listing = runner("iptables -S OUTPUT")
+        return any(
+            f"--uid-owner {uid}" in line and "-j REJECT" in line for line in listing.splitlines()
+        )
+    return False
+
+
+def apply_network_isolation() -> bool:
+    """Deny the workspace uid RFC1918, loopback, and Fly 6PN; reject the script uid entirely.
+
+    Returns whether the script uid's reject rule is verified.
+    """
+    try:
+        script_uid = pwd.getpwnam("zescript").pw_uid
+    except KeyError:
+        script_uid = None
+    verified = apply_script_isolation(script_uid) if script_uid is not None else False
+    _apply_workspace_isolation()
+    return verified
+
+
+def _apply_workspace_isolation() -> None:
     uid, _gid = _workspace_uids()
     if uid is None:
         return

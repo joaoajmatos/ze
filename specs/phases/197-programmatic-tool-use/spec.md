@@ -4,11 +4,11 @@
 
 **Created**: 2026-10-18
 
-**Status**: Ready to implement (Gauge: M-1..M-7 closed at 4db40148, approved on folding R-1/R-3; egress flag per the Maestro)
+**Status**: Implemented (Gauge APPROVE 2026-10-21; Docker sandbox smoke 11/11; live evals not run, see the phase Handoffs)
 
 **Input**: User description (approved 2026-10-18, "yes do all of that"): models write short scripts that call several tools, loop and compute, and return only the result to the model, for fewer round trips, fewer tokens and more autonomy. Scripts run in the phase 115 workspace sandbox, never a hosted third-party sandbox. Ze's tools are exposed inside the sandbox as a small typed Python API, filtered to the calling agent's own tools and skill narrowing. Read tools first; writes inside scripts go through the 181 write gate (same or later phase, decided here). Every inner call is a tool call on the trace with 187b telemetry; the script is one traced step with its source stored. Limits: wall time, inner calls, cost per script; failure returns a structured error. A script that keeps succeeding can become a procedure candidate (138/139). Eval scenarios show fewer model round trips on multi-step reads; no live calibration spend without the user's OK.
 
-**Governed by**: `PRODUCT.md` principle 4 (unattended work is accountable), phase 115/116/129 (workspace sidecar, follow-through, run journal), phase 114 (skill narrowing), phase 181 (irreversible writes ask first), phase 180 (undo payloads), phase 187b (trace telemetry: `call_id`, offsets, durations), phases 138/139 (procedure lifecycle and activation), phase 22 (tool-call cap), `specs/arch/pre-v1-hard-cuts.md`. An ADR (`specs/arch/programmatic-tool-use.md`) records the channel and trust decisions.
+**Governed by**: `PRODUCT.md` principle 4 (unattended work is accountable), phase 115/116/129 (workspace sidecar, follow-through, run journal), phase 114 (skill narrowing), phase 181 (irreversible writes ask first), phase 180 (undo payloads), phase 187b (trace telemetry: `call_id`, offsets, durations), phases 138/139 (procedure lifecycle and activation), phase 22 (tool-call cap), `specs/arch/pre-v1-hard-cuts.md`. The decision record in `research.md` records the channel and trust decisions.
 
 **Depends on**: 187b (Ready; `ToolCall.call_id`/`started_at` and per-call durations). 196 is independent.
 
@@ -170,7 +170,7 @@ When scripts with the same tool signature (same agent, same ordered list of tool
 - **FR-009**: Retry eligibility, the rollback plan and confirmation summaries MUST treat inner calls exactly like direct calls.
 - **FR-010**: Three consecutive successes with the same tool signature by the same agent MUST submit one procedure candidate through `submit_procedure_candidate`, citing the three runs (one ledger record per run); duplicates MUST NOT be submitted. Invoking a validated script procedure MUST run its stored source through the script tool with the stub built from the agent's tools at invocation time; procedure guidance MUST show a script procedure as one line pointing to `run_tool_script(procedure_id=...)`, never its source.
 - **FR-011**: The eval scenario format MUST gain an assertion on model calls per scenario (`max_llm_calls`), and three scenarios (finance, messenger, calendar) MUST show a multi-step read finishing in fewer model calls with the script tool than the direct-call baseline. Live runs need the user's OK.
-- **FR-012**: An ADR `specs/arch/programmatic-tool-use.md` MUST record: Ze-initiated channel, no sandbox credential, stub equals visible tools, inner calls are ordinary calls, why a hosted sandbox is refused.
+- **FR-012**: The decision record in `research.md` ("Decision record") MUST record: Ze-initiated channel, no sandbox credential, stub equals visible tools, inner calls are ordinary calls, why a hosted sandbox is refused.
 - **FR-013**: Public docs MUST describe the feature: `docs/architecture.md` (the script path), `docs/configuration.md` (limits), `docs/sdk.md` (how a tool appears in a script; untyped returns), `sidecar/workspace/README.md` (the script mode and endpoint).
 
 ### Key Entities
