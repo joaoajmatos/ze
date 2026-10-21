@@ -21,7 +21,7 @@ function GateModule({ gate, goalId, goalTitle, gateApi, offline, onChatAbout }: 
   const state = gateApi.stateOf(gate.id);
   const err = gateApi.errorOf(gate.id);
   const busy = state === "in_flight";
-  const ref = { kind: "goal_gate", id: gate.id, parent_id: goalId } as WsScreenRef;
+  const ref = { kind: "goal_gate", id: gate.id, parent_id: goalId, label: gate.title } as WsScreenRef;
   return (
     <Module label="Needs you" tone="cream" className="gate-first">
       <div className="row">

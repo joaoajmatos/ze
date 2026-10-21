@@ -36,7 +36,7 @@ export function WorkflowsBoard({ workflows, executions, loading, error, offline,
           {workflows.map((w) => {
             const result = lastResult(executions[w.id]);
             const running = trigger.isPending && trigger.variables === w.id;
-            const ref = { kind: "workflow", id: w.id } as WsScreenRef;
+            const ref = { kind: "workflow", id: w.id, label: w.name } as WsScreenRef;
             return (
               <li key={w.id} className={`row ${result.kind === "failed" ? "hot" : ""}`} data-workflow={w.id}>
                 <Link className="t goal-link" to={workflowPath(w.id)}>

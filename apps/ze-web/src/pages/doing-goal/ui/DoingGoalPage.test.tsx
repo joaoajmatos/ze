@@ -66,7 +66,7 @@ describe("DoingGoalPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Proceed" }));
     expect((m.gate.proceed as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith("gt1");
     fireEvent.click(screen.getByRole("button", { name: "Redirect" }));
-    expect(m.chatAbout).toHaveBeenCalledWith({ kind: "goal_gate", id: "gt1", parent_id: "g1" }, null);
+    expect(m.chatAbout).toHaveBeenCalledWith(expect.objectContaining({ kind: "goal_gate", id: "gt1", parent_id: "g1", label: expect.any(String) }), null);
     expect(m.start.mutate).not.toHaveBeenCalled();
   });
 

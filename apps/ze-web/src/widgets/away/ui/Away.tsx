@@ -21,8 +21,8 @@ const RUN_WORDS: Record<VisibleJobRun["last_status"], string> = { ok: "ran", err
 export function Away({ notifications, jobRuns, budget, loading, error, now, onChatAbout }: Props) {
   const refOf = (n: NotificationItem): WsScreenRef =>
     n.target_type === "workflow_execution" && n.target_id
-      ? ({ kind: "workflow_execution", id: n.target_id, parent_id: n.target_parent_id ?? undefined } as WsScreenRef)
-      : ({ kind: "notification", id: n.id } as WsScreenRef);
+      ? ({ kind: "workflow_execution", id: n.target_id, parent_id: n.target_parent_id ?? undefined, label: n.title } as WsScreenRef)
+      : ({ kind: "notification", id: n.id, label: n.title } as WsScreenRef);
 
   useScreenPublisher({ visible: notifications.slice(0, 10).map(refOf) });
 

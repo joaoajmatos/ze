@@ -109,6 +109,20 @@ describe("NotificationBell", () => {
     expect(screen.queryByText("You're all caught up.")).not.toBeInTheDocument();
   });
 
+  it("closes on Escape and gives focus back to the bell", () => {
+    setup({ items: [item] });
+    renderBell();
+
+    const bell = screen.getByLabelText("Notifications");
+    fireEvent.click(bell);
+    expect(screen.getByText("Goal stuck")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByText("Goal stuck")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(bell);
+  });
+
   it("renders notification items when the panel is open", () => {
     setup({ items: [item] });
     renderBell();

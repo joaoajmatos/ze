@@ -65,7 +65,7 @@ function RunRow({ run, now, onChatAbout }: { run: WorkspaceRunResponse; now: Dat
         </span>
       )}
       {onChatAbout && run.id && (
-        <ChatAboutChip label={run.command} onClick={(chip) => onChatAbout({ kind: "workspace_run", id: run.id! } as WsScreenRef, chip.closest(".row"))} />
+        <ChatAboutChip label={run.command} onClick={(chip) => onChatAbout({ kind: "workspace_run", id: run.id!, label: run.command } as WsScreenRef, chip.closest(".row"))} />
       )}
     </li>
   );

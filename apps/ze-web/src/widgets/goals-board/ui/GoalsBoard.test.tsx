@@ -54,7 +54,7 @@ describe("GoalsBoard", () => {
     expect(screen.getByText(/stuck since/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Redirect" }));
     expect(gate.redirectStuck).toHaveBeenCalledWith("g1");
-    expect(onChatAbout).toHaveBeenCalledWith({ kind: "goal", id: "g1" }, null);
+    expect(onChatAbout).toHaveBeenCalledWith(expect.objectContaining({ kind: "goal", id: "g1", label: expect.any(String) }), null);
     fireEvent.click(screen.getByRole("button", { name: "Pause" }));
     expect(gate.pause).toHaveBeenCalledWith("g1");
     fireEvent.click(screen.getByRole("button", { name: "Abandon" }));
@@ -75,7 +75,7 @@ describe("GoalsBoard", () => {
     const { container } = view([goal({ id: "p", title: "Paused one", status: "paused" }), goal({ id: "a", title: "Live" })], fakeGate(), { onChatAbout });
     expect([...container.querySelectorAll("li.row .t")].map((e) => e.textContent)).toEqual(["Live", "Paused one"]);
     fireEvent.click(screen.getByRole("button", { name: "Resume" }));
-    expect(onChatAbout).toHaveBeenCalledWith({ kind: "goal", id: "p" }, null);
+    expect(onChatAbout).toHaveBeenCalledWith(expect.objectContaining({ kind: "goal", id: "p", label: expect.any(String) }), null);
     expect(screen.getByText("Paused", { selector: ".lbl" })).toBeInTheDocument();
   });
 
@@ -106,7 +106,7 @@ describe("GoalsBoard", () => {
     const onChatAbout = vi.fn();
     view([goal({})], fakeGate(), { onChatAbout });
     fireEvent.click(screen.getByRole("button", { name: "Chat about Learn Rust" }));
-    expect(onChatAbout).toHaveBeenCalledWith({ kind: "goal", id: "g1" }, expect.anything());
+    expect(onChatAbout).toHaveBeenCalledWith(expect.objectContaining({ kind: "goal", id: "g1", label: expect.any(String) }), expect.anything());
   });
 
   it("says the checkpoint is unavailable for a goal awaiting a gate with no gate id", () => {

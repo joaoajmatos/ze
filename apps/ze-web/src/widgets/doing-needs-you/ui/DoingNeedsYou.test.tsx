@@ -59,7 +59,7 @@ describe("DoingNeedsYou", () => {
     expect(gate.proceed).toHaveBeenCalledWith("gt1");
     expect(gate.stop).toHaveBeenCalledWith("gt1");
     expect(gate.redirect).toHaveBeenCalledWith("gt1");
-    expect(onChatAbout).toHaveBeenCalledWith({ kind: "goal_gate", id: "gt1", parent_id: "g1" }, null);
+    expect(onChatAbout).toHaveBeenCalledWith(expect.objectContaining({ kind: "goal_gate", id: "gt1", parent_id: "g1", label: expect.any(String) }), null);
   });
 
   it("disables gate buttons in flight and shows the error line", () => {
@@ -88,8 +88,8 @@ describe("DoingNeedsYou", () => {
     const onChatAbout = vi.fn();
     render(<DoingNeedsYou {...props} goals={[goal({ gate_id: "gt1", gate_title: "Approve" })]} held={[held]} gate={fakeGate()} onChatAbout={onChatAbout} />);
     fireEvent.click(screen.getByRole("button", { name: "Chat about Approve" }));
-    expect(onChatAbout).toHaveBeenCalledWith({ kind: "goal_gate", id: "gt1", parent_id: "g1" }, expect.anything());
+    expect(onChatAbout).toHaveBeenCalledWith(expect.objectContaining({ kind: "goal_gate", id: "gt1", parent_id: "g1", label: expect.any(String) }), expect.anything());
     fireEvent.click(screen.getByRole("button", { name: "Chat about Weekly digest" }));
-    expect(onChatAbout).toHaveBeenCalledWith({ kind: "held_write", id: "h1" }, expect.anything());
+    expect(onChatAbout).toHaveBeenCalledWith(expect.objectContaining({ kind: "held_write", id: "h1", label: expect.any(String) }), expect.anything());
   });
 });
