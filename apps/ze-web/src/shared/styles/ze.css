@@ -379,8 +379,8 @@ h2.lbl {
   border: 0;
   color: var(--l2);
   cursor: pointer;
-  min-width: 24px;
-  min-height: 24px;
+  min-width: 44px;
+  min-height: 44px;
 }
 .about-suggestions {
   display: grid;
