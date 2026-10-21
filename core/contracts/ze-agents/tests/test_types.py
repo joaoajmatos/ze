@@ -64,3 +64,20 @@ def test_tool_sink_defaults_to_none_and_stays_out_of_repr():
     ctx = AgentContext(session_id="s", prompt="p", tool_sink=lambda call: None)
     assert AgentContext(session_id="s", prompt="p").tool_sink is None
     assert "tool_sink" not in repr(ctx)
+
+
+def test_script_fields_default_empty_and_runner_stays_out_of_repr():
+    from ze_agents.types import AgentContext, ToolCall
+
+    call = ToolCall(tool_name="t", args={}, result="", duration_ms=1, success=True)
+    assert call.parent_call_id is None
+    assert call.inner_calls == []
+    assert call.script is None
+    assert call.inner_calls is not ToolCall(
+        tool_name="t", args={}, result="", duration_ms=1, success=True
+    ).inner_calls
+
+    runner = object()
+    ctx = AgentContext(session_id="s", prompt="p", script_runner=runner)
+    assert AgentContext(session_id="s", prompt="p").script_runner is None
+    assert "script_runner" not in repr(ctx)

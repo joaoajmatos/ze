@@ -79,6 +79,7 @@ async def get_headlines(
 
 @tool(
     access=ToolAccess.READ,
+    egress=True,  # force-fetches every feed per call; never in a tool script's stub
     description=(
         "Trigger an immediate refresh of all RSS news sources, bypassing the normal "
         "30-minute fetch interval. Call this when the user asks for today's news or "

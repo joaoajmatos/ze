@@ -16,6 +16,7 @@ from ze_agents.errors import AgentAbortedError, LoopParked
 from ze_agents.park import ParkedLoop
 from ze_agents.registry import get_agent
 from ze_logging import get_logger
+from ze_agents.nested_tools import nested_row
 from ze_agents.types import AgentContext, ToolCall, add_sources
 
 log = get_logger(__name__)
@@ -208,25 +209,6 @@ async def _emit_conductor_progress(ctx: AgentContext, agent_name: str) -> None:
     await reporter.emit(key)
 
 
-def _nested_rows(calls: list[ToolCall]) -> list[dict[str, Any]]:
-    return [
-        {
-            "tool_name": call.tool_name,
-            "args": call.args,
-            "result": call.result,
-            "duration_ms": call.duration_ms,
-            "success": call.success,
-            "error": call.error,
-            "gate": call.gate,
-            "agent": call.agent,
-            "undo": call.undo,
-            "call_id": call.call_id,
-            "started_at": call.started_at,
-        }
-        for call in calls
-    ]
-
-
 async def run_delegate(
     arguments: dict[str, Any],
     ctx: AgentContext,
@@ -303,6 +285,7 @@ async def run_delegate(
         write_decisions=ctx.write_decisions,
         resume=resume,
         tool_sink=ctx.tool_sink,
+        script_runner=ctx.script_runner,
         extensions={"_delegate_depth": depth + 1},
     )
 
@@ -336,7 +319,7 @@ async def run_delegate(
         return ToolCall(
             tool_name=DELEGATE_TOOL_NAME,
             args=arguments,
-            result={"tool_calls": _nested_rows(sub_ctx.tool_calls)},
+            result={"tool_calls": [nested_row(c) for c in sub_ctx.tool_calls]},
             duration_ms=duration_ms,
             success=False,
             error=(
@@ -367,7 +350,7 @@ async def run_delegate(
 
     add_sources(ctx.sources, sub_ctx.sources)
     duration_ms = int((time.monotonic() - start) * 1000)
-    nested = _nested_rows(result.tool_calls)
+    nested = [nested_row(call) for call in result.tool_calls]
     if _is_empty_response(result.response):
         log.warning("delegate_stalled_empty", to_agent=agent_name)
         ctx.extensions[_stall_key(agent_name)] = "empty response"

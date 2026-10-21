@@ -111,3 +111,14 @@ def describe_context(context: dict | None) -> str:
     if context.get("compose"):
         parts.append(f"preset {context['compose']}")
     return "; ".join(parts) or "none"
+
+
+def max_llm_calls_limit(scenario: dict) -> int | None:
+    """The `max_llm_calls:` cap on a scenario's LLM calls, or None when it declares none.
+    A bool is refused even though it is an int: `true` is not a limit of one."""
+    limit = scenario.get("max_llm_calls")
+    if limit is None:
+        return None
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+        raise ValueError(f"max_llm_calls must be a positive int: {limit!r}")
+    return limit

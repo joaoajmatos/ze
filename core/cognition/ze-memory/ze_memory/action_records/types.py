@@ -116,6 +116,7 @@ class ActionContext:
     outreach_id: UUID | None = None
     calendar_ref: str | None = None
     reminder_id: UUID | None = None
+    script_key: str | None = None
 
 
 @dataclass(frozen=True)

@@ -17,6 +17,7 @@ class ProcedureSourceKind(StrEnum):
     USER_INSTRUCTION = "user_instruction"
     REFLECTION = "reflection"
     SKILL = "skill"
+    TOOL_SCRIPT = "tool_script"
 
 
 class CandidateStatus(StrEnum):
@@ -138,6 +139,7 @@ class ProcedureVersion:
     id: UUID | None = None
     created_at: datetime | None = None
     ended_at: datetime | None = None
+    source_kind: str | None = None
 
 
 @dataclass
@@ -237,6 +239,7 @@ class ProcedureMatch:
     unmet_preconditions: list[str]
     effective_tool_names: frozenset[str] = field(default_factory=frozenset)
     procedure_relevant_tools: frozenset[str] = field(default_factory=frozenset)
+    source_kind: str | None = None
 
 
 @dataclass

@@ -301,6 +301,8 @@ class ZeContainer(CoreContainer):
     procedure_activator: Any = None
     tier_judge: Any = None
     screen_resolvers: Any = None
+    # Set by the workspace stack (T031); None keeps run_tool_script off.
+    script_runner: Any = None
     transcription_registry: TranscriptionRegistry = field(
         default_factory=TranscriptionRegistry
     )
@@ -348,6 +350,7 @@ class ZeContainer(CoreContainer):
             "procedure_discovery": self.procedure_discovery,
             "procedure_activator": self.procedure_activator,
             "screen_resolvers": self.screen_resolvers,
+            "script_runner": self.script_runner,
             **plugin_services,
         }
         configurable["memory_hooks"] = [*plugin_services.get("memory_hooks", [])]
@@ -489,6 +492,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         turn_starter=turn_starter,
         push_sender=push_sender,
         action_record_store=stores.action_record_store,
+        procedure_admission=stores.procedure_admission,
     )
     wire_automation(automation, workspace, stores, shared, worldstate, skills_stack)
     install_contradiction_hook(shared, worldstate)
@@ -714,6 +718,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         procedure_discovery=stores.procedure_discovery,
         procedure_activator=stores.procedure_activator,
         screen_resolvers=screen_resolvers,
+        script_runner=workspace.script_runner,
         job_run_store=stores.job_run_store,
         hypothesis_store=correlation.hypothesis_store,
     )

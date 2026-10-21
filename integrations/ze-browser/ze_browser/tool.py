@@ -15,6 +15,7 @@ _BLOCKED_MSG = "[blocked or empty — skip this URL]"
         "Returns an error string if the page is blocked or unreachable — "
         "in that case, skip this URL and try another source."
     ),
+    egress=True,
 )
 async def browser_extract(
     url: str,

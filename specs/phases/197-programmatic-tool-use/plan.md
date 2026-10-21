@@ -32,7 +32,7 @@ Every agent with at least one data read tool sees one harness tool, `run_tool_sc
 
 | Principle | Status |
 |---|---|
-| I Spec first | Spec clarified 2026-10-18; ADR `specs/arch/programmatic-tool-use.md` in this phase |
+| I Spec first | Spec clarified 2026-10-18; the decision record in `research.md` ("Decision record") |
 | II Single user | One script slot; no tenancy |
 | III Layered packages | Contract and dispatch in ze-agents (imports nothing from ze-workspace); runner in ze-workspace (already depends on ze-agents, ze-memory); wiring in ze-api; plugins change nothing (the capability is in `BaseAgent`) |
 | IV Typed Python | `ScriptLimits`, `ScriptRequest`, `ScriptOutcome`, `ScriptTrace` dataclasses; typed `ScriptError(ZeError)` |
@@ -79,7 +79,7 @@ Revised after Gauge's review of 2026-10-18 (M-1..M-7, Me-1..Me-5, N-1..N-7) and 
 - `SCRIPT_TOOL_NAME = "run_tool_script"`; `SCRIPT_TOOL_SCHEMA` (function schema: `source: string` optional, `procedure_id: string` optional, exactly one required, described in the schema text).
 - `@dataclass(frozen=True) ScriptLimits(wall_seconds: int = 30, max_inner_calls: int = 20, max_proposed_writes: int = 10, max_spend_usd: float = 0.05, max_result_chars: int = 4000, max_source_chars: int = 8000, max_request_bytes: int = 262144, max_reply_bytes: int = 1048576, inner_result_store_chars: int = 2000)`, `from_config(config)` reading `workspace.scripts` with per-field fallback. Ten proposed writes: enough for a batch action, small enough that one confirmation lists them all (N-4).
 - `ScriptRequest(seq: int, tool: str, args: dict)`; `ScriptOutcome(status: Literal["ok", "exception", "timeout", "killed", "bad_request", "busy", "unavailable", "resource_limit"], value: Any, writes: list[dict], stderr_tail: str, exception: str | None)`.
-- `class ScriptRunner(Protocol)`: `async def run(self, *, script_id: str, agent: str, source: str, stub: str, limits: ScriptLimits, dispatch: Callable[[ScriptRequest], Awaitable[DispatchReply]]) -> ScriptOutcome`. `DispatchReply(ok: bool, value: Any = None, error: str | None = None, stop: bool = False)`.
+- `class ScriptRunner(Protocol)`: `async def run(self, *, script_id: str, agent: str, source: str, stub: str, limits: ScriptLimits, dispatch: Callable[[ScriptRequest], Awaitable[DispatchReply]], procedure_id: str | None = None, context: ScriptContext | None = None) -> ScriptOutcome`. `ScriptContext(user_turn, message_id, thread_id)`. `DispatchReply(ok: bool, value: Any = None, error: str | None = None, stop: bool = False)`.
 - `ScriptBudget`, `current_script_budget: ContextVar[ScriptBudget | None]`, `charge_script(usd)`; `in_script_call: ContextVar[bool]` (set by the dispatcher around each inner `call_tool`, read by `ToolCallCapHook`).
 - `SCRIPT_GUIDANCE` (appended to the system prompt once, before the loop, when the script tool is visible at the first iteration; harmless if later narrowing hides it): when to write a script (three or more reads, loops, joins, counting); print nothing (stdout is discarded); return only what the answer needs with `finish(...)`; propose writes with `propose(...)` in `finish`; tool results are JSON data, so inspect keys defensively; the error you get back shows the shape of the last result.
 - `ScriptError(ZeError)` with `kind`.
@@ -146,7 +146,7 @@ Revised after Gauge's review of 2026-10-18 (M-1..M-7, Me-1..Me-5, N-1..N-7) and 
 
 ### Agents
 
-- No per-agent change: the capability lives in `BaseAgent`. Any agent with a data read tool (for example calendar, messenger and finance) gets the script tool when a runner is wired; T001 lists, per registered agent, whether it has a data read tool. The companion has only UI reads and delegation today, so it gets none; a follow-up phase (proposed to the user) adds a read bridge. No prompt edits.
+- No per-agent change: the capability lives in `BaseAgent`. Any agent with a data read tool (for example calendar, messenger and finance) gets the script tool when a runner is wired; T001 lists, per registered agent, whether it has a data read tool. Build T001 found the companion's one data read, `get_briefing`, so it gets the script tool too (accepted under the user's rule); research, priority, ingestion and prospecting have none. Cross-agent reads for the companion are the follow-up read-bridge phase. `refresh_news` (news) is a READ that fetches the user's configured feeds, not a caller-chosen URL, so it is not `egress`. No prompt edits.
 - Finance is pinned to one provider; a script's source and value go only to the same model and the trace, so nothing leaves that provider (N-5, ADR).
 
 ### Eval
@@ -171,7 +171,7 @@ workspace:
 
 ### Docs
 
-- ADR `specs/arch/programmatic-tool-use.md`: Ze-initiated channel; no sandbox credential; no network (reject rule verified at startup, per-script probe; egress tools such as `browser_extract` excluded from the stub, so a script cannot reach the network through a tool either); resource limits; stub = data-read tools (UI and egress tools excluded); inner calls are ordinary calls (counted by the script cap, not the turn cap); proposed writes; why a hosted sandbox is refused; learning through the ledger by tool signature; AF_UNIX note; finance provider pin.
+- Decision record in `research.md`: Ze-initiated channel; no sandbox credential; no network (reject rule verified at startup, per-script probe; egress tools such as `browser_extract` excluded from the stub, so a script cannot reach the network through a tool either); resource limits; stub = data-read tools (UI and egress tools excluded); inner calls are ordinary calls (counted by the script cap, not the turn cap); proposed writes; why a hosted sandbox is refused; learning through the ledger by tool signature; AF_UNIX note; finance provider pin.
 - `docs/architecture.md`: the script path (a short sequence; consider a diagram per the docs rule).
 - `docs/configuration.md`: `workspace.scripts`.
 - `docs/sdk.md`: scripts as a harness capability (no opt-in); `produces_ui`; how a tool appears in `ze_tools` (schema-derived signature, JSON return); write tools must be proposed.
@@ -213,7 +213,7 @@ apps/ze-api/config/config.yaml
 packages/ze-client/                                     (regenerated)
 apps/ze-web/src/widgets/assemble/ui/trace/{ToolsTimeline.tsx,instruments.test.tsx}, widgets/assemble/lib/script-rows.ts
 core/ops/ze-eval/ze_eval/{scenario,scoring}.py, eval/scenarios/tool_scripts.yaml
-specs/arch/programmatic-tool-use.md, docs/*.md, AGENTS.md, specs/README.md
+docs/*.md, AGENTS.md, specs/README.md
 ```
 
 ## Lane Plan (Maestri crew)

@@ -7,6 +7,7 @@ from ze_memory.procedures.types import (
     IdentityStatus,
     MatchState,
     ProcedureMatch,
+    ProcedureSourceKind,
     ProcedureTaskContext,
     VersionStatus,
 )
@@ -83,6 +84,7 @@ class ProcedureDiscovery:
                         unmet_preconditions=list(version.preconditions),
                         effective_tool_names=effective,
                         procedure_relevant_tools=relevant_tools,
+                        source_kind=version.source_kind,
                     )
                 )
                 continue
@@ -107,6 +109,7 @@ class ProcedureDiscovery:
                     unmet_preconditions=unmet,
                     effective_tool_names=effective,
                     procedure_relevant_tools=relevant_tools,
+                    source_kind=version.source_kind,
                 )
             )
         return [
@@ -124,6 +127,13 @@ def format_procedure_guidance(matches: list[ProcedureMatch]) -> str | None:
         "following steps. A match does not execute anything.]"
     ]
     for match in matches:
+        if match.source_kind == ProcedureSourceKind.TOOL_SCRIPT.value:
+            lines.append(
+                f"- [{match.state.value}] {match.name} id={match.procedure_id}: "
+                "script procedure, run it with "
+                f'run_tool_script(procedure_id="{match.procedure_id}")'
+            )
+            continue
         lines.append(
             f"- [{match.state.value}] {match.name} v{match.version_number} "
             f"id={match.procedure_id}"

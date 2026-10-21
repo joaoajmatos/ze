@@ -220,6 +220,8 @@ class ToolSpec:
     )
     ui_action: bool = False
     done_phrase: str | None = None
+    produces_ui: bool = False
+    egress: bool = False
     _parameters: tuple[dict, frozenset[str]] | None = field(
         default=None, repr=False, compare=False
     )
@@ -397,6 +399,8 @@ def tool(
     summarize: Callable[[dict[str, Any]], str] | None = None,
     ui_action: bool = False,
     done_phrase: str | None = None,
+    produces_ui: bool = False,
+    egress: bool = False,
 ) -> Callable:
     """Decorator that registers an async function as a Ze tool.
 
@@ -404,7 +408,9 @@ def tool(
     reversibility arguments. A REVERSIBLE tool names its compensating `undo_tool`.
     An IRREVERSIBLE tool asks the user first unless it declares `asks_first=False`
     with a `no_ask_reason`. A WRITE tool with `ui_action=True` can be named by a screen
-    button (`ToolAction`); `done_phrase` is the line shown after it ran.
+    button (`ToolAction`); `done_phrase` is the line shown after it ran. `produces_ui`
+    marks a tool whose effect is drawing on screen, and `egress` a READ tool that reaches a
+    caller-chosen URL or host, or fetches from the network on every call; neither appears in a tool script's stub.
     """
     access_val = ToolAccess(access) if isinstance(access, str) else access
     reversibility_val = (
@@ -454,6 +460,8 @@ def tool(
             summarize=summarize,
             ui_action=ui_action,
             done_phrase=done_phrase,
+            produces_ui=produces_ui,
+            egress=egress,
             _parameters=parameters,
         )
         return func

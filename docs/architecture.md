@@ -233,6 +233,28 @@ the writes.
 Interactive confirmations use the `confirm_request` and `confirm` frames. See
 [docs/native-interface.md](native-interface.md) for the full WebSocket protocol.
 
+### Tool scripts
+
+An agent with at least one data read tool also gets `run_tool_script`. The model writes
+one short Python script that calls those reads, so a multi-step read costs one model
+turn instead of one per call. The script runs in the workspace sidecar with no network, and the sidecar refuses to run it unless isolation holds.
+
+1. The model calls `run_tool_script` with `source` (or `procedure_id` for an approved
+   script). The agentic loop hands the call to `run_script_step`.
+2. Ze builds a stub from the agent's data read tools. Tools that write, draw on screen or
+   reach a caller-chosen URL are left out.
+3. Ze opens `WS /scripts` to the sidecar. The script runs as the `zescript` user.
+4. Each `ze_tools` call in the script comes back to Ze as a request. Ze runs it through
+   `call_tool`, so every gate and hook applies, and records it as an inner call.
+5. The script ends with `finish(result, writes=[...])`. Ze returns the result to the model
+   and runs each proposed write as an ordinary call, so the confirmation rules apply.
+6. The finished script is one action record. Three successes with the same tool signature
+   propose a `tool_script` procedure. The user approves it in Mind › Procedures before it
+   can run again.
+
+See [workspace.md](workspace.md#tool-scripts) for the sandbox limits and
+`specs/phases/197-programmatic-tool-use/research.md` for the decision record.
+
 ### Message trace effect metadata
 
 `record_trace` resolves every tool call against the tool registry when it writes the
@@ -787,6 +809,8 @@ patterns do not require frontend changes.
 4. `ComponentCollectionHook.on_loop_end` drains the side-channel into `AgentState.components`.
 5. `NativeAppInterface.send_message(components=[...])` delivers the trees alongside the text response.
 6. `PrimitiveRenderer` in `ze-web` renders each tree recursively.
+
+Render tools set `produces_ui=True`, so a tool script never calls them.
 
 ### Adding a new component pattern
 

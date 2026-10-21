@@ -57,3 +57,29 @@ def test_learning_refs_are_preserved() -> None:
     learning_id = uuid4()
     candidate = _candidate(learning_refs=[LearningRef(learning_id=learning_id)])
     assert candidate.learning_refs[0].learning_id == learning_id
+
+
+def test_tool_script_candidate_constructs_without_preconditions() -> None:
+    candidate = _candidate(
+        source_kind=ProcedureSourceKind.TOOL_SCRIPT, preconditions=[]
+    )
+    assert candidate.source_kind.value == "tool_script"
+    assert candidate.preconditions == []
+
+
+def test_procedure_match_source_kind_defaults_to_none() -> None:
+    from ze_memory.procedures.types import MatchState, ProcedureMatch
+
+    match = ProcedureMatch(
+        procedure_id=uuid4(),
+        version_id=uuid4(),
+        version_number=1,
+        name="n",
+        trigger="t",
+        steps=["s"],
+        state=MatchState.READY,
+        matched_trigger="t",
+        satisfied_preconditions=[],
+        unmet_preconditions=[],
+    )
+    assert match.source_kind is None

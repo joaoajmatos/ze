@@ -31,8 +31,18 @@ import httpx
 from ze_eval.judge import DEFAULT_JUDGE_MODEL, judge
 from ze_eval.metrics import fetch_session_metrics
 from ze_eval.fixtures import Fixtures, substitute
-from ze_eval.scenario import describe_context, is_runnable, load_scenarios, turn_contexts
-from ze_eval.scoring import outcome_correct, routing_correct, tools_correct
+from ze_eval.scenario import (
+    describe_context,
+    is_runnable,
+    load_scenarios,
+    turn_contexts,
+)
+from ze_eval.scoring import (
+    llm_calls_correct,
+    outcome_correct,
+    routing_correct,
+    tools_correct,
+)
 from ze_eval.verifier import run_verification
 
 _DEFAULT_RESULTS_DIR = (
@@ -456,6 +466,9 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
                     "llm_calls": sm.llm_calls,
                     "models": sm.models,
                 }
+                llm_ok = llm_calls_correct(scenario, sm.llm_calls)
+                if llm_ok is False:
+                    outcome = False
 
             if use_judge and scenario.get("criteria"):
                 contexts_for_judge = turn_contexts(scenario)
@@ -489,7 +502,9 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
                         components=components_for_judge,
                         pending_confirmation=pending_confirmation_for_judge,
                         screen_context="; ".join(
-                            f"[turn {i}] {describe_context(c)}" if len(contexts_for_judge) > 1 else describe_context(c)
+                            f"[turn {i}] {describe_context(c)}"
+                            if len(contexts_for_judge) > 1
+                            else describe_context(c)
                             for i, c in enumerate(contexts_for_judge, start=1)
                             if c
                         )

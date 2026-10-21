@@ -184,6 +184,18 @@ does not run it. The loop stops at that call. The turn pauses once for the user 
 [Write confirmation](architecture.md#write-confirmation)). A denied call returns a
 declined result to the model. `READ` and `REVERSIBLE` tools never park.
 
+### Read tools, scripts and screen tools
+
+Your agent needs no opt-in for tool scripts. If it has at least one data read tool, it
+also gets `run_tool_script`, and the script can call every data read tool it has. Set two
+flags on tools that must stay out of a script:
+
+- `produces_ui=True` on a tool that draws on screen. A render tool is one example.
+- `egress=True` on a `READ` tool that reaches a URL or host the caller chooses.
+
+A `READ` tool with a URL-like parameter needs one of these flags or an explicit exemption
+with a reason. The registry sweep fails otherwise. See [sdk.md](sdk.md#tool-scripts-produces_ui-and-egress).
+
 ### Tool parameters
 
 The agent's `run()` method passes all dependencies (API clients, settings) as keyword
@@ -444,4 +456,5 @@ Conventions:
 - [ ] `tools.py` — all tools decorated with `@tool` (if applicable); every `WRITE` tool declares `reversibility` and `effect_phrase`
 - [ ] Progress keys added to `locales/en.yaml` (and `locales/pt.yaml`) in the plugin package
 - [ ] Tests written (including the park path for asks-first tools)
+- [ ] Screen-drawing tools set `produces_ui=True`; URL-reaching read tools set `egress=True`
 - [ ] Optional: `bundled_skill_paths()` if the plugin ships a `SKILL.md`

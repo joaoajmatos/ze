@@ -417,10 +417,37 @@ skips common no-reply prefixes and bulk-mail headers.
 ```yaml
 workspace:
   run_timeout_seconds: 120   # timeout for a single workspace run
+  scripts:                   # limits for one run_tool_script call
+    wall_seconds: 30
+    max_inner_calls: 20
+    max_proposed_writes: 10
+    max_spend_usd: 0.05
+    max_result_chars: 4000
+    max_source_chars: 8000
 ```
 
 The wait before a turn detaches a long run is the environment variable
 `WORKSPACE_FOLLOW_THROUGH_SHORT_WAIT_SECONDS`, not a YAML key.
+
+`workspace.scripts` sets the limits for one tool script. See [workspace.md](workspace.md#tool-scripts)
+for how the sandbox enforces them.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `wall_seconds` | `30` | Wall-clock limit for one script. The CPU limit is this value plus one second. |
+| `max_inner_calls` | `20` | Read tool calls one script may make. |
+| `max_proposed_writes` | `10` | Writes one script may propose in `finish(...)`. |
+| `max_spend_usd` | `0.05` | Estimated model spend the script's inner calls may use. One call can overshoot; the check runs before the next. |
+| `max_result_chars` | `4000` | Characters of the script's result that reach the model. |
+| `max_source_chars` | `8000` | Characters of script source that Ze accepts. |
+
+Each key takes a positive number. A wrong type or a value of zero or less keeps the default
+for that key and logs `script_limit_invalid`. The other keys keep their values. The
+The integer keys (`wall_seconds`, `max_inner_calls`, `max_proposed_writes`, `max_result_chars`
+and `max_source_chars`) must be whole numbers. `wall_seconds: 30.0` falls back to `30` with a
+warning. `max_spend_usd` accepts an integer or a float, so `max_spend_usd: 1` sets `1.0`.
+Byte caps on the request and reply frames, and the inner-result store size, are code
+constants, not config keys.
 
 ### `news:`
 

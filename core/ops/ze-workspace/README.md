@@ -38,6 +38,8 @@ The sidecar is not a browsing session. Web pages stay in `ze-browser`. This pack
 | `followthrough.py` | `RunWatcher` — watch detached runs, follow-up turn, push |
 | `turn_lock.py` | Per-thread lock for follow-up turns |
 | `action_records.py`, `action_handoff.py` | Action-record submissions for runs |
+| `scripts.py` | `WorkspaceScriptRunner` — runs a tool script over the sidecar's `WS /scripts` and serves its tool calls |
+| `script_learning.py` | `ScriptLearning` — one ledger row per script run; a procedure candidate after three straight successes |
 | `rest.py` | FastAPI helpers: status, files, reset |
 | `sanitize.py` | Path confinement and secret redaction |
 | `types.py` | Action, origin, run, and file types |
@@ -48,7 +50,7 @@ Every `WRITE` tool in this package declares `reversibility` and an `effect_phras
 
 ## Dependencies
 
-`ze-agents`, `ze-logging`, `ze-data`, `ze-memory`, `ze-plugin`, `httpx`, `asyncpg`. `ze-core` and `ze-agents` must not depend on this package.
+`ze-agents`, `ze-logging`, `ze-data`, `ze-memory`, `ze-plugin`, `httpx`, `websockets`, `asyncpg`. `ze-core` and `ze-agents` must not depend on this package.
 
 ## Usage
 
@@ -73,6 +75,8 @@ stat = await client.stat()
 | `WORKSPACE_API_TOKEN` | Bearer token for the sidecar control API |
 | `WORKSPACE_TIMEOUT_SECONDS` | Per-request HTTP timeout |
 | `WORKSPACE_FOLLOW_THROUGH_SHORT_WAIT_SECONDS` | Seconds a turn waits for a command before it detaches |
+
+`WorkspaceStack.script_runner` is set only when both `WORKSPACE_SERVICE_URL` and `WORKSPACE_API_TOKEN` are set, because the sidecar refuses `/scripts` without a token. The runner checks `GET /stat` first and never opens the socket when `scripts_isolated` is false.
 
 See [docs/workspace.md](../../docs/workspace.md) for access, isolation, and local/Fly setup.
 See [docs/skills.md](../../docs/skills.md) for how skill scripts reach this sidecar.
