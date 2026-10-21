@@ -45,7 +45,7 @@ function WorkflowGraphInner({ steps, execution }: Props) {
         label: e.label ?? undefined,
         animated: e.taken && execution?.status === "running",
         style: {
-          stroke: e.taken ? "var(--main)" : "var(--hair)",
+          stroke: e.taken ? "var(--main)" : "var(--hair-strong)",
           strokeWidth: e.taken ? 2 : 1,
         },
         labelStyle: { fill: e.taken ? "var(--cream)" : "var(--dim)", fontSize: 11 },

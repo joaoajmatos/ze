@@ -2,9 +2,8 @@
 .gov {
   display: grid;
   gap: 14px;
-  padding: 18px 16px 28px;
+  padding: 0 0 28px;
   max-width: 1180px;
-  margin: 0 auto;
 }
 .gov > * {
   min-width: 0;

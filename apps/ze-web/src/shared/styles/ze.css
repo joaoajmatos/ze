@@ -349,6 +349,11 @@ h2.lbl {
     min-height: 44px;
     min-width: 44px;
   }
+  .row .t.ctl-text {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .chat-about {
@@ -399,7 +404,7 @@ h2.lbl {
 /* ---------- rows ---------- */
 .row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px 12px;
   align-items: baseline;
   padding: 7px 0;
@@ -416,6 +421,7 @@ h2.lbl {
 }
 .row .s {
   grid-column: 1 / -1;
+  overflow-wrap: anywhere;
   color: var(--dim);
   font-size: 0.8125rem;
 }
@@ -933,6 +939,7 @@ h2.lbl {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 .presence-orb {
   display: grid;
@@ -1387,7 +1394,7 @@ h2.lbl {
     grid-column: span 12;
   }
   :root {
-    --orb: 150px;
+    --orb: 120px;
   }
 }
 
@@ -1717,7 +1724,7 @@ h2.lbl {
   }
   .presence {
     display: grid;
-    grid-template-columns: 150px minmax(0, 1fr);
+    grid-template-columns: 120px minmax(0, 1fr);
     grid-template-areas: "orb head" "orb foot";
     align-items: center;
     column-gap: 12px;

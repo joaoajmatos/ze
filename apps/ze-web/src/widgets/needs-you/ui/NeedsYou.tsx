@@ -58,11 +58,11 @@ export function NeedsYou({ decisions, loading, error, now, offline, offlineLine 
   const isFocused = (kind: string, id: string) => focus?.kind === kind && focus.id === id;
   const refOf = (d: Decision): WsScreenRef | null =>
     d.kind === "held_write"
-      ? ({ kind: "held_write", id: d.id } as WsScreenRef)
+      ? ({ kind: "held_write", id: d.id, label: d.title } as WsScreenRef)
       : d.kind === "gate"
-        ? ({ kind: "goal_gate", id: d.id, parent_id: d.goalId } as WsScreenRef)
+        ? ({ kind: "goal_gate", id: d.id, parent_id: d.goalId, label: d.title } as WsScreenRef)
         : d.kind === "suspected_loop"
-          ? ({ kind: "loop", id: d.id } as WsScreenRef)
+          ? ({ kind: "loop", id: d.id, label: d.title } as WsScreenRef)
           : null;
   const chatChip = (d: Decision) => {
     const ref = refOf(d);
@@ -119,7 +119,7 @@ export function NeedsYou({ decisions, loading, error, now, offline, offlineLine 
                     className="ctl"
                     disabled={offline || inFlight}
                     onClick={() => {
-                      if (gate.redirect(d.id)) onChatAbout?.({ kind: "goal_gate", id: d.id, parent_id: d.goalId } as WsScreenRef, null);
+                      if (gate.redirect(d.id)) onChatAbout?.({ kind: "goal_gate", id: d.id, parent_id: d.goalId, label: d.title } as WsScreenRef, null);
                     }}
                   >
                     Redirect

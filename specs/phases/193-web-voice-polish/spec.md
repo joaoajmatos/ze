@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-17 (refined through `/speckit-specify` 2026-10-18)
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Voice and Polish (W8)": Maestro brief 2026-10-17, phase W8; overhaul plan sections c (Voice) and e (Phase W8); `direction-gmunk.md` ("it is also important to also have the voice orb, the ambience"); user decision 6 (voice input only; spoken output later).
 

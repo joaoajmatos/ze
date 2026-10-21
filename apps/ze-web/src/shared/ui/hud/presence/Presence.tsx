@@ -52,7 +52,7 @@ export const Presence = forwardRef<PresenceHandle, PresenceProps>(function Prese
         {headSlot}
       </header>
       <div className="presence-orb">
-        <Orb ref={handle} state={state} size={compact ? 150 : 184} colors={colors} reducedMotion={reducedMotion} rings={rings} leanTo={leanTo} level={level} />
+        <Orb ref={handle} state={state} size={compact ? 120 : 184} colors={colors} reducedMotion={reducedMotion} rings={rings} leanTo={leanTo} level={level} />
       </div>
       <footer className="presence-foot">
         <span className="lbl">presence</span>
