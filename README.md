@@ -40,9 +40,9 @@ Ze is pre-v1. It has one user, runs locally, and is built in the open, one funct
 
 **Memory with honesty rules.** A keep/drop extractor admits facts through typed contributions. Ze says it remembered or forgot something only after the write succeeds. It uses what it knows silently and does not recite it. See [memory](docs/memory.md).
 
-![Ze chat with the trace panel open, showing how the last reply was routed and which memory it used](docs/assets/chat-trace.png)
+![The World place with the Ask overlay open on a loop: Ze offers three questions about it](docs/assets/chat-about.png)
 
-<sub>Chat with the trace panel. Each turn shows its routing, feedback, memory, tools, and skills.</sub>
+<sub>Chat about this. Pick any item on any place and Ze answers with that item in view. Each reply has a trace of its routing, memory, tools, and skills.</sub>
 
 ---
 
