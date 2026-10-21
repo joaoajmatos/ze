@@ -45,3 +45,10 @@
 
 - **Decision**: the tee keeps the last `server_tool_use` value seen in one response body and adds it to the counter once, when the body finishes.
 - **Rationale**: some providers repeat cumulative usage on several stream chunks; summing per chunk would double count.
+
+## R9 — The SDK rejects `openrouter:web_fetch` (build T025, 2026-10-18)
+
+- **Finding**: the installed `openrouter` SDK (0.9.1, also 1.3.65) validates `tools` against its `ChatFunctionTool` union before sending, and that union has no `openrouter:web_fetch`; the first live research turn errored client side ($0 spent).
+- **Decision**: the client takes server tools the SDK cannot type out of the SDK call and the citation transport appends them to the request body's `tools`, carried by a ContextVar set for that one request and reset in `finally` (concurrent calls never see each other's tools). The client allowlist guard runs first, unchanged, so only `SERVER_TOOLS` entries can reach the body. Tests first: the body holds the fetch tool with its params, a concurrent call without it does not, the stream and non-stream paths both carry it.
+- **Eval**: scenario 2 is worded as a research question about a 404 URL; "Read <url>" alone is an ingest request and routes to ingestion, which is correct (147).
+- **Live result (T025, 2026-10-18, ~$0.061)**: with the split, fetch ran and a 404 was reported honestly. The non-stream chat completion carried no `usage.server_tool_use`, no server tool calls, no fetch result records and no annotations, only `usage.server_tool_use_details` (`tool_calls_requested`, `tool_calls_executed`), totals across all server tools. Fetch targets, per-kind counts and fetch Sources (US2) cannot be built on this surface. The user halted the phase on 2026-10-21.

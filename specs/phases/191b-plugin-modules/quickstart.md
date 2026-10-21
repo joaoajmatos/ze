@@ -2,7 +2,7 @@
 
 ## Automated
 - `make test-plugin`, `make test` (ze-api), `make test-news`, `make test-web`, `make typecheck-web`, `make web-build`, `make lint`.
-- `rtk proxy grep -rn "manifest.nav\|ui_manifest.nav\|ui_nav\|show_in_mobile_nav\|CORE_RESERVED_NAV_PATHS\|getNewsPage\|news/page\|build_news_page\|getContactsPage\|build_contacts_page\|page_operation_id\|plugin-page\|pluginPage" core apps plugins packages` returns nothing, and no place list contains `"plugin"` (`api/ws/schemas.py`, `ze_agents/screen.py`, `places.ts`).
+- `rtk proxy grep -rn "manifest.nav\|ui_manifest.nav\|ui_nav\|show_in_mobile_nav\|CORE_RESERVED_NAV_PATHS\|getNewsPage\|news/page\|build_news_page\|page_operation_id\|plugin-page\|pluginPage" core apps plugins packages` returns only `apps/ze-web/src/shared/lib/query-keys.test.ts` (the test asserting `pluginPage` is gone), and no place list contains `"plugin"` (`api/ws/schemas.py`, `ze_agents/screen.py`, `places.ts`).
 - `make calibrate-routing ARGS=--check-sets` passes (offline).
 
 ## Manual against `make dev-full`
