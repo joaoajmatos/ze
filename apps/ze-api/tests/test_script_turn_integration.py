@@ -73,7 +73,16 @@ async def test_a_finance_turn_that_scripts_two_reads_leaves_step_and_inner_calls
 
     class _Runner:
         async def run(
-            self, *, script_id, agent, source, stub, limits, dispatch, procedure_id=None
+            self,
+            *,
+            script_id,
+            agent,
+            source,
+            stub,
+            limits,
+            dispatch,
+            procedure_id=None,
+            context=None,
         ):
             await dispatch(ScriptRequest(1, "list_accounts_it", {}))
             await dispatch(ScriptRequest(2, "get_transactions_it", {"account": "a"}))
