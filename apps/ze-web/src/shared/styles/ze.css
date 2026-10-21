@@ -399,7 +399,7 @@ h2.lbl {
 /* ---------- rows ---------- */
 .row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px 12px;
   align-items: baseline;
   padding: 7px 0;
@@ -416,6 +416,7 @@ h2.lbl {
 }
 .row .s {
   grid-column: 1 / -1;
+  overflow-wrap: anywhere;
   color: var(--dim);
   font-size: 0.8125rem;
 }
@@ -933,6 +934,7 @@ h2.lbl {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 .presence-orb {
   display: grid;
