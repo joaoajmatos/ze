@@ -8,7 +8,7 @@ export function useMessageTraceQuery(messageId: string, enabled: boolean) {
     queryKey: queryKeys.messageTrace(messageId),
     queryFn: async () => {
       const { data, error } = await getMessageTrace({ path: { message_id: messageId } });
-      if (error) return null;
+      if (error || !data) throw error ?? new Error("Failed to load the trace");
       return data as MessageTraceResponse;
     },
     enabled,

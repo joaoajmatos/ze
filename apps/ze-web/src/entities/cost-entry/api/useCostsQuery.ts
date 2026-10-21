@@ -7,8 +7,9 @@ export function useCostsQuery() {
   return useQuery<WebCostSummaryResponse>({
     queryKey: queryKeys.costs,
     queryFn: async () => {
-      const { data } = await getCostSummary();
-      return data!;
+      const { data, error } = await getCostSummary();
+      if (error || !data) throw error ?? new Error("Failed to load costs");
+      return data;
     },
   });
 }

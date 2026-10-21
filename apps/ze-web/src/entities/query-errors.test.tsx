@@ -1,45 +1,51 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
-import { useContactsPageQuery } from "./contact";
-import { useHypothesesQuery } from "./hypothesis";
-import { useMemoryFeedQuery, useMemoryTimelineBoundsQuery, useReviewFactMutation } from "./memory-feed-item";
-import { useSearchEntitiesQuery } from "./memory-graph";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useCostAnomaliesQuery } from "./cost-entry/api/useCostAnomaliesQuery";
+import { useCostsQuery } from "./cost-entry/api/useCostsQuery";
+import { useDataDomainsQuery } from "./data-domain/api/useDataDomainsQuery";
+import { useMemoryActivityQuery } from "./memory-feed-item/api/useMemoryActivityQuery";
+import { useMessageTraceQuery } from "./message-trace/api/useMessageTraceQuery";
+import { useNotificationsQuery } from "./notification/api/useNotificationsQuery";
 
-const { failed } = vi.hoisted(() => ({ failed: () => Promise.resolve({ data: undefined, error: { detail: "boom" } }) }));
-vi.mock("@myguyze/ze-client", () => ({
-  searchEntities: failed,
-  getContactsPage: failed,
-  getMemoryFeed: failed,
-  getMemoryTimelineBounds: failed,
-  listHypotheses: failed,
-  getMemoryGraph: failed,
-  reviewFacts: failed,
-  setHypothesisFeedback: failed,
+const sdk = vi.hoisted(() => ({
+  getCostAnomalies: vi.fn(),
+  getCostSummary: vi.fn(),
+  listDataDomains: vi.fn(),
+  getMemoryActivity: vi.fn(),
+  getMessageTrace: vi.fn(),
+  listNotifications: vi.fn(),
 }));
+vi.mock("@myguyze/ze-client", () => sdk);
 
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{children}</QueryClientProvider>
-);
+function wrap() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+}
 
-describe("a failed API call is an error, not an empty result", () => {
-  it.each([
-    ["entity search", () => useSearchEntitiesQuery("ada")],
-    ["contacts page", () => useContactsPageQuery()],
-    ["memory feed", () => useMemoryFeedQuery({ type: "all" })],
-    ["timeline bounds", () => useMemoryTimelineBoundsQuery()],
-    ["hypotheses", () => useHypothesesQuery({ entityId: "e1" })],
-  ])("%s", async (_name, hook) => {
-    const { result } = renderHook(hook as () => { isError: boolean }, { wrapper });
-    await waitFor(() => expect(result.current.isError).toBe(true));
+describe("queries throw when the client reports an error", () => {
+  beforeEach(() => {
+    for (const fn of Object.values(sdk)) fn.mockReset();
   });
-});
 
-describe("a failed review is an error, not a success", () => {
-  it("rejects when the API returns an error", async () => {
-    const { result } = renderHook(() => useReviewFactMutation({ type: "all" }), { wrapper });
-    result.current.mutate([] as never);
+  const failing = { data: undefined, error: { detail: "boom" } };
+
+  const table: [string, keyof typeof sdk, () => { isError: boolean; data: unknown }][] = [
+    ["costs", "getCostSummary", () => useCostsQuery()],
+    ["cost anomalies", "getCostAnomalies", () => useCostAnomaliesQuery()],
+    ["data domains", "listDataDomains", () => useDataDomainsQuery()],
+    ["memory activity", "getMemoryActivity", () => useMemoryActivityQuery(new Date(0), new Date(1))],
+    ["message trace", "getMessageTrace", () => useMessageTraceQuery("m1", true)],
+    ["notifications", "listNotifications", () => useNotificationsQuery()],
+  ];
+
+  it.each(table)("%s sets isError and never resolves empty", async (_name, fn, hook) => {
+    sdk[fn].mockResolvedValue(failing);
+    const { result } = renderHook(hook, { wrapper: wrap() });
     await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.data).toBeUndefined();
   });
 });

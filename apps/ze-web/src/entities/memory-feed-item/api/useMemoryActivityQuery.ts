@@ -6,9 +6,10 @@ export function useMemoryActivityQuery(start: Date | undefined, end: Date | unde
   return useQuery({
     queryKey: ["memory-activity", start?.toISOString(), end?.toISOString()],
     queryFn: async () => {
-      const { data } = await getMemoryActivity({
+      const { data, error } = await getMemoryActivity({
         query: { start: start!.toISOString(), end: end!.toISOString() },
       });
+      if (error || !data) throw error ?? new Error("Failed to load memory activity");
       return data as MemoryActivityResponse;
     },
     enabled: Boolean(start && end),

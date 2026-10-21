@@ -10,12 +10,20 @@ interface MessageTracePanelProps {
 }
 
 export function MessageTracePanel({ messageId }: MessageTracePanelProps) {
-  const { data: trace, isLoading } = useMessageTraceQuery(messageId, true);
+  const { data: trace, isLoading, isError } = useMessageTraceQuery(messageId, true);
 
   if (isLoading) {
     return (
       <div className="mt-1 rounded-xl border border-foreground/[0.06] bg-foreground/[0.03] px-3 py-2 text-xs text-smoke">
         Loading trace…
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div role="alert" className="mt-1 rounded-xl border border-foreground/[0.06] bg-foreground/[0.03] px-3 py-2 text-xs text-smoke/80 italic">
+        Could not load the trace.
       </div>
     );
   }
