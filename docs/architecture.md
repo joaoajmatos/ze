@@ -234,7 +234,7 @@ Interactive confirmations use the `confirm_request` and `confirm` frames. See
 
 An agent with at least one data read tool also gets `run_tool_script`. The model writes
 one short Python script that calls those reads, so a multi-step read costs one model
-turn instead of one per call. The script runs in the workspace sidecar with no network.
+turn instead of one per call. The script runs in the workspace sidecar with no network, and the sidecar refuses to run it unless isolation holds.
 
 1. The model calls `run_tool_script` with `source` (or `procedure_id` for an approved
    script). The agentic loop hands the call to `run_script_step`.
