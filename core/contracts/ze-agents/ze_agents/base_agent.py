@@ -12,6 +12,7 @@ from functools import cached_property
 from typing import Any, AsyncIterator
 
 from ze_agents.client import LLMClient
+from ze_agents import budget
 from ze_agents.defaults import MODEL_AGENT_DEFAULT, MODEL_AGENT_TIMEOUT
 from ze_agents.errors import (
     AgentAbortedError,
@@ -893,9 +894,17 @@ class BaseAgent(ABC):
             await self._apply_resume(ctx, resume, messages, accumulated, _deps)
             start_iteration = resume.iteration + 1
 
+        wrapped_up = False
+        reached = max_iterations
         for iteration in range(start_iteration, max_iterations):
             if ctx.abort_token is not None and ctx.abort_token.is_set:
                 raise AgentAbortedError(ctx.abort_token.reason)
+
+            if iteration > start_iteration and budget.exhausted(ctx):
+                messages.append({"role": "user", "content": budget.WRAP_UP_NOTE})
+                wrapped_up = True
+                reached = iteration
+                break
 
             visible = self._visible_tool_names(ctx, names)
             if SCRIPT_TOOL_NAME in visible and not data_read_names(self, ctx, names):
@@ -1177,15 +1186,16 @@ class BaseAgent(ABC):
                     )
                 )
 
-        log.warning(
-            "agentic_loop_max_iterations",
-            agent=self.name,
-            max_iterations=max_iterations,
-        )
+        if not wrapped_up:
+            log.warning(
+                "agentic_loop_max_iterations",
+                agent=self.name,
+                max_iterations=max_iterations,
+            )
         await _dispatch_loop_hooks(
             hooks,
             "on_loop_end",
-            LoopEndEvent(self.name, ctx, accumulated, iterations_used=max_iterations),
+            LoopEndEvent(self.name, ctx, accumulated, iterations_used=reached),
         )
         text = await client.complete(
             messages=messages,

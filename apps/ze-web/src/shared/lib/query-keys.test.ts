@@ -1,33 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { refreshKeysForScreen } from "@/shared/lib/query-keys";
-
-const manifest = {
-  nav: [
-    {
-      id: "ze_news.overview",
-      plugin: "ze_news",
-      kind: "nav" as const,
-      label: "News",
-      icon: "newspaper",
-      path: "news",
-      page_operation_id: "getNewsPage",
-      show_in_mobile_nav: true,
-      priority: 100,
-    },
-    {
-      id: "ze_personal.contacts.overview",
-      plugin: "ze_personal",
-      kind: "nav" as const,
-      label: "Contacts",
-      icon: "users",
-      path: "contacts",
-      page_operation_id: "getContactsPage",
-      show_in_mobile_nav: true,
-      priority: 100,
-    },
-  ],
-  settings_sections: [],
-};
+import { queryKeys, refreshKeysForScreen } from "@/shared/lib/query-keys";
 
 describe("refreshKeysForScreen", () => {
   it("returns query keys for core-owned screens", () => {
@@ -36,14 +8,19 @@ describe("refreshKeysForScreen", () => {
     expect(refreshKeysForScreen("costs")).toEqual([["costs"]]);
   });
 
-  it("resolves plugin screens from manifest nav path", () => {
-    expect(refreshKeysForScreen("news", manifest)).toEqual([["plugin-page", "ze_news.overview"]]);
-    expect(refreshKeysForScreen("contacts", manifest)).toEqual([["plugin-page", "ze_personal.contacts.overview"]]);
+  it("resolves a module screen to the module's prefix key, covering every subject", () => {
+    expect(refreshKeysForScreen("module:x.facet")).toEqual([["ui-module", "x.facet"]]);
+    expect(queryKeys.uiModule("x.facet", "entity:e-1:")).toEqual(["ui-module", "x.facet", "entity:e-1:"]);
   });
 
-  it("returns undefined for unknown screens", () => {
+  it("returns undefined for unknown screens and an empty module id", () => {
     expect(refreshKeysForScreen("chat")).toBeUndefined();
     expect(refreshKeysForScreen("news")).toBeUndefined();
+    expect(refreshKeysForScreen("module:")).toBeUndefined();
     expect(refreshKeysForScreen("")).toBeUndefined();
+  });
+
+  it("has no plugin-page key", () => {
+    expect("pluginPage" in queryKeys).toBe(false);
   });
 });

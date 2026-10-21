@@ -203,3 +203,34 @@ def test_tool_executor_context_embeds_the_prompt_as_a_query():
     embedder = MagicMock()
     assert _embed_fn({"configurable": {"embedder": embedder}}) is embedder.encode_query
     assert _embed_fn({"configurable": {}}) is None
+
+
+class TestConductorHardTimeout:
+    async def test_conductor_past_its_limit_answers_from_the_ledger(self):
+        from ze_agents.budget import set_soft_deadline
+
+        cls = _make_agent_class("conductor", timeout=0)
+
+        async def slow_run(self, ctx):
+            set_soft_deadline(ctx, 1)
+            await asyncio.sleep(10)
+            return AgentResult(agent="conductor", response="late")
+
+        agent(cls)
+        instance = object.__new__(cls)
+        instance.timeout = 0.05
+        instance.run = slow_run.__get__(instance, cls)
+        register_instance("conductor", instance)
+        ctx = _ctx("conductor")
+        ctx.conductor_ledger = [{"agent": "research", "status": "running"}]
+        state = {
+            "envelope": _envelope("conductor"),
+            "agent_context": ctx,
+            "image_data": None,
+        }
+
+        result = await execute_tool(state, {"configurable": {}})
+
+        text = result["agent_result"].response
+        assert "Not finished" in text and "research." in text
+        assert "continue" in text

@@ -15,6 +15,17 @@ _PATH = _ROOT / "eval/calibration/routing.jsonl"
 _ROWS = [json.loads(line) for line in _PATH.read_text().splitlines() if line.strip()]
 
 
+def _roster() -> dict:
+    """The routing roster of a running server: the core agents plus the plugin agents.
+
+    Other tests clear the process-wide registry, so a plugin agent is read from its class
+    rather than from whatever the registry holds at this point.
+    """
+    from ze_news.agents.agent import NewsAgent
+
+    return {**get_enabled_agents(), NewsAgent.name: NewsAgent}
+
+
 def test_ids_unique_and_fields_valid():
     assert len({r["id"] for r in _ROWS}) == len(_ROWS)
     for r in _ROWS:
@@ -25,7 +36,7 @@ def test_ids_unique_and_fields_valid():
 
 
 def test_gold_agents_exist_in_the_registry_or_are_none():
-    roster = set(get_enabled_agents())
+    roster = set(_roster())
     for r in _ROWS:
         assert r["gold_agent"] == "none" or r["gold_agent"] in roster, r["id"]
 
@@ -48,7 +59,7 @@ def test_every_roster_agent_has_a_clear_single_in_each_language():
         for r in _ROWS
         if r["id"].startswith("single-") and not r["gold_multi"]
     )
-    for name in get_enabled_agents():
+    for name in _roster():
         for lang in ("en", "pt"):
             assert counts[(name, lang)] >= 1, (name, lang)
 
@@ -64,7 +75,7 @@ def _load(name: str) -> list[dict]:
 @pytest.mark.parametrize("name", _HELD_OUT)
 def test_held_out_set_is_valid(name):
     rows = _load(name)
-    roster = set(get_enabled_agents())
+    roster = set(_roster())
     assert len({r["id"] for r in rows}) == len(rows)
     for r in rows:
         assert r["lang"] in {"en", "pt"}

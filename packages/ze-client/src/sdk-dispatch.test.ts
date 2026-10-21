@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getNewsPage } = vi.hoisted(() => ({
-  getNewsPage: vi.fn(),
+const { getNewsSettings } = vi.hoisted(() => ({
+  getNewsSettings: vi.fn(),
 }));
 
 vi.mock("./generated/sdk.gen", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./generated/sdk.gen")>();
   return {
     ...actual,
-    getNewsPage,
+    getNewsSettings,
   };
 });
 
@@ -16,7 +16,7 @@ import { invokeSdkOperation, loadPluginOperation } from "./sdk-dispatch";
 
 describe("sdk-dispatch", () => {
   beforeEach(() => {
-    getNewsPage.mockReset();
+    getNewsSettings.mockReset();
   });
 
   it("throws for unknown operation", async () => {
@@ -24,19 +24,19 @@ describe("sdk-dispatch", () => {
   });
 
   it("returns PluginPageResponse from sdk function", async () => {
-    getNewsPage.mockResolvedValue({ data: { title: "News", tree: [] } });
-    const result = await loadPluginOperation("getNewsPage");
+    getNewsSettings.mockResolvedValue({ data: { title: "News", tree: [] } });
+    const result = await loadPluginOperation("getNewsSettings");
     expect(result).toEqual({ title: "News", tree: [] });
   });
 
   it("throws when sdk returns error", async () => {
-    getNewsPage.mockResolvedValue({ error: { message: "fail" } });
-    await expect(invokeSdkOperation("getNewsPage")).rejects.toThrow("SDK operation failed");
+    getNewsSettings.mockResolvedValue({ error: { message: "fail" } });
+    await expect(invokeSdkOperation("getNewsSettings")).rejects.toThrow("SDK operation failed");
   });
 
   it("throws when response is not PluginPageResponse", async () => {
-    getNewsPage.mockResolvedValue({ data: { foo: "bar" } });
-    await expect(loadPluginOperation("getNewsPage")).rejects.toThrow(
+    getNewsSettings.mockResolvedValue({ data: { foo: "bar" } });
+    await expect(loadPluginOperation("getNewsSettings")).rejects.toThrow(
       "did not return PluginPageResponse",
     );
   });

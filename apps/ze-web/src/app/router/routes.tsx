@@ -58,7 +58,6 @@ export const routes: RouteObject[] = [
       },
       ...devRoutes,
       ...redirects.map((r) => ({ path: r.from.slice(1), element: <RedirectTo to={r.to} hint={r.hint} hintMap={r.hintMap} /> })),
-      { path: ":pluginPath", element: lazyPage(() => import("@/pages/plugin-page").then((m) => ({ default: m.PluginPage }))) },
       { path: "*", element: notFound },
     ],
   },

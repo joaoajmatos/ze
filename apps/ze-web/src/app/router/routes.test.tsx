@@ -35,9 +35,6 @@ vi.mock("@/pages/doing-workflow", () => ({
 }));
 vi.mock("@/pages/dev-primitives", () => ({ DevPrimitivesPage: () => <p data-testid="dev-primitives">gallery</p> }));
 vi.mock("@/pages/jarvis", () => ({ JarvisApp: () => <p data-testid="jarvis">jarvis</p> }));
-vi.mock("@/pages/plugin-page", () => ({
-  PluginPage: () => <p data-testid="plugin">plugin {useParams().pluginPath}</p>,
-}));
 
 import { routes } from "./routes";
 
@@ -85,9 +82,10 @@ describe("places", () => {
     expect(screen.getAllByTestId("shell")[0]).toContainElement(el);
   });
 
-  it("renders a manifest plugin path through PluginPage", async () => {
-    go("/news");
-    expect(await screen.findByTestId("plugin")).toHaveTextContent("plugin news");
+  it("has no top-level plugin route: an old plugin path is not found", async () => {
+    go("/notes");
+    expect(await screen.findByRole("link", { name: /Back to the world/ })).toHaveAttribute("href", "/");
+    expect(screen.queryByTestId("plugin")).toBeNull();
   });
 
   it("/world/priority is gone: nothing owns it any more", async () => {
@@ -120,6 +118,7 @@ describe("redirects", () => {
     ["/procedures", "/mind"],
     ["/doing/procedures", "/mind"],
     ["/contacts", "/mind"],
+    ["/news", "/ask"],
     ["/mind/graph", "/mind"],
     ["/workspace", "/governance#files"],
     ["/doing/workspace", "/governance#files"],

@@ -1,15 +1,21 @@
 from ze_plugin.ui import (
-    CORE_RESERVED_NAV_PATHS,
+    ModuleResult,
+    ModuleSubject,
     UiContribution,
     UiManifest,
     collect_ui_contributions,
     filter_ui_manifest_by_openapi,
+    request_module_refresh,
 )
+from ze_plugin.ui_validate import validate_plugin_tree
 
 __all__ = [
-    "CORE_RESERVED_NAV_PATHS",
+    "ModuleResult",
+    "ModuleSubject",
     "UiContribution",
     "UiManifest",
     "collect_ui_contributions",
     "filter_ui_manifest_by_openapi",
+    "request_module_refresh",
+    "validate_plugin_tree",
 ]

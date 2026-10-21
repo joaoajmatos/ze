@@ -4,7 +4,7 @@ News fetching and personalised headlines for Ze. Fetches articles from curated R
 
 ## Role in Ze
 
-Ze keeps the user informed without them having to check feeds manually. RSS sources are fetched on a schedule, ranked by the user's memory profile and interest signals, and surfaced through the `NewsAgent` and the news page in `ze-web`.
+Ze keeps the user informed without them having to check feeds manually. RSS sources are fetched on a schedule, ranked by the user's memory profile and interest signals, and surfaced through the `NewsAgent`, the "What's new in my sources?" chip in Ask, and a Sources module on topic entities in Mind.
 
 ### Key features
 

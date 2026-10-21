@@ -1,5 +1,3 @@
-import type { UiManifestResponse } from "@myguyze/ze-client";
-
 export const queryKeys = {
   goals: ["goals"] as const,
   goalDetail: (goalId: string) => ["goal-detail", goalId] as const,
@@ -25,7 +23,8 @@ export const queryKeys = {
   entitySearch: (q: string, type?: string) => ["entity-search", q, type ?? ""] as const,
   contactsPage: ["contacts-page"] as const,
   hypotheses: (state: string, entityId?: string) => ["hypotheses", state, entityId ?? ""] as const,
-  pluginPage: (path: string) => ["plugin-page", path] as const,
+  uiModule: (id: string, subjectKey?: string) =>
+    (subjectKey === undefined ? ["ui-module", id] : ["ui-module", id, subjectKey]) as readonly string[],
   pluginSettings: (id: string) => ["plugin-settings", id] as const,
   dataDomains: () => ["data-domains"] as const,
   notifications: (unreadOnly: boolean) => ["notifications", unreadOnly] as const,
@@ -56,6 +55,8 @@ export const queryKeys = {
   procedureDetail: (procedureId: string) => ["procedure-detail", procedureId] as const,
 };
 
+const MODULE_SCREEN_PREFIX = "module:";
+
 const CORE_REFRESH_SCREEN_MAP: Record<string, readonly (readonly string[])[]> = {
   goals: [queryKeys.goals, queryKeys.prioritySnapshot(), queryKeys.workflowExecutionsAll],
   workflows: [queryKeys.workflows],
@@ -63,18 +64,14 @@ const CORE_REFRESH_SCREEN_MAP: Record<string, readonly (readonly string[])[]> = 
 };
 
 /** The query keys a `refresh` frame for `screen` invalidates. */
-export function refreshKeysForScreen(
-  screen: string,
-  manifest?: UiManifestResponse | null,
-): readonly (readonly string[])[] | undefined {
+export function refreshKeysForScreen(screen: string): readonly (readonly string[])[] | undefined {
   const coreKeys = CORE_REFRESH_SCREEN_MAP[screen];
   if (coreKeys) {
     return coreKeys;
   }
 
-  const pluginEntry = manifest?.nav.find((item) => item.path === screen);
-  if (pluginEntry) {
-    return [queryKeys.pluginPage(pluginEntry.id)];
+  if (screen.startsWith(MODULE_SCREEN_PREFIX) && screen.length > MODULE_SCREEN_PREFIX.length) {
+    return [queryKeys.uiModule(screen.slice(MODULE_SCREEN_PREFIX.length))];
   }
 
   return undefined;

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import (
     BaseModel,
@@ -14,18 +14,18 @@ class HealthResponse(BaseModel):
 class UiContributionSchema(BaseModel):
     id: str
     plugin: str
-    kind: Literal["nav", "settings_section"]
+    kind: Literal["module", "preset", "settings_section"]
     label: str
     icon: str
-    path: str | None = None
-    page_operation_id: str | None = None
+    slot: Literal["mind.entity", "doing.run", "governance.connections"] | None = None
+    prompt: str | None = None
     settings_operation_id: str | None = None
     priority: int = 100
-    show_in_mobile_nav: bool = True
 
 
 class UiManifestResponse(BaseModel):
-    nav: list[UiContributionSchema]
+    modules: list[UiContributionSchema]
+    presets: list[UiContributionSchema]
     settings_sections: list[UiContributionSchema]
 
     @classmethod
@@ -37,17 +37,24 @@ class UiManifestResponse(BaseModel):
                 kind=item.kind,
                 label=item.label,
                 icon=item.icon,
-                path=item.path,
-                page_operation_id=item.page_operation_id,
+                slot=item.slot,
+                prompt=item.prompt,
                 settings_operation_id=item.settings_operation_id,
                 priority=item.priority,
-                show_in_mobile_nav=item.show_in_mobile_nav,
             )
 
         return cls(
-            nav=[to_schema(item) for item in manifest.nav],
+            modules=[to_schema(item) for item in manifest.modules],
+            presets=[to_schema(item) for item in manifest.presets],
             settings_sections=[to_schema(item) for item in manifest.settings_sections],
         )
+
+
+class UiModuleResponse(BaseModel):
+    module_id: str
+    applies: bool
+    components: list[dict[str, Any]]
+    ui_version: str
 
 
 class VersionResponse(BaseModel):

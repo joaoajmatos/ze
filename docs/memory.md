@@ -455,7 +455,7 @@ memory:
 ## Nightly consolidation (2 AM UTC)
 
 **Module:** `ze_memory/consolidator.py`  
-**Scheduled in:** `ze_api/container.py` via `proactive_scheduler`
+**Scheduled in:** `ze_memory/bootstrap.py` (job id `memory_consolidation`, gated by `consolidation_enabled`), called from `ze_api/wiring/jobs.py`
 
 `MemoryConsolidator.run()` executes four passes in sequence:
 

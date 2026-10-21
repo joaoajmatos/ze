@@ -2,6 +2,7 @@ import type { WorkflowExecutionResponse, WorkflowRevisionResponse, WorkflowStepR
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { PluginModuleSlot } from "@/widgets/plugin-module";
 import { WorkflowGraph } from "@/widgets/workflow-graph";
 import { useChatAbout } from "@/features/ask-bar";
 import { useScreenPublisher } from "@/entities/screen-context";
@@ -183,6 +184,8 @@ export function DoingWorkflowPage() {
           </div>
         )}
       </Module>
+
+      {display && <PluginModuleSlot slot="doing.run" subject={{ kind: "workflow_run", id: display.id, parent_id: workflowId }} />}
 
       <Module as="div" label="Runs">
         {execQ.isError ? (

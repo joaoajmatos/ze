@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { manifestFixture } from "@/test/fixtures/manifest";
 import { mockMatchMedia } from "@/test/match-media";
 
 const m = vi.hoisted(() => ({ sendTurn: vi.fn(() => true) }));
@@ -21,11 +22,15 @@ vi.mock("@/widgets/assemble", () => ({
 }));
 vi.mock("@/widgets/sessions-rail", () => ({ SessionsRail: () => <div data-testid="rail" /> }));
 vi.mock("@/widgets/try-chips", () => ({
-  TryChips: ({ onSend }: { onSend: (t: string, c: object) => boolean }) => (
-    <button type="button" onClick={() => onSend("What's slipping?", { compose: "slipping", origin: "preset" })}>
+  TryChips: ({ onSend, presets }: { onSend: (t: string, c: object) => boolean; presets?: { id: string }[] }) => (
+    <button type="button" data-presets={(presets ?? []).map((p) => p.id).join(",")} onClick={() => onSend("What's slipping?", { compose: "slipping", origin: "preset" })}>
       try
     </button>
   ),
+}));
+vi.mock("@/entities/ui-manifest", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/ui-manifest")>()),
+  useUiManifestQuery: () => ({ data: manifestFixture }),
 }));
 vi.mock("@/entities/conversation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/entities/conversation")>()),
@@ -64,6 +69,11 @@ beforeEach(() => {
 afterEach(() => mm.restore());
 
 describe("AskPage", () => {
+  it("passes the manifest's presets to the try chips", () => {
+    mount();
+    expect(screen.getByRole("button", { name: "try" })).toHaveAttribute("data-presets", "fixture.preset");
+  });
+
   it("lays out the rail, the canvas and the trace on a desktop", () => {
     mount();
     expect(screen.getByTestId("rail")).toBeInTheDocument();

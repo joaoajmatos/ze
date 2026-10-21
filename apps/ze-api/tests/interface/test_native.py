@@ -528,3 +528,13 @@ async def test_trace_update_carries_script_rows():
     frame = conn.send_frame.call_args[0][0]
     assert frame["tool_calls"][0]["script"]["outcome"] == "ok"
     assert frame["tool_calls"][1]["parent_call_id"] == "step"
+
+
+async def test_send_refresh_sends_a_refresh_frame():
+    iface, _, conn, _ = _make_interface(connected=True)
+
+    await iface.send_refresh("module:ze_news.sources")
+
+    conn.send_frame.assert_awaited_once_with(
+        {"type": "refresh", "screen": "module:ze_news.sources"}
+    )

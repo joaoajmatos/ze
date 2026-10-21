@@ -19,13 +19,13 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Branch from `main` with 191a merged. `make install && make web-install`; `graphify update .`; `graphify affected` on `UiContribution`, `UiManifest`, `collect_ui_contributions`, `filter_ui_manifest_by_openapi`, `CORE_RESERVED_NAV_PATHS`, `PluginPage`, `refreshKeysForScreen`, `TryChips`, `MindEntityPage`, `DoingWorkflowPage`, `Connections`. Grep `manifest.nav`, `ui_manifest.nav`, `ui_nav`, `show_in_mobile_nav`, `page_operation_id`, `getNewsPage`, `news/page`, `build_news_page`, `PluginPageResponse`. Confirm: that a plugin's agents are the registered agents whose class `__module__` starts with one of its `agent_module_paths()` (or name another source); the function in `ze_agents/claims.py` or `ze_components/claims.py` that says which (ClaimKind, Provenance) pairs are allowed (if none, lead adds `is_licensed_posture` in T002); where plugin settings responses can be validated by core; the memory graph and workflow store lookups for the subject; whether 188's `DoingWorkflowPage` is on `main`; and the final `TryChips` chips array and props. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
+- [x] T001 [L:lead] Branch from `main` with 191a merged. `make install && make web-install`; `graphify update .`; `graphify affected` on `UiContribution`, `UiManifest`, `collect_ui_contributions`, `filter_ui_manifest_by_openapi`, `CORE_RESERVED_NAV_PATHS`, `PluginPage`, `refreshKeysForScreen`, `TryChips`, `MindEntityPage`, `DoingWorkflowPage`, `Connections`. Grep `manifest.nav`, `ui_manifest.nav`, `ui_nav`, `show_in_mobile_nav`, `page_operation_id`, `getNewsPage`, `news/page`, `build_news_page`, `PluginPageResponse`. Confirm: that a plugin's agents are the registered agents whose class `__module__` starts with one of its `agent_module_paths()` (or name another source); the function in `ze_agents/claims.py` or `ze_components/claims.py` that says which (ClaimKind, Provenance) pairs are allowed (if none, lead adds `is_licensed_posture` in T002); where plugin settings responses can be validated by core; the memory graph and workflow store lookups for the subject; whether 188's `DoingWorkflowPage` is on `main`; and the final `TryChips` chips array and props. Record differences from plan.md "Blast radius" in the Handoffs note; stop and report differences to the Spec Architect (Lintel).
 
 ---
 
 ## Phase 2: Foundational (contract step, lane `lead`)
 
-- [ ] T002 [L:lead] Tests first:
+- [x] T002 [L:lead] Tests first:
   - `core/contracts/ze-plugin/tests/test_ui.py` (rewrite): each of these raises `AgentConfigError` naming the id:
     - the kinds `nav`, `page` and `foo`;
     - a module without a slot, with an unknown slot, or without a provider;
@@ -50,14 +50,14 @@
     - `request_module_refresh(interface, "x.facet")` calls `send_refresh("module:x.facet")`, and a failing interface is logged, not raised; `NativeAppInterface.send_refresh` sends the `refresh` frame.
 
   Implement `ze_plugin/ui.py` (delete the page kind, `path`, `page_operation_id`, `show_in_mobile_nav`, `CORE_RESERVED_NAV_PATHS`), the `ze_sdk/ui.py` re-export (lines 2 and 10), the `api/v0/system` schemas and route description, the new `api/v0/ui_modules` route, and the log fields in `wiring/agents.py:224-232` and `wiring/container.py:768-769`. Delete News's page contribution in `ze_news/plugin.py` so startup passes (lane `news` adds the preset and module). Delete ze-personal's `getContactsPage` (`api/routes.py:24-35`), `ui/page.py`, its `PluginPageResponse` copy and their tests. Remove the `plugin` place from `WsScreenContext.place` (`api/ws/schemas.py:227`) and `PLACES` (`ze_agents/screen.py:25`). Add `AppInterface.send_refresh`, `NativeAppInterface.send_refresh` and `ze_sdk.ui.request_module_refresh`. Point `apps/ze-api/tests/api/test_openapi_export.py:11,27`, `apps/ze-api/tests/test_plugin_routes.py:28` and `packages/ze-client/src/sdk-dispatch.test.ts` at `getNewsSettings`. Run `make codegen`; commit the generated client with the task.
-- [ ] T003 [L:lead] Tests first:
+- [x] T003 [L:lead] Tests first:
   - `entities/ui-manifest/model/select.test.ts`: `modulesForSlot(manifest, "mind.entity")` returns that slot's modules in order; an empty or absent manifest gives `[]`; `presets(manifest)` returns the presets;
   - `entities/ui-manifest/api/useUiModuleQuery.test.ts`: the query key includes the module id and subject, and the request passes the subject query fields;
   - `shared/lib/query-keys.test.ts`: `refreshKeysForScreen("module:x.facet")` returns the `uiModule("x.facet")` prefix key; `queryKeys.pluginPage` and the `contacts` plugin-page expectation (line 41) are gone;
   - `app/router/routes.test.tsx`: no top-level `:pluginPath` route; `/notes` renders not found; `/news` redirects to `/ask` (in `shared/config/places.test.ts` too).
 
   Implement in `entities/ui-manifest`, `query-keys.ts` (delete `pluginPage`), `routes.tsx` and `places.ts` (drop the `plugin` comment at line 23). Add `widgets/plugin-module/index.ts` with the `PluginModuleSlot({ slot, subject })` stub (renders nothing), and `apps/ze-web/src/test/fixtures/manifest.ts` (one module per slot, one preset, one settings section).
-- [ ] T004 [L:lead] Delete `pages/plugin-page` (route, page and tests) and `widgets/plugin-screen`'s page-header use if nothing else needs it (`PluginSettingsSection` keeps working); run `make test-web` and `make typecheck-web`.
+- [x] T004 [L:lead] Delete `pages/plugin-page` (route, page and tests) and `widgets/plugin-screen`'s page-header use if nothing else needs it (`PluginSettingsSection` keeps working); run `make test-web` and `make typecheck-web`.
 
 **Checkpoint**: lanes start.
 
@@ -65,7 +65,7 @@
 
 ## Phase 3: User Story 2 - News (P1)
 
-- [ ] T005 [P] [L:news] [US2] Tests first:
+- [x] T005 [P] [L:news] [US2] Tests first:
   - `plugins/ze-news/tests/test_store_by_tag.py` (mocked pool): `by_tag("climate")` issues an exact `tags && ARRAY[$1]` match (no `lower()`), newest first, at most 8;
   - `plugins/ze-news/tests/test_plugin_ui.py`: `ui_contributions()` returns the preset `ze_news.whats_new` (label and prompt "What's new in my sources?"), the module `ze_news.sources` (slot `mind.entity`, label "Sources") and the settings section when enabled, and nothing when disabled;
   - the sources provider: `applies=False` before `startup()` has created the store (not an exception), for an entity type other than `topic`, and when no article matches; otherwise a `claim_list` with one item per article (title, source, date), posture `fact`/`live_search` set by code, and the tree validates against the 191a schema;
@@ -79,7 +79,7 @@
 
 ## Phase 4: User Story 1 - Modules in slots (P1) 🎯 MVP
 
-- [ ] T006 [L:web] [US1] Tests first `widgets/plugin-module/ui/PluginModuleSlot.test.tsx` (fixture manifest; mocked query; mocked `IntersectionObserver`):
+- [x] T006 [L:web] [US1] Tests first `widgets/plugin-module/ui/PluginModuleSlot.test.tsx` (fixture manifest; mocked query; mocked `IntersectionObserver`):
   - a slot with no modules renders nothing;
   - each module renders in a `Module` titled with its label, in priority order;
   - the loading line "Loading <label>…" shows while waiting;
@@ -90,13 +90,13 @@
   - an unknown primitive shows 191a's fallback.
 
   Implement `PluginModuleSlot`.
-- [ ] T007 [L:web] [US1] Tests first, extending `pages/mind-entity/ui/MindEntityPage.test.tsx`, `pages/doing-workflow/ui/DoingWorkflowPage.test.tsx` and `widgets/connections/ui/Connections.test.tsx`, each with the fixture manifest:
+- [x] T007 [L:web] [US1] Tests first, extending `pages/mind-entity/ui/MindEntityPage.test.tsx`, `pages/doing-workflow/ui/DoingWorkflowPage.test.tsx` and `widgets/connections/ui/Connections.test.tsx`, each with the fixture manifest:
   - the Mind entity page mounts the `mind.entity` slot with subject `{ kind: "entity", id, label, entity_type }`;
   - the Doing workflow page mounts the `doing.run` slot with the selected execution as `id` and the workflow as `parent_id`;
   - Connections mounts the `governance.connections` slot with subject `none`, after the settings sections.
 
   Implement the one-line mounts.
-- [ ] T008 [L:web] [US2] Tests first `widgets/try-chips/ui/TryChips.test.tsx` and `pages/ask/ui/AskPage.test.tsx` (extend):
+- [x] T008 [L:web] [US2] Tests first `widgets/try-chips/ui/TryChips.test.tsx` and `pages/ask/ui/AskPage.test.tsx` (extend):
   - presets render after the core chips, at most two, in order;
   - their index labels and keys continue the visible numbering (3–4 with no active goal, 4–5 with one), and the key past the last chip does nothing;
   - React keys are ids;
@@ -111,17 +111,17 @@
 
 ## Phase 5: User Stories 3 and 4 - No plugin pages; settings verified (P2, P3)
 
-- [ ] T009 [L:web] [US4] Test only, `widgets/connections/ui/Connections.test.tsx` (extend) with the fixture: the settings section renders and a save dispatches its operation. No implementation change is expected; if one is needed, report it to the Spec Architect.
+- [x] T009 [L:web] [US4] Test only, `widgets/connections/ui/Connections.test.tsx` (extend) with the fixture: the settings section renders and a save dispatches its operation. No implementation change is expected; if one is needed, report it to the Spec Architect.
 
 ---
 
 ## Phase 6: Polish and cross-cutting
 
-- [ ] T010 [L:lead] Merge `news`, then `web`. `make codegen` if a schema moved. Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. The quickstart grep returns nothing.
-- [ ] T011 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev-full`, with captures of Ask (News chip) and a Mind topic entity with the Sources module at 1440 and 390, no console errors; record them in the Handoffs note.
-- [ ] T012 [P] [L:docs] `docs/extending-ze.md`, `docs/frontend.md`, `docs/native-interface.md`, `packages/ze-sdk/README.md` and `core/contracts/ze-plugin/README.md` where they document UI contributions; doc-style skill.
-- [ ] T013 [P] [L:docs] README screenshots refreshed from T011's captures; `AGENTS.md` phase row 191b and the plugin-UI Learned Workspace Facts line; `specs/README.md` row 191b → Implemented; spec status.
-- [ ] T014 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
+- [x] T010 [L:lead] Merge `news`, then `web`. `make codegen` if a schema moved. Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make web-build`, `make lint`. The quickstart grep returns nothing.
+- [x] T011 [L:lead] Run [quickstart.md](./quickstart.md) against `make dev-full`, with captures of Ask (News chip) and a Mind topic entity with the Sources module at 1440 and 390, no console errors; record them in the Handoffs note.
+- [x] T012 [P] [L:docs] `docs/extending-ze.md`, `docs/frontend.md`, `docs/native-interface.md`, `packages/ze-sdk/README.md` and `core/contracts/ze-plugin/README.md` where they document UI contributions; doc-style skill.
+- [x] T013 [P] [L:docs] README screenshots refreshed from T011's captures; `AGENTS.md` phase row 191b and the plugin-UI Learned Workspace Facts line; `specs/README.md` row 191b → Implemented; spec status.
+- [x] T014 [L:docs] Coverage check: `git diff main...HEAD --stat` against plan.md "Docs touched"; record in the Handoffs note.
 
 ---
 
@@ -142,3 +142,21 @@ After the contract step:
 ## Implementation Strategy
 
 - MVP = US1 (a module in each slot, proven by the fixture plugin) on the contract step. US2 moves News and is what the user sees. US3 is the hard cut done in the contract step. US4 is a regression guard.
+
+---
+
+## Handoffs
+
+**T001 differences from plan.md** (Socket):
+- `getContactsPage`, `ze_personal/ui/page.py` and ze-personal's `PluginPageResponse` stay: Mind › People reads them (Spec Architect ruling, a7abb032 on `web-overhaul-specs`). `queryKeys.contactsPage` stays; `queryKeys.pluginPage` is gone.
+- The fixture plugin is `apps/ze-api/tests/support/fixture_plugin.py` (ze-api tests cannot import ze-plugin's tests directory).
+- ze-plugin has no ze-components dependency: `validate_plugin_tree` checks dicts (tool binding, claim kind/subject/source, card-action intent); the primitive JSON-schema check and card-tone recompute live in the ze-api route.
+- No (ClaimKind, Provenance) pair table exists; `ClaimPosture` carries kind/subject/source. Plugins may state kind identity|fact|inference|suspicion, subject fact|person, and a `Provenance` source; card actions only with intent `open`.
+- `request_module_refresh` and `AppInterface.send_refresh` are async. The route finds a module's plugin by contribution id over `container.plugins`.
+- Lane `web`: Connections takes an `extra` node and `GovernancePage` mounts the `governance.connections` slot (FSD forbids widget to widget); `doing.run` mounts only when a run is selected.
+
+**T011 live run** (throwaway DB `ze_e2e_191b`, API 8080, vite 5200, portal "191b Web", 800x600; the 390 portal resize stalled, phone width is covered by unit tests only): Ask shows "3 What's new in my sources?" after the two core chips; a `topic` entity "climate" with two tagged articles shows the Sources module (title · source · date, posture `fact`), a `person` entity shows none; `/news` lands on `/ask`; `/notes` renders the not-found page ("Back to the world"); Governance shows the News settings section; no console errors. Screenshots (portal captures): Ask `/var/folders/n1/28pvt34n0q99sl5rw3df51hr0000gn/T/maestri-portal-8956055A-E00A-4609-81ED-63AE3F7D7816.png`, Mind entity `.../maestri-portal-F4F015C0-8A66-4DED-A9E1-C40702E72189.png`. Not run live: quickstart step 3 (provider failure line, covered by route and slot tests), the `refresh_news` live refresh, the `doing.run` slot, and the chip's routing turn (no OpenRouter calls).
+
+**T013/T014:** the repo has no README screenshots of News or plugin pages, so none were refreshed. Docs touched: `docs/{extending-ze,frontend,native-interface,sdk}.md`, `plugins/ze-news/README.md`, `AGENTS.md`, `specs/README.md`, spec status. `packages/ze-sdk/README.md` and `core/contracts/ze-plugin/README.md` do not document UI contributions, so are unchanged. The quickstart grep returns only the negative assertions in tests, `packages/ze-ui/fixtures/string-action-button.json` (a legacy string-action fixture) and an `.impeccable` plan note.
+
+**Review round 1 (Gauge, CHANGES):** B-1 fixed: the core calibration test reads the roster as the core agents plus the news agent class (other tests clear the registry), and a PT row `single-news-sources-pt` pairs the EN row; the routing row was checked offline only (`--check-sets`), no live `make calibrate-routing` run, so SC-003 rests on the offline row and the unit tests. N-1 folded (one refresh after the source loop), N-5 folded (schema cached). Not changed: N-2 (exact tag match is the spec's rule), N-3 (posture fact/live_search is the spec's rule), N-4 (loading line stays, FR-004).

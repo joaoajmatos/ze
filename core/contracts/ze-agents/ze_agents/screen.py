@@ -22,7 +22,7 @@ from ze_logging import get_logger
 
 log = get_logger(__name__)
 
-PLACES = frozenset({"world", "ask", "doing", "mind", "governance", "plugin"})
+PLACES = frozenset({"world", "ask", "doing", "mind", "governance"})
 COMPOSE_PRESETS = frozenset({"slipping", "decisions", "topic"})
 
 MAX_SUBJECT = 3
