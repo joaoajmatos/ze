@@ -10,7 +10,7 @@ export function useNotificationsQuery(options?: { unreadOnly?: boolean; markRead
   return useInfiniteQuery({
     queryKey: queryKeys.notifications(unreadOnly),
     queryFn: async ({ pageParam }) => {
-      const { data } = await listNotifications({
+      const { data, error } = await listNotifications({
         query: {
           limit: 20,
           cursor: pageParam ?? undefined,
@@ -18,6 +18,7 @@ export function useNotificationsQuery(options?: { unreadOnly?: boolean; markRead
           mark_read: pageParam == null ? markRead : false,
         },
       });
+      if (error || !data) throw error ?? new Error("Failed to load notifications");
       return data as NotificationListResponse;
     },
     getNextPageParam: (lastPage) => lastPage?.next_cursor ?? undefined,

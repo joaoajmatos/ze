@@ -91,6 +91,24 @@ describe("NotificationBell", () => {
     expect(screen.getByText("You're all caught up.")).toBeInTheDocument();
   });
 
+  it("says the list could not load instead of 'all caught up' when the query fails", () => {
+    setup();
+    useNotificationsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
+    });
+    renderBell();
+
+    fireEvent.click(screen.getByLabelText("Notifications"));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't load notifications.");
+    expect(screen.queryByText("You're all caught up.")).not.toBeInTheDocument();
+  });
+
   it("renders notification items when the panel is open", () => {
     setup({ items: [item] });
     renderBell();

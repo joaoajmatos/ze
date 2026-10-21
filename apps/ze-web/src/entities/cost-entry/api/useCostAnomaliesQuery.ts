@@ -7,8 +7,9 @@ export function useCostAnomaliesQuery() {
   return useQuery<CostAnomaliesResponse>({
     queryKey: queryKeys.costAnomalies,
     queryFn: async () => {
-      const { data } = await getCostAnomalies();
-      return data!;
+      const { data, error } = await getCostAnomalies();
+      if (error || !data) throw error ?? new Error("Failed to load cost anomalies");
+      return data;
     },
   });
 }

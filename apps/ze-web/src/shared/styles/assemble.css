@@ -205,9 +205,6 @@
     transform: translateX(420%);
   }
 }
-.tr-total {
-  margin-top: 10px;
-}
 .tr-instrument {
   border-top: 1px solid var(--hair);
 }

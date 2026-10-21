@@ -23,6 +23,7 @@ export function NotificationBell() {
   const {
     data,
     isLoading,
+    isError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -88,6 +89,10 @@ export function NotificationBell() {
               <div className="flex items-center justify-center py-10">
                 <Loader2 className="size-4 animate-spin text-smoke" />
               </div>
+            ) : isError ? (
+              <p role="alert" className="px-4 py-10 text-center text-sm text-smoke">
+                Couldn't load notifications.
+              </p>
             ) : items.length === 0 ? (
               <EmptyState icon={Bell} message="You're all caught up." />
             ) : (

@@ -158,9 +158,8 @@ components:
 
 # Design System: Ze
 
-Source of truth for the web app (`apps/ze-web`). The reference implementation is the Jarvis
-surface at `apps/ze-web/src/pages/jarvis/` (route `/jarvis`). Every token below is a CSS custom
-property on `:root` in `apps/ze-web/src/shared/styles/ze.css`. Build from this file and that CSS;
+Source of truth for the web app (`apps/ze-web`). Every token below is a CSS custom property on
+`:root` in `apps/ze-web/src/shared/styles/ze.css`; the five places are the reference implementation. Build from this file and that CSS;
 when they disagree, this file wins and the CSS gets fixed.
 
 ## Overview
@@ -311,11 +310,15 @@ Title in cream with a claim glyph (`.glyph`: filled told, half inferred, dashed 
 ### Inputs (Ask bar)
 Zero radius, 1px `--hair-strong` border, transparent background, Saira body text in cream, placeholder dim, 44px height, focus ring 1px cream offset 3px (global `:focus-visible`). Caret, selection and scrollbars are themed from `--main`.
 
+**Mic (`features/voice-input/ui/VoiceMic.tsx`).** A 44px `.ctl` beside the input, labelled "Speak to Ze (hold V)". Hold `V` outside a text field to talk; a hold under 300 ms is discarded. States: idle (mic glyph); recording (`aria-pressed`, stop square and a mono clock that becomes "Ns left" from 105 s, hard stop at 115 s); transcribing (disabled, `aria-busy`); unavailable or blocked (disabled, the reason is the label and title). A one-line status above the bar (`VoiceStatus`, `role="status"`) carries the words: "Transcribing…", "10 seconds left", "Ze heard nothing", and failures with a 44px Retry, "Try again" or "Record again", and Dismiss. Ambience goes silent while recording.
+
 ### Navigation
-Top bar: dot-matrix "ZE" brand, the five places as tabs (World, Ask, Doing, Mind, Governance), the notification bell and a connection dot. No prototype controls: the palette is a Governance setting. Phone (1023px and below): the tabs leave the top bar and a fixed bottom bar shows the five places as icon and label, each a 44px target. The Ask bar sits directly above it. Inside a place, sections are a row of tabs (`SectionTabs`).
+Top bar: dot-matrix "ZE" brand, the five places as tabs (World, Ask, Doing, Mind, Governance), the notification bell and a connection dot. No prototype controls: the palette is a Governance setting. Phone (1023px and below): the tabs leave the top bar and a fixed bottom bar shows the five places as icon and label, each a 44px target. The Ask bar sits directly above it. Inside a place, sections are a row of tabs (`SectionTabs`). Secondary lists (Needs you, Doing now, sessions) live in the shell rail under the Presence orb, through `rail-slot`, never in the place's canvas.
 
 ### Presence module (signature)
-A framed module at the top of the left rail: "● Online" and the dot-matrix session clock in the head, the orb (184px; 150px compact) with no waveform strip under it (speaking shows through the orb's own pulse), and a footer with a `presence` label and the state phrase ("2 promises slipping", "composing", "assembling the answer") with `aria-live` only for attention, done and error.
+A framed module at the top of the left rail: "● Online", the dot-matrix session clock and the ambience toggle (a 44px `.ctl`, `aria-pressed`, "Ambience on" / "Ambience off") in the head, the orb (184px; 150px compact) with no waveform strip under it (speaking shows through the orb's own pulse), and a footer with a `presence` label and the state phrase ("2 promises slipping", "composing", "assembling the answer") with `aria-live` only for attention, done and error.
+
+**Ambience (`features/ambience`).** An opt-in synthesized hum, off by default, remembered per browser (`ze.ambience`) and started only by a gesture. It ducks to silence while the mic records. Under reduced motion it reads off until the user presses the toggle.
 
 ### The orb (`shared/ui/hud/presence/Orb.tsx`, signature)
 A dot-matrix sphere on a 29-dot grid drawn on canvas: denser and brighter toward a lit cream core, a drifting key light, a limb rim. Every dot keeps its grid home and springs (K=110, critically damped) toward where the current state wants it. A state change reaches the rim 320ms after the core (`stagger = (0.75·r + 0.25·seed) × 320ms`), so every transition is one continuous morph, never a cut or crossfade. Colours mix in oklab; coral drains back at a quarter of the normal rate.
