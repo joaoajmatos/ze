@@ -87,6 +87,8 @@ python ".claude/skills/ui-ux-pro-max/scripts/search.py" "beauty spa wellness ser
 
 ### Step 2b: Persist Design System (Master + Overrides Pattern)
 
+> **Ze: do not use `--persist` in this repo.** It writes `design-system/<slug>/MASTER.md` (and page overrides) outside the skill folder. Ze's design system lives in the root `DESIGN.md` (with `PRODUCT.md`) and `apps/ze-web/.impeccable/`; read the search output and apply it there by hand.
+
 To save the design system for retrieval across sessions, add `--persist` **and always pass `--output-dir` pointed at the project root** — without it, files are written relative to whatever directory the tool happens to run from:
 
 ```bash
