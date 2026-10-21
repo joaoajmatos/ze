@@ -75,10 +75,10 @@ The full feature list is in [docs/features.md](docs/features.md).
 
 | | |
 |---|---|
-| ![Open loops page with one active loop Ze is tracking, with its provenance and confidence](docs/assets/loops.png) | ![Priority page ranking two goals](docs/assets/priority.png) |
-| **Open loops.** A loop Ze tracks, with its provenance and confidence. You can close or drop it. | **Priority.** One ranking over goals, loops, and hypotheses. You can reorder it. |
-| ![Goal detail with milestones, learnings for review, and a gate awaiting approval](docs/assets/goals.png) | |
-| **Goals.** Milestones, learnings you approve or reject, and a verification gate. | |
+| ![World: the Field plots every concern by time left and how sure Ze is, with the open loops and what needs you beside it](docs/assets/world.png) | ![Doing: goals, workflows, runs and skills, with what waits for you first](docs/assets/doing.png) |
+| **World.** Every concern on one field, by time left and how sure Ze is. Open loops sit beside it, and you can close or drop them. | **Doing.** What runs without you, what it did, and what waits for your answer. |
+| ![Mind: beliefs with their claim kind, the people Ze knows and a search over entities](docs/assets/mind.png) | ![Governance: spend, attention budget, data, connections and files](docs/assets/governance.png) |
+| **Mind.** What Ze believes, how it knows, and who it knows. | **Governance.** Spend, the push budget, your data, connections and files. |
 
 ---
 
