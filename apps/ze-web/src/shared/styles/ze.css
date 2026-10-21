@@ -2357,6 +2357,10 @@ input[type="checkbox"] {
   flex-direction: column;
   gap: 8px;
 }
+.graph-frame .react-flow__node.selectable:focus-visible {
+  outline: 1px solid var(--cream);
+  outline-offset: 3px;
+}
 .graph-frame {
   position: relative;
   height: 440px;
