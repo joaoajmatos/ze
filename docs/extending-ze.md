@@ -153,8 +153,8 @@ Plugin discovery is automatic via the `ze.plugins` entry point. If your agent's
 `__init__` takes a type that is not already in the bootstrap dep map, either:
 
 - contribute it from an existing plugin via `agent_deps()`, or
-- add the service to `plugin_deps` in `ze_api/container.py` inside `build_container()`
-  when it is a shared infra type constructed before plugins load.
+- add the service to `plugin_deps` in `ze_api/wiring/container.py` inside
+  `build_container()` when it is a shared infra type constructed before plugins load.
 
 `NLIClient`, `LLMClient`, `SentenceTransformer` (embedder), and `asyncpg.Pool` are
 already in the dep map — annotate them on your `ZePlugin.__init__` when a job or
@@ -501,7 +501,7 @@ The error hierarchy:
 - [ ] `tools.py` with `@tool` functions — `access` and `description` set on each; `reversibility` and `effect_phrase` set on each `WRITE` tool
 - [ ] Module paths added to `plugin.agent_module_paths()` (tools module listed first)
 - [ ] All `__init__` parameters type-annotated
-- [ ] New shared dependencies added to `plugin_deps` in `ze_api/container.py` (only when no plugin already provides the type)
+- [ ] New shared dependencies added to `plugin_deps` in `ze_api/wiring/container.py` (only when no plugin already provides the type)
 - [ ] Progress keys added to `locales/en.yaml` (and `pt.yaml`) in the plugin package
 - [ ] Tests cover the golden path and the park path for asks-first tools
 

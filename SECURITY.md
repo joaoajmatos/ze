@@ -34,9 +34,9 @@ Ze is **single-user by design**. There is no multi-tenant isolation. Before expo
 
 1. Generate a strong `ZE_API_KEY` — this is the sole gate for both REST and WebSocket access.
 2. Keep `.env` out of version control; use `fly secrets` in production.
-3. Review each agent's `capabilities` setting — prefer `confirm` or `draft_only` for write actions.
+3. Know the write-confirmation gate: an irreversible write tool asks you to confirm before it runs, unless the tool explicitly opts out with a stated reason.
 4. Use a non-guessable ntfy topic and set an access token.
 5. Import only skills you trust. A new skill waits for your review before it affects a conversation. A skill script runs in the workspace only after a second, separate approval.
-6. Keep the workspace sidecar off the public network. It runs shell commands. In chat, Ze asks you to confirm a command, and unattended runs (goals, workflows) can use the workspace without a prompt. Reset needs confirmation and never runs unattended.
+6. Keep the workspace sidecar off the public network. It runs shell commands. In chat, Ze asks you to confirm a command, and unattended runs (goals, workflows) can use the workspace without a prompt. "Forget this server" clears your browser's local connection settings only — it does not delete data on the server.
 
 Do not deploy Ze as a shared service without substantial hardening.

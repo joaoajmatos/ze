@@ -181,6 +181,22 @@ on this server." Preprocessing calls `vision_caption` when a photo arrives witho
 caption, so the embedding router has text to score. OpenRouter serves all three, except
 `embedding`, which runs as a local model.
 
+### `conductor:`
+
+Time limit for a companion turn that delegates to specialists.
+
+```yaml
+conductor:
+  budget_seconds: 110
+  reserve_seconds: 25
+```
+
+Companion stops starting work at `budget_seconds - reserve_seconds`. It then answers with
+what it finished, what it did not, and an offer to continue. A delegate that runs past that
+point is cut off. If the turn still hits `budget_seconds`, Ze answers from the list of
+specialists it called instead of failing in silence. Both keys are optional. Keep `budget_seconds` below the web app's delivery watchdog (120 s of silence); a test pins this.
+A specialist cut off at the deadline may have already done a write: the reply says it may have partly run, but the trace cannot show that one call because it never returned.
+
 ### `memory:`
 
 ```yaml

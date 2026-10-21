@@ -62,7 +62,7 @@ Nothing synthetic writes directly to live memory. Every promoted fact carries
 | Sub-phase | Status | What ships |
 |-----------|--------|------------|
 | **78a** | Done | Sleep pass, wake hook, migration, dream journal API, retrieval weight enforcement |
-| **78b** | Done | Dream synthesis, NLI gates, two-critic pipeline, auto-promotion, review REST API, confidence decay, `valid_until` expiry |
+| **78b** | Done | Dream synthesis, NLI gates, two-critic pipeline, auto-promotion, confidence decay, `valid_until` expiry |
 
 **NLI model (Phase 79, done):** `cross-encoder/nli-deberta-v3-small` loads as a shared
 singleton in `ze_core/nli.py` via `NLIClient` — used for write-time contradiction, nightly dedup,
@@ -74,12 +74,13 @@ imports from the same module (no second download).
 - Nightly sleep pass: compresses sessions, deduplicates facts, decays stale episodes, detects schema and policy clusters.
 - LLM synthesis (haiku): insights, procedures, hindsight facts, plan stress-tests.
 - Full scoring pipeline: NLI groundedness gate + embedding novelty gate + retrievability gate + two adversarial LLM critic calls (sonnet). Both critics must pass.
-- Auto-promotion with `valid_until`, `dream_run_id`, `derived_from` lineage.
-- Per-run rollback: `POST /api/v0/memory/dream/runs/{run_id}/rollback` bulk-contradicts promoted facts.
+- Auto-promotion with `valid_until`, `dream_run_id`, `derived_from` lineage, so a run's
+  promoted facts stay traceable even though no rollback query uses that lineage yet.
 - Synthetic fact confidence decay: non-corroborated synthesized facts lose 0.03 confidence per run after 30 days; contradicted at < 0.25.
 - `valid_until` hard expiry: synthesized facts past their 90-day window that have not been corroborated by a raw episode are contradicted on each morning integration.
-- Morning briefing: "Ze dreamed — M insights promoted, K items for review."
-- `needs_review` push notifications gated behind `review_notifications_enabled` config flag (disabled until a web review page ships).
+- Morning briefing: a "Ze dreamed" section with processed-episode count, insights
+  promoted, plan risks surfaced, and items pending review (skipped only when both
+  insights promoted and items pending review are zero).
 
 ---
 
@@ -134,7 +135,6 @@ dream:
   max_synthesis_per_run: 20
   max_stress_tests_per_goal: 2
   max_schema_candidates_per_run: 30
-  session_archive_threshold_days: 7
   auto_promote_min_support: 3
   auto_promote_min_distinct_sessions: 2
   auto_promote_min_temporal_spread_days: 7
@@ -148,7 +148,6 @@ dream:
   critic_model: "anthropic/claude-sonnet-4-6"
   synthetic_fact_valid_days: 90      # synthesized facts contradicted after this many days without corroboration
   job_timeout_seconds: 1800
-  review_notifications_enabled: false  # enable when a review page ships
   inactivity_trigger_enabled: false    # fire dream job when user goes idle
   inactivity_threshold_hours: 6        # hours of silence before triggering
   inactivity_check_interval_minutes: 30
@@ -162,17 +161,10 @@ See [configuration.md](configuration.md) for the full key reference.
 
 ## REST API
 
-```
-GET  /api/v0/memory/dream/journal
-GET  /api/v0/memory/dream/artifacts              # status=needs_review
-GET  /api/v0/memory/dream/artifacts/{id}
-POST /api/v0/memory/dream/artifacts/{id}/approve
-POST /api/v0/memory/dream/artifacts/{id}/reject
-POST /api/v0/memory/dream/artifacts/{id}/revise
-POST /api/v0/memory/dream/runs/{run_id}/rollback
-```
-
-`ze-web` has no dream review page yet. Use these routes, or the generated `@myguyze/ze-client` methods, to review artifacts.
+No REST surface exists yet. `PostgresDreamStore` (`ze_memory/dream/store.py`) holds the
+journal, the artifact queue, and `update_artifact_status`, but no route in `ze-api`
+calls them. Review a `needs_review` artifact or the journal through the database
+directly until a review route and a `ze-web` page ship.
 
 ---
 
@@ -187,16 +179,15 @@ POST /api/v0/memory/dream/runs/{run_id}/rollback
   markers in the stored prompt/response; (3) response-phrase detection for research
   summaries. `user_asserted` episodes score lower and cap at 1 toward `support_count`.
 - **Sensitive exclusion** — episodes linked to sensitive entities skip all dream passes.
-- **Session contamination** — Ze flags summaries that included synthetic facts as
-  `dream_influenced` and excludes them from dream source selection until corroborated
-  or rolled back.
+- **Session contamination** — `_record_session_contamination` sets
+  `memory_session_summaries.dream_influenced = true` on any session that fetched
+  synthesized facts, and the schema- and policy-candidate detectors exclude those
+  sessions from the dream source pool. Nothing clears the flag once set.
 - **Synthetic expiry** — the next morning integration run contradicts synthesized facts
   past `valid_until` (default 90 days) that no raw episode has corroborated.
-- **Rollback** — `POST /api/v0/memory/dream/runs/{run_id}/rollback` bulk-contradicts all facts from a run
-  and flags contaminated session summaries for re-summarization.
-- **Quality audit** — `GET /api/v0/memory/facts/quality` returns a diagnostic snapshot
-  (provenance distribution, avg confidence, contradicted/unreviewed/expired counts) for
-  assessing source pool health before trusting synthesis output.
+- **Rollback** — every promoted fact carries `dream_run_id` and `derived_from` lineage, so a
+  run's output is traceable, but no code yet bulk-contradicts a run or re-summarizes the
+  session summaries it contaminated (see REST API above).
 
 ---
 

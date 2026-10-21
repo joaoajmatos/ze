@@ -47,6 +47,7 @@ class RemindersAgent(BaseAgent):
     """
     model = "anthropic/claude-haiku-4-5"
     timeout = 15
+    workspace_opt_out = True
     tools = ["set_reminder", "list_reminders", "cancel_reminder"]
 
     def __init__(
