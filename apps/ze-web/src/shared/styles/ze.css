@@ -1394,7 +1394,7 @@ h2.lbl {
     grid-column: span 12;
   }
   :root {
-    --orb: 150px;
+    --orb: 120px;
   }
 }
 
@@ -1724,7 +1724,7 @@ h2.lbl {
   }
   .presence {
     display: grid;
-    grid-template-columns: 150px minmax(0, 1fr);
+    grid-template-columns: 120px minmax(0, 1fr);
     grid-template-areas: "orb head" "orb foot";
     align-items: center;
     column-gap: 12px;
