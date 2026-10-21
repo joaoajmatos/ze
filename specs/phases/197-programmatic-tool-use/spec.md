@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-18
 
-**Status**: Ready to implement (Gauge: M-1..M-7 closed at 4db40148, approved on folding R-1/R-3; egress flag per the Maestro)
+**Status**: Implemented (Gauge APPROVE 2026-10-21; Docker sandbox smoke 11/11; live evals not run, see the phase Handoffs)
 
 **Input**: User description (approved 2026-10-18, "yes do all of that"): models write short scripts that call several tools, loop and compute, and return only the result to the model, for fewer round trips, fewer tokens and more autonomy. Scripts run in the phase 115 workspace sandbox, never a hosted third-party sandbox. Ze's tools are exposed inside the sandbox as a small typed Python API, filtered to the calling agent's own tools and skill narrowing. Read tools first; writes inside scripts go through the 181 write gate (same or later phase, decided here). Every inner call is a tool call on the trace with 187b telemetry; the script is one traced step with its source stored. Limits: wall time, inner calls, cost per script; failure returns a structured error. A script that keeps succeeding can become a procedure candidate (138/139). Eval scenarios show fewer model round trips on multi-step reads; no live calibration spend without the user's OK.
 
