@@ -188,6 +188,37 @@ plugins/<pkg>/tests/agents/<name>/
 
 ---
 
+## Adding UI to a plugin
+
+A plugin is a source of data and behavior. It does not add screens. The five places (World, Ask, Doing, Mind, Governance) show what a plugin feeds into claims, loops, signals and actions. When a plugin needs a visual of its own, `ui_contributions()` returns one of three kinds:
+
+| Kind | What it is | Where it shows |
+|---|---|---|
+| `module` | A title, a `slot` and a `provider`, an async function `(ModuleSubject) -> ModuleResult(applies, components)`. | `mind.entity` (entity page), `doing.run` (workflow run), `governance.connections` (Connections card). |
+| `preset` | A label (40 characters or fewer) and a prompt (300 or fewer). | A chip in Ask's Try chips. Pressing it sends an ordinary turn. At most two plugin presets show. |
+| `settings_section` | A `settings_operation_id` for a route the plugin owns. | Governance › Connections. |
+
+```python
+def ui_contributions(self) -> list[UiContribution]:
+    return [
+        UiContribution(
+            id="ze_news.sources", plugin="ze_news", kind="module",
+            label="Sources", icon="newspaper", slot="mind.entity",
+            provider=self._sources,
+        ),
+    ]
+```
+
+Rules:
+
+- The provider reads its stores when called, never when `ui_contributions()` runs. Return `ModuleResult(applies=False)` when the store is not ready or the module does not cover the subject.
+- Ze builds the `ModuleSubject` from its own records. A plugin never receives client text.
+- Return serialized `ze_components` primitives. A `tool` action must name an agent the plugin registered and one of that agent's tools. Claim postures use kind `identity`, `fact`, `inference` or `suspicion`, subject `fact` or `person`, and a source from the shared provenance list. Ze refuses any other view and shows the plugin's failure line. Run `validate_plugin_tree(plugin, components)` (from `ze_sdk.ui`) in your own routes, such as a settings route.
+- A plugin contributes no browser script, no page and no route. A `page` kind or an unknown kind fails startup with an `AgentConfigError` that names the contribution.
+- After data changes, call `await request_module_refresh(interface, module_id)` so an open module updates.
+
+---
+
 ## Creating a new plugin package
 
 Use this path when you have a coherent new domain (e.g. finance, health) that warrants

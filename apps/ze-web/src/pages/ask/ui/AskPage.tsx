@@ -9,6 +9,7 @@ import { sendTurn, type SendTurnOptions } from "@/features/turn-stream";
 import { useThread, useThreadHistory } from "@/entities/conversation";
 import { useOnboardingSession } from "@/entities/onboarding-session";
 import { useSession } from "@/entities/session";
+import { presets, useUiManifestQuery } from "@/entities/ui-manifest";
 import { useConnectionState } from "@/shared/api";
 import { useNarrow, useRailSlot } from "@/shared/lib";
 import { Control } from "@/shared/ui";
@@ -46,6 +47,7 @@ function AskThread({ threadId }: { threadId: string }) {
   const narrow = useNarrow();
   const railSlot = useRailSlot((s) => s.element);
   const chatAbout = useChatAbout();
+  const { data: manifest } = useUiManifestQuery();
   const draft = useAskOverlay((s) => s.draft);
   const onboardingId = useOnboardingSession((s) => s.sessionId);
   const onboardingDone = useOnboardingSession((s) => s.completed);
@@ -89,7 +91,7 @@ function AskThread({ threadId }: { threadId: string }) {
 
   const rail = (
     <div className="ask-rail" role="region" aria-label="Ask">
-      <TryChips onSend={(text, context) => send(text, context)} disabled={connection !== "online" || running} />
+      <TryChips presets={presets(manifest)} onSend={(text, context) => send(text, context)} disabled={connection !== "online" || running} />
       {onboardingThread && threadId !== onboardingThread && (
         <button type="button" className="ctl-text ask-continue" onClick={() => selectSession(onboardingThread)}>
           <span className="lbl on">Continue getting to know you</span>

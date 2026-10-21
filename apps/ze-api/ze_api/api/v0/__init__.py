@@ -20,6 +20,7 @@ from ze_api.api.v0.skills.router import router as skills_router
 from ze_api.api.v0.system.models import router as system_models_router
 from ze_api.api.v0.system.router import router as system_router
 from ze_api.api.v0.system.ui import ui_router
+from ze_api.api.v0.ui_modules.router import router as ui_modules_router
 from ze_api.api.v0.voice.router import router as voice_router
 from ze_api.api.v0.webhooks.router import router as webhooks_router
 from ze_api.api.v0.workflows.router import router as workflows_router
@@ -51,6 +52,7 @@ for _domain_router in (
     skills_router,
     workspace_router,
     ui_router,
+    ui_modules_router,
     voice_router,
     webhooks_router,
 ):

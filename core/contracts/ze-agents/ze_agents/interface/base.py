@@ -30,6 +30,9 @@ class AppInterface(Protocol):
     async def push(self, notification: Notification) -> None:
         """Deliver a proactive notification. Must not raise — swallow and log errors."""
 
+    async def send_refresh(self, screen: str) -> None:
+        """Tell the client that `screen` (for example "module:<id>") has new data."""
+
     async def confirm(self, request: ConfirmationRequest) -> ConfirmationResponse:
         """
         Required when confirmation_style == "inline".

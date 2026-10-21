@@ -25,7 +25,7 @@ def test_mounts_routers_that_the_export_knows():
     app = FastAPI()
     mount_plugin_routers(app, [_Plugin(static)])
     paths = {route.path for route in app.routes}
-    assert "/api/v0/news/page" in paths
+    assert "/api/v0/news/settings" in paths
 
 
 def test_a_disabled_plugin_that_returns_no_routes_mounts_nothing():

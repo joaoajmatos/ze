@@ -488,3 +488,13 @@ async def test_trace_update_carries_screen_json_safe():
     frame = conn.send_frame.call_args[0][0]
     assert frame["screen"]["origin"] == "chat_about" and frame["screen"]["subject"] == ["Loop · Reply"]
     json.dumps(frame)
+
+
+async def test_send_refresh_sends_a_refresh_frame():
+    iface, _, conn, _ = _make_interface(connected=True)
+
+    await iface.send_refresh("module:ze_news.sources")
+
+    conn.send_frame.assert_awaited_once_with(
+        {"type": "refresh", "screen": "module:ze_news.sources"}
+    )

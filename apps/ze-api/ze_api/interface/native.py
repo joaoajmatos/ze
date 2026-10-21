@@ -142,6 +142,9 @@ class NativeAppInterface:
         if notification.event_type is not None:
             await self._send_notification_frame(notification)
 
+    async def send_refresh(self, screen: str) -> None:
+        await self._conn.send_frame({"type": "refresh", "screen": screen})
+
     async def send_trace_partial(
         self, message_id: str, fields: dict, thread_id: str | None = None
     ) -> None:

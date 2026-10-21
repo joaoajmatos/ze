@@ -3263,7 +3263,7 @@ export type UiContributionSchema = {
     /**
      * Kind
      */
-    kind: 'nav' | 'settings_section';
+    kind: 'module' | 'preset' | 'settings_section';
     /**
      * Label
      */
@@ -3273,13 +3273,13 @@ export type UiContributionSchema = {
      */
     icon: string;
     /**
-     * Path
+     * Slot
      */
-    path?: string | null;
+    slot?: 'mind.entity' | 'doing.run' | 'governance.connections' | null;
     /**
-     * Page Operation Id
+     * Prompt
      */
-    page_operation_id?: string | null;
+    prompt?: string | null;
     /**
      * Settings Operation Id
      */
@@ -3288,10 +3288,6 @@ export type UiContributionSchema = {
      * Priority
      */
     priority?: number;
-    /**
-     * Show In Mobile Nav
-     */
-    show_in_mobile_nav?: boolean;
 };
 
 /**
@@ -3299,13 +3295,41 @@ export type UiContributionSchema = {
  */
 export type UiManifestResponse = {
     /**
-     * Nav
+     * Modules
      */
-    nav: Array<UiContributionSchema>;
+    modules: Array<UiContributionSchema>;
+    /**
+     * Presets
+     */
+    presets: Array<UiContributionSchema>;
     /**
      * Settings Sections
      */
     settings_sections: Array<UiContributionSchema>;
+};
+
+/**
+ * UiModuleResponse
+ */
+export type UiModuleResponse = {
+    /**
+     * Module Id
+     */
+    module_id: string;
+    /**
+     * Applies
+     */
+    applies: boolean;
+    /**
+     * Components
+     */
+    components: Array<{
+        [key: string]: unknown;
+    }>;
+    /**
+     * Ui Version
+     */
+    ui_version: string;
 };
 
 /**
@@ -6328,6 +6352,67 @@ export type GetUiManifestResponses = {
 
 export type GetUiManifestResponse = GetUiManifestResponses[keyof GetUiManifestResponses];
 
+export type GetUiModuleData = {
+    body?: never;
+    path: {
+        /**
+         * Module Id
+         */
+        module_id: string;
+    };
+    query: {
+        /**
+         * Subject Kind
+         *
+         * What the slot passes: an entity, a workflow run, or nothing
+         */
+        subject_kind: 'entity' | 'workflow_run' | 'none';
+        /**
+         * Subject Id
+         *
+         * Entity or run id
+         */
+        subject_id?: string | null;
+        /**
+         * Parent Id
+         *
+         * Workflow id, for a run
+         */
+        parent_id?: string | null;
+    };
+    url: '/api/v0/ui/modules/{module_id}';
+};
+
+export type GetUiModuleErrors = {
+    /**
+     * Unknown module or subject
+     */
+    404: unknown;
+    /**
+     * Validation error (unknown agent/intent or invalid request body)
+     */
+    422: ErrorDetail;
+    /**
+     * The module failed or sent a view Ze cannot show
+     */
+    502: unknown;
+    /**
+     * The module took too long
+     */
+    504: unknown;
+};
+
+export type GetUiModuleError = GetUiModuleErrors[keyof GetUiModuleErrors];
+
+export type GetUiModuleResponses = {
+    /**
+     * Successful Response
+     */
+    200: UiModuleResponse;
+};
+
+export type GetUiModuleResponse = GetUiModuleResponses[keyof GetUiModuleResponses];
+
 export type TranscribeVoiceData = {
     body?: BodyTranscribeVoice;
     path?: never;
@@ -6386,38 +6471,6 @@ export type ReceiveWebhookResponses = {
 };
 
 export type ReceiveWebhookResponse = ReceiveWebhookResponses[keyof ReceiveWebhookResponses];
-
-export type GetNewsPageData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Limit
-         *
-         * Maximum articles to return
-         */
-        limit?: number;
-    };
-    url: '/api/v0/news/page';
-};
-
-export type GetNewsPageErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetNewsPageError = GetNewsPageErrors[keyof GetNewsPageErrors];
-
-export type GetNewsPageResponses = {
-    /**
-     * Successful Response
-     */
-    200: PluginPageResponse;
-};
-
-export type GetNewsPageResponse = GetNewsPageResponses[keyof GetNewsPageResponses];
 
 export type GetNewsSettingsData = {
     body?: never;

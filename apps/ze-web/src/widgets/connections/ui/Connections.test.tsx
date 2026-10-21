@@ -1,6 +1,9 @@
+import type { ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import button from "../../../../../../packages/ze-ui/fixtures/button.json";
+import { manifestFixture } from "@/test/fixtures/manifest";
 import { Connections } from "./Connections";
 
 const m = vi.hoisted(() => ({
@@ -9,6 +12,8 @@ const m = vi.hoisted(() => ({
   reconnect: vi.fn(),
   resetClient: vi.fn(),
   useUiManifestQuery: vi.fn(),
+  usePluginSettingsQuery: vi.fn(),
+  onAction: vi.fn(),
 }));
 
 vi.mock("@/shared/config", async (orig) => ({
@@ -21,20 +26,21 @@ vi.mock("@/shared/api", () => ({ reconnect: m.reconnect }));
 vi.mock("@/shared/lib", async (orig) => ({ ...(await orig<typeof import("@/shared/lib")>()), resetClient: m.resetClient }));
 vi.mock("@/entities/ui-manifest", () => ({
   useUiManifestQuery: m.useUiManifestQuery,
-  usePluginSettingsQuery: () => ({ data: { tree: [] }, isLoading: false, isError: false, refetch: vi.fn() }),
+  usePluginSettingsQuery: m.usePluginSettingsQuery,
 }));
 vi.mock("@/features/choose-palette", () => ({ ChoosePalette: () => <div data-testid="palette" /> }));
-vi.mock("@/features/primitive-tree", async (orig) => ({ ...(await orig<typeof import("@/features/primitive-tree")>()), usePrimitiveActions: () => ({}) }));
+vi.mock("@/features/primitive-tree", async (orig) => ({ ...(await orig<typeof import("@/features/primitive-tree")>()), usePrimitiveActions: () => ({ onAction: m.onAction }) }));
 
 const fetchMock = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal("fetch", fetchMock);
-  m.useUiManifestQuery.mockReturnValue({ data: { settings_sections: [{ id: "news", label: "News", icon: "newspaper", path: "/x" }] } });
+  m.useUiManifestQuery.mockReturnValue({ data: manifestFixture });
+  m.usePluginSettingsQuery.mockReturnValue({ data: { tree: [], ui_version: "2.0" }, isLoading: false, isError: false, refetch: vi.fn() });
 });
 
-const view = () => render(<MemoryRouter><Connections /></MemoryRouter>);
+const view = (extra?: ReactNode) => render(<MemoryRouter><Connections extra={extra} /></MemoryRouter>);
 
 describe("Connections", () => {
   it("saves the URL and key and reconnects", () => {
@@ -68,8 +74,23 @@ describe("Connections", () => {
 
   it("renders plugin settings sections and the palette", () => {
     view();
-    expect(screen.getByText("News")).toBeInTheDocument();
+    expect(screen.getByText("Fixture")).toBeInTheDocument();
     expect(screen.getByTestId("palette")).toBeInTheDocument();
+  });
+
+  it("renders the fixture settings section and dispatches a save as its tool action", () => {
+    m.usePluginSettingsQuery.mockReturnValue({ data: { tree: button, ui_version: "2.0" }, isLoading: false, isError: false, refetch: vi.fn() });
+    view();
+    expect(m.usePluginSettingsQuery).toHaveBeenCalledWith(expect.objectContaining({ id: "fixture.settings", settings_operation_id: "getNewsSettings" }), true);
+    fireEvent.click(screen.getByRole("button", { name: "Mark read" }));
+    expect(m.onAction).toHaveBeenCalledWith({ kind: "tool", owner: "news", tool: "mark_source_read", args: { source_id: "s-12" } });
+  });
+
+  it("renders the extra content (the module slot) after the settings sections", () => {
+    view(<section aria-label="slot governance.connections" />);
+    const slot = screen.getByRole("region", { name: "slot governance.connections" });
+    const settings = screen.getByText("Fixture");
+    expect(settings.compareDocumentPosition(slot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("forgets this server only after one confirmation", async () => {

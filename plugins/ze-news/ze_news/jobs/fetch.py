@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from ze_logging import get_logger
 from ze_sdk.proactive import proactive_job
+from ze_sdk.ui import request_module_refresh
 from ze_agents.nli import NLIClient
 from ze_news.registry import SourceRegistry
 from ze_news.store import NewsStore
@@ -59,6 +60,7 @@ class NewsFetchJob:
         self._admission_gate = admission_gate
         self._signal_source = signal_source
         self._signal_watermark: datetime = _EPOCH
+        self._interface: Any = None
         self._nli_client = nli_client
         self._nli_credibility_enabled = nli_credibility_enabled
         self._nli_headline_contradiction_threshold = (
@@ -69,8 +71,12 @@ class NewsFetchJob:
         self._nli_dedup_cosine_threshold = nli_dedup_cosine_threshold
         self._nli_dedup_entailment_threshold = nli_dedup_entailment_threshold
 
+    def bind_interface(self, interface: Any) -> None:
+        self._interface = interface
+
     async def run(self, *, force: bool = False) -> None:
         now = datetime.now(timezone.utc)
+        stored_any = False
         for source in self._registry.all():
             if not force and await self._should_skip_source(source.key, now):
                 continue
@@ -98,6 +104,8 @@ class NewsFetchJob:
                 new=len(new_articles),
             )
 
+            stored_any = stored_any or bool(new_articles)
+
             if new_articles and self._credibility_enabled and self._client is not None:
                 asyncio.create_task(self._score_new_articles(new_articles))
 
@@ -113,6 +121,9 @@ class NewsFetchJob:
                 and self._admission_gate is not None
             ):
                 asyncio.create_task(self._emit_via_source(new_articles))
+
+        if stored_any and self._interface is not None:
+            await request_module_refresh(self._interface, "ze_news.sources")
 
         pruned = await self._store.prune(older_than_days=self._retention_days)
         if pruned:

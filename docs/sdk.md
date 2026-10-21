@@ -356,7 +356,7 @@ Override only the hooks your plugin needs. All methods have no-op defaults.
 | `channels()` | `-> list[Any]` | Communication channel instances, collected into the `ChannelRegistry`. |
 | `data_domains()` | `-> list[DataDomain]` | Export, import, and delete contract for the plugin's tables. |
 | `ingestion_fetchers()` / `ingestion_extractors()` | `-> list` | Custom content fetchers and extractors for `ze-ingestion`. |
-| `ui_contributions()` | `-> list` | Nav items, settings sections, and pages for ze-web, served at `GET /api/v0/ui/manifest`. |
+| `ui_contributions()` | `-> list` | Modules, Ask presets and settings sections for ze-web, served at `GET /api/v0/ui/manifest`. Plugins add no pages. See [Adding UI to a plugin](extending-ze.md#adding-ui-to-a-plugin). |
 | `rest_routes()` | `-> list` | FastAPI routers the plugin owns. |
 | `rest_stores()` | `-> dict[str, Any]` | Named stores that REST routes can reach. |
 | `screen_resolvers()` | `-> list[ScreenResolver]` | Readers that turn a screen ref (`kind`, `id`) into a short line for the screen note. One resolver per `kind`; a duplicate `kind` fails at startup. See [Screen resolvers](#screen-resolvers). |
