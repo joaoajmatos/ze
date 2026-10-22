@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Recruit an agent with the right role and tier, and make sure the brief arrived.
 
-Usage: recruit.py <name> <role> <tier> <floor> <brief-file> [--note "<Floor> Handoffs"] [--dry-run]
+Usage: recruit.py <name> <role> <tier> <floor> <brief-file> [--note "<Floor> Handoffs"] [--connect AGENT ...] [--dry-run]
   role/tier rules come from roles.toml; ZE_ROLE is set on the agent's command.
-  Waits for the TUI, sends the brief with a "reply ready" ping, retries once with recruit --replace.
+  --connect wires the new agent to each named agent (its reviewer, its lead), since `maestri ask`
+  reaches connected agents only. Waits for the TUI, sends the brief with a "reply ready" ping, retries once with recruit --replace.
 Tunables (tests): ZE_RECRUIT_BOOT_SECS (60), ZE_RECRUIT_REPLY_SECS (120), ZE_RECRUIT_POLL_SECS (2).
 """
 
@@ -82,6 +83,27 @@ def send_brief(name: str, brief: str, seconds: float, poll: float = 2.0) -> bool
     return False
 
 
+def connect(name: str, others: list[str]) -> list[str]:
+    """Wire `name` to each of `others`; the names that failed."""
+    return [
+        other
+        for other in others
+        if handoff.maestri("connect", name, other, "--agent").returncode != 0
+    ]
+
+
+def recruit_and_connect(recruit: list[str], name: str, others: list[str]) -> bool:
+    if handoff.maestri(*recruit).returncode != 0:
+        return False
+    failed = connect(name, others)
+    if failed:
+        print(
+            f"{name}: could not connect to {', '.join(failed)}; run maestri connect by hand",
+            file=sys.stderr,
+        )
+    return True
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("name")
@@ -90,6 +112,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("floor")
     ap.add_argument("brief")
     ap.add_argument("--note", default="")
+    ap.add_argument("--connect", action="append", default=[])
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv)
 
@@ -106,6 +129,8 @@ def main(argv: list[str]) -> int:
     recruit += ["--floor", args.floor, "--command", command]
     if args.dry_run:
         print(f"{handoff.cli()} {' '.join(recruit)}")
+        for other in args.connect:
+            print(f'{handoff.cli()} connect "{args.name}" "{other}" --agent')
         print(
             f"then wait for the TUI, send {args.brief} with a ready ping, retry once (dismiss, then recruit again)"
         )
@@ -114,7 +139,7 @@ def main(argv: list[str]) -> int:
     boot = float(os.environ.get("ZE_RECRUIT_BOOT_SECS", 60))
     reply = float(os.environ.get("ZE_RECRUIT_REPLY_SECS", 120))
     poll = float(os.environ.get("ZE_RECRUIT_POLL_SECS", 2))
-    if handoff.maestri(*recruit).returncode != 0:
+    if not recruit_and_connect(recruit, args.name, args.connect):
         print("recruit failed", file=sys.stderr)
         return 1
     for attempt in (1, 2):
@@ -139,7 +164,7 @@ def main(argv: list[str]) -> int:
         if attempt == 1:
             # --replace keeps neither --role nor --command, so start over with the same arguments
             handoff.maestri("dismiss", args.name)
-            if handoff.maestri(*recruit).returncode != 0:
+            if not recruit_and_connect(recruit, args.name, args.connect):
                 print("recruit failed on the retry", file=sys.stderr)
                 return 1
     handoff.append_handoff(

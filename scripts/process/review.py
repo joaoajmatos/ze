@@ -10,7 +10,6 @@ request or verdict ended (delta-only review), or at the merge base with main for
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import time
@@ -25,20 +24,13 @@ import handoff  # noqa: E402
 VERDICTS = ("APPROVE", "CHANGES")
 
 
-def maestro() -> str:
-    return os.environ.get("ZE_MAESTRO") or "Claude Code"
+def not_connected(sent: subprocess.CompletedProcess) -> bool:
+    """`maestri ask` reaches connected agents only; to anyone else it fails with "not found"."""
+    return sent.returncode == 1 and "not found" in sent.stderr
 
 
-def deliver(
-    target: str, text: str, timeout: float
-) -> tuple[subprocess.CompletedProcess, bool]:
-    """Ask `target`; when it is not connected to the sender, ask the Maestro (connected to every
-    agent) to relay. Returns the result and whether it went through the Maestro."""
-    sent = handoff.maestri("ask", target, text, timeout=timeout)
-    if sent.returncode != 1 or "not found" not in sent.stderr or target == maestro():
-        return sent, False
-    relay = f"RELAY to {target} (not connected to the sender), verbatim:\n\n{text}"
-    return handoff.maestri("ask", maestro(), relay, timeout=timeout), True
+def connect_hint(a: str, b: str) -> str:
+    return f'{a} is not connected to {b}; ask the Maestro to run: maestri connect "{a}" "{b}" --agent, then run this again'
 
 
 def git(repo: Path, *args: str) -> str:
@@ -138,23 +130,18 @@ def request(args) -> int:
         f"make process-review-verdict RANGE={start[:8]}..{end[:8]} VERDICT=APPROVE|CHANGES FINDINGS=<file>. "
         "That records the verdict and delivers it; do not report it by chat alone."
     )
-    sent, relayed = deliver(args.reviewer, text, timeout=15)
+    sent = handoff.maestri("ask", args.reviewer, text, timeout=15)
+    if not_connected(sent):
+        print(
+            f"request recorded, not delivered: {connect_hint(args.requester, args.reviewer)}",
+            file=sys.stderr,
+        )
+        return 1
     handoff.append_handoff(
         repo,
         args.note,
         f"TO {args.reviewer}: review requested {start[:8]}..{end[:8]} ({path.name})",
     )
-    if relayed:
-        if sent.returncode not in (0, 124):
-            print(
-                f"request recorded but neither {args.reviewer} nor the Maestro could be reached; send it by hand",
-                file=sys.stderr,
-            )
-            return 1
-        print(
-            f"review requested through the Maestro (not connected to {args.reviewer}): {path}"
-        )
-        return 0
     started = _started(args.reviewer, before, token, args.wait)
     if not started:
         print(
@@ -222,7 +209,13 @@ def verdict(args) -> int:
     path.write_text(json.dumps(record, indent=1) + "\n")
     summary = f"{args.verdict} for {start[:8]}..{end[:8]} (record {path})"
     message = summary + (f"\n\n{findings[:6000]}" if findings else "")
-    sent, relayed = deliver(record["requester"], message, timeout=30)
+    sent = handoff.maestri("ask", record["requester"], message, timeout=30)
+    if not_connected(sent):
+        print(
+            f"verdict recorded, not delivered: {connect_hint(record['reviewer'], record['requester'])}",
+            file=sys.stderr,
+        )
+        return 1
     handoff.append_handoff(
         repo, args.note, f"TO {record['requester']}: review verdict {summary}"
     )
@@ -232,7 +225,7 @@ def verdict(args) -> int:
             file=sys.stderr,
         )
         return 1
-    print(f"verdict delivered{' through the Maestro' if relayed else ''}: {summary}")
+    print(f"verdict delivered: {summary}")
     return 0
 
 

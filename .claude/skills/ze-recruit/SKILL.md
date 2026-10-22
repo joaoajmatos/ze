@@ -14,6 +14,7 @@ Then run exactly:
 
 - `role`: `maestro`, `architect`, `eng`, `jr`, `review`, `qa` or `docs`. `scripts/process/roles.toml` lists which tiers each role may use. The script refuses a mismatch such as an engineer on Opus.
 - It lints the brief, recruits with `ZE_ROLE` set, waits for the terminal to be ready, sends the brief with a "reply ready" ping, and retries once with `recruit --replace`.
+- `--connect "<Agent>"` (repeatable) wires the new agent to that agent right after the recruit. `maestri ask` reaches connected agents only, so review requests and verdicts depend on it. Pass the floor's reviewer for every lead and engineer, and the lead for every lane agent. When you recruit the reviewer after the crew, wire each one with `maestri connect "<Reviewer>" "<Agent>" --agent`.
 - If it exits 1, the brief did not arrive. Read the agent's terminal with `maestri check` before trying again; do not assume the agent is working.
 
 Preview with `--dry-run`.
