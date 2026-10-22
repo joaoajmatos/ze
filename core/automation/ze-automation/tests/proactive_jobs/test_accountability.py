@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 
 from ze_automation.accountability.summarizer import build_narrative
 from ze_automation.accountability.types import (
@@ -104,8 +105,11 @@ def test_build_narrative_no_failures_message():
 # ── AccountabilityJob ─────────────────────────────────────────────────────────
 
 
-def _make_accountability_job(*, dedup_hit: bool = False) -> AccountabilityJob:
+def _make_accountability_job(
+    *, dedup_hit: bool = False, outcome: str = "delivered"
+) -> AccountabilityJob:
     notifier = AsyncMock()
+    notifier.notify = AsyncMock(return_value=outcome)
     push_log = AsyncMock()
     push_log.was_sent_within_hours = AsyncMock(return_value=dedup_hit)
     push_log.log = AsyncMock()
@@ -148,6 +152,20 @@ async def test_accountability_job_sends_narrative_when_no_dedup():
     job._notifier.notify.assert_called_once()
     assert job._notifier.notify.call_args.args[0] is ACCOUNTABILITY_NARRATIVE
     job._push_log.log.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("outcome", "logged"), [("failed", False), ("delivered", True), ("held", True)]
+)
+async def test_accountability_cooldown_starts_only_when_delivered_or_held(
+    outcome, logged
+):
+    job = _make_accountability_job(outcome=outcome)
+    await job.run()
+    if logged:
+        job._push_log.log.assert_awaited_once()
+    else:
+        job._push_log.log.assert_not_awaited()
 
 
 # ── CostAnomalyJob ────────────────────────────────────────────────────────────

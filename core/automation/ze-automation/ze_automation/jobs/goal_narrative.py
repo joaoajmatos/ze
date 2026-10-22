@@ -84,11 +84,12 @@ class GoalNarrativeJob:
             return
 
         body = "\n\n".join(paragraphs)
-        await self._notifier.notify(
+        outcome = await self._notifier.notify(
             GOAL_NARRATIVE,
             "Goal progress this week",
             body,
             format="html",
         )
-        await self._push_log.log("goal_narrative", "weekly")
+        if outcome in ("delivered", "held"):
+            await self._push_log.log("goal_narrative", "weekly")
         log.info("goal_narrative_sent", goals=len(paragraphs))

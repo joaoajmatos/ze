@@ -147,3 +147,50 @@ async def test_goal_stuck_pause_updates_status():
     )
 
     store.update_status.assert_awaited_once_with(goal_id, GoalStatus.PAUSED)
+
+
+_PAUSE_ALLOWED = {GoalStatus.ACTIVE, GoalStatus.AWAITING_GATE}
+_ABANDON_ALLOWED = {
+    GoalStatus.PLANNING,
+    GoalStatus.ACTIVE,
+    GoalStatus.AWAITING_GATE,
+    GoalStatus.PAUSED,
+}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("action", ["pause", "abandon"])
+@pytest.mark.parametrize("status", list(GoalStatus))
+async def test_goal_stuck_pause_and_abandon_follow_the_lifecycle(action, status):
+    goal_id = uuid4()
+    goal = Goal(
+        id=goal_id,
+        title="Learn AI",
+        objective="o",
+        success_condition="s",
+        status=status,
+    )
+    store = AsyncMock()
+    store.get_goal = AsyncMock(return_value=goal)
+    executor = AsyncMock()
+    conn_mgr = ConnectionManager()
+    conn_mgr.send_frame = AsyncMock()
+
+    await handle_action(
+        _make_ws(),
+        {"payload": f"goal_stuck:{action}:{goal_id.hex}", "thread_id": THREAD},
+        _make_container(store=store, executor=executor),
+        conn_mgr,
+    )
+
+    allowed = _PAUSE_ALLOWED if action == "pause" else _ABANDON_ALLOWED
+    target = GoalStatus.PAUSED if action == "pause" else GoalStatus.ABANDONED
+    if status in allowed:
+        store.update_status.assert_awaited_once_with(goal_id, target)
+        executor.close_holds.assert_awaited_once_with(goal_id)
+    else:
+        store.update_status.assert_not_awaited()
+        executor.close_holds.assert_not_awaited()
+        conn_mgr.send_frame.assert_awaited_once_with(
+            {"type": "error", "detail": "Goal already resolved."}, THREAD
+        )
