@@ -49,7 +49,6 @@ class AgentState(TypedDict):
     # ── Conversation history ───────────────────────────────────────────────
     messages: list[dict]
     last_active_at: float | None
-    compaction_span: tuple[int, int] | None  # set by write_memory when it compacts
     resume_recap_applied: bool  # set by fetch_context's resume-recap branch
     open_items_query: bool  # set by fetch_context every turn; read by surface_loops
     loop_offer_ids: list[str]  # set by fetch_context every turn; read by record_trace
