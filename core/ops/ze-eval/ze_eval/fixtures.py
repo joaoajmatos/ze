@@ -85,7 +85,6 @@ KINDS: dict[str, Kind] = {
         "open_loops",
         lambda n: {
             "title": n,
-            "claim_kind": "suspicion",
             "provenance": "conversation",
             "confidence": 0.6,
             "state": "active",
