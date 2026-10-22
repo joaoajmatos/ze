@@ -27,6 +27,18 @@ BUILDERS = {"eng", "web", "platform", "jr"}
 LAND_GATES = {"lint", "test-py", "test-web", "typecheck-web", "lint-web"}
 MAESTRI_CLI_SPELLINGS = ("$MAESTRI_CLI", "${MAESTRI_CLI}")
 COMMIT_ALL = re.compile(r"^-[a-zA-Z]*a[a-zA-Z]*$")
+HEAD_MOVERS = {
+    "commit",
+    "merge",
+    "pull",
+    "rebase",
+    "cherry-pick",
+    "am",
+    "revert",
+    "reset",
+    "checkout",
+    "switch",
+}
 
 
 def _scrub_heredocs(cmd: str) -> str:
@@ -189,7 +201,7 @@ def _current_branch(cwd: str) -> str:
     return p.stdout.strip()
 
 
-def _check_git(argv, role, cwd):
+def _check_git(argv, role, cwd, head_moved=False):
     sub, rest, workdir = _git_parts(argv)
     where = os.path.join(cwd, workdir) if cwd and workdir else (workdir or cwd)
     if sub == "add" and any(a in ("-A", "--all", ".", "-u", "--update") for a in rest):
@@ -215,6 +227,12 @@ def _check_git(argv, role, cwd):
         if any(r in MAIN_REFS for r in refs):
             if role and role != "maestro":
                 return DENY, f"Only the Maestro pushes main (ZE_ROLE={role})."
+            if head_moved:
+                # the receipt check below sees HEAD before the earlier command moves it
+                return (
+                    DENY,
+                    "Push main in its own command, after the commit or merge: the receipt check needs the HEAD being pushed.",
+                )
             problem = _receipt_problem(where) if where else ""
             if problem:
                 return DENY, problem
@@ -288,6 +306,7 @@ def decide(cmd: str, env: dict[str, str], cwd: str = "") -> tuple[str, str]:
     has_pipestatus = "PIPESTATUS" in cmd or "pipefail" in cmd
     if SHARED_DB.search(cmd):
         return DENY, "Never point at the shared DB `ze`: use a throwaway ze_e2e_* DB."
+    head_moved = False
     for idx, (raw, op) in enumerate(segs):
         argv, local_env = _strip_prefix(raw)
         if any(SHARED_DB.search(v) for v in local_env.values()):
@@ -321,7 +340,8 @@ def decide(cmd: str, env: dict[str, str], cwd: str = "") -> tuple[str, str]:
         head = os.path.basename(argv[0])
         result = None
         if head == "git":
-            result = _check_git(argv, role, cwd)
+            result = _check_git(argv, role, cwd, head_moved)
+            head_moved = head_moved or _git_parts(argv)[0] in HEAD_MOVERS
         elif head == "make":
             result = _check_make(argv, ctx)
         elif (
@@ -330,6 +350,7 @@ def decide(cmd: str, env: dict[str, str], cwd: str = "") -> tuple[str, str]:
             or argv[0] == os.environ.get("MAESTRI_CLI")
         ):
             result = _check_maestri(argv, role)
+            head_moved = head_moved or argv[1:3] == ["floor", "land"]
         elif head == "psql" and any(
             a == "-d" and i + 1 < len(argv) and argv[i + 1] == "ze"
             for i, a in enumerate(argv)

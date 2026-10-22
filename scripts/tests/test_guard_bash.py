@@ -241,6 +241,31 @@ def test_push_main_needs_a_green_receipt_with_every_land_gate(tmp_path):
     assert guard.decide("git push remote process-kit", env, str(tmp_path))[0] == "allow"
 
 
+@pytest.mark.parametrize(
+    "before",
+    [
+        "git commit -q -m x",
+        "git -C . merge feat",
+        "git pull --rebase remote main",
+        'maestri floor land "F" --into main',
+    ],
+)
+def test_push_main_after_a_head_move_in_the_same_command_is_refused(tmp_path, before):
+    """The receipt check runs before the command, so it would see the old HEAD (f3df9298 slipped through)."""
+    sha = _main_repo(tmp_path)
+    env = {**AGENT, "ZE_ROLE": "maestro"}
+    _receipt(tmp_path, sha, [(g, 0) for g in LAND])
+    assert guard.decide("git push remote main", env, str(tmp_path))[0] == "allow"
+    verdict, why = guard.decide(
+        f"{before} && git push -q remote main", env, str(tmp_path)
+    )
+    assert verdict == "deny" and "its own command" in why
+    assert (
+        guard.decide(f"{before} && git push remote feat", env, str(tmp_path))[0]
+        == "allow"
+    )
+
+
 def _commit_file(repo, name):
     (repo / name).parent.mkdir(parents=True, exist_ok=True)
     (repo / name).write_text("x")
