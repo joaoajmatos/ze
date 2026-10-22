@@ -1,14 +1,21 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
 
 import pytest
 
 from ze_agents.claims import ClaimKind, Confidence
 from ze_priority.errors import ZePriorityError
-from ze_priority.types import PriorityCandidateRef, RelationshipSignal
+from ze_priority.types import (
+    PriorityCandidateRef,
+    PriorityOverride,
+    RelationshipSignal,
+)
 from ze_priority.view import PriorityView
+
+from ze_worldstate.types import LoopState
 
 from tests.factories import make_hypothesis, make_loop, make_stuck_goal
 
@@ -16,14 +23,47 @@ UTC = timezone.utc
 
 
 def _view(
-    loop_store=None, goal_store=None, hypothesis_store=None, relationship_source=None
+    loop_store=None,
+    goal_store=None,
+    hypothesis_store=None,
+    relationship_source=None,
+    override_store=None,
 ) -> PriorityView:
     return PriorityView(
         loop_store=loop_store or AsyncMock(),
         goal_store=goal_store or AsyncMock(),
         hypothesis_store=hypothesis_store or AsyncMock(),
         relationship_source=relationship_source,
+        override_store=override_store,
     )
+
+
+def _override(item_id, anchor_id, relation="above", *, pinned=True) -> PriorityOverride:
+    return PriorityOverride(
+        id=uuid4(),
+        source_kind="loop",
+        source_id=item_id,
+        anchor_source_kind="loop",
+        anchor_source_id=anchor_id,
+        relation=relation,
+        pinned=pinned,
+        submitted_at=datetime.now(UTC),
+        superseded_at=None,
+        contribution_domain_id=uuid4(),
+    )
+
+
+def _two_loops():
+    """A computes higher than B."""
+    a = make_loop(title="A", confidence=0.9, state=LoopState.ACTIVE)
+    b = make_loop(title="B", confidence=0.2, state=LoopState.ACTIVE)
+    loop_store = AsyncMock()
+    loop_store.list.return_value = [a, b]
+    goal_store = AsyncMock()
+    goal_store.list_stuck.return_value = []
+    hypothesis_store = AsyncMock()
+    hypothesis_store.list_recent.return_value = []
+    return a, b, loop_store, goal_store, hypothesis_store
 
 
 async def test_rank_combines_three_mocked_sources():
@@ -224,25 +264,41 @@ async def test_priority_view_without_relationship_source_still_works():
     assert {item.source_kind for item in ranking.items} == {"loop"}
 
 
-async def test_rank_subset_never_touches_the_stores():
-    loop = make_loop()
+async def test_rank_subset_places_candidates_by_the_full_ranking():
+    a, b, loop_store, goal_store, hypothesis_store = _two_loops()
+    override_store = AsyncMock()
+    override_store.get_active.return_value = [_override(b.id, a.id)]
     hyp = make_hypothesis()
 
-    loop_store = AsyncMock()
-    goal_store = AsyncMock()
-    hypothesis_store = AsyncMock()
+    ranking = await _view(
+        loop_store, goal_store, hypothesis_store, override_store=override_store
+    ).rank_subset(
+        [
+            PriorityCandidateRef(source_kind="loop", entity=a),
+            PriorityCandidateRef(source_kind="loop", entity=b),
+            PriorityCandidateRef(source_kind="hypothesis", entity=hyp),
+        ]
+    )
 
-    ranking = await _view(loop_store, goal_store, hypothesis_store).rank_subset(
+    assert [item.source_id for item in ranking.items] == [b.id, a.id, hyp.id]
+
+
+async def test_rank_subset_scores_candidates_when_every_source_fails():
+    loop = make_loop()
+    hyp = make_hypothesis()
+    failing = AsyncMock()
+    failing.list.side_effect = RuntimeError("db down")
+    failing.list_stuck.side_effect = RuntimeError("db down")
+    failing.list_recent.side_effect = RuntimeError("db down")
+
+    ranking = await _view(failing, failing, failing).rank_subset(
         [
             PriorityCandidateRef(source_kind="loop", entity=loop),
             PriorityCandidateRef(source_kind="hypothesis", entity=hyp),
         ]
     )
 
-    loop_store.list.assert_not_called()
-    goal_store.list_stuck.assert_not_called()
-    hypothesis_store.list_recent.assert_not_called()
-    assert len(ranking.items) == 2
+    assert {item.source_id for item in ranking.items} == {loop.id, hyp.id}
 
 
 async def test_priority_item_round_trips_as_a_priority_claim_shape():
@@ -273,6 +329,76 @@ async def test_rank_reads_hypotheses_through_list_recent():
     hypothesis_store = AsyncMock()
     hypothesis_store.list_recent.return_value = []
 
-    await _view(AsyncMock(list=AsyncMock(return_value=[])), None, hypothesis_store).rank()
+    await _view(
+        AsyncMock(list=AsyncMock(return_value=[])), None, hypothesis_store
+    ).rank()
 
     hypothesis_store.list_recent.assert_awaited_once()
+
+
+# ── the user's order (phase 198, B5) ───────────────────────────────────────────
+
+
+async def test_rank_returns_the_users_order_with_the_computed_rank_kept():
+    a, b, loop_store, goal_store, hypothesis_store = _two_loops()
+    override_store = AsyncMock()
+    override_store.get_active.return_value = [_override(b.id, a.id)]
+
+    ranking = await _view(
+        loop_store, goal_store, hypothesis_store, override_store=override_store
+    ).rank()
+
+    assert [item.source_id for item in ranking.items] == [b.id, a.id]
+    top, second = ranking.items
+    assert (top.rank, top.computed_rank) == (1, 2)
+    assert top.override is not None and top.override.source_id == b.id
+    assert (second.rank, second.computed_rank) == (2, 1)
+    assert second.override is None
+
+
+async def test_rank_without_overrides_keeps_the_computed_order():
+    a, b, loop_store, goal_store, hypothesis_store = _two_loops()
+    override_store = AsyncMock()
+    override_store.get_active.return_value = []
+
+    ranking = await _view(
+        loop_store, goal_store, hypothesis_store, override_store=override_store
+    ).rank()
+
+    assert [item.source_id for item in ranking.items] == [a.id, b.id]
+    assert [(i.rank, i.computed_rank) for i in ranking.items] == [(1, 1), (2, 2)]
+
+
+async def test_override_store_failure_returns_the_computed_order_and_warns(
+    monkeypatch,
+):
+    log = MagicMock()
+    monkeypatch.setattr("ze_priority.view.log", log)
+    a, b, loop_store, goal_store, hypothesis_store = _two_loops()
+    override_store = AsyncMock()
+    override_store.get_active.side_effect = RuntimeError("db unreachable")
+
+    ranking = await _view(
+        loop_store, goal_store, hypothesis_store, override_store=override_store
+    ).rank()
+
+    assert [item.source_id for item in ranking.items] == [a.id, b.id]
+    events = [c.args[0] for c in log.warning.call_args_list]
+    assert events == ["priority_overrides_unavailable"]
+
+
+async def test_override_store_is_not_read_when_there_are_no_items():
+    loop_store = AsyncMock()
+    loop_store.list.return_value = []
+    goal_store = AsyncMock()
+    goal_store.list_stuck.return_value = []
+    hypothesis_store = AsyncMock()
+    hypothesis_store.list_recent.return_value = []
+    override_store = AsyncMock()
+
+    ranking = await _view(
+        loop_store, goal_store, hypothesis_store, override_store=override_store
+    ).rank()
+
+    assert ranking.items == []
+    override_store.get_active.assert_not_awaited()

@@ -152,4 +152,5 @@ def sort_and_rank(items: list[PriorityItem]) -> list[PriorityItem]:
     )
     for index, item in enumerate(ordered, start=1):
         item.rank = index
+        item.computed_rank = index
     return ordered

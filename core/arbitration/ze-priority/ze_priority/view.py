@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Sequence
+from typing import Callable, Sequence
 
 from ze_logging import get_logger
 
@@ -12,6 +12,7 @@ from ze_worldstate.store import LoopStore
 from ze_worldstate.types import LoopState
 
 from ze_priority.errors import ZePriorityError
+from ze_priority.merge import merge
 from ze_priority.scoring import (
     score_goal,
     score_hypothesis,
@@ -19,6 +20,7 @@ from ze_priority.scoring import (
     score_relationship_staleness,
     sort_and_rank,
 )
+from ze_priority.store import PriorityOverrideStore
 from ze_priority.types import (
     PriorityCandidateRef,
     PriorityItem,
@@ -46,10 +48,16 @@ _RELATIONSHIP_STALE_DAYS_DEFAULT = 7
 _RELATIONSHIP_LIMIT_DEFAULT = 3
 
 
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
 class PriorityView:
     """Read-only projection ranking open loops, stuck/near-gate goals,
     non-stale hypotheses, and stale relationships on one comparable
-    `Confidence` scale (FR-001..FR-004)."""
+    `Confidence` scale (FR-001..FR-004), in the user's order: active
+    reprioritization overrides are merged here, so every consumer sees one
+    order. `rank` is the displayed rank; `computed_rank` is Ze's own."""
 
     def __init__(
         self,
@@ -57,11 +65,16 @@ class PriorityView:
         goal_store: GoalStore,
         hypothesis_store: PostgresHypothesisStore,
         relationship_source: RelationshipStalenessSource | None = None,
+        *,
+        override_store: PriorityOverrideStore | None = None,
+        clock: Callable[[], datetime] = _utc_now,
     ) -> None:
         self._loop_store = loop_store
         self._goal_store = goal_store
         self._hypothesis_store = hypothesis_store
         self._relationship_source = relationship_source
+        self._override_store = override_store
+        self._clock = clock
 
     def set_relationship_source(self, source: RelationshipStalenessSource) -> None:
         """Backfill the relationship source after construction.
@@ -124,33 +137,76 @@ class PriorityView:
         if len(failed) == total_sources:
             raise ZePriorityError("all PriorityView sources failed")
 
-        return PriorityRanking(
+        ranking = PriorityRanking(
             items=sort_and_rank(items),
             sources_succeeded=succeeded,
             sources_failed=failed,
-            generated_at=datetime.now(UTC),
+            generated_at=self._clock(),
         )
+        return await self._apply_overrides(ranking)
+
+    async def _apply_overrides(self, ranking: PriorityRanking) -> PriorityRanking:
+        if self._override_store is None or not ranking.items:
+            return ranking
+        try:
+            overrides = await self._override_store.get_active()
+        except Exception as exc:
+            log.warning("priority_overrides_unavailable", error=str(exc))
+            return ranking
+
+        items_by_id = {item.source_id: item for item in ranking.items}
+        ordered: list[PriorityItem] = []
+        for row in merge(ranking, overrides, self._clock()):
+            item = items_by_id[row.source_id]
+            item.rank = row.displayed_rank
+            item.override = row.override
+            ordered.append(item)
+        ranking.items = ordered
+        return ranking
 
     async def rank_subset(
         self, candidates: Sequence[PriorityCandidateRef]
     ) -> PriorityRanking:
-        """Same ranking logic as `rank()`, scoped to already-fetched candidates —
-        never re-queries the stores (used by `AttentionArbitrationJob`)."""
-        items: list[PriorityItem] = []
-        succeeded: set[SourceKind] = set()
+        """The already-fetched `candidates`, in their place in the full `rank()`
+        (the user's order), minus any item the user pushed down while its
+        override is active (used by `AttentionArbitrationJob`). A candidate the
+        full ranking does not hold keeps its own score and follows the rest."""
+        try:
+            full = await self.rank()
+        except ZePriorityError:
+            full = None
+        known = {item.source_id: item for item in full.items} if full else {}
 
+        placed: list[PriorityItem] = []
+        unplaced: list[PriorityItem] = []
+        succeeded: set[SourceKind] = set()
         for candidate in candidates:
-            if candidate.source_kind == "loop":
-                items.append(score_loop(candidate.entity))
-            elif candidate.source_kind == "goal":
-                items.append(score_goal(candidate.entity))
-            else:
-                items.append(score_hypothesis(candidate.entity))
+            scored = _score_candidate(candidate)
+            item = known.get(scored.source_id)
+            if item is None:
+                unplaced.append(scored)
+            elif not _is_pushed_down(item):
+                placed.append(item)
             succeeded.add(candidate.source_kind)
 
+        placed.sort(key=lambda item: item.rank)
         return PriorityRanking(
-            items=sort_and_rank(items),
+            items=placed + sort_and_rank(unplaced),
             sources_succeeded=succeeded,
             sources_failed=set(),
-            generated_at=datetime.now(UTC),
+            generated_at=self._clock(),
         )
+
+
+def _score_candidate(candidate: PriorityCandidateRef) -> PriorityItem:
+    if candidate.source_kind == "loop":
+        return score_loop(candidate.entity)
+    if candidate.source_kind == "goal":
+        return score_goal(candidate.entity)
+    return score_hypothesis(candidate.entity)
+
+
+def _is_pushed_down(item: PriorityItem) -> bool:
+    """An active override (merge keeps only those with weight > 0) that put the
+    item below where Ze's own score would."""
+    return item.override is not None and item.rank > item.computed_rank

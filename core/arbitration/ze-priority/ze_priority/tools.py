@@ -54,7 +54,7 @@ def _resolve_anchor(
 ) -> tuple[PriorityItem, str] | None:
     """Translate the coarse `requested_relation` into the anchor-relative
     representation the drag path produces (R3)."""
-    ordered = sorted(items, key=lambda item: item.rank)
+    ordered = sorted(items, key=lambda item: item.rank)  # displayed (user's) order
     index = next(
         i for i, item in enumerate(ordered) if item.source_id == target.source_id
     )
@@ -111,9 +111,10 @@ async def reprioritize_item(
 
     anchor_choice = _resolve_anchor(target, ranking.items, requested_relation)
     if anchor_choice is None:
+        end = "most" if requested_relation == "more_urgent" else "least"
         return {
             "status": "no_op",
-            "message": f"{target.title!r} is already at that end of the priority order.",
+            "message": f"{target.title!r} is already the {end} urgent item.",
         }
     anchor, relation = anchor_choice
 
