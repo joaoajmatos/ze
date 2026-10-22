@@ -11,6 +11,7 @@ from ze_correlation.push import (
 )
 from ze_logging import get_logger
 from ze_memory.graph.store import GraphStore
+from ze_proactive.attention_budget import ATTENTION_PUSH_EVENT_KEY
 from ze_proactive.types import PushOutcome
 
 from ze_worldstate.push_kinds import LOOP_DRIFT
@@ -20,7 +21,6 @@ from ze_worldstate.types import LoopState, OpenLoop
 
 log = get_logger(__name__)
 
-PUSH_EVENT_KEY = "worldstate_loop_push"
 _NOVELTY_LOOKBACK_HOURS = 48.0
 
 _DEFAULT_THRESHOLDS = {
@@ -49,6 +49,7 @@ class LoopSurfacer:
         relevance_model: Any = None,
         embedder: Any = None,
         notifier: Any = None,
+        nli_client: Any = None,
     ) -> None:
         self._loop_store = loop_store
         self._graph_store = graph_store
@@ -57,6 +58,7 @@ class LoopSurfacer:
         self._notifier = notifier
         self._relevance_model = relevance_model
         self._embedder = embedder
+        self._nli_client = nli_client
 
     async def passes_push_bar(
         self,
@@ -68,7 +70,6 @@ class LoopSurfacer:
         novelty_similarity_max: float = 0.85,
         grounding_threshold: float = 0.3,
         inline_cooldown_hours: float = 12.0,
-        nli_client: Any = None,
     ) -> bool:
         """Reuses `ze_correlation.push`'s bar functions (FR-007) plus one
         loop-specific gate — the inline-then-push cooldown (FR-012).
@@ -84,17 +85,20 @@ class LoopSurfacer:
         if not passes_relevance(score.value, tau_relevance):
             return False
 
-        recent_summaries = await self._push_log.list_recent_payloads(
-            PUSH_EVENT_KEY, _NOVELTY_LOOKBACK_HOURS
+        recent_pushes = await self._push_log.list_recent_payloads(
+            ATTENTION_PUSH_EVENT_KEY, _NOVELTY_LOOKBACK_HOURS
         )
         if not await passes_novelty(
-            rationale, recent_summaries, self._embedder, novelty_similarity_max
+            format_hedged_mention(loop.title, rationale),
+            recent_pushes,
+            self._embedder,
+            novelty_similarity_max,
         ):
             return False
 
         evidence_labels = await self._evidence_labels(loop.id)
         if not await passes_grounding(
-            loop.title, evidence_labels, nli_client, grounding_threshold
+            loop.title, evidence_labels, self._nli_client, grounding_threshold
         ):
             return False
 
@@ -111,7 +115,6 @@ class LoopSurfacer:
         *,
         thresholds: dict | None = None,
         inline_cooldown_hours: float = 12.0,
-        nli_client: Any = None,
     ) -> list[OpenLoop]:
         """Drifting loops that pass every push-bar gate except the shared budget
         claim (novelty/relevance/grounding/idempotency unchanged, SC-004) — for
@@ -131,7 +134,6 @@ class LoopSurfacer:
                 novelty_similarity_max=cfg["novelty_similarity_max"],
                 grounding_threshold=cfg["grounding_threshold"],
                 inline_cooldown_hours=inline_cooldown_hours,
-                nli_client=nli_client,
             )
             if passes:
                 eligible.append(loop)
