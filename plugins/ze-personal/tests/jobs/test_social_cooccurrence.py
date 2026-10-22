@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 
-from ze_agents.claims import ClaimKind
+from ze_agents.claims import ClaimKind, Provenance
 from ze_correlation.types import Hypothesis
 from ze_memory.graph.predicates import WORKS_ON
 from ze_memory.types import Entity
@@ -71,6 +71,27 @@ class TestFormsHypothesisFromEvidence:
             candidate.target_entity_id,
         }
         assert len(saved.evidence) == 1
+
+    async def test_evidence_origin_follows_where_the_event_came_from(self):
+        events = [
+            _event(event_id="e1", days_ago=2, source_type="email"),
+            _event(event_id="c1", days_ago=2, source_type="calendar"),
+            _event(event_id="t1", days_ago=2, source_type="conversation"),
+        ]
+        source = AsyncMock()
+        source.gather_candidates.return_value = [_candidate(evidence_events=events)]
+        hypothesis_store = AsyncMock()
+        hypothesis_store.list_by_entities.return_value = []
+
+        await _make_job(source, hypothesis_store).run()
+
+        saved: Hypothesis = hypothesis_store.save.await_args.args[0]
+        origins = {e.label.split(" on ")[0]: e.origin for e in saved.evidence}
+        assert origins == {
+            "email": Provenance.PROMPT_SUPPLIED,
+            "calendar": Provenance.PROMPT_SUPPLIED,
+            "conversation": Provenance.SYNTHESIZED,
+        }
 
     async def test_does_not_write_graph_edge_for_single_event(self):
         candidate = _candidate(evidence_events=[_event(event_id="t1", days_ago=2)])

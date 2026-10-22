@@ -50,7 +50,7 @@ def _evidence_ref(event: CoOccurrenceEvidenceEvent) -> HypothesisEvidence:
         id=_evidence_id(event.event_id),
         label=f"{event.source_type} on {event.occurred_at.date().isoformat()}",
         external_ref=event.external_ref,
-        origin=Provenance.LIVE_SEARCH
+        origin=Provenance.PROMPT_SUPPLIED
         if event.source_type in ("email", "calendar")
         else Provenance.SYNTHESIZED,
         retrieved_at=datetime.now(UTC),

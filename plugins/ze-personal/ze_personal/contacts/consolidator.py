@@ -266,6 +266,7 @@ class ContactsConsolidator:
                 confirmed=False,
                 dismissed=False,
                 confidence=weight,
+                provenance=source.provenance,
             )
 
             async def _write() -> Person:

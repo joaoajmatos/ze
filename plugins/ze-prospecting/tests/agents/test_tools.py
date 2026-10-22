@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import pytest
 
+from ze_agents.claims import Provenance
 from ze_personal.contacts.types import Person
 from ze_browser import BrowserError, BrowserResult
 
@@ -210,6 +211,8 @@ async def test_add_prospect_new_person():
     assert "Maria Santos" in result
     person_store.upsert.assert_called_once()
     person_store.add_source.assert_called()
+    assert person_store.upsert.call_args.args[0].provenance == Provenance.LIVE_SEARCH
+    assert person_store.add_source.call_args.args[1].provenance == Provenance.LIVE_SEARCH
     cs.add_outreach.assert_called_once()
     cs.increment_found.assert_called_once()
 

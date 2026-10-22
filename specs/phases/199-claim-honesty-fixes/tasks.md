@@ -198,11 +198,11 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Independent Test**: `make test-personal test-prospecting` and `make test-pg -k contact_provenance`.
 
-- [ ] T029 [L:contacts] [US6] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_contact_provenance_pg.py`. Each test runs `TRUNCATE contacts CASCADE` first; see `test_contacts_watermark_pg.py`.
+- [x] T029 [L:contacts] [US6] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_contact_provenance_pg.py`. Each test runs `TRUNCATE contacts CASCADE` first; see `test_contacts_watermark_pg.py`.
   (a) `ContactConsolidator._store_candidate` (built with the real person store on `pg_pool`) with `ContactProposal(source_type="email", ...)` stores a `contact_sources` row with `provenance='prompt_supplied'` and a `contacts` row with `prompt_supplied`. This fails today. Repeat for `calendar` and `conversation`.
   (b) The prospecting tool (`ze_prospecting.agents.tools`, the add-prospect tool) stores a `research` source with `live_search`. This fails today.
   (c) Seed the rows with raw SQL: sources `email` and `research` stored `synthesized`, and a contact whose earliest source is `email`. Run `zc041.REPAIR_SQL` (import `ze_personal.migrations.versions.zc041_contact_source_provenance as zc041`). The sources become `prompt_supplied` and `live_search`, and the contact becomes `prompt_supplied`. A contact with no source is unchanged. A second run changes 0 rows.
-- [ ] T030 [L:contacts] [US6] [BE] In `plugins/ze-personal/ze_personal/contacts/`:
+- [x] T030 [L:contacts] [US6] [BE] In `plugins/ze-personal/ze_personal/contacts/`:
   - create `errors.py` with `class ContactSourceTypeError(ZeCoreError)` (import `ZeCoreError` from `ze_sdk.errors`);
   - in `types.py`, make `_SOURCE_TYPE_TO_PROVENANCE` map `manual`, `conversation`, `email` and `calendar` to `PROMPT_SUPPLIED` and `research` to `LIVE_SEARCH`;
   - add `source_provenance(source_type: str) -> Provenance`, which raises `ContactSourceTypeError` for an unknown type;
@@ -210,19 +210,19 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
   - delete the `ContactProposal.provenance` field.
 
   Add unit tests for `source_provenance` (all five types plus one unknown) to `plugins/ze-personal/tests/contacts/` (new `test_source_provenance.py`).
-- [ ] T031 [L:contacts] [US6] [BE] Update the write and read paths:
+- [x] T031 [L:contacts] [US6] [BE] Update the write and read paths:
   - In `contacts/store.py`, stop passing `provenance=` when building `PersonSource` from a row (about lines 54-60); `add_source` keeps writing `source.provenance.value`.
   - In `contacts/extractors.py`, remove the `provenance=` arguments at about lines 66 and 111.
   - In `contacts/consolidator.py` (about line 259), `graph/memory_hooks.py` (about line 240) and `plugins/ze-prospecting/ze_prospecting/agents/tools.py` (about line 66), pass `provenance=source.provenance` when building a new `Person`. In prospecting, build the `PersonSource` before the `Person` so it can.
   - Update `plugins/ze-personal/tests/contacts/`, `plugins/ze-personal/tests/graph/test_memory_hooks.py` and `plugins/ze-prospecting/tests/agents/test_tools.py` where they pass or assert the old provenance.
-- [ ] T032 [L:contacts] [US6] [BE] In `plugins/ze-personal/ze_personal/jobs/social_cooccurrence.py:53`, change `Provenance.LIVE_SEARCH` to `Provenance.PROMPT_SUPPLIED` (email and calendar). Conversation keeps `SYNTHESIZED`. Add an assertion to `plugins/ze-personal/tests/jobs/test_social_cooccurrence.py` that email and calendar evidence carry `PROMPT_SUPPLIED` and conversation evidence carries `SYNTHESIZED`. It fails today for email and calendar.
-- [ ] T033 [L:contacts] [US6] [PLATFORM] Create `plugins/ze-personal/ze_personal/migrations/versions/zc041_contact_source_provenance.py` (`revision = "zc041"`, `down_revision = "zc040"`):
+- [x] T032 [L:contacts] [US6] [BE] In `plugins/ze-personal/ze_personal/jobs/social_cooccurrence.py:53`, change `Provenance.LIVE_SEARCH` to `Provenance.PROMPT_SUPPLIED` (email and calendar). Conversation keeps `SYNTHESIZED`. Add an assertion to `plugins/ze-personal/tests/jobs/test_social_cooccurrence.py` that email and calendar evidence carry `PROMPT_SUPPLIED` and conversation evidence carries `SYNTHESIZED`. It fails today for email and calendar.
+- [x] T033 [L:contacts] [US6] [PLATFORM] Create `plugins/ze-personal/ze_personal/migrations/versions/zc041_contact_source_provenance.py` (`revision = "zc041"`, `down_revision = "zc040"`):
   - `REPAIR_SQL` first sets `contact_sources.provenance` to `'prompt_supplied'` where `source_type IN ('manual','conversation','email','calendar')` and to `'live_search'` where `source_type = 'research'`, but only where the value differs;
   - it then updates `contacts.provenance` from `SELECT DISTINCT ON (contact_id) contact_id, provenance FROM contact_sources ORDER BY contact_id, created_at`, where the value differs;
   - `upgrade()` logs the row counts with `get_logger`; `downgrade()` is a no-op with a comment.
 
   T029 passes.
-- [ ] T034 [L:contacts] [US6] [BE] Run `make test-personal test-prospecting`, `make test-pg -k contact_provenance` and `make lint`. All green. The `contacts` lane is ready for review.
+- [x] T034 [L:contacts] [US6] [BE] Run `make test-personal test-prospecting`, `make test-pg -k contact_provenance` and `make lint`. All green. The `contacts` lane is ready for review.
 
 ---
 
