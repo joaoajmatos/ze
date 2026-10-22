@@ -170,7 +170,11 @@ class MemoryConsolidator:
                     merged += 1
                     continue
 
-                if sim >= llm_threshold and score["entailment"] >= nli_entail:
+                if (
+                    sim >= llm_threshold
+                    and score["entailment"] >= nli_entail
+                    and self._shares_claim(rows[i], rows[j_idx])
+                ):
                     merged_value = await self._llm_merge(
                         rows[i]["value"], rows[j_idx]["value"]
                     )
@@ -185,12 +189,24 @@ class MemoryConsolidator:
                             merged_value,
                             max(rows[i]["confidence"], rows[j_idx]["confidence"]),
                             new_emb,
+                            provenance=rows[i]["provenance"],
+                            claim_kind=rows[i]["claim_kind"],
                         )
                         contradicted_ids.add(rows[i]["id"])
                         contradicted_ids.add(rows[j_idx]["id"])
                         merged += 1
 
         return merged
+
+    @staticmethod
+    def _shares_claim(a: Any, b: Any) -> bool:
+        """A merge keeps its inputs' claim, so only perception-grade twins merge."""
+        return (
+            a["dream_run_id"] is None
+            and b["dream_run_id"] is None
+            and a["provenance"] == b["provenance"]
+            and a["claim_kind"] == b["claim_kind"]
+        )
 
     @staticmethod
     def _newer_fact_drop_index(rows: list, i: int, j: int) -> int:

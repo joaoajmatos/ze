@@ -46,32 +46,32 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Independent Test**: `make test-core test-ingestion test-messenger test-memory test-seed` and `make test-pg -k "dream_decay or consolidation_merge"`.
 
-- [ ] T002 [P] [L:facts] [US1] [BE] Write a failing test in `core/engine/ze-core/tests/orchestration/nodes/test_memory.py`: run `write_memory` with a fact admission that persists one fact (reuse the existing persist-fact fixtures in that file and patch `submit_perception_facts` the way the file already does), and assert that every `PerceptionFactSubmit.provenance` is `Provenance.PROMPT_SUPPLIED`. It fails today (`SYNTHESIZED`).
-- [ ] T003 [L:facts] [US1] [BE] In `core/engine/ze-core/ze_core/orchestration/nodes/memory.py` (the `PerceptionFactSubmit(...)` block at about line 214-221 only), change `provenance=Provenance.SYNTHESIZED` to `Provenance.PROMPT_SUPPLIED`. T002 passes. `make test-core`.
-- [ ] T004 [P] [L:facts] [US1] [BE] Write a failing test in `core/ops/ze-ingestion/tests/test_sink.py`: `MemorySink.push(ingestion_id, ["fact"])` submits facts whose provenance is `PROMPT_SUPPLIED`.
-- [ ] T005 [L:facts] [US1] [BE] In `core/ops/ze-ingestion/ze_ingestion/sink.py:53`, stamp `Provenance.PROMPT_SUPPLIED`. T004 passes. `make test-ingestion`.
-- [ ] T006 [P] [L:facts] [US1] [BE] Write a failing test in `plugins/ze-messenger/tests/test_inbound_processor.py`: `_extract_facts` (mock `extract_facts` returning one fact) submits it with provenance `PROMPT_SUPPLIED`.
-- [ ] T007 [L:facts] [US1] [BE] In `plugins/ze-messenger/ze_messenger/inbound/processor.py:207`, stamp `Provenance.PROMPT_SUPPLIED`. T006 passes. `make test-messenger`.
-- [ ] T008 [L:facts] [US1] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_dream_decay_pg.py`. Build `DreamPromoter(pool, dream_store=stub)` from `ze_memory.dream.promoter`, where the stub's `get_pending_artifacts_for_run` returns a list you control and its other methods are `AsyncMock`. Insert rows into `memory_facts` with raw SQL, setting `created_at = now() - interval '60 days'`. Cover four cases:
+- [x] T002 [P] [L:facts] [US1] [BE] Write a failing test in `core/engine/ze-core/tests/orchestration/nodes/test_memory.py`: run `write_memory` with a fact admission that persists one fact (reuse the existing persist-fact fixtures in that file and patch `submit_perception_facts` the way the file already does), and assert that every `PerceptionFactSubmit.provenance` is `Provenance.PROMPT_SUPPLIED`. It fails today (`SYNTHESIZED`).
+- [x] T003 [L:facts] [US1] [BE] In `core/engine/ze-core/ze_core/orchestration/nodes/memory.py` (the `PerceptionFactSubmit(...)` block at about line 214-221 only), change `provenance=Provenance.SYNTHESIZED` to `Provenance.PROMPT_SUPPLIED`. T002 passes. `make test-core`.
+- [x] T004 [P] [L:facts] [US1] [BE] Write a failing test in `core/ops/ze-ingestion/tests/test_sink.py`: `MemorySink.push(ingestion_id, ["fact"])` submits facts whose provenance is `PROMPT_SUPPLIED`.
+- [x] T005 [L:facts] [US1] [BE] In `core/ops/ze-ingestion/ze_ingestion/sink.py:53`, stamp `Provenance.PROMPT_SUPPLIED`. T004 passes. `make test-ingestion`.
+- [x] T006 [P] [L:facts] [US1] [BE] Write a failing test in `plugins/ze-messenger/tests/test_inbound_processor.py`: `_extract_facts` (mock `extract_facts` returning one fact) submits it with provenance `PROMPT_SUPPLIED`.
+- [x] T007 [L:facts] [US1] [BE] In `plugins/ze-messenger/ze_messenger/inbound/processor.py:207`, stamp `Provenance.PROMPT_SUPPLIED`. T006 passes. `make test-messenger`.
+- [x] T008 [L:facts] [US1] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_dream_decay_pg.py`. Build `DreamPromoter(pool, dream_store=stub)` from `ze_memory.dream.promoter`, where the stub's `get_pending_artifacts_for_run` returns a list you control and its other methods are `AsyncMock`. Insert rows into `memory_facts` with raw SQL, setting `created_at = now() - interval '60 days'`. Cover four cases:
   (a) A `synthesized` fact with `dream_run_id` NULL, confidence 0.8, `reviewed` true, uncorroborated: after 10 calls of `run_morning_integration(uuid4())`, confidence, `reviewed` and `contradicted` are unchanged. This fails today.
   (b) A `synthesized` fact with `dream_run_id` set, confidence 0.8: after 1 call, confidence is 0.77.
   (c) A `synthesized` fact with `dream_run_id` NULL and `valid_until` in the past: after 1 call, it is not contradicted. This fails today. The same row with `dream_run_id` set is contradicted.
   (d) The stub returns one artifact (`artifact_type='synthesized_insight'`, `status='pending'`, `critic_a_verdict='PASS'`, `critic_b_verdict='PASS'`, support and spread fields above the defaults in `promoter.py`): the call does not raise, a new `memory_facts` row exists with `agent='dream'` and `dream_run_id` set, and a pre-aged dream insight inserted beforehand was decayed in the same call. This fails today with `UndefinedColumnError: creation_method`.
-- [ ] T009 [L:facts] [US1] [BE] In `core/cognition/ze-memory/ze_memory/dream/promoter.py`:
+- [x] T009 [L:facts] [US1] [BE] In `core/cognition/ze-memory/ze_memory/dream/promoter.py`:
   - add `AND dream_run_id IS NOT NULL` to the `SELECT` in `_run_confidence_decay` and to the `UPDATE` in `_expire_stale_synthetic_facts`;
   - remove `creation_method` and its `'synthesized'` value from the `INSERT` in `_insert_fact`;
   - update both docstrings to say "dream insights".
 
   Update `core/cognition/ze-memory/tests/dream/test_promoter.py` for any SQL-text assertions. T008 passes (`make test-pg`), and so does `make test-memory`.
-- [ ] T010 [P] [L:facts] [US1] [BE] In `core/ops/ze-seed/ze_seed/narrative/persona.yaml`, change the two seed facts with `provenance: synthesized` (ids `00000006-0001-4000-8000-000000000010` and `...00000000003d`) to `provenance: prompt_supplied`. In `core/ops/ze-seed/tests/test_loader.py:69-72`, assert that no seed fact is `synthesized`. `make test-seed`.
+- [x] T010 [P] [L:facts] [US1] [BE] In `core/ops/ze-seed/ze_seed/narrative/persona.yaml`, change the two seed facts with `provenance: synthesized` (ids `00000006-0001-4000-8000-000000000010` and `...00000000003d`) to `provenance: prompt_supplied`. In `core/ops/ze-seed/tests/test_loader.py:69-72`, assert that no seed fact is `synthesized`. `make test-seed`.
 
-- [ ] T044 [L:facts] [US1] [BE] Write failing tests for consolidation's merged fact (FR-002a, research R2a):
+- [x] T044 [L:facts] [US1] [BE] Write failing tests for consolidation's merged fact (FR-002a, research R2a):
   - In `core/cognition/ze-memory/tests/test_consolidator_nli.py`, give `_fact_row` the keyword arguments `provenance='prompt_supplied'`, `claim_kind='fact'` and `dream_run_id=None`, and add them to the row dict. Do the same for the row fixtures in `core/cognition/ze-memory/tests/test_consolidator.py`.
   - Extend `test_nli_entailment_triggers_llm_merge` to assert `insert_merged_fact` is awaited with `provenance='prompt_supplied'` and `claim_kind='fact'`. This fails today: the method takes no provenance.
   - Add `test_entailment_with_dream_insight_skips_merge`: one row has `dream_run_id=uuid4()`, `provenance='synthesized'` and `claim_kind='inference'`, and NLI returns entailment 0.85. The model is not called, nothing is contradicted, and `insert_merged_fact` is not awaited.
   - Add `test_entailment_across_provenance_skips_merge`: the same shape with `prompt_supplied` and `live_search` rows. Nothing is merged.
   - Add test-pg `apps/ze-api/tests/pg/test_consolidation_merge_pg.py`. Insert one fact with raw SQL, then assert that `PostgresConsolidationStore(pool).fetch_active_facts()` returns its `provenance`, `claim_kind` and `dream_run_id`. Call `insert_merged_fact(..., provenance='prompt_supplied', claim_kind='fact')` and read the new row back: `provenance='prompt_supplied'`, `claim_kind='fact'`, `agent='consolidation'`, `dream_run_id` NULL.
-- [ ] T045 [L:facts] [US1] [BE] In `core/cognition/ze-memory/ze_memory/consolidation_store.py`, add `provenance, claim_kind, dream_run_id` to the `SELECT` in `fetch_active_facts`. Give `insert_merged_fact` the parameters `provenance: str` and `claim_kind: str` and bind them in place of the literals `'fact'` and `'synthesized'`. In `core/cognition/ze-memory/ze_memory/consolidator.py` `dedup_facts`, enter the entailment-merge branch only when both rows have `dream_run_id` None and the same `provenance` and `claim_kind`, and pass both values to `insert_merged_fact`. T044 passes (`make test-memory`, `make test-pg -k consolidation_merge`).
+- [x] T045 [L:facts] [US1] [BE] In `core/cognition/ze-memory/ze_memory/consolidation_store.py`, add `provenance, claim_kind, dream_run_id` to the `SELECT` in `fetch_active_facts`. Give `insert_merged_fact` the parameters `provenance: str` and `claim_kind: str` and bind them in place of the literals `'fact'` and `'synthesized'`. In `core/cognition/ze-memory/ze_memory/consolidator.py` `dedup_facts`, enter the entailment-merge branch only when both rows have `dream_run_id` None and the same `provenance` and `claim_kind`, and pass both values to `insert_merged_fact`. T044 passes (`make test-memory`, `make test-pg -k consolidation_merge`).
 
 **Checkpoint**: New conversation, ingestion and inbound facts are `prompt_supplied`, consolidation keeps its inputs' provenance, and decay touches dream insights only.
 
@@ -83,7 +83,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Independent Test**: `make test-pg -k zm026`.
 
-- [ ] T011 [L:facts] [US2] [PLATFORM] Write a failing test-pg test in a new `apps/ze-api/tests/pg/test_zm026_pg.py`, following `test_zm025_pg.py`. Import `ze_memory.migrations.versions.zm026_perception_fact_provenance as zm026`. Seed `memory_facts` with five rows:
+- [x] T011 [L:facts] [US2] [PLATFORM] Write a failing test-pg test in a new `apps/ze-api/tests/pg/test_zm026_pg.py`, following `test_zm025_pg.py`. Import `ze_memory.migrations.versions.zm026_perception_fact_provenance as zm026`. Seed `memory_facts` with five rows:
   - A: `synthesized`, `dream_run_id` NULL, claim kind `inference`, confidence 0.2, contradicted;
   - B: `synthesized`, `dream_run_id` NULL, claim kind `fact`, confidence 0.8;
   - C: `synthesized`, `dream_run_id` set, claim kind `inference`;
@@ -97,14 +97,14 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
   - `updated_at` is unchanged on every row.
 
   Run both again and assert `restamped = 0` the second time.
-- [ ] T012 [L:facts] [US2] [PLATFORM] Create `core/cognition/ze-memory/ze_memory/migrations/versions/zm026_perception_fact_provenance.py` (`revision = "zm026"`, `down_revision = "zm025"`), per research R3 and `contracts/migrations.md`:
+- [x] T012 [L:facts] [US2] [PLATFORM] Create `core/cognition/ze-memory/ze_memory/migrations/versions/zm026_perception_fact_provenance.py` (`revision = "zm026"`, `down_revision = "zm025"`), per research R3 and `contracts/migrations.md`:
   - `COUNT_SQL` returns one row with the columns `restamped` and `decay_damaged`;
   - `REPAIR_SQL` is the `UPDATE`;
   - `upgrade()` runs `COUNT_SQL` through `op.get_bind()`, logs `zm026_restamped` with both counts through `get_logger(__name__)`, then runs `REPAIR_SQL`;
   - `downgrade()` is a no-op with a one-line comment (pre-v1; the old label was wrong).
 
   T011 passes.
-- [ ] T013 [L:facts] [US2] [PLATFORM] Measure without writing: run `zm026.COUNT_SQL` read-only against the local `ze` database (`docker exec ze-postgres-1 psql -U ze -d ze -c "<COUNT_SQL>"`), and record `restamped` and `decay_damaged` in the Handoffs note. Expected on 2026-10-22: 2 and 0.
+- [x] T013 [L:facts] [US2] [PLATFORM] Measure without writing: run `zm026.COUNT_SQL` read-only against the local `ze` database (`docker exec ze-postgres-1 psql -U ze -d ze -c "<COUNT_SQL>"`), and record `restamped` and `decay_damaged` in the Handoffs note. Expected on 2026-10-22: 2 and 0. Measured 2026-10-22 on `ze` (read-only, user-approved): restamped=2, decay_damaged=0.
 
 **Checkpoint**: `make test-pg -k "zm026 or dream_decay"` is green, and the `facts` lane is ready for review.
 

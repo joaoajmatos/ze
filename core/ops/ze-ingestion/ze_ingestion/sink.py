@@ -50,7 +50,7 @@ class MemorySink:
                     ),
                     source_refs=list(source_refs),
                 ),
-                provenance=Provenance.SYNTHESIZED,
+                provenance=Provenance.PROMPT_SUPPLIED,
                 target_face=TargetFace.WORLD,
                 evidence=list(evidence),
             )

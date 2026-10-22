@@ -36,7 +36,13 @@ def _embedder(vectors: list[list[float]]):
 
 
 def _fact_row(
-    value: str, *, confidence: float = 1.0, created_at: datetime | None = None
+    value: str,
+    *,
+    confidence: float = 1.0,
+    created_at: datetime | None = None,
+    provenance: str = "prompt_supplied",
+    claim_kind: str = "fact",
+    dream_run_id=None,
 ):
     return {
         "id": uuid4(),
@@ -44,6 +50,9 @@ def _fact_row(
         "value": value,
         "confidence": confidence,
         "created_at": created_at or datetime.now(tz=timezone.utc),
+        "provenance": provenance,
+        "claim_kind": claim_kind,
+        "dream_run_id": dream_run_id,
     }
 
 
@@ -95,6 +104,49 @@ async def test_nli_entailment_triggers_llm_merge():
     assert merged == 1
     client.complete.assert_awaited_once()
     store.insert_merged_fact.assert_awaited_once()
+    kwargs = store.insert_merged_fact.await_args.kwargs
+    assert kwargs["provenance"] == "prompt_supplied"
+    assert kwargs["claim_kind"] == "fact"
+
+
+async def _entailed_pair_is_not_merged(rows):
+    store = _store(fetch_active_facts=AsyncMock(return_value=rows))
+    vecs = [[1.0, 0.0], [0.87, 0.49]]
+    nli = _nli([{"contradiction": 0.05, "neutral": 0.1, "entailment": 0.85}])
+    client = AsyncMock()
+    client.complete = AsyncMock(return_value="merged")
+
+    merged = await _consolidator(
+        store, _embedder(vecs), client=client, nli=nli
+    ).dedup_facts()
+
+    assert merged == 0
+    client.complete.assert_not_awaited()
+    store.mark_contradicted.assert_not_awaited()
+    store.insert_merged_fact.assert_not_awaited()
+
+
+async def test_entailment_with_dream_insight_skips_merge():
+    await _entailed_pair_is_not_merged(
+        [
+            _fact_row("likes coffee"),
+            _fact_row(
+                "enjoys coffee",
+                provenance="synthesized",
+                claim_kind="inference",
+                dream_run_id=uuid4(),
+            ),
+        ]
+    )
+
+
+async def test_entailment_across_provenance_skips_merge():
+    await _entailed_pair_is_not_merged(
+        [
+            _fact_row("likes coffee"),
+            _fact_row("enjoys coffee", provenance="live_search"),
+        ]
+    )
 
 
 async def test_low_cosine_skips_nli():

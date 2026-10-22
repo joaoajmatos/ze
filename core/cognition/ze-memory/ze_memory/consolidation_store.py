@@ -59,7 +59,8 @@ class PostgresConsolidationStore:
     async def fetch_active_facts(self) -> list:
         async with self._pool.acquire() as conn:
             return await conn.fetch(
-                "SELECT id, predicate, value, confidence, created_at"
+                "SELECT id, predicate, value, confidence, created_at,"
+                " provenance, claim_kind, dream_run_id"
                 " FROM memory_facts WHERE contradicted = false ORDER BY updated_at DESC"
             )
 
@@ -75,15 +76,19 @@ class PostgresConsolidationStore:
         value: str,
         confidence: float,
         embedding: Any,
+        provenance: str,
+        claim_kind: str,
     ) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(
                 "INSERT INTO memory_facts (predicate, value, confidence, embedding, agent, claim_kind, provenance)"
-                " VALUES ($1, $2, $3, $4::vector, 'consolidation', 'fact', 'synthesized')",
+                " VALUES ($1, $2, $3, $4::vector, 'consolidation', $5, $6)",
                 predicate,
                 value,
                 confidence,
                 to_vector_literal(embedding),
+                claim_kind,
+                provenance,
             )
 
     async def soft_expire_unreviewed_facts(self, ttl_days: int, grace_days: int) -> int:
