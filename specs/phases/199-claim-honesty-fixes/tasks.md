@@ -167,7 +167,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 - [ ] T024 [L:loops] [US4] [BE] In `core/cognition/ze-worldstate/ze_worldstate/store.py`:
   - add `resolve(self, loop_id: UUID, evidence: Sequence[EvidenceRef]) -> OpenLoop | None` to the `LoopStore` Protocol and implement it on `PostgresLoopStore`, per `contracts/loop-store.md`;
   - the implementation runs one `async with conn.transaction()`, does a conditional `UPDATE ... WHERE id = $1 AND state IN ('suspected','active','drifting') RETURNING *`, then inserts one `derived_from` relationship per ref with the `link_evidence` SQL;
-  - it raises `LoopNotFoundError` when the id is unknown, returns `None` when no row moved, and logs `open_loop_transitioned` with `event="resolve"`;
+  - it raises `LoopNotFoundError` when the id is unknown, returns `None` when no row moved, and logs `open_loop_transitioned` with `via="resolve"` (structlog reserves `event`);
   - leave `_ALLOWED_TRANSITIONS` and `transition` unchanged.
 - [ ] T025 [L:loops] [US4] [BE] In `core/cognition/ze-worldstate/ze_worldstate/extraction.py`:
   - give `_close_matching_loop` an `evidence_refs: list[EvidenceRef]` parameter, and have it call `loop_store.resolve(existing.id, evidence_refs)`, returning `[closed]` or `[]`;
