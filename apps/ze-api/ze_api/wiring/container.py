@@ -158,7 +158,18 @@ class _ContainerTurnStarter:
         outcome = await self._container.invoke_raw_turn(
             thread_id, RawInput(text=prompt)
         )
-        if outcome.interrupted or not turn_has_reply(outcome):
+        if outcome.interrupted:
+            from ze_api.api.ws.confirmation import send_confirmation_request
+
+            await send_confirmation_request(
+                self._container.connection_manager,
+                self._container,
+                outcome,
+                thread_id,
+                confirmation_store=self._container.confirmation_store,
+            )
+            return
+        if not turn_has_reply(outcome):
             return
         await self._container.interface.send_with_thread(
             outcome.response,
