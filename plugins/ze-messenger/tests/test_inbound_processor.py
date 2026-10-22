@@ -179,7 +179,7 @@ async def test_extract_facts_calls_propose_facts():
     from ze_agents.claims import Provenance
     from ze_plugin.contribution import TargetFace
 
-    assert items[0].provenance == Provenance.SYNTHESIZED
+    assert items[0].provenance == Provenance.PROMPT_SUPPLIED
     assert items[0].target_face == TargetFace.USER
 
 

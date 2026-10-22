@@ -173,10 +173,10 @@ class TestWriteMemory:
         submit.assert_awaited_once()
         items = submit.await_args.args[1]
         assert any(i.fact.predicate == "identity" for i in items)
-        assert all(i.provenance == Provenance.SYNTHESIZED for i in items)
+        assert all(i.provenance == Provenance.PROMPT_SUPPLIED for i in items)
         assert all(i.target_face == TargetFace.USER for i in items)
 
-    async def test_extracted_facts_are_synthesized(self):
+    async def test_extracted_facts_are_prompt_supplied(self):
         store = _make_store()
         extracted = [Fact(predicate="preference", value="dark mode")]
 
@@ -204,7 +204,7 @@ class TestWriteMemory:
             )
         store.propose_facts.assert_not_awaited()
         items = submit.await_args.args[1]
-        assert items[0].provenance == Provenance.SYNTHESIZED
+        assert items[0].provenance == Provenance.PROMPT_SUPPLIED
 
     async def test_skips_extractor_predicates_already_remembered_this_turn(self):
         store = _make_store()
