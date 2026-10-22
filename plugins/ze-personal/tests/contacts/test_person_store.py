@@ -70,7 +70,7 @@ def make_source_row(**overrides):
         "source_type": "conversation",
         "weight": 1.0,
         "claim_kind": "identity",
-        "provenance": "synthesized",
+        "provenance": "prompt_supplied",
         "raw_context": "I met João at the aviation conference",
         "created_at": datetime.utcnow(),
     }
@@ -123,7 +123,7 @@ def test_source_from_row_maps_fields():
     assert source.source_type == "conversation"
     assert source.weight == 1.0
     assert source.claim_kind == ClaimKind.IDENTITY
-    assert source.provenance == Provenance.SYNTHESIZED
+    assert source.provenance == Provenance.PROMPT_SUPPLIED
 
 
 # ── PersonStore.upsert ────────────────────────────────────────────────────────

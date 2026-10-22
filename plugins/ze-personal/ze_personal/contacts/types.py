@@ -4,6 +4,8 @@ from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
 
+from ze_personal.contacts.errors import ContactSourceTypeError
+
 
 SOURCE_WEIGHTS: dict[str, float] = {
     "manual": 1.0,
@@ -15,11 +17,20 @@ SOURCE_WEIGHTS: dict[str, float] = {
 
 _SOURCE_TYPE_TO_PROVENANCE: dict[str, Provenance] = {
     "manual": Provenance.PROMPT_SUPPLIED,
-    "conversation": Provenance.SYNTHESIZED,
-    "email": Provenance.LIVE_SEARCH,
-    "calendar": Provenance.LIVE_SEARCH,
-    "research": Provenance.SYNTHESIZED,
+    "conversation": Provenance.PROMPT_SUPPLIED,
+    "email": Provenance.PROMPT_SUPPLIED,
+    "calendar": Provenance.PROMPT_SUPPLIED,
+    "research": Provenance.LIVE_SEARCH,
 }
+
+
+def source_provenance(source_type: str) -> Provenance:
+    try:
+        return _SOURCE_TYPE_TO_PROVENANCE[source_type]
+    except KeyError:
+        raise ContactSourceTypeError(
+            f"unknown contact source type {source_type!r}"
+        ) from None
 
 
 @dataclass
@@ -49,10 +60,13 @@ class PersonSource:
     source_type: str  # "conversation" | "manual" | "email" | "calendar" | "research"
     weight: float
     claim_kind: ClaimKind = ClaimKind.IDENTITY
-    provenance: Provenance = Provenance.SYNTHESIZED
     raw_context: str = ""
     id: UUID | None = None
     created_at: datetime | None = None
+
+    @property
+    def provenance(self) -> Provenance:
+        return source_provenance(self.source_type)
 
 
 @dataclass
@@ -105,5 +119,4 @@ class ContactProposal:
     confirmed: bool = False
     source_type: str = "conversation"
     claim_kind: ClaimKind = ClaimKind.IDENTITY
-    provenance: Provenance = Provenance.SYNTHESIZED
     raw_context: str = ""

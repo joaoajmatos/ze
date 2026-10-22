@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-from ze_agents.claims import ClaimKind, Confidence, DecayProfile
+from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_agents.errors import UnlicensedClaimKindError
 from ze_plugin.contribution import SourceFunction, TargetFace
 
@@ -451,3 +451,4 @@ async def test_store_candidate_persists_correctly_tagged_contribution():
     assert created is True
     store.upsert.assert_called_once()
     store.add_source.assert_called_once()
+    assert store.upsert.call_args.args[0].provenance == Provenance.PROMPT_SUPPLIED

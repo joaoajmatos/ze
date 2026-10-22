@@ -246,6 +246,7 @@ async def _write_contact_proposals(
                     confirmed=proposal.confirmed,
                     dismissed=False,
                     confidence=proposal.confidence,
+                    provenance=source.provenance,
                 )
 
                 async def _write() -> Person:
