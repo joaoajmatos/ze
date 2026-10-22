@@ -75,7 +75,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Independent Test**: `make test-pg -k zm026`.
 
-- [ ] T011 [L:facts] [US2] [PLATFORM] Write a failing test-pg test in a new `apps/ze-api/tests/pg/test_zm026_pg.py`, following `test_zm025_pg.py`. Import `ze_memory.migrations.versions.zm026_perception_fact_provenance as zm026`. Seed `memory_facts` with five rows:
+- [x] T011 [L:facts] [US2] [PLATFORM] Write a failing test-pg test in a new `apps/ze-api/tests/pg/test_zm026_pg.py`, following `test_zm025_pg.py`. Import `ze_memory.migrations.versions.zm026_perception_fact_provenance as zm026`. Seed `memory_facts` with five rows:
   - A: `synthesized`, `dream_run_id` NULL, claim kind `inference`, confidence 0.2, contradicted;
   - B: `synthesized`, `dream_run_id` NULL, claim kind `fact`, confidence 0.8;
   - C: `synthesized`, `dream_run_id` set, claim kind `inference`;
@@ -89,7 +89,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
   - `updated_at` is unchanged on every row.
 
   Run both again and assert `restamped = 0` the second time.
-- [ ] T012 [L:facts] [US2] [PLATFORM] Create `core/cognition/ze-memory/ze_memory/migrations/versions/zm026_perception_fact_provenance.py` (`revision = "zm026"`, `down_revision = "zm025"`), per research R3 and `contracts/migrations.md`:
+- [x] T012 [L:facts] [US2] [PLATFORM] Create `core/cognition/ze-memory/ze_memory/migrations/versions/zm026_perception_fact_provenance.py` (`revision = "zm026"`, `down_revision = "zm025"`), per research R3 and `contracts/migrations.md`:
   - `COUNT_SQL` returns one row with the columns `restamped` and `decay_damaged`;
   - `REPAIR_SQL` is the `UPDATE`;
   - `upgrade()` runs `COUNT_SQL` through `op.get_bind()`, logs `zm026_restamped` with both counts through `get_logger(__name__)`, then runs `REPAIR_SQL`;
