@@ -72,7 +72,7 @@ def _stores():
     loop_store.create = AsyncMock(side_effect=_with_id)
     loop_store.list = AsyncMock(return_value=[])
     loop_store.set_drift_deadline = AsyncMock()
-    loop_store.transition = AsyncMock(side_effect=lambda i, st: _closed(i))
+    loop_store.resolve = AsyncMock(side_effect=lambda i, evidence: _closed(i))
     graph_store = AsyncMock()
     graph_store.list_relationships = AsyncMock(return_value=[])
     return loop_store, graph_store
@@ -196,7 +196,8 @@ async def test_resolves_closes_matching_loop(monkeypatch):
     assert adm.consumed == frozenset({"resolves_existing"})
     closed = await adm.commit()
     assert closed and closed[0].state == LoopState.CLOSED
-    loop_store.transition.assert_awaited_once()
+    loop_store.resolve.assert_awaited_once()
+    loop_store.transition.assert_not_called()
     loop_store.create.assert_not_called()
 
 
@@ -209,6 +210,7 @@ async def test_resolves_without_match_closes_and_creates_nothing(monkeypatch):
     )
     adm = _admitted(inflow, "resolve", "I renewed my passport, it is done")
     assert await adm.commit() == []
+    loop_store.resolve.assert_not_called()
     loop_store.transition.assert_not_called()
     loop_store.create.assert_not_called()
 

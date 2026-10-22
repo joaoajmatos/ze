@@ -148,24 +148,24 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Independent Test**: `make test-worldstate` and `make test-pg -k loop_resolve`.
 
-- [ ] T023 [L:loops] [US4] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_loop_resolve_pg.py`, reusing the `_TitleEmbedder`, `_graph()` and `_propose(...)` pattern from `apps/ze-api/tests/pg/test_loop_evidence.py`. Use an `_Llm` that returns `{"is_loop": false, "resolves_existing": true, "title": "Renew passport"}`. Cover:
+- [x] T023 [L:loops] [US4] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_loop_resolve_pg.py`, reusing the `_TitleEmbedder`, `_graph()` and `_propose(...)` pattern from `apps/ze-api/tests/pg/test_loop_evidence.py`. Use an `_Llm` that returns `{"is_loop": false, "resolves_existing": true, "title": "Renew passport"}`. Cover:
   (a) A suspected loop titled "Renew passport", created through `_propose` with an email ref. A second `_propose` with a resolve reply and a new episode ref closes it: `state is CLOSED`, `closed_at` is set, `list_evidence` contains the new ref, and `dismissed_evidence_fingerprint` is NULL. This fails today.
   (b) The same, run through the System One admission path: `_commit_admitted` with a `LoopGateDecision("resolve", ...)`, called as `propose_loop_candidates(..., admission=LoopAdmission(...))` the way `ze_worldstate/admission.py` does. Repeat for the provenances `conversation`, `email` and `ingestion` (each with one evidence ref, linked after the resolve) and `calendar` (no refs: it closes with nothing linked).
   (c) Active and drifting loops (from `_builders.make_loop`) close the same way, with the evidence linked.
   (d) `PostgresLoopStore.transition(suspected_id, "closed")` still raises `InvalidLoopTransitionError`.
   (e) `store.resolve` on a dropped loop returns None and changes nothing.
   (f) `LoopInflow(...).commit_for(text, "email", admission)` with a resolve admission logs no `loop_extraction_failed`. Use `structlog.testing.capture_logs`.
-- [ ] T024 [L:loops] [US4] [BE] In `core/cognition/ze-worldstate/ze_worldstate/store.py`:
+- [x] T024 [L:loops] [US4] [BE] In `core/cognition/ze-worldstate/ze_worldstate/store.py`:
   - add `resolve(self, loop_id: UUID, evidence: Sequence[EvidenceRef]) -> OpenLoop | None` to the `LoopStore` Protocol and implement it on `PostgresLoopStore`, per `contracts/loop-store.md`;
   - the implementation runs one `async with conn.transaction()`, does a conditional `UPDATE ... WHERE id = $1 AND state IN ('suspected','active','drifting') RETURNING *`, then inserts one `derived_from` relationship per ref with the `link_evidence` SQL;
   - it raises `LoopNotFoundError` when the id is unknown, returns `None` when no row moved, and logs `open_loop_transitioned` with `event="resolve"`;
   - leave `_ALLOWED_TRANSITIONS` and `transition` unchanged.
-- [ ] T025 [L:loops] [US4] [BE] In `core/cognition/ze-worldstate/ze_worldstate/extraction.py`:
+- [x] T025 [L:loops] [US4] [BE] In `core/cognition/ze-worldstate/ze_worldstate/extraction.py`:
   - give `_close_matching_loop` an `evidence_refs: list[EvidenceRef]` parameter, and have it call `loop_store.resolve(existing.id, evidence_refs)`, returning `[closed]` or `[]`;
   - pass `evidence_refs` at both call sites (`_commit_admitted`, about line 512, and the 109 fallback branch in `propose_loop_candidates`, about line 640).
 
   Add `resolve` to every in-memory `LoopStore` fake under `core/cognition/ze-worldstate/tests/` (search for `class .*LoopStore` and `async def transition`). Update `test_extraction.py::test_resolves_existing_closes_matching_loop_instead_of_creating` and `test_intake.py::test_resolve_closes_matching_loop` to assert `resolve` was called with the evidence. T023 passes.
-- [ ] T026 [L:loops] [US4] [BE] Run `make test-worldstate`, `make test-pg -k "loop_resolve or loop_evidence or loop_claim_kind"`, and `make lint`. All green. The `loops` lane is ready for review. Tell `lead` that `schemas.py` changed (T021), so the client can be regenerated.
+- [x] T026 [L:loops] [US4] [BE] Run `make test-worldstate`, `make test-pg -k "loop_resolve or loop_evidence or loop_claim_kind"`, and `make lint`. All green. The `loops` lane is ready for review. Tell `lead` that `schemas.py` changed (T021), so the client can be regenerated.
 
 **Checkpoint**: B3 and B12 are fixed. Phase 203 can build on `LoopStore.resolve` and `loop_claim_kind`.
 

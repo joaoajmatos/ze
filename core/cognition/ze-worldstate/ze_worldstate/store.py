@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from collections.abc import Sequence
 from typing import Protocol
 from uuid import UUID
 
@@ -100,6 +101,10 @@ class LoopStore(Protocol):
     async def transition(
         self, loop_id: UUID, new_state: str, *, user_asked: bool = False
     ) -> OpenLoop: ...
+
+    async def resolve(
+        self, loop_id: UUID, evidence: Sequence[EvidenceRef]
+    ) -> OpenLoop | None: ...
 
     async def link(
         self,
@@ -261,6 +266,56 @@ class PostgresLoopStore:
             loop_id=str(loop_id),
             from_state=loop.state.value,
             to_state=target.value,
+        )
+        return result
+
+    async def resolve(
+        self, loop_id: UUID, evidence: Sequence[EvidenceRef]
+    ) -> OpenLoop | None:
+        """Close a suspected, active or drifting loop on resolving evidence.
+
+        The only edge into `closed` from `suspected`; `transition` still refuses it.
+        Never stamps a dismissed-evidence fingerprint: the loop was done, not wrong.
+        """
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                row = await conn.fetchrow(
+                    """
+                    UPDATE open_loops
+                    SET state = 'closed', closed_at = now(), updated_at = now()
+                    WHERE id = $1 AND state IN ('suspected', 'active', 'drifting')
+                    RETURNING *, (SELECT state FROM open_loops WHERE id = $1) AS prior_state
+                    """,
+                    loop_id,
+                )
+                if row is None:
+                    exists = await conn.fetchval(
+                        "SELECT 1 FROM open_loops WHERE id = $1", loop_id
+                    )
+                    if exists is None:
+                        raise LoopNotFoundError(f"Loop {loop_id} not found")
+                    return None
+                for ref in evidence:
+                    await conn.execute(
+                        """
+                        INSERT INTO memory_relationships
+                          (source_id, source_type, predicate, target_id, target_type,
+                           confidence, creation_method)
+                        VALUES ($1, 'open_loop', 'derived_from', $2, $3, 1.0, 'extracted')
+                        ON CONFLICT (source_id, predicate, target_id) WHERE target_id IS NOT NULL
+                        DO NOTHING
+                        """,
+                        loop_id,
+                        ref.id,
+                        ref.kind,
+                    )
+        result = _loop_from_row(row)
+        log.info(
+            "open_loop_transitioned",
+            loop_id=str(loop_id),
+            from_state=row["prior_state"],
+            to_state=LoopState.CLOSED.value,
+            via="resolve",
         )
         return result
 

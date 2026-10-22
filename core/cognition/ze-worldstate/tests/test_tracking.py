@@ -80,6 +80,11 @@ class FakeLoopStore:
         self.transitions.append((loop_id, new_state, user_asked))
         return loop
 
+    async def resolve(self, loop_id: UUID, evidence) -> OpenLoop:
+        loop = self.loops[loop_id]
+        loop.state = LoopState.CLOSED
+        return loop
+
     async def stamp_declared(
         self, loop_id: UUID, *, confidence: float, deadline
     ) -> None:

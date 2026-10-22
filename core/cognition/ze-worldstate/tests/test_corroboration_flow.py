@@ -115,6 +115,10 @@ class FakeLoopStore:
         self.loops[loop_id].state = LoopState(new_state)
         return self.loops[loop_id]
 
+    async def resolve(self, loop_id, evidence):
+        self.loops[loop_id].state = LoopState.CLOSED
+        return self.loops[loop_id]
+
     async def add_source(self, source):
         rows = self.sources.setdefault(source.loop_id, [])
         if any(r.key == source.key for r in rows):

@@ -166,6 +166,10 @@ class _ConfirmStore:
         loop = self.bank if loop_id == self.bank.id else self.dentist
         return loop
 
+    async def resolve(self, loop_id, evidence):
+        self.transitions.append((loop_id, "closed"))
+        return self.bank if loop_id == self.bank.id else self.dentist
+
     async def stamp_declared(self, loop_id, *, confidence, deadline):
         self.stamped.append(loop_id)
 

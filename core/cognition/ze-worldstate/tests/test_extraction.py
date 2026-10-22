@@ -189,7 +189,7 @@ async def test_resolves_existing_closes_matching_loop_instead_of_creating():
     entity_id = uuid4()
     entity_resolver.return_value = [entity_id]
     loop_store.get = AsyncMock(return_value=existing)
-    loop_store.transition = AsyncMock(
+    loop_store.resolve = AsyncMock(
         return_value=OpenLoop(
             **{**existing.__dict__, "state": LoopState.CLOSED},
         )
@@ -206,10 +206,11 @@ async def test_resolves_existing_closes_matching_loop_instead_of_creating():
         ]
     )
 
+    evidence = [EvidenceRef(kind="episode", id=uuid4())]
     result = await propose_loop_candidates(
         "I followed up with the accountant, it's done",
         "conversation",
-        [],
+        evidence,
         llm,
         embedder,
         loop_store,
@@ -219,7 +220,8 @@ async def test_resolves_existing_closes_matching_loop_instead_of_creating():
     assert len(result) == 1
     assert result[0].state == LoopState.CLOSED
     loop_store.create.assert_not_called()
-    loop_store.transition.assert_awaited_once_with(existing.id, LoopState.CLOSED.value)
+    loop_store.resolve.assert_awaited_once_with(existing.id, evidence)
+    loop_store.transition.assert_not_called()
 
 
 async def test_duplicate_candidate_attaches_to_existing_loop_not_duplicated():

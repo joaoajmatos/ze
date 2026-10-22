@@ -28,6 +28,9 @@ class FakeStore:
             raise self.error
         return self.loop
 
+    async def resolve(self, loop_id, evidence):
+        return self.loop
+
     async def stamp_declared(self, loop_id, *, confidence, deadline):
         self.stamped.append((loop_id, confidence, deadline))
 
