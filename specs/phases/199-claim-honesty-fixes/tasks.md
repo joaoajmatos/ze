@@ -177,7 +177,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Independent Test**: `make test-plugin`.
 
-- [ ] T027 [P] [L:jr1] [US5] [BE] In `core/contracts/ze-plugin/tests/test_contribution.py`, extend the two existing parametrize tables. Do not add new test functions.
+- [x] T027 [P] [L:jr1] [US5] [BE] In `core/contracts/ze-plugin/tests/test_contribution.py`, extend the two existing parametrize tables. Do not add new test functions.
   - In `test_licensed_claim_kind_is_accepted`, add the row `(SourceFunction.EXECUTIVE, ClaimKind.SUSPICION),`. It already passes; it pins that the narrowing keeps suspicion.
   - In `test_unlicensed_claim_kind_is_rejected`, add these three rows:
 
