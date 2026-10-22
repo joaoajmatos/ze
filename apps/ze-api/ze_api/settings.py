@@ -1,15 +1,19 @@
-from functools import lru_cache
-import os
+from functools import cached_property, lru_cache
 import re
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import yaml
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from ze_agents.settings import Settings as CoreSettings
 from ze_memory.bootstrap import consolidation_enabled
 
 from ze_api.errors import ProfileConfigError
+from ze_logging import get_logger
+
+logger = get_logger(__name__)
 
 _ROOT = Path(__file__).parent.parent  # apps/ze-api/
 _PROFILE_NAME = re.compile(r"[A-Za-z0-9_-]+")
@@ -80,6 +84,9 @@ class ZeApiSettings(BaseSettings):
     # (`make dev` sets `quiet`; empty means the shipped config as is).
     ze_profile: str = ""
 
+    # ── Timezone (the `timezone` YAML key wins over TIMEZONE; see `timezone`) ─
+    timezone_env: str = Field("", validation_alias="TIMEZONE")
+
     # ── Derived config (loaded from YAML, not env) ────────────────────────────
 
     @property
@@ -128,9 +135,19 @@ class ZeApiSettings(BaseSettings):
     def persona_config(self) -> dict[str, Any]:
         return _load_yaml(self.persona_path)
 
+    @cached_property
+    def timezone(self) -> str:
+        """The user's IANA zone: YAML `timezone`, then env `TIMEZONE`, then UTC."""
+        zone = str(self.config.get("timezone") or self.timezone_env or "UTC")
+        try:
+            ZoneInfo(zone)
+        except (ZoneInfoNotFoundError, ValueError):
+            logger.warning("settings_timezone_invalid", timezone=zone)
+            return "UTC"
+        return zone
+
     def to_core_settings(self) -> CoreSettings:
         """Map to ze-core Settings for framework container helpers."""
-        tz = self.config.get("timezone") or os.environ.get("TIMEZONE", "UTC")
         return CoreSettings(
             openrouter_api_key=self.openrouter_api_key,
             database_url=self.database_url,
@@ -139,7 +156,7 @@ class ZeApiSettings(BaseSettings):
             session_inactivity_minutes=self.session_inactivity_minutes,
             consolidation_enabled=consolidation_enabled(self),
             log_level=self.log_level,
-            timezone=tz,
+            timezone=self.timezone,
             gmail_pubsub_topic=self.gmail_pubsub_topic,
             config=self.config,
         )
