@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import asyncpg
-from ze_agents.claims import ClaimKind
 from ze_worldstate.store import PostgresLoopStore
 from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
@@ -28,7 +27,6 @@ async def make_loop(
     loop = await store.create(
         OpenLoop(
             title=title,
-            claim_kind=ClaimKind.PRIORITY,
             provenance=provenance,
             confidence=confidence,
             state=state,

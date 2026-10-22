@@ -16,7 +16,6 @@ from ze_worldstate.matching import find_matching_loop
 from ze_worldstate.store import LoopStore
 from ze_worldstate.types import (
     DECLARED_CONFIDENCE,
-    LoopClaimKind,
     LoopProvenance,
     LoopState,
     OpenLoop,
@@ -127,7 +126,6 @@ class LoopTracker:
     ) -> OpenLoop:
         loop = OpenLoop(
             title=title,
-            claim_kind=LoopClaimKind.PRIORITY,
             provenance=LoopProvenance.USER_DECLARED,
             confidence=DECLARED_CONFIDENCE,
             state=LoopState.ACTIVE,

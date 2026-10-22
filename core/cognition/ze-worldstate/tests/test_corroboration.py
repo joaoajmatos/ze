@@ -135,7 +135,7 @@ from structlog.testing import capture_logs  # noqa: E402
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult  # noqa: E402
 
 from ze_worldstate.corroboration import corroborate_match  # noqa: E402
-from ze_worldstate.types import ClaimKind, LoopState, OpenLoop  # noqa: E402
+from ze_worldstate.types import LoopState, OpenLoop  # noqa: E402
 
 BARS = {"enabled": True, "corroborate_hold": 0.6, "promote_hold": 0.85}
 KEY = SourceKey("email", "T-new")
@@ -169,7 +169,6 @@ def _loop(confidence=0.3, state=LoopState.SUSPECTED) -> OpenLoop:
     return OpenLoop(
         id=uuid4(),
         title="Reply to Ana about the budget",
-        claim_kind=ClaimKind.SUSPICION,
         provenance="conversation",
         confidence=confidence,
         state=state,

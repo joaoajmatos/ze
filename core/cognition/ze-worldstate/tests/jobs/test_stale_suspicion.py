@@ -5,14 +5,13 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from ze_worldstate.jobs.stale_suspicion import StaleSuspicionJob
-from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
+from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
 
 def _loop(age_days: int, state=LoopState.SUSPECTED) -> OpenLoop:
     return OpenLoop(
         id=uuid4(),
         title="Some loop",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=0.3,
         state=state,

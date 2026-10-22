@@ -4,14 +4,13 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from ze_worldstate.matching import find_matching_loop
-from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
+from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
 
 def _loop(**overrides) -> OpenLoop:
     base = dict(
         id=uuid4(),
         title="Renew passport",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=0.3,
         state=LoopState.SUSPECTED,

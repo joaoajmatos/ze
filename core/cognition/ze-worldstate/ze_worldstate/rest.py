@@ -31,7 +31,7 @@ def _loop_to_list_item(loop: OpenLoop, sources: list[LoopSource]) -> dict:
         "id": loop.id,
         "title": loop.title,
         "state": loop.state.value,
-        "claim_kind": loop.claim_kind.value,
+        "claim_kind": loop.claim_kind.value if loop.claim_kind is not None else None,
         "provenance": loop.provenance,
         "confidence": loop.confidence,
         "drift_rationale": loop.drift_rationale,

@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-import json
-from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
-import pytest
-from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
-from ze_agents.errors import UnlicensedClaimKindError
-from ze_plugin.contribution import Contribution, EvidenceRef, SourceFunction, TargetFace
+from ze_agents.claims import ClaimKind, DecayProfile, Provenance
+from ze_plugin.contribution import EvidenceRef, SourceFunction, TargetFace
 
 from ze_worldstate.contribution import loop_to_contribution
-from ze_worldstate.extraction import propose_loop_candidates
 from ze_worldstate.types import (
     LoopClaimKind,
     LoopProvenance,
@@ -22,7 +17,6 @@ from ze_worldstate.types import (
 def _make_loop(**kwargs) -> OpenLoop:
     defaults = dict(
         title="Renew passport",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=0.3,
         state=LoopState.SUSPECTED,
@@ -35,7 +29,7 @@ def _make_loop(**kwargs) -> OpenLoop:
 
 
 def test_loop_to_contribution_preserves_claim_kind_and_confidence():
-    loop = _make_loop(claim_kind=LoopClaimKind.PRIORITY, confidence=0.9)
+    loop = _make_loop(state=LoopState.ACTIVE, confidence=0.9)
 
     contribution = loop_to_contribution(loop)
 
@@ -73,47 +67,18 @@ def test_loop_to_contribution_carries_evidence_through():
     assert contribution.evidence == contribution_evidence
 
 
-# ── extraction.py real write-path rejection (Edge Case 1) ──────────────────────
+# ── claim kind comes from the state at the write path (FR-012) ─────────────────
 
 
-def _llm(response: dict) -> AsyncMock:
-    client = AsyncMock()
-    client.complete = AsyncMock(return_value=json.dumps(response))
-    return client
+def test_contribution_for_a_new_suspected_loop_declares_suspicion():
+    contribution = loop_to_contribution(_make_loop(state=LoopState.SUSPECTED))
+
+    assert contribution.claim_kind is ClaimKind.SUSPICION
 
 
-async def test_extraction_write_path_rejects_malformed_claim_kind_before_create():
-    llm = AsyncMock()
-    loop_store = AsyncMock()
-    loop_store.create = AsyncMock(
-        side_effect=lambda loop: setattr(loop, "id", uuid4()) or loop
-    )
-    embedder = AsyncMock()
-    entity_resolver = AsyncMock(return_value=[])
-
-    # Simulates a loop contribution mistagged with a source_function whose license
-    # doesn't cover PRIORITY (a real OpenLoop claim_kind) — proving the general
-    # licensing check applies to loop-shaped contributions the same way it does
-    # to reflection's, per Edge Case 1.
-    mistagged = Contribution(
-        claim_kind=ClaimKind.PRIORITY,
-        provenance=Provenance.PROMPT_SUPPLIED,
-        confidence=Confidence(value=0.9, decay_profile=DecayProfile.TIME_LINEAR),
-        target_face=TargetFace.ACTIVE_CONCERNS,
-        source_function=SourceFunction.REFLECTION,
-        evidence=[],
+def test_contribution_for_a_declared_active_loop_declares_priority():
+    contribution = loop_to_contribution(
+        _make_loop(state=LoopState.ACTIVE, provenance=LoopProvenance.USER_DECLARED)
     )
 
-    with patch("ze_worldstate.extraction.loop_to_contribution", return_value=mistagged):
-        with pytest.raises(UnlicensedClaimKindError):
-            await propose_loop_candidates(
-                "remind me I need to follow up with the accountant",
-                "user_declared",
-                [],
-                llm,
-                embedder,
-                loop_store,
-                entity_resolver,
-            )
-
-    loop_store.create.assert_not_called()
+    assert contribution.claim_kind is ClaimKind.PRIORITY

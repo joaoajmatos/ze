@@ -10,14 +10,13 @@ from ze_worldstate.drift import (
     compute_drift_deadline,
     is_drift_eligible,
 )
-from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
+from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
 
 def _loop(**overrides) -> OpenLoop:
     defaults = dict(
         id=uuid4(),
         title="Send Maria the contract",
-        claim_kind=LoopClaimKind.PRIORITY,
         provenance=LoopProvenance.USER_DECLARED,
         confidence=0.9,
         state=LoopState.ACTIVE,

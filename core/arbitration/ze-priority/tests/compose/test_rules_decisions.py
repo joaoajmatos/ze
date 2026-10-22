@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
-from ze_agents.claims import ClaimKind
 from ze_priority.compose import rules
 from ze_priority.compose.types import SourceSnapshot
 from ze_worldstate.types import LoopState
@@ -15,7 +14,6 @@ NOW = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
 
 def _suspected(**kw):
     kw.setdefault("state", LoopState.SUSPECTED)
-    kw.setdefault("claim_kind", ClaimKind.SUSPICION)
     kw.setdefault("provenance", "email")
     kw.setdefault("updated_at", NOW - timedelta(hours=5))
     return make_loop(**kw)

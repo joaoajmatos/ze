@@ -16,7 +16,6 @@ from ze_api.api.v0.loops.router import router
 from ze_plugin.contribution import EvidenceRef
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.types import (
-    LoopClaimKind,
     LoopProvenance,
     LoopSource,
     LoopSourceRole,
@@ -32,7 +31,6 @@ def _loop(**overrides) -> OpenLoop:
     defaults = dict(
         id=uuid4(),
         title="Renew passport before the trip",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=0.35,
         state=LoopState.SUSPECTED,
@@ -93,6 +91,34 @@ async def test_list_loops_defaults_to_non_terminal_states():
     assert len(data) == 1
     assert data[0]["state"] == "suspected"
     store.list.assert_awaited_once_with(["suspected", "active", "drifting"], since=None)
+
+
+@pytest.mark.asyncio
+async def test_claim_kind_follows_state_and_is_null_for_a_dropped_loop():
+    store = AsyncMock()
+    store.list = AsyncMock(
+        return_value=[
+            _loop(state=LoopState.SUSPECTED),
+            _loop(state=LoopState.ACTIVE),
+            _loop(state=LoopState.DROPPED),
+        ]
+    )
+    store.list_sources_for = AsyncMock(return_value={})
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            "/api/v0/loops", headers={"Authorization": f"Bearer {API_KEY}"}
+        )
+
+    assert resp.status_code == 200
+    assert [item["claim_kind"] for item in resp.json()] == [
+        "suspicion",
+        "priority",
+        None,
+    ]
 
 
 @pytest.mark.asyncio

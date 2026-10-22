@@ -14,7 +14,6 @@ CTX = ResolveContext(now=NOW)
 def _loop(**kw) -> OpenLoop:
     base = dict(
         title="Reply to Ana",
-        claim_kind=ClaimKind.SUSPICION,
         provenance="email",
         confidence=0.62,
         state=LoopState.DRIFTING,
@@ -38,7 +37,7 @@ async def test_loop_posture_comes_from_the_row_and_flags_from_the_row_only():
     assert "drifting" in line.summary and "no reply in a week" in line.summary
     assert "has a reminder" in line.summary and "linked to a goal" in line.summary
     assert (line.posture.kind, line.posture.source, line.posture.confidence) == (
-        ClaimKind.SUSPICION,
+        ClaimKind.PRIORITY,
         "email",
         0.62,
     )

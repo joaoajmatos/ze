@@ -116,7 +116,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Independent Test**: `make test-worldstate test-priority test` and `make test-pg -k loop_claim_kind`.
 
-- [ ] T014 [L:loops] [US3] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_loop_claim_kind_pg.py`, using `PostgresLoopStore`:
+- [x] T014 [L:loops] [US3] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_loop_claim_kind_pg.py`, using `PostgresLoopStore`:
   - create a suspected loop through `store.create` and assert `claim_kind is ClaimKind.SUSPICION`;
   - confirm it with `ze_worldstate.review.confirm_loop`, re-read it, and assert `PRIORITY`. This fails today;
   - create another suspected loop, run `store.promote(id, confidence=0.7, window_days=7)`, and assert `PRIORITY`. This fails today;
@@ -125,27 +125,27 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
   - `ze_worldstate.rest.list_loops(store, ["dropped"])` returns `"claim_kind": None` for it;
   - `information_schema.columns` has no `open_loops.claim_kind`;
   - `PriorityView` (built as in `apps/ze-api/tests/pg/test_acceptance.py`) returns the confirmed loop with `claim_kind is ClaimKind.PRIORITY`.
-- [ ] T015 [P] [L:loops] [US3] [BE] Write a failing unit test in a new `core/cognition/ze-worldstate/tests/test_claim_kind.py` covering the full table: `loop_claim_kind(LoopState.X)` for all five states, and that `OpenLoop(title=..., provenance=..., confidence=..., state=...)` exposes the matching `.claim_kind`.
-- [ ] T016 [L:loops] [US3] [BE] In `core/cognition/ze-worldstate/ze_worldstate/types.py`:
+- [x] T015 [P] [L:loops] [US3] [BE] Write a failing unit test in a new `core/cognition/ze-worldstate/tests/test_claim_kind.py` covering the full table: `loop_claim_kind(LoopState.X)` for all five states, and that `OpenLoop(title=..., provenance=..., confidence=..., state=...)` exposes the matching `.claim_kind`.
+- [x] T016 [L:loops] [US3] [BE] In `core/cognition/ze-worldstate/ze_worldstate/types.py`:
   - add `def loop_claim_kind(state: LoopState) -> ClaimKind | None` (table in `data-model.md`);
   - remove the `claim_kind` dataclass field from `OpenLoop`;
   - add a read-only `@property claim_kind` returning `loop_claim_kind(self.state)`.
 
   Run `graphify affected "OpenLoop" --depth 2` first and keep its output for T018–T020. T015 passes.
-- [ ] T017 [L:loops] [US3] [BE] In `core/cognition/ze-worldstate/ze_worldstate/store.py`, drop `claim_kind` from `_loop_from_row` and from the `INSERT` column list and values in `create`.
-- [ ] T018 [L:loops] [US3] [BE] Remove the `claim_kind=` argument from the `OpenLoop(...)` constructors in `core/cognition/ze-worldstate/ze_worldstate/extraction.py` (about lines 354 and 462) and `ze_worldstate/tracking.py` (about line 130). In `ze_worldstate/rest.py:34`, emit `loop.claim_kind.value if loop.claim_kind is not None else None`. `contribution.py` stays as it is (it reads the property).
-- [ ] T019 [L:loops] [US3] [PLATFORM] Create `core/cognition/ze-worldstate/ze_worldstate/migrations/versions/zw006_drop_loop_claim_kind.py` (`revision = "zw006"`, `down_revision = "zw005"`).
+- [x] T017 [L:loops] [US3] [BE] In `core/cognition/ze-worldstate/ze_worldstate/store.py`, drop `claim_kind` from `_loop_from_row` and from the `INSERT` column list and values in `create`.
+- [x] T018 [L:loops] [US3] [BE] Remove the `claim_kind=` argument from the `OpenLoop(...)` constructors in `core/cognition/ze-worldstate/ze_worldstate/extraction.py` (about lines 354 and 462) and `ze_worldstate/tracking.py` (about line 130). In `ze_worldstate/rest.py:34`, emit `loop.claim_kind.value if loop.claim_kind is not None else None`. `contribution.py` stays as it is (it reads the property).
+- [x] T019 [L:loops] [US3] [PLATFORM] Create `core/cognition/ze-worldstate/ze_worldstate/migrations/versions/zw006_drop_loop_claim_kind.py` (`revision = "zw006"`, `down_revision = "zw005"`).
   - `upgrade`: `ALTER TABLE open_loops DROP COLUMN claim_kind`.
   - `downgrade`: re-add it as `TEXT`, fill it with `CASE state WHEN 'suspected' THEN 'suspicion' WHEN 'dropped' THEN 'suspicion' ELSE 'priority' END`, then set it `NOT NULL`. The old column was not nullable; the comment says dropped maps to suspicion only for the restore.
-- [ ] T020 [L:loops] [US3] [BE] Remove `claim_kind=` from every `OpenLoop(...)` call in the test files, deleting only those lines and changing nothing else:
+- [x] T020 [L:loops] [US3] [BE] Remove `claim_kind=` from every `OpenLoop(...)` call in the test files, deleting only those lines and changing nothing else:
   - `core/cognition/ze-worldstate/tests/` (`test_track_loop_tool.py`, `test_loop_agent_cancel.py`, `test_extraction.py`, `test_track_loop_undo_payload.py`, `test_rest.py`, `test_admission.py`, `test_contribution.py`, `test_corroboration_flow.py`, `test_intake.py`, `test_store.py`, `test_tracking.py`, `test_surfacing.py`, `test_confirm_loop_tool.py`, `test_decay.py`, `test_matching.py`, `jobs/test_stale_suspicion.py`, `jobs/test_drift_sweep.py`, `test_loop_screen_resolver.py`, `test_drift.py`, `test_corroboration.py`, `test_loop_evidence_plumbing.py`, `test_review.py`);
   - `core/arbitration/ze-priority/tests/factories.py`, `tests/test_turn.py`, `tests/compose/test_rules_topic.py`, `tests/compose/test_rules_slipping.py`;
   - `apps/ze-api/tests/pg/_builders.py`;
   - `core/ops/ze-eval/ze_eval/fixtures.py:88`: delete the `"claim_kind": "suspicion"` line of the `loop` fixture (it inserts into `open_loops`, and `zw006` drops the column; the other `claim_kind` lines in that file target other tables). Tare found this in review.
 
   Where a test sets a kind that disagrees with its state, set the state instead. Rewrite `test_contribution.py::test_extraction_write_path_rejects_malformed_claim_kind_before_create`: a malformed stored kind is no longer possible, so replace it with a test that the contribution built for a new suspected loop declares `SUSPICION`, and for a declared active loop `PRIORITY` (FR-012).
-- [ ] T021 [L:loops] [US3] [BE] In `apps/ze-api/ze_api/api/v0/loops/schemas.py:19`, make `LoopListItem.claim_kind` `str | None`. Update the route's `description` to say it is null for dropped loops. In `apps/ze-api/tests/api/test_loops_route.py`, add a case for a dropped loop returning `claim_kind: null`, and remove its `claim_kind=` constructor arguments.
-- [ ] T022 [L:loops] [US3] [BE] Run `make test-worldstate test-priority test` and `make test-pg -k loop_claim_kind`. All green; T014 passes.
+- [x] T021 [L:loops] [US3] [BE] In `apps/ze-api/ze_api/api/v0/loops/schemas.py:19`, make `LoopListItem.claim_kind` `str | None`. Update the route's `description` to say it is null for dropped loops. In `apps/ze-api/tests/api/test_loops_route.py`, add a case for a dropped loop returning `claim_kind: null`, and remove its `claim_kind=` constructor arguments.
+- [x] T022 [L:loops] [US3] [BE] Run `make test-worldstate test-priority test` and `make test-pg -k loop_claim_kind`. All green; T014 passes.
 
 **Checkpoint**: A confirmed or promoted loop reads `priority` everywhere, and the column is gone.
 
@@ -157,24 +157,24 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Independent Test**: `make test-worldstate` and `make test-pg -k loop_resolve`.
 
-- [ ] T023 [L:loops] [US4] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_loop_resolve_pg.py`, reusing the `_TitleEmbedder`, `_graph()` and `_propose(...)` pattern from `apps/ze-api/tests/pg/test_loop_evidence.py`. Use an `_Llm` that returns `{"is_loop": false, "resolves_existing": true, "title": "Renew passport"}`. Cover:
+- [x] T023 [L:loops] [US4] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_loop_resolve_pg.py`, reusing the `_TitleEmbedder`, `_graph()` and `_propose(...)` pattern from `apps/ze-api/tests/pg/test_loop_evidence.py`. Use an `_Llm` that returns `{"is_loop": false, "resolves_existing": true, "title": "Renew passport"}`. Cover:
   (a) A suspected loop titled "Renew passport", created through `_propose` with an email ref. A second `_propose` with a resolve reply and a new episode ref closes it: `state is CLOSED`, `closed_at` is set, `list_evidence` contains the new ref, and `dismissed_evidence_fingerprint` is NULL. This fails today.
   (b) The same, run through the System One admission path: `_commit_admitted` with a `LoopGateDecision("resolve", ...)`, called as `propose_loop_candidates(..., admission=LoopAdmission(...))` the way `ze_worldstate/admission.py` does. Repeat for the provenances `conversation`, `email` and `ingestion` (each with one evidence ref, linked after the resolve) and `calendar` (no refs: it closes with nothing linked).
   (c) Active and drifting loops (from `_builders.make_loop`) close the same way, with the evidence linked.
   (d) `PostgresLoopStore.transition(suspected_id, "closed")` still raises `InvalidLoopTransitionError`.
   (e) `store.resolve` on a dropped loop returns None and changes nothing.
   (f) `LoopInflow(...).commit_for(text, "email", admission)` with a resolve admission logs no `loop_extraction_failed`. Use `structlog.testing.capture_logs`.
-- [ ] T024 [L:loops] [US4] [BE] In `core/cognition/ze-worldstate/ze_worldstate/store.py`:
+- [x] T024 [L:loops] [US4] [BE] In `core/cognition/ze-worldstate/ze_worldstate/store.py`:
   - add `resolve(self, loop_id: UUID, evidence: Sequence[EvidenceRef]) -> OpenLoop | None` to the `LoopStore` Protocol and implement it on `PostgresLoopStore`, per `contracts/loop-store.md`;
   - the implementation runs one `async with conn.transaction()`, does a conditional `UPDATE ... WHERE id = $1 AND state IN ('suspected','active','drifting') RETURNING *`, then inserts one `derived_from` relationship per ref with the `link_evidence` SQL;
   - it raises `LoopNotFoundError` when the id is unknown, returns `None` when no row moved, and logs `open_loop_transitioned` with `via="resolve"` (structlog reserves `event`);
   - leave `_ALLOWED_TRANSITIONS` and `transition` unchanged.
-- [ ] T025 [L:loops] [US4] [BE] In `core/cognition/ze-worldstate/ze_worldstate/extraction.py`:
+- [x] T025 [L:loops] [US4] [BE] In `core/cognition/ze-worldstate/ze_worldstate/extraction.py`:
   - give `_close_matching_loop` an `evidence_refs: list[EvidenceRef]` parameter, and have it call `loop_store.resolve(existing.id, evidence_refs)`, returning `[closed]` or `[]`;
   - pass `evidence_refs` at both call sites (`_commit_admitted`, about line 512, and the 109 fallback branch in `propose_loop_candidates`, about line 640).
 
   Add `resolve` to every in-memory `LoopStore` fake under `core/cognition/ze-worldstate/tests/` (search for `class .*LoopStore` and `async def transition`). Update `test_extraction.py::test_resolves_existing_closes_matching_loop_instead_of_creating` and `test_intake.py::test_resolve_closes_matching_loop` to assert `resolve` was called with the evidence. T023 passes.
-- [ ] T026 [L:loops] [US4] [BE] Run `make test-worldstate`, `make test-pg -k "loop_resolve or loop_evidence or loop_claim_kind"`, and `make lint`. All green. The `loops` lane is ready for review. Tell `lead` that `schemas.py` changed (T021), so the client can be regenerated.
+- [x] T026 [L:loops] [US4] [BE] Run `make test-worldstate`, `make test-pg -k "loop_resolve or loop_evidence or loop_claim_kind"`, and `make lint`. All green. The `loops` lane is ready for review. Tell `lead` that `schemas.py` changed (T021), so the client can be regenerated.
 
 **Checkpoint**: B3 and B12 are fixed. Phase 203 can build on `LoopStore.resolve` and `loop_claim_kind`.
 

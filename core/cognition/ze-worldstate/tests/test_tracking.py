@@ -24,7 +24,6 @@ def _loop(**overrides) -> OpenLoop:
     base = dict(
         id=uuid4(),
         title="Porto move",
-        claim_kind=ClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=0.3,
         state=LoopState.SUSPECTED,
@@ -79,6 +78,11 @@ class FakeLoopStore:
         loop = self.loops[loop_id]
         loop.state = LoopState(new_state)
         self.transitions.append((loop_id, new_state, user_asked))
+        return loop
+
+    async def resolve(self, loop_id: UUID, evidence) -> OpenLoop:
+        loop = self.loops[loop_id]
+        loop.state = LoopState.CLOSED
         return loop
 
     async def stamp_declared(

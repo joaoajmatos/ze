@@ -46,12 +46,10 @@ class _FakeTracker:
 
 
 def _tracked_loop() -> OpenLoop:
-    from ze_agents.claims import ClaimKind
 
     return OpenLoop(
         id=uuid4(),
         title="Porto move",
-        claim_kind=ClaimKind.PRIORITY,
         provenance=LoopProvenance.USER_DECLARED,
         confidence=0.9,
         state=LoopState.ACTIVE,
@@ -139,13 +137,11 @@ def test_forget_that_is_miss_not_a_write():
 
 class _ConfirmStore:
     def __init__(self, fail_confirm: bool = False) -> None:
-        from ze_agents.claims import ClaimKind
 
         self.fail_confirm = fail_confirm
         self.bank = OpenLoop(
             id=uuid4(),
             title="Switch bank",
-            claim_kind=ClaimKind.SUSPICION,
             provenance="email",
             confidence=0.35,
             state=LoopState.SUSPECTED,
@@ -153,7 +149,6 @@ class _ConfirmStore:
         self.dentist = OpenLoop(
             id=uuid4(),
             title="Dentist appointment",
-            claim_kind=ClaimKind.SUSPICION,
             provenance="email",
             confidence=0.3,
             state=LoopState.SUSPECTED,
@@ -170,6 +165,10 @@ class _ConfirmStore:
         self.transitions.append((loop_id, state))
         loop = self.bank if loop_id == self.bank.id else self.dentist
         return loop
+
+    async def resolve(self, loop_id, evidence):
+        self.transitions.append((loop_id, "closed"))
+        return self.bank if loop_id == self.bank.id else self.dentist
 
     async def stamp_declared(self, loop_id, *, confidence, deadline):
         self.stamped.append(loop_id)

@@ -21,7 +21,6 @@ from ze_worldstate.store import LoopStore
 from ze_worldstate.types import (
     DECLARED_CONFIDENCE,
     LoopAdmission,
-    LoopClaimKind,
     LoopProvenance,
     LoopSource,
     LoopSourceRole,
@@ -351,7 +350,6 @@ async def _create_declared_loop(
     confirmed_at = datetime.now(timezone.utc)
     loop = OpenLoop(
         title=title,
-        claim_kind=LoopClaimKind.PRIORITY,
         provenance=LoopProvenance.USER_DECLARED
         if prov == LoopProvenance.CONVERSATION
         else prov,
@@ -383,6 +381,7 @@ async def _close_matching_loop(
     loop_store: LoopStore,
     graph_store: GraphStore | None,
     embedder: Any,
+    evidence_refs: list[EvidenceRef],
 ) -> list[OpenLoop]:
     if graph_store is None:
         return []
@@ -396,8 +395,8 @@ async def _close_matching_loop(
     )
     if existing is None:
         return []
-    closed = await loop_store.transition(existing.id, LoopState.CLOSED.value)
-    return [closed]
+    closed = await loop_store.resolve(existing.id, evidence_refs)
+    return [closed] if closed is not None else []
 
 
 async def _create_suspected_loop(
@@ -459,7 +458,6 @@ async def _create_suspected_loop(
 
     loop = OpenLoop(
         title=title,
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=prov,
         confidence=_SUSPECTED_CONFIDENCE,
         state=LoopState.SUSPECTED,
@@ -510,7 +508,7 @@ async def _commit_admitted(
         return []
     if kind == "resolve":
         return await _close_matching_loop(
-            written.title, entity_ids, loop_store, graph_store, embedder
+            written.title, entity_ids, loop_store, graph_store, embedder, evidence_refs
         )
     if kind == "create_declared":
         created = await _create_declared_loop(
@@ -638,7 +636,7 @@ async def propose_loop_candidates(
         # T030: "it's done" recognition — resolve the matching loop instead of
         # creating a new one.
         return await _close_matching_loop(
-            gate.title, entity_ids, loop_store, graph_store, embedder
+            gate.title, entity_ids, loop_store, graph_store, embedder, evidence_refs
         )
 
     if not gate.is_loop or not gate.title:

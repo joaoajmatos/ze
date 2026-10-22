@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
-from ze_agents.claims import ClaimKind
 from ze_priority.compose import rules
 from ze_priority.compose.types import SourceSnapshot
 from ze_priority.scoring import score_relationship_staleness, sort_and_rank
@@ -66,7 +65,6 @@ def test_us1_independent_example():
     suspected = _loop(
         title="Maybe call the bank",
         state=LoopState.SUSPECTED,
-        claim_kind=ClaimKind.SUSPICION,
     )
     stuck = make_goal_progress(
         goal_overrides={"title": "Ship the report"},
