@@ -111,8 +111,8 @@
 
 ## Phase 11: User Story 10 — data domains (P3)
 
-- [ ] T038 [L:automation] [BE] [US10] Test first, new `apps/ze-api/tests/test_data_domains_unique.py`: build the list the container builds (`engine_data_domains`, `automation_data_domains`, `worldstate_data_domains`, `feedback_data_domains`, `interruption_data_domains`, `PersonalPlugin.data_domains(PersonalPlugin.__new__(PersonalPlugin))`) over a fake pool that records SQL (pattern in `plugins/ze-personal/tests/test_data_domains.py`). Assert each table is registered once, `export()` selects each table once, and `delete()` runs `DELETE FROM goals` in a later batch than `DELETE FROM open_loops`. Fails today.
-- [ ] T039 [L:automation] [BE] [US10] Delete the `automation.goals` and `automation.workflows` entries from `automation_data_domains` (`ze_automation/bootstrap.py:84-140`); keep `automation.accountability`. T038 passes.
+- [x] T038 [L:automation] [BE] [US10] Test first, new `apps/ze-api/tests/test_data_domains_unique.py`: build the list the container builds (`engine_data_domains`, `automation_data_domains`, `worldstate_data_domains`, `feedback_data_domains`, `interruption_data_domains`, `PersonalPlugin.data_domains(PersonalPlugin.__new__(PersonalPlugin))`) over a fake pool that records SQL (pattern in `plugins/ze-personal/tests/test_data_domains.py`). Assert each table is registered once, `export()` selects each table once, and `delete()` runs `DELETE FROM goals` in a later batch than `DELETE FROM open_loops`. Fails today.
+- [x] T039 [L:automation] [BE] [US10] Delete the `automation.goals` and `automation.workflows` entries from `automation_data_domains` (`ze_automation/bootstrap.py:84-140`); keep `automation.accountability`. T038 passes.
 
 ---
 

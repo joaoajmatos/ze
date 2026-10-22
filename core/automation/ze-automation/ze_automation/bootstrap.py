@@ -134,8 +134,6 @@ def automation_data_domains(pool: asyncpg.Pool) -> list[DataDomain]:
         )
 
     return [
-        _domain("automation.goals", "goals"),
-        _domain("automation.workflows", "workflows"),
         _domain("automation.accountability", "accountability_anomalies"),
     ]
 
