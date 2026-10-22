@@ -44,7 +44,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Goal**: Perception facts are stored `prompt_supplied`. Dream decay and expiry touch only dream insights (`dream_run_id IS NOT NULL`). Dream promotion stores insights again.
 
-**Independent Test**: `make test-core test-ingestion test-messenger test-memory test-seed` and `make test-pg -k dream_decay`.
+**Independent Test**: `make test-core test-ingestion test-messenger test-memory test-seed` and `make test-pg -k "dream_decay or consolidation_merge"`.
 
 - [ ] T002 [P] [L:facts] [US1] [BE] Write a failing test in `core/engine/ze-core/tests/orchestration/nodes/test_memory.py`: run `write_memory` with a fact admission that persists one fact (reuse the existing persist-fact fixtures in that file and patch `submit_perception_facts` the way the file already does), and assert that every `PerceptionFactSubmit.provenance` is `Provenance.PROMPT_SUPPLIED`. It fails today (`SYNTHESIZED`).
 - [ ] T003 [L:facts] [US1] [BE] In `core/engine/ze-core/ze_core/orchestration/nodes/memory.py` (the `PerceptionFactSubmit(...)` block at about line 214-221 only), change `provenance=Provenance.SYNTHESIZED` to `Provenance.PROMPT_SUPPLIED`. T002 passes. `make test-core`.
@@ -65,7 +65,15 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
   Update `core/cognition/ze-memory/tests/dream/test_promoter.py` for any SQL-text assertions. T008 passes (`make test-pg`), and so does `make test-memory`.
 - [ ] T010 [P] [L:facts] [US1] [BE] In `core/ops/ze-seed/ze_seed/narrative/persona.yaml`, change the two seed facts with `provenance: synthesized` (ids `00000006-0001-4000-8000-000000000010` and `...00000000003d`) to `provenance: prompt_supplied`. In `core/ops/ze-seed/tests/test_loader.py:69-72`, assert that no seed fact is `synthesized`. `make test-seed`.
 
-**Checkpoint**: New conversation, ingestion and inbound facts are `prompt_supplied`, and decay touches dream insights only.
+- [ ] T044 [L:facts] [US1] [BE] Write failing tests for consolidation's merged fact (FR-002a, research R2a):
+  - In `core/cognition/ze-memory/tests/test_consolidator_nli.py`, give `_fact_row` the keyword arguments `provenance='prompt_supplied'`, `claim_kind='fact'` and `dream_run_id=None`, and add them to the row dict. Do the same for the row fixtures in `core/cognition/ze-memory/tests/test_consolidator.py`.
+  - Extend `test_nli_entailment_triggers_llm_merge` to assert `insert_merged_fact` is awaited with `provenance='prompt_supplied'` and `claim_kind='fact'`. This fails today: the method takes no provenance.
+  - Add `test_entailment_with_dream_insight_skips_merge`: one row has `dream_run_id=uuid4()`, `provenance='synthesized'` and `claim_kind='inference'`, and NLI returns entailment 0.85. The model is not called, nothing is contradicted, and `insert_merged_fact` is not awaited.
+  - Add `test_entailment_across_provenance_skips_merge`: the same shape with `prompt_supplied` and `live_search` rows. Nothing is merged.
+  - Add test-pg `apps/ze-api/tests/pg/test_consolidation_merge_pg.py`. Insert one fact with raw SQL, then assert that `PostgresConsolidationStore(pool).fetch_active_facts()` returns its `provenance`, `claim_kind` and `dream_run_id`. Call `insert_merged_fact(..., provenance='prompt_supplied', claim_kind='fact')` and read the new row back: `provenance='prompt_supplied'`, `claim_kind='fact'`, `agent='consolidation'`, `dream_run_id` NULL.
+- [ ] T045 [L:facts] [US1] [BE] In `core/cognition/ze-memory/ze_memory/consolidation_store.py`, add `provenance, claim_kind, dream_run_id` to the `SELECT` in `fetch_active_facts`. Give `insert_merged_fact` the parameters `provenance: str` and `claim_kind: str` and bind them in place of the literals `'fact'` and `'synthesized'`. In `core/cognition/ze-memory/ze_memory/consolidator.py` `dedup_facts`, enter the entailment-merge branch only when both rows have `dream_run_id` None and the same `provenance` and `claim_kind`, and pass both values to `insert_merged_fact`. T044 passes (`make test-memory`, `make test-pg -k consolidation_merge`).
+
+**Checkpoint**: New conversation, ingestion and inbound facts are `prompt_supplied`, consolidation keeps its inputs' provenance, and decay touches dream insights only.
 
 ---
 
@@ -272,7 +280,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 ## Dependencies & Execution Order
 
 - **T001** comes first.
-- **US1 (T002–T010) → US2 (T011–T013)**, both in the `facts` lane. US2 needs only T012's file, but the lane runs them in order.
+- **US1 (T002–T010, T044–T045) → US2 (T011–T013)**, both in the `facts` lane. T044–T045 were added on 2026-10-23 after the facts-lane review; if T011–T013 are already done, run them next. US2 needs only T012's file, but the lane runs them in order.
 - **US3 (T014–T022) → US4 (T023–T026)**, both in the `loops` lane. They are sequential because both edit `store.py` and `extraction.py`, and T023's fixtures build on the derived claim kind.
 - **US5 (T027–T028)** in `jr1` and **US6 (T029–T034)** in `contacts` are independent of everything else.
 - **T035–T040** (`lead`) start once all four lanes are reviewed. T036–T037 depend on T021.
@@ -283,7 +291,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 After T001, four agents start together:
 
 ```text
-facts:    T002, T004, T006 (three failing tests, different files) → T003, T005, T007 → T008 → T009 → T010 → T011 → T012 → T013
+facts:    T002, T004, T006 (three failing tests, different files) → T003, T005, T007 → T008 → T009 → T010 → T044 → T045 → T011 → T012 → T013
 loops:    T014, T015 → T016 → T017 → T018 → T019 → T020 → T021 → T022 → T023 → T024 → T025 → T026
 contacts: T029 → T030 → T031 → T032 → T033 → T034
 jr1:      T027 → T028
@@ -291,7 +299,7 @@ jr1:      T027 → T028
 
 ## Implementation Strategy
 
-- **MVP**: US1 alone (T002–T010) stops new user-stated facts from decaying. It is the bug with real cost.
+- **MVP**: US1 alone (T002–T010, T044–T045) stops new user-stated facts from decaying. It is the bug with real cost.
 - **Then** US2 (the existing rows), US3 and US4 (loops), US5, and US6.
 - Each lane is reviewed on its own small diff before `lead` merges it.
 - Phase 203 depends on US3 and US4 having landed.
