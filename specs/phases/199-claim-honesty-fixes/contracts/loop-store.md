@@ -11,7 +11,7 @@ async def resolve(
 - Moves the loop to `closed` iff its state is `suspected`, `active` or `drifting`, and links each `evidence` ref with `derived_from`. One transaction.
 - Returns the closed loop, or `None` when nothing moved (already `closed` or `dropped`, or a concurrent resolve won). Raises `LoopNotFoundError` when the id does not exist.
 - Never writes `dismissed_evidence_fingerprint`.
-- Logs `open_loop_transitioned` with `from_state`, `to_state="closed"`, `event="resolve"`.
+- Logs `open_loop_transitioned` with `from_state`, `to_state="closed"`, `via="resolve"` (structlog reserves `event` for the log message name).
 
 ## Changed
 
