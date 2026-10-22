@@ -30,7 +30,7 @@ description: "Tasks for phase 199 Claim Honesty Fixes"
 
 **Purpose**: Reserve migration revisions and confirm the cross-floor boundaries before any lane starts.
 
-- [ ] T001 [L:lead] [PLATFORM] Confirm the next free revisions are `zm026` (after `zm025` in `core/cognition/ze-memory/ze_memory/migrations/versions/`), `zw006` (after `zw005` in `core/cognition/ze-worldstate/ze_worldstate/migrations/versions/`) and `zc041` (after `zc040` in `plugins/ze-personal/ze_personal/migrations/versions/`). Ask floor 198 (Fathom) through the Maestro to confirm it still adds no migration (198 FR-026). Record the three revisions and file names (`zm026_perception_fact_provenance.py`, `zw006_drop_loop_claim_kind.py`, `zc041_contact_source_provenance.py`) in the "199 Claim Honesty Fixes Handoffs" note.
+- [x] T001 [L:lead] [PLATFORM] Confirm the next free revisions are `zm026` (after `zm025` in `core/cognition/ze-memory/ze_memory/migrations/versions/`), `zw006` (after `zw005` in `core/cognition/ze-worldstate/ze_worldstate/migrations/versions/`) and `zc041` (after `zc040` in `plugins/ze-personal/ze_personal/migrations/versions/`). Ask floor 198 (Fathom) through the Maestro to confirm it still adds no migration (198 FR-026). Record the three revisions and file names (`zm026_perception_fact_provenance.py`, `zw006_drop_loop_claim_kind.py`, `zc041_contact_source_provenance.py`) in the "199 Claim Honesty Fixes Handoffs" note.
 
 ---
 
