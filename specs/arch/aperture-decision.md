@@ -51,6 +51,10 @@ surfacing discipline, and the phase spec writes itself.
 opened → active → drifting → closed | dropped
 ```
 
+(As shipped, "opened" is the `suspected` state: `suspected → active → drifting → closed | dropped`,
+and a resolved suspected loop goes straight to `closed`, per `suspected-loop-resolution.md`. Goals
+and loops stay separate linked records, per `commitments-linked-not-merged.md`.)
+
 Crucially, loops are **opened implicitly by perception**, not declared by the user: a promise
 in an email thread, a decision left pending in conversation, a "I should look into X"
 mentioned once, a project whose dependency stalled. A **goal is the special case**: an open

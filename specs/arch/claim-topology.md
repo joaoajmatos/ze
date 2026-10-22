@@ -4,6 +4,12 @@
 > The leftover on the fact row (`Fact.provenance` as `"raw"`/`"synthesized"`, public
 > `propose_facts()`) shipped as contribution-seam rollout steps 5–6 (Phases 133–134).
 > `Fact.provenance` is `ze_agents.claims.Provenance`; persist is private to the seam.
+> **Superseded in part (2026-10-22):** the body below is the original proposal. Three of its ideas
+> did not ship, and `plugin-domain-vocabulary.md` overrides them: inflow values are not folded into
+> `Provenance` (the inflow is its own field); `LoopClaimKind`/`LoopProvenance` were not kept as
+> re-exports; `FROZEN` is not a decay profile. Hypotheses are always created as `SUSPICION`. A
+> loop's claim kind follows its state (`loop-claim-kind-from-state.md`). An extracted user
+> statement is `prompt_supplied`, not `synthesized` (`user-statement-provenance.md`).
 > **Scope:** `core/contracts/ze-agents` (new shared home), `core/cognition/ze-memory`, `core/cognition/ze-correlation`,
 > `core/cognition/ze-worldstate`, `core/contracts/ze-plugin` (all four current claim producers).
 > **Constrained by:** `specs/arch/ze-doctrine.md` §The epistemic ontology,

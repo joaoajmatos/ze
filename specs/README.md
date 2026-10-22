@@ -9,7 +9,8 @@ specs/
 ├── phases/            ← feature specs, one spec-kit directory per feature
 │   └── NNN-<name>/    ←   spec.md (+ plan.md, research.md, tasks.md, contracts/, …)
 ├── core/              ← ze-core infrastructure layer specs
-└── arch/              ← architecture decision records
+├── arch/              ← architecture decision records
+└── GLOSSARY.md        ← the domain language (terms, aliases to avoid, relationships)
 ```
 
 Feature specs follow the [GitHub spec-kit](https://github.com/github/spec-kit)
@@ -241,6 +242,51 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 195 | [Screen Context Awareness](phases/195-screen-context-awareness/spec.md) | ✅ Implemented (live eval: first run 10 of 26, chat_about 9 of 15 after owner routing; chip capture deferred to 193) |
 | 196 | [OpenRouter Server Tools](phases/196-openrouter-server-tools/spec.md) | ⏸ Halted by the user 2026-10-21 (too tied to OpenRouter; see research R9) |
 | 197 | [Programmatic Tool Use](phases/197-programmatic-tool-use/spec.md) | ✅ Implemented (no migration; live evals not run) |
+
+### Architecture review 2026-10 (phases 198–219)
+
+Comes from the 2026-10-22 depth, seam and domain-model audit. The decisions are ADRs:
+[user-statement-provenance](arch/user-statement-provenance.md),
+[loop-claim-kind-from-state](arch/loop-claim-kind-from-state.md),
+[executive-licence](arch/executive-licence.md),
+[suspected-loop-resolution](arch/suspected-loop-resolution.md),
+[person-identity](arch/person-identity.md),
+[thread-not-session](arch/thread-not-session.md) and
+[commitments-linked-not-merged](arch/commitments-linked-not-merged.md).
+The terms are in [GLOSSARY.md](GLOSSARY.md).
+
+Run the waves in order. The phases inside a wave run in parallel, except where a dependency is
+listed. Wave 0 has a plan and tasks. Later waves get theirs when the wave starts, because their plans
+depend on code the earlier waves change.
+
+| Phase | Spec | Wave | Depends on | Status |
+|---|---|---|---|---|
+| 198 | [Audit Bug Fixes](phases/198-audit-bug-fixes/spec.md) | 0 | — | ⏳ Not written yet |
+| 199 | [Claim Honesty Fixes](phases/199-claim-honesty-fixes/spec.md) | 0 | — | ⏳ Not written yet |
+| 200 | [Agent Context Derivation](phases/200-agent-context-derivation/spec.md) | 1 | 198 | ✏️ Draft (unchecked; writer stopped) |
+| 201 | [Typed Turn Services](phases/201-typed-turn-services/spec.md) | 1 | 200 | ✏️ Draft (unchecked; writer stopped) |
+| 202 | [Judgment Surface](phases/202-judgment-surface/spec.md) | 1 | 198 | 📝 Specified |
+| 203 | [Open-Loop Lifecycle](phases/203-open-loop-lifecycle/spec.md) | 1 | 199 | 📝 Specified |
+| 204 | [Push Bar and Cooldowns](phases/204-push-bar-and-cooldowns/spec.md) | 1 | 198 | 📝 Specified |
+| 205 | [Web Turn State](phases/205-web-turn-state/spec.md) | 1 | 198 | 📝 Specified |
+| 206 | [Web Query Staleness](phases/206-web-query-staleness/spec.md) | 1 | — | 📝 Specified |
+| 207 | [Conversation Turn Module](phases/207-conversation-turn-module/spec.md) | 2 | 201 | 📝 Specified |
+| 208 | [Trace Recorder](phases/208-trace-recorder/spec.md) | 2 | 200, 201 | ⏳ Not written yet |
+| 209 | [Write Gate and Reply Template](phases/209-write-gate-and-reply-template/spec.md) | 2 | 200 | 📝 Specified |
+| 210 | [Plugin Seam Narrowing](phases/210-plugin-seam-narrowing/spec.md) | 2 | 201 | 📝 Specified |
+| 211 | [Personal Unbundling](phases/211-personal-unbundling/spec.md) | 2 | 210 | ✏️ Draft (unchecked; writer stopped) |
+| 212 | [Contribution Submitter](phases/212-contribution-submitter/spec.md) | 3 | 201, 203 | 📝 Specified |
+| 213 | [One Scheduler](phases/213-one-scheduler/spec.md) | 3 | 204 | 📝 Specified |
+| 214 | [Unattended Step Runner](phases/214-unattended-step-runner/spec.md) | 3 | 200, 201 | 📝 Specified |
+| 215 | [Workspace Runs Module](phases/215-workspace-runs-module/spec.md) | 3 | 201 | 📝 Specified |
+| 216 | [Memory Interface and SDK Trim](phases/216-memory-interface-and-sdk-trim/spec.md) | 3 | 201 | ⏳ Not written yet |
+| 217 | [Data Domain Factory](phases/217-data-domain-factory/spec.md) | 3 | 211 | ⏳ Not written yet |
+| 218 | [Web Module Host](phases/218-web-module-host/spec.md) | 3 | 206 | 📝 Specified |
+| 219 | [WS Conformance Harness](phases/219-ws-conformance-harness/spec.md) | 3 | 207 | 📝 Specified |
+
+Files several phases share: `ze_api/wiring/container.py` (201, then 207, 210, 211 in order),
+`orchestration/nodes/execution.py` (200, then 209), `nodes/trace.py` and `conversation/turn.py`
+(200, then 208), and `ze_worldstate/admission.py` (202 and 203: give it to one lane).
 
 ## Ze Core specs (`core/`)
 

@@ -113,6 +113,11 @@ shared budget when both have something drift-worthy on the same day.
   merged `PriorityView` snapshot, including Phase 127 pins. Unsolicited mentions stay
   relevance-gated. The morning briefing already reads relationship nudges from
   `PriorityView` (Phase 128); rewriting the rest of the briefing is out of scope.
+  **Amended 2026-10-22:** the code did not match this. Only REST and `TurnSurfacing` merged
+  overrides. From phase 198, `PriorityView` returns the user's order by default, and every consumer
+  reads it: composed answers, `reprioritize_item`, push arbitration and the briefing. Pins steer
+  pushes within the budget. Arbitration ranks candidates in the user's order, an item the user
+  pushed down never wins a push, and pins never add a push beyond the budget.
 - [x] **Definition of "shared budget"** — resolved as the simple system-wide number per Phase
   123 FR-005: the single migrated limit is the minimum of the two prior per-mechanism
   `max_pushes_per_day` values, not a load-varying budget.

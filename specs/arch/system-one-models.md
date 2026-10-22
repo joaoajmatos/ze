@@ -39,7 +39,7 @@ Authoritative provider docs: [TypeSafe index](https://docs.typesafe.ai/llms.txt)
 ## Pinned (do not relitigate in a phase spec)
 
 1. **OpenRouter remains System Two.** System One is an *additional* decision layer. No replacement of agent replies, drafts, research synthesis, or conductor planning.
-2. **Code owns arithmetic, policy, and execution.** Budgets, `CapabilityGate` modes, SQL, confirm WebSocket protocol, decay, push claim-then-notify, `allowed_tools` intersection, date/window math — never a model.
+2. **Code owns arithmetic, policy, and execution.** Budgets, write confirmation (phase 181 replaced `CapabilityGate` modes), SQL, confirm WebSocket protocol, decay, push claim-then-notify, `allowed_tools` intersection, date/window math — never a model.
 3. **Local E5 stays the shortlist.** Cosine is similarity, not calibrated confidence. System One may **select** after a shortlist; it does not replace `query:` / `passage:` encoding. *(167: when the recall gate needs the whole roster, E5 no longer filters for the routing Choice and remains only the 160 cosine skip path; see the 167 recall table in `specs/phases/167-routing-choice-criteria/research.md`.)*
 4. **Local DeBERTa NLI stays for pair entailment/contradiction.** Write-time contradiction and consolidator NLI are the right primitive at zero API cost. Do not replace them with System One. Fail-open on non-Latin (`None` scores) is unchanged until a later phase measures otherwise.
 5. **Fail open to the current path.** Timeout, missing key, 429/529 → behave as today (same contract as `live_rerank`). High-harm interrupts (ntfy) MAY fail closed in a later push phase; 162–164 fail open.
@@ -189,7 +189,7 @@ preprocess → embed_route → [decompose] → fetch_context → match_skills �
 | `ComplexityEstimator` | regex + word count | 182: tier Noul after match_skills; full model on off/skip |
 | Haiku `decompose` | JSON subtasks | **164 Implemented** — gated on `none` / multi-specialist; not deleted |
 | `SkillMatcher` | E5 shortlist, System One Choice + Noul (166), `/slug` in code | **166 Implemented** — 114 path on skip, abstain or off |
-| `CapabilityGate` / budget | lookup + USD | never |
+| Write confirmation (181; was `CapabilityGate`) / budget | lookup + USD | never |
 | `live_rerank` | DeBERTa as relevance | queued O5 |
 | Extractor `speech_act` | System One (163), Haiku fallback | **163 Implemented** |
 | Write-time NLI | DeBERTa contradiction | keep |

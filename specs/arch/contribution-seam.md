@@ -96,7 +96,7 @@ like" and how far each is from the seam today.
 
 | Function | Contributes | Today | Distance to seam |
 |---|---|---|---|
-| Perception | facts, candidate loops, feedback records (`FEEDBACK_RECORD`, Phase 165) | **Signals**, **loops**, and **facts** on the seam (`ingest_signal`, `propose_loop_candidates`, `submit_perception_facts`) | Done for current producers (133–134). `SignalSource` stays the registration Protocol; polling rewire is deferred |
+| Perception | facts, feedback records (`FEEDBACK_RECORD`, Phase 165). Candidate loops are Executive's interpretation of what perception read (`executive-licence.md`) | **Signals** and **facts** on the seam; loops from its inflows are submitted as Executive (`ingest_signal`, `propose_loop_candidates`, `submit_perception_facts`) | Done for current producers (133–134). `SignalSource` stays the registration Protocol; polling rewire is deferred |
 | Memory | nothing new (custodian) | persist is private (`_persist_facts` / seam `write=`); no public `propose_facts` | Target, not a contributor. Door closed in step 6 / Phase 134 |
 | Executive | priorities, open-loop state | OpenLoop writes on the seam (Phases 109–110, 124); `PriorityView` ranks (123, 127, 132) | Write path done. Ranking consumer is Phase 132, not this brief |
 | Social cognition | identity/relationship claims | Contacts on the seam (125); co-occurrence hypotheses on the seam (130) | Done for current producers |

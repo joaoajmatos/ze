@@ -2,6 +2,10 @@
 
 > **Status:** Draft for discussion; open questions answered 2026-10-12 (see §8 Decisions)
 > **Date:** 2026-10-12
+> **Read as of 2026-10-12.** Since then, phase 177 added quiet hours, urgency tiers and the
+> interruption governor, and phase 181 replaced `CapabilityGate` modes with irreversible-write
+> confirmation. Decision D3 (link commitments, do not merge them) is recorded as
+> `commitments-linked-not-merged.md`.
 > **Author:** Cairn (Spec Architect, floor "Executive Function Research")
 > **Scope:** `core/cognition/ze-worldstate`, `core/arbitration/ze-priority`, `core/contracts/ze-proactive`,
 > `core/automation/ze-automation`, `core/cognition/ze-correlation`, and the executive-adjacent parts of
