@@ -291,11 +291,10 @@ async def test_suspected_creates_suspected_loop():
 
 async def test_resolve_closes_matching_loop(monkeypatch):
     from ze_worldstate import extraction
-    from ze_worldstate.types import LoopClaimKind, OpenLoop
+    from ze_worldstate.types import OpenLoop
 
     existing = OpenLoop(
         title="x",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance="conversation",
         confidence=0.3,
         state=LoopState.CLOSED,

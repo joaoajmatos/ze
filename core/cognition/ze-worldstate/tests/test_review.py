@@ -12,7 +12,6 @@ from ze_worldstate.drift import DEFAULT_DRIFT_WINDOW_DAYS
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.types import (
     DECLARED_CONFIDENCE,
-    LoopClaimKind,
     LoopProvenance,
     LoopState,
     OpenLoop,
@@ -23,7 +22,6 @@ def _loop(state=LoopState.SUSPECTED, **overrides) -> OpenLoop:
     defaults = dict(
         id=uuid4(),
         title="Renew passport",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=0.3,
         state=state,

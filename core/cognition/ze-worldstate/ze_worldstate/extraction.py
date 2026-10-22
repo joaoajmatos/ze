@@ -21,7 +21,6 @@ from ze_worldstate.store import LoopStore
 from ze_worldstate.types import (
     DECLARED_CONFIDENCE,
     LoopAdmission,
-    LoopClaimKind,
     LoopProvenance,
     LoopSource,
     LoopSourceRole,
@@ -351,7 +350,6 @@ async def _create_declared_loop(
     confirmed_at = datetime.now(timezone.utc)
     loop = OpenLoop(
         title=title,
-        claim_kind=LoopClaimKind.PRIORITY,
         provenance=LoopProvenance.USER_DECLARED
         if prov == LoopProvenance.CONVERSATION
         else prov,
@@ -459,7 +457,6 @@ async def _create_suspected_loop(
 
     loop = OpenLoop(
         title=title,
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=prov,
         confidence=_SUSPECTED_CONFIDENCE,
         state=LoopState.SUSPECTED,

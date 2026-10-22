@@ -169,12 +169,11 @@ async def test_explicit_declaration_within_conversation_creates_active_user_decl
 
 async def test_resolves_existing_closes_matching_loop_instead_of_creating():
     from ze_memory.graph.types import Relationship
-    from ze_worldstate.types import LoopClaimKind, OpenLoop
+    from ze_worldstate.types import OpenLoop
 
     existing = OpenLoop(
         id=uuid4(),
         title="Follow up with the accountant",
-        claim_kind=LoopClaimKind.PRIORITY,
         provenance=LoopProvenance.USER_DECLARED,
         confidence=0.9,
         state=LoopState.ACTIVE,
@@ -224,12 +223,11 @@ async def test_resolves_existing_closes_matching_loop_instead_of_creating():
 
 
 async def test_duplicate_candidate_attaches_to_existing_loop_not_duplicated():
-    from ze_worldstate.types import LoopClaimKind, OpenLoop
+    from ze_worldstate.types import OpenLoop
 
     existing = OpenLoop(
         id=uuid4(),
         title="Renew passport",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=0.3,
         state=LoopState.SUSPECTED,

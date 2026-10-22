@@ -11,7 +11,6 @@ from ze_agents.db import DBPool
 from ze_worldstate.drift import DEFAULT_DRIFT_WINDOW_DAYS
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.types import (
-    LoopClaimKind,
     LoopSource,
     LoopSourceRole,
     LoopState,
@@ -55,7 +54,6 @@ def _loop_from_row(row) -> OpenLoop:
         id=row["id"],
         title=row["title"],
         state=LoopState(row["state"]),
-        claim_kind=LoopClaimKind(row["claim_kind"]),
         provenance=row["provenance"],
         confidence=row["confidence"],
         goal_id=row["goal_id"],
@@ -169,14 +167,13 @@ class PostgresLoopStore:
             row = await conn.fetchrow(
                 """
                 INSERT INTO open_loops
-                  (title, state, claim_kind, provenance, confidence, goal_id,
+                  (title, state, provenance, confidence, goal_id,
                    reminder_id, dismissed_evidence_fingerprint, confirmed_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 RETURNING *
                 """,
                 loop.title,
                 loop.state.value,
-                loop.claim_kind.value,
                 loop.provenance,
                 loop.confidence,
                 loop.goal_id,

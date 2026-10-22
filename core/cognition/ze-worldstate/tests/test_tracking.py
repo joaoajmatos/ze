@@ -24,7 +24,6 @@ def _loop(**overrides) -> OpenLoop:
     base = dict(
         id=uuid4(),
         title="Porto move",
-        claim_kind=ClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=0.3,
         state=LoopState.SUSPECTED,

@@ -7,7 +7,6 @@ from uuid import uuid4
 
 from ze_worldstate import rest
 from ze_worldstate.types import (
-    LoopClaimKind,
     LoopProvenance,
     LoopSource,
     LoopSourceRole,
@@ -23,7 +22,6 @@ def _loop(**overrides) -> OpenLoop:
     defaults = dict(
         id=uuid4(),
         title="Sort out the deposit with the landlord",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=0.3,
         state=LoopState.SUSPECTED,

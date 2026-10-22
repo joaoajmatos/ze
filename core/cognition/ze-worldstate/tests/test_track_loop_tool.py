@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from ze_agents.claims import ClaimKind
 from ze_agents.errors import ZeError
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, get_tool, validate_tool_declarations
@@ -35,7 +34,6 @@ def _ok_result() -> TrackResult:
         loop=OpenLoop(
             id=uuid4(),
             title="Porto move",
-            claim_kind=ClaimKind.PRIORITY,
             provenance=LoopProvenance.USER_DECLARED,
             confidence=0.9,
             state=LoopState.ACTIVE,

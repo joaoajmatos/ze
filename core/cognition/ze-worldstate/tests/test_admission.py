@@ -84,11 +84,10 @@ def _with_id(loop):
 
 
 def _closed(i):
-    from ze_worldstate.types import LoopClaimKind, OpenLoop
+    from ze_worldstate.types import OpenLoop
 
     return OpenLoop(
         title="x",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance="conversation",
         confidence=0.3,
         state=LoopState.CLOSED,
