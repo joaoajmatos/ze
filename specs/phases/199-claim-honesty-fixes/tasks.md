@@ -237,7 +237,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T035 [L:lead] [PLATFORM] Merge the lane branches into the floor branch in the order `jr1` → `facts` → `contacts` → `loops`, resolving no conflicts by hand in another lane's files (the lanes are disjoint).
+- [x] T035 [L:lead] [PLATFORM] Merge the lane branches into the floor branch in the order `jr1` → `facts` → `contacts` → `loops`, resolving no conflicts by hand in another lane's files (the lanes are disjoint).
 - [x] T036 [L:lead] [PLATFORM] Run `make codegen` and commit the regenerated `packages/ze-client/src/generated/` (`LoopListItem.claim_kind` becomes `string | null`). If floor 198 has landed on main first, rebase and re-run `make codegen` rather than hand-merging generated files.
 - [x] T037 [L:lead] [WEB] Make the three web readers accept a null loop claim kind:
   - `apps/ze-web/src/pages/world/lib/concerns.ts:73`: `claimKind` is already nullable; keep the type check passing;
