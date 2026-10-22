@@ -53,6 +53,14 @@ Blast radius (`graphify affected --depth 2`):
 | `handle_retry` | `endpoint.websocket_endpoint` | `test_retry_rollback_e2e.py` (8 tests), `test_ws_retry_rollback.py` |
 | `ThreadTurnLock` | `lifespan.py`, `cli/seed.py`, `wiring/container.py` | four container tests |
 
+**Added 2026-10-22 (phase 201 clarify, Q201-2 B):** the inbound webhook turn still runs on core
+`Container.invoke` (`WebhookDispatcher._trigger_messenger`, `wiring/webhooks.py:140-155`). It runs
+with no thread lock and no telemetry, and it has its own confirmation style. This phase makes the
+inbound message a turn-module adapter, persisted and asking for confirmations the way WS does, and
+then deletes `Container.invoke`. Phase 201 deletes only `resume`, `from_config` and the core
+`_build_config`. The B15 Cancel token is created in `invoke_raw_turn` by phase 198 and becomes part
+of the turn request in 201.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A follow-up turn that needs my yes asks for it (Priority: P1)
