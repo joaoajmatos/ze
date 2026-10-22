@@ -96,7 +96,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
   - `downgrade()` is a no-op with a one-line comment (pre-v1; the old label was wrong).
 
   T011 passes.
-- [ ] T013 [L:facts] [US2] [PLATFORM] Measure without writing: run `zm026.COUNT_SQL` read-only against the local `ze` database (`docker exec ze-postgres-1 psql -U ze -d ze -c "<COUNT_SQL>"`), and record `restamped` and `decay_damaged` in the Handoffs note. Expected on 2026-10-22: 2 and 0.
+- [x] T013 [L:facts] [US2] [PLATFORM] Measure without writing: run `zm026.COUNT_SQL` read-only against the local `ze` database (`docker exec ze-postgres-1 psql -U ze -d ze -c "<COUNT_SQL>"`), and record `restamped` and `decay_damaged` in the Handoffs note. Expected on 2026-10-22: 2 and 0. Measured 2026-10-22 on `ze` (read-only, user-approved): restamped=2, decay_damaged=0.
 
 **Checkpoint**: `make test-pg -k "zm026 or dream_decay"` is green, and the `facts` lane is ready for review.
 
