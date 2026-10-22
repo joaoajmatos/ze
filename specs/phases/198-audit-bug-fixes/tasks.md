@@ -18,7 +18,7 @@
 
 ## Phase 1: Setup and contract step (lane `lead`)
 
-- [ ] T001 [L:lead] [PLATFORM] `make install`; `graphify update .`; re-read every file:line in spec.md "Context" against the floor branch and note any drift in the Handoffs note. Confirm with Ledger, through the Maestro, which commit of floor 199 touches `nodes/memory.py`, so the engine lane can rebase onto it if it lands first.
+- [x] T001 [L:lead] [PLATFORM] `make install`; `graphify update .`; re-read every file:line in spec.md "Context" against the floor branch and note any drift in the Handoffs note. Confirm with Ledger, through the Maestro, which commit of floor 199 touches `nodes/memory.py`, so the engine lane can rebase onto it if it lands first.
 - [x] T002 [L:lead] [BE] [US1] Tests first, new `apps/ze-api/tests/test_settings_timezone.py`: (a) YAML `timezone: Europe/Lisbon` with `TIMEZONE=America/New_York` set → `ZeApiSettings(...).timezone == "Europe/Lisbon"`; (b) no YAML key, `TIMEZONE=America/New_York` → `"America/New_York"`; (c) neither → `"UTC"`; (d) `TIMEZONE=Not/AZone` → `"UTC"` and one `settings_timezone_invalid` warning; (e) `to_core_settings().timezone == settings.timezone` in each case; (f) `fetch_context` (helpers `_config` and `_state` from `core/engine/ze-core/tests/orchestration/nodes/test_context.py`) run with a `ZeApiSettings` whose zone is `Europe/Lisbon` builds an agent context with that zone. This covers conversation turns and workflow steps, which both read the zone through `fetch_context`. Use `monkeypatch.setenv` and the copied-YAML settings fixture pattern from `docs/testing.md`. They fail today (no attribute).
 - [x] T003 [L:lead] [BE] [US1] Implement `ZeApiSettings.timezone` in `apps/ze-api/ze_api/settings.py` (YAML, then env, then UTC; validated with `zoneinfo.ZoneInfo`), and make `to_core_settings()` use it. T002 passes; `make test` green.
 
@@ -42,8 +42,8 @@
 
 ## Phase 3: User Story 2 — turn extractor (P1)
 
-- [ ] T009 [L:lead] [BE] [US2] Test first, new `apps/ze-api/tests/test_container_config.py`: build a `ZeContainer` with the `_container()` pattern from `test_container_tier_judge.py`, but call the real `ZeContainer._build_config("t1")`. Assert (a) `configurable["turn_extractor"] is gather_turn_proposals`; (b) every key of `Container._build_config(c, "t1")["configurable"]` is present in the ze-api one, and the failure message names the missing keys. Both fail today (`turn_extractor`).
-- [ ] T010 [L:lead] [BE] [US2] Add `"turn_extractor": gather_turn_proposals` beside `fact_extractor` in `apps/ze-api/ze_api/wiring/container.py:322`. T009 passes.
+- [x] T009 [L:lead] [BE] [US2] Test first, new `apps/ze-api/tests/test_container_config.py`: build a `ZeContainer` with the `_container()` pattern from `test_container_tier_judge.py`, but call the real `ZeContainer._build_config("t1")`. Assert (a) `configurable["turn_extractor"] is gather_turn_proposals`; (b) every key of `Container._build_config(c, "t1")["configurable"]` is present in the ze-api one, and the failure message names the missing keys. Both fail today (`turn_extractor`).
+- [x] T010 [L:lead] [BE] [US2] Add `"turn_extractor": gather_turn_proposals` beside `fact_extractor` in `apps/ze-api/ze_api/wiring/container.py:322`. T009 passes.
 
 ---
 

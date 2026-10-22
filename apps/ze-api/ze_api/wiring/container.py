@@ -316,7 +316,7 @@ class ZeContainer(CoreContainer):
         for plugin in self.plugins:
             plugin_services.update(plugin.configurable_services())
 
-        from ze_memory.extractor import gather_fact_proposals
+        from ze_memory.extractor import gather_fact_proposals, gather_turn_proposals
 
         configurable: dict = {
             "thread_id": str(thread_id),
@@ -324,6 +324,7 @@ class ZeContainer(CoreContainer):
             "tier_judge": self.tier_judge,
             "memory_store": self.memory_store,
             "fact_extractor": gather_fact_proposals,
+            "turn_extractor": gather_turn_proposals,
             "persona_store": self.persona_store,
             "openrouter_client": self.openrouter_client,
             "embedder": self.embedder,
