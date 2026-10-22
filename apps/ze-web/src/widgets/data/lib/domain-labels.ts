@@ -1,7 +1,5 @@
 const LABELS: Record<string, string> = {
   "automation.accountability": "Accountability notes",
-  "automation.goals": "Automation goals",
-  "automation.workflows": "Automation workflows",
   "calendar.calendar_reminders": "Calendar reminders",
   "calendar.reminders": "Reminders",
   "confirmations": "Pending approvals",
