@@ -149,7 +149,7 @@ async def test_trace_merge_also_in_compaction_branch():
         patch("ze_core.orchestration.nodes.memory._should_compact", return_value=True),
     ):
         out = await write_memory(state, config)
-    assert out["compaction_span"] is not None
+    assert out["messages"][0]["compaction_summary"] is True
     assert len(out["message_trace"].judgments) == 2
 
 

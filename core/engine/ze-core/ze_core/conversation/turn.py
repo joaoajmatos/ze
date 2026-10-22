@@ -10,6 +10,7 @@ from uuid import UUID
 from ze_agents.interface.types import RawInput
 
 from ze_agents.park import WriteConfirmation
+from ze_agents.types import AbortToken
 from ze_logging import get_logger
 from ze_core.orchestration.nodes.trace import ROUTING_SCORES_SHOWN
 from ze_core.telemetry.context import enter_turn_context
@@ -26,7 +27,6 @@ if TYPE_CHECKING:
     from ze_core.container import Container
 
 NO_PENDING_CONFIRMATION = "No pending confirmation."
-
 
 
 def make_graph_input(
@@ -258,6 +258,20 @@ def _with_tool_sink(config: dict, telemetry: TurnTelemetry | None) -> dict:
     return {**config, "configurable": configurable}
 
 
+def _register_abort_token(container: Any, thread_id: str, token: AbortToken) -> None:
+    """Let ``container.abort_invocation`` reach this turn; test doubles without a map run uncancellable."""
+    tokens = getattr(container, "_abort_tokens", None)
+    if tokens is not None:
+        tokens[thread_id] = token
+
+
+def _release_abort_token(container: Any, thread_id: str, token: AbortToken) -> None:
+    """Drop the registration unless a newer turn on the thread has replaced it."""
+    tokens = getattr(container, "_abort_tokens", None)
+    if tokens is not None and tokens.get(thread_id) is token:
+        del tokens[thread_id]
+
+
 async def invoke_raw_turn(
     container: Container,
     thread_id: str,
@@ -271,7 +285,10 @@ async def invoke_raw_turn(
 
     enter_turn_context(thread_id)
     graph_input = make_graph_input(raw, thread_id)
-    config = container._build_config(thread_id, **(config_extra or {}))
+    abort_token = AbortToken()
+    config = container._build_config(
+        thread_id, **{**(config_extra or {}), "abort_token": abort_token}
+    )
     interface = container.interface
     graph_name = getattr(container.graph, "name", "LangGraph")
     pending_message_id = str(uuid4())
@@ -286,6 +303,7 @@ async def invoke_raw_turn(
         )
     config = _with_tool_sink(config, telemetry)
     token = current_turn_telemetry.set(telemetry)
+    _register_abort_token(container, thread_id, abort_token)
     interrupted = False
     try:
         final_state: dict = {}
@@ -376,6 +394,7 @@ async def invoke_raw_turn(
             message_id=pending_message_id,
         )
     finally:
+        _release_abort_token(container, thread_id, abort_token)
         current_turn_telemetry.reset(token)
         if registry is not None and not interrupted:
             await _close(registry, telemetry, thread_id)
@@ -414,8 +433,14 @@ async def resume_turn(
     thread_id = config["configurable"]["thread_id"]
     registry = _registry(container)
     telemetry = registry.resume(thread_id) if registry is not None else None
+    abort_token = AbortToken()
+    config = {
+        **config,
+        "configurable": {**config["configurable"], "abort_token": abort_token},
+    }
     config = _with_tool_sink(config, telemetry)
     token = current_turn_telemetry.set(telemetry)
+    _register_abort_token(container, thread_id, abort_token)
     interrupted = False
     try:
         final_state = await container.graph.ainvoke(Command(resume=value), config)
@@ -446,6 +471,7 @@ async def resume_turn(
             else "",
         )
     finally:
+        _release_abort_token(container, thread_id, abort_token)
         current_turn_telemetry.reset(token)
         if registry is not None and not interrupted:
             await _close(registry, telemetry, thread_id)

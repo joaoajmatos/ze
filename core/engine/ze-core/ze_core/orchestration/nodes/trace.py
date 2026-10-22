@@ -76,10 +76,14 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         else [s.agent for s in envelope.subtasks]
     )
 
-    compaction_span = state.get("compaction_span")
+    # What the prompt was built from: fetch_context blanks the history after a
+    # resume gap, while state["messages"] still holds it.
+    ctx = state.get("agent_context")
+    history = (ctx.messages if ctx is not None else state.get("messages")) or []
+    opening = history[0] if history else {}
     compaction = (
-        CompactionTrace(span_start=0, span_end=compaction_span[1])
-        if compaction_span is not None
+        CompactionTrace(span_start=0, span_end=opening["compaction_span"][1])
+        if opening.get("compaction_summary") and opening.get("compaction_span")
         else None
     )
 
