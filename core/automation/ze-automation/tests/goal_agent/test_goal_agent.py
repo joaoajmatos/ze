@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -400,6 +401,70 @@ async def test_run_abandons_goal_via_tool():
 
     store.update_status.assert_called_once_with(gid, GoalStatus.ABANDONED)
     assert result.response
+
+
+_PAUSE_ALLOWED = {GoalStatus.ACTIVE, GoalStatus.AWAITING_GATE}
+_ABANDON_ALLOWED = {
+    GoalStatus.PLANNING,
+    GoalStatus.ACTIVE,
+    GoalStatus.AWAITING_GATE,
+    GoalStatus.PAUSED,
+}
+
+
+def _lifecycle_goal(status: GoalStatus) -> Goal:
+    return Goal(
+        id=uuid4(),
+        title="My Goal",
+        objective="o",
+        success_condition="s",
+        status=status,
+    )
+
+
+@pytest.mark.parametrize("status", list(GoalStatus))
+async def test_pause_goal_follows_the_lifecycle(status):
+    from ze_automation.agents.goals.tools import pause_goal
+
+    goal = _lifecycle_goal(status)
+    store = make_store()
+    store.get_goal = AsyncMock(return_value=goal)
+    executor = AsyncMock()
+
+    result = await pause_goal(store, executor, str(goal.id))
+
+    if status in _PAUSE_ALLOWED:
+        store.update_status.assert_awaited_once_with(goal.id, GoalStatus.PAUSED)
+        executor.close_holds.assert_awaited_once_with(goal.id)
+        assert result["status"] == "paused"
+        assert "undo" in result
+    else:
+        assert result["error"] == f"My Goal is {status.value}; it cannot be paused."
+        store.update_status.assert_not_awaited()
+        executor.close_holds.assert_not_awaited()
+        assert "undo" not in result
+
+
+@pytest.mark.parametrize("status", list(GoalStatus))
+async def test_abandon_goal_follows_the_lifecycle(status):
+    from ze_automation.agents.goals.tools import abandon_goal
+
+    goal = _lifecycle_goal(status)
+    store = make_store()
+    store.get_goal = AsyncMock(return_value=goal)
+    executor = AsyncMock()
+
+    result = await abandon_goal(store, executor, str(goal.id))
+
+    if status in _ABANDON_ALLOWED:
+        store.update_status.assert_awaited_once_with(goal.id, GoalStatus.ABANDONED)
+        executor.close_holds.assert_awaited_once_with(goal.id)
+        assert result["status"] == "abandoned"
+    else:
+        assert result["error"] == f"My Goal is {status.value}; it cannot be abandoned."
+        store.update_status.assert_not_awaited()
+        executor.close_holds.assert_not_awaited()
+        assert "undo" not in result
 
 
 async def test_run_no_tool_calls_when_llm_answers_directly():
