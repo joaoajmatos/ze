@@ -263,15 +263,15 @@ depend on code the earlier waves change.
 |---|---|---|---|---|
 | 198 | [Audit Bug Fixes](phases/198-audit-bug-fixes/spec.md) | 0 | — | ⏳ Not written yet |
 | 199 | [Claim Honesty Fixes](phases/199-claim-honesty-fixes/spec.md) | 0 | — | ⏳ Not written yet |
-| 200 | [Agent Context Derivation](phases/200-agent-context-derivation/spec.md) | 1 | 198 | ✏️ Draft (unchecked; writer stopped) |
-| 201 | [Typed Turn Services](phases/201-typed-turn-services/spec.md) | 1 | 200 | ✏️ Draft (unchecked; writer stopped) |
+| 200 | [Agent Context Derivation](phases/200-agent-context-derivation/spec.md) | 1 | 198 | 📝 Specified |
+| 201 | [Typed Turn Services](phases/201-typed-turn-services/spec.md) | 1 | 200 | 📝 Specified |
 | 202 | [Judgment Surface](phases/202-judgment-surface/spec.md) | 1 | 198 | 📝 Specified |
 | 203 | [Open-Loop Lifecycle](phases/203-open-loop-lifecycle/spec.md) | 1 | 199 | 📝 Specified |
 | 204 | [Push Bar and Cooldowns](phases/204-push-bar-and-cooldowns/spec.md) | 1 | 198 | 📝 Specified |
 | 205 | [Web Turn State](phases/205-web-turn-state/spec.md) | 1 | 198 | 📝 Specified |
 | 206 | [Web Query Staleness](phases/206-web-query-staleness/spec.md) | 1 | — | 📝 Specified |
 | 207 | [Conversation Turn Module](phases/207-conversation-turn-module/spec.md) | 2 | 201 | 📝 Specified |
-| 208 | [Trace Recorder](phases/208-trace-recorder/spec.md) | 2 | 200, 201 | ⏳ Not written yet |
+| 208 | [Trace Recorder](phases/208-trace-recorder/spec.md) | 2 | 200, 201, 207 | 📝 Specified |
 | 209 | [Write Gate and Reply Template](phases/209-write-gate-and-reply-template/spec.md) | 2 | 200 | 📝 Specified |
 | 210 | [Plugin Seam Narrowing](phases/210-plugin-seam-narrowing/spec.md) | 2 | 201 | 📝 Specified |
 | 211 | [Personal Unbundling](phases/211-personal-unbundling/spec.md) | 2 | 198, 201, 210 | 📝 Specified |
