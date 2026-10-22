@@ -19,6 +19,16 @@ Every decision below was checked against the code on branch `199-claim-honesty-f
 - **Out of scope by the ADR's own line**: loop contributions (`ze_worldstate/contribution.py`, Executive judgments), social-cognition identity edges (`graph/memory_hooks.py:166`), procedure candidates, correlation hypotheses, action records.
 - **Seeds**: `ze_seed/narrative/persona.yaml:127` and `:490` seed two `synthesized` facts with no dream run. Under FR-002 they would be invalid rows. They become `prompt_supplied` (both are companion-extracted narrative facts), and `ze-seed/tests/test_loader.py:69-72` changes its count to 0. `ze_seed/domains/memory.py:94` keeps its rule (it is correct for a synthesized seed if one is ever added).
 
+## R2a — Consolidation's merged fact (added 2026-10-23, facts-lane review finding 1)
+
+- **Decision** (option a): a merged fact carries its inputs' claim.
+  - `PostgresConsolidationStore.fetch_active_facts` also selects `provenance`, `claim_kind` and `dream_run_id`.
+  - In `MemoryConsolidator.dedup_facts`, the model-merge branch (NLI entailment) runs only when both rows have `dream_run_id` NULL and the same `provenance` and `claim_kind`. Otherwise it skips the pair: no model call, no contradiction, no insert. The silent-threshold branch and the NLI-contradiction branch do not change.
+  - `insert_merged_fact(predicate, value, confidence, embedding, provenance, claim_kind)` writes the values it is given. `agent` stays `'consolidation'`, and `dream_run_id` stays NULL.
+- **Rationale**: merging two user statements is not reflection, so the result keeps the label its inputs had. If the merge always stamped `prompt_supplied`, a dream inference merged with a user fact would turn into "the user said". Copying a dream insight's claim through a merge would make consolidation a second reflection writer, with a new row, a new `created_at` and a lost `valid_until`. Skipping that pair is honest: the insight keeps its own lifecycle.
+- **Rejected** (option b): license consolidation as a second `synthesized` writer and add `agent <> 'consolidation'` to zm026. That widens FR-002 and the dream-only decay rule, and still labels two merged user statements as Ze's conclusion.
+- **zm026 is unchanged.** Rows consolidation wrote before this phase that are `synthesized` with no dream run are merges of perception facts, so re-stamping them `prompt_supplied` is right. Local `ze` DB: the 7 `agent='consolidation'` rows are already `prompt_supplied`, and there are no dream facts.
+
 ## R3 — The fact re-stamp (zm026)
 
 - **Decision**: `zm026_perception_fact_provenance.py` on the `zm` chain (down revision `zm025`). It exposes:

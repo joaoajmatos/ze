@@ -43,17 +43,15 @@ async def add_prospect(
     campaign_store: ProspectCampaignStore = None,
 ) -> str:
     existing = await person_store.get_by_name(name)
+    source = PersonSource(
+        person_id=existing[0].id if existing else None,  # type: ignore[arg-type]
+        source_type="research",
+        weight=0.2,
+        raw_context=f"source: {source_url}\n{enrichment_notes}",
+    )
     if existing:
         person = existing[0]
-        await person_store.add_source(
-            person.id,
-            PersonSource(
-                person_id=person.id,
-                source_type="research",
-                weight=0.2,
-                raw_context=f"source: {source_url}\n{enrichment_notes}",
-            ),
-        )
+        await person_store.add_source(person.id, source)
     else:
         rel = relationship
         if company and role:
@@ -73,17 +71,11 @@ async def add_prospect(
                 notes=enrichment_notes,
                 confirmed=False,
                 confidence=0.2,
+                provenance=source.provenance,
             )
         )
-        await person_store.add_source(
-            person.id,
-            PersonSource(
-                person_id=person.id,
-                source_type="research",
-                weight=0.2,
-                raw_context=f"source: {source_url}\n{enrichment_notes}",
-            ),
-        )
+        source.person_id = person.id
+        await person_store.add_source(person.id, source)
 
     outreach_id = await campaign_store.add_outreach(
         UUID(campaign_id), person.id, channel

@@ -23,6 +23,7 @@ Ze labels every claim it stores with a **claim kind** (fact, suspicion, priority
 | B7 | `ze_core/orchestration/nodes/memory.py:217`, `ze_ingestion/sink.py:53`, `ze_messenger/inbound/processor.py:207` | Facts perception extracts from a conversation turn, an ingested document or an inbound message are stamped `synthesized`. |
 | B7 | `ze_memory/dream/promoter.py:237-282` | The nightly dream pass lowers every uncorroborated `synthesized` fact older than 30 days by 0.03 a night. Below 0.50 it clears `reviewed`; below 0.25 it sets `contradicted`. Expiry also contradicts `synthesized` facts past `valid_until`. Neither checks who wrote the fact. |
 | B7 | `ze_personal/contacts/types.py:16-22`, `contacts/consolidator.py:239`, `graph/memory_hooks.py:221`, `ze_prospecting/agents/tools.py:50`, `ze_personal/jobs/social_cooccurrence.py:53` | Contact proposals from email and calendar carry `live_search`, but every stored contact and contact source is written `synthesized`, because the consolidator never copies the proposal's provenance. Co-occurrence hypothesis evidence from email and calendar is labelled `live_search`. |
+| B7 | `ze_memory/consolidation_store.py:81` (`insert_merged_fact`), `consolidator.py:183` | When consolidation merges two near-duplicate facts with the model, it writes the merged fact `synthesized`, claim kind `fact`, with no dream run. Two merged user statements then read as Ze's own conclusion. A dream insight merged with a user fact reads as a fact. |
 | B12 | `ze_worldstate/store.py:406` (`stamp_declared`), `:512` (`promote`), `extraction.py:354/462`, `tracking.py:130` | A loop's claim kind is written once at creation. Confirming or promoting a suspected loop leaves it `suspicion`, so World draws a confirmed loop as a dotted hunch (`ze_priority/compose/rules.py:77`) and `PriorityItem.claim_kind` (`scoring.py:51`) carries the stale kind. |
 | B8 | `ze_plugin/contribution.py:52-62` | Executive is licensed for identity, fact, inference, suspicion and priority. The doctrine allows priority and suspicion only. |
 | B3 | `ze_worldstate/store.py:26-32`, `extraction.py:380-400`, `admission.py:113-117` | "That's done" looks for a matching suspected, active or drifting loop and moves it to `closed`. The transition table has no `suspected → closed` edge, so the store raises; the inflow catches it and logs `loop_extraction_failed`. The suspected loop stays in Needs you. A resolve on an active loop records no resolving evidence. |
@@ -33,6 +34,7 @@ Ze labels every claim it stores with a **claim kind** (fact, suspicion, priority
 - **The dream promoter's fact insert names that missing column** (`promoter.py:191-199`). Promoting a synthesized insight raises, which fails morning integration; decay and expiry run after the promotion loop, so they are skipped on any night with a promotion.
 - **Contacts from email and calendar are not stored as `live_search`.** The proposal is; the stored row is `synthesized` (dataclass default). Contacts from conversation and from prospecting web research are also stored `synthesized`.
 - **The inbound-message extractor** (`ze_messenger/inbound/processor.py:207`) was not named in the audit; it stamps `synthesized` too.
+- **Consolidation's merge writer** (`consolidation_store.py:81`) was not named in the audit or in this spec's first draft; the facts-lane review found it (2026-10-23). It stamps every merged fact `synthesized`. Separately, `docs/memory.md:271` says reviewed facts are never auto-merged, but `fetch_active_facts` does not filter on `reviewed` (outside this phase).
 - **Decay never updates `updated_at`**, so `delete_contradicted_facts` (`consolidation_store.py:110`) can hard-delete a fact soon after decay contradicts it. Those facts cannot be restored. A fact's `reviewed` value before decay cleared it is recorded nowhere.
 - Minor: `claim_tone` lives in `ze_components/claims.py`, not `compose/rules.py`; the loop posture is built at `compose/rules.py:77`, not `:74`.
 
@@ -59,6 +61,10 @@ Ze labels every claim it stores with a **claim kind** (fact, suspicion, priority
 - Q: (default, accepted) Which migrations? → A: `zm026` (fact re-stamp), `zw006` (drop `open_loops.claim_kind`), and the next free `zc` number for the contact re-stamp.
 - Q: (default, accepted) How does a resolve get the `suspected → closed` edge? → A: Through its own loop-store method (`suspected`, `active` or `drifting` → `closed`; links the resolving evidence; never writes a fingerprint). The generic transition table does not change.
 
+### Session 2026-10-23
+
+- Q: Consolidation merges near-duplicate facts and stamps the result `synthesized` with no dream run. How is a merged fact stamped? → A: (architect decision, delegated by the Maestro; option a) A merged fact carries the provenance and claim kind its two inputs share. Consolidation merges two facts only when neither is a dream insight and both have the same provenance and claim kind; otherwise it leaves both as they are. FR-002 and zm026 do not change.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - What the user says stays believed (Priority: P1)
@@ -77,6 +83,8 @@ The user tells Ze "I'm vegetarian". Ze stores it as something the user supplied.
 4. **Given** a dream insight created 60 days ago, uncorroborated, **When** the integration step runs, **Then** its confidence drops by 0.03 per run, and it is contradicted after `valid_until` passes, as today.
 5. **Given** a perception fact that was (wrongly) stored `synthesized` with a `valid_until` in the past, **When** expiry runs, **Then** it is not contradicted.
 6. **Given** a dream run that promotes an insight, **When** morning integration runs, **Then** the insight is stored and decay and expiry still run that night.
+7. **Given** two near-duplicate `prompt_supplied` facts that consolidation merges, **When** the merged fact is written, **Then** it is `prompt_supplied`, claim kind `fact`, with no dream run.
+8. **Given** a dream insight and a perception fact that say the same thing, **When** consolidation runs, **Then** it does not merge them and both rows are unchanged.
 
 ---
 
@@ -167,6 +175,8 @@ A contact Ze learned from the user's email, calendar or conversation is labelled
 ### Edge Cases
 
 - **A fact written by a dream run whose run row was deleted.** The dream marker on the fact stands on its own; decay does not join to the run table.
+- **A dream insight that says the same thing as a user fact.** Consolidation does not merge them; the insight keeps its own decay and expiry, and the user fact keeps its provenance.
+- **Two near-duplicate facts with different provenance.** Consolidation does not merge them, because no single label is true for the merged text.
 - **Facts decay already damaged.** They keep their lowered confidence and flags (Clarification Q2); the repair counts them. Facts consolidation already deleted are gone.
 - **A resolve that matches no live loop.** Nothing changes and no error is logged (as today).
 - **Two resolves of the same loop at once.** One closes it; the other sees a closed loop and changes nothing.
@@ -182,6 +192,7 @@ A contact Ze learned from the user's email, calendar or conversation is labelled
 
 - **FR-001**: Facts perception reads from the user or the user's own sources MUST be stored `prompt_supplied`: the conversation fact path in `write_memory`, the ingestion sink, and the inbound-message extractor.
 - **FR-002**: `synthesized` MUST be written to `memory_facts` only by reflection (the dream promoter). `live_search` MUST mean a web search only.
+- **FR-002a**: Consolidation's merge MUST NOT write `synthesized`. A merged fact MUST carry the provenance and claim kind its two inputs share. Consolidation MUST merge two facts only when neither has a dream run and both have the same provenance and claim kind; otherwise it MUST leave both facts unchanged.
 - **FR-003**: Dream decay and dream expiry MUST select only facts the dream wrote, in addition to their current conditions, so a wrong provenance cannot make them touch a perception fact. The marker that identifies "the dream wrote this" is `dream_run_id IS NOT NULL`; no column is added.
 - **FR-004**: The dream promoter MUST be able to store a synthesized insight: its insert stops naming `creation_method`, which `memory_facts` does not have. Decay and expiry MUST run on a night with a promotion.
 - **FR-005**: A one-time migration on the `zm` chain MUST re-stamp every `memory_facts` row that is `synthesized` and was not written by the dream to `prompt_supplied`, and set its claim kind to `fact`. Dream-written facts and facts with any other provenance MUST be untouched. Running the repair twice MUST change nothing the second time.
@@ -231,7 +242,7 @@ A contact Ze learned from the user's email, calendar or conversation is labelled
 
 - **SC-001**: A fact the user states in conversation keeps the confidence, `reviewed` and `contradicted` it was stored with after 10 runs of the dream integration step on a fact aged 60 days (0 changes).
 - **SC-002**: Dream insights keep today's behaviour: confidence falls by exactly 0.03 per run after 30 days, and every insight past `valid_until` is contradicted.
-- **SC-003**: After the repair, 0 facts outside dream insights are labelled `synthesized`, the count of decay-damaged facts is reported, and a second run reports 0 rows changed.
+- **SC-003**: After the repair, 0 facts outside dream insights are labelled `synthesized`, no writer other than the dream promoter creates one afterwards (consolidation included), the count of decay-damaged facts is reported, and a second run reports 0 rows changed.
 - **SC-004**: 100% of confirmed or promoted loops read `priority` on every surface, and 0 dropped loops are shown with a claim kind.
 - **SC-005**: A resolve of a suspected loop closes it in 100% of test cases across the four inflows, with its evidence linked, and produces 0 `loop_extraction_failed` lines.
 - **SC-006**: 0 contributions with claim kind fact, inference or identity are accepted from Executive.

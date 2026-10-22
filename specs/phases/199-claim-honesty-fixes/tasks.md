@@ -44,7 +44,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Goal**: Perception facts are stored `prompt_supplied`. Dream decay and expiry touch only dream insights (`dream_run_id IS NOT NULL`). Dream promotion stores insights again.
 
-**Independent Test**: `make test-core test-ingestion test-messenger test-memory test-seed` and `make test-pg -k dream_decay`.
+**Independent Test**: `make test-core test-ingestion test-messenger test-memory test-seed` and `make test-pg -k "dream_decay or consolidation_merge"`.
 
 - [x] T002 [P] [L:facts] [US1] [BE] Write a failing test in `core/engine/ze-core/tests/orchestration/nodes/test_memory.py`: run `write_memory` with a fact admission that persists one fact (reuse the existing persist-fact fixtures in that file and patch `submit_perception_facts` the way the file already does), and assert that every `PerceptionFactSubmit.provenance` is `Provenance.PROMPT_SUPPLIED`. It fails today (`SYNTHESIZED`).
 - [x] T003 [L:facts] [US1] [BE] In `core/engine/ze-core/ze_core/orchestration/nodes/memory.py` (the `PerceptionFactSubmit(...)` block at about line 214-221 only), change `provenance=Provenance.SYNTHESIZED` to `Provenance.PROMPT_SUPPLIED`. T002 passes. `make test-core`.
@@ -65,7 +65,15 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
   Update `core/cognition/ze-memory/tests/dream/test_promoter.py` for any SQL-text assertions. T008 passes (`make test-pg`), and so does `make test-memory`.
 - [x] T010 [P] [L:facts] [US1] [BE] In `core/ops/ze-seed/ze_seed/narrative/persona.yaml`, change the two seed facts with `provenance: synthesized` (ids `00000006-0001-4000-8000-000000000010` and `...00000000003d`) to `provenance: prompt_supplied`. In `core/ops/ze-seed/tests/test_loader.py:69-72`, assert that no seed fact is `synthesized`. `make test-seed`.
 
-**Checkpoint**: New conversation, ingestion and inbound facts are `prompt_supplied`, and decay touches dream insights only.
+- [ ] T044 [L:facts] [US1] [BE] Write failing tests for consolidation's merged fact (FR-002a, research R2a):
+  - In `core/cognition/ze-memory/tests/test_consolidator_nli.py`, give `_fact_row` the keyword arguments `provenance='prompt_supplied'`, `claim_kind='fact'` and `dream_run_id=None`, and add them to the row dict. Do the same for the row fixtures in `core/cognition/ze-memory/tests/test_consolidator.py`.
+  - Extend `test_nli_entailment_triggers_llm_merge` to assert `insert_merged_fact` is awaited with `provenance='prompt_supplied'` and `claim_kind='fact'`. This fails today: the method takes no provenance.
+  - Add `test_entailment_with_dream_insight_skips_merge`: one row has `dream_run_id=uuid4()`, `provenance='synthesized'` and `claim_kind='inference'`, and NLI returns entailment 0.85. The model is not called, nothing is contradicted, and `insert_merged_fact` is not awaited.
+  - Add `test_entailment_across_provenance_skips_merge`: the same shape with `prompt_supplied` and `live_search` rows. Nothing is merged.
+  - Add test-pg `apps/ze-api/tests/pg/test_consolidation_merge_pg.py`. Insert one fact with raw SQL, then assert that `PostgresConsolidationStore(pool).fetch_active_facts()` returns its `provenance`, `claim_kind` and `dream_run_id`. Call `insert_merged_fact(..., provenance='prompt_supplied', claim_kind='fact')` and read the new row back: `provenance='prompt_supplied'`, `claim_kind='fact'`, `agent='consolidation'`, `dream_run_id` NULL.
+- [ ] T045 [L:facts] [US1] [BE] In `core/cognition/ze-memory/ze_memory/consolidation_store.py`, add `provenance, claim_kind, dream_run_id` to the `SELECT` in `fetch_active_facts`. Give `insert_merged_fact` the parameters `provenance: str` and `claim_kind: str` and bind them in place of the literals `'fact'` and `'synthesized'`. In `core/cognition/ze-memory/ze_memory/consolidator.py` `dedup_facts`, enter the entailment-merge branch only when both rows have `dream_run_id` None and the same `provenance` and `claim_kind`, and pass both values to `insert_merged_fact`. T044 passes (`make test-memory`, `make test-pg -k consolidation_merge`).
+
+**Checkpoint**: New conversation, ingestion and inbound facts are `prompt_supplied`, consolidation keeps its inputs' provenance, and decay touches dream insights only.
 
 ---
 
@@ -132,7 +140,8 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 - [ ] T020 [L:loops] [US3] [BE] Remove `claim_kind=` from every `OpenLoop(...)` call in the test files, deleting only those lines and changing nothing else:
   - `core/cognition/ze-worldstate/tests/` (`test_track_loop_tool.py`, `test_loop_agent_cancel.py`, `test_extraction.py`, `test_track_loop_undo_payload.py`, `test_rest.py`, `test_admission.py`, `test_contribution.py`, `test_corroboration_flow.py`, `test_intake.py`, `test_store.py`, `test_tracking.py`, `test_surfacing.py`, `test_confirm_loop_tool.py`, `test_decay.py`, `test_matching.py`, `jobs/test_stale_suspicion.py`, `jobs/test_drift_sweep.py`, `test_loop_screen_resolver.py`, `test_drift.py`, `test_corroboration.py`, `test_loop_evidence_plumbing.py`, `test_review.py`);
   - `core/arbitration/ze-priority/tests/factories.py`, `tests/test_turn.py`, `tests/compose/test_rules_topic.py`, `tests/compose/test_rules_slipping.py`;
-  - `apps/ze-api/tests/pg/_builders.py`.
+  - `apps/ze-api/tests/pg/_builders.py`;
+  - `core/ops/ze-eval/ze_eval/fixtures.py:88`: delete the `"claim_kind": "suspicion"` line of the `loop` fixture (it inserts into `open_loops`, and `zw006` drops the column; the other `claim_kind` lines in that file target other tables). Tare found this in review.
 
   Where a test sets a kind that disagrees with its state, set the state instead. Rewrite `test_contribution.py::test_extraction_write_path_rejects_malformed_claim_kind_before_create`: a malformed stored kind is no longer possible, so replace it with a test that the contribution built for a new suspected loop declares `SUSPICION`, and for a declared active loop `PRIORITY` (FR-012).
 - [ ] T021 [L:loops] [US3] [BE] In `apps/ze-api/ze_api/api/v0/loops/schemas.py:19`, make `LoopListItem.claim_kind` `str | None`. Update the route's `description` to say it is null for dropped loops. In `apps/ze-api/tests/api/test_loops_route.py`, add a case for a dropped loop returning `claim_kind: null`, and remove its `claim_kind=` constructor arguments.
@@ -177,7 +186,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Independent Test**: `make test-plugin`.
 
-- [ ] T027 [P] [L:jr1] [US5] [BE] In `core/contracts/ze-plugin/tests/test_contribution.py`, extend the two existing parametrize tables. Do not add new test functions.
+- [x] T027 [P] [L:jr1] [US5] [BE] In `core/contracts/ze-plugin/tests/test_contribution.py`, extend the two existing parametrize tables. Do not add new test functions.
   - In `test_licensed_claim_kind_is_accepted`, add the row `(SourceFunction.EXECUTIVE, ClaimKind.SUSPICION),`. It already passes; it pins that the narrowing keeps suspicion.
   - In `test_unlicensed_claim_kind_is_rejected`, add these three rows:
 
@@ -188,7 +197,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
     ```
 
   Run `make test-plugin`. Exactly these 3 new rejected cases fail on today's code; that is the failing test.
-- [ ] T028 [L:jr1] [US5] [BE] In `core/contracts/ze-plugin/ze_plugin/contribution.py` (lines 52-62), replace the Executive entry with `SourceFunction.EXECUTIVE: frozenset({ClaimKind.PRIORITY, ClaimKind.SUSPICION}),`. Run `make test-plugin test-worldstate test-priority`. All green, and T027 passes.
+- [x] T028 [L:jr1] [US5] [BE] In `core/contracts/ze-plugin/ze_plugin/contribution.py` (lines 52-62), replace the Executive entry with `SourceFunction.EXECUTIVE: frozenset({ClaimKind.PRIORITY, ClaimKind.SUSPICION}),`. Run `make test-plugin test-worldstate test-priority`. All green, and T027 passes.
 
 ---
 
@@ -198,11 +207,11 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
 **Independent Test**: `make test-personal test-prospecting` and `make test-pg -k contact_provenance`.
 
-- [ ] T029 [L:contacts] [US6] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_contact_provenance_pg.py`. Each test runs `TRUNCATE contacts CASCADE` first; see `test_contacts_watermark_pg.py`.
+- [x] T029 [L:contacts] [US6] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_contact_provenance_pg.py`. Each test runs `TRUNCATE contacts CASCADE` first; see `test_contacts_watermark_pg.py`.
   (a) `ContactConsolidator._store_candidate` (built with the real person store on `pg_pool`) with `ContactProposal(source_type="email", ...)` stores a `contact_sources` row with `provenance='prompt_supplied'` and a `contacts` row with `prompt_supplied`. This fails today. Repeat for `calendar` and `conversation`.
   (b) The prospecting tool (`ze_prospecting.agents.tools`, the add-prospect tool) stores a `research` source with `live_search`. This fails today.
   (c) Seed the rows with raw SQL: sources `email` and `research` stored `synthesized`, and a contact whose earliest source is `email`. Run `zc041.REPAIR_SQL` (import `ze_personal.migrations.versions.zc041_contact_source_provenance as zc041`). The sources become `prompt_supplied` and `live_search`, and the contact becomes `prompt_supplied`. A contact with no source is unchanged. A second run changes 0 rows.
-- [ ] T030 [L:contacts] [US6] [BE] In `plugins/ze-personal/ze_personal/contacts/`:
+- [x] T030 [L:contacts] [US6] [BE] In `plugins/ze-personal/ze_personal/contacts/`:
   - create `errors.py` with `class ContactSourceTypeError(ZeCoreError)` (import `ZeCoreError` from `ze_sdk.errors`);
   - in `types.py`, make `_SOURCE_TYPE_TO_PROVENANCE` map `manual`, `conversation`, `email` and `calendar` to `PROMPT_SUPPLIED` and `research` to `LIVE_SEARCH`;
   - add `source_provenance(source_type: str) -> Provenance`, which raises `ContactSourceTypeError` for an unknown type;
@@ -210,19 +219,19 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
   - delete the `ContactProposal.provenance` field.
 
   Add unit tests for `source_provenance` (all five types plus one unknown) to `plugins/ze-personal/tests/contacts/` (new `test_source_provenance.py`).
-- [ ] T031 [L:contacts] [US6] [BE] Update the write and read paths:
+- [x] T031 [L:contacts] [US6] [BE] Update the write and read paths:
   - In `contacts/store.py`, stop passing `provenance=` when building `PersonSource` from a row (about lines 54-60); `add_source` keeps writing `source.provenance.value`.
   - In `contacts/extractors.py`, remove the `provenance=` arguments at about lines 66 and 111.
   - In `contacts/consolidator.py` (about line 259), `graph/memory_hooks.py` (about line 240) and `plugins/ze-prospecting/ze_prospecting/agents/tools.py` (about line 66), pass `provenance=source.provenance` when building a new `Person`. In prospecting, build the `PersonSource` before the `Person` so it can.
   - Update `plugins/ze-personal/tests/contacts/`, `plugins/ze-personal/tests/graph/test_memory_hooks.py` and `plugins/ze-prospecting/tests/agents/test_tools.py` where they pass or assert the old provenance.
-- [ ] T032 [L:contacts] [US6] [BE] In `plugins/ze-personal/ze_personal/jobs/social_cooccurrence.py:53`, change `Provenance.LIVE_SEARCH` to `Provenance.PROMPT_SUPPLIED` (email and calendar). Conversation keeps `SYNTHESIZED`. Add an assertion to `plugins/ze-personal/tests/jobs/test_social_cooccurrence.py` that email and calendar evidence carry `PROMPT_SUPPLIED` and conversation evidence carries `SYNTHESIZED`. It fails today for email and calendar.
-- [ ] T033 [L:contacts] [US6] [PLATFORM] Create `plugins/ze-personal/ze_personal/migrations/versions/zc041_contact_source_provenance.py` (`revision = "zc041"`, `down_revision = "zc040"`):
+- [x] T032 [L:contacts] [US6] [BE] In `plugins/ze-personal/ze_personal/jobs/social_cooccurrence.py:53`, change `Provenance.LIVE_SEARCH` to `Provenance.PROMPT_SUPPLIED` (email and calendar). Conversation keeps `SYNTHESIZED`. Add an assertion to `plugins/ze-personal/tests/jobs/test_social_cooccurrence.py` that email and calendar evidence carry `PROMPT_SUPPLIED` and conversation evidence carries `SYNTHESIZED`. It fails today for email and calendar.
+- [x] T033 [L:contacts] [US6] [PLATFORM] Create `plugins/ze-personal/ze_personal/migrations/versions/zc041_contact_source_provenance.py` (`revision = "zc041"`, `down_revision = "zc040"`):
   - `REPAIR_SQL` first sets `contact_sources.provenance` to `'prompt_supplied'` where `source_type IN ('manual','conversation','email','calendar')` and to `'live_search'` where `source_type = 'research'`, but only where the value differs;
   - it then updates `contacts.provenance` from `SELECT DISTINCT ON (contact_id) contact_id, provenance FROM contact_sources ORDER BY contact_id, created_at`, where the value differs;
   - `upgrade()` logs the row counts with `get_logger`; `downgrade()` is a no-op with a comment.
 
   T029 passes.
-- [ ] T034 [L:contacts] [US6] [BE] Run `make test-personal test-prospecting`, `make test-pg -k contact_provenance` and `make lint`. All green. The `contacts` lane is ready for review.
+- [x] T034 [L:contacts] [US6] [BE] Run `make test-personal test-prospecting`, `make test-pg -k contact_provenance` and `make lint`. All green. The `contacts` lane is ready for review.
 
 ---
 
@@ -271,7 +280,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 ## Dependencies & Execution Order
 
 - **T001** comes first.
-- **US1 (T002–T010) → US2 (T011–T013)**, both in the `facts` lane. US2 needs only T012's file, but the lane runs them in order.
+- **US1 (T002–T010, T044–T045) → US2 (T011–T013)**, both in the `facts` lane. T044–T045 were added on 2026-10-23 after the facts-lane review; if T011–T013 are already done, run them next. US2 needs only T012's file, but the lane runs them in order.
 - **US3 (T014–T022) → US4 (T023–T026)**, both in the `loops` lane. They are sequential because both edit `store.py` and `extraction.py`, and T023's fixtures build on the derived claim kind.
 - **US5 (T027–T028)** in `jr1` and **US6 (T029–T034)** in `contacts` are independent of everything else.
 - **T035–T040** (`lead`) start once all four lanes are reviewed. T036–T037 depend on T021.
@@ -282,7 +291,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 After T001, four agents start together:
 
 ```text
-facts:    T002, T004, T006 (three failing tests, different files) → T003, T005, T007 → T008 → T009 → T010 → T011 → T012 → T013
+facts:    T002, T004, T006 (three failing tests, different files) → T003, T005, T007 → T008 → T009 → T010 → T044 → T045 → T011 → T012 → T013
 loops:    T014, T015 → T016 → T017 → T018 → T019 → T020 → T021 → T022 → T023 → T024 → T025 → T026
 contacts: T029 → T030 → T031 → T032 → T033 → T034
 jr1:      T027 → T028
@@ -290,7 +299,7 @@ jr1:      T027 → T028
 
 ## Implementation Strategy
 
-- **MVP**: US1 alone (T002–T010) stops new user-stated facts from decaying. It is the bug with real cost.
+- **MVP**: US1 alone (T002–T010, T044–T045) stops new user-stated facts from decaying. It is the bug with real cost.
 - **Then** US2 (the existing rows), US3 and US4 (loops), US5, and US6.
 - Each lane is reviewed on its own small diff before `lead` merges it.
 - Phase 203 depends on US3 and US4 having landed.

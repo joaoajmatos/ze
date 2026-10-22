@@ -57,7 +57,6 @@ def _source_from_row(row: asyncpg.Record) -> PersonSource:
         source_type=row["source_type"],
         weight=row["weight"],
         claim_kind=ClaimKind(row["claim_kind"]),
-        provenance=Provenance(row["provenance"]),
         raw_context=row["raw_context"] or "",
         created_at=row["created_at"],
     )
