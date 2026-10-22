@@ -51,15 +51,7 @@ class TargetFace(StrEnum):
 _LICENSE: dict[SourceFunction, frozenset[ClaimKind]] = {
     SourceFunction.PERCEPTION: frozenset({ClaimKind.FACT, ClaimKind.FEEDBACK_RECORD}),
     SourceFunction.MEMORY: frozenset(),
-    SourceFunction.EXECUTIVE: frozenset(
-        {
-            ClaimKind.IDENTITY,
-            ClaimKind.FACT,
-            ClaimKind.INFERENCE,
-            ClaimKind.SUSPICION,
-            ClaimKind.PRIORITY,
-        }
-    ),
+    SourceFunction.EXECUTIVE: frozenset({ClaimKind.PRIORITY, ClaimKind.SUSPICION}),
     SourceFunction.SOCIAL_COGNITION: frozenset({ClaimKind.IDENTITY}),
     SourceFunction.REFLECTION: frozenset({ClaimKind.INFERENCE, ClaimKind.SUSPICION}),
     SourceFunction.ACTION: frozenset({ClaimKind.ACTION_RECORD}),
