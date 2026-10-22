@@ -478,6 +478,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         loop_store=worldstate.loop_store,
         goal_store=automation.goal_store,
         hypothesis_store=correlation.hypothesis_store,
+        override_store=stores.priority_override_store,
     )
 
     skills_stack = build_skills_stack(shared, settings)
@@ -547,10 +548,10 @@ async def build_container(settings: Settings) -> ZeContainer:
         getattr(correlation, "relevance_model", None),
         shared.embedder,
         notifier,
+        nli_client=shared.nli_client,
     )
     turn_surfacer = TurnSurfacing(
         priority_view=priority_view,
-        override_store=stores.priority_override_store,
         graph_store=worldstate.graph_store,
         loop_store=worldstate.loop_store,
         embedder=shared.embedder,

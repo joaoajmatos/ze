@@ -56,7 +56,6 @@ async def test_resume_offers_are_recorded_and_cool_down_for_a_week(pg_pool):
         )
     surfacer = TurnSurfacing(
         priority_view=MagicMock(spec=PriorityView),
-        override_store=None,
         graph_store=AsyncMock(),
         loop_store=store,
         embedder=MagicMock(),

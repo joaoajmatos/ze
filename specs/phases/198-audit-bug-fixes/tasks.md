@@ -125,8 +125,8 @@
 
 ## Phase 12: Integration and gates (lane `lead`)
 
-- [ ] T040 [L:lead] [PLATFORM] [US6] After `attention` merges: pass `shared.nli_client` to `build_loop_surfacer` at `apps/ze-api/ze_api/wiring/container.py:532`; update `apps/ze-api/tests/pg/test_acceptance.py:64` and `apps/ze-api/tests/pg/test_loop_evidence.py:146`.
-- [ ] T041 [L:lead] [PLATFORM] [US5] After `attention` merges: pass `override_store=stores.priority_override_store` to `PriorityView` (`wiring/container.py:465`); stop passing it to `TurnSurfacing` and to the REST snapshot (`apps/ze-api/ze_api/api/v0/priority/router.py`); update `apps/ze-api/tests/agents/test_bootstrap.py` and the pg tests `test_loop_confirmation_pg.py`, `test_stuck_goals.py` that build these.
+- [x] T040 [L:lead] [PLATFORM] [US6] After `attention` merges: pass `shared.nli_client` to `build_loop_surfacer` at `apps/ze-api/ze_api/wiring/container.py:532`; update `apps/ze-api/tests/pg/test_acceptance.py:64` and `apps/ze-api/tests/pg/test_loop_evidence.py:146`.
+- [x] T041 [L:lead] [PLATFORM] [US5] After `attention` merges: pass `override_store=stores.priority_override_store` to `PriorityView` (`wiring/container.py:465`); stop passing it to `TurnSurfacing` and to the REST snapshot (`apps/ze-api/ze_api/api/v0/priority/router.py`); update `apps/ze-api/tests/agents/test_bootstrap.py` and the pg tests `test_loop_confirmation_pg.py`, `test_stuck_goals.py` that build these.
 - [ ] T042 [L:lead] [PLATFORM] Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make lint`, and `make test-pg` when Docker is available. Record the results in the Handoffs note.
 - [ ] T043 [L:lead] [PLATFORM] `graphify update .`, then `graphify affected` on every changed public symbol (`PriorityView`, `PriorityItem`, `TurnSurfacing`, `LoopSurfacer`, `build_loop_surfacer`, `GoalExecutor`, `ZeApiSettings`, `AgentState`, `invoke_raw_turn`, `resume_turn`) and confirm no caller was missed. `git diff main...HEAD -- core/engine/ze-core/ze_core/orchestration/nodes/memory.py` shows no hunk in lines 199-223.
 

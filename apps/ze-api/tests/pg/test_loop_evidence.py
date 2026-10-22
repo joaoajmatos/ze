@@ -136,14 +136,14 @@ class _Nli:
         return max(scores)
 
 
-def _surfacer(pool, store):
+def _surfacer(pool, store, nli_client=None):
     push_log = AsyncMock()
     push_log.list_recent_payloads = AsyncMock(return_value=[])
     push_log.was_sent_within_hours = AsyncMock(return_value=False)
     relevance = MagicMock()
     relevance.build = AsyncMock(return_value=object())
     relevance.score = MagicMock(return_value=SimpleNamespace(value=1.0, contributions=[]))
-    return LoopSurfacer(store, MagicMock(), push_log, pool=pool, relevance_model=relevance, embedder=None)
+    return LoopSurfacer(store, MagicMock(), push_log, pool=pool, relevance_model=relevance, embedder=None, nli_client=nli_client)
 
 
 async def test_push_bar_grounds_the_title_against_real_evidence(pg_pool):
@@ -152,11 +152,8 @@ async def test_push_bar_grounds_the_title_against_real_evidence(pg_pool):
     episode_id = await make_episode(pg_pool)
     await store.link_evidence(loop.id, "episode", episode_id)
     rationale = "No corroborating evidence before the implied window elapsed."
-    surfacer = _surfacer(pg_pool, store)
+    grounded = _surfacer(pg_pool, store, _Nli(loop.title))
+    ungrounded = _surfacer(pg_pool, store, _Nli("something else entirely"))
 
-    assert await surfacer.passes_push_bar(
-        loop, rationale, nli_client=_Nli(loop.title)
-    ) is True
-    assert await surfacer.passes_push_bar(
-        loop, rationale, nli_client=_Nli("something else entirely")
-    ) is False
+    assert await grounded.passes_push_bar(loop, rationale) is True
+    assert await ungrounded.passes_push_bar(loop, rationale) is False
