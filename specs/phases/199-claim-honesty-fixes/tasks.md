@@ -52,18 +52,18 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 - [x] T005 [L:facts] [US1] [BE] In `core/ops/ze-ingestion/ze_ingestion/sink.py:53`, stamp `Provenance.PROMPT_SUPPLIED`. T004 passes. `make test-ingestion`.
 - [x] T006 [P] [L:facts] [US1] [BE] Write a failing test in `plugins/ze-messenger/tests/test_inbound_processor.py`: `_extract_facts` (mock `extract_facts` returning one fact) submits it with provenance `PROMPT_SUPPLIED`.
 - [x] T007 [L:facts] [US1] [BE] In `plugins/ze-messenger/ze_messenger/inbound/processor.py:207`, stamp `Provenance.PROMPT_SUPPLIED`. T006 passes. `make test-messenger`.
-- [ ] T008 [L:facts] [US1] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_dream_decay_pg.py`. Build `DreamPromoter(pool, dream_store=stub)` from `ze_memory.dream.promoter`, where the stub's `get_pending_artifacts_for_run` returns a list you control and its other methods are `AsyncMock`. Insert rows into `memory_facts` with raw SQL, setting `created_at = now() - interval '60 days'`. Cover four cases:
+- [x] T008 [L:facts] [US1] [BE] Write failing test-pg tests in a new `apps/ze-api/tests/pg/test_dream_decay_pg.py`. Build `DreamPromoter(pool, dream_store=stub)` from `ze_memory.dream.promoter`, where the stub's `get_pending_artifacts_for_run` returns a list you control and its other methods are `AsyncMock`. Insert rows into `memory_facts` with raw SQL, setting `created_at = now() - interval '60 days'`. Cover four cases:
   (a) A `synthesized` fact with `dream_run_id` NULL, confidence 0.8, `reviewed` true, uncorroborated: after 10 calls of `run_morning_integration(uuid4())`, confidence, `reviewed` and `contradicted` are unchanged. This fails today.
   (b) A `synthesized` fact with `dream_run_id` set, confidence 0.8: after 1 call, confidence is 0.77.
   (c) A `synthesized` fact with `dream_run_id` NULL and `valid_until` in the past: after 1 call, it is not contradicted. This fails today. The same row with `dream_run_id` set is contradicted.
   (d) The stub returns one artifact (`artifact_type='synthesized_insight'`, `status='pending'`, `critic_a_verdict='PASS'`, `critic_b_verdict='PASS'`, support and spread fields above the defaults in `promoter.py`): the call does not raise, a new `memory_facts` row exists with `agent='dream'` and `dream_run_id` set, and a pre-aged dream insight inserted beforehand was decayed in the same call. This fails today with `UndefinedColumnError: creation_method`.
-- [ ] T009 [L:facts] [US1] [BE] In `core/cognition/ze-memory/ze_memory/dream/promoter.py`:
+- [x] T009 [L:facts] [US1] [BE] In `core/cognition/ze-memory/ze_memory/dream/promoter.py`:
   - add `AND dream_run_id IS NOT NULL` to the `SELECT` in `_run_confidence_decay` and to the `UPDATE` in `_expire_stale_synthetic_facts`;
   - remove `creation_method` and its `'synthesized'` value from the `INSERT` in `_insert_fact`;
   - update both docstrings to say "dream insights".
 
   Update `core/cognition/ze-memory/tests/dream/test_promoter.py` for any SQL-text assertions. T008 passes (`make test-pg`), and so does `make test-memory`.
-- [ ] T010 [P] [L:facts] [US1] [BE] In `core/ops/ze-seed/ze_seed/narrative/persona.yaml`, change the two seed facts with `provenance: synthesized` (ids `00000006-0001-4000-8000-000000000010` and `...00000000003d`) to `provenance: prompt_supplied`. In `core/ops/ze-seed/tests/test_loader.py:69-72`, assert that no seed fact is `synthesized`. `make test-seed`.
+- [x] T010 [P] [L:facts] [US1] [BE] In `core/ops/ze-seed/ze_seed/narrative/persona.yaml`, change the two seed facts with `provenance: synthesized` (ids `00000006-0001-4000-8000-000000000010` and `...00000000003d`) to `provenance: prompt_supplied`. In `core/ops/ze-seed/tests/test_loader.py:69-72`, assert that no seed fact is `synthesized`. `make test-seed`.
 
 **Checkpoint**: New conversation, ingestion and inbound facts are `prompt_supplied`, and decay touches dream insights only.
 

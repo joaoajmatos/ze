@@ -192,11 +192,11 @@ class DreamPromoter:
                 INSERT INTO memory_facts (
                     predicate, value, embedding, confidence, reviewed,
                     provenance, valid_until, dream_run_id, derived_from,
-                    corroborated, creation_method, agent, claim_kind
+                    corroborated, agent, claim_kind
                 ) VALUES (
                     'synthesized_insight', $1, $2::vector, 0.7, false,
                     'synthesized', $3, $4, $5,
-                    false, 'synthesized', 'dream', 'inference'
+                    false, 'dream', 'inference'
                 )
                 RETURNING id
                 """,
@@ -235,13 +235,14 @@ class DreamPromoter:
         return saved.id
 
     async def _run_confidence_decay(self) -> None:
-        """Decrement confidence on non-corroborated synthetic facts older than 30 days."""
+        """Decrement confidence on non-corroborated dream insights older than 30 days."""
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
                 """
                 SELECT id, confidence, reviewed, contradicted
                 FROM memory_facts
                 WHERE provenance = 'synthesized'
+                  AND dream_run_id IS NOT NULL
                   AND corroborated = false
                   AND created_at < now() - interval '30 days'
                   AND contradicted = false
@@ -266,7 +267,7 @@ class DreamPromoter:
                 )
 
     async def _expire_stale_synthetic_facts(self) -> None:
-        """Contradict synthesized facts that have passed their valid_until deadline."""
+        """Contradict dream insights that have passed their valid_until deadline."""
         async with self._pool.acquire() as conn:
             result = await conn.execute(
                 """
@@ -274,6 +275,7 @@ class DreamPromoter:
                     contradicted = true,
                     reviewed = false
                 WHERE provenance = 'synthesized'
+                  AND dream_run_id IS NOT NULL
                   AND corroborated = false
                   AND contradicted = false
                   AND valid_until IS NOT NULL
