@@ -35,9 +35,7 @@ def synthesized_claim_contribution(item: PriorityItem) -> Contribution:
     """The companion contribution representing PriorityView's own current computed
     position for the same item (`EXECUTIVE`/`SYNTHESIZED`) — exists so Phase 126's
     collision detector can observe genuine user-vs-executive disagreement (R1)."""
-    content = (
-        f"Ze currently ranks {item.source_kind} {item.title!r} at position {item.rank}"
-    )
+    content = f"Ze currently ranks {item.source_kind} {item.title!r} at position {item.computed_rank}"
     return Contribution(
         claim_kind=ClaimKind.PRIORITY,
         provenance=Provenance.SYNTHESIZED,

@@ -15,13 +15,10 @@ from ze_components.serialize import serialize_primitive
 from ze_logging import get_logger
 from ze_priority.compose.rules import mention_card
 from ze_priority.errors import ZePriorityError
-from ze_priority.merge import merge
 from ze_priority.open_query import OpenQueryDetector
-from ze_priority.store import PriorityOverrideStore
 from ze_priority.types import (
     LoopOffer,
     LoopSignal,
-    MergedPriorityItem,
     OpenItemMention,
     PriorityItem,
     RelationshipSignal,
@@ -51,7 +48,6 @@ class TurnSurfacing:
     def __init__(
         self,
         priority_view: PriorityView,
-        override_store: PriorityOverrideStore | None,
         graph_store: Any,
         loop_store: Any,
         embedder: Any,
@@ -59,7 +55,6 @@ class TurnSurfacing:
         open_query_detector: OpenQueryDetector | None = None,
     ) -> None:
         self._priority_view = priority_view
-        self._override_store = override_store
         self._graph_store = graph_store
         self._loop_store = loop_store
         self._push_log = push_log
@@ -69,15 +64,10 @@ class TurnSurfacing:
         return self._open_query.is_open_query(embedding)
 
     async def recap_mentions(self, limit: int | None = None) -> list[OpenItemMention]:
-        snapshot = await self._snapshot()
-        if snapshot is None:
+        items = await self._snapshot()
+        if items is None:
             return []
-        merged, items_by_id = snapshot
-        mentions = [
-            self._format_mention(items_by_id[row.source_id])
-            for row in merged
-            if row.source_id in items_by_id
-        ]
+        mentions = [self._format_mention(item) for item in items]
         return mentions if limit is None else mentions[:limit]
 
     async def open_query_mentions(self, limit: int) -> list[OpenItemMention]:
@@ -159,17 +149,13 @@ class TurnSurfacing:
     ) -> list[OpenItemMention]:
         if not entity_ids:
             return []
-        snapshot = await self._snapshot()
-        if snapshot is None:
+        items = await self._snapshot()
+        if items is None:
             return []
-        merged, items_by_id = snapshot
         relevant_loop_ids = await self._relevant_loop_ids(entity_ids)
         names = _entity_names(entities)
         selected: list[OpenItemMention] = []
-        for row in merged:
-            item = items_by_id.get(row.source_id)
-            if item is None:
-                continue
+        for item in items:
             if not _is_relevant(item, entity_ids, relevant_loop_ids, names):
                 continue
             mention = self._format_mention(item)
@@ -197,7 +183,7 @@ class TurnSurfacing:
 
     async def _snapshot(
         self,
-    ) -> tuple[list[MergedPriorityItem], dict[UUID, PriorityItem]] | None:
+    ) -> list[PriorityItem] | None:
         try:
             ranking = await self._priority_view.rank()
         except ZePriorityError as exc:
@@ -207,16 +193,7 @@ class TurnSurfacing:
             log.warning("turn_surfacing_rank_failed", error=str(exc))
             return None
 
-        items_by_id = {item.source_id: item for item in ranking.items}
-        overrides: list = []
-        if self._override_store is not None:
-            try:
-                overrides = await self._override_store.get_active()
-            except Exception as exc:
-                log.warning("turn_surfacing_override_store_failed", error=str(exc))
-
-        merged = merge(ranking, overrides, datetime.now(UTC))
-        return merged, items_by_id
+        return ranking.items
 
     async def _relevant_loop_ids(self, entity_ids: list[UUID]) -> set[UUID]:
         try:

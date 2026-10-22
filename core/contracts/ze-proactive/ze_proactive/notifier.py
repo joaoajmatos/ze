@@ -147,7 +147,7 @@ class ProactiveNotifier:
             assert budget_key is not None
             try:
                 claimed = await try_claim_shared(
-                    self._push_log, budget_key, self._max, payload=title
+                    self._push_log, budget_key, self._max, payload=body
                 )
                 if claimed:
                     budget_won = True

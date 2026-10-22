@@ -124,6 +124,13 @@ async def test_discretionary_claims_and_delivers():
     pl.release_claim.assert_not_awaited()
 
 
+async def test_discretionary_claim_payload_is_the_body():
+    pl = _push_log()
+    n, _, _ = _make(push_log=pl)
+    await n.notify(DIS, "A title", "The full body text", budget_key="k1")
+    assert pl.try_claim.call_args.kwargs["payload"] == "The full body text"
+
+
 async def test_discretionary_budget_full_is_suppressed_with_silent_frame():
     pl = _push_log(count=5)
     n, iface, store = _make(push_log=pl)

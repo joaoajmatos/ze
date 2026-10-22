@@ -77,6 +77,7 @@ def build_loop_surfacer(
     relevance_model: Any = None,
     embedder: Any = None,
     notifier: Any = None,
+    nli_client: Any = None,
 ) -> LoopSurfacer:
     """Constructed in `ze_api/container.py` once `push_log_store` (and, for the
     push path, the correlation stack's `RelevanceModel`) exist — both are built
@@ -89,6 +90,7 @@ def build_loop_surfacer(
         relevance_model=relevance_model,
         embedder=embedder,
         notifier=notifier,
+        nli_client=nli_client,
     )
 
 

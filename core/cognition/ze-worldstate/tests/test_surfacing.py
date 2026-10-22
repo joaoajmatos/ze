@@ -52,6 +52,7 @@ def _push_bar_surfacer(
     recent_payloads: list[str] | None = None,
     inline_sent: bool = False,
     budget_count: int = 0,
+    nli_client=None,
 ) -> LoopSurfacer:
     push_log = AsyncMock()
     push_log.list_recent_payloads = AsyncMock(return_value=recent_payloads or [])
@@ -71,6 +72,7 @@ def _push_bar_surfacer(
         pool=None,
         relevance_model=_relevance_model(relevance_value),
         embedder=None,
+        nli_client=nli_client,
     )
 
 
@@ -214,8 +216,8 @@ async def test_grounding_hypothesis_is_the_loop_title_not_the_rationale(monkeypa
     loop = _loop(confidence=0.8)
     nli = _RecordingNli()
 
-    passed = await _push_bar_surfacer().passes_push_bar(
-        loop, loop.drift_rationale, nli_client=nli
+    passed = await _push_bar_surfacer(nli_client=nli).passes_push_bar(
+        loop, loop.drift_rationale
     )
 
     assert passed is True
@@ -231,8 +233,8 @@ async def test_grounding_fails_when_the_title_is_not_supported(monkeypatch):
     monkeypatch.setattr(surfacing, "_fetch_evidence_summaries", fake_summaries)
     loop = _loop(confidence=0.8)
     assert (
-        await _push_bar_surfacer().passes_push_bar(
-            loop, loop.drift_rationale, nli_client=_RecordingNli(score=0.01)
+        await _push_bar_surfacer(nli_client=_RecordingNli(score=0.01)).passes_push_bar(
+            loop, loop.drift_rationale
         )
         is False
     )
@@ -242,9 +244,132 @@ async def test_grounding_passes_without_evidence_labels():
     loop = _loop(confidence=0.8)
     nli = _RecordingNli(score=0.0)
     assert (
-        await _push_bar_surfacer().passes_push_bar(
-            loop, loop.drift_rationale, nli_client=nli
+        await _push_bar_surfacer(nli_client=nli).passes_push_bar(
+            loop, loop.drift_rationale
         )
         is True
     )
     assert nli.pairs == []
+
+
+# ── the push bar holds on the path the sweep takes (phase 198, B4) ────────────
+
+
+class _MemoryPushLog:
+    """In-memory push log: payloads per event type, aged by an injectable clock."""
+
+    def __init__(self) -> None:
+        self.now = datetime(2026, 10, 1, 12, tzinfo=UTC)
+        self.rows: list[tuple[str, str, datetime]] = []
+
+    def add(self, event_type: str, payload: str, *, hours_ago: float) -> None:
+        self.rows.append((event_type, payload, self.now - timedelta(hours=hours_ago)))
+
+    async def list_recent_payloads(self, event_type, hours):
+        cutoff = self.now - timedelta(hours=hours)
+        return [p for e, p, at in self.rows if e == event_type and at > cutoff]
+
+    async def was_sent_within_hours(self, event_type, hours):
+        cutoff = self.now - timedelta(hours=hours)
+        return any(e == event_type and at > cutoff for e, _, at in self.rows)
+
+
+class _WordEmbedder:
+    """Bag-of-words vectors: identical text is identical, different text is not."""
+
+    _VOCAB: dict[str, int] = {}
+
+    def encode_passage(self, text: str):
+        import numpy as np
+
+        vec = np.zeros(256)
+        for word in text.lower().split():
+            index = self._VOCAB.setdefault(word, len(self._VOCAB))
+            vec[index % 256] += 1.0
+        return vec
+
+
+def _swept_surfacer(
+    loop: OpenLoop, *, push_log, nli_client, monkeypatch, evidence="I need to send it"
+):
+    from ze_worldstate import surfacing
+    from ze_worldstate.bootstrap import build_loop_surfacer
+
+    async def fake_summaries(pool, loop_store, loop_id):
+        return [{"type": "episode", "id": uuid4(), "summary": evidence}]
+
+    monkeypatch.setattr(surfacing, "_fetch_evidence_summaries", fake_summaries)
+    loop_store = AsyncMock()
+    loop_store.list = AsyncMock(return_value=[loop])
+    stack = SimpleNamespace(loop_store=loop_store, graph_store=AsyncMock(), pool=None)
+    return build_loop_surfacer(
+        stack,
+        push_log,
+        relevance_model=_relevance_model(0.8),
+        embedder=_WordEmbedder(),
+        nli_client=nli_client,
+    )
+
+
+async def test_sweep_path_drops_a_loop_whose_evidence_does_not_support_its_title(
+    monkeypatch,
+):
+    loop = _loop(confidence=0.8)
+    surfacer = _swept_surfacer(
+        loop,
+        push_log=_MemoryPushLog(),
+        nli_client=_RecordingNli(score=0.01),
+        monkeypatch=monkeypatch,
+    )
+
+    assert await surfacer.eligible_candidates(thresholds={}) == []
+
+
+async def test_sweep_path_keeps_a_loop_whose_evidence_supports_its_title(monkeypatch):
+    loop = _loop(confidence=0.8)
+    surfacer = _swept_surfacer(
+        loop,
+        push_log=_MemoryPushLog(),
+        nli_client=_RecordingNli(score=0.9),
+        monkeypatch=monkeypatch,
+    )
+
+    assert await surfacer.eligible_candidates(thresholds={}) == [loop]
+
+
+async def test_sweep_path_drops_a_loop_whose_push_text_repeats_a_recent_push(
+    monkeypatch,
+):
+    loop = _loop(confidence=0.8)
+    push_log = _MemoryPushLog()
+    push_log.add(
+        "attention_push",
+        format_hedged_mention(loop.title, loop.drift_rationale),
+        hours_ago=3,
+    )
+    surfacer = _swept_surfacer(
+        loop,
+        push_log=push_log,
+        nli_client=_RecordingNli(score=0.9),
+        monkeypatch=monkeypatch,
+    )
+
+    assert await surfacer.eligible_candidates(thresholds={}) == []
+
+
+async def test_sweep_path_ignores_the_retired_worldstate_loop_push_rows(monkeypatch):
+    loop = _loop(confidence=0.8)
+    push_log = _MemoryPushLog()
+    push_log.add(
+        "worldstate_loop_push",
+        format_hedged_mention(loop.title, loop.drift_rationale),
+        hours_ago=3,
+    )
+    surfacer = _swept_surfacer(
+        loop,
+        push_log=push_log,
+        nli_client=_RecordingNli(score=0.9),
+        monkeypatch=monkeypatch,
+    )
+
+    assert await surfacer.eligible_candidates(thresholds={}) == [loop]

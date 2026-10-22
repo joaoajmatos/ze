@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
 
 import pytest
 from ze_priority.compose import WorldComposer
@@ -34,9 +35,11 @@ def _composer(
     workflows=None,
     executions=None,
     embedder=None,
+    view=None,
 ):
-    view = MagicMock(spec=PriorityView)
-    view.rank = AsyncMock(return_value=ranking or _ranking())
+    if view is None:
+        view = MagicMock(spec=PriorityView)
+        view.rank = AsyncMock(return_value=ranking or _ranking())
     loop_store = AsyncMock()
     loop_store.list = AsyncMock(return_value=loops if loops is not None else [])
     goal_store = AsyncMock()
@@ -248,12 +251,61 @@ async def test_topic_matching_batches_encodes_and_runs_off_the_event_loop():
                 return super().encode_passage(text)
             return _Embedder.encode_passage(self, text)
 
-    loops = [make_loop(title=f"LedgerLite launch {i}", state=LoopState.ACTIVE) for i in range(5)]
+    loops = [
+        make_loop(title=f"LedgerLite launch {i}", state=LoopState.ACTIVE)
+        for i in range(5)
+    ]
     composer, *_ = _composer(
-        loops=loops, workflows=[_workflow(f"LedgerLite {i}") for i in range(4)], embedder=_Spy()
+        loops=loops,
+        workflows=[_workflow(f"LedgerLite {i}") for i in range(4)],
+        embedder=_Spy(),
     )
     await composer.compose_topic("ledgerlite launch")
 
     assert all(off_loop for off_loop, _ in calls)
     assert len(calls) <= 8
     assert max(n for _, n in calls) >= 4
+
+
+async def test_slipping_lists_people_in_the_users_order():
+    from ze_priority.scoring import _relationship_source_id
+    from ze_priority.types import PriorityOverride, RelationshipSignal
+
+    relationship_source = AsyncMock()
+    relationship_source.list_stale_for_follow_up.return_value = [
+        RelationshipSignal(name="Ana", days_ago=60),
+        RelationshipSignal(name="Bruno", days_ago=10),
+    ]
+    override_store = AsyncMock()
+    override_store.get_active.return_value = [
+        PriorityOverride(
+            id=uuid4(),
+            source_kind="relationship",
+            source_id=_relationship_source_id("Bruno"),
+            anchor_source_kind="relationship",
+            anchor_source_id=_relationship_source_id("Ana"),
+            relation="above",
+            pinned=True,
+            submitted_at=NOW,
+            superseded_at=None,
+            contribution_domain_id=uuid4(),
+        )
+    ]
+    quiet = AsyncMock()
+    quiet.list = AsyncMock(return_value=[])
+    quiet.list_stuck = AsyncMock(return_value=[])
+    quiet.list_recent = AsyncMock(return_value=[])
+    view = PriorityView(
+        loop_store=quiet,
+        goal_store=quiet,
+        hypothesis_store=quiet,
+        relationship_source=relationship_source,
+        override_store=override_store,
+        clock=lambda: NOW,
+    )
+    composer, *_ = _composer(view=view)
+
+    composition = await composer.compose_slipping()
+
+    people = [c["title"] for c in composition.components if c["type"] == "claim_card"]
+    assert people == ["Bruno", "Ana"]

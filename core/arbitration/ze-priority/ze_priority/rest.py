@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from uuid import UUID
 
 from ze_agents.nli import NLIClient
 from ze_collision.store import CollisionLogStore
 
 from ze_priority.errors import StaleReprioritizationTargetError
-from ze_priority.merge import merge
 from ze_priority.service import submit_reprioritization
 from ze_priority.store import PriorityOverrideStore
 from ze_priority.types import (
@@ -17,16 +15,22 @@ from ze_priority.types import (
 )
 from ze_priority.view import PriorityView
 
-UTC = timezone.utc
 
-
-async def get_snapshot(
-    priority_view: PriorityView, override_store: PriorityOverrideStore
-) -> PrioritySnapshotResult:
+async def get_snapshot(priority_view: PriorityView) -> PrioritySnapshotResult:
     ranking = await priority_view.rank()
-    overrides = await override_store.get_active()
     return PrioritySnapshotResult(
-        items=merge(ranking, overrides, datetime.now(UTC)),
+        items=[
+            MergedPriorityItem(
+                source_kind=item.source_kind,
+                source_id=item.source_id,
+                title=item.title,
+                displayed_rank=item.rank,
+                computed_rank=item.computed_rank,
+                overridden_from_computed=item.rank != item.computed_rank,
+                override=item.override,
+            )
+            for item in ranking.items
+        ],
         sources_failed=tuple(sorted(ranking.sources_failed)),
     )
 
@@ -46,7 +50,7 @@ async def submit_override(
         collision_store=collision_store,
         nli_client=nli_client,
     )
-    return await _snapshot_row_for(override.source_id, priority_view, override_store)
+    return await _snapshot_row_for(override.source_id, priority_view)
 
 
 async def unpin_override(
@@ -56,15 +60,13 @@ async def unpin_override(
     override_store: PriorityOverrideStore,
 ) -> MergedPriorityItem:
     override = await override_store.unpin(override_id)
-    return await _snapshot_row_for(override.source_id, priority_view, override_store)
+    return await _snapshot_row_for(override.source_id, priority_view)
 
 
 async def _snapshot_row_for(
-    source_id: UUID,
-    priority_view: PriorityView,
-    override_store: PriorityOverrideStore,
+    source_id: UUID, priority_view: PriorityView
 ) -> MergedPriorityItem:
-    snapshot = await get_snapshot(priority_view, override_store)
+    snapshot = await get_snapshot(priority_view)
     for row in snapshot.items:
         if row.source_id == source_id:
             return row
