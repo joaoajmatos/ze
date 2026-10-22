@@ -76,8 +76,8 @@ imports from the same module (no second download).
 - Full scoring pipeline: NLI groundedness gate + embedding novelty gate + retrievability gate + two adversarial LLM critic calls (sonnet). Both critics must pass.
 - Auto-promotion with `valid_until`, `dream_run_id`, `derived_from` lineage, so a run's
   promoted facts stay traceable even though no rollback query uses that lineage yet.
-- Synthetic fact confidence decay: non-corroborated synthesized facts lose 0.03 confidence per run after 30 days; contradicted at < 0.25.
-- `valid_until` hard expiry: synthesized facts past their 90-day window that have not been corroborated by a raw episode are contradicted on each morning integration.
+- Dream insight confidence decay: non-corroborated dream insights lose 0.03 confidence per run after 30 days; contradicted at < 0.25. A dream insight is a fact with a `dream_run_id`. Facts without one never decay.
+- `valid_until` hard expiry: dream insights past their 90-day window that have not been corroborated by a raw episode are contradicted on each morning integration.
 - Morning briefing: a "Ze dreamed" section with processed-episode count, insights
   promoted, plan risks surfaced, and items pending review (skipped only when both
   insights promoted and items pending review are zero).
@@ -146,7 +146,7 @@ dream:
   forgetting_weight_threshold: 0.1
   synthesis_model: "anthropic/claude-haiku-4-5"
   critic_model: "anthropic/claude-sonnet-4-6"
-  synthetic_fact_valid_days: 90      # synthesized facts contradicted after this many days without corroboration
+  synthetic_fact_valid_days: 90      # dream insights contradicted after this many days without corroboration
   job_timeout_seconds: 1800
   inactivity_trigger_enabled: false    # fire dream job when user goes idle
   inactivity_threshold_hours: 6        # hours of silence before triggering
@@ -172,7 +172,8 @@ directly until a review route and a `ze-web` page ship.
 
 - **Staging buffer** — no synthetic output touches live memory until all gates pass.
 - **Provenance** — Ze hedges `provenance=synthesized` facts in retrieval context
-  ("Ze inferred this from a pattern").
+  ("Ze inferred this from a pattern"). Only the dream writes `synthesized` facts. Facts that
+  Ze reads from what you say, or from your own email and files, are `prompt_supplied`.
 - **Source tagging** — Ze classifies episodes as `ze_observed` or `user_asserted` at write
   time. Classification uses three layers: (1) agent-name allowlist (email, calendar,
   workflow, reminders, news, prospecting, finance, goal, automation); (2) tool-result
@@ -183,8 +184,8 @@ directly until a review route and a `ze-web` page ship.
   `memory_session_summaries.dream_influenced = true` on any session that fetched
   synthesized facts, and the schema- and policy-candidate detectors exclude those
   sessions from the dream source pool. Nothing clears the flag once set.
-- **Synthetic expiry** — the next morning integration run contradicts synthesized facts
-  past `valid_until` (default 90 days) that no raw episode has corroborated.
+- **Synthetic expiry** — the next morning integration run contradicts dream insights
+  (facts with a `dream_run_id`) past `valid_until` (default 90 days) that no raw episode has corroborated.
 - **Rollback** — every promoted fact carries `dream_run_id` and `derived_from` lineage, so a
   run's output is traceable, but no code yet bulk-contradicts a run or re-summarizes the
   session summaries it contaminated (see REST API above).

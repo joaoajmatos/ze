@@ -11,7 +11,7 @@ Personal-assistant domain layer for Ze. Implements the user-facing features that
 - **Goals** — autonomous multi-week goal execution with milestones, verification gates, and adaptive replanning
 - **Workflows** — multi-step plans persisted in Postgres with a scheduling loop
 - **Persona** — named profiles with TARS-style numeric dials that shape agent tone and behaviour
-- **Contacts** — person tracking with extraction from email, calendar, and conversation. The web app shows them in Mind › People; the plugin has no nav entry of its own
+- **Contacts** — person tracking with extraction from email, calendar, and conversation. A contact source's provenance follows its source type: `manual`, `conversation`, `email` and `calendar` are `prompt_supplied`, and `research` (prospecting) is `live_search`. A new contact takes the provenance of its first source. Migration `zc041` re-stamped existing contacts and sources. The web app shows them in Mind › People; the plugin has no nav entry of its own
 - **Proactive jobs** — morning briefing, weekly insights, goal suggestions, stuck-goal alerts, cost anomaly detection
 - **Agents** — ResearchAgent, CompanionAgent, GoalAgent, WorkflowAgent
 

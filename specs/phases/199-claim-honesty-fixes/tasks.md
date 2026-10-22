@@ -257,7 +257,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
 
   Run `graphify update .`, then run `graphify affected` on `OpenLoop`, `_close_matching_loop`, `submit_perception_facts` and `PersonSource`, and confirm every caller it lists was updated or is unaffected. Record useful or misleading queries with `graphify save-result ... --memory-dir /Users/joaoamatos/coding/ze/graphify-out/memory`.
 - [ ] T040 [L:lead] [PLATFORM] Run quickstart.md section 4 against a scratch database: create `ze_199_verify` (`docker exec ze-postgres-1 createdb -U ze ze_199_verify`), run `make migrate` with `DATABASE_URL` and `DATABASE_URL_SYNC` pointed at it, and confirm the `zm026_restamped` log line. Do not run the migration on the shared `ze` DB; the user lands floors.
-- [ ] T041 [P] [L:docs] [DOCS] Update the public docs from the finished diff (doc-style skill rules):
+- [x] T041 [P] [L:docs] [DOCS] Update the public docs from the finished diff (doc-style skill rules):
   - `docs/dreaming.md:79-80,174-186`: decay and expiry apply to dream insights only, selected by `dream_run_id`;
   - `docs/architecture.md:574,605-606`: post-turn extraction stores `prompt_supplied` facts, and expiry applies to dream insights;
   - `docs/memory.md`: a fact provenance paragraph: perception writes `prompt_supplied`, only the dream writes `synthesized`, and `live_search` means a web search;
@@ -266,14 +266,14 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
   - `core/cognition/ze-worldstate/README.md`: the claim kind follows the state, the `resolve` event, and `zw006`;
   - `core/cognition/ze-memory/README.md`: decay scope and `zm026`;
   - `plugins/ze-personal/README.md`: contact provenance by source type and `zc041`.
-- [ ] T042 [L:docs] [DOCS] Update the indexes and their checks:
+- [x] T042 [L:docs] [DOCS] Update the indexes and their checks:
   - `AGENTS.md`: add the 199 phase row (Implemented, a one-line summary in the table's style); in Migration ownership, name `zm026` (ze-memory row), `zw006` drops `open_loops.claim_kind` (ze-worldstate row), and `zc041` contact provenance re-stamp (ze-personal row);
   - `specs/README.md`: the 199 Status cell only;
   - `specs/arch/contribution-seam.md`: confirm that no text still attributes candidate loops to Perception;
   - spec.md: set `**Status**` to Implemented.
 
   Run the `speckit-process-after-implement` skill.
-- [ ] T043 [L:docs] [DOCS] Run a coverage check: `git diff main...HEAD --stat -- docs/ AGENTS.md specs/README.md '*README.md'`. Confirm every file listed in T041–T042 appears in it, and list any public doc that names a changed symbol (`grep -rn "creation_method\|claim_kind\|live_search\|synthesized" docs/ */*/README.md */*/*/README.md`) but was not updated, with a reason.
+- [x] T043 [L:docs] [DOCS] Run a coverage check: `git diff main...HEAD --stat -- docs/ AGENTS.md specs/README.md '*README.md'`. Confirm every file listed in T041–T042 appears in it, and list any public doc that names a changed symbol (`grep -rn "creation_method\|claim_kind\|live_search\|synthesized" docs/ */*/README.md */*/*/README.md`) but was not updated, with a reason.
 
 ---
 

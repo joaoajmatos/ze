@@ -44,6 +44,8 @@ class Fact:
 
 **Table:** `memory_facts` — pgvector embedding on `value`.
 
+**Provenance.** Perception writes `prompt_supplied`: conversation facts, ingested files and inbound messages. Only the dream writes `synthesized`, and those facts carry a `dream_run_id`. Confidence decay and expiry apply to facts with a `dream_run_id` only. `live_search` means a web search. Nightly dedup merges two facts only when both have no `dream_run_id` and share the same provenance and claim kind. The merged fact keeps that provenance and claim kind.
+
 ### `Episode`
 
 Raw per-turn records of individual conversation exchanges.
@@ -260,7 +262,7 @@ instead. It labels the message `speech_act` as `fact`, `forget`, `ingest`,
 [system-one.md](system-one.md#commitment-intake). Predicates
 already written this turn by `remember_fact` (`ok` true, same predicate+value
 identity after normalize) are dropped. Kept rows are
-`SYNTHESIZED`, `reviewed=false`. Eval threads (`eval-*`) skip this path.
+`PROMPT_SUPPLIED`, `reviewed=false`. Eval threads (`eval-*`) skip this path.
 
 - Before insert, the store checks exact-predicate matches, then NLI contradiction
   (`nli_write_time_check`, default `true`) on same-subject candidates with cosine ≥
