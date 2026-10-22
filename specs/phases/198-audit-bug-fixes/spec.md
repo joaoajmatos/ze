@@ -52,11 +52,12 @@ Each audit claim was read against the code at the floor's base commit `c8dc97da`
 - `PriorityView` is built once at `wiring/container.py:465`, and the override store exists before that line. The briefing receives the same instance.
 - The governing rule is the `attention-arbitration.md` amendment of 2026-10-22: `PriorityView` returns the user's order by default; arbitration ranks candidates in the user's order; an item the user pushed down never wins a push; pins never add a push beyond the budget.
 
-### B6: the compaction readout is shown on the wrong turns (PARTLY; the audit's framing is corrected)
+### B6: the compacted summary is dropped after one turn (PARTLY; the audit's framing is corrected twice)
 
 - Graph order: `synthesize → record_trace → write_memory → END` (`ze_core/orchestration/graph.py:147-149`). `record_trace` reads `state["compaction_span"]` (`nodes/trace.py:79-84`). `write_memory` compacts after the reply and sets `compaction_span` to `(0, n-1)` (`memory.py:286`) or `None` (`:292`).
 - The audit says the readout is "one turn late". Phase 112 defines it the other way. FR-011 there: "record, per turn, whether that turn's context included a compacted summary". Its acceptance scenario: "a turn whose prompt included a rolling summary". Turn N compacts after its reply, so N's prompt had no summary. Turn N+1's prompt is the first that has one, and today N+1 does show it.
-- **The real bug**: only N+1 shows it. N+1's `write_memory` resets `compaction_span` to `None`, so turns N+2, N+3 … show no summary although their prompts still open with the summary message (`memory.py:342` marks it `compaction_summary`). A later re-compaction shows the same lag.
+- **The real bug** (corrected 2026-10-22 by the engine lane's four-turn graph test, verified at `memory.py:271-294`): the summary itself reaches only one prompt. After compaction the history is `[summary] + last 10` (11 messages). Turn N+1 adds 2 (13), does not compact again (the summary made the history short), and its non-compacting branch keeps `updated[-SESSION_HISTORY_LIMIT:]` (`:291`), which drops the leading summary. The test's readouts were `[None, span, None, None]` and the summary was in the prompt on `[no, yes, no, no]`: today's readout already matches the prompts. What breaks is phase 112's rolling summary: FR-002 replaces older turns with a summary, and FR-004 folds a prior summary into a re-compaction, but after one turn Ze has neither the older turns nor their summary, exactly as if it had only trimmed.
+- The fix (user's answer to Q5): the non-compacting trim keeps a leading `compaction_summary` message in front of the last 10 messages. Re-compaction already folds it in, because `older_span = updated[:-10]` starts with it and `_format_transcript` renders it as `system: <summary>`. With the summary kept, the readout derived from the history's first message is correct on every later turn.
 - `make_graph_input` (`ze_core/conversation/turn.py:32-90`) does not reset `compaction_span`. It also skips `loop_offer_ids`, `open_items_query`, `procedure_matches` and `resume_recap_applied`, but `fetch_context` rewrites those four every turn (`context.py:392-395`), and `pre_approved_writes` is a workflow input. Resetting `compaction_span` alone would hide compaction completely.
 - Compaction code in `memory.py`: `43-45`, `252-265`, `267-294`, `308-317`, `320-342`. The provenance block that phase 199 edits is `199-223`.
 - The web draws the readout at `apps/ze-web/src/widgets/assemble/ui/trace/instruments/readouts.ts:57`.
@@ -141,6 +142,7 @@ Answers from the user, relayed by the Maestro.
 - Q: B11, what recovers a calendar reminder whose push failed? → A: clear its sent mark, so the next startup replay sends it as a late reminder. The record itself moves in phase 204 (FR-012).
 - Q: B5, may an item the user pushed down still be pushed? → A: no. While the override is active, it is excluded from pushes, even when it is the only candidate.
 - Q: The `push_log` lifetime idempotency index (a loop can be pushed once in its life): fix here or later? → A: leave it to phase 204. The Maestro adds it to 204's Context.
+- Q: B6, the leading summary is dropped by the next non-compacting trim, so it reaches one prompt only. Keep it, or keep the trim? → A: keep it. The history after a non-compacting trim is the summary plus the last 10 messages, and a re-compaction folds the old summary into the new one. This changes prompt content on every turn after a compaction (a phase 112 fix).
 - Scope addition by the user: B15, Cancel never stops a running WS turn. `invoke_raw_turn` creates and registers the abort token; phase 201 later folds it into the turn request. Failing test first.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -264,17 +266,17 @@ A morning brief, weekly goal narrative, accountability summary or workflow-failu
 
 ---
 
-### User Story 8 - The compaction readout matches what the model saw (Priority: P3)
+### User Story 8 - Ze keeps the compacted summary, and the readout matches what the model saw (Priority: P3)
 
-The trace of every turn whose prompt opened with a compacted summary says so, and says which messages the summary covers.
+After a long conversation is compacted, Ze keeps the summary of the older turns in every later prompt until the next compaction folds it into a new one. The trace of every turn whose prompt opened with the summary says so, and says which messages the summary covers.
 
-**Why this priority**: it is a transparency readout. The conversation works without it, but today it appears on one turn and then disappears while the summary is still in use.
+**Why this priority**: today the summary is dropped one turn after it is made, so Ze forgets the older conversation as if it had only trimmed it. The readout then appears on one turn only. The conversation still works, so P3.
 
-**Independent Test**: a graph-level test runs four turns on one thread with a history long enough to compact after turn 1. Assert the compaction readout on each turn according to FR-021.
+**Independent Test**: a graph-level test runs four turns on one thread with a history long enough to compact after turn 1. Assert that the first message of each turn's prompt is the summary from turn 2 on, and the compaction readout on each turn according to FR-021.
 
 **Acceptance Scenarios**:
 
-1. **Given** a thread whose history was compacted after turn N, **When** the user inspects the traces of turns N+1, N+2 and N+3, **Then** each shows the summary and the span it covers.
+1. **Given** a thread whose history was compacted after turn N, **When** turns N+1, N+2 and N+3 run, **Then** each prompt opens with the summary, and each trace shows the summary and the span it covers.
 2. **Given** the same thread, **When** the user inspects turn N, **Then** it shows no summary, because its prompt had none.
 3. **Given** a thread that has never compacted, **When** the user inspects any trace, **Then** no compaction is shown.
 4. **Given** a thread compacted a second time after turn M, **When** the user inspects turn M+1, **Then** it shows the newer summary's span.
@@ -340,7 +342,8 @@ The user presses Cancel while Ze is working on a reply. The running turn stops a
 - A push candidate the user pinned while the budget is exhausted. It is not pushed (the budget wins).
 - The notifier holds a loop push for quiet hours. The held push counts for novelty.
 - Two workflow failures within the alert cooldown. Both are listed in `/status`, and one alert is sent.
-- A thread is compacted twice. The readout shows the newest summary's span.
+- A thread is compacted twice. The second summary folds in the first, the history holds one summary, and the readout shows the newest summary's span.
+- The summary fails to generate (the model call fails). Compaction falls back to the plain trim as today; a summary kept from an earlier compaction stays in front.
 - Cancel arrives after the turn finished. It is a no-op, as today.
 - Two turns overlap on one thread (the thread lock normally prevents it). A turn removes only its own token from the registry, never a newer one.
 - An archive exported before this phase that still holds the duplicate files. Import reads only registered domains, so the extra file is ignored.
@@ -390,9 +393,10 @@ The user presses Cancel while Ze is working on a reply. The running turn stops a
 - **FR-019**: A workflow failure MUST still be recorded for `/status` and the briefing whatever the alert's outcome. The alert cooldown MUST be recorded apart from the failure ledger.
 - **FR-020**: A calendar reminder whose push fails MUST be marked unsent again, so the next startup replay sends it as a late reminder.
 
-**Compaction readout (B6)**
+**Compacted summary and readout (B6)**
 
 - **FR-021**: The trace MUST show the compaction span on every turn whose prompt opens with a compacted summary, and on no other turn. It is derived from the history the turn actually sent to the model, not from a flag set after the reply. The `compaction_span` state field MUST be removed (hard cut). Phase 199's lines in `nodes/memory.py` (199-223) MUST stay untouched.
+- **FR-028**: When `write_memory` trims a history without compacting it, it MUST keep a leading compacted summary message: the stored history is that summary plus the last 10 messages. A re-compaction MUST fold the previous summary into the new one (the span to compact starts with it), so at most one summary message is ever stored. A history without a summary is trimmed as today.
 
 **Rail attention (B10)**
 
@@ -432,7 +436,7 @@ The user presses Cancel while Ze is working on a reply. The running turn stops a
 - **SC-005**: Every consumer of the priority ranking returns the user's order. The view, `reprioritize_item`, push arbitration and composed answers each have a test that fails today; REST, `TurnSurfacing` and the morning brief read the same view instance.
 - **SC-006**: An ungrounded or repeated loop candidate is rejected in a test through `AttentionArbitrationJob.run`, with no direct call to a bar function.
 - **SC-007**: For each of the four jobs, a failed push never starts a cooldown. One parametrized test per job proves it.
-- **SC-008**: The compaction readout is correct on 4 consecutive turns of a graph-level test.
+- **SC-008**: In a 4-turn graph-level test that compacts after turn 1, the summary opens the prompt of turns 2, 3 and 4, and the compaction readout is correct on all 4 turns.
 - **SC-009**: The rail dot survives a background `confirm_request` in a test that renders both frame handlers in the shell's order.
 - **SC-010**: Each table appears once in the registered data domains.
 - **SC-011**: Cancel stops a running turn and a resumed turn in a test through the turn entry points; a finished turn leaves no token registered.
