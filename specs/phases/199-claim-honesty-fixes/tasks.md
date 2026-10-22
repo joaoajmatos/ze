@@ -188,7 +188,7 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
     ```
 
   Run `make test-plugin`. Exactly these 3 new rejected cases fail on today's code; that is the failing test.
-- [ ] T028 [L:jr1] [US5] [BE] In `core/contracts/ze-plugin/ze_plugin/contribution.py` (lines 52-62), replace the Executive entry with `SourceFunction.EXECUTIVE: frozenset({ClaimKind.PRIORITY, ClaimKind.SUSPICION}),`. Run `make test-plugin test-worldstate test-priority`. All green, and T027 passes.
+- [x] T028 [L:jr1] [US5] [BE] In `core/contracts/ze-plugin/ze_plugin/contribution.py` (lines 52-62), replace the Executive entry with `SourceFunction.EXECUTIVE: frozenset({ClaimKind.PRIORITY, ClaimKind.SUSPICION}),`. Run `make test-plugin test-worldstate test-priority`. All green, and T027 passes.
 
 ---
 
