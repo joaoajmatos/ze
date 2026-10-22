@@ -33,8 +33,8 @@
 - [ ] T004 [P] [L:engine] [BE] [US1] Tests first in `core/engine/ze-core/tests/orchestration/nodes/test_execution.py` (helpers `_register_and_wire`, `_envelope`, `_ctx`): with `base_ctx.timezone = "Europe/Lisbon"`, the agent receives `ctx.timezone == "Europe/Lisbon"` for a single-agent envelope and for both subtasks of a compound envelope. Fails today (UTC).
 - [ ] T005 [P] [L:engine] [BE] [US1] Test first in `core/contracts/ze-agents/tests/test_delegate.py`: a delegate from a context with `timezone="Europe/Lisbon"` gives the specialist a context with the same zone. Fails today.
 - [ ] T006 [L:engine] [BE] [US1] Pass `timezone=base_ctx.timezone` at `core/engine/ze-core/ze_core/orchestration/nodes/execution.py:388` and `:493`, and `timezone=ctx.timezone` at `core/contracts/ze-agents/ze_agents/delegate.py:270`. T004–T005 pass.
-- [ ] T007 [P] [L:automation] [BE] [US1] Test first in `core/automation/ze-automation/tests/goal_engine/test_executor.py`: build the `executor` fixture with `timezone="Europe/Lisbon"`, run one milestone, capture the context through the `agent_getter` mock, assert its zone. Fails today (no parameter).
-- [ ] T008 [L:automation] [BE] [US1] Add `timezone: str = "UTC"` to `GoalExecutor.__init__` (`ze_automation/goals/executor.py:168`), use it at `:906`, and pass `settings.timezone` at `ze_automation/bootstrap.py:164`. T007 passes.
+- [x] T007 [P] [L:automation] [BE] [US1] Test first in `core/automation/ze-automation/tests/goal_engine/test_executor.py`: build the `executor` fixture with `timezone="Europe/Lisbon"`, run one milestone, capture the context through the `agent_getter` mock, assert its zone. Fails today (no parameter).
+- [x] T008 [L:automation] [BE] [US1] Add `timezone: str = "UTC"` to `GoalExecutor.__init__` (`ze_automation/goals/executor.py:168`), use it at `:906`, and pass `settings.timezone` at `ze_automation/bootstrap.py:164`. T007 passes.
 
 **Checkpoint**: `make test-core`, `make test-agents`, `make test-automation`, `make test` green.
 

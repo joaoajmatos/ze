@@ -168,6 +168,7 @@ def build_automation_stack(shared: Any, settings: Any) -> AutomationStack:
         notify=_unwired_notify,
         agent_getter=_get_agent,
         memory_store=memory_store,
+        timezone=settings.timezone,
     )
     workflow_planner = WorkflowPlanner(openrouter_client=openrouter_client)
     deps: dict[type, Any] = {
