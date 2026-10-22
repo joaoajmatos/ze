@@ -65,6 +65,7 @@ async def test_each_table_is_exported_by_one_domain():
         if n > 1
     }
     assert duplicated == {}
+    assert {"goals", "workflows"} <= set(counts)
 
 
 async def test_domain_names_are_unique():
