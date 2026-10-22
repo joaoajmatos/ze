@@ -274,13 +274,13 @@ depend on code the earlier waves change.
 | 208 | [Trace Recorder](phases/208-trace-recorder/spec.md) | 2 | 200, 201 | ⏳ Not written yet |
 | 209 | [Write Gate and Reply Template](phases/209-write-gate-and-reply-template/spec.md) | 2 | 200 | 📝 Specified |
 | 210 | [Plugin Seam Narrowing](phases/210-plugin-seam-narrowing/spec.md) | 2 | 201 | 📝 Specified |
-| 211 | [Personal Unbundling](phases/211-personal-unbundling/spec.md) | 2 | 210 | ✏️ Draft (unchecked; writer stopped) |
+| 211 | [Personal Unbundling](phases/211-personal-unbundling/spec.md) | 2 | 198, 201, 210 | 📝 Specified |
 | 212 | [Contribution Submitter](phases/212-contribution-submitter/spec.md) | 3 | 201, 203 | 📝 Specified |
 | 213 | [One Scheduler](phases/213-one-scheduler/spec.md) | 3 | 204 | 📝 Specified |
 | 214 | [Unattended Step Runner](phases/214-unattended-step-runner/spec.md) | 3 | 200, 201 | 📝 Specified |
 | 215 | [Workspace Runs Module](phases/215-workspace-runs-module/spec.md) | 3 | 201 | 📝 Specified |
-| 216 | [Memory Interface and SDK Trim](phases/216-memory-interface-and-sdk-trim/spec.md) | 3 | 201 | ⏳ Not written yet |
-| 217 | [Data Domain Factory](phases/217-data-domain-factory/spec.md) | 3 | 211 | ⏳ Not written yet |
+| 216 | [Memory Interface and SDK Trim](phases/216-memory-interface-and-sdk-trim/spec.md) | 3 | 201, 210, 211, 212 | 📝 Specified |
+| 217 | [Data Domain Factory](phases/217-data-domain-factory/spec.md) | 3 | 210, 211 | 📝 Specified |
 | 218 | [Web Module Host](phases/218-web-module-host/spec.md) | 3 | 206 | 📝 Specified |
 | 219 | [WS Conformance Harness](phases/219-ws-conformance-harness/spec.md) | 3 | 207 | 📝 Specified |
 
