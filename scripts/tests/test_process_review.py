@@ -247,7 +247,8 @@ case "$1" in
       active) marks "$(asked)";;
       stuck) if [ "$(raw)" -ge 1 ]; then marks "$(raw)"; else echo "❯ $(grep '^ask Gauge .rq' "$FAKE_LOG" | tail -1)"; fi;;
     esac;;
-  ask) echo "";;
+  ask) if [ -n "$FAKE_UNCONNECTED" ] && [ "$2" != "Claude Code" ] && echo " $FAKE_UNCONNECTED " | grep -q " $2 "; then
+         echo "maestri: Terminal '$2' not found" >&2; exit 1; fi; echo "";;
   note) exit 1;;
 esac
 """
@@ -347,6 +348,37 @@ def test_an_idle_screen_without_the_request_is_not_an_alarm(
     a, b, *_ = _repo(tmp_path)
     monkeypatch.setenv("FAKE_MODE", "idle")
     assert request(tmp_path, f"{a}..{b}").returncode == 0
+
+
+def test_a_reviewer_not_connected_to_the_requester_gets_it_through_the_maestro(
+    review_cli, tmp_path, monkeypatch
+):
+    a, b, *_ = _repo(tmp_path)
+    monkeypatch.setenv("FAKE_UNCONNECTED", "Gauge Socket")
+    monkeypatch.setenv(
+        "FAKE_MODE", "stuckforever"
+    )  # never consulted: a relayed ask has no screen to watch
+    p = review(
+        "request",
+        f"{a}..{b}",
+        "Gauge",
+        "--requester",
+        "Socket",
+        "--wait",
+        "0",
+        repo=tmp_path,
+    )
+    assert p.returncode == 0, p.stderr
+    assert "through the Maestro" in p.stdout
+    calls = review_cli.read_text().splitlines()
+    assert any(c.startswith("ask Claude Code RELAY to Gauge") for c in calls)
+    assert not any("--raw" in c for c in calls)
+    v = verdict(tmp_path, f"{a}..{b}", "APPROVE")
+    assert v.returncode == 0 and "through the Maestro" in v.stdout
+    assert any(
+        c.startswith("ask Claude Code RELAY to Socket")
+        for c in review_cli.read_text().splitlines()
+    )
 
 
 def test_changes_then_re_review_restarts_at_the_last_approve_and_lands(
