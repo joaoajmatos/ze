@@ -53,7 +53,7 @@ Every decision below was checked against the code on branch `199-claim-honesty-f
   1. `UPDATE open_loops SET state = 'closed', closed_at = now(), updated_at = now() WHERE id = $1 AND state IN ('suspected', 'active', 'drifting') RETURNING *`;
   2. one `derived_from` `memory_relationships` row per evidence ref, the same SQL `link_evidence` uses (`ON CONFLICT DO NOTHING`).
 
-  It returns `None` when no row moved (already closed or dropped, or a concurrent resolve won). It never writes `dismissed_evidence_fingerprint`. It logs `open_loop_transitioned` with `event="resolve"`.
+  It returns `None` when no row moved (already closed or dropped, or a concurrent resolve won). It never writes `dismissed_evidence_fingerprint`. It logs `open_loop_transitioned` with `via="resolve"` (structlog reserves `event`).
 - `_close_matching_loop` (`extraction.py:380-400`) gains `evidence_refs` and calls `loop_store.resolve(existing.id, evidence_refs)` instead of `transition(CLOSED)`. Both callers already hold `evidence_refs` (`_commit_admitted`, `extraction.py:511-514`; the 109 fallback, `:637-641`).
 - `_ALLOWED_TRANSITIONS` and `transition()` do not change, so the REST close route, `close_loop`, `review.close_loop`, decay and the drift sweep still refuse `suspected → closed` (FR-017).
 - **Evidence per inflow**: conversation passes the turn episode (`_commit_with_episode` in `nodes/memory.py`); email passes the message reference; ingestion passes the ingestion id; calendar passes none (`calendar_reminder.py`). This is unchanged from create.
