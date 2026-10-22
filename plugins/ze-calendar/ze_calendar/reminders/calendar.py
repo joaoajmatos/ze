@@ -179,13 +179,17 @@ class CalendarReminderService:
         if late_from is not None:
             local = late_from.astimezone(self._user_tz())
             body = f"{label} (late, was due {local:%H:%M})"
-        await self._notifier.notify(
+        outcome = await self._notifier.notify(
             CALENDAR_REMINDER,
             "Calendar reminder",
             body,
             target_type="reminder",
             target_id=str(reminder_id),
         )
+        if outcome == "failed":
+            await self._store.mark_unsent(reminder_id)
+            log.warning("reminder_push_failed", id=str(reminder_id))
+            return
         await self._push_log.log(f"calendar_reminder:{reminder_id}", label)
         log.info("reminder_fired", id=str(reminder_id))
 

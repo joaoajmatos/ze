@@ -28,9 +28,9 @@ def make_settings():
     return _make()
 
 
-def make_notifier():
+def make_notifier(outcome="delivered"):
     n = MagicMock(spec=ProactiveNotifier)
-    n.notify = AsyncMock()
+    n.notify = AsyncMock(return_value=outcome)
     return n
 
 
@@ -335,6 +335,52 @@ async def test_fire_reminder_pushes_and_logs():
     assert call.args[2] == "Meeting in 1 hour"
     assert call.kwargs["target_id"] == str(rid)
     push_log.log.assert_awaited_once()
+
+
+async def test_fire_reminder_failed_push_clears_the_sent_mark():
+    rid = uuid4()
+    store = MagicMock(spec=CalendarReminderStore)
+    store.mark_sent = AsyncMock(return_value="Meeting in 1 hour")
+    store.mark_unsent = AsyncMock()
+    push_log = MagicMock(spec=PushLogStore)
+    push_log.log = AsyncMock()
+
+    svc, _ = make_reminder_service(notifier=make_notifier("failed"))
+    svc._store = store
+    svc._push_log = push_log
+    await svc.fire_reminder(rid)
+
+    store.mark_unsent.assert_awaited_once_with(rid)
+    push_log.log.assert_not_awaited()
+
+
+@pytest.mark.parametrize("outcome", ["delivered", "held"])
+async def test_fire_reminder_keeps_the_sent_mark_after_delivered_or_held(outcome):
+    rid = uuid4()
+    store = MagicMock(spec=CalendarReminderStore)
+    store.mark_sent = AsyncMock(return_value="Meeting in 1 hour")
+    store.mark_unsent = AsyncMock()
+    push_log = MagicMock(spec=PushLogStore)
+    push_log.log = AsyncMock()
+
+    svc, _ = make_reminder_service(notifier=make_notifier(outcome))
+    svc._store = store
+    svc._push_log = push_log
+    await svc.fire_reminder(rid)
+
+    store.mark_unsent.assert_not_awaited()
+    push_log.log.assert_awaited_once()
+
+
+async def test_mark_unsent_clears_sent_and_sent_at():
+    pool, conn = make_pool()
+    rid = uuid4()
+
+    await CalendarReminderStore(pool).mark_unsent(rid)
+
+    sql, arg = conn.execute.call_args.args
+    assert "sent = false" in sql and "sent_at = NULL" in sql
+    assert arg == rid
 
 
 async def test_fire_reminder_noop_when_already_sent_or_missing():
