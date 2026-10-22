@@ -48,12 +48,13 @@ class AccountabilityJob:
         summary = await self._build_summary(period_days=7)
         narrative = build_narrative(summary)
 
-        await self._notifier.notify(
+        outcome = await self._notifier.notify(
             ACCOUNTABILITY_NARRATIVE,
             "Weekly accountability report",
             narrative,
         )
-        await self._push_log.log(_DEDUP_KEY)
+        if outcome in ("delivered", "held"):
+            await self._push_log.log(_DEDUP_KEY)
         log.info("accountability_job_sent", total_cost=summary.total_cost_usd)
 
     async def _build_summary(self, period_days: int) -> ActivitySummary:
