@@ -119,6 +119,7 @@ async def test_same_source_function_different_provenance_pair_is_compared() -> N
 
     a = _contribution(
         source_function=SourceFunction.EXECUTIVE,
+        claim_kind=ClaimKind.PRIORITY,
         provenance=Provenance.PROMPT_SUPPLIED,
         content="user wants X above Y",
         entity_ids=[entity_id],
@@ -127,6 +128,7 @@ async def test_same_source_function_different_provenance_pair_is_compared() -> N
 
     b = _contribution(
         source_function=SourceFunction.EXECUTIVE,
+        claim_kind=ClaimKind.PRIORITY,
         provenance=Provenance.SYNTHESIZED,
         content="Ze currently ranks X below Y",
         entity_ids=[entity_id],
@@ -277,7 +279,7 @@ async def test_only_genuinely_conflicting_pair_logged_among_three() -> None:
 
     c = _contribution(
         source_function=SourceFunction.EXECUTIVE,
-        claim_kind=ClaimKind.FACT,
+        claim_kind=ClaimKind.SUSPICION,
         content="X still lives in Lisbon",
         entity_ids=[entity_id],
     )
