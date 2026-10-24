@@ -245,18 +245,18 @@ None. The lanes touch disjoint packages and need no shared stub. The only cross-
   - `apps/ze-web/src/pages/doing-goal/ui/DoingGoalPage.tsx:165`: render no claim label when `l.claim_kind` is null.
 
   Add or extend a colocated vitest for `concerns.ts` with a dropped loop (`claim_kind: null`). Run `make typecheck-web test-web`.
-- [ ] T038 [L:lead] [PLATFORM] Run the full gates and record each result in the Handoffs note and the state file:
+- [x] T038 [L:lead] [PLATFORM] Run the full gates and record each result in the Handoffs note and the state file:
   - `make test-py`
   - `make test-pg`
   - `make lint`
   - `make typecheck-web`
   - `make test-web`
-- [ ] T039 [L:lead] [PLATFORM] Check that the fix holds. Every query must return 0:
+- [x] T039 [L:lead] [PLATFORM] Check that the fix holds. Every query must return 0:
   - `grep -rn "Provenance.SYNTHESIZED" core/engine/ze-core/ze_core/orchestration/nodes/memory.py core/ops/ze-ingestion/ze_ingestion/sink.py plugins/ze-messenger/ze_messenger/inbound/processor.py`
   - `grep -rn "claim_kind=" core/cognition/ze-worldstate/ze_worldstate`, which should list only `contribution.py`.
 
   Run `graphify update .`, then run `graphify affected` on `OpenLoop`, `_close_matching_loop`, `submit_perception_facts` and `PersonSource`, and confirm every caller it lists was updated or is unaffected. Record useful or misleading queries with `graphify save-result ... --memory-dir /Users/joaoamatos/coding/ze/graphify-out/memory`.
-- [ ] T040 [L:lead] [PLATFORM] Run quickstart.md section 4 against a scratch database: create `ze_199_verify` (`docker exec ze-postgres-1 createdb -U ze ze_199_verify`), run `make migrate` with `DATABASE_URL` and `DATABASE_URL_SYNC` pointed at it, and confirm the `zm026_restamped` log line. Do not run the migration on the shared `ze` DB; the user lands floors.
+- [x] T040 [L:lead] [PLATFORM] Run quickstart.md section 4 against a scratch database: create `ze_199_verify` (`docker exec ze-postgres-1 createdb -U ze ze_199_verify`), run `make migrate` with `DATABASE_URL` and `DATABASE_URL_SYNC` pointed at it, and confirm the `zm026_restamped` log line. Do not run the migration on the shared `ze` DB; the user lands floors.
 - [x] T041 [P] [L:docs] [DOCS] Update the public docs from the finished diff (doc-style skill rules):
   - `docs/dreaming.md:79-80,174-186`: decay and expiry apply to dream insights only, selected by `dream_run_id`;
   - `docs/architecture.md:574,605-606`: post-turn extraction stores `prompt_supplied` facts, and expiry applies to dream insights;
