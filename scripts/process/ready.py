@@ -103,6 +103,29 @@ def changed_files(base: str) -> list[str]:
     return sorted(set(tracked) | set(untracked))
 
 
+def review_refusal(floor: str, branch: str, floor_list: str, root: Path) -> str:
+    """Why this checkout may not set the floor to review, or "" when it may.
+
+    Review is a floor state: only the floor's own branch with every task ticked sets it, never a lane.
+    """
+    m = re.search(
+        rf"^\s*\"?{re.escape(floor)}\"?\s+—.*?branch '([^']+)'", floor_list, re.M
+    )
+    if not m:
+        return f"floor {floor!r} is not in maestri floor list"
+    if branch != m.group(1):
+        return (
+            f"review is a floor state: run this on the floor branch {m.group(1)!r}, not {branch!r}. "
+            "A lane asks its reviewer (ze-request-review) and tells the lead."
+        )
+    tasks = root / "specs" / "phases" / branch / "tasks.md"
+    if tasks.exists():
+        open_tasks = re.findall(r"^\s*- \[ \] (T\d+)", tasks.read_text(), re.M)
+        if open_tasks:
+            return f"{len(open_tasks)} task(s) still open in {tasks.relative_to(root)}: {', '.join(open_tasks[:8])}"
+    return ""
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="")
@@ -176,6 +199,15 @@ def main() -> int:
 
     if rc == 0 and args.set_review:
         cli = os.environ.get("MAESTRI_CLI") or "maestri"
+        why = review_refusal(
+            args.set_review,
+            run("git", "rev-parse", "--abbrev-ref", "HEAD"),
+            run(cli, "floor", "list", check=False),
+            root,
+        )
+        if why:
+            print(f"process-ready: floor not set to review: {why}")
+            return 1
         rc = subprocess.run(
             [cli, "floor", "status", args.set_review, "--state", "review"]
         ).returncode
