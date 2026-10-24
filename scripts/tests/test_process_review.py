@@ -97,8 +97,10 @@ def fake_cli(tmp_path, monkeypatch):
     monkeypatch.setenv("FAKE_LOG", str(log))
     monkeypatch.setenv("FAKE_CHECK", "❯ ready for input")
     monkeypatch.setenv("FAKE_ASK", "ready")
+    # Generous budgets: every wait returns as soon as the fake answers, and no test waits out a deadline.
+    # REPLY is also the `maestri ask` subprocess timeout, so 1 s failed whenever the load slowed the fake's start.
     for k in ("BOOT", "REPLY", "POLL"):
-        monkeypatch.setenv(f"ZE_RECRUIT_{k}_SECS", "1" if k != "POLL" else "0.1")
+        monkeypatch.setenv(f"ZE_RECRUIT_{k}_SECS", "30" if k != "POLL" else "0.1")
     return log
 
 
@@ -208,8 +210,8 @@ def test_recruit_submits_a_brief_stuck_in_the_input_box(tmp_path, monkeypatch):
     monkeypatch.setenv("MAESTRI_CLI", str(cli))
     monkeypatch.setenv("FAKE_LOG", str(log))
     monkeypatch.setenv("FAKE_BRIEF", str(brief))
-    monkeypatch.setenv("ZE_RECRUIT_BOOT_SECS", "1")
-    monkeypatch.setenv("ZE_RECRUIT_REPLY_SECS", "2")
+    monkeypatch.setenv("ZE_RECRUIT_BOOT_SECS", "30")
+    monkeypatch.setenv("ZE_RECRUIT_REPLY_SECS", "30")
     monkeypatch.setenv("ZE_RECRUIT_POLL_SECS", "0.1")
     monkeypatch.chdir(tmp_path)
     assert recruit.main(["Forge", "eng", "sonnet", "F", str(brief)]) == 0
