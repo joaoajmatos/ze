@@ -12,14 +12,13 @@ def test_person_source_to_contribution_round_trips():
         person_id=uuid4(),
         source_type="email",
         weight=0.7,
-        provenance=Provenance.LIVE_SEARCH,
         raw_context="Ze extracted from email thread",
     )
 
     contribution = person_source_to_contribution(source)
 
     assert contribution.claim_kind == ClaimKind.IDENTITY
-    assert contribution.provenance == Provenance.LIVE_SEARCH
+    assert contribution.provenance == Provenance.PROMPT_SUPPLIED
     assert contribution.confidence.value == source.weight
     assert contribution.confidence.decay_profile == DecayProfile.EVIDENCE_WEIGHTED
     assert contribution.target_face == TargetFace.USER

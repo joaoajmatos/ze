@@ -6,7 +6,7 @@ from uuid import uuid4
 from ze_agents.claims import ClaimKind
 from ze_automation.goals.types import Goal, GoalStatus, StuckGoal
 from ze_correlation.types import Hypothesis
-from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
+from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
 UTC = timezone.utc
 
@@ -15,7 +15,6 @@ def make_loop(**overrides) -> OpenLoop:
     base = dict(
         id=uuid4(),
         title="Follow up with Maria",
-        claim_kind=LoopClaimKind.PRIORITY,
         provenance=LoopProvenance.USER_DECLARED,
         confidence=0.5,
         state=LoopState.DRIFTING,

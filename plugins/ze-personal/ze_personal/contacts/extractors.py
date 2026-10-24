@@ -10,7 +10,6 @@ from ze_personal.contacts.types import (
     ProjectProposal,
     RelationshipEdgeProposal,
     SOURCE_WEIGHTS,
-    _SOURCE_TYPE_TO_PROVENANCE,
 )
 from ze_agents.types import ToolCall
 
@@ -63,7 +62,6 @@ def extract_email_contacts(tool_calls: list[ToolCall]) -> list[ContactProposal]:
                 confirmed=False,
                 source_type="email",
                 claim_kind=ClaimKind.IDENTITY,
-                provenance=_SOURCE_TYPE_TO_PROVENANCE["email"],
             )
         )
 
@@ -108,7 +106,6 @@ def extract_calendar_contacts(tool_calls: list[ToolCall]) -> list[ContactProposa
                         confirmed=False,
                         source_type="calendar",
                         claim_kind=ClaimKind.IDENTITY,
-                        provenance=_SOURCE_TYPE_TO_PROVENANCE["calendar"],
                     )
                 )
 

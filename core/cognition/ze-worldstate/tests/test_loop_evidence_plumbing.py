@@ -16,7 +16,7 @@ from ze_worldstate import extraction
 from ze_worldstate.admission import LoopInflow
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.intake import CommitmentIntake
-from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
+from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
 BARS = {"enabled": True, "loop_hold": 0.5, "resolves_hold": 0.7}
 
@@ -25,7 +25,6 @@ def _loop(state=LoopState.ACTIVE, fingerprint=None) -> OpenLoop:
     return OpenLoop(
         id=uuid4(),
         title="Renew passport",
-        claim_kind=LoopClaimKind.PRIORITY,
         provenance=LoopProvenance.USER_DECLARED,
         confidence=0.9,
         state=state,

@@ -571,7 +571,7 @@ Five memory layers, all backed by Postgres + pgvector:
 
 - **Facts** (`memory_facts`) — short declarative statements about the user. Companion
   `remember_fact` writes prompt-supplied, reviewed facts through the contribution
-  seam. Post-turn extraction may add synthesized facts only after a keep/drop gate
+  seam. Post-turn extraction may add `prompt_supplied` facts only after a keep/drop gate
   (closed families; the commitment must be `fact`). Timed reminders, loops, and goals
   are not stored as facts. There is no `AgentResult.memory_proposals` persist path.
   The REST `POST /api/v0/memory/facts/review` endpoint exposes review for the native app.
@@ -603,7 +603,7 @@ Memory accumulates into progressively richer representations through a nightly p
 - **Dream pass (REM-like):** synthesizes clusters into insights, procedures, hindsight facts, and plan stress-tests using a haiku-class generator. All outputs land in a staging buffer (`memory_dream_artifacts`).
 - **Scoring pipeline:** every staged artifact passes NLI groundedness gate + embedding novelty gate + retrievability gate, then two adversarial LLM critic calls (sonnet-class, different framings). Both critics must pass.
 - **Morning integration:** artifacts with sufficient session diversity and temporal spread auto-promote to `memory_facts` or submit procedure candidates with `provenance=synthesized`, `valid_until`, and `dream_run_id` lineage for per-run rollback.
-- **Expiry:** synthesized facts that go uncorroborated by raw episodes for 90 days (`valid_until`) are automatically contradicted on the next integration run.
+- **Expiry:** dream insights (facts with a `dream_run_id`) that go uncorroborated by raw episodes for 90 days (`valid_until`) are automatically contradicted on the next integration run.
 
 See [docs/dreaming.md](dreaming.md) for a full walkthrough of the pipeline, configuration, REST API, and safety model. See [docs/memory.md](memory.md) for a deep-dive on types, tables, graph, retrieval
 policies, and how to inspect memory. See [docs/scheduled-jobs.md](scheduled-jobs.md) for

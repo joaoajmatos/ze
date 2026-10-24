@@ -16,7 +16,7 @@ class LoopListItem(BaseModel):
     id: UUIDType
     title: str
     state: str
-    claim_kind: str
+    claim_kind: str | None
     provenance: str
     confidence: float
     drift_rationale: str | None

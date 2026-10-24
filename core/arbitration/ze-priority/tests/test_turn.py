@@ -536,13 +536,7 @@ async def test_hypothesis_mention_is_a_dotted_card():
 
 
 async def test_unconfirmed_suspected_loop_mention_reads_the_record():
-    from ze_agents.claims import ClaimKind
-
-    suspected = make_loop(
-        title="Maybe call the bank",
-        state=LoopState.SUSPECTED,
-        claim_kind=ClaimKind.SUSPICION,
-    )
+    suspected = make_loop(title="Maybe call the bank", state=LoopState.SUSPECTED)
     loop_store = AsyncMock()
     loop_store.list = AsyncMock(return_value=[suspected])
     loop_store.get = AsyncMock(return_value=suspected)

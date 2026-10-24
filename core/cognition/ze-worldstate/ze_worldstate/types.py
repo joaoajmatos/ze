@@ -39,10 +39,22 @@ class LoopState(StrEnum):
     DROPPED = "dropped"
 
 
+_CLAIM_KIND_BY_STATE: dict[LoopState, LoopClaimKind | None] = {
+    LoopState.SUSPECTED: LoopClaimKind.SUSPICION,
+    LoopState.ACTIVE: LoopClaimKind.PRIORITY,
+    LoopState.DRIFTING: LoopClaimKind.PRIORITY,
+    LoopState.CLOSED: LoopClaimKind.PRIORITY,
+    LoopState.DROPPED: None,
+}
+
+
+def loop_claim_kind(state: LoopState) -> LoopClaimKind | None:
+    return _CLAIM_KIND_BY_STATE[state]
+
+
 @dataclass
 class OpenLoop:
     title: str
-    claim_kind: LoopClaimKind
     provenance: str
     confidence: float
     state: LoopState = LoopState.SUSPECTED
@@ -58,6 +70,10 @@ class OpenLoop:
     updated_at: datetime | None = None
     confirmed_at: datetime | None = None
     closed_at: datetime | None = None
+
+    @property
+    def claim_kind(self) -> LoopClaimKind | None:
+        return loop_claim_kind(self.state)
 
 
 @dataclass(frozen=True)

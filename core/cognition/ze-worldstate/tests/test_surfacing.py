@@ -6,14 +6,13 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 from ze_worldstate.surfacing import LoopSurfacer, format_hedged_mention
-from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
+from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
 
 def _loop(**overrides) -> OpenLoop:
     base = dict(
         id=uuid4(),
         title="Send Maria the contract",
-        claim_kind=LoopClaimKind.PRIORITY,
         provenance=LoopProvenance.USER_DECLARED,
         confidence=0.5,
         state=LoopState.DRIFTING,

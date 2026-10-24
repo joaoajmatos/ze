@@ -169,7 +169,7 @@ Ze promotes a learning to user memory only when it is eligible:
 - You confirmed it, or
 - At least two distinct supporting action records exist, and they come from at least two independent execution contexts.
 
-A learning with an unresolved contradiction is never eligible. Promotion goes through `submit_perception_facts` as a synthesized fact with `reviewed = false`. It then follows the normal memory pipeline, including nightly dedup, and appears at `GET /api/v0/memory/facts`. A confirmed learning can become a `FACT`. Any other learning stays an `INFERENCE`.
+A learning with an unresolved contradiction is never eligible. Promotion goes through `submit_perception_facts` as a `prompt_supplied` fact with `reviewed = false`. It then follows the normal memory pipeline, including nightly dedup, and appears at `GET /api/v0/memory/facts`. A confirmed learning can become a `FACT`. Any other learning stays an `INFERENCE`.
 
 You review and promote learnings through the REST API:
 

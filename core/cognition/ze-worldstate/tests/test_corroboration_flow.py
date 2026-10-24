@@ -24,7 +24,6 @@ from ze_worldstate.admission import LoopInflow
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.intake import CommitmentIntake
 from ze_worldstate.types import (
-    LoopClaimKind,
     LoopSource,
     LoopSourceRole,
     LoopState,
@@ -114,6 +113,10 @@ class FakeLoopStore:
 
     async def transition(self, loop_id, new_state, **kw):
         self.loops[loop_id].state = LoopState(new_state)
+        return self.loops[loop_id]
+
+    async def resolve(self, loop_id, evidence):
+        self.loops[loop_id].state = LoopState.CLOSED
         return self.loops[loop_id]
 
     async def add_source(self, source):
@@ -454,7 +457,6 @@ async def _with_dropped(h: Harness, dropped_source=("email", "G1")):
     dropped = await h.store.create(
         OpenLoop(
             title=TITLE,
-            claim_kind=LoopClaimKind.SUSPICION,
             provenance="email",
             confidence=0.3,
             state=LoopState.DROPPED,
@@ -474,7 +476,6 @@ async def _with_dropped(h: Harness, dropped_source=("email", "G1")):
     suspected = await h.store.create(
         OpenLoop(
             title=TITLE,
-            claim_kind=LoopClaimKind.SUSPICION,
             provenance="conversation",
             confidence=0.3,
         )

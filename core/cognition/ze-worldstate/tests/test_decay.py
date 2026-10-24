@@ -5,14 +5,13 @@ from uuid import uuid4
 
 from ze_agents.claims import CONFIDENCE_FLOOR
 from ze_worldstate.decay import cascade_from_evidence
-from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
+from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
 
 def _loop(confidence=0.6) -> OpenLoop:
     return OpenLoop(
         id=uuid4(),
         title="Send Maria the contract",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=confidence,
         state=LoopState.SUSPECTED,
@@ -73,7 +72,6 @@ async def test_active_loop_contradiction_transitions_to_drifting():
     drifted = OpenLoop(
         id=loop.id,
         title=loop.title,
-        claim_kind=loop.claim_kind,
         provenance=loop.provenance,
         confidence=loop.confidence,
         state=LoopState.DRIFTING,

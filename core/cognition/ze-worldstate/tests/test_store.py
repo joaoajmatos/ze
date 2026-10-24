@@ -10,7 +10,6 @@ from ze_plugin.contribution import EvidenceRef
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.store import PostgresLoopStore
 from ze_worldstate.types import (
-    LoopClaimKind,
     LoopProvenance,
     LoopSource,
     LoopSourceRole,
@@ -26,7 +25,6 @@ def _row(**overrides) -> dict:
         "id": uuid4(),
         "title": "Renew passport",
         "state": "suspected",
-        "claim_kind": "suspicion",
         "provenance": "conversation",
         "confidence": 0.3,
         "goal_id": None,
@@ -52,7 +50,6 @@ async def test_create_returns_loop():
 
     loop = OpenLoop(
         title="Renew passport",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=0.3,
     )
@@ -358,7 +355,6 @@ async def test_row_and_create_carry_reminder_id():
     store = PostgresLoopStore(pool=pool)
     loop = OpenLoop(
         title="Call Ana",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance=LoopProvenance.CONVERSATION,
         confidence=0.3,
         reminder_id=reminder_id,

@@ -596,7 +596,7 @@ export const markAllNotificationsRead = <ThrowOnError extends boolean = false>(o
 /**
  * List open loops
  *
- * Return open loops, optionally filtered to one or more lifecycle states (repeat `state`) and to loops updated after `since` (a timezone offset is required; use Z or %2B00:00 in a URL). Defaults to non-terminal states (suspected, active, drifting). Each item reports whether the loop was promoted by corroboration and the distinct inflows it was seen in.
+ * Return open loops, optionally filtered to one or more lifecycle states (repeat `state`) and to loops updated after `since` (a timezone offset is required; use Z or %2B00:00 in a URL). Defaults to non-terminal states (suspected, active, drifting). Each item reports whether the loop was promoted by corroboration and the distinct inflows it was seen in. `claim_kind` follows the state: suspicion while suspected, priority once active, drifting or closed, and null for dropped loops.
  */
 export const listLoops = <ThrowOnError extends boolean = false>(options?: Options<ListLoopsData, ThrowOnError>): RequestResult<ListLoopsResponses, ListLoopsErrors, ThrowOnError> => (options?.client ?? client).get<ListLoopsResponses, ListLoopsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

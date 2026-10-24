@@ -84,6 +84,11 @@ describe("buildConcerns", () => {
     expect(c.slipped).toBe(true);
   });
 
+  it("keeps a null claim kind for a dropped loop", () => {
+    const [c] = buildConcerns({ ...empty, snapshot: [item("loop", "l1", 1)], loops: [loop("l1", { state: "dropped", claim_kind: null })] });
+    expect(c).toMatchObject({ kind: "loop", state: "dropped", claimKind: null, partial: false, slipped: false });
+  });
+
   it("joins a stuck goal with its progress, slipped, with no confidence", () => {
     const [c] = buildConcerns({ ...empty, snapshot: [item("goal", "g1", 1)], goals: [goal("g1")] });
     expect(c).toMatchObject({ kind: "goal", slipped: true, confidence: null, confidencePrior: null });

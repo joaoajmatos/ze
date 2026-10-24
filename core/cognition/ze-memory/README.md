@@ -9,6 +9,7 @@ Memory is how Ze remembers the user across conversations. Facts and episodes are
 ### Key features
 
 - Fact and episode storage with semantic retrieval (local embedding model, no API cost)
+- Fact provenance: perception writes `prompt_supplied`, and only the dream writes `synthesized` (with a `dream_run_id`). Dream decay and expiry touch only facts with a `dream_run_id`. Migration `zm026` re-stamped the older perception facts `synthesized` → `prompt_supplied`. Nightly dedup merges two facts only when both have no `dream_run_id` and share provenance and claim kind, and the merged fact keeps them
 - LLM-driven extraction and session-grouped episode consolidation
 - Per-agent retrieval policies — plugins register domain-specific memory access rules
 - Memory graph — entity linking, traversal, and neighbourhood expansion for correlation

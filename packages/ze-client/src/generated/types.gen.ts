@@ -1353,7 +1353,7 @@ export type LoopListItem = {
     /**
      * Claim Kind
      */
-    claim_kind: string;
+    claim_kind: string | null;
     /**
      * Provenance
      */

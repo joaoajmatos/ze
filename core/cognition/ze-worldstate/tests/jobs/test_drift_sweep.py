@@ -8,14 +8,13 @@ from uuid import uuid4
 from ze_worldstate.errors import InvalidLoopTransitionError
 from ze_worldstate.jobs import drift_sweep
 from ze_worldstate.jobs.drift_sweep import DriftSweepJob
-from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
+from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
 
 def _loop(*, deadline_days_from_now: int, state: LoopState = LoopState.ACTIVE) -> OpenLoop:
     return OpenLoop(
         id=uuid4(),
         title="Send Maria the contract",
-        claim_kind=LoopClaimKind.PRIORITY,
         provenance=LoopProvenance.USER_DECLARED,
         confidence=0.9,
         state=state,

@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
-from ze_agents.claims import ClaimKind
 from ze_agents.errors import ZeError
 from ze_agents.tool import get_tool
 from ze_worldstate.agents.agent import LoopsAgent
@@ -39,7 +38,6 @@ def _result(outcome: TrackOutcome) -> TrackResult:
         loop=OpenLoop(
             id=uuid4(),
             title="Porto move",
-            claim_kind=ClaimKind.PRIORITY,
             provenance=LoopProvenance.USER_DECLARED,
             confidence=0.9,
             state=LoopState.ACTIVE,

@@ -63,13 +63,23 @@ def _consolidator(store=None, client=None, settings=None, embedder=None, nli=Non
     )
 
 
-def _fact_row(key="k", value="v", confidence=1.0):
+def _fact_row(
+    key="k",
+    value="v",
+    confidence=1.0,
+    provenance="prompt_supplied",
+    claim_kind="fact",
+    dream_run_id=None,
+):
     return {
         "id": uuid4(),
         "predicate": key,
         "value": value,
         "agent": "global",
         "confidence": confidence,
+        "provenance": provenance,
+        "claim_kind": claim_kind,
+        "dream_run_id": dream_run_id,
     }
 
 

@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
-from ze_agents.claims import ClaimKind, Confidence, DecayProfile
+from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_plugin.contribution import SourceFunction, TargetFace
 
 from ze_memory.graph.predicates import WORKS_ON
@@ -58,6 +58,7 @@ async def test_write_contact_proposals_persists_correctly_tagged_contribution():
     await _write_contact_proposals(store, [proposal], prompt="hi")
 
     store.upsert.assert_called_once()
+    assert store.upsert.call_args.args[0].provenance == Provenance.PROMPT_SUPPLIED
     store.add_source.assert_called_once()
 
 
@@ -94,7 +95,6 @@ async def test_write_relationship_edge_via_seam_rejects_wrong_source_function():
     # itself (not our wrapper) is what rejects it.
     import pytest
 
-    from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
     from ze_agents.errors import UnlicensedClaimKindError
     from ze_plugin.contribution import Contribution as SeamContribution
     from ze_plugin.contribution import SourceFunction, TargetFace, validate_and_submit

@@ -42,7 +42,7 @@ async def test_push_uuid_ingestion_id_on_source_refs_and_evidence(
     items = submit.await_args.args[1]
     assert len(items) == 2
     for item in items:
-        assert item.provenance == Provenance.SYNTHESIZED
+        assert item.provenance == Provenance.PROMPT_SUPPLIED
         assert item.target_face == TargetFace.WORLD
         assert item.fact.source_refs == [ingest_id]
         assert len(item.evidence) == 1

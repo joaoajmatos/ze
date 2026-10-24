@@ -214,7 +214,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             items = [
                 PerceptionFactSubmit(
                     fact=fact,
-                    provenance=Provenance.SYNTHESIZED,
+                    provenance=Provenance.PROMPT_SUPPLIED,
                     target_face=TargetFace.USER,
                     evidence=[],
                 )

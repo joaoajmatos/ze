@@ -10,6 +10,7 @@ from uuid import uuid4
 import pytest
 from ze_agents.system_one import SystemOneResult
 from ze_agents.types import ToolCall
+from ze_plugin.contribution import EvidenceRef
 
 from tests.commitment_fixtures import _BARS, make
 from ze_worldstate import intake as intake_mod
@@ -291,11 +292,10 @@ async def test_suspected_creates_suspected_loop():
 
 async def test_resolve_closes_matching_loop(monkeypatch):
     from ze_worldstate import extraction
-    from ze_worldstate.types import LoopClaimKind, OpenLoop
+    from ze_worldstate.types import OpenLoop
 
     existing = OpenLoop(
         title="x",
-        claim_kind=LoopClaimKind.SUSPICION,
         provenance="conversation",
         confidence=0.3,
         state=LoopState.CLOSED,
@@ -306,12 +306,14 @@ async def test_resolve_closes_matching_loop(monkeypatch):
     )
     llm = FakeLLM()
     intake, loop_store, _ = _build(FakeSystemOne(make("none", resolves=0.95)), llm)
-    loop_store.transition = AsyncMock(return_value=existing)
+    loop_store.resolve = AsyncMock(return_value=existing)
     adm = await _admit(intake, llm, prompt="I renewed my passport, it is done")
     assert adm.outcome.kind == "resolve_loop"
     assert adm.consumed == frozenset({"resolves_existing"})
-    assert await adm.loop.commit()
-    loop_store.transition.assert_awaited_once()
+    evidence = [EvidenceRef(kind="episode", id=uuid4())]
+    assert await adm.loop.commit(evidence)
+    loop_store.resolve.assert_awaited_once_with(existing.id, evidence)
+    loop_store.transition.assert_not_called()
     loop_store.create.assert_not_called()
 
 

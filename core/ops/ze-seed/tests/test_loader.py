@@ -69,7 +69,7 @@ def test_load_persona_memory_variety():
     synthesized = [f for f in narrative.facts if f.provenance == "synthesized"]
     assert len(unreviewed) == 9
     assert len(contradicted) == 1
-    assert len(synthesized) == 2
+    assert synthesized == []
     assert all(ep.summary for ep in narrative.episodes)
     assert len({ep.days_ago for ep in narrative.episodes}) > 1
 
