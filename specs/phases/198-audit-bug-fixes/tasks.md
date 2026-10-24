@@ -127,14 +127,14 @@
 
 - [x] T040 [L:lead] [PLATFORM] [US6] After `attention` merges: pass `shared.nli_client` to `build_loop_surfacer` at `apps/ze-api/ze_api/wiring/container.py:532`; update `apps/ze-api/tests/pg/test_acceptance.py:64` and `apps/ze-api/tests/pg/test_loop_evidence.py:146`.
 - [x] T041 [L:lead] [PLATFORM] [US5] After `attention` merges: pass `override_store=stores.priority_override_store` to `PriorityView` (`wiring/container.py:465`); stop passing it to `TurnSurfacing` and to the REST snapshot (`apps/ze-api/ze_api/api/v0/priority/router.py`); update `apps/ze-api/tests/agents/test_bootstrap.py` and the pg tests `test_loop_confirmation_pg.py`, `test_stuck_goals.py` that build these.
-- [ ] T042 [L:lead] [PLATFORM] Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make lint`, and `make test-pg` when Docker is available. Record the results in the Handoffs note.
-- [ ] T043 [L:lead] [PLATFORM] `graphify update .`, then `graphify affected` on every changed public symbol (`PriorityView`, `PriorityItem`, `TurnSurfacing`, `LoopSurfacer`, `build_loop_surfacer`, `GoalExecutor`, `ZeApiSettings`, `AgentState`, `invoke_raw_turn`, `resume_turn`) and confirm no caller was missed. `git diff main...HEAD -- core/engine/ze-core/ze_core/orchestration/nodes/memory.py` shows no hunk in lines 199-223.
+- [x] T042 [L:lead] [PLATFORM] Gates: `make test-py`, `make test-web`, `make typecheck-web`, `make lint`, and `make test-pg` when Docker is available. Record the results in the Handoffs note.
+- [x] T043 [L:lead] [PLATFORM] `graphify update .`, then `graphify affected` on every changed public symbol (`PriorityView`, `PriorityItem`, `TurnSurfacing`, `LoopSurfacer`, `build_loop_surfacer`, `GoalExecutor`, `ZeApiSettings`, `AgentState`, `invoke_raw_turn`, `resume_turn`) and confirm no caller was missed. `git diff main...HEAD -- core/engine/ze-core/ze_core/orchestration/nodes/memory.py` shows no hunk in lines 199-223.
 
 ---
 
 ## Phase 13: Docs (lane `docs`, after all lanes merged)
 
-- [ ] T044 [L:docs] [DOCS] Update every public doc the phase changes, per the `doc-style` skill:
+- [x] T044 [L:docs] [DOCS] Update every public doc the phase changes, per the `doc-style` skill:
   - `docs/configuration.md:56`: `TIMEZONE` (and the YAML `timezone` key) now set the zone of every agent, goal milestone and workflow step, not only calendar and reminders;
   - `docs/goals.md` (around `:59-62`): pause works on active or gate-waiting goals, abandon on unfinished goals, resume on paused goals, the same in chat and on the goal's screen;
   - `docs/workspace.md:42`: a follow-up turn that asks first shows the confirmation card or sends a push;
@@ -144,7 +144,7 @@
   - `core/arbitration/ze-priority/README.md:11-14`: overrides merge inside `PriorityView.rank()`; items keep `computed_rank`;
   - `core/cognition/ze-worldstate/README.md:23`: `LoopSurfacer` takes the NLI client; novelty reads the governor's pushes;
   - `docs/native-interface.md:70`: the `cancel` command stops the running or resumed turn on that thread, not only a pending confirmation.
-- [ ] T045 [L:docs] [DOCS] Add the phase 198 row to the `AGENTS.md` phase table (Implemented, one paragraph naming the eleven fixes). In `specs/README.md`, edit only the Status cell of row 198. Coverage check: `git diff --stat main...HEAD` — every changed package with a README or doc listed in T044 has a matching doc change, or a line in the Handoffs note saying why none was needed.
+- [x] T045 [L:docs] [DOCS] Add the phase 198 row to the `AGENTS.md` phase table (Implemented, one paragraph naming the eleven fixes). In `specs/README.md`, edit only the Status cell of row 198. Coverage check: `git diff --stat main...HEAD` — every changed package with a README or doc listed in T044 has a matching doc change, or a line in the Handoffs note saying why none was needed.
 
 ---
 

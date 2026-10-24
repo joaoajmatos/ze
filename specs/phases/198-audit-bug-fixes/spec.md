@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-22
 
-**Status**: Ready to implement
+**Status**: Implemented
 
 **Wave**: 0 (architecture review 2026-10). Phases 200, 201, 202–207, 211, 214 and 217 build on it.
 
