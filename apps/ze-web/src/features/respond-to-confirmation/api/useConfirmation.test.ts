@@ -163,7 +163,6 @@ describe("useConfirmation", () => {
     });
     open(requestFrame({ id: "req-t2", thread_id: "thread-2" }));
     expect(result.current.pendingConfirms).toEqual([]);
-    expect(useWsStore.getState().attentionThreads["thread-2"]).toBe(true);
     rerender({ thread: "thread-2" });
     expect(result.current.pendingConfirms[0]).toMatchObject({ id: "req-t2", threadId: "thread-2" });
   });

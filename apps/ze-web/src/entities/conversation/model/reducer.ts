@@ -298,9 +298,10 @@ export function reduce(state: ConversationState, event: ConversationEvent, now: 
     case "delivery_failed":
       return patch(state, event.threadId, (t) => endTurn(t, "failed"));
     case "paused":
-      return patch(state, event.threadId, (t) =>
-        isRunning(t) ? { ...t, turn: { ...t.turn, phase: "paused" } } : t,
-      );
+      return patch(state, event.threadId, (t) => ({
+        ...(isRunning(t) ? { ...t, turn: { ...t.turn, phase: "paused" as const } } : t),
+        attention: t.attention || event.threadId !== ctx.activeThreadId,
+      }));
     case "resumed":
       // Also from idle or failed: a confirmation replayed after a reload resumes a turn this client never saw start.
       return patch(state, event.threadId, (t) =>

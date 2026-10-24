@@ -143,6 +143,18 @@ describe("messages", () => {
 });
 
 describe("pause, attention, bookkeeping", () => {
+  it("a pause on a background thread raises attention, a pause on the active thread does not", () => {
+    const elsewhere = { activeThreadId: "other" };
+    let s = reduce({ byThread: {} }, sent({ threadId: "t2" }), 1000, elsewhere);
+    s = reduce(s, { type: "paused", threadId: "t2" }, 1010, elsewhere);
+    expect(th(s, "t2")).toMatchObject({ attention: true });
+    expect(th(s, "t2").turn.phase).toBe("paused");
+    s = reduce(s, { type: "paused", threadId: "t3" }, 1020, elsewhere);
+    expect(th(s, "t3")).toMatchObject({ attention: true, turn: { phase: "idle" } });
+    const active = run([sent(), { type: "paused", threadId: T }]);
+    expect(th(active).attention).toBe(false);
+  });
+
   it("pauses only a running thread and resumes with a fresh clock", () => {
     const idle = run([{ type: "paused", threadId: T }]);
     expect(th(idle).turn.phase).toBe("idle");
