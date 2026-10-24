@@ -362,6 +362,19 @@ def test_an_idle_screen_without_the_request_is_not_an_alarm(
     assert request(tmp_path, f"{a}..{b}").returncode == 0
 
 
+def test_the_verdict_goes_back_to_the_agent_that_asked(
+    review_cli, tmp_path, monkeypatch
+):
+    """2026-10-22: lanes ran the request without --requester, so Plumb's and Tare's verdicts went to the Maestro."""
+    a, b, *_ = _repo(tmp_path)
+    monkeypatch.setenv("ZE_AGENT", "Tiller")
+    assert request(tmp_path, f"{a}..{b}").returncode == 0
+    record = json.loads(
+        next((tmp_path / ".process" / "reviews").glob("*.json")).read_text()
+    )
+    assert record["requester"] == "Tiller"
+
+
 def test_an_unconnected_reviewer_fails_loudly_with_the_connect_command(
     review_cli, tmp_path, monkeypatch
 ):

@@ -126,6 +126,7 @@ Cancel, ack and send go through the turn-stream feature's interface. Widgets and
 - **FR-009**: The subscription in `TurnFrameHandler` that copies conversation state into the WS store MUST be deleted.
 - **FR-010**: Outbound conversation frames (message, ack, cancel command) MUST be built only inside the turn-stream feature, behind functions it exports. `RetryControl` and `useThreadHistory` MUST call those functions.
 - **FR-011**: The frame registry (`features/turn-stream/model/frame-registry.ts`) and its coverage test MUST be updated so `confirm_request` names its conversation-state role next to the pending-confirmation store's role.
+- **FR-013**: A failed thread-history read (`loadThreadHistory` in `entities/conversation/api/useThreadHistory.ts`) MUST surface as an error state, never as an empty thread, per the phase 186/193 rule that a failed read never reads as "nothing here". (Added 2026-10-22 from the 206 clarify, Q5 A.)
 - **FR-012**: Presence states and wording, rail marks, the watchdog timings and the Retry behaviour MUST stay as `DESIGN.md` and phases 187 and 193 define them. This phase changes where state lives, not what the user sees, except for fixing B10.
 
 ### Key Entities

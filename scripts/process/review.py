@@ -2,7 +2,7 @@
 """Review requests and verdicts as files, so neither can be lost in chat.
 
 Usage:
-  review.py request <a..b> <reviewer> [--requester "Claude Code"] [--note N] [--wait SECS] [--repo PATH]
+  review.py request <a..b> <reviewer> [--requester NAME (default $ZE_AGENT, else "Claude Code")] [--note N] [--wait SECS] [--repo PATH]
   review.py verdict <a..b> APPROVE|CHANGES [--findings FILE] [--note N] [--repo PATH]
 Records live in <repo>/.process/reviews/<a8>..<b8>.json. A request must start where the last
 request or verdict ended (delta-only review), or at the merge base with main for the first one.
@@ -10,6 +10,7 @@ request or verdict ended (delta-only review), or at the merge base with main for
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -235,7 +236,10 @@ def main(argv: list[str]) -> int:
     req = sub.add_parser("request")
     req.add_argument("range")
     req.add_argument("reviewer")
-    req.add_argument("--requester", default="Claude Code")
+    # The verdict goes back to whoever asked: a recruited agent carries its own name in ZE_AGENT.
+    req.add_argument(
+        "--requester", default=os.environ.get("ZE_AGENT") or "Claude Code"
+    )
     req.add_argument("--wait", type=float, default=60)
     ver = sub.add_parser("verdict")
     ver.add_argument("range")

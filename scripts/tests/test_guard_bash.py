@@ -88,6 +88,10 @@ def test_noop_without_maestri_terminal(cmd, want):
         ("eng", "maestri floor delete F", "deny"),
         ("eng", "maestri floor status F --state review", "deny"),
         ("jr", "maestri floor status F --state review", "deny"),
+        # 2026-10-22: Fathom (architect) set 198 to review when only the spec work was done.
+        ("architect", "maestri floor status F --state review", "deny"),
+        ("review", "maestri floor status F --state review", "deny"),
+        ("docs", "maestri floor status F --state review", "deny"),
         ("eng", "maestri floor status F --state building", "allow"),
         ("maestro", "maestri floor status F --state review", "allow"),
         ("", "maestri floor status F --state review", "allow"),

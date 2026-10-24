@@ -12,28 +12,28 @@
 
 ## Context
 
-`ZePlugin` (`core/contracts/ze-plugin/ze_plugin/plugin.py`, 233 lines) is a real seam with six adapters, one per plugin. But it is wide rather than deep: it has about 30 hook methods, and adding one agent takes about ten steps against the one that `plugin-agents.md` promises. Verified against the code on 2026-10-22:
+`ZePlugin` (`core/contracts/ze-plugin/ze_plugin/plugin.py`, 233 lines) is a real seam with six adapters, one per plugin. But it is wide rather than deep: it has 30 hook methods, and adding one agent takes ten steps (the checklist in `docs/adding-an-agent.md:449-460`) against the one that `plugin-agents.md` promises (Goal 3). `ingestion_extractors` (finance) and `shutdown` (prospecting) each have one adapter and stay. Verified against the code on 2026-10-22:
 
 - **Hooks with no plugin adapter.**
   - `agents()` (`plugin.py:43`) has no adapter and no consumer.
-  - `jobs()` (`plugin.py:46`) has no consumer. `PersonalPlugin.jobs()` (`ze_personal/plugin.py:314`) returns four jobs that nothing reads, since the real registration is `register_proactive_jobs`.
   - `webhook_handlers` (consumed at `ze_api/wiring/webhooks.py:50`), `ingestion_fetchers` (`ze_ingestion/bootstrap.py:55`), `bundled_skill_paths` (`ze_skills/bootstrap.py:71`), `graph_nodes` and `graph_edges` (`ze_core/orchestration/graph.py:179-181`, `ze_api/wiring/workflow_graph.py:117-119`) each have a consumer but no plugin override.
-  - `locale_data` has no override, but its default (`plugin.py:174-193`) loads the `locales/*.yaml` that five plugins ship. That behaviour is live and stays.
-- **One object published under three keys.** A plugin publishes the same object through `agent_deps()` (keyed by type), `configurable_services()` (keyed by string) and `rest_stores()` (keyed by string). Examples: `news_store` in `ze_news/plugin.py:115-130`; `person_store` and `goal_store` in `ze_personal/plugin.py:217-269`.
-- **Magic keys in a flat dict.** `configurable_services` carries `"identity_builder"` and `"memory_hooks"` (`ze_personal/plugin.py:256-266`), and it is merged with `dict.update` in two places (`ze_api/wiring/container.py:317`, `ze_core/container.py:55`). A second plugin returning the same key silently replaces the first.
+  - `locale_data` has no override, but its default (`plugin.py:174-193`) loads the `locales/*.yaml` that five plugins ship (calendar, messenger, news, personal, prospecting). That behaviour is live and stays.
+- **A hook with an adapter but no consumer.** `jobs()` (`plugin.py:46`) has no consumer. `PersonalPlugin.jobs()` (`ze_personal/plugin.py:314`) returns four jobs that nothing reads, since the real registration is `register_proactive_jobs`.
+- **One object published under three keys.** A plugin publishes the same object through `agent_deps()` (keyed by type), `configurable_services()` (keyed by string) and `rest_stores()` (keyed by string). Examples: `news_store` in `ze_news/plugin.py:115-131`; `person_store` and `goal_store` in `ze_personal/plugin.py:219-269`.
+- **Magic keys in a flat dict.** `configurable_services` carries `"identity_builder"` and `"memory_hooks"` (`ze_personal/plugin.py:263-264`, in the method at `:258-269`), and it is merged with `dict.update` in two places (`ze_api/wiring/container.py:317`, `ze_core/container.py:55`). A second plugin returning the same key silently replaces the first.
 - **Two ways to register a job.**
   - `register_proactive_jobs` is used by personal, messenger and prospecting.
-  - `startup()` calls `container.proactive_scheduler.register` directly in news (`ze_news/plugin.py:229`), calendar (`ze_calendar/plugin.py:171`) and finance.
-  - Messenger builds its poll job in `startup` (`ze_messenger/plugin.py:125-160`) and schedules it in `register_proactive_jobs`. This only works because the container calls `startup` first.
+  - `startup()` calls `container.proactive_scheduler.register` directly in news (`ze_news/plugin.py:231`), calendar (`ze_calendar/plugin.py:173`) and finance (`ze_finance/plugin.py:257,262`).
+  - Messenger builds its poll job in `startup` (`ze_messenger/plugin.py:125-158`) and schedules it in `register_proactive_jobs` (`:159`). This only works because the container calls `startup` (`ze_api/wiring/container.py:731`) before `register_all_proactive_jobs` (`:757`).
 - **Late services wired by monkey-patching.** `startup(self, container: Any)` is an untyped back door that is used in both directions:
-  - Plugins write private attributes onto the container (`container._calendar_reminder_job`, `ze_calendar/plugin.py:167`; `container._webhook_processor`, `ze_messenger/plugin.py:145`), and ze-api reads them back with `getattr` (`ze_api/wiring/hooks.py:138-157`).
-  - ze-api patches plugin internals: `wire_plugin_consolidators` sets `consolidator._collision_store` and `_nli_client` (`hooks.py:127-134`), and `wire_plugin_loop_extractors` sets `.loop_extractor` (`hooks.py:137-157`).
-  - Plugins patch their own objects after construction (`self._fetch_job._memory_store`, `ze_news/plugin.py:222-226`; `self.morning_briefing._news` and `._dream_store`, `ze_personal/plugin.py:324-336`).
-  - Plugins find each other by guessing names. News looks for a `goal_store` attribute on any plugin (`ze_news/plugin.py:240-245`). Personal reads `news_store` out of other plugins' `configurable_services()` (`ze_personal/plugin.py:326`).
+  - Plugins write private attributes onto the container (`container._calendar_reminder_job`, `ze_calendar/plugin.py:167`; `container._webhook_processor`, `ze_messenger/plugin.py:145`), and ze-api reads them back with `getattr` (`ze_api/wiring/hooks.py:140-141`; `ze_api/wiring/webhooks.py:121` reads `_webhook_processor` a second time).
+  - ze-api patches plugin internals: `wire_plugin_consolidators` finds the consolidator with `getattr(plugin, "contacts_consolidator")` and sets its `_collision_store` and `_nli_client` (`hooks.py:128-135`), and `wire_plugin_loop_extractors` sets `.loop_extractor` (`hooks.py:138-156`).
+  - Plugins patch their own objects after construction (`self._fetch_job._memory_store` and `._admission_gate`, `ze_news/plugin.py:223,226`; `self.morning_briefing._news` and `._dream_store`, `ze_personal/plugin.py:330,337`).
+  - Plugins find each other by guessing names. News looks for a `goal_store` attribute on any plugin (`ze_news/plugin.py:242-246`). Personal reads `news_store` out of other plugins' `configurable_services()` (`ze_personal/plugin.py:328`).
 - **Retrieval policies named after plugin agents.**
   - `ze_memory/policies.py` (920 lines) holds twelve policy classes, ten of them near-copies (`CalendarPolicy:495`, `RemindersPolicy:537`, `EmailPolicy:567`, `ProspectingPolicy:632`, …).
   - Each plugin picks its policy in `memory_policies()`, keyed by the agent name as a string.
-  - An unknown agent silently falls back to `CompanionPolicy` with a warning (`policies.py:902-919`).
+  - An unknown agent silently falls back to `CompanionPolicy` with a warning (`_FALLBACK_POLICY`, `policies.py:901`; `for_module`, `:911-919`).
   - Core thus knows plugin agents by name (Principle III).
 
 Blast radius (`graphify affected ZePlugin --depth 2`): 183 nodes. That covers the six plugins, `ze_api/wiring/{container,agents,jobs,webhooks,screen,workflow_graph,hooks}.py`, `ze_core/container.py`, `ze_core/orchestration/graph.py`, `ze_ingestion/bootstrap.py`, `ze_skills/bootstrap.py`, and the plugin test suites.
@@ -109,7 +109,7 @@ An agent author states which memory buckets to fetch, the limits, the token budg
 
 ### User Story 5 - Unused hooks are gone (Priority: P3)
 
-A plugin author reads a seam of a dozen hooks, each with at least one adapter or a live default.
+A plugin author reads a seam of about 22 hooks, down from 30, each with at least one adapter or a live default.
 
 **Why this priority**: This is the cheapest part, and it makes the seam honest. It can land first.
 
@@ -122,10 +122,10 @@ A plugin author reads a seam of a dozen hooks, each with at least one adapter or
 
 ### Edge Cases
 
-- A plugin provides an object under both a Protocol and its concrete class (today's `dep_map` has both `NLIClient` and `LocalNLIClient`). Consumers depend on the Protocol. Providing the concrete class as a separate key is an error unless a consumer needs the concrete class.
+- A plugin provides an object under both a Protocol and its concrete class (today's `dep_map` has both `NLIClient` and `LocalNLIClient`, `ze_api/wiring/agents.py:86-87`). Consumers depend on the Protocol. Providing the concrete class as a separate key is an error unless a consumer needs the concrete class.
 - A plugin is disabled by config (news off). Its jobs are not scheduled, its provided types are absent, and a consumer that declared the type as optional receives `None`, while one that declared it required fails at startup with a clear message.
 - Two plugins depend on each other's provided types. This is a startup error naming the cycle, never a late-binding workaround.
-- A plugin's `startup()` still has real async work to do (calendar replays unsent reminders). It keeps an optional `startup` that receives one typed runtime object with named fields, never the whole container.
+- A plugin's `startup()` still has real async work to do (calendar replays unsent reminders at `ze_calendar/plugin.py:172` and reschedules user reminders through `workflow_scheduler.schedule_at` at `:190`). It keeps an optional `startup` that receives one typed runtime object with named fields, never the whole container. The runtime object therefore carries the workflow scheduler.
 
 ## Requirements *(mandatory)*
 
@@ -146,7 +146,7 @@ A plugin author reads a seam of a dozen hooks, each with at least one adapter or
 
 ### Key Entities
 
-- **Plugin seam**: the interface a plugin implements. After this phase it has about a dozen hooks: provides, scheduled jobs, turn observers, identity contributor, agent module paths, migrations path, screen resolvers, signal sources, UI contributions, REST routes, channels, data domains, seed domains, integration types, onboarding, state extensions, pre-route node, checkpoint serde modules and an optional startup.
+- **Plugin seam**: the interface a plugin implements. After this phase it has 22 hooks: provides, scheduled jobs, turn observers, identity contributor, agent module paths, migrations path, screen resolvers, signal sources, UI contributions, REST routes, channels, data domains, seed domains, integration types, ingestion extractors, locale data (live default), onboarding, state extensions, pre-route node, checkpoint serde modules, an optional startup and an optional shutdown. Phase 211 then removes state extensions, pre-route node and checkpoint serde modules, whose only adapter is ze-personal, when ze-automation contributes them through its core stack.
 - **Provided service**: an object a plugin offers under a type. It is unique per type across all plugins.
 - **Scheduled job declaration**: a job plus its cron key, default cron and enabled key.
 - **Turn observer**: a plugin callback that runs after a turn with that turn's result and context.
@@ -158,7 +158,7 @@ A plugin author reads a seam of a dozen hooks, each with at least one adapter or
 
 - **SC-001**: Adding an agent to an existing plugin takes at most 4 steps: write the agent and tools modules, list them in `agent_module_paths`, declare the recipe, add locale keys. Today it takes about 10.
 - **SC-002**: No code in `apps/` or `plugins/` writes a private attribute of an object it does not own. A test greps for `._` assignments across the seam and finds none.
-- **SC-003**: The seam has at most 20 hooks, down from about 30, and every one has an adapter or a live default.
+- **SC-003**: The seam has at most 22 hooks, down from 30, and every one has an adapter or a live default.
 - **SC-004**: `ze_memory/policies.py` shrinks by at least 600 lines, and retrieval equality tests pass for all ten former named policies.
 - **SC-005**: `make test-py` passes, and every job scheduled before the change is scheduled after it with the same cron. A startup test compares the two lists.
 
