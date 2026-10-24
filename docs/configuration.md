@@ -53,7 +53,7 @@ not `ZeApiSettings`.
 | `GOOGLE_CLIENT_ID` | If using calendar/email | OAuth2 client ID from Google Cloud Console |
 | `GOOGLE_CLIENT_SECRET` | If using calendar/email | OAuth2 client secret |
 | `GOOGLE_REFRESH_TOKEN` | If using calendar/email | Long-lived refresh token. Obtained by running `scripts/google_auth.py` once locally. |
-| `TIMEZONE` | No | IANA timezone string (default: `UTC`). Used for calendar/reminder agents via `config.timezone` YAML override. |
+| `TIMEZONE` | No | IANA timezone string (default: `UTC`). Sets the zone of every agent, goal milestone, and workflow step, not only calendar and reminders. The `timezone` key in `config.yaml` wins over this variable. An unknown zone in either place falls back to `UTC` and logs a warning; an invalid YAML key does not fall through to a valid `TIMEZONE`. |
 
 ### Logging (`core/kernel/ze-logging`)
 

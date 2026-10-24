@@ -9,11 +9,11 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 ### Key features
 
 - `PriorityView.rank()` ranks drifting loops, stuck or near-gate goals, hypotheses, and stale relationships
-- User overrides (`PriorityOverride`) merge into the ranking at read time. They decay over 48 hours unless pinned
+- User overrides (`PriorityOverride`) merge inside `PriorityView.rank()`, so `rank()` returns the user's order. Each item keeps `computed_rank` (Ze's own position) and `override`. They decay over 48 hours unless pinned. If the override store cannot be read, `rank()` logs a warning and returns Ze's own order; for that run, arbitration can no longer tell which items the user pushed down
 - `reprioritize_item` — a conversational tool that makes a named item more or less urgent
-- `AttentionArbitrationJob` — one scheduled job that sends ranked candidates through the interruption governor until one is delivered or held. It reads `worldstate.push.enabled` for loops and `correlation.push.enabled`/`dry_run` for hypotheses
+- `AttentionArbitrationJob` — one scheduled job that sends ranked candidates, in the user's order and never one the user pushed down, through the interruption governor until one is delivered or held. It reads `worldstate.push.enabled` for loops and `correlation.push.enabled`/`dry_run` for hypotheses
 - The snapshot response carries `{items, sources_failed}`, so the page can name the sources it could not read. `source_kind` accepts `loop`, `goal`, `hypothesis`, and `relationship`
-- `TurnSurfacing` — inline mentions and the resume recap use the same merged ranking. It detects "what's open" questions with `OpenQueryDetector`, which compares the message to example questions by E5 similarity in English and Portuguese. The recap lists at most 5 items. An explicit "what's open" answer lists at most 10. At resume, it offers up to 3 suspected loops as a question. A loop it offered stays quiet for 7 days, tracked in `push_log`
+- `TurnSurfacing` — inline mentions and the resume recap use the same ranking, which already holds the user's order. It detects "what's open" questions with `OpenQueryDetector`, which compares the message to example questions by E5 similarity in English and Portuguese. The recap lists at most 5 items. An explicit "what's open" answer lists at most 10. At resume, it offers up to 3 suspected loops as a question. A loop it offered stays quiet for 7 days, tracked in `push_log`
 
 - `WorldComposer` (`compose/`) — builds three composed answers from stored records: what is slipping, what needs a decision, and what Ze knows about a topic. It reads the sources in parallel, drops a source that fails, and names it. Pure rules in `compose/rules.py` set every card's posture from the record. The model never does
 - `show_slipping`, `show_decisions`, and `show_topic` — companion READ tools that reach the same composer from a typed question

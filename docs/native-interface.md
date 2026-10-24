@@ -67,7 +67,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "retry", "message_id": "<uuid>", "thread_id": "...", "confirmed_plan": ["<entry id>", ...]}` | User presses Retry on the latest reply | Undoes what the reply did, then regenerates it. `confirmed_plan` lists the undo entry ids the person confirmed. Omit it or send `null` when the plan is empty. See [Reply feedback and Retry](#reply-feedback-and-retry). |
 | `{"type": "confirm", "id": "<request id>", "choice": "approve" \| "deny", "edits": {...}}` | Answer a `confirm_request` | Approves or denies the parked writes in that request. `edits` is optional (see [Confirmation flow](#confirmation-flow)) |
 | `{"type": "action", "payload": "<action value>", "thread_id": "..."}` | User presses a prompt button that is not approve or deny | Runs the action named by the button value, e.g. a goal gate's `goal_plan:yes:<id>` (see [Confirmation flow](#confirmation-flow)) |
-| `{"type": "command", "name": "cancel"}` | Cancel pending confirmation | Aborts the awaited graph turn |
+| `{"type": "command", "name": "cancel"}` | Cancel the turn | Stops the turn that is running or resuming on that thread. It also aborts a turn that waits for a confirmation |
 | `{"type": "command", "name": "costs"}` | Introspection | Returns a 7-day cost summary message |
 | `{"type": "command", "name": "status", "period_days": 1}` | Accountability | Returns an activity narrative (default: past 24 h; set `period_days: 7` for the weekly view) |
 | `{"type": "command", "name": "onboarding"}` | Setup | Starts or resumes onboarding |

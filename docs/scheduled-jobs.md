@@ -200,7 +200,8 @@ A daily digest, sent as the `accountability` push kind `morning_brief` via `Proa
   a plain recency-ordered list under `📰 Headlines:`.
 
 The briefing is deduplicated — it will not fire if one was already sent within the past
-20 hours.
+20 hours. Only a briefing that was delivered or held (for example by quiet hours) counts.
+If the push fails, Ze tries again on the next run.
 
 ---
 
@@ -217,7 +218,8 @@ a flight). `WorkflowScheduler` creates one-shot `DateTrigger` jobs accordingly.
 When a reminder fires, Ze sends the event title and time as a `requested` push (kind
 `calendar_reminder`) via `ProactiveNotifier`. A reminder that came due while the server
 was down fires on startup, marked late ("(late, was due HH:MM)"); future reminders are
-re-registered as usual.
+re-registered as usual. A reminder whose push fails is marked unsent again, so Ze sends
+it late at the next startup.
 
 Calendar sync runs at 7:45 AM — before the 8 AM briefing — so Ze captures upcoming
 events with same-day reminders.
@@ -231,7 +233,9 @@ events with same-day reminders.
 When a scheduled workflow step fails, Ze sends an `accountability` push (kind
 `workflow_failure`) immediately — no waiting for the morning briefing. A
 `workflow_failure_cooldown_hours` (default: 1h) prevents alert spam for
-repeatedly-failing workflows.
+repeatedly-failing workflows. The cooldown starts only after Ze delivers or holds an alert.
+If the alert fails, the next failure inside the hour alerts again. Every failure is still
+recorded in the push log.
 
 ---
 
@@ -280,7 +284,7 @@ until someone answers them. The hold itself is described in
 **Module:** `ze_automation/jobs/goal_narrative.py`  
 **Cron:** `0 18 * * 0` (configurable via `proactive.goal_narrative.cron`)
 
-For each active goal, Ze synthesizes a one-paragraph weekly update: what was completed this week, any pending gate, and what comes next. Ze sends it as an `accountability` push (kind `goal_narrative`). Skips goals that had no activity in the past 7 days.
+For each active goal, Ze synthesizes a one-paragraph weekly update: what was completed this week, any pending gate, and what comes next. Ze sends it as an `accountability` push (kind `goal_narrative`). Skips goals that had no activity in the past 7 days. If the push fails, Ze tries again on the next run.
 
 ---
 
