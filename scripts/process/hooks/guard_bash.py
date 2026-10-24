@@ -290,10 +290,12 @@ def _check_maestri(argv, role):
         if role and role != "maestro":
             return DENY, f"Only the Maestro lands or deletes floors (ZE_ROLE={role})."
     if words[:2] == ["floor", "status"] and "review" in argv and "--state" in argv:
-        if role in BUILDERS:
+        if role and role != "maestro":
             return (
                 DENY,
-                "Set the review state through make process-ready FLOOR=<name>, which checks the gate receipts first.",
+                "Review is a floor state, not a lane's or a spec's: the lead sets it with make process-ready "
+                "FLOOR=<name> on the floor branch once every task is ticked. Finished your part? Request review "
+                "(ze-request-review) or tell the lead, and keep the floor at --state working.",
             )
     return None
 

@@ -43,12 +43,15 @@ synthesis"?
 - Perception stamps facts it reads from the user or the user's own sources `prompt_supplied`.
 - `live_search` means a search of the web, and nothing else.
 - `synthesized` means a reflection output, and nothing else.
-- The dream pass's decay and expiry also check `creation_method`. They touch only facts the dream
-  wrote, so a wrong provenance cannot bring the bug back.
-- A one-time migration re-stamps existing facts and restores the ones decay damaged. It re-stamps
-  facts whose `creation_method` is `extracted` or `explicit`, and resets `reviewed` and
-  `contradicted` where decay alone set them. This is a pre-v1 hard cut (`pre-v1-hard-cuts.md`); no
-  dual reading.
+- The dream pass's decay and expiry also check that the dream wrote the fact (`dream_run_id IS NOT
+  NULL`). They touch only facts the dream wrote, so a wrong provenance cannot bring the bug back.
+- A one-time migration re-stamps every `synthesized` fact the dream did not write to
+  `prompt_supplied`. It restores nothing else: nothing recorded a fact's `reviewed` flag or its
+  confidence before decay, and the local database held no rows with the decay signature
+  (2026-10-22). This is a pre-v1 hard cut (`pre-v1-hard-cuts.md`); no dual reading.
+- **Erratum (2026-10-22, phase 199 clarify):** `memory_facts` has no `creation_method` column (only
+  `memory_relationships` has one). The first version of this ADR keyed on it, and that is why it
+  now keys on `dream_run_id`.
 
 ## Consequences
 

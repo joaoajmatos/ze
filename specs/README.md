@@ -263,24 +263,24 @@ depend on code the earlier waves change.
 |---|---|---|---|---|
 | 198 | [Audit Bug Fixes](phases/198-audit-bug-fixes/spec.md) | 0 | — | 📋 Ready to implement (spec, plan, tasks; analyzed) |
 | 199 | [Claim Honesty Fixes](phases/199-claim-honesty-fixes/spec.md) | 0 | — | ⏳ Not written yet |
-| 200 | [Agent Context Derivation](phases/200-agent-context-derivation/spec.md) | 1 | 198 | ✏️ Draft (unchecked; writer stopped) |
-| 201 | [Typed Turn Services](phases/201-typed-turn-services/spec.md) | 1 | 200 | ✏️ Draft (unchecked; writer stopped) |
+| 200 | [Agent Context Derivation](phases/200-agent-context-derivation/spec.md) | 1 | 198 | 📝 Specified |
+| 201 | [Typed Turn Services](phases/201-typed-turn-services/spec.md) | 1 | 200 | 📝 Specified |
 | 202 | [Judgment Surface](phases/202-judgment-surface/spec.md) | 1 | 198 | 📝 Specified |
 | 203 | [Open-Loop Lifecycle](phases/203-open-loop-lifecycle/spec.md) | 1 | 199 | 📝 Specified |
 | 204 | [Push Bar and Cooldowns](phases/204-push-bar-and-cooldowns/spec.md) | 1 | 198 | 📝 Specified |
 | 205 | [Web Turn State](phases/205-web-turn-state/spec.md) | 1 | 198 | 📝 Specified |
 | 206 | [Web Query Staleness](phases/206-web-query-staleness/spec.md) | 1 | — | 📝 Specified |
 | 207 | [Conversation Turn Module](phases/207-conversation-turn-module/spec.md) | 2 | 201 | 📝 Specified |
-| 208 | [Trace Recorder](phases/208-trace-recorder/spec.md) | 2 | 200, 201 | ⏳ Not written yet |
+| 208 | [Trace Recorder](phases/208-trace-recorder/spec.md) | 2 | 200, 201, 207 | 📝 Specified |
 | 209 | [Write Gate and Reply Template](phases/209-write-gate-and-reply-template/spec.md) | 2 | 200 | 📝 Specified |
 | 210 | [Plugin Seam Narrowing](phases/210-plugin-seam-narrowing/spec.md) | 2 | 201 | 📝 Specified |
-| 211 | [Personal Unbundling](phases/211-personal-unbundling/spec.md) | 2 | 210 | ✏️ Draft (unchecked; writer stopped) |
+| 211 | [Personal Unbundling](phases/211-personal-unbundling/spec.md) | 2 | 198, 201, 210 | 📝 Specified |
 | 212 | [Contribution Submitter](phases/212-contribution-submitter/spec.md) | 3 | 201, 203 | 📝 Specified |
 | 213 | [One Scheduler](phases/213-one-scheduler/spec.md) | 3 | 204 | 📝 Specified |
 | 214 | [Unattended Step Runner](phases/214-unattended-step-runner/spec.md) | 3 | 200, 201 | 📝 Specified |
 | 215 | [Workspace Runs Module](phases/215-workspace-runs-module/spec.md) | 3 | 201 | 📝 Specified |
-| 216 | [Memory Interface and SDK Trim](phases/216-memory-interface-and-sdk-trim/spec.md) | 3 | 201 | ⏳ Not written yet |
-| 217 | [Data Domain Factory](phases/217-data-domain-factory/spec.md) | 3 | 211 | ⏳ Not written yet |
+| 216 | [Memory Interface and SDK Trim](phases/216-memory-interface-and-sdk-trim/spec.md) | 3 | 201, 210, 211, 212 | 📝 Specified |
+| 217 | [Data Domain Factory](phases/217-data-domain-factory/spec.md) | 3 | 210, 211 | 📝 Specified |
 | 218 | [Web Module Host](phases/218-web-module-host/spec.md) | 3 | 206 | 📝 Specified |
 | 219 | [WS Conformance Harness](phases/219-ws-conformance-harness/spec.md) | 3 | 207 | 📝 Specified |
 

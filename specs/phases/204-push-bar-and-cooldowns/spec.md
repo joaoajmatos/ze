@@ -47,6 +47,12 @@ Five callers hand-roll `if outcome in ("delivered", "held")`:
 - `passes_novelty`: `ze_correlation/push.py`, `ze_worldstate/surfacing.py`, `ze_priority/turn.py`, `ze_worldstate/bootstrap.py` and three test modules.
 - `ProactiveNotifier`: every proactive job and the ze-api wiring.
 
+**Added 2026-10-22 (phase 198 clarify, Q4):** the unique index on `push_log(event_type,
+idempotency_key)` has no window, and `push_log` is never pruned. Loops claim `budget_key` as
+`loop:<id>`, so a loop can be pushed at most once in its life: a revived loop that drifts again never
+pushes. This phase owns `push_log`, so it fixes this, for example by keying the claim per drift
+episode or by adding a window.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A push Ze already sent is not sent again, and a failed one is retried (Priority: P1)

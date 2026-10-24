@@ -282,3 +282,49 @@ def test_dirty_count_ignores_process_files_and_scratchpads_but_not_new_sources(
     assert dirty() == 0
     (repo / "new_module.py").write_text("x = 1\n")
     assert dirty() == 1
+
+
+FLOOR_LIST = """Floors in "Ze":
+  Ground — ~/coding/ze  ·  branch 'main'  ·  active
+  "199 Claim Honesty Fixes" — branch '199-claim-honesty-fixes'  ·  git worktree at ~/f  ·  16 nodes
+"""
+
+
+def _phase(tmp_path: Path, tasks: str) -> Path:
+    d = tmp_path / "specs" / "phases" / "199-claim-honesty-fixes"
+    d.mkdir(parents=True)
+    (d / "tasks.md").write_text(tasks)
+    return tmp_path
+
+
+def test_a_lane_branch_cannot_set_the_floor_to_review(tmp_path):
+    """2026-10-22: Pip ran process-ready FLOOR=... from 199-lane-jr1 and flipped the whole floor to review."""
+    root = _phase(tmp_path, "- [x] T027 x\n- [x] T028 y\n")
+    why = ready.review_refusal(
+        "199 Claim Honesty Fixes", "199-lane-jr1", FLOOR_LIST, root
+    )
+    assert "199-claim-honesty-fixes" in why and "199-lane-jr1" in why
+
+
+def test_open_tasks_keep_the_floor_out_of_review(tmp_path):
+    root = _phase(tmp_path, "- [x] T001 a\n- [ ] T029 b\n- [ ] T030 c\n")
+    why = ready.review_refusal(
+        "199 Claim Honesty Fixes", "199-claim-honesty-fixes", FLOOR_LIST, root
+    )
+    assert "2 task(s) still open" in why and "T029" in why
+
+
+def test_the_floor_branch_with_every_task_ticked_may_set_review(tmp_path):
+    root = _phase(tmp_path, "- [x] T001 a\n- [X] T002 b\n")
+    assert (
+        ready.review_refusal(
+            "199 Claim Honesty Fixes", "199-claim-honesty-fixes", FLOOR_LIST, root
+        )
+        == ""
+    )
+
+
+def test_an_unknown_floor_is_refused(tmp_path):
+    assert "not in maestri floor list" in ready.review_refusal(
+        "Nope", "main", FLOOR_LIST, tmp_path
+    )

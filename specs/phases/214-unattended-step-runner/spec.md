@@ -33,6 +33,13 @@ An unattended step runs in two different ways today.
 - `WorkflowPlanner._fetch_procedures` (`workflow/planner.py:160`) returns a formatted `str`, and `extract_procedure` is at :180.
 - The extraction prompts are near copies (`goals/planner.py:161-176`, `workflow/planner.py:60-`).
 
+**Added 2026-10-22 (phase 201 clarify, Q201-1 B):** workflow steps run the engine graph without
+several conversation services: `budget_checker` (so the spend budget never holds a step),
+`skill_matcher`, `tier_judge`, `system_one_client`, `commitment_intake`, `fact_extractor`,
+`turn_extractor`, `nli_client` and every plugin service. Phase 201 types today's subset and declares
+each omission with its reason. This phase decides which of them an unattended step should get. The
+missing spend budget is the first candidate.
+
 **Blast radius** (`graphify affected GoalExecutor`): ze-automation `__init__`, `agents/goals/agent.py`, five goal tools (`steer_goal`, `pause_goal`, `resume_goal`, `abandon_goal`, and others), and `bootstrap.build_automation_stack`. `WorkflowRunner` and `open_hold` are internal to ze-automation and ze-api wiring.
 
 ## User Scenarios & Testing *(mandatory)*
