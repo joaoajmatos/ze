@@ -116,13 +116,16 @@ class MorningBriefing:
         if self._news is not None:
             await self._append_news_section(lines)
 
-        await self._notifier.notify(
+        outcome = await self._notifier.notify(
             MORNING_BRIEF,
             "Morning Briefing",
             "\n".join(lines),
         )
-        self._log.info("briefing_sent", unreviewed=unreviewed)
-        await self._push_log.log("morning_brief")
+        if outcome in ("delivered", "held"):
+            self._log.info("briefing_sent", unreviewed=unreviewed)
+            await self._push_log.log("morning_brief")
+        else:
+            self._log.warning("briefing_not_sent", outcome=outcome)
 
     async def _stale_relationship_nudges(self) -> list:
         """Read stale-relationship nudges from `PriorityView`'s ranked output —

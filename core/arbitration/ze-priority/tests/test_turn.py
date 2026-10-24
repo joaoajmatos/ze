@@ -14,7 +14,7 @@ from ze_priority.turn import (
     OFFER_LIMIT,
     TurnSurfacing,
 )
-from ze_priority.types import LoopOffer, PriorityOverride, PriorityRanking
+from ze_priority.types import LoopOffer, PriorityRanking
 from ze_priority.view import PriorityView
 
 from ze_worldstate.types import LoopState
@@ -24,31 +24,13 @@ from tests.factories import make_hypothesis, make_loop, make_stuck_goal
 UTC = timezone.utc
 
 
-def _surfacer(
-    view, override_store=None, graph_store=None, loop_store=None, push_log=None
-):
+def _surfacer(view, graph_store=None, loop_store=None, push_log=None):
     return TurnSurfacing(
         embedder=MagicMock(),
         priority_view=view,
-        override_store=override_store,
         graph_store=graph_store or AsyncMock(),
         loop_store=loop_store or AsyncMock(),
         push_log=push_log,
-    )
-
-
-def _override(item, anchor, *, pinned=True):
-    return PriorityOverride(
-        id=uuid4(),
-        source_kind=item.source_kind,
-        source_id=item.source_id,
-        anchor_source_kind=anchor.source_kind,
-        anchor_source_id=anchor.source_id,
-        relation="above",
-        pinned=pinned,
-        submitted_at=datetime.now(UTC),
-        superseded_at=None,
-        contribution_domain_id=uuid4(),
     )
 
 
@@ -59,6 +41,20 @@ def _entity(entity_id, name):
 def _ranking(*source_items):
     return PriorityRanking(
         items=sort_and_rank(list(source_items)),
+        sources_succeeded={"loop", "goal", "hypothesis"},
+        sources_failed=set(),
+        generated_at=datetime.now(UTC),
+    )
+
+
+def _users_order(*source_items):
+    """A ranking already in the user's order: the view merges overrides, so the
+    surfacer receives the displayed order and does no merging of its own."""
+    items = list(source_items)
+    for index, item in enumerate(items, start=1):
+        item.rank = index
+    return PriorityRanking(
+        items=items,
         sources_succeeded={"loop", "goal", "hypothesis"},
         sources_failed=set(),
         generated_at=datetime.now(UTC),
@@ -79,11 +75,9 @@ async def test_recap_follows_pinned_goal_above_loop():
     stuck = score_goal(
         make_stuck_goal(goal_overrides={"title": "Stuck goal"}, idle_days=1)
     )
-    ranking = _ranking(loop, stuck)
-    store = AsyncMock()
-    store.get_active = AsyncMock(return_value=[_override(stuck, loop)])
+    ranking = _users_order(stuck, loop)
 
-    mentions = await _surfacer(_view(ranking), store).recap_mentions()
+    mentions = await _surfacer(_view(ranking)).recap_mentions()
 
     assert [m.title for m in mentions] == ["Stuck goal", "Drifting loop"]
     assert mentions[0].source_kind == "goal"
@@ -94,18 +88,6 @@ async def test_recap_empty_when_all_sources_fail():
         _view(error=ZePriorityError("all PriorityView sources failed"))
     ).recap_mentions()
     assert mentions == []
-
-
-async def test_override_store_failure_still_returns_unmerged_rank():
-    loop = score_loop(make_loop(title="Loop", confidence=0.95))
-    stuck = score_goal(make_stuck_goal(goal_overrides={"title": "Goal"}, idle_days=1))
-    ranking = _ranking(loop, stuck)
-    store = AsyncMock()
-    store.get_active = AsyncMock(side_effect=RuntimeError("db down"))
-
-    mentions = await _surfacer(_view(ranking), store).recap_mentions()
-
-    assert [m.title for m in mentions] == ["Loop", "Goal"]
 
 
 async def test_inline_mentions_goal_beats_overlapping_loop_when_pinned():
@@ -119,9 +101,7 @@ async def test_inline_mentions_goal_beats_overlapping_loop_when_pinned():
             }
         )
     )
-    ranking = _ranking(loop, stuck)
-    store = AsyncMock()
-    store.get_active = AsyncMock(return_value=[_override(stuck, loop)])
+    ranking = _users_order(stuck, loop)
 
     graph_store = AsyncMock()
     graph_store.list_relationships = AsyncMock(
@@ -136,7 +116,7 @@ async def test_inline_mentions_goal_beats_overlapping_loop_when_pinned():
 
     entity = _entity(entity_id, "Maria")
     mentions = await _surfacer(
-        _view(ranking), store, graph_store=graph_store, loop_store=loop_store
+        _view(ranking), graph_store=graph_store, loop_store=loop_store
     ).inline_mentions([entity_id], entities=[entity])
 
     assert mentions[0].title == "Send Maria the contract"
@@ -244,7 +224,6 @@ def test_is_global_open_query_delegates_to_the_detector():
     detector.is_open_query = MagicMock(side_effect=[True, False])
     surfacer = TurnSurfacing(
         priority_view=_view(),
-        override_store=None,
         graph_store=AsyncMock(),
         loop_store=AsyncMock(),
         embedder=MagicMock(),
@@ -278,12 +257,9 @@ async def test_recap_mentions_limit_slices_the_merged_order():
 async def test_recap_mentions_limit_keeps_pinned_item_first():
     loops = [score_loop(make_loop(title=f"Loop {i}")) for i in range(6)]
     stuck = score_goal(make_stuck_goal(goal_overrides={"title": "Pinned"}, idle_days=1))
-    ranking = _ranking(*loops, stuck)
-    first = ranking.items[0]
-    store = AsyncMock()
-    store.get_active = AsyncMock(return_value=[_override(stuck, first)])
+    ranking = _users_order(stuck, *loops)
 
-    capped = await _surfacer(_view(ranking), store).recap_mentions(limit=5)
+    capped = await _surfacer(_view(ranking)).recap_mentions(limit=5)
 
     assert len(capped) == 5
     assert capped[0].title == "Pinned"
@@ -563,7 +539,9 @@ async def test_unconfirmed_suspected_loop_mention_reads_the_record():
     from ze_agents.claims import ClaimKind
 
     suspected = make_loop(
-        title="Maybe call the bank", state=LoopState.SUSPECTED, claim_kind=ClaimKind.SUSPICION
+        title="Maybe call the bank",
+        state=LoopState.SUSPECTED,
+        claim_kind=ClaimKind.SUSPICION,
     )
     loop_store = AsyncMock()
     loop_store.list = AsyncMock(return_value=[suspected])

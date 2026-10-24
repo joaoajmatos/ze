@@ -83,6 +83,15 @@ class CalendarReminderStore:
             )
         return row["label"] if row else None
 
+    async def mark_unsent(self, reminder_id: UUID) -> None:
+        """Undo `mark_sent` after a failed push, so the next startup replay sends it."""
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE calendar_reminders SET sent = false, sent_at = NULL "
+                "WHERE id = $1",
+                reminder_id,
+            )
+
     async def delete_unsent_for_event(self, event_id: str) -> list[UUID]:
         """Delete unsent reminders for an event (e.g. when event is updated). Returns deleted IDs."""
         async with self._pool.acquire() as conn:

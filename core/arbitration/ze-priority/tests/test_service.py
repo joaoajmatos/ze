@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
@@ -147,3 +147,27 @@ async def test_submit_reprioritization_returns_superseded_id():
     )
 
     assert superseded_id == prior
+
+
+async def test_collision_contribution_states_the_computed_position_not_the_displayed_one():
+    target = _item(rank=1, computed_rank=2)
+    anchor = _item(rank=2, computed_rank=1)
+    view = _view([target, anchor])
+    override_store = AsyncMock()
+    override_store.create.side_effect = lambda o: (o, None)
+    submitted: list = []
+
+    async def _capture(contribution, write, **kwargs):
+        submitted.append(contribution)
+        return await write()
+
+    with patch("ze_priority.service.submit_and_detect_collisions", _capture):
+        await submit_reprioritization(
+            _request(target, anchor, relation="above"),
+            priority_view=view,
+            override_store=override_store,
+        )
+
+    synthesized = [c for c in submitted if "currently ranks" in c.content]
+    assert len(synthesized) == 1
+    assert synthesized[0].content.endswith("at position 2")

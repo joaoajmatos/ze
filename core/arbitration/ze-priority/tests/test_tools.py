@@ -251,3 +251,54 @@ def test_priority_agent_declares_undo_tool_and_deps():
     agent._nli_client = "n"
     agent._embedder = "e"
     assert agent.tool_deps()["override_store"] == "s"
+
+
+async def test_reprioritize_item_after_the_user_moved_it_to_the_top_is_a_no_op():
+    from ze_priority.types import PriorityOverride
+    from ze_priority.view import PriorityView
+    from ze_worldstate.types import LoopState
+
+    from tests.factories import make_loop
+
+    a = make_loop(title="quarterly report", confidence=0.9, state=LoopState.ACTIVE)
+    b = make_loop(title="the berlin move", confidence=0.2, state=LoopState.ACTIVE)
+    loop_store = AsyncMock()
+    loop_store.list.return_value = [a, b]
+    goal_store = AsyncMock()
+    goal_store.list_stuck.return_value = []
+    hypothesis_store = AsyncMock()
+    hypothesis_store.list_recent.return_value = []
+    override_store = AsyncMock()
+    override_store.get_active.return_value = [
+        PriorityOverride(
+            id=uuid4(),
+            source_kind="loop",
+            source_id=b.id,
+            anchor_source_kind="loop",
+            anchor_source_id=a.id,
+            relation="above",
+            pinned=True,
+            submitted_at=datetime.now(UTC),
+            superseded_at=None,
+            contribution_domain_id=uuid4(),
+        )
+    ]
+    view = PriorityView(
+        loop_store, goal_store, hypothesis_store, override_store=override_store
+    )
+    embedder = _FakeEmbedder(["berlin", "move", "quarterly", "report"])
+
+    result = await reprioritize_item(
+        priority_view=view,
+        override_store=override_store,
+        collision_store=None,
+        nli_client=None,
+        embedder=embedder,
+        item_description="the berlin move",
+        requested_relation="more_urgent",
+    )
+
+    assert result["status"] == "no_op"
+    assert "already the most urgent" in result["message"]
+    assert "undo" not in result
+    override_store.create.assert_not_called()

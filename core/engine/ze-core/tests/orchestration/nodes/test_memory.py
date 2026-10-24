@@ -349,7 +349,6 @@ class TestWriteMemoryCompaction:
             {"role": "assistant", "content": "resp"},
         ]
         assert result["messages"] == updated[-SESSION_HISTORY_LIMIT:]
-        assert result["compaction_span"] is None
 
     async def test_over_budget_history_triggers_compaction(self):
         existing = self._big_existing()
@@ -376,9 +375,9 @@ class TestWriteMemoryCompaction:
             "role": "system",
             "content": "condensed summary",
             "compaction_summary": True,
+            "compaction_span": [0, len(older_span) - 1],
         }
         assert result["messages"][1:] == tail
-        assert result["compaction_span"] == (0, len(older_span) - 1)
 
     async def test_repeated_compaction_on_already_compacted_thread(self):
         prior_summary = {
@@ -398,8 +397,10 @@ class TestWriteMemoryCompaction:
             "input_modality": "text",
         }
         result = await write_memory(state, _config(thread_id="s1", client=client))
-        assert result["compaction_span"] is not None
         assert result["messages"][0]["compaction_summary"] is True
+        assert result["messages"][0]["content"] == "new condensed summary"
+        assert result["messages"][0]["compaction_span"] == [0, 1]
+        assert not any(m.get("compaction_summary") for m in result["messages"][1:])
 
     async def test_compaction_llm_failure_falls_back_to_trim(self):
         existing = self._big_existing()
@@ -419,7 +420,79 @@ class TestWriteMemoryCompaction:
             {"role": "assistant", "content": "resp"},
         ]
         assert result["messages"] == updated[-SESSION_HISTORY_LIMIT:]
-        assert result["compaction_span"] is None
+
+    async def test_non_compacting_trim_keeps_the_leading_summary(self):
+        summary = {
+            "role": "system",
+            "content": "old summary",
+            "compaction_summary": True,
+            "compaction_span": [0, 3],
+        }
+        plain = [
+            {"role": "user" if i % 2 == 0 else "assistant", "content": f"m{i}"}
+            for i in range(12)
+        ]
+        state = {
+            "session_id": "s1",
+            "agent_context": self._compacting_ctx(),
+            "agent_result": AgentResult(agent="a", response="resp"),
+            "subtask_results": [],
+            "messages": [summary] + plain,
+            "input_modality": "text",
+        }
+        result = await write_memory(state, _config(thread_id="s1"))
+        updated = (
+            [summary]
+            + plain
+            + [
+                {"role": "user", "content": "hi"},
+                {"role": "assistant", "content": "resp"},
+            ]
+        )
+        assert result["messages"] == [summary] + updated[-SESSION_HISTORY_LIMIT:]
+
+    async def test_trim_of_plain_messages_keeps_the_last_ten(self):
+        plain = [
+            {"role": "user" if i % 2 == 0 else "assistant", "content": f"m{i}"}
+            for i in range(12)
+        ]
+        state = {
+            "session_id": "s1",
+            "agent_context": self._compacting_ctx(),
+            "agent_result": AgentResult(agent="a", response="resp"),
+            "subtask_results": [],
+            "messages": plain,
+            "input_modality": "text",
+        }
+        result = await write_memory(state, _config(thread_id="s1"))
+        updated = plain + [
+            {"role": "user", "content": "hi"},
+            {"role": "assistant", "content": "resp"},
+        ]
+        assert result["messages"] == updated[-SESSION_HISTORY_LIMIT:]
+        assert not any(m.get("compaction_summary") for m in result["messages"])
+
+    async def test_failed_compaction_keeps_an_earlier_summary_in_front(self):
+        summary = {
+            "role": "system",
+            "content": "old summary",
+            "compaction_summary": True,
+            "compaction_span": [0, 3],
+        }
+        client = AsyncMock()
+        client.complete = AsyncMock(side_effect=RuntimeError("timeout"))
+        state = {
+            "session_id": "s1",
+            "agent_context": self._compacting_ctx(),
+            "agent_result": AgentResult(agent="a", response="resp"),
+            "subtask_results": [],
+            "messages": [summary] + self._big_existing(n=9),
+            "input_modality": "text",
+        }
+        result = await write_memory(state, _config(thread_id="s1", client=client))
+        assert result["messages"][0] == summary
+        assert len(result["messages"]) == SESSION_HISTORY_LIMIT + 1
+        assert result["messages"][-1] == {"role": "assistant", "content": "resp"}
 
 
 class TestSynthesize:

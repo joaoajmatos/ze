@@ -261,7 +261,7 @@ depend on code the earlier waves change.
 
 | Phase | Spec | Wave | Depends on | Status |
 |---|---|---|---|---|
-| 198 | [Audit Bug Fixes](phases/198-audit-bug-fixes/spec.md) | 0 | — | ⏳ Not written yet |
+| 198 | [Audit Bug Fixes](phases/198-audit-bug-fixes/spec.md) | 0 | — | ✅ Implemented (no migration) |
 | 199 | [Claim Honesty Fixes](phases/199-claim-honesty-fixes/spec.md) | 0 | — | ⏳ Not written yet |
 | 200 | [Agent Context Derivation](phases/200-agent-context-derivation/spec.md) | 1 | 198 | 📝 Specified |
 | 201 | [Typed Turn Services](phases/201-typed-turn-services/spec.md) | 1 | 200 | 📝 Specified |

@@ -78,6 +78,8 @@ class PriorityItem:
     linked_entity_ids: tuple[UUID, ...] = ()
     match_text: str = ""
     hedge: bool = False
+    computed_rank: int = 0
+    override: PriorityOverride | None = None
 
 
 @dataclass

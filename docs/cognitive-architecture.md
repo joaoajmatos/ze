@@ -104,7 +104,7 @@ mechanism already scores; the two previously-independent daily push budgets (cor
 worldstate's) were consolidated into one shared, atomically-claimed attention budget in
 `core/contracts/ze-proactive`. Interruption-handling is now one policy, not per-mechanism. Phase 127
 (user-directed priority override) layered a first arbitration case on top: decaying/pinned user
-reorderings merge into `PriorityView.rank()` at render time. Phase 173 (commitment intake) ended the double booking: one System One request now judges a conversation turn, so a timed reminder no longer also opens a loop. A loop that matches a reminder or goal the turn created links to it instead.
+reorderings merge inside `PriorityView.rank()`, so `rank()` returns the user's order and every reader (REST, chat mentions, composed answers, arbitration) sees the same one. Each item keeps its own computed rank for comparison. Arbitration sends candidates in that order and never pushes an item the user pushed down. Phase 173 (commitment intake) ended the double booking: one System One request now judges a conversation turn, so a timed reminder no longer also opens a loop. A loop that matches a reminder or goal the turn created links to it instead.
 
 **What is still missing:**
 - **Loops and goals are deliberately un-unified** (`specs/phases/110-open-loop-drift-surfacing/spec.md`

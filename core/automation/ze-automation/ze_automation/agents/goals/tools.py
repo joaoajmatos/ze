@@ -7,6 +7,7 @@ from ze_agents.tool import AskDecision, ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.errors import GoalPlanError
 from ze_automation.goals.executor import GoalExecutor
+from ze_automation.goals.lifecycle import can_abandon, can_pause, can_resume
 from ze_automation.holds.planned import (
     approval_given,
     grant_planned_writes,
@@ -235,6 +236,8 @@ async def pause_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) -> 
     goal = await store.get_goal(uid)
     if not goal:
         return {"error": f"Goal not found: {goal_id}"}
+    if not can_pause(goal.status):
+        return {"error": f"{goal.title} is {goal.status.value}; it cannot be paused."}
     await store.update_status(uid, GoalStatus.PAUSED)
     await executor.close_holds(uid)
     return {
@@ -260,7 +263,7 @@ async def resume_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) ->
     goal = await store.get_goal(uid)
     if not goal:
         return {"error": f"Goal not found: {goal_id}"}
-    if goal.status != GoalStatus.PAUSED:
+    if not can_resume(goal.status):
         return {
             "error": f"Goal '{goal.title}' is not paused (status: {goal.status.value})."
         }
@@ -328,6 +331,10 @@ async def abandon_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) -
     goal = await store.get_goal(uid)
     if not goal:
         return {"error": f"Goal not found: {goal_id}"}
+    if not can_abandon(goal.status):
+        return {
+            "error": f"{goal.title} is {goal.status.value}; it cannot be abandoned."
+        }
     await store.update_status(uid, GoalStatus.ABANDONED)
     await executor.close_holds(uid)
     return {"title": goal.title, "status": "abandoned"}

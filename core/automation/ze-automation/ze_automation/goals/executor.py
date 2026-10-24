@@ -177,7 +177,9 @@ class GoalExecutor:
         nli_client: object | None = None,
         procedure_admission: object | None = None,
         held_store: HeldWriteStore | None = None,
+        timezone: str = "UTC",
     ) -> None:
+        self._timezone = timezone
         self._held_store = held_store
         self._store = goal_store
         self._planner = goal_planner
@@ -909,6 +911,7 @@ class GoalExecutor:
             pre_approved_writes=frozenset(milestone.approved_writes),
             memory_store=self._memory,
             extensions={"goal_id": str(milestone.goal_id)},
+            timezone=self._timezone,
             **(resume.context_kwargs() if resume else {}),
         )
 

@@ -63,10 +63,10 @@ async def test_declared_loop_drifts_and_is_a_push_candidate(pg_pool):
     nli.grounding_score = MagicMock(return_value=0.95)
     surfacer = LoopSurfacer(
         store, MagicMock(), PushLogStore(pg_pool), pool=pg_pool,
-        relevance_model=relevance, embedder=embedder,
+        relevance_model=relevance, embedder=embedder, nli_client=nli,
     )
 
-    candidates = await surfacer.eligible_candidates(nli_client=nli)
+    candidates = await surfacer.eligible_candidates()
 
     assert [c.id for c in candidates] == [created.id]
 

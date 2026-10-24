@@ -62,6 +62,16 @@ You can also manage goals conversationally:
 `GoalAgent` handles create / inspect / steer / pause / resume / abandon. It does **not**
 execute milestones — that is `GoalExecutor`'s job.
 
+One rule set decides which goals each action accepts. It is the same in chat and on the goal's screen:
+
+| Action | Allowed when the goal is |
+|---|---|
+| Pause | `ACTIVE` or `AWAITING_GATE` |
+| Resume | `PAUSED` |
+| Abandon | `PLANNING`, `ACTIVE`, `AWAITING_GATE`, or `PAUSED` |
+
+Any other status gets a plain refusal that names the goal and its status. Nothing changes.
+
 Reading goals never pauses a turn. Each write tool (`create_goal`, `steer_goal`, `pause_goal`, `resume_goal`, `abandon_goal`) asks for your confirmation before it acts. On a single-agent turn the agent runs as a read, so the question comes from the tool. In a multi-step turn, the write intents keep their per-step confirmation, so the question comes first and no sibling step runs twice.
 
 **Steering** (`steer_goal` tool) enqueues a free-text instruction that is applied before the next milestone runs: Ze re-plans the remaining milestones around the instruction and continues. Steering only works while the goal is `ACTIVE`; if the goal is `AWAITING_GATE`, resolve the gate first.

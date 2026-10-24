@@ -111,7 +111,7 @@ async def test_compaction_and_resume_recap_compose_on_same_turn():
     merged = {**fetch_result, **write_result}
 
     assert merged["resume_recap_applied"] is True
-    assert merged["compaction_span"] is not None
+    assert merged["messages"][0]["compaction_summary"] is True
     assert merged["agent_context"].resume_recap is not None
 
 
@@ -155,7 +155,7 @@ async def test_compaction_llm_failure_end_to_end_turn_still_completes():
         }
     }
     result = await write_memory(state, config)  # must not raise
-    assert result["compaction_span"] is None
+    assert not result["messages"][0].get("compaction_summary")
     assert len(result["messages"]) <= 10
 
 
@@ -189,5 +189,5 @@ async def test_unknown_model_end_to_end_uses_default_context_window_no_error():
         }
     }
     result = await write_memory(state, config)  # must not raise
-    assert result["compaction_span"] is None
+    assert not result["messages"][0].get("compaction_summary")
     assert result["messages"][-1] == {"role": "assistant", "content": "hi there"}

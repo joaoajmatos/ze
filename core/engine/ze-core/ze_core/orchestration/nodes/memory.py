@@ -281,17 +281,12 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         tail = updated[-SESSION_HISTORY_LIMIT:]
         summary_message = await _compact(older_span, ctx, config)
         if summary_message is not None:
-            return {
-                "messages": [summary_message] + tail,
-                "compaction_span": (0, len(older_span) - 1),
-                **trace_update,
-            }
+            return {"messages": [summary_message] + tail, **trace_update}
 
-    return {
-        "messages": updated[-SESSION_HISTORY_LIMIT:],
-        "compaction_span": None,
-        **trace_update,
-    }
+    trimmed = updated[-SESSION_HISTORY_LIMIT:]
+    if older_span and updated[0].get("compaction_summary"):
+        trimmed = [updated[0]] + trimmed
+    return {"messages": trimmed, **trace_update}
 
 
 async def _commit_with_episode(commit: Any, episode_task: asyncio.Task) -> Any:
@@ -339,7 +334,12 @@ async def _compact(
         log.warning("write_memory_compaction_failed", error=str(exc))
         return None
 
-    return {"role": "system", "content": summary_text, "compaction_summary": True}
+    return {
+        "role": "system",
+        "content": summary_text,
+        "compaction_summary": True,
+        "compaction_span": [0, len(older_span) - 1],
+    }
 
 
 async def synthesize(state: AgentState, config: RunnableConfig) -> dict:

@@ -158,7 +158,18 @@ class _ContainerTurnStarter:
         outcome = await self._container.invoke_raw_turn(
             thread_id, RawInput(text=prompt)
         )
-        if outcome.interrupted or not turn_has_reply(outcome):
+        if outcome.interrupted:
+            from ze_api.api.ws.confirmation import send_confirmation_request
+
+            await send_confirmation_request(
+                self._container.connection_manager,
+                self._container,
+                outcome,
+                thread_id,
+                confirmation_store=self._container.confirmation_store,
+            )
+            return
+        if not turn_has_reply(outcome):
             return
         await self._container.interface.send_with_thread(
             outcome.response,
@@ -316,7 +327,7 @@ class ZeContainer(CoreContainer):
         for plugin in self.plugins:
             plugin_services.update(plugin.configurable_services())
 
-        from ze_memory.extractor import gather_fact_proposals
+        from ze_memory.extractor import gather_fact_proposals, gather_turn_proposals
 
         configurable: dict = {
             "thread_id": str(thread_id),
@@ -324,6 +335,7 @@ class ZeContainer(CoreContainer):
             "tier_judge": self.tier_judge,
             "memory_store": self.memory_store,
             "fact_extractor": gather_fact_proposals,
+            "turn_extractor": gather_turn_proposals,
             "persona_store": self.persona_store,
             "openrouter_client": self.openrouter_client,
             "embedder": self.embedder,
@@ -466,6 +478,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         loop_store=worldstate.loop_store,
         goal_store=automation.goal_store,
         hypothesis_store=correlation.hypothesis_store,
+        override_store=stores.priority_override_store,
     )
 
     skills_stack = build_skills_stack(shared, settings)
@@ -535,10 +548,10 @@ async def build_container(settings: Settings) -> ZeContainer:
         getattr(correlation, "relevance_model", None),
         shared.embedder,
         notifier,
+        nli_client=shared.nli_client,
     )
     turn_surfacer = TurnSurfacing(
         priority_view=priority_view,
-        override_store=stores.priority_override_store,
         graph_store=worldstate.graph_store,
         loop_store=worldstate.loop_store,
         embedder=shared.embedder,

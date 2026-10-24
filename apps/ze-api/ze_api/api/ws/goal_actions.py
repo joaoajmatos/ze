@@ -11,6 +11,7 @@ from ze_agents.errors import GoalPlanError
 from ze_agents.interface.types import OutboundMessage
 from ze_api.api.ws.connection import ConnectionManager
 from ze_api.api.ws.frames import build_prompt_frame
+from ze_automation.goals.lifecycle import can_abandon, can_pause
 from ze_automation.goals.proposal import plan_for_goal, propose_goal
 from ze_automation.goals.types import Goal, GoalStatus, SuggestionStatus
 from ze_logging import get_logger
@@ -205,7 +206,7 @@ async def _handle_stuck_action(
         return
 
     if action == "pause":
-        if goal.status not in (GoalStatus.ACTIVE, GoalStatus.AWAITING_GATE):
+        if not can_pause(goal.status):
             await conn_mgr.send_frame(
                 {"type": "error", "detail": "Goal already resolved."}, thread_id
             )
@@ -222,7 +223,7 @@ async def _handle_stuck_action(
         return
 
     if action == "abandon":
-        if goal.status in (GoalStatus.COMPLETED, GoalStatus.ABANDONED):
+        if not can_abandon(goal.status):
             await conn_mgr.send_frame(
                 {"type": "error", "detail": "Goal already resolved."}, thread_id
             )

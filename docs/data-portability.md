@@ -118,7 +118,8 @@ ze-export-<ISO8601>.zip
 ├── memory.facts.json      # list of row objects
 ├── memory.episodes.json
 ├── contacts.persons.json
-├── goals.goals.json
+├── goals.goals.json       # goals, once
+├── workflow.workflows.json # workflows, once
 ├── feedback.records.json  # ratings and retry requests on assistant replies
 ├── ...
 └── graph.checkpoints.json # exported but not imported

@@ -42,9 +42,8 @@ router = APIRouter(
 )
 async def get_priority_snapshot(
     priority_view: PriorityView = Depends(get_priority_view),
-    override_store: PriorityOverrideStore = Depends(get_priority_override_store),
 ) -> PrioritySnapshotResponse:
-    snapshot = await priority_rest.get_snapshot(priority_view, override_store)
+    snapshot = await priority_rest.get_snapshot(priority_view)
     return PrioritySnapshotResponse(
         items=[PrioritySnapshotItem.from_merged_item(item) for item in snapshot.items],
         sources_failed=list(snapshot.sources_failed),

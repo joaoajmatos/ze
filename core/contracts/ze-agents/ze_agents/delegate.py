@@ -273,6 +273,7 @@ async def run_delegate(
         memory=ctx.memory,
         contacts=ctx.contacts,
         persona=ctx.persona,
+        timezone=ctx.timezone,
         model=None,
         messages=[{"role": "user", "content": prompt}],
         reporter=ctx.reporter,

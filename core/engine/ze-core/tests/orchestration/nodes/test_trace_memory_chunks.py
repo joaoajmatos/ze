@@ -99,23 +99,32 @@ async def test_record_trace_produces_empty_memory_chunks_not_missing_trace():
     assert trace.memory_chunks == []
 
 
-async def test_record_trace_compaction_span_none_leaves_trace_compaction_none():
+_SUMMARY_0_7 = {
+    "role": "system",
+    "content": "s",
+    "compaction_summary": True,
+    "compaction_span": [0, 7],
+}
+_SUMMARY_0_12 = {**_SUMMARY_0_7, "compaction_span": [0, 12]}
+
+
+async def test_record_trace_history_without_summary_leaves_compaction_none():
     state = {
         "envelope": _envelope(),
         "agent_result": None,
         "memory_context": None,
-        "compaction_span": None,
+        "messages": [{"role": "user", "content": "hi"}],
     }
     result = await record_trace(state, config={})
     assert result["message_trace"].compaction is None
 
 
-async def test_record_trace_compaction_span_populates_compaction_trace():
+async def test_record_trace_history_opening_with_summary_populates_compaction():
     state = {
         "envelope": _envelope(),
         "agent_result": None,
         "memory_context": None,
-        "compaction_span": (0, 7),
+        "messages": [_SUMMARY_0_7, {"role": "user", "content": "hi"}],
     }
     result = await record_trace(state, config={})
     assert result["message_trace"].compaction == CompactionTrace(
@@ -150,7 +159,7 @@ async def test_record_trace_compaction_and_resume_recap_compose_in_same_trace():
         "envelope": _envelope(),
         "agent_result": None,
         "memory_context": None,
-        "compaction_span": (0, 12),
+        "messages": [_SUMMARY_0_12],
         "resume_recap_applied": True,
     }
     result = await record_trace(state, config={})
@@ -244,3 +253,19 @@ async def test_record_trace_loop_offer_ids_default_empty():
     state = {"envelope": _envelope(), "agent_result": None, "memory_context": None}
     result = await record_trace(state, config={})
     assert result["message_trace"].loop_offer_ids == []
+
+
+async def test_record_trace_reads_the_history_the_prompt_was_built_from():
+    """After a resume gap fetch_context blanks the prompt's history, while the
+    stored history still opens with the summary."""
+    state = {
+        "envelope": _envelope(),
+        "agent_result": None,
+        "memory_context": None,
+        "messages": [_SUMMARY_0_7],
+        "agent_context": SimpleNamespace(
+            messages=[{"role": "user", "content": "hello again"}]
+        ),
+    }
+    result = await record_trace(state, config={})
+    assert result["message_trace"].compaction is None

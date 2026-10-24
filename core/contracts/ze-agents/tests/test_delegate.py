@@ -754,6 +754,31 @@ async def test_script_runner_reaches_the_specialist_context() -> None:
     assert seen["runner"] is runner
 
 
+async def test_timezone_reaches_the_specialist_context() -> None:
+    seen: dict = {}
+
+    async def _run_impl(self, ctx: AgentContext) -> AgentResult:
+        seen["timezone"] = ctx.timezone
+        return AgentResult(agent="calendar", response="done")
+
+    cls = type(
+        "_ZoneSpecialist",
+        (BaseAgent,),
+        {
+            "name": "calendar",
+            "description": "calendar",
+            "tools": [],
+            "run": _run_impl,
+        },
+    )
+    agent(cls)
+    register_instance("calendar", cls())
+    ctx = _ctx()
+    ctx.timezone = "Europe/Lisbon"
+    await _run({"agent_name": "calendar", "objective": "x"}, ctx)
+    assert seen["timezone"] == "Europe/Lisbon"
+
+
 async def test_nested_rows_keep_the_script_step_and_its_inner_calls() -> None:
     from ze_agents.nested_tools import flatten_tool_calls
 

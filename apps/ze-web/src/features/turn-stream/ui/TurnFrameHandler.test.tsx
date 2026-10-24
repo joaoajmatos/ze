@@ -33,6 +33,7 @@ import { useConversation } from "@/entities/conversation";
 import { useOnboardingSession } from "@/entities/onboarding-session";
 import { usePresenceStore } from "@/entities/presence";
 import { useSession } from "@/entities/session";
+import { ConfirmationFrameHandler, usePendingConfirms } from "@/features/respond-to-confirmation";
 import { useWsStore } from "@/shared/api";
 import { TurnFrameHandler } from "./TurnFrameHandler";
 
@@ -90,6 +91,36 @@ describe("TurnFrameHandler", () => {
     expect(thread().turn.phase).toBe("thinking");
     emit(confirmFrame());
     expect(thread().turn.phase).toBe("paused");
+  });
+
+  it("marks a background thread for attention on a confirmation and clears it when the thread opens", () => {
+    render(
+      <>
+        <ConfirmationFrameHandler />
+        <TurnFrameHandler />
+      </>,
+      { wrapper: wrap },
+    );
+    emit({ type: "typing", thread_id: "t2", text: "working" });
+    emit(confirmFrame({ thread_id: "t2" }));
+    expect(useWsStore.getState().attentionThreads.t2).toBe(true);
+    expect(useWsStore.getState().thinkingThreads.t2).toBe(false);
+    expect(usePendingConfirms.getState().byThread.t2).toHaveLength(1);
+    act(() => useSession.setState({ threadId: "t2" }));
+    expect(useWsStore.getState().attentionThreads.t2).toBe(false);
+  });
+
+  it("raises attention for a confirmation on a thread it has never seen", () => {
+    render(
+      <>
+        <ConfirmationFrameHandler />
+        <TurnFrameHandler />
+      </>,
+      { wrapper: wrap },
+    );
+    emit(confirmFrame({ thread_id: "t2" }));
+    expect(useWsStore.getState().attentionThreads.t2).toBe(true);
+    expect(useWsStore.getState().thinkingThreads.t2 ?? false).toBe(false);
   });
 
   it("keeps the ws thinking, typing and attention flags in step with the store", () => {

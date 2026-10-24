@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from types import SimpleNamespace
+import pytest
 from unittest.mock import AsyncMock, MagicMock, create_autospec
 
 from ze_personal.contacts.types import StaleFollowUpNudge
@@ -19,9 +20,9 @@ def make_settings():
     )
 
 
-def make_notifier():
+def make_notifier(outcome="delivered"):
     n = MagicMock(spec=ProactiveNotifier)
-    n.notify = AsyncMock()
+    n.notify = AsyncMock(return_value=outcome)
     return n
 
 
@@ -137,12 +138,19 @@ async def test_briefing_includes_failure_summary():
     assert "daily_report" in text
 
 
-async def test_briefing_writes_push_log():
-    notifier = make_notifier()
+@pytest.mark.parametrize(
+    ("outcome", "logged"),
+    [("delivered", True), ("held", True), ("failed", False)],
+)
+async def test_briefing_writes_push_log_only_after_delivered_or_held(outcome, logged):
+    notifier = make_notifier(outcome)
     b, push_log = make_briefing(notifier=notifier)
     await b.run()
 
-    push_log.log.assert_awaited_once_with("morning_brief")
+    if logged:
+        push_log.log.assert_awaited_once_with("morning_brief")
+    else:
+        push_log.log.assert_not_awaited()
 
 
 async def test_briefing_calls_memory_store_real_interface():

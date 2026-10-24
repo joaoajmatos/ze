@@ -171,6 +171,56 @@ class TestExecuteTool:
             await execute_tool(state, {"configurable": {}})
 
 
+class TestTimezone:
+    @staticmethod
+    def _recording_agent(name: str, seen: list[str]):
+        cls = _make_agent_class(name)
+
+        async def run(self, ctx: AgentContext) -> AgentResult:
+            seen.append(ctx.timezone)
+            return AgentResult(agent=name, response="ok")
+
+        cls.run = run
+        agent(cls)
+        instance = object.__new__(cls)
+        instance.run = run.__get__(instance, cls)
+        instance.stream = AsyncMock(side_effect=NotImplementedError)
+        register_instance(name, instance)
+
+    @staticmethod
+    def _zoned_ctx() -> AgentContext:
+        ctx = _ctx()
+        ctx.timezone = "Europe/Lisbon"
+        return ctx
+
+    async def test_single_agent_gets_the_configured_zone(self):
+        seen: list[str] = []
+        self._recording_agent("a", seen)
+        state = {
+            "envelope": _envelope("a"),
+            "agent_context": self._zoned_ctx(),
+            "image_data": None,
+        }
+        await execute_tool(state, {"configurable": {}})
+        assert seen == ["Europe/Lisbon"]
+
+    async def test_compound_subtasks_get_the_configured_zone(self):
+        seen: list[str] = []
+        self._recording_agent("alpha", seen)
+        self._recording_agent("beta", seen)
+        subtasks = [
+            SubTask(agent="alpha", prompt="p1"),
+            SubTask(agent="beta", prompt="p2"),
+        ]
+        state = {
+            "envelope": _envelope("alpha", is_compound=True, subtasks=subtasks),
+            "agent_context": self._zoned_ctx(),
+            "image_data": None,
+        }
+        await execute_tool(state, {"configurable": {}})
+        assert seen == ["Europe/Lisbon", "Europe/Lisbon"]
+
+
 class TestPreflight:
     async def test_all_agents_disabled_blocks(self):
         from ze_core.orchestration.nodes.execution import preflight

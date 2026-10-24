@@ -134,8 +134,6 @@ def automation_data_domains(pool: asyncpg.Pool) -> list[DataDomain]:
         )
 
     return [
-        _domain("automation.goals", "goals"),
-        _domain("automation.workflows", "workflows"),
         _domain("automation.accountability", "accountability_anomalies"),
     ]
 
@@ -168,6 +166,7 @@ def build_automation_stack(shared: Any, settings: Any) -> AutomationStack:
         notify=_unwired_notify,
         agent_getter=_get_agent,
         memory_store=memory_store,
+        timezone=settings.timezone,
     )
     workflow_planner = WorkflowPlanner(openrouter_client=openrouter_client)
     deps: dict[type, Any] = {
@@ -217,12 +216,13 @@ def make_workflow_failure_handler(
     push_log_store: PushLogStore,
 ) -> Callable[[Any, Exception], Awaitable[None]]:
     async def _handle(workflow: Any, exc: Exception) -> None:
+        await push_log_store.log(f"workflow_failure:{workflow.id}", workflow.name)
         alerts_cfg = settings.proactive_config.get("alerts", {})
         if not alerts_cfg.get("workflow_failure_enabled", True):
             return
         cooldown = int(alerts_cfg.get("workflow_failure_cooldown_hours", 1))
-        event_type = f"workflow_failure:{workflow.id}"
-        if await push_log_store.was_sent_within_hours(event_type, cooldown):
+        alert_key = f"workflow_failure_alert:{workflow.id}"
+        if await push_log_store.was_sent_within_hours(alert_key, cooldown):
             log.info("failure_alert_suppressed_cooldown", workflow=workflow.name)
             return
         executions = await workflow_store.list_executions(workflow.id, limit=5)
@@ -237,14 +237,15 @@ def make_workflow_failure_handler(
                 "target_id": str(execution.id),
                 "target_parent_id": str(workflow.id),
             }
-        await notifier.notify(
+        outcome = await notifier.notify(
             WORKFLOW_FAILURE,
             f'Workflow failed: "{workflow.name}"',
             body,
             **targets,
         )
-        await push_log_store.log(event_type, workflow.name)
-        log.info("failure_alert_sent", workflow=workflow.name)
+        if outcome in ("delivered", "held"):
+            await push_log_store.log(alert_key, workflow.name)
+        log.info("failure_alert_sent", workflow=workflow.name, outcome=outcome)
 
     return _handle
 

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
+import pytest
 
 from ze_automation.jobs.goal_narrative import GoalNarrativeJob
 from ze_automation.goals.types import (
@@ -53,9 +54,15 @@ def _gate(title="Checkpoint") -> VerificationGate:
 
 
 def _make_job(
-    goals=None, milestones=None, gate=None, dedup=False, paragraph="Progress summary."
+    goals=None,
+    milestones=None,
+    gate=None,
+    dedup=False,
+    paragraph="Progress summary.",
+    outcome="delivered",
 ):
     notifier = AsyncMock()
+    notifier.notify = AsyncMock(return_value=outcome)
 
     push_log = AsyncMock()
     push_log.was_sent_within_hours = AsyncMock(return_value=dedup)
@@ -119,6 +126,26 @@ async def test_run_sends_narrative_for_goals_with_progress():
     assert "Job search" in call.args[2]
     assert "Ze found 10 prospects" in call.args[2]
     push_log.log.assert_called_once_with("goal_narrative", "weekly")
+
+
+@pytest.mark.parametrize(
+    ("outcome", "logged"), [("failed", False), ("delivered", True), ("held", True)]
+)
+async def test_cooldown_starts_only_when_the_push_was_delivered_or_held(
+    outcome, logged
+):
+    job, _, push_log, _ = _make_job(
+        goals=[_goal("Job search")],
+        milestones=[_milestone(1, MilestoneStatus.COMPLETED)],
+        outcome=outcome,
+    )
+
+    await job.run()
+
+    if logged:
+        push_log.log.assert_awaited_once_with("goal_narrative", "weekly")
+    else:
+        push_log.log.assert_not_awaited()
 
 
 async def test_run_skips_goals_with_no_progress_this_week():

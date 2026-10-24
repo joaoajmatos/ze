@@ -35,7 +35,9 @@ from ze_workspace.types import (
     WorkspaceRunStatusDTO,
 )
 
+from ze_agents.park import ConfirmItem, WriteConfirmation
 from ze_api.wiring.container import _ContainerTurnStarter, _NotifierPushSender
+from ze_api.wiring.push_kinds import CONFIRMATION_REQUEST
 from ze_api.interface.native import NativeAppInterface
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.types import NotificationRow
@@ -320,7 +322,6 @@ class _FakeTurnOutcome:
         self.final_state = {"components": [], "message_trace": None}
 
 
-
 class _LockAwareFakeContainer:
     """Stand-in for ZeContainer.invoke_raw_turn: real ThreadTurnLock acquisition
     (mirrors container._locked_invoke_raw_turn) around a fake raw invoke, so
@@ -520,3 +521,92 @@ async def test_components_only_followup_turn_is_delivered():
     assert interface.send_with_thread.await_args.kwargs["components"] == [
         {"type": "table"}
     ]
+
+
+class _InterruptedOutcome:
+    """A follow-up turn that parked a write and now waits for the user's OK."""
+
+    def __init__(self) -> None:
+        self.response = None
+        self.interrupted = True
+        self.final_state = {"components": [], "message_trace": None}
+        self.config = {"configurable": {"thread_id": "t1"}}
+        self.confirmation = WriteConfirmation(
+            request_id="req-1",
+            kind="write",
+            round=1,
+            items=[
+                ConfirmItem(
+                    item_id="i1",
+                    agent="messenger",
+                    tool="send_email",
+                    effect_phrase="send an email",
+                    summary="to: ana@example.com",
+                )
+            ],
+        )
+
+
+class _ConfirmingFakeContainer(_LockAwareFakeContainer):
+    def __init__(self, raw_invoke, interface, *, connected: bool):
+        super().__init__(ThreadTurnLock(), raw_invoke, interface)
+        self.settings = SimpleNamespace(confirm_timeout_seconds=900)
+        self.confirmation_store = AsyncMock()
+        self.confirmation_store.get_pending_for_thread = AsyncMock(return_value=[])
+        self.notifier = SimpleNamespace(notify=AsyncMock())
+        self.sent_frames: list[dict] = []
+        self.connection_manager = SimpleNamespace(
+            send_frame=self._send_frame, connected=connected
+        )
+
+    async def _send_frame(self, frame, thread_id=None):
+        if self.connection_manager.connected:
+            self.sent_frames.append({**frame, "thread_id": thread_id})
+
+
+async def _run_interrupted_followup(monkeypatch, *, connected: bool):
+    timeouts = AsyncMock()
+    monkeypatch.setattr("ze_api.api.ws.confirmation.confirmation_timeout", timeouts)
+    interface = SimpleNamespace(send_with_thread=AsyncMock())
+
+    async def raw_invoke(thread_id, raw):
+        return _InterruptedOutcome()
+
+    container = _ConfirmingFakeContainer(raw_invoke, interface, connected=connected)
+    turn_starter = _ContainerTurnStarter()
+    turn_starter.bind(container)
+
+    await turn_starter.invoke_raw_turn("t1", "run finished")
+    for _ in range(5):
+        await asyncio.sleep(0)
+    return container, interface, timeouts
+
+
+@pytest.mark.asyncio
+async def test_followup_turn_that_asks_first_sends_the_confirmation(monkeypatch):
+    container, interface, timeouts = await _run_interrupted_followup(
+        monkeypatch, connected=True
+    )
+
+    (frame,) = [f for f in container.sent_frames if f["type"] == "confirm_request"]
+    assert frame["id"] == "req-1" and frame["thread_id"] == "t1"
+    container.confirmation_store.save.assert_awaited_once()
+    assert container.confirmation_store.save.await_args.kwargs["request_id"] == "req-1"
+    container.notifier.notify.assert_awaited_once()
+    assert container.notifier.notify.await_args.args[0] is CONFIRMATION_REQUEST
+    timeouts.assert_called_once()
+    interface.send_with_thread.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_followup_confirmation_with_no_client_is_saved_and_pushed(monkeypatch):
+    container, interface, timeouts = await _run_interrupted_followup(
+        monkeypatch, connected=False
+    )
+
+    assert container.sent_frames == []
+    container.confirmation_store.save.assert_awaited_once()
+    container.notifier.notify.assert_awaited_once()
+    assert container.notifier.notify.await_args.args[0] is CONFIRMATION_REQUEST
+    timeouts.assert_called_once()
+    interface.send_with_thread.assert_not_awaited()

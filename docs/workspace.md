@@ -41,7 +41,9 @@ chooses. Ze records the run in `workspace_runs` before it starts the command.
   The turn ends with a "still running" reply.
 - **Follow-up turn.** When a detached command ends, Ze starts a new turn on the same
   thread and reports the result. If no client is connected, Ze sends a push
-  notification instead.
+  notification instead. If the follow-up turn needs your approval before it acts,
+  Ze shows the confirmation card. With no client connected, Ze saves the request
+  and sends a push.
 - **One run at a time.** Ze refuses a second command while one runs. The refusal
   names the running command.
 - **Restart.** After `ze-api` restarts, Ze reattaches to runs that are still
