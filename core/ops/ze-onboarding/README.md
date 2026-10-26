@@ -28,9 +28,9 @@ Plugins return an `OnboardingProvider` from `ZePlugin.onboarding()`. `ze-api` bu
 
 ## Dependencies
 
-![ze-onboarding package dependencies](../../docs/diagrams/core/ops/ze-onboarding/dependencies.svg)
+![ze-onboarding package dependencies](../../../docs/diagrams/core/ops/ze-onboarding/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/ops/ze-onboarding/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/ops/ze-onboarding/dependencies.html)</sub>
 
 ## Usage
 
@@ -49,4 +49,4 @@ From the repo root:
 make test-onboarding
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

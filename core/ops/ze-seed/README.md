@@ -40,9 +40,9 @@ cd apps/ze-api && uv run python -m ze_api.cli.seed apply
 
 ## Dependencies
 
-![ze-seed package dependencies](../../docs/diagrams/core/ops/ze-seed/dependencies.svg)
+![ze-seed package dependencies](../../../docs/diagrams/core/ops/ze-seed/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/ops/ze-seed/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/ops/ze-seed/dependencies.html)</sub>
 
 Depends on `ze-core` and `ze-logging`. Third-party: `pyyaml`.
 
@@ -63,4 +63,4 @@ From the repo root:
 make test-seed
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

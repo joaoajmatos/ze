@@ -37,9 +37,9 @@ Plugins self-register via `[project.entry-points."ze.plugins"]`. `bootstrap.py` 
 
 ## Dependencies
 
-![ze-plugin package dependencies](../../docs/diagrams/core/contracts/ze-plugin/dependencies.svg)
+![ze-plugin package dependencies](../../../docs/diagrams/core/contracts/ze-plugin/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/contracts/ze-plugin/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/contracts/ze-plugin/dependencies.html)</sub>
 
 ## Usage
 
@@ -65,4 +65,4 @@ From the repo root:
 make test-plugin
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

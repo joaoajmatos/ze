@@ -17,7 +17,7 @@ Ze's memory graph connects facts, episodes, contacts, news signals, and calendar
 
 ### Integration
 
-The `correlate` graph node in `ze-core` runs inline correlation after `execute_tool`. `CorrelationJob` runs on a schedule from `ze-api`. Plugins contribute signal sources via `ZePlugin.signal_sources()` — news and calendar plugins feed the engine.
+The `correlate` graph node in `ze-core` runs inline correlation after `execute_tool`. `CorrelationJob` runs on a schedule from `ze-api`. Plugins contribute signal sources via `ZePlugin.signal_sources()` — the news, calendar, finance and messenger plugins feed the engine.
 
 `screen_resolvers.py` registers the `hypothesis` screen resolver. A hypothesis line says it is an inference.
 
@@ -39,9 +39,9 @@ The `correlate` graph node in `ze-core` runs inline correlation after `execute_t
 
 ## Dependencies
 
-![ze-correlation package dependencies](../../docs/diagrams/core/cognition/ze-correlation/dependencies.svg)
+![ze-correlation package dependencies](../../../docs/diagrams/core/cognition/ze-correlation/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/cognition/ze-correlation/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/cognition/ze-correlation/dependencies.html)</sub>
 
 Third-party: `asyncpg`.
 
@@ -67,4 +67,4 @@ From the repo root:
 make test-correlation
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

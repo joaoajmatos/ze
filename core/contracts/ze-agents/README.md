@@ -55,9 +55,9 @@ Imported by nearly every other Ze package, including `ze-plugin`, `ze-core`, and
 
 ## Dependencies
 
-![ze-agents package dependencies](../../docs/diagrams/core/contracts/ze-agents/dependencies.svg)
+![ze-agents package dependencies](../../../docs/diagrams/core/contracts/ze-agents/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/contracts/ze-agents/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/contracts/ze-agents/dependencies.html)</sub>
 
 Depends on `ze-logging` only. Third-party: `pyyaml`, `typing_extensions`.
 
@@ -79,4 +79,4 @@ From the repo root:
 make test-agents
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

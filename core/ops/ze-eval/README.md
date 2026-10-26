@@ -48,7 +48,7 @@ python eval/run.py [--judge] [--tag X] [report]
 python eval/server.py   # MCP server — make eval-server
 ```
 
-See [docs/eval.md](../../docs/eval.md) for the full workflow.
+See [docs/eval.md](../../../docs/eval.md) for the full workflow.
 
 ## Testing
 
@@ -58,4 +58,4 @@ From the repo root:
 make test-eval
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

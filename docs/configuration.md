@@ -404,7 +404,7 @@ Disable any proactive feature by setting `enabled: false` or toggling the releva
 
 `proactive.notifications.release_cron` (default `*/5 * * * *`) sets how often Ze checks whether quiet hours have ended and releases the pushes it held.
 
-Quiet hours are not a YAML value. The user sets them in Settings › Notifications. Ze stores them in the `interruption_settings` table and exposes them over REST at `/api/v0/notifications/quiet-hours`. Quiet hours ship off.
+Quiet hours are not a YAML value. The user sets them in the Attention module of Governance (`/governance`). Ze stores them in the `interruption_settings` table and exposes them over REST at `/api/v0/notifications/quiet-hours`. Quiet hours ship off.
 
 ### `finance:`
 

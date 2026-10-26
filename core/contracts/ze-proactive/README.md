@@ -65,9 +65,9 @@ Branch `zpro`. `zpro001` creates `push_log`, `zpro002` creates `notifications`, 
 
 ## Dependencies
 
-![ze-proactive package dependencies](../../docs/diagrams/core/contracts/ze-proactive/dependencies.svg)
+![ze-proactive package dependencies](../../../docs/diagrams/core/contracts/ze-proactive/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/contracts/ze-proactive/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/contracts/ze-proactive/dependencies.html)</sub>
 
 Third-party: `asyncpg`.
 
@@ -95,4 +95,4 @@ From the repo root:
 make test-proactive
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

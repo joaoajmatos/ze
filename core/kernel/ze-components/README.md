@@ -71,4 +71,4 @@ From the repo root:
 make test-components
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

@@ -50,9 +50,9 @@ Every `WRITE` tool in this package declares `reversibility` and an `effect_phras
 
 ## Dependencies
 
-![ze-ingestion package dependencies](../../docs/diagrams/core/ops/ze-ingestion/dependencies.svg)
+![ze-ingestion package dependencies](../../../docs/diagrams/core/ops/ze-ingestion/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/ops/ze-ingestion/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/ops/ze-ingestion/dependencies.html)</sub>
 
 Third-party: `asyncpg`, `httpx`, `beautifulsoup4`, `pypdf`.
 
@@ -107,4 +107,4 @@ From the repo root:
 make test-ingestion
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

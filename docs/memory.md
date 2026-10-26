@@ -450,8 +450,8 @@ The graph layer stores typed relationships between memory objects in the
 | `PROMOTES_TO` | Event → Fact (from outcome extraction) |
 | `BELONGS_TO_GOAL` | TaskState → Goal |
 | `USES_PROCEDURE` | Procedure → TaskState (defined; no code writes it today) |
-| `WORKS_ON` | Person → Project (written by the contacts consolidator in `ze-personal`) |
-| `COLLABORATES_WITH` | Person ↔ Person (written by the contacts consolidator in `ze-personal`) |
+| `WORKS_ON` | Person → Project (written by `ze-personal`: the contacts consolidator and extractors, and the promotion of social hypotheses) |
+| `COLLABORATES_WITH` | Person ↔ Person (written by `ze-personal`: the contacts consolidator and extractors, and the promotion of social hypotheses) |
 
 </details>
 
@@ -522,7 +522,7 @@ Two steps run in order.
    directly. For any other session, Haiku writes one summary, stored as an archive
    episode, and the consolidator deletes the raw rows.
 2. **Batch archival.** The remaining old raw episodes (up to `episode_archive_batch`,
-   20 default) are archived together: when at least `episode_min_archive_batch`
+   20 in code, 50 in the shipped config) are archived together: when at least `episode_min_archive_batch`
    (10 default) exist, Haiku summarizes the batch into one archive row and the
    consolidator deletes the originals. With fewer, it deletes archive summaries older
    than twice `episode_archive_days`.
@@ -582,7 +582,7 @@ memory:
     unreviewed_ttl_days: 90
     expiry_grace_days: 7
     episode_archive_days: 7
-    episode_archive_batch: 20
+    episode_archive_batch: 50
     episode_min_archive_batch: 10
     session_grouping_enabled: true
     min_session_episodes: 3
