@@ -20,32 +20,32 @@
 
 This is a deepening refactor. Its users are the maintainers of the turn engine, and the guarantees it protects are ones the user sees: the time in a reply, the screen they were looking at, the reply that a workflow links to, and a trace that describes the right turn.
 
-Today the derivation of a child context from the turn context has no owner. Each construction site copies whichever fields its author thought of. The sites checked on 2026-10-22:
+Today the derivation of a child context from the turn context has no owner. Each construction site copies whichever fields its author thought of. The sites checked on 2026-10-22 and re-checked on 2026-10-26 against `5426cce1` (after phases 198 and 199 landed):
 
 | Site | What it copies | What it drops (examples) |
 |---|---|---|
-| `ze_core/orchestration/nodes/execution.py:388` (`_execute_single`) | 18 named fields, plus four `**_*_kwargs` helpers that spread 16 more | `timezone`, `extensions` (so `user_message_id` is lost), `memory_store`, `sources` |
-| `nodes/execution.py:493` (`_execute_compound`) | the same list, written out a second time (line 507 is misindented) | the same |
-| `ze_agents/delegate.py:270` (specialist delegate) | 19 named fields | `timezone`, `embed_fn`, `token_sink`, `screen_context_note`, `preset_note`, `resume_recap`, `open_priorities_note`, `active_skills`, `skill_tool_names`, the procedure fields (including the `procedure_tool_names` narrowing) and the conductor fields. It also *replaces* `extensions` with `{"_delegate_depth": …}`, so `user_message_id` is lost. Some of these drops may be deliberate; the code does not say which |
-| `ze_automation/goals/executor.py:906` (goal milestone) | 5 fields plus the resume kwargs | `timezone`, `tool_sink`, `abort_token`, `reporter` |
+| `ze_core/orchestration/nodes/execution.py:388` (`_execute_single`) | 18 named fields (`timezone` since phase 198), plus four `**_*_kwargs` helpers that spread 16 more | `extensions` (so `user_message_id` is lost), `memory_store`, `sources` |
+| `nodes/execution.py:494` (`_execute_compound._make_ctx`) | the same list, written out a second time (line 509 is misindented) | the same |
+| `ze_agents/delegate.py:270` (specialist delegate) | 19 named fields (`timezone` since phase 198) | `embed_fn`, `memory_store`, `token_sink`, `screen_context_note`, `preset_note`, `resume_recap`, `open_priorities_note`, `active_skills`, `skill_tool_names`, the procedure fields (including the `procedure_tool_names` narrowing) and the conductor fields. It also *replaces* `extensions` with `{"_delegate_depth": …}`, so `user_message_id` is lost. Some of these drops may be deliberate; the code does not say which |
+| `ze_automation/goals/executor.py:908` (goal milestone) | 6 fields (`timezone` since phase 198) plus the resume kwargs | `tool_sink`, `abort_token`, `reporter` |
 | `ze_agents/base_agent.py:355` (`run_undo`), `apps/ze-api/ze_api/api/ws/ui_actions.py:152` (screen action) | `session_id` and an empty prompt | everything, by design |
 
 Consequences that a user sees:
-- **Wrong time.** `fetch_context` sets `timezone` (`nodes/context.py:345`), but neither execution path copies it. Every routed agent's "Current date and time" line (`base_agent.py:251`) is therefore in UTC. Phase 198 patches the two sites; this phase removes the class of bug.
+- **Wrong time.** `fetch_context` sets `timezone` (`nodes/context.py:345`), but before phase 198 neither execution path copied it, so every routed agent's "Current date and time" line (`base_agent.py:251`) was in UTC. Phase 198 (B1) patched the four sites by hand; this phase removes the class of bug.
 - **Lost reply link.** `fetch_context` puts `user_message_id` in `extensions` (`nodes/context.py:371`). The workflow agent reads it (`ze_automation/agents/workflow/agent.py:108`), but routed runs drop `extensions`, so the workflow it creates may not link back to the user's message.
 
-Conductor and procedure state are worse: they live in three places. `AgentState`, the base context and the child context each hold a copy. After a single-specialist run they are copied back by hand (`execution.py:415-454`, `_sync_procedure_invocation` at `:366`), with `getattr` guards on fields that always exist (`AgentContext` declares every one of them, `ze_agents/types.py:161-174`).
+Conductor and procedure state are worse: they live in three places. `AgentState`, the base context and the child context each hold a copy. After a single-specialist run they are copied back by hand (`execution.py:416-454`, `_sync_procedure_invocation` at `:366`), with `getattr` guards on fields that always exist (`AgentContext` declares every one of them, `ze_agents/types.py:161-174`).
 
-The compound path does not copy them back at all. `_execute_compound` (`execution.py:536-543`) returns the base context unchanged: no conductor ledger, no delegate total, no procedure invocation, and no `record_guided_actions`. Its subtasks also share some of that state by accident. `_conductor_kwargs` hands every subtask the *same* `conductor_delegate_counts` dict (`execution.py:29-40`), so the per-specialist delegate cap counts across subtasks. But `conductor_delegate_total` is an integer copied per subtask, so the per-turn cap (`delegate.py:151-158`) applies per subtask. And `conductor_ledger` is `base.ledger or []`, so an empty ledger becomes a fresh list per subtask and is dropped. Today only the companion delegates, so this matters only when the companion is one subtask of a compound turn.
+The compound path does not copy them back at all. `_execute_compound` (`execution.py:539-547`) returns the base context unchanged: no conductor ledger, no delegate total, no procedure invocation, and no `record_guided_actions`. Its subtasks also share some of that state by accident. `_conductor_kwargs` hands every subtask the *same* `conductor_delegate_counts` dict (`execution.py:29-40`), so the per-specialist delegate cap counts across subtasks. But `conductor_delegate_total` is an integer copied per subtask, so the per-turn cap (`delegate.py:151-158`) applies per subtask. And `conductor_ledger` is `base.ledger or []`, so an empty ledger becomes a fresh list per subtask and is dropped. Today only the companion delegates, so this matters only when the companion is one subtask of a compound turn.
 
-The per-turn reset (`make_graph_input`, `ze_core/conversation/turn.py:32-90`) must mirror `AgentState` (`ze_core/orchestration/state.py`) by hand. Six fields are missing from it: `compaction_span`, `resume_recap_applied`, `open_items_query`, `loop_offer_ids`, `pre_approved_writes` and `procedure_matches`. Comments such as "set by fetch_context every turn" are the only thing standing in for the missing reset. The missing `compaction_span` reset is part of bug B6 (compaction shown one turn late). Phase 198 fixes B6; this phase makes the reset complete by construction.
+The per-turn reset (`make_graph_input`, `ze_core/conversation/turn.py:32-90`) must mirror `AgentState` (`ze_core/orchestration/state.py`) by hand. On 2026-10-22 six fields were missing from it. Phase 198 (B6) cut `compaction_span` from `AgentState`, so five remain: `resume_recap_applied`, `open_items_query`, `loop_offer_ids`, `pre_approved_writes` and `procedure_matches`. Comments such as "set by fetch_context every turn" are the only thing standing in for the missing reset. `AgentState.procedure_matches` is written by `fetch_context` (`nodes/context.py:395`) and read by nothing (every reader uses the context's copy). This phase makes the reset complete by construction.
 
-**Blast radius** (`graphify affected AgentContext --depth 1`, 2026-10-22):
-- Source references: ze-agents 41, ze-core 20, ze-automation 8, ze-personal 7, ze-calendar 6, ze-news 4, ze-prospecting 3, ze-messenger 3, ze-finance 3, ze-worldstate 3, ze-priority 3, ze-memory 2, ze-ingestion 2, ze-api 2, ze-sdk 1.
-- Test references: about 200.
+**Blast radius** (`graphify affected AgentContext --depth 1`, re-run 2026-10-26 on `5426cce1`; the full per-symbol table is in `plan.md`):
+- Source references: ze-agents 41, ze-core 20, ze-automation 8, ze-personal 7, ze-calendar 6, ze-news 4, ze-prospecting 3, ze-messenger 3, ze-finance 3, ze-worldstate 3, ze-priority 3, ze-memory 2, ze-ingestion 2, ze-api 2, ze-sdk 1, eval/calibration 2.
+- Test references: about 210 (ze-core 95, ze-agents 70, ze-api 11).
 - Almost all of these only type a `ctx` parameter. Only the seven construction sites above build contexts, and this phase changes only those.
 - `AgentState` has 48 source references, all in ze-core.
-- `make_graph_input` callers: `invoke_raw_turn`, `make_graph_input_from_raw_text`, core `Container.invoke`, ze-api `begin_workflow_turn` (`wiring/workflow_graph.py:18`), and 7 test modules. (The review listed `ze_automation/bootstrap.py:246` as a caller. It is not: `bootstrap.py:287` takes `begin_workflow_turn`'s output and adds the workflow keys by hand.)
+- `make_graph_input` callers: `invoke_raw_turn`, `make_graph_input_from_raw_text`, core `Container.invoke`, ze-api `begin_workflow_turn` (`wiring/workflow_graph.py:18`), and 9 test modules (8 in ze-core, `apps/ze-api/tests/test_workflow_hold.py`). (The review listed `ze_automation/bootstrap.py:246` as a caller. It is not: `_workflow_executor` (`bootstrap.py:285-293`) takes `begin_workflow_turn`'s output and adds the workflow keys by hand.)
 - **A third reset list.** The workflow graph resets state between steps in `load_workflow_step` (`ze_personal/graph/workflow.py:98-121`). It resets 16 engine keys by hand (plus its own workflow keys) and leaves the rest, such as `judgments`, `components`, the conductor fields, `tier` and `skill_matches`, to carry from one step into the next.
 
 ## Clarifications
@@ -81,7 +81,7 @@ A maintainer adds a field to the turn context, such as a new prompt note. Every 
 
 After a subtask or delegate runs, the conductor ledger, delegate counts and procedure invocation it produced reach the turn state through one return value. Nothing copies fields back by hand, and nothing has to guess which copy is current.
 
-**Why this priority**: Three copies of the same state is where the trace's conductor section (`nodes/trace.py:332-337`) and the procedure ledger can disagree. It is the second-largest source of `getattr` guards in the engine.
+**Why this priority**: Three copies of the same state is where the trace's conductor section (`nodes/trace.py:336-341`) and the procedure ledger can disagree. It is the second-largest source of `getattr` guards in the engine.
 
 **Independent Test**: A compound turn whose subtasks each delegate once ends with a conductor ledger and delegate total equal to the sum over subtasks, read from `AgentState` alone. This holds both when a subtask pauses for a confirmation and resumes, and when it does not.
 
@@ -105,7 +105,7 @@ Each `AgentState` field, including the fields of plugin state extensions, declar
 **Acceptance Scenarios**:
 
 1. **Given** a turn that set `loop_offer_ids`, **When** the next turn starts, **Then** `loop_offer_ids` starts empty.
-2. **Given** `messages` and `last_active_at` are thread-scoped, **When** a turn starts, **Then** they keep their checkpointed values (today's behaviour, `turn.py:41-44`).
+2. **Given** `messages` and `last_active_at` are thread-scoped, **When** a turn starts, **Then** they keep their checkpointed values (today’s behaviour, `turn.py:42-44`).
 3. **Given** a plugin state extension field with no lifetime declared, **When** the graph is built, **Then** startup fails with an error that names the field.
 4. **Given** a workflow whose first step wrote judgment rows and components, **When** the second step starts, **Then** both start empty, and the workflow's own fields (steps, results, visit counts) keep their values.
 
@@ -133,7 +133,7 @@ Each `AgentState` field, including the fields of plugin state extensions, declar
 - **FR-005**: Conductor state (hint, ledger, per-agent delegate counts, total) and procedure invocation state MUST flow from a child run back to the turn through one returned value. Code that copies these fields back from a child context MUST be deleted.
 - **FR-006**: Each `AgentState` field MUST declare its lifetime (turn or thread) and its reset value where it lives. The graph input for a new turn MUST be generated from those declarations.
 - **FR-007**: Plugin state extensions MUST declare field lifetimes the same way. Building the graph MUST fail when an extension field has none.
-- **FR-008**: `compaction_span`, `resume_recap_applied`, `open_items_query`, `loop_offer_ids`, `pre_approved_writes` and `procedure_matches` MUST each be declared, so the generated reset covers them, or they are thread-scoped with a recorded reason.
+- **FR-008**: `resume_recap_applied`, `open_items_query`, `loop_offer_ids` and `pre_approved_writes` MUST each be declared, so the generated reset covers them, or they are thread-scoped with a recorded reason. `AgentState.procedure_matches`, which nothing reads, MUST be deleted (pre-v1 hard cut). (`compaction_span` was cut by phase 198.)
 - **FR-009**: The `getattr(..., default)` guards on `AgentContext` fields in `nodes/execution.py` and `nodes/trace.py` that exist only because the fields might be missing MUST be removed, because the type guarantees the fields.
 - **FR-010**: Behaviour MUST NOT change otherwise, apart from FR-012 (a delegate now gets the timezone and `user_message_id`), FR-013 and FR-014. The existing turn, conductor, write-confirmation, retry and workflow test suites MUST pass unchanged, apart from tests that asserted the old hand copies.
 
