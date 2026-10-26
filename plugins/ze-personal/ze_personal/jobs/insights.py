@@ -7,7 +7,7 @@ from ze_logging import get_logger
 from ze_sdk import parse_llm_json
 from ze_agents.client import LLMClient
 from ze_agents.model_resolution import resolve_model
-from ze_sdk.proactive import ProactiveNotifier
+from ze_sdk.proactive import OncePer, ProactiveNotifier, is_sent
 from ze_agents.settings import Settings
 from ze_sdk.proactive import proactive_job
 from ze_personal.push_kinds import INSIGHT
@@ -168,9 +168,9 @@ class InsightEngine:
                     insight["text"],
                     target_type="insight",
                     target_id=str(row["id"]),
-                    budget_key=f"insight:{row['id']}",
+                    once_per=OncePer(f"insight:{row['id']}"),
                 )
-                if outcome in ("delivered", "held"):
+                if is_sent(outcome):
                     await conn.execute(
                         "UPDATE insights SET pushed = true, pushed_at = NOW() WHERE id = $1",
                         row["id"],

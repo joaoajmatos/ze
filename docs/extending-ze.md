@@ -373,7 +373,9 @@ Background jobs run on a cron schedule and push notifications to the user.
 
 ```python
 # ze_myplugin/jobs/myjob.py
-from ze_sdk.proactive import proactive_job, ProactiveNotifier, PushKind
+from datetime import timedelta
+
+from ze_sdk.proactive import OncePer, ProactiveNotifier, PushKind, proactive_job
 from ze_agents.settings import Settings
 
 # Declare the kind once, at module level. The first argument is the event type.
@@ -399,11 +401,11 @@ class MyJob:
             MY_PLUGIN_INSIGHT,
             title="Weekly summary",
             body=data,
-            budget_key=f"insight:{data.id}",
+            once_per=OncePer(f"insight:{data.id}", within=timedelta(days=7)),
         )
 ```
 
-Pick the class by who asked for the push: `requested` for a reminder the user set, `accountability` for a report the user switched on, and `discretionary` for a nudge Ze chose to send. Only a `discretionary` push needs a `budget_key`.
+Pick the class by who asked for the push: `requested` for a reminder the user set, `accountability` for a report the user switched on, and `discretionary` for a nudge Ze chose to send. A `discretionary` push must pass a `once_per` (`OncePer`). A `requested` push must not. An `accountability` push may pass one. A key that is still inside its window returns `deduped` and sends nothing. The claim holds only when the push is sent or held (`is_sent`).
 
 ### 2. Register in the plugin
 

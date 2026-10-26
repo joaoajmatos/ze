@@ -29,7 +29,7 @@ It also owns accountability: the weekly narrative and cost-anomaly detection tha
 | Module | What it provides |
 |---|---|
 | `goals/` | `GoalStore` protocol + `PostgresGoalStore`, `GoalPlanner`, `GoalExecutor`, `GoalSuggestionStore`, types. `lifecycle.py` holds the one pause, abandon, and resume rule set that the chat tools and the goal screen both use. `learning.py` and `proposal.py` hold goal learnings and their promotion to memory |
-| `workflow/` | `WorkflowStore` protocol + `PostgresWorkflowStore`, `WorkflowPlanner`, `WorkflowScheduler`, `runner.py` (unattended runs that hold on a step needing approval), retry, `failure.py` (the `failure_summary` line), revision summaries, validation, types |
+| `workflow/` | `WorkflowStore` protocol + `PostgresWorkflowStore` (`list_failed_executions` reads the failed runs in a window, for the briefing, accountability and the REST routes), `WorkflowPlanner`, `WorkflowScheduler`, `runner.py` (unattended runs that hold on a step needing approval), retry, `failure.py` (the `failure_summary` line), revision summaries, validation, types |
 | `accountability/` | `AccountabilityStore`, `ActivitySummary` / `AnomalyRecord` types, narrative building |
 | `agents/` | `GoalAgent`, `WorkflowAgent` |
 | `holds/` | `planned.py` (plan-time approval: a step's `approved_writes` lists the irreversible tools it may run, with any arguments; a step edit clears it), `store.py` (`HeldWriteStore` protocol + `PostgresHeldWriteStore`), `resumer.py` (`HeldWriteResumer`: approve, deny, edit, or timeout, then resume the parked run), `types.py` (`HeldWrite`, `HeldWriteStatus`) |
@@ -40,7 +40,7 @@ It also owns accountability: the weekly narrative and cost-anomaly detection tha
 | `workspace_unattended.py` | Workspace gating helpers for unattended runs (no `ze_workspace` import) |
 | `push_kinds.py` | The push kinds for goal, workflow, accountability, and held-write notifications |
 | `screen_resolvers.py` | Screen resolvers for `goal`, `goal_gate`, `workflow`, `workflow_execution`, and `held_write` |
-| `bootstrap.py` | DI wiring — stores, planners, executors, schedulers, jobs |
+| `bootstrap.py` | DI wiring — stores, planners, executors, schedulers, jobs; `make_workflow_failure_handler` sends the workflow failure alert with a `OncePer` per workflow (window `proactive.alerts.workflow_failure_cooldown_hours`) |
 | `rest.py` | Workflow list/detail/execution/revision/cancel handlers, held-write handlers, and the `/status` summary |
 | `migrations/` | `zc006`–`zc009` (goal traces/suggestions/stuck/reuse), `zc011` (workflows), `zc014` (accountability), `zc021`/`zc025`/`zc026` (workflow execution + revisions), `zc030` (goal learning claims), `zc033` (`held_writes`), `zc038` (learning evidence checks) — continues the `ze-core` `zc` migration chain |
 

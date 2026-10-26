@@ -267,7 +267,7 @@ depend on code the earlier waves change.
 | 201 | [Typed Turn Services](phases/201-typed-turn-services/spec.md) | 1 | 200 | 📝 Specified |
 | 202 | [Judgment Surface](phases/202-judgment-surface/spec.md) | 1 | 198 | 📝 Specified |
 | 203 | [Open-Loop Lifecycle](phases/203-open-loop-lifecycle/spec.md) | 1 | 199 | 📝 Specified |
-| 204 | [Push Bar and Cooldowns](phases/204-push-bar-and-cooldowns/spec.md) | 1 | 198 | 📝 Specified |
+| 204 | [Push Bar and Cooldowns](phases/204-push-bar-and-cooldowns/spec.md) | 1 | 198 | ✅ Implemented (`zpro006`, `zpri002`) |
 | 205 | [Web Turn State](phases/205-web-turn-state/spec.md) | 1 | 198 | 📝 Specified |
 | 206 | [Web Query Staleness](phases/206-web-query-staleness/spec.md) | 1 | — | 📝 Specified |
 | 207 | [Conversation Turn Module](phases/207-conversation-turn-module/spec.md) | 2 | 201 | 📝 Specified |

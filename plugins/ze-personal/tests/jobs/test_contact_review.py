@@ -4,6 +4,7 @@ from uuid import uuid4
 from ze_personal.contacts.types import Person, PersonSource
 from ze_personal.jobs.contacts import ContactReviewNotifier
 from ze_personal.push_kinds import CONTACT_REVIEW
+from ze_sdk.proactive import OncePer
 
 
 def _make_person(**kwargs) -> Person:
@@ -131,3 +132,16 @@ async def test_run_omits_classification_when_unknown():
     call = notifier.notify.call_args
     assert "unknown" not in call.args[2]
     assert "Classification:" not in call.args[2]
+
+
+async def test_run_pushes_with_once_per_contact_key():
+    person = _make_person()
+    store = AsyncMock()
+    store.get_pending = AsyncMock(return_value=[(person, [_make_source(person.id)])])
+    notifier = AsyncMock()
+
+    reviewer = ContactReviewNotifier(person_store=store, notifier=notifier)
+    await reviewer.run()
+
+    call = notifier.notify.call_args
+    assert call.kwargs["once_per"] == OncePer(f"contact:{person.id}")

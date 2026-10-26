@@ -253,7 +253,6 @@ def engine_data_domains(pool: asyncpg.Pool) -> list[DataDomain]:
         _engine_domain("routing.log", "routing_log"),
         _engine_domain("messages.store", "messages"),
         _engine_domain("confirmations", "pending_confirmations"),
-        _engine_domain("proactive.log", "push_log"),
         _engine_domain("sessions", "sessions"),
         DataDomain(
             "onboarding",

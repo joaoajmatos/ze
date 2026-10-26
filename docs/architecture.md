@@ -517,6 +517,9 @@ See [docs/ingestion.md](ingestion.md) for the pipeline, extractors, and plugin h
 
 Correlation turns memory and external signals into hypotheses and surfaced
 connections. It can run inline during chat turns and as a proactive background job.
+Its proactive pushes do not send themselves. `CorrelationPushCandidateSource` describes each
+hypothesis as a candidate, and the attention arbitration job screens it through the push bar
+in `ze-priority`.
 
 See [specs/phases/057-correlation-engine/spec.md](../specs/phases/057-correlation-engine/spec.md)
 and [specs/phases/058-inline-correlation/spec.md](../specs/phases/058-inline-correlation/spec.md)
@@ -1177,7 +1180,8 @@ it owns no tables and no revision files.
 | `checkpoints` | LangGraph `AsyncPostgresSaver` graph state — pruned hourly, see [scheduled-jobs.md](scheduled-jobs.md#checkpoint-pruning-hourly) |
 | `workflow_plans` | Persisted multi-step workflow definitions |
 | `workflow_executions` | Per-run state for each workflow |
-| `push_log` | Budget claims for proactive pushes (not outcomes; outcomes are `notifications.delivery`) |
+| `push_log` | Claims for proactive pushes: the `OncePer` cooldowns and the shared daily budget (`zpro006`). Owned by `ze-proactive`. Outcomes are `notifications.delivery`. |
+| `surfacing_memory` | Inline mentions and resume offers the conversation has raised, read by the push bar (`zpri002`). Owned by `ze-priority`. |
 | `calendar_reminders` | Synced calendar events scheduled for reminders |
 | `llm_cost_log` | Per-call token usage and estimated cost |
 | `persona_state` | Single-row table: active profile name + dial overrides (JSONB) |

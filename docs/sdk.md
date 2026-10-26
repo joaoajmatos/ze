@@ -14,7 +14,7 @@ Plugin packages never import `ze-core` directly.
 from ze_sdk import ZePlugin, agent, tool, ToolAccess, ToolReversibility, BaseAgent, get_logger, Settings, DBPool, NLIClient
 from ze_sdk import DataDomain
 from ze_sdk.types import AgentContext, AgentResult, ToolCall, AbortToken, AskDecision, Action, Notification
-from ze_sdk.proactive import ProactiveJob, proactive_job, ProactiveScheduler, ProactiveNotifier, PushKind, PushOutcome, PushLogStore, PushLogEntry
+from ze_sdk.proactive import ProactiveJob, proactive_job, ProactiveScheduler, ProactiveNotifier, PushKind, PushOutcome, OncePer, is_sent
 from ze_sdk.channels import Channel, InboundChannel, ChannelType, ChannelHandle, Message, SentMessage, Thread, ThreadMessage, ChannelSendError
 from ze_sdk.memory import MemoryContext, Fact, Episode, Procedure, Entity, TaskState, RetrievalRequest, MemoryStore, PostgresMemoryStore, PostgresDreamStore, DreamArtifact, DreamJournalEntry, DreamRun, ArtifactType, ArtifactStatus
 from ze_sdk.contribution import Contribution, EvidenceRef, SourceFunction, TargetFace, validate_and_submit, submit_and_detect_collisions
@@ -492,11 +492,11 @@ durable seeds before applying them through deployment adapters. See
 | `ProactiveJob` | Protocol. Set `job_id: str` and implement `async run() -> None`. |
 | `proactive_job` | Class decorator that checks the class defines a `job_id`. It does not register the job. |
 | `ProactiveScheduler` | APScheduler wrapper. Call `register(job, cron)` inside `register_proactive_jobs`, or `add_cron_job(fn, cron, job_id)` for a bare coroutine function. |
-| `ProactiveNotifier` | The one proactive send path. Call `notify(kind, title, body, ...)`; the interruption governor decides delivery. |
+| `ProactiveNotifier` | The one proactive send path. Call `notify(kind, title, body, once_per=..., ...)`; the interruption governor decides delivery. |
 | `PushKind` | A declared kind of push: event type, class (`requested`/`accountability`/`discretionary`), urgency (`low`/`normal`/`high`), source. |
-| `PushOutcome` | What the governor did with a push: `delivered`, `held`, `suppressed_budget`, `duplicate`, `deduped`, `failed`. |
-| `PushLogStore` | Delivery audit log. Persists which notifications have been sent. |
-| `PushLogEntry` | Dataclass for a single log entry. |
+| `OncePer` | The cooldown a push claims: `OncePer(key, within=timedelta(...))` sends the key once per window; `within=None` sends it once ever. A `discretionary` push must pass one; a `requested` push must not. |
+| `is_sent` | `is_sent(outcome)` is true for `delivered` and `held`. Only a sent push keeps its `OncePer` claim. |
+| `PushOutcome` | What the governor did with a push: `delivered`, `held`, `suppressed_budget`, `deduped`, `failed`. |
 | `PushClass`, `Urgency` | The `Literal` types behind `PushKind.push_class` and `PushKind.urgency`. |
 | `NotificationStore` | Store for the notification center rows. |
 

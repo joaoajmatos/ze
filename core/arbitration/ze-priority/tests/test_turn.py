@@ -3,7 +3,9 @@ from __future__ import annotations
 from types import SimpleNamespace
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
+from uuid import UUID, uuid4
+
+import pytest
 
 
 from ze_priority.errors import ZePriorityError
@@ -24,13 +26,32 @@ from tests.factories import make_hypothesis, make_loop, make_stuck_goal
 UTC = timezone.utc
 
 
-def _surfacer(view, graph_store=None, loop_store=None, push_log=None):
+class _Memory:
+    """Fake SurfacingMemory keeping (kind, source_kind, source_id, at) on an injectable clock."""
+
+    def __init__(self) -> None:
+        self.now = datetime(2026, 10, 1, tzinfo=UTC)
+        self.rows: list[tuple[str, str, UUID, datetime]] = []
+
+    async def record(self, kind, source_kind, source_ids):
+        for source_id in source_ids:
+            self.rows.append((kind, source_kind, source_id, self.now))
+
+    async def recorded_within(self, kind, source_kind, source_id, hours):
+        cutoff = self.now - timedelta(hours=hours)
+        return any(
+            (k, sk, sid) == (kind, source_kind, source_id) and at > cutoff
+            for k, sk, sid, at in self.rows
+        )
+
+
+def _surfacer(view, graph_store=None, loop_store=None, memory=None):
     return TurnSurfacing(
         embedder=MagicMock(),
         priority_view=view,
         graph_store=graph_store or AsyncMock(),
         loop_store=loop_store or AsyncMock(),
-        push_log=push_log,
+        memory=memory if memory is not None else _Memory(),
     )
 
 
@@ -194,29 +215,94 @@ async def test_inline_mentions_empty_on_total_rank_failure():
     assert mentions == []
 
 
-async def test_loop_inline_writes_push_log_key():
+async def _inline_with(item, memory):
     entity_id = uuid4()
-    loop = score_loop(make_loop(title="Follow up with Maria"))
-    ranking = _ranking(loop)
     graph_store = AsyncMock()
     graph_store.list_relationships = AsyncMock(
-        return_value=[MagicMock(target_id=loop.source_id, target_type="open_loop")]
+        return_value=[MagicMock(target_id=item.source_id, target_type="open_loop")]
     )
     loop_store = AsyncMock()
-    loop_store.get = AsyncMock(return_value=make_loop(id=loop.source_id))
-    push_log = AsyncMock()
-
-    await _surfacer(
-        _view(ranking),
+    loop_store.get = AsyncMock(return_value=make_loop(id=item.source_id))
+    return await _surfacer(
+        _view(_ranking(item)),
         graph_store=graph_store,
         loop_store=loop_store,
-        push_log=push_log,
-    ).inline_mentions(
-        [entity_id],
-        entities=[_entity(entity_id, "Maria")],
+        memory=memory,
+    ).inline_mentions([entity_id], entities=[_entity(entity_id, "Maria")])
+
+
+async def test_loop_inline_is_recorded_as_inline():
+    loop = score_loop(make_loop(title="Follow up with Maria"))
+    memory = _Memory()
+
+    await _inline_with(loop, memory)
+
+    assert [(k, sk, sid) for k, sk, sid, _ in memory.rows] == [
+        ("inline", "loop", loop.source_id)
+    ]
+
+
+async def test_goal_and_hypothesis_inlines_are_not_recorded():
+    memory = _Memory()
+    goal = score_goal(
+        make_stuck_goal(goal_overrides={"title": "Maria goal"}, idle_days=3)
+    )
+    entity_id = uuid4()
+    hypothesis = score_hypothesis(
+        make_hypothesis(summary="Maria may be on Launch", entities=[entity_id])
     )
 
-    push_log.log.assert_awaited_once_with(f"worldstate_loop_inline:{loop.source_id}")
+    surfacer = _surfacer(_view(_ranking(goal, hypothesis)), memory=memory)
+    mentions = await surfacer.inline_mentions(
+        [entity_id], entities=[_entity(entity_id, "Maria")]
+    )
+
+    assert {m.source_kind for m in mentions} == {"goal", "hypothesis"}
+    assert memory.rows == []
+
+
+async def test_a_failing_record_does_not_lose_the_mentions():
+    loop = score_loop(make_loop(title="Follow up with Maria"))
+    memory = _Memory()
+    memory.record = AsyncMock(side_effect=RuntimeError("db"))
+
+    mentions = await _inline_with(loop, memory)
+
+    assert [m.source_id for m in mentions] == [loop.source_id]
+
+
+async def test_mentioned_inline_within_reads_the_record():
+    loop_id = uuid4()
+    memory = _Memory()
+    surfacer = _surfacer(_view(), memory=memory)
+    assert not await surfacer.mentioned_inline_within("loop", loop_id, 12)
+
+    await memory.record("inline", "loop", [loop_id])
+    assert await surfacer.mentioned_inline_within("loop", loop_id, 12)
+    assert not await surfacer.mentioned_inline_within("loop", uuid4(), 12)
+
+    memory.now += timedelta(hours=13)
+    assert not await surfacer.mentioned_inline_within("loop", loop_id, 12)
+
+
+async def test_an_offer_does_not_count_as_an_inline_mention():
+    loop_id = uuid4()
+    memory = _Memory()
+    await memory.record("offer", "loop", [loop_id])
+
+    assert not await _surfacer(_view(), memory=memory).mentioned_inline_within(
+        "loop", loop_id, 12
+    )
+
+
+def test_memory_is_required():
+    with pytest.raises(TypeError):
+        TurnSurfacing(
+            priority_view=_view(),
+            graph_store=AsyncMock(),
+            loop_store=AsyncMock(),
+            embedder=MagicMock(),
+        )
 
 
 def test_is_global_open_query_delegates_to_the_detector():
@@ -227,6 +313,7 @@ def test_is_global_open_query_delegates_to_the_detector():
         graph_store=AsyncMock(),
         loop_store=AsyncMock(),
         embedder=MagicMock(),
+        memory=_Memory(),
         open_query_detector=detector,
     )
     embedding = object()
@@ -284,25 +371,10 @@ def _suspected(title, *, confidence=0.35, created_days_ago=1, **kw):
     )
 
 
-class _PushLog:
-    """Fake push_log storing (event_type, sent_at) against an injectable clock."""
-
-    def __init__(self) -> None:
-        self.now = datetime(2026, 10, 1, tzinfo=UTC)
-        self.rows: list[tuple[str, datetime]] = []
-
-    async def was_sent_within_hours(self, event_type, hours):
-        cutoff = self.now - timedelta(hours=hours)
-        return any(e == event_type and at > cutoff for e, at in self.rows)
-
-    async def log(self, event_type, payload=None):
-        self.rows.append((event_type, self.now))
-
-
-def _offer_surfacer(loops, push_log):
+def _offer_surfacer(loops, memory):
     loop_store = AsyncMock()
     loop_store.list = AsyncMock(return_value=loops)
-    return _surfacer(_view(), loop_store=loop_store, push_log=push_log), loop_store
+    return _surfacer(_view(), loop_store=loop_store, memory=memory), loop_store
 
 
 async def test_offers_pick_three_ordered_by_confidence_then_recency():
@@ -313,8 +385,8 @@ async def test_offers_pick_three_ordered_by_confidence_then_recency():
         _suspected("mid older", confidence=0.4, created_days_ago=6),
         _suspected("low new", confidence=0.3, created_days_ago=2),
     ]
-    push_log = _PushLog()
-    surfacer, loop_store = _offer_surfacer(loops, push_log)
+    memory = _Memory()
+    surfacer, loop_store = _offer_surfacer(loops, memory)
 
     offers = await surfacer.resume_loop_offers()
 
@@ -322,8 +394,8 @@ async def test_offers_pick_three_ordered_by_confidence_then_recency():
     assert len(offers) == OFFER_LIMIT
     assert all(isinstance(o, LoopOffer) for o in offers)
     loop_store.list.assert_awaited_once_with(states=["suspected"])
-    assert sorted(e for e, _ in push_log.rows) == sorted(
-        f"worldstate_loop_offer:{o.loop_id}" for o in offers
+    assert sorted((k, sk, sid) for k, sk, sid, _ in memory.rows) == sorted(
+        ("offer", "loop", o.loop_id) for o in offers
     )
 
 
@@ -332,7 +404,7 @@ async def test_offers_sort_missing_created_at_last():
         _suspected("undated", created_days_ago=None),
         _suspected("dated", created_days_ago=3),
     ]
-    surfacer, _ = _offer_surfacer(loops, _PushLog())
+    surfacer, _ = _offer_surfacer(loops, _Memory())
 
     offers = await surfacer.resume_loop_offers()
 
@@ -341,39 +413,56 @@ async def test_offers_sort_missing_created_at_last():
 
 async def test_offer_cooldown_skips_and_next_fills_the_slot():
     loops = [_suspected(f"L{i}", confidence=0.5 - i * 0.05) for i in range(4)]
-    push_log = _PushLog()
-    push_log.rows.append((f"worldstate_loop_offer:{loops[0].id}", push_log.now))
-    surfacer, _ = _offer_surfacer(loops, push_log)
+    memory = _Memory()
+    await memory.record("offer", "loop", [loops[0].id])
+    surfacer, _ = _offer_surfacer(loops, memory)
 
     offers = await surfacer.resume_loop_offers()
 
     assert [o.title for o in offers] == ["L1", "L2", "L3"]
 
 
-async def test_offers_empty_without_push_log():
-    surfacer, _ = _offer_surfacer([_suspected("x")], None)
+async def test_an_inline_mention_does_not_cool_an_offer():
+    loop = _suspected("x")
+    memory = _Memory()
+    await memory.record("inline", "loop", [loop.id])
+    surfacer, _ = _offer_surfacer([loop], memory)
+
+    assert [o.title for o in await surfacer.resume_loop_offers()] == ["x"]
+
+
+async def test_a_loop_offered_within_168_hours_is_skipped():
+    loop = _suspected("x")
+    memory = _Memory()
+    await memory.record("offer", "loop", [loop.id])
+    memory.now += timedelta(hours=OFFER_COOLDOWN_HOURS - 1)
+    surfacer, _ = _offer_surfacer([loop], memory)
+
     assert await surfacer.resume_loop_offers() == []
+
+    memory.now += timedelta(hours=2)
+    assert [o.title for o in await surfacer.resume_loop_offers()] == ["x"]
 
 
 async def test_offers_empty_when_list_raises():
-    surfacer, loop_store = _offer_surfacer([], _PushLog())
+    surfacer, loop_store = _offer_surfacer([], _Memory())
     loop_store.list = AsyncMock(side_effect=RuntimeError("db"))
     assert await surfacer.resume_loop_offers() == []
 
 
-async def test_offers_empty_and_nothing_logged_when_cooldown_check_raises():
-    push_log = _PushLog()
-    push_log.was_sent_within_hours = AsyncMock(side_effect=RuntimeError("db"))
-    surfacer, _ = _offer_surfacer([_suspected("x")], push_log)
+async def test_offers_empty_and_nothing_recorded_when_the_read_raises():
+    memory = _Memory()
+    memory.recorded_within = AsyncMock(side_effect=RuntimeError("db"))
+    surfacer, _ = _offer_surfacer([_suspected("x")], memory)
 
     assert await surfacer.resume_loop_offers() == []
-    assert push_log.rows == []
+    assert memory.rows == []
 
 
-async def test_offers_survive_a_failing_log_write():
-    push_log = _PushLog()
-    push_log.log = AsyncMock(side_effect=RuntimeError("db"))
-    surfacer, _ = _offer_surfacer([_suspected("x")], push_log)
+async def test_offers_survive_a_failing_record_write():
+    memory = _Memory()
+    memory.record = AsyncMock(side_effect=RuntimeError("db"))
+    surfacer, _ = _offer_surfacer([_suspected("x")], memory)
 
     offers = await surfacer.resume_loop_offers()
 
@@ -382,14 +471,14 @@ async def test_offers_survive_a_failing_log_write():
 
 async def test_offers_never_repeat_inside_cooldown_over_two_weeks():
     loops = [_suspected(f"L{i}", confidence=0.5 - i * 0.05) for i in range(4)]
-    push_log = _PushLog()
-    surfacer, _ = _offer_surfacer(loops, push_log)
+    memory = _Memory()
+    surfacer, _ = _offer_surfacer(loops, memory)
     offered_on: dict = {loop.id: [] for loop in loops}
 
     for _day in range(14):
         for offer in await surfacer.resume_loop_offers():
-            offered_on[offer.loop_id].append(push_log.now)
-        push_log.now += timedelta(hours=24)
+            offered_on[offer.loop_id].append(memory.now)
+        memory.now += timedelta(hours=24)
 
     cooldown = timedelta(hours=OFFER_COOLDOWN_HOURS)
     for times in offered_on.values():
@@ -403,7 +492,7 @@ async def test_open_query_mentions_list_suspected_loops_as_unconfirmed():
         _suspected("Maybe renew passport", confidence=0.4),
         _suspected("Maybe call Ana", confidence=0.3),
     ]
-    surfacer, loop_store = _offer_surfacer(suspected, _PushLog())
+    surfacer, loop_store = _offer_surfacer(suspected, _Memory())
     surfacer._priority_view = _view(_ranking(ranked))
 
     mentions = await surfacer.open_query_mentions(limit=10)
@@ -424,7 +513,7 @@ async def test_open_query_mentions_respect_the_limit_with_ranked_first():
         score_loop(make_loop(title=f"Ranked {i}", state=LoopState.ACTIVE))
         for i in range(2)
     ]
-    surfacer, _ = _offer_surfacer([_suspected("Suspected")], _PushLog())
+    surfacer, _ = _offer_surfacer([_suspected("Suspected")], _Memory())
     surfacer._priority_view = _view(_ranking(*ranked))
 
     mentions = await surfacer.open_query_mentions(limit=2)
@@ -434,7 +523,7 @@ async def test_open_query_mentions_respect_the_limit_with_ranked_first():
 
 
 async def test_recap_mentions_never_include_suspected_loops():
-    surfacer, loop_store = _offer_surfacer([_suspected("Suspected")], _PushLog())
+    surfacer, loop_store = _offer_surfacer([_suspected("Suspected")], _Memory())
     surfacer._priority_view = _view(
         _ranking(score_loop(make_loop(title="Ranked", state=LoopState.ACTIVE)))
     )
@@ -446,7 +535,7 @@ async def test_recap_mentions_never_include_suspected_loops():
 
 
 async def test_open_query_mentions_keep_ranked_items_when_suspected_listing_fails():
-    surfacer, loop_store = _offer_surfacer([], _PushLog())
+    surfacer, loop_store = _offer_surfacer([], _Memory())
     loop_store.list = AsyncMock(side_effect=RuntimeError("db down"))
     surfacer._priority_view = _view(
         _ranking(score_loop(make_loop(title="Ranked", state=LoopState.ACTIVE)))
@@ -458,7 +547,7 @@ async def test_open_query_mentions_keep_ranked_items_when_suspected_listing_fail
 
 
 async def test_open_query_mentions_list_suspected_when_ranking_fails():
-    surfacer, _ = _offer_surfacer([_suspected("Suspected")], _PushLog())
+    surfacer, _ = _offer_surfacer([_suspected("Suspected")], _Memory())
     surfacer._priority_view = _view(error=ZePriorityError("all failed"))
 
     mentions = await surfacer.open_query_mentions(limit=10)
