@@ -145,6 +145,13 @@ No plugin source changes apart from ze-personal's `workflow.py`. The plugin agen
 | 209 write gate | All write-gate inputs are `ctx.write_gate: WriteGateState`. | `ze_agents/types.py` |
 | 214 unattended step runner | Milestones build their context with `for_unattended`. 214 replaces that call with the turn pipeline. | `goals/executor.py` |
 
+## Other floors with nearby lines
+
+| File | Other floors that edit it | Overlap |
+|---|---|---|
+| `apps/ze-api/ze_api/wiring/container.py` | 203, 204 | Hunks are disjoint. The second floor to land rebases. |
+| `ze_worldstate/bootstrap.py` | 203, 204 | Hunks are disjoint. The second floor to land rebases. |
+
 ## Lane Plan (Maestri crew)
 
 **Contract step** (lane `lead`, lands first, T001–T014): the parts and the regrouped `AgentContext` (`types.py`), `lifetime.py`, `derive.py` complete with its table, the two errors and the `ze_sdk` re-exports, and the lifetime markers on `AgentState` and `WorkflowAgentState` (`state.py` gains `conductor_ledgers`, `procedure_invocations`, the deleted `procedure_matches`, `build_state_type` validation and `with_turn_reset`).
