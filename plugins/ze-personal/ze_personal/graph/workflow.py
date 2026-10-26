@@ -43,7 +43,9 @@ class WorkflowAgentState(TypedDict, total=False):
     (plain conversation turns) remain valid without these keys.
     """
 
-    workflow_id: Annotated[UUID | None, Run("set when the run starts; kept across its steps")]
+    workflow_id: Annotated[
+        UUID | None, Run("set when the run starts; kept across its steps")
+    ]
     workflow_execution_id: Annotated[
         UUID | None, Run("set when the run starts; kept across its steps")
     ]
@@ -56,7 +58,9 @@ class WorkflowAgentState(TypedDict, total=False):
     workflow_step_results: Annotated[
         list, Run("results accumulate across the run's steps")
     ]  # list[StepResult]
-    step_started_at: Annotated[float | None, Run("the current step's clock; set by load")]
+    step_started_at: Annotated[
+        float | None, Run("the current step's clock; set by load")
+    ]
     step_attempt: Annotated[int, Run("retry counter for the current step")]
     from_retry: Annotated[bool, Run("whether the step re-entered through a retry")]
 
@@ -65,7 +69,7 @@ class WorkflowAgentState(TypedDict, total=False):
 
 
 async def load_workflow_step(state: dict[str, Any], config: RunnableConfig) -> dict:
-    """Set prompt to the current step's task and reset all per-step state."""
+    """Set prompt to the current step's task. The graph wraps this node in `with_turn_reset`."""
     scheduler = config["configurable"].get("workflow_scheduler")
     execution_id = state.get("workflow_execution_id")
     if (
@@ -111,20 +115,6 @@ async def load_workflow_step(state: dict[str, Any], config: RunnableConfig) -> d
         "from_retry": False,
         "prompt": step.task,
         "pre_approved_writes": list(step.approved_writes),
-        "envelope": None,
-        "memory_context": None,
-        "agent_context": None,
-        "agent_result": None,
-        "subtask_results": [],
-        "completed_subtask_indexes": [],
-        "final_response": None,
-        "blocked": False,
-        "budget_approved": False,
-        "parked_subtasks": [],
-        "write_confirmation": None,
-        "write_decisions": [],
-        "write_rounds": 0,
-        "write_outcomes": [],
     }
 
 

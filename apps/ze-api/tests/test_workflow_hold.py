@@ -26,6 +26,7 @@ from ze_automation.workflow.runner import WorkflowRunner
 from ze_automation.workflow.scheduler import WorkflowScheduler
 from ze_automation.workflow.types import Workflow, WorkflowStep
 from ze_core.conversation import make_graph_input
+from ze_core.orchestration.state import build_state_type
 from ze_core.routing.types import RoutingEnvelope, SubTask
 
 calls: list[str] = []
@@ -228,7 +229,9 @@ class Harness:
         self.workflow.steps = steps
         return {
             **make_graph_input(
-                RawInput(text="[workflow]"), f"workflow:{self.workflow.id}"
+                RawInput(text="[workflow]"),
+                f"workflow:{self.workflow.id}",
+                build_state_type([_StatePlugin()]),
             ),
             "workflow_id": self.workflow.id,
             "workflow_execution_id": execution_id,

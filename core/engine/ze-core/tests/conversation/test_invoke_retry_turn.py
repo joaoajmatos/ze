@@ -6,6 +6,7 @@ from uuid import uuid4
 import pytest
 
 from ze_agents.errors import RetryFailedError, RetryRewindError
+from ze_core.orchestration.state import AgentState
 from ze_core.conversation import invoke_retry_turn
 
 _OLD = uuid4()
@@ -46,6 +47,7 @@ def _container(output, *, history=None, next_=(), stream_error=None):
     graph.aupdate_state = AsyncMock()
     c = MagicMock()
     c.graph = graph
+    c.state_type = AgentState
     c.interface = None
     c._build_config = lambda tid, **extra: {"configurable": {"thread_id": tid, **extra}}
     return c, graph, seen

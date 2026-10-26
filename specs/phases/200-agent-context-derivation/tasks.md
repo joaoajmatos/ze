@@ -183,21 +183,21 @@ Repo-root paths below:
 
 **Independent Test**: `ZC/tests/conversation/test_make_graph_input.py` plus `ZC/tests/orchestration/test_state_lifetimes.py` (T008).
 
-- [ ] T031 [P] [L:edges] [US3] Extend `ZC/tests/conversation/test_make_graph_input.py` (failing first):
+- [x] T031 [P] [L:edges] [US3] Extend `ZC/tests/conversation/test_make_graph_input.py` (failing first):
   - Every `Turn` key of `AgentState` equals its reset value; every `Input` key comes from the `RawInput`; no `Thread` or `Run` key is present.
   - A `state_type` with an extra `Turn` key gets that key reset.
   - A two-turn graph run (with `write_confirmation_harness.build_graph`) shows that `loop_offer_ids`, `open_items_query`, `resume_recap_applied` and `pre_approved_writes` set in turn 1 start empty in turn 2 (US3 scenario 1, FR-008), and `messages` and `last_active_at` survive (US3 scenario 2).
-- [ ] T032 [L:edges] [US3] `ZC/ze_core/conversation/turn.py`: `make_graph_input(raw, session_id, state_type=AgentState)` returns `{**turn_reset(state_type), **inputs}`. Delete the hand-kept dict and its docstring note about `messages`; keep the docstring's explanation of why `Thread` keys are absent. `make_graph_input_from_raw_text` is unchanged.
-- [ ] T033 [L:edges] [US3] `Container.state_type` (default `AgentState`) in `ZC/ze_core/container.py`, set where the graph is built (`:369`) from `build_state_type(resolved_plugins)`. Set it in `API/ze_api/wiring/container.py` (`:626`). `invoke_raw_turn` and `Container.invoke` pass it to `make_graph_input`. T031 passes.
-- [ ] T034 [P] [L:edges] [US3] Write `API/tests/test_workflow_turn_reset.py` (failing first). Build the workflow graph with stub nodes and run two steps: step 1 writes `judgments`, `components`, `tier` and a conductor ledger; step 2 starts with all four empty, while `workflow_steps`, `workflow_step_results` and `visit_counts` keep their values (US3 scenario 4). The cancel short-circuit still reaches `workflow_cancelled` with the step results.
-- [ ] T035 [L:edges] [US3] `API/ze_api/wiring/workflow_graph.py`:
+- [x] T032 [L:edges] [US3] `ZC/ze_core/conversation/turn.py`: `make_graph_input(raw, session_id, state_type=AgentState)` returns `{**turn_reset(state_type), **inputs}`. Delete the hand-kept dict and its docstring note about `messages`; keep the docstring's explanation of why `Thread` keys are absent. `make_graph_input_from_raw_text` is unchanged.
+- [x] T033 [L:edges] [US3] `Container.state_type` (default `AgentState`) in `ZC/ze_core/container.py`, set where the graph is built (`:369`) from `build_state_type(resolved_plugins)`. Set it in `API/ze_api/wiring/container.py` (`:626`). `invoke_raw_turn` and `Container.invoke` pass it to `make_graph_input`. T031 passes.
+- [x] T034 [P] [L:edges] [US3] Write `API/tests/test_workflow_turn_reset.py` (failing first). Build the workflow graph with stub nodes and run two steps: step 1 writes `judgments`, `components`, `tier` and a conductor ledger; step 2 starts with all four empty, while `workflow_steps`, `workflow_step_results` and `visit_counts` keep their values (US3 scenario 4). The cancel short-circuit still reaches `workflow_cancelled` with the step results.
+- [x] T035 [L:edges] [US3] `API/ze_api/wiring/workflow_graph.py`:
   - Register the node as `add_timed_node(builder, "load_workflow_step", with_turn_reset(load_workflow_step, state_type))`.
   - `begin_workflow_turn(workflow, *, state_type)` passes it to `make_graph_input`.
   - In `API/ze_api/wiring/container.py` (`:766`), inject `functools.partial(begin_workflow_turn, state_type=…)`. `ze_automation/bootstrap.py` does not change (research R10).
-- [ ] T036 [L:edges] [US3] `ZP/ze_personal/graph/workflow.py`: `load_workflow_step` returns only its step keys (`steps_by_id`, `current_step_id`, `visit_counts`, `step_started_at`, `step_attempt`, `from_retry`, `prompt`, `pre_approved_writes`); delete the 14 hand-reset keys and update the docstring (FR-014). Update the assertions in `ZP/tests/graph/test_workflow.py` that pinned the reset keys. T034 passes.
-- [ ] T037 [L:edges] [US3] Update `API/tests/test_workflow_hold.py` and `API/tests/test_workflow_graph_timed.py` for `begin_workflow_turn`'s new argument and the wrapped node.
-- [ ] T038 [L:edges] [US3] Run the US1 and US3 regression: `make test-agents test-core test-automation test-personal test` green.
-- [ ] T039 [L:edges] Edges lane gate: request review from Vigil on the lane range.
+- [x] T036 [L:edges] [US3] `ZP/ze_personal/graph/workflow.py`: `load_workflow_step` returns only its step keys (`steps_by_id`, `current_step_id`, `visit_counts`, `step_started_at`, `step_attempt`, `from_retry`, `prompt`, `pre_approved_writes`); delete the 14 hand-reset keys and update the docstring (FR-014). Update the assertions in `ZP/tests/graph/test_workflow.py` that pinned the reset keys. T034 passes.
+- [x] T037 [L:edges] [US3] Update `API/tests/test_workflow_hold.py` and `API/tests/test_workflow_graph_timed.py` for `begin_workflow_turn`'s new argument and the wrapped node.
+- [x] T038 [L:edges] [US3] Run the US1 and US3 regression: `make test-agents test-core test-automation test-personal test` green.
+- [x] T039 [L:edges] Edges lane gate: request review from Vigil on the lane range.
 
 **Checkpoint**: all three stories are done.
 
