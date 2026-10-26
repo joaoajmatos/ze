@@ -39,7 +39,7 @@ No database change and no migration. Every type here is an in-process dataclass.
 | `result` | `SystemOneResult` | The raw result; a raised call is `SystemOneResult(outcome="skip", skip_reason="error")` |
 | `question_kinds` | `dict[str, QuestionKind]` | Every question asked, in the order asked |
 | `consumed` | `frozenset[str]` | From `DecisionUse` |
-| `skip_reason` | `str \| None` | `result.skip_reason or "error"` when `result.outcome == "skip"`, else `DecisionUse.unused_reason` (FR-007) |
+| `skip_reason` | `str \| None` | `"error"` when the call raised; else `result.skip_reason` when `result.outcome == "skip"` (no reason stays `None`); else `DecisionUse.unused_reason` (FR-007) |
 | `bars` | `dict[str, SurfaceBar \| None]` | One entry per question id in `question_kinds`, from `cfg.bar_for` |
 
 A surface that was not asked (disabled, uncalibrated, no client, or a surface-specific precondition) has no record.

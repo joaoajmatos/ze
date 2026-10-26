@@ -44,7 +44,7 @@ def reset_surface_warnings() -> None: ...   # tests only
 2. Any exception → log `system_one_judgment_error` (`surface`, `error`) at warning, and use `SystemOneResult(outcome="skip", skip_reason="error")`.
 3. `decision = decide(result)`; `use = read(decision)`.
 4. Return `Judgment(surface=cfg.SURFACE, result=result, question_kinds={qid: q.type ...}, consumed=use.consumed, skip_reason=..., bars={qid: cfg.bar_for(qid) ...})` and `decision`.
-   `skip_reason` is `result.skip_reason or "error"` when `result.outcome == "skip"`, else `use.unused_reason`.
+   `skip_reason` is `"error"` when step 2 caught an exception; else `result.skip_reason` when `result.outcome == "skip"` (a skip with no reason stays `None`, as `judgments_from_result` does today); else `use.unused_reason`.
 
 `judge()` never raises unless `decide` or `read` raises; every existing `decide()` is total.
 

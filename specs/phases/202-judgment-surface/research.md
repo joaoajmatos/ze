@@ -45,7 +45,7 @@ All facts below were checked against main at `5426cce1` on 2026-10-26. No item i
 
 ## R5. The one meaning of `skip_reason` (FR-007)
 
-- **Decision**: `Judgment.skip_reason` is `result.skip_reason or "error"` when `result.outcome == "skip"`, else `read(decision).unused_reason`. The trace-row rule is unchanged: a skip result gives one row per question with that reason; an ok result gives one row per question, carrying the reason, and a missing answer gives its own skip row.
+- **Decision**: `Judgment.skip_reason` is `"error"` when `judge()` caught an exception; else `result.skip_reason` when `result.outcome == "skip"` (a skip with no reason stays `None`; real clients always set one); else `read(decision).unused_reason`. The trace-row rule is unchanged: a skip result gives one row per question with that reason; an ok result gives one row per question, carrying the reason, and a missing answer gives its own skip row.
 - **Effect per surface**: routing, skills and complexity rows are the same as today. Intake rows on an exception are new (FR-006). Loop gate and corroboration log lines are the same except that an exception now logs the record (R10).
 - **Spec fix**: the spec's FR-007 example listed `abstain` as a skip reason. Routing's `abstain` is a Choice held under `choice_trust`, so it is "held under a bar" and has no skip reason, as today. The spec example is corrected.
 
@@ -79,7 +79,7 @@ All facts below were checked against main at `5426cce1` on 2026-10-26. No item i
 
 ## R11. The dead `fact_judge` path
 
-- **Decision**: delete `write_memory`'s non-intake judgment branch (`nodes/memory.py:182-193`) and `FactAdmission.judgment`, `question_ids`, `consumed` and `skip_reason`. `intake.py` stops setting them (`intake.py:216`, `262-265`, `306-308`). Delete `test_fact_fallback_rows_have_fact_judge_surface_and_no_bar` (`test_judgment_bars.py:349`).
+- **Decision**: delete `write_memory`'s non-intake judgment branch (the non-intake branch of `write_memory`, at `nodes/memory.py:182-193` on `5426cce1`) and `FactAdmission.judgment`, `question_ids`, `consumed` and `skip_reason`. `intake.py` stops setting them, in `CommitmentIntake._fallback` and `_apply` (`intake.py:216`, `262-265`, `306-308` on `5426cce1`). Delete `test_fact_fallback_rows_have_fact_judge_surface_and_no_bar` (`test_judgment_bars.py:349`).
 - **Rationale**: `gather_fact_proposals` returns `FactAdmission(path="none")` or `FactAdmission(facts=..., path="haiku")` only (`extractor.py:449`, `467`). No production code reads the four fields (grep, 2026-10-26). User decision, Clarifications 2026-10-26.
 
 ## R12. Complexity
