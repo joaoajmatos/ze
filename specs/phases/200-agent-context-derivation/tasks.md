@@ -212,16 +212,16 @@ Repo-root paths below:
   - Record the results in "200 Handoffs".
 - [x] T042 [L:lead] Run `graphify update .`, then `graphify affected AgentContext --depth 1`, and confirm no new construction site. Save the outcome with `graphify save-result ... --memory-dir /Users/joaoamatos/coding/ze/graphify-out/memory`.
 - [ ] T043 [L:lead] After the docs lane: tick every task, set `spec.md` Status to Implemented, and run the after_implement hook (`speckit-process-after-implement`). The `AGENTS.md` and `specs/README.md` rows belong to `docs` (T045).
-- [ ] T044 [P] [L:docs] Public docs, following the `doc-style` skill:
+- [x] T044 [P] [L:docs] Public docs, following the `doc-style` skill:
   - `docs/architecture.md`: replace "Graph input factory" with how lifetimes generate the turn input and the workflow step reset; add an "Agent context derivation" subsection (one owner, four kinds, a delegate's inheritance, one outcome per child run).
   - `docs/sdk.md`: the `AgentContext` table gets `write_gate`, `conductor` and `procedure_invocation`; the `state_extensions()` row says every field needs a `Turn`/`Input`/`Thread`/`Run` marker from `ze_sdk.types` or startup fails; list the new `ze_sdk.types` exports and `UndeclaredLifetimeError`.
   - `docs/workflows.md`: line 86, where each step resets turn state through the engine's generated reset.
-- [ ] T045 [P] [L:docs] Package READMEs and indexes:
+- [x] T045 [P] [L:docs] Package READMEs and indexes:
   - `core/contracts/ze-agents/README.md`: module rows for `derive.py` and `lifetime.py`.
   - `packages/ze-sdk/README.md`: the `types.py` row names the lifetime markers.
   - `AGENTS.md`: layout rows for `derive.py`, `lifetime.py` and `ze_core/orchestration/child_runs.py`, and the phase 200 row, set to Implemented.
   - `specs/README.md`: the 200 row, set to Implemented.
-- [ ] T046 [L:docs] Docs coverage check:
+- [x] T046 [L:docs] Docs coverage check:
   - `git diff main...HEAD --stat` and `git diff main...HEAD -- '*.py' | rg '^\+(def|class) '`. Every renamed or new public symbol (`for_*`, `Turn`/`Input`/`Thread`/`Run`, `WriteGateState`, `ConductorState`, `ProcedureInvocation`, `conductor_ledgers`, `make_graph_input(state_type)`, `begin_workflow_turn(state_type)`) is described in a touched doc, or the docs lane notes why no public doc mentions it.
   - `rg -n "conductor_ledger\b|procedure_invocation_id|pre_approved_writes|write_decisions|AgentState.procedure_matches" docs README.md core/*/*/README.md packages/*/README.md` finds no stale mention.
 

@@ -23,7 +23,7 @@ Every plugin's `pyproject.toml` lists `ze-sdk`. A plugin may also depend on othe
 | Module | What it provides |
 |---|---|
 | `__init__.py` | `ZePlugin`, `DataDomain`, `@agent`, `@tool`, `BaseAgent`, `Settings`, `DBPool`, `get_logger` |
-| `types.py` | Shared SDK types |
+| `types.py` | Shared SDK types, including the lifetime markers (`Turn`, `Input`, `Thread`, `Run`) that declare each `state_extensions()` field's lifetime |
 | `undo_payload` | In `__init__.py`. Builds the undo data that a `REVERSIBLE` tool returns under the `undo` key |
 | `errors.py` | Plugin-facing error re-exports |
 | `proactive.py` | `ProactiveJob`, `ProactiveScheduler`, `ProactiveNotifier`, `PushKind`, `PushOutcome`, `PushLogStore` |

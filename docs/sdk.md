@@ -105,6 +105,9 @@ Passed to every `BaseAgent.run()` call. Contains everything the agent needs for 
 | `extensions` | `dict[str, ...]` | Arbitrary msgpack-serializable data (e.g. `goal_id`). |
 | `timezone` | `str` | IANA timezone name for the current-time line in the prompt. Defaults to `UTC`; the graph sets it from the configured timezone (`timezone` in `config.yaml`, then `TIMEZONE`). |
 | `sources` | `list[Source]` | Web citations collected while the agent runs. |
+| `write_gate` | `WriteGateState` | Write-confirmation and Retry state that the write gates read: the saved loop to resume, the decisions, the pre-approved calls and the round. Run-local. |
+| `conductor` | `ConductorState` | The conductor's state for this run: the hint, this run's ledger, the shared delegate tally and the deadline. Run-local. |
+| `procedure_invocation` | `ProcedureInvocation \| None` | The procedure this run invoked. Its `tool_names` only narrow the agent's tools. |
 
 The context also carries runtime-only fields: `identity_builder`, `abort_token`, `memory_store`, `embed_fn`, `token_sink`, `tool_sink`, `script_runner`, and the screen, recap, skill, procedure and write-confirmation notes the graph sets. Never checkpoint a context where they are set.
 
@@ -412,13 +415,38 @@ Override only the hooks your plugin needs. All methods have no-op defaults. Set 
 
 | Method | Signature | Purpose |
 |--------|-----------|---------|
-| `state_extensions()` | `-> type \| None` | A plain `TypedDict` (`total=False`) whose fields are merged into `AgentState`. Do not subclass `AgentState`; the engine adds it. |
+| `state_extensions()` | `-> type \| None` | A plain `TypedDict` (`total=False`) whose fields are merged into `AgentState`. Every field needs a lifetime marker from `ze_sdk.types` (`Turn`, `Input`, `Thread` or `Run`). A field with no marker raises `UndeclaredLifetimeError`, and graph build fails at startup. Do not subclass `AgentState`; the engine adds it. See [Lifetime markers](#lifetime-markers). |
 | `checkpoint_serde_modules()` | `-> tuple[str, ...]` | `types.py` module paths scanned for checkpoint-serializable dataclasses/enums. |
 | `memory_policies()` | `-> dict[str, Any]` | Agent name → retrieval policy for this plugin's agents. |
 | `pre_route_node()` | `-> Callable \| None` | An async graph node inserted between preprocess and embed_route. |
 | `graph_nodes()` | `-> dict[str, Callable]` | Additional LangGraph nodes keyed by node name. Write them async: the turn timer calls a sync node inline on the event loop. |
 | `graph_edges(builder)` | `-> None` | Wire plugin nodes into the graph at build time. |
 | `configurable_services()` | `-> dict[str, Any]` | Services injected into `config["configurable"]` every turn. |
+
+### Lifetime markers
+
+Import the markers from `ze_sdk.types`. Annotate each `state_extensions()` field with one of them:
+
+| Marker | Meaning |
+|--------|---------|
+| `Turn(reset=...)` or `Turn(factory=list)` | Reset at every turn and every workflow step. Pass an immutable `reset`, or a `factory` for a list or dict. |
+| `Input()` | Supplied by whoever starts the turn. The reset leaves it alone. |
+| `Thread("reason")` | Kept across turns. The reason is required. |
+| `Run("reason")` | Kept across the steps of one workflow run. The reason is required. |
+
+```python
+from typing import Annotated, TypedDict
+
+from ze_sdk.types import Run, Turn
+
+
+class MyState(TypedDict, total=False):
+    pending_note: Annotated[str | None, Turn()]
+    step_notes: Annotated[list[str], Turn(factory=list)]
+    review_count: Annotated[int, Run("counts reviews across the steps of one run")]
+```
+
+`ze_sdk.types` also exports `ConductorState`, `DelegateTally`, `ProcedureInvocation` and `WriteGateState`. These are the typed values that `AgentContext` carries as one field each.
 
 ### Lifecycle hooks
 
@@ -580,6 +608,7 @@ Always raise a typed `ZeCoreError` subclass. Never raise bare `Exception` or `Va
 | `AgentAbortedError` | Agent loop was cancelled via `AbortToken`. |
 | `AgentConfigError` | Misconfiguration detected at startup (missing type hints, unregistered tool). |
 | `ChannelSendError` | Channel `send()` failed. |
+| `UndeclaredLifetimeError` | A graph-state field has no lifetime marker. Graph build fails at startup. |
 
 The module also exports the rest of the hierarchy, such as `AgentTimeoutError`, `UnknownToolError`, `GoalError`, `WorkflowError`, `LLMJsonParseError` and `UiActionRefusedError`.
 

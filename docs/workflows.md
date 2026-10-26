@@ -83,7 +83,10 @@ For a workflow with N steps, the graph runs through the following loop for each 
 
 <sub>[Interactive version](diagrams/docs/workflow-graph.html)</sub>
 
-`load_workflow_step` resets per-step state and sets `prompt` to the step's task.
+Each step starts from the engine's generated reset. The step loader runs under `with_turn_reset`,
+which applies the same `Turn` reset that a conversation turn gets. The `Run` fields, such as the
+step results and visit counts, carry across the steps. `load_workflow_step` then sets `prompt` to
+the step's task.
 The graph then routes normally — `embed_route` picks the right agent, memory is
 injected, and irreversible writes still ask first — exactly as if the user had typed the task.
 
