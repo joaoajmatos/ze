@@ -274,3 +274,27 @@ def test_land_post_rejects_an_empty_or_partial_receipt(world):
         for g in ("lint", "test-py", "test-web", "typecheck-web", "lint-web")
     ]
     assert "not green" not in run_post(full).stderr
+
+
+def test_ok_archives_floor_and_lane_records_to_ground(world, tmp_path):
+    ground, floor = world
+    (floor / ".gitignore").write_text(".process/\n")
+    git(floor, "add", ".gitignore")
+    git(floor, "commit", "-q", "-m", "ignore")
+    ready_floor(floor)
+    lane = tmp_path / "lane"
+    git(ground, "worktree", "add", "-q", "-b", "feat-lane-x", str(lane), "feat")
+    make_review(lane, "a" * 40, "b" * 40, verdict="CHANGES", name="lane-round")
+    p = run(floor)
+    assert p.returncode == 0, p.stdout
+    dest = ground / "journal" / "metrics" / "feat"
+    reviews = sorted(f.name for f in (dest / "reviews").glob("*.json"))
+    assert "lane-round.json" in reviews and len(reviews) == 2
+    assert len(list((dest / "receipts").glob("*.json"))) == 1
+
+
+def test_failed_preflight_archives_nothing(world):
+    ground, floor = world
+    p = run(floor)
+    assert p.returncode == 1
+    assert not (ground / "journal" / "metrics").exists()
