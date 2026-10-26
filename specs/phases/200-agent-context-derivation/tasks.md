@@ -171,7 +171,7 @@ Repo-root paths below:
 - [x] T025 [L:engine] [US2] Run the grep gate:
   - `rg -n 'getattr\((ctx|base_ctx|agent_context), "' ZC/ze_core/orchestration/nodes/{execution,trace}.py` finds no `AgentContext` field (FR-009).
   - `rg -n "_sync_procedure_invocation|base_ctx\.conductor|conductor_delegate_total = " core` finds nothing (FR-005).
-- [ ] T026 [L:engine] [US2] Engine lane gate: `make test-core test-agents` green. Request review from Vigil on the lane range.
+- [x] T026 [L:engine] [US2] Engine lane gate: `make test-core test-agents` green. Request review from Vigil on the lane range.
 
 **Checkpoint**: US2 is done when T018–T026 are green.
 
