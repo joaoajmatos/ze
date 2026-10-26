@@ -119,6 +119,29 @@ async def test_insights_generates_and_pushes():
     conn.execute.assert_awaited_once()
 
 
+async def test_insights_skips_pushed_update_when_notify_fails():
+    conn = make_conn()
+    conn.fetch = AsyncMock(
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=_profile_facets(),
+        )
+    )
+    conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
+
+    client = AsyncMock()
+    client.complete = AsyncMock(return_value=_insight_json())
+    notifier = make_notifier()
+    notifier.notify = AsyncMock(return_value="failed")
+
+    engine, _ = make_engine(conn=conn, notifier=notifier, client=client)
+    await engine.run()
+
+    notifier.notify.assert_awaited_once()
+    conn.execute.assert_not_awaited()
+
+
 async def test_insights_calls_complete_with_messages_not_prompt():
     conn = make_conn()
     conn.fetch = AsyncMock(
