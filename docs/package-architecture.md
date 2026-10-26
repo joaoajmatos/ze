@@ -52,7 +52,7 @@ Hard rules:
 - `ze-agents` depends only on `ze-logging` plus third-party utilities — it is the stable agent/plugin API foundation.
 - `ze-onboarding` depends on `ze-agents`, `ze-memory`, and `ze-plugin` — it owns the setup-flow domain, not a dependency-free leaf.
 - `ze-data` stays free of application wiring; `ze-plugin` depends on `ze-agents`, `ze-logging`, `ze-data`, and `ze-communication`. Together they own the reusable extension and portability seams.
-- `ze-core` never imports from domain packages. It depends on `ze-agents` and `ze-plugin` for shared engine-facing types.
+- `ze-core` never imports from domain packages. It depends on `ze-agents`, `ze-communication`, `ze-components`, `ze-data`, `ze-logging`, `ze-memory` and `ze-plugin`.
 - Plugin packages (`ze-personal`, `ze-messenger`, etc.) never import `ze-core` directly — use `ze-sdk`.
 - `ze-memory`, `ze-automation`, and `ze-personal` never import from `ze-api`. Violations break the abstraction.
 
@@ -106,21 +106,23 @@ Depends on `ze-agents`, `ze-data`, and `ze-logging`.
 
 ## ze-sdk — Public SDK Surface
 
-`ze_sdk` is a flat re-export layer over `ze-agents`, `ze-proactive`, `ze-memory`,
-`ze-onboarding`, `ze-plugin`, `ze-data`, and `ze-automation`.
-Plugin authors list `ze-sdk` as their only Ze dependency and import everything from it.
-`ze-core` never appears in a plugin's dependency list.
+`ze_sdk` is a flat re-export layer over `ze-agents`, `ze-automation`, `ze-collision`, `ze-communication`, `ze-correlation`, `ze-data`, `ze-logging`, `ze-memory`, `ze-onboarding`, `ze-plugin` and `ze-proactive`. Plugin code imports Ze types from `ze-sdk`. A plugin may also depend on other plugins or integrations (for example `ze-google` or `ze-personal`), but `ze-core` never appears in a plugin's dependency list.
 
 | Module | What it re-exports |
 |--------|-----------------|
 | `ze_sdk` | `ZePlugin`, `agent`, `tool`, `ToolAccess`, `BaseAgent`, `get_logger`, `Settings`, `DBPool` |
-| `ze_sdk.types` | `AgentContext`, `AgentResult`, `ToolCall`, `AbortToken`, `Action`, `Notification` |
+| `ze_sdk.types` | `AgentContext`, `AgentResult`, `ToolCall`, `AbortToken`, `Source`, `AskDecision`, `Action`, `Notification` |
 | `ze_sdk.proactive` | `ProactiveJob`, `proactive_job`, `ProactiveScheduler`, `ProactiveNotifier`, `PushKind`, `PushOutcome`, `PushLogStore`, `PushLogEntry` |
 | `ze_sdk.channels` | `Channel`, `ChannelType`, `ChannelHandle`, `Message`, `SentMessage`, `Thread`, `ThreadMessage`, `ChannelSendError` |
 | `ze_sdk.memory` | `MemoryContext`, `Fact`, `Episode`, `Procedure`, `Entity`, `TaskState`, `RetrievalRequest`, `MemoryStore`, `PostgresMemoryStore` |
 | `ze_sdk.onboarding` | `OnboardingProvider`, `OnboardingStep`, `OnboardingField`, `OnboardingSeed`, `OnboardingResult`, setup seed and submission types |
 | `ze_sdk.automation` | `Goal`, `GoalStatus`, `GoalStore`, `GoalSuggestionStore`, `Workflow`, `WorkflowStep`, `WorkflowStore`, `WorkflowScheduler`, `AutomationPlanner`, `AutomationStore` |
-| `ze_sdk.errors` | Full `ZeError` hierarchy |
+| `ze_sdk.errors` | The error hierarchy, rooted at `ZeCoreError` |
+| `ze_sdk.contribution` | Contribution seam types and `validate_and_submit` |
+| `ze_sdk.correlation` | Signal and hypothesis types for correlation |
+| `ze_sdk.screen` | Screen-context contract: `ScreenResolver`, `ScreenRef`, `ScreenLine`, `sanitize_text` |
+| `ze_sdk.ui` | `UiContribution`, `ModuleResult`, `ModuleSubject`, `request_module_refresh`, `validate_plugin_tree` |
+| `ze_sdk.api` | `require_api_key` for plugin REST routes |
 
 ---
 
@@ -148,8 +150,7 @@ removed in phase 194.
 ## ze-core — Engine
 
 `ze_core` owns the LangGraph engine, routing infrastructure, telemetry, and DI
-container. It depends on `ze-agents` for the developer API types but never on domain
-packages. Plugin authors never import `ze_core` directly — use `ze_sdk` instead.
+container. It depends on `ze-agents`, `ze-communication`, `ze-components`, `ze-data`, `ze-logging`, `ze-memory` and `ze-plugin`, but never on domain packages. Plugin authors never import `ze_core` directly — use `ze_sdk` instead.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -179,8 +180,12 @@ the integration protocol shared by engine and plugin code. It depends on `ze-age
 
 | Module | What it provides |
 |--------|-----------------|
-| `plugin.py` | `ZePlugin`, `DataDomain` re-export for backwards compatibility |
-| `channels/` | `Channel` ABC, handle/message types, `ChannelRegistry` |
+| `plugin.py` | `ZePlugin` ABC, with the `DataDomain` type from `ze-data` |
+| `registry.py` | The plugin registry (`get_plugin_registry`) |
+| `bootstrap.py` | Plugin discovery, DI resolution, `build_integrations()` |
+| `ui.py`, `ui_validate.py` | `UiContribution` (modules, presets, settings sections) and primitive-tree validation |
+| `webhook.py` | `WebhookHandler` protocol for plugins that receive non-channel webhooks |
+| `api_auth.py` | `require_api_key` dependency for plugin REST routes |
 | `contribution.py` | `Contribution`, `validate_and_submit`, and the claim-kind license table per source function |
 | `signals.py` | `SignalSource` protocol for cross-plugin signal collection |
 | `integration.py` | `ZeIntegration` protocol for third-party credential classes |
@@ -303,8 +308,7 @@ imported in `ze-api`'s container alongside plugin paths from `ZePlugin.agent_mod
 ## ze-personal — Domain Layer
 
 `ze_personal` owns persona, contacts, and onboarding — the parts of the personal
-assistant that are specific to this user's identity and social graph. It depends on
-`ze-sdk` and knows nothing about Google APIs or HTTP. Goals, workflows, and
+assistant that are specific to this user's identity and social graph. It depends on `ze-sdk`, `ze-automation`, `ze-components`, `ze-news`, `ze-priority` and `ze-seed`, and knows nothing about Google APIs or HTTP. Goals, workflows, and
 accountability live in `ze-automation`, not here.
 
 | Module | What it provides |
@@ -357,8 +361,7 @@ campaign recovery. It depends on `ze-sdk`, `ze-browser`, and `ze-personal`.
 
 ## ze-calendar — Calendar Domain
 
-`ze_calendar` owns the calendar and reminders domain. It depends on `ze-sdk`,
-`ze-google` (for credentials), and `ze-personal`.
+`ze_calendar` owns the calendar and reminders domain. It depends on `ze-sdk`, `ze-components`, `ze-google` (for credentials), `ze-personal` and `ze-seed`.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -375,8 +378,7 @@ campaign recovery. It depends on `ze-sdk`, `ze-browser`, and `ze-personal`.
 
 ## ze-google — Shared Google Credentials
 
-`ze_google` provides a thin credential layer. It has no Ze dependencies and can be
-imported by any package that needs Google OAuth2.
+`ze_google` provides a thin credential layer. It depends on `ze-agents` and `ze-communication` and can be imported by any package that needs Google OAuth2.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -398,16 +400,18 @@ dependencies and is consumed by `ze-finance`.
 ## ze-news — News Package
 
 `ze_news` owns news ingestion, personalized ranking, and credibility analysis.
-Depends on `ze-sdk` only.
+Depends on `ze-sdk` and `ze-components`.
 
 | Module | What it provides |
 |--------|-----------------|
-| `agents/news/` | `NewsAgent` — headlines and search tools |
+| `agents/` | `NewsAgent` — headlines and search tools |
 | `jobs/fetch.py` | `NewsFetchJob` — RSS ingestion and embedding |
 | `store.py` | `NewsStore` — article persistence + pgvector search |
 | `registry.py` | `build_registry()` — source registry from config |
 | `credibility.py` | LLM-based article credibility scoring |
-| `personalization.py` | Interest-vector-based ranking |
+| `preferences.py` | `NewsPreferenceBuilder` — weighted preferences from memory facts, used for ranking |
+| `onboarding.py` | The "Tune your news" onboarding form |
+| `signals.py`, `screen_resolvers.py`, `ui/` | Signal source, screen resolver, and UI contributions |
 | `plugin.py` | `NewsPlugin(ZePlugin)` — registers agent, conditionally loaded |
 
 ---
@@ -415,8 +419,7 @@ Depends on `ze-sdk` only.
 ## ze-finance — Finance Domain
 
 `ze_finance` owns portfolio positions, bank transactions, spending summaries,
-recurring detection, and proactive P&L alerts. It depends on `ze-sdk` and
-`ze-trading212`, and pins its finance-specific LLM calls to Anthropic via
+recurring detection with proactive nudges. It depends on `ze-sdk`, `ze-ingestion` and `ze-trading212`, and pins its finance-specific LLM calls to Anthropic via
 OpenRouter.
 
 | Module | What it provides |
@@ -514,9 +517,10 @@ inside message frames. It depends on `ze-agents` and `ze-logging`. `ze-priority`
 
 | Module | What it provides |
 |--------|-----------------|
-| `types.py` | Component descriptor dataclasses |
+| `atoms/`, `molecules/` | `text`, `badge`, `divider`, `spacer`, `button`, `col`, `row` primitives and their builders |
 | `claims.py` | `ClaimPosture`, `Readout`, `CardAction`, `TimelineEntry` |
-| `organisms/` | The `headline`, `claim_card`, and `claim_timeline` primitives |
+| `organisms/` | The structured and claim primitives (`table`, `form`, `chart`, `stat_row`, `card`, `claim_card` and more) |
+| `patterns/` | Builders that compose primitives (`confirm`, `metric`, `list`, `timeline` and more) |
 | `tools.py` | `@tool`-registered render helpers (imported at startup for side effects) |
 
 ---
@@ -524,8 +528,7 @@ inside message frames. It depends on `ze-agents` and `ze-logging`. `ze-priority`
 ## ze-api — Application Shell
 
 `ze_api` is the runnable deployment unit. It contains **no domain agents or jobs** —
-only wiring, transport, and configuration. It depends on all Ze packages and registers
-their `ZePlugin` implementations.
+only wiring, transport, and configuration. It depends on every Ze package except `ze-sdk`, `ze-eval` and `ze-trading212`, and registers their `ZePlugin` implementations.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -533,7 +536,7 @@ their `ZePlugin` implementations.
 | `interface/native.py` | `NativeAppInterface` — WebSocket + ntfy delivery |
 | `wiring/container.py` | `ZeContainer` — composition entry; subclasses `ze_core.Container` |
 | `wiring/jobs.py` | `register_all_proactive_jobs()` — core + plugin cron registration |
-| `migrate.py` | Meta-migrator — discovers all package migration paths; ze-api owns no tables |
+| `cli/migrate.py` | Meta-migrator — discovers all package migration paths; ze-api owns no tables |
 | `settings.py` | `ZeApiSettings` — shell env + YAML; `to_core_settings()` bridge |
 | `migrations/env.py` | Alembic runner harness (no owned revision files) |
 
@@ -664,7 +667,7 @@ Agent-scoped deps can be contributed via `agent_deps()` without touching the con
 | New job scheduling primitive | `ze-proactive` (re-export from `ze_sdk.proactive`) |
 | New onboarding step/seed type, provider contract, or coordinator behavior | `ze-onboarding` (re-export from `ze_sdk.onboarding`) |
 | New engine primitive (routing, graph node, telemetry) | `ze-core` |
-| New memory retrieval policy for a plugin agent | plugin `memory_policies()` hook — not `ze-memory/policies.py` |
+| New memory retrieval policy for a plugin agent | plugin `memory_policies()` hook — not `ze_memory/policies.py` |
 | New domain concept tied to personal assistant | `ze-personal` |
 | New automation concept (goals, workflows, execution) | `ze-automation` |
 | New Google integration credential | `ze-google` |
@@ -676,7 +679,7 @@ Agent-scoped deps can be contributed via `agent_deps()` without touching the con
 | New background job (automation: goals, workflows, costs) | `ze-automation` → `ze_automation/jobs/` |
 | New background job (personal assistant: briefing, insights) | `ze-personal` → `ze_personal/jobs/` + `PersonalPlugin.register_proactive_jobs()` |
 | New background job (prospecting) | `ze-prospecting` → `ze_prospecting/jobs/` + `ProspectingPlugin.register_proactive_jobs()` |
-| New channel implementation (LinkedIn, WhatsApp) | New package or existing domain package → `channel/` module |
+| New channel implementation (LinkedIn, WhatsApp) | New package or existing domain package → a module that subclasses `Channel` or `InboundChannel` |
 | New push notification backend | `ze-notifications` |
 | New server-driven UI component | `ze-components` |
 | Headless browser interaction | `ze-browser` |

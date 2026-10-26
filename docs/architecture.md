@@ -769,9 +769,9 @@ itself is never stored on the trace.
 calls a lightweight vision model (`models.vision_caption` in config, defaults to
 `google/gemini-flash-1.5`) to generate a short description used for routing.
 
-**Vision-capable agents** — agents with `vision_capable = True` receive a
-`ChatContentImage` content block alongside the text prompt. Agents without the flag
-receive only the routing caption as text.
+**Image delivery** — when a photo is present, the chosen agent gets a user message that holds
+the image (as a base64 `image_url` block) and the text prompt or the caption. No agent flag
+controls this.
 
 ---
 
@@ -795,16 +795,27 @@ patterns do not require frontend changes.
 | `badge` | Content | Small colored label |
 | `divider` | Content | Horizontal rule |
 | `spacer` | Content | Blank gap |
-| `button` | Interactive | Tappable action; emits `action` string back to backend as a message |
-| `progress` | Content | Horizontal progress bar (0.0–1.0) |
-| `table` | Structured | Header row + data rows (the one primitive that can't be cleanly composed) |
+| `button` | Interactive | Tappable control with a typed action (`ask`, `tool`, `navigate` or `compose`) |
+| `card` | Layout | Titled card with children and optional buttons |
+| `table` | Structured | Header row + data rows; optional row `keys` and per-row buttons |
 | `form` | Structured | Input form used by onboarding and guided collection flows |
+| `steps` | Structured | Ordered list of steps with a status each |
+| `chart` | Structured | Line, bar, area or pie chart over labeled points |
+| `stat_row` | Structured | One to a few labeled numbers with an optional change arrow |
+| `sparkline` | Structured | A label and a short series of numbers |
 | `connections` | Structured | Relationship summary with evidence, surfaced by correlation |
+| `headline` | Claim | One sentence that sums up a composed answer |
+| `claim_card` | Claim | A card for one claim, with lines, readouts and buttons |
+| `claim_list` | Claim | A list of claims, each with its own posture |
+| `claim_timeline` | Claim | Claims placed on a date range |
+| `entity_facet` | Claim | The facts Ze holds about one entity |
+
+Claim primitives carry a `ClaimPosture` that code sets from the stored record. A model-supplied `claim` is dropped.
 
 ### How it works
 
 1. An agent calls a named render tool (`render_table`, `render_metric`, `render_list`, …).
-2. The render tool calls a **builder helper** in `ze_components/builders.py` that returns a `Primitive` tree.
+2. The render tool builds a `Primitive` tree with the constructors in `ze_components/atoms/`, `molecules/`, `organisms/` and `patterns/`.
 3. The `@render_tool` decorator appends the tree (as `asdict()`) to a `ContextVar` side-channel.
 4. `ComponentCollectionHook.on_loop_end` drains the side-channel into `AgentState.components`.
 5. `NativeAppInterface.send_message(components=[...])` delivers the trees alongside the text response.
@@ -814,7 +825,7 @@ Render tools set `produces_ui=True`, so a tool script never calls them.
 
 ### Adding a new component pattern
 
-Add a builder function in `ze_components/builders.py` that returns a `Primitive` tree.
+Add a builder function under `ze_components/patterns/` that returns a `Primitive` tree.
 Add a named render tool in `ze_components/tools.py` if the LLM should call it directly.
 No React changes required.
 
@@ -824,37 +835,46 @@ See [specs/phases/066-primitive-ui/spec.md](../specs/phases/066-primitive-ui/spe
 
 ## Communication Channels
 
-**Module:** `ze_agents/channels/`
+**Module:** `ze_communication` (`core/contracts/ze-communication`)
 
 The channel abstraction decouples agents from transport details. Every outbound
 message Ze sends to a real person goes through a `Channel` implementation —
 agents never call Gmail (or any future transport) directly.
 
-### Core types (`ze_agents/channels/types.py`)
+### Core types (`ze_communication/types.py`)
 
 | Type | Purpose |
 |---|---|
 | `ChannelType` | Enum — `email`, `linkedin`, `whatsapp` |
 | `ChannelHandle` | A contact's address on a channel (`handle`, `preferred`, `verified`) |
-| `Message` | Outbound payload — `to`, `body`, optional `subject` and `thread_id` |
-| `SentMessage` | Return value from `send()` — `message_id`, `thread_id`, `sent_at` |
-| `Thread` / `ThreadMessage` | Full thread history, used by `get_thread()` and `poll_replies()` |
+| `Message` | Outbound payload — `channel_type`, `to`, `body`, optional `subject` and `thread_id` |
+| `SentMessage` | Return value from `send()` — `message_id`, `thread_id`, `channel_type`, `sent_at` |
+| `Thread` / `ThreadMessage` | Full thread history, returned by `get_thread()` |
+| `InboundMessage` | A new message that arrived on a channel, with the raw `headers` for sender classification |
 
-### `Channel` ABC (`ze_agents/channels/base.py`)
+### `Channel` and `InboundChannel` ABCs (`ze_communication/channel.py`)
 
-Every channel must implement three methods:
+`Channel` is the outbound contract. Every channel implements the `channel_type` property and two methods:
 
-| Method | Signature | Description |
+| Member | Signature | Description |
 |---|---|---|
 | `send` | `(Message) → SentMessage` | Send a new message or reply to an existing thread |
 | `get_thread` | `(thread_id: str) → Thread` | Fetch a full thread by ID |
-| `poll_replies` | `(thread_ids, since) → list[ThreadMessage]` | Return inbound messages since a given datetime |
+
+`InboundChannel` extends `Channel` for transports that also receive messages:
+
+| Member | Description |
+|---|---|
+| `poll_new_messages(since)` | Return the `InboundMessage`s that arrived since a given datetime |
+| `channel_id` | Unique id of the channel instance; defaults to `channel_type.value` |
+| `supports_push` | `False` by default. When `True`, messages arrive through the webhook path |
+| `webhook_verifier()` | Returns a `WebhookVerifier` (`verify`, `parse`) when `supports_push` is `True` |
 
 ### Currently implemented channels
 
 | Channel | Class | Transport |
 |---|---|---|
-| `email` | `GmailChannel` (`ze_google/gmail_channel.py`) | Gmail API via `GoogleCredentials` (from `ze-google`) |
+| `email` | `GmailChannel` (`ze_google/gmail_channel.py`, an `InboundChannel`) | Gmail API via `GoogleCredentials` (from `ze-google`) |
 
 See [docs/channels.md](channels.md) for the authoring guide for adding new channels.
 
@@ -908,55 +928,120 @@ import time, so codegen needs no running server.
 |---|---|---|
 | `POST` | `/api/v0/voice/transcriptions` | `transcribeVoice` |
 | `GET` | `/api/v0/messages` | `listMessages` |
+| `GET` | `/api/v0/messages/traces` | `getMessageTraces` |
+| `GET` | `/api/v0/messages/{message_id}/trace` | `getMessageTrace` |
 | `PUT` | `/api/v0/messages/{message_id}/feedback` | `setMessageFeedback` |
 | `GET` | `/api/v0/messages/feedback` | `getMessageFeedback` |
 | `GET` | `/api/v0/sessions` | `listSessions` |
-| `POST` | `/api/v0/sessions` | `createSession` |
-| `GET` | `/api/v0/ws-schema` | `getWsSchema` |
+| `GET` | `/api/v0/sessions/search` | `searchSessions` |
+| `POST` | `/api/v0/webhooks/{source}` | `receiveWebhook` |
 
 ### Personal data
 
 | Method | Path | operationId |
 |---|---|---|
-| `GET` | `/api/v0/contacts` | `listContacts` |
+| `GET` | `/api/v0/contacts/page` | `getContactsPage` |
 | `GET` | `/api/v0/goals` | `listGoals` |
 | `GET` | `/api/v0/reminders` | `listReminders` |
-| `GET` | `/api/v0/notifications/budget` | `getAttentionBudget` |
-| `GET` | `/api/v0/proactive/job-runs` | `listProactiveJobRuns` |
-| `GET` | `/api/v0/hypotheses` | `listHypotheses` |
-| `POST` | `/api/v0/hypotheses/{id}/feedback` | `setHypothesisFeedback` |
-| `GET` | `/api/v0/news` | `listNews` |
-| `GET` | `/api/v0/costs/summary` | `getCostSummary` |
-| `GET` | `/api/v0/costs/detail` | `getCostDetail` |
+| `GET` | `/api/v0/news/settings` | `getNewsSettings` |
 | `GET` | `/api/v0/actions` | `listActionRecords` (subject filter, keyset cursor) |
 | `GET` | `/api/v0/collisions` | `listCollisions` |
-| `GET` | `/api/v0/system/models` | `getModelSettings` |
 | `GET` | `/api/v0/channels/status` | `listChannelStatus` |
+
+### Attention and priority
+
+| Method | Path | operationId |
+|---|---|---|
+| `GET` | `/api/v0/notifications` | `listNotifications` |
+| `GET` | `/api/v0/notifications/unread-count` | `getUnreadNotificationCount` |
+| `GET` | `/api/v0/notifications/budget` | `getAttentionBudget` |
+| `GET` | `/api/v0/notifications/quiet-hours` | `getQuietHours` |
+| `PUT` | `/api/v0/notifications/quiet-hours` | `updateQuietHours` |
+| `POST` | `/api/v0/notifications/{notification_id}/read` | `markNotificationRead` |
+| `POST` | `/api/v0/notifications/read-all` | `markAllNotificationsRead` |
+| `GET` | `/api/v0/proactive/job-runs` | `listProactiveJobRuns` |
+| `GET` | `/api/v0/loops` | `listLoops` |
+| `POST` | `/api/v0/loops/{loop_id}/confirm` | `confirmLoop` |
+| `POST` | `/api/v0/loops/{loop_id}/close` | `closeLoop` |
+| `POST` | `/api/v0/loops/{loop_id}/drop` | `dropLoop` |
+| `GET` | `/api/v0/hypotheses` | `listHypotheses` |
+| `POST` | `/api/v0/hypotheses/{hypothesis_id}/feedback` | `setHypothesisFeedback` |
+| `GET` | `/api/v0/priority/snapshot` | `getPrioritySnapshot` |
+| `POST` | `/api/v0/priority/override` | `submitPriorityOverride` |
+| `POST` | `/api/v0/priority/override/{override_id}/unpin` | `unpinPriorityOverride` |
+| `GET` | `/api/v0/held-writes` | `listHeldWrites` |
+| `POST` | `/api/v0/held-writes/{request_id}/decision` | `decideHeldWrite` |
 
 ### Memory
 
 | Method | Path | operationId |
 |---|---|---|
 | `GET` | `/api/v0/memory/feed` | `getMemoryFeed` (facts carry `claim_kind`) |
+| `GET` | `/api/v0/memory/timeline-bounds` | `getMemoryTimelineBounds` |
+| `GET` | `/api/v0/memory/activity` | `getMemoryActivity` |
 | `GET` | `/api/v0/memory/entities` | `searchEntities` (`q`, `entity_type`, `limit`; name and alias match, most connected first) |
+| `GET` | `/api/v0/memory/graph` | `getMemoryGraph` |
 | `GET` | `/api/v0/memory/graph/entity/{entity_id}` | `getEntityDetail` (facts carry claim kind, confidence, review state and provenance; neighbours ordered by connections with `neighbour_total`) |
-| `GET` | `/api/v0/memory/facts` | `listFacts` |
 | `POST` | `/api/v0/memory/facts/review` | `reviewFacts` |
-| `GET` | `/api/v0/memory/digest` | `getMemoryDigest` |
-| `POST` | `/api/v0/memory/consolidate` | `consolidateMemory` |
-| `GET` | `/api/v0/memory/profile` | `getProfile` |
+| `GET` | `/api/v0/procedures` | `listActiveProcedures` |
+| `GET` | `/api/v0/procedures/library` | `listProcedureLibrary` |
+| `GET` | `/api/v0/procedures/candidates` | `listProcedureCandidates` |
+| `GET` | `/api/v0/procedures/{procedure_id}` | `getProcedure` |
+| `POST` | `/api/v0/procedures/{procedure_id}/edit` | `editProcedure` |
+| `POST` | `/api/v0/procedures/{procedure_id}/disable` | `disableProcedure` |
+| `POST` | `/api/v0/procedures/candidates/{candidate_id}/review` | `reviewProcedureCandidate` |
 
-### Workflows / Data / Ingestion
+### Goals, workflows and skills
 
 | Method | Path | operationId |
 |---|---|---|
+| `GET` | `/api/v0/goals/{goal_id}` | `getGoalDetail` |
+| `GET` | `/api/v0/goals/{goal_id}/traces` | `listGoalTraces` |
+| `POST` | `/api/v0/goals/{goal_id}/start` | `startGoal` |
+| `POST` | `/api/v0/goals/{goal_id}/learnings/{learning_id}/review` | `reviewGoalLearning` |
 | `GET` | `/api/v0/workflows` | `listWorkflows` |
-| `GET` | `/api/v0/routing/log` | `getRoutingLog` |
-| `POST` | `/api/v0/ingest` | `ingest` |
+| `GET` | `/api/v0/workflows/{workflow_id}` | `getWorkflow` |
+| `GET` | `/api/v0/workflows/{workflow_id}/executions` | `listWorkflowExecutions` |
+| `GET` | `/api/v0/workflows/{workflow_id}/executions/{execution_id}` | `getWorkflowExecution` |
+| `POST` | `/api/v0/workflows/{workflow_id}/executions/{execution_id}/cancel` | `cancelWorkflowExecution` |
+| `GET` | `/api/v0/workflows/{workflow_id}/revisions` | `listWorkflowRevisions` |
+| `POST` | `/api/v0/workflows/{workflow_id}/trigger` | `triggerWorkflow` |
+| `GET` | `/api/v0/skills` | `listSkills` |
+| `POST` | `/api/v0/skills/import` | `importSkill` |
+| `POST` | `/api/v0/skills/{skill_id}/approve` | `approveSkill` |
+| `POST` | `/api/v0/skills/{skill_id}/approve-executables` | `approveSkillExecutables` |
+| `POST` | `/api/v0/skills/{skill_id}/reject` | `rejectSkill` |
+| `POST` | `/api/v0/skills/{skill_id}/disable` | `disableSkill` |
+| `POST` | `/api/v0/skills/{skill_id}/enable` | `enableSkill` |
+| `DELETE` | `/api/v0/skills/{skill_id}` | `deleteSkill` |
+
+### Workspace
+
+| Method | Path | operationId |
+|---|---|---|
+| `GET` | `/api/v0/workspace` | `getWorkspace` |
+| `GET` | `/api/v0/workspace/files` | `listWorkspaceFiles` |
+| `POST` | `/api/v0/workspace/files` | `uploadWorkspaceFile` |
+| `GET` | `/api/v0/workspace/files/{file_path}` | `getWorkspaceFile` |
+| `DELETE` | `/api/v0/workspace/files/{file_path}` | `deleteWorkspaceFile` |
+| `GET` | `/api/v0/workspace/runs` | `listWorkspaceRuns` |
+| `GET` | `/api/v0/workspace/runs/{run_id}/events` | `watchWorkspaceRunEvents` |
+| `POST` | `/api/v0/workspace/runs/{run_id}/cancel` | `cancelWorkspaceRun` |
+
+### Costs, system, data and UI
+
+| Method | Path | operationId |
+|---|---|---|
+| `GET` | `/api/v0/costs/summary` | `getCostSummary` |
+| `GET` | `/api/v0/costs/anomalies` | `getCostAnomalies` |
+| `GET` | `/api/v0/system/models` | `getModelSettings` |
+| `GET` | `/api/v0/data/domains` | `listDataDomains` |
 | `GET` | `/api/v0/data/export` | `exportData` |
 | `POST` | `/api/v0/data/import` | `importData` |
 | `POST` | `/api/v0/data/delete-intent` | `createDeleteIntent` |
 | `DELETE` | `/api/v0/data` | `deleteData` |
+| `GET` | `/api/v0/ui/manifest` | `getUiManifest` |
+| `GET` | `/api/v0/ui/modules/{module_id}` | `getUiModule` |
 
 ### Internal tooling
 
@@ -972,13 +1057,13 @@ import time, so codegen needs no running server.
 OpenAPI spec. `ze-web` imports from it — never raw route strings.
 
 ```typescript
-import { configure, listContacts, listGoals } from "@myguyze/ze-client";
+import { configure, listGoals } from "@myguyze/ze-client";
 
 // Once at startup (main.tsx)
 configure({ serverUrl: "http://localhost:8000", apiKey: "..." });
 
 // Then call named methods anywhere, no { client } arg needed
-const { data: contacts } = await listContacts();
+const { data: goals } = await listGoals();
 ```
 
 **Regenerate after backend changes:**
@@ -1017,7 +1102,7 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 | `ze_logging` | structlog setup (`configure_logging`, `get_logger`, `bind_context`) — configured at app startup |
 | `ze_agents/errors.py` | Exception hierarchy — typed `ZeError` subclasses (re-exported via `ze_sdk.errors`) |
 | `ze_core/embeddings.py` | Shared `intfloat/multilingual-e5-base` singleton — loaded once at startup |
-| `ze_api/db.py` | asyncpg pool factory — lifespan-managed |
+| `ze_api/wiring/db.py` | asyncpg pool factory — lifespan-managed |
 | `ze_plugin/bootstrap.py` | Plugin discovery, DI resolution, `build_integrations()` |
 | `ze_agents/bootstrap.py` | `bootstrap_agents()` — agent registration via plugin `agent_module_paths()` |
 | `ze_api/wiring/jobs.py` | `register_all_proactive_jobs()` — fans out core + plugin cron registration |
