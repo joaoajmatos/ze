@@ -111,14 +111,14 @@ Repo-root paths below:
 
 ### Engine lane (routed agent and compound subtask)
 
-- [ ] T015 [P] [L:engine] [US1] Write `ZC/tests/orchestration/nodes/test_execution_derivation.py` (failing first). The turn context has `timezone="Europe/Lisbon"` and `extensions={"user_message_id": "m1"}`. Check:
+- [x] T015 [P] [L:engine] [US1] Write `ZC/tests/orchestration/nodes/test_execution_derivation.py` (failing first). The turn context has `timezone="Europe/Lisbon"` and `extensions={"user_message_id": "m1"}`. Check:
   - The single-path child context and each compound subtask context carry both values.
   - A stub agent's `_build_system_prompt` line shows Lisbon time (SC-005, US1 scenario 1).
   - A stub agent reading `ctx.extensions["user_message_id"]` (as the workflow agent does, `ze_automation/agents/workflow/agent.py:108`) gets `"m1"` when routed (US1 scenario 2).
   - Only the single path gets a `token_sink`.
   - An image turn's child gets the image message.
-- [ ] T016 [L:engine] [US1] Create `ZC/ze_core/orchestration/child_runs.py` with `runtime_handles(config, *, stream)`, `gate_input(turn, state, config, index)` (moves `_pre_approved` and `_resume_kwargs`), `tally_from(state)`, `conductor_input(state, index, tally)` and `procedure_input(state, index)`.
-- [ ] T017 [L:engine] [US1] In `ZC/ze_core/orchestration/nodes/execution.py`, both paths build the child with `for_subtask(...)` from `child_runs`. Delete `_conductor_kwargs`, `_prompt_note_kwargs`, `_procedure_kwargs`, `_pre_approved`, `_resume_kwargs` and the second hand-written list in `_make_ctx` (this also removes the misindented line). T015 passes. `ZC/tests/orchestration/nodes/test_execution_context_notes.py` and `test_execution.py` pass; update only the assertions that checked the deleted helpers. Keep phase 198's B1 timezone regression tests as they are.
+- [x] T016 [L:engine] [US1] Create `ZC/ze_core/orchestration/child_runs.py` with `runtime_handles(config, *, stream)`, `gate_input(turn, state, config, index)` (moves `_pre_approved` and `_resume_kwargs`), `tally_from(state)`, `conductor_input(state, index, tally)` and `procedure_input(state, index)`.
+- [x] T017 [L:engine] [US1] In `ZC/ze_core/orchestration/nodes/execution.py`, both paths build the child with `for_subtask(...)` from `child_runs`. Delete `_conductor_kwargs`, `_prompt_note_kwargs`, `_procedure_kwargs`, `_pre_approved`, `_resume_kwargs` and the second hand-written list in `_make_ctx` (this also removes the misindented line). T015 passes. `ZC/tests/orchestration/nodes/test_execution_context_notes.py` and `test_execution.py` pass; update only the assertions that checked the deleted helpers. Keep phase 198's B1 timezone regression tests as they are.
 
 ### Edges lane (delegate, goal milestone, screen action)
 

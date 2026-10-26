@@ -6,10 +6,8 @@ import pytest
 from ze_agents.errors import AgentTimeoutError
 from ze_memory.types import MemoryContext
 from ze_agents.registry import agent, clear_registry, register_instance
-from ze_core.orchestration.nodes.execution import (
-    _embed_fn,
-    execute_tool,
-)
+from ze_core.orchestration.child_runs import runtime_handles
+from ze_core.orchestration.nodes.execution import execute_tool
 from ze_agents.types import AgentContext, AgentResult
 from ze_core.routing.types import RoutingEnvelope, SubTask
 
@@ -251,8 +249,9 @@ class TestPreflight:
 
 def test_tool_executor_context_embeds_the_prompt_as_a_query():
     embedder = MagicMock()
-    assert _embed_fn({"configurable": {"embedder": embedder}}) is embedder.encode_query
-    assert _embed_fn({"configurable": {}}) is None
+    handles = runtime_handles({"configurable": {"embedder": embedder}}, stream=False)
+    assert handles.embed_fn is embedder.encode_query
+    assert runtime_handles({"configurable": {}}, stream=False).embed_fn is None
 
 
 class TestConductorHardTimeout:
@@ -272,10 +271,10 @@ class TestConductorHardTimeout:
         instance.run = slow_run.__get__(instance, cls)
         register_instance("conductor", instance)
         ctx = _ctx("conductor")
-        ctx.conductor.ledger = [{"agent": "research", "status": "running"}]
         state = {
             "envelope": _envelope("conductor"),
             "agent_context": ctx,
+            "conductor_ledgers": [[{"agent": "research", "status": "running"}]],
             "image_data": None,
         }
 
