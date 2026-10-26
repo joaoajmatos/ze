@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-22
 
-**Status**: Ready to implement (2026-10-26)
+**Status**: Implemented
 
 **Depends on**: 198 (wiring fixes B4 and B11)
 

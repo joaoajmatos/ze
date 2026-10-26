@@ -154,7 +154,7 @@ description: "Tasks for phase 204 Push Bar and Cooldowns"
   - `docs/memory.md`, `docs/native-interface.md`, `docs/workflows.md`: remove push-log mentions (`budget_key`, `duplicate`, the failure ledger) or point them at the new owners;
   - READMEs: `core/contracts/ze-proactive/README.md`, `core/arbitration/ze-priority/README.md`, `core/cognition/ze-worldstate/README.md`, `core/cognition/ze-correlation/README.md`, `core/automation/ze-automation/README.md`, `packages/ze-sdk/README.md`.
 - [x] T043 [L:docs] [DOCS] Update `AGENTS.md`: the 204 phase row (Implemented, one line in the table's style); the dependency graph (`ze-worldstate` drops `ze-correlation`; `ze-priority` adds `ze-proactive`) and the layout comments that name `push.py` or `push_log`; Migration ownership: ze-proactive `push_log` claims (`zpro006`), ze-priority `surfacing_memory` (`zpri002`). Check `specs/arch/attention-arbitration.md` and add a short "Since phase 204" note where it describes the bar living in the sources.
-- [ ] T044 [L:docs] [DOCS] Set spec.md `**Status**` to Implemented and the 204 Status cell in `specs/README.md`, then run the `speckit-process-after-implement` skill.
+- [x] T044 [L:docs] [DOCS] Set spec.md `**Status**` to Implemented and the 204 Status cell in `specs/README.md`, then run the `speckit-process-after-implement` skill.
 - [x] T045 [L:docs] [DOCS] Coverage check: `git diff main...HEAD --stat -- docs/ AGENTS.md specs/README.md '*README.md'`. Confirm every file in T042–T044 appears, and list any public doc that still names a changed symbol (`grep -rn "budget_key\|push_log\|PushLogStore\|dedup_hours\|passes_novelty\|was_sent_within_hours" docs/ README.md */*/README.md */*/*/README.md`) with a reason.
 
 ---
