@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from ze_personal.jobs.insights import InsightEngine
 from ze_personal.push_kinds import INSIGHT
-from ze_sdk.proactive import ProactiveNotifier
+from ze_sdk.proactive import OncePer, ProactiveNotifier
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ async def test_insights_generates_and_pushes():
     notifier.notify.assert_awaited_once()
     call = notifier.notify.call_args
     assert call.args[0] is INSIGHT
-    assert call.kwargs["budget_key"] == f"insight:{inserted_id}"
+    assert call.kwargs["once_per"] == OncePer(f"insight:{inserted_id}")
     pushed_text = notifier.notify.call_args[0][2]
     assert "sleep" in pushed_text.lower()
     # UPDATE should mark pushed

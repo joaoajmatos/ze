@@ -8,7 +8,6 @@ from zoneinfo import ZoneInfo
 
 from ze_logging import get_logger
 from ze_sdk import parse_llm_json
-from ze_sdk.proactive import PushLogStore
 from ze_calendar.push_kinds import (
     CALENDAR_REMINDER,
     CALENDAR_REMINDERS_SCHEDULED,
@@ -99,14 +98,12 @@ class CalendarReminderService:
         self,
         notifier: ProactiveNotifier,
         store: CalendarReminderStore,
-        push_log_store: PushLogStore,
         openrouter_client: LLMClient,
         scheduler: Any,  # WorkflowScheduler — avoids circular import
         settings: Any,  # ze_api.settings.Settings — not imported to avoid circular dep
     ) -> None:
         self._notifier = notifier
         self._store = store
-        self._push_log = push_log_store
         self._client = openrouter_client
         self._scheduler = scheduler
         self._settings = settings
@@ -190,7 +187,6 @@ class CalendarReminderService:
             await self._store.mark_unsent(reminder_id)
             log.warning("reminder_push_failed", id=str(reminder_id))
             return
-        await self._push_log.log(f"calendar_reminder:{reminder_id}", label)
         log.info("reminder_fired", id=str(reminder_id))
 
     def _user_tz(self) -> tzinfo:
