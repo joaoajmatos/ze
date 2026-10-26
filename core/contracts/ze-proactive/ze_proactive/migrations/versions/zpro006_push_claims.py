@@ -42,6 +42,13 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Older repeat claims of one key are dropped (the newest stays), because the
+    old schema's unique index allows one row per (event_type, key)."""
+    op.execute(
+        "DELETE FROM push_log a USING push_log b "
+        "WHERE a.event_type = b.event_type AND a.claim_key = b.claim_key "
+        "AND a.id < b.id"
+    )
     op.execute("DROP INDEX IF EXISTS push_log_discretionary_sent_at_idx")
     op.execute("DROP INDEX IF EXISTS push_log_claim_key_sent_at_idx")
     op.execute("ALTER TABLE push_log DROP COLUMN IF EXISTS discretionary")
