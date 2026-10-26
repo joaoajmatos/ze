@@ -2,12 +2,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Literal
 
 import asyncpg
 
 from ze_logging import get_logger
 
 log = get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class ClaimResult:
+    status: Literal["won", "cooling", "over_budget"]
+    claim_id: int | None = None  # set only when won
 
 
 @dataclass

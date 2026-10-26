@@ -143,6 +143,6 @@ A failed quiet-hours release keeps the claim (Clarifications Q2): `deliver_held`
 ## R14. Coordination with other floors
 
 - **200 (Agent Context Derivation, two hunks), 201 (Typed Turn Services), 203 (Open-Loop Lifecycle, one hunk)** and later 207, 210, 211 edit `ze_api/wiring/container.py`. This phase's container edits are small (notifier construction, surfacer, turn surfacing, arbitration sources, the bar). Whichever floor lands second rebases; the `lead` lane owns the file here.
-- **203 (Open-Loop Lifecycle)** edits ze-worldstate's lifecycle files, not `surfacing.py` or `bootstrap.py`'s push settings; its only shared file with this phase is `container.py` (above). The loop re-push window needs no loop schema change.
+- **203 (Open-Loop Lifecycle)** edits ze-worldstate's lifecycle files, not `surfacing.py`. Vigil found it also edits `ze_worldstate/bootstrap.py` and `ze_api/wiring/container.py`; the hunks are disjoint from this phase's (203 touches lifecycle wiring, 204 touches `LoopPushSettings`, `build_loop_surfacer` and the notifier/bar construction). Whichever floor lands second rebases. The loop re-push window needs no loop schema change.
 - **213 (One Scheduler)** builds on this phase: after 204, no job reads the push log for its cooldown (213 assumption).
 - The `configurable["loop_surfacer"]` key in `ZeContainer` has no reader on main (grep for `"loop_surfacer"` finds only the writer); it goes with the surfacer's new constructor.
