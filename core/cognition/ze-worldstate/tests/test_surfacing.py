@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
+from ze_proactive.types import OncePer
+
+from ze_worldstate.bootstrap import LoopPushSettings
 from ze_worldstate.surfacing import LoopSurfacer, format_hedged_mention
 from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
@@ -35,9 +38,6 @@ def test_format_hedged_mention_without_rationale():
     assert text.endswith(".")
 
 
-# ── passes_push_bar (T032, T038) ───────────────────────────────────────────────
-
-
 def _relevance_model(value: float = 0.8) -> MagicMock:
     model = MagicMock()
     model.build = AsyncMock(return_value=object())
@@ -45,330 +45,120 @@ def _relevance_model(value: float = 0.8) -> MagicMock:
     return model
 
 
-def _push_bar_surfacer(
+def _surfacer(
+    loops: list[OpenLoop] | None = None,
     *,
-    relevance_value: float = 0.8,
-    recent_payloads: list[str] | None = None,
-    inline_sent: bool = False,
-    budget_count: int = 0,
-    nli_client=None,
+    settings: LoopPushSettings | None = None,
+    notifier=None,
+    relevance_model=None,
 ) -> LoopSurfacer:
-    push_log = AsyncMock()
-    push_log.list_recent_payloads = AsyncMock(return_value=recent_payloads or [])
-    push_log.was_sent_within_hours = AsyncMock(return_value=inline_sent)
-    push_log.window_sent_at = AsyncMock(
-        return_value=[
-            datetime(2026, 1, 1, tzinfo=UTC) + timedelta(minutes=i)
-            for i in range(budget_count)
-        ]
-    )
-    push_log.log = AsyncMock()
-
-    return LoopSurfacer(
-        loop_store=AsyncMock(),
-        graph_store=AsyncMock(),
-        push_log=push_log,
-        pool=None,
-        relevance_model=_relevance_model(relevance_value),
-        embedder=None,
-        nli_client=nli_client,
-    )
-
-
-async def test_passes_push_bar_clears_all_gates():
-    loop = _loop(confidence=0.8)
-    surfacer = _push_bar_surfacer(relevance_value=0.8)
-    assert await surfacer.passes_push_bar(loop, loop.drift_rationale) is True
-
-
-async def test_passes_push_bar_rejects_low_confidence():
-    loop = _loop(confidence=0.1)
-    surfacer = _push_bar_surfacer()
-    assert await surfacer.passes_push_bar(loop, loop.drift_rationale) is False
-
-
-async def test_passes_push_bar_rejects_low_relevance():
-    loop = _loop(confidence=0.8)
-    surfacer = _push_bar_surfacer(relevance_value=0.1)
-    assert await surfacer.passes_push_bar(loop, loop.drift_rationale) is False
-
-
-# ── eligible_candidates / send (phase 123 User Story 2) ────────────────────────
-
-
-def _eligibility_surfacer(
-    *, loops: list[OpenLoop], relevance_value: float = 0.8
-) -> LoopSurfacer:
-    push_log = AsyncMock()
-    push_log.list_recent_payloads = AsyncMock(return_value=[])
-    push_log.was_sent_within_hours = AsyncMock(return_value=False)
-
     loop_store = AsyncMock()
-    loop_store.list = AsyncMock(return_value=loops)
-
+    loop_store.list = AsyncMock(return_value=loops or [])
     return LoopSurfacer(
         loop_store=loop_store,
         graph_store=AsyncMock(),
-        push_log=push_log,
         pool=None,
-        relevance_model=_relevance_model(relevance_value),
-        embedder=None,
+        relevance_model=relevance_model or _relevance_model(),
+        notifier=notifier or AsyncMock(),
+        settings=settings or LoopPushSettings(),
     )
 
 
-async def test_eligible_candidates_returns_loops_passing_the_bar():
+async def test_candidates_carry_the_fields_the_bar_reads():
     loop = _loop(confidence=0.8)
-    surfacer = _eligibility_surfacer(loops=[loop])
-    candidates = await surfacer.eligible_candidates()
-    assert candidates == [loop]
+    surfacer = _surfacer([loop])
+
+    (candidate,) = await surfacer.candidates()
+
+    assert candidate.source_kind == "loop"
+    assert candidate.source_id == loop.id
+    assert candidate.entity is loop
+    assert candidate.body == format_hedged_mention(loop.title, loop.drift_rationale)
+    assert candidate.claim == loop.title
+    assert candidate.confidence == 0.8
+    assert candidate.once_per == OncePer(f"loop:{loop.id}", within=timedelta(days=7))
 
 
-async def test_eligible_candidates_excludes_low_confidence_loops():
-    loop = _loop(confidence=0.1)
-    surfacer = _eligibility_surfacer(loops=[loop])
-    assert await surfacer.eligible_candidates() == []
+async def test_candidates_skip_loops_without_rationale():
+    surfacer = _surfacer([_loop(drift_rationale=None), _loop()])
+    assert len(await surfacer.candidates()) == 1
 
 
-async def test_eligible_candidates_skips_loops_without_rationale():
-    loop = _loop(confidence=0.8, drift_rationale=None)
-    surfacer = _eligibility_surfacer(loops=[loop])
-    assert await surfacer.eligible_candidates() == []
+async def test_candidates_queries_only_drifting_loops():
+    surfacer = _surfacer([])
+    await surfacer.candidates()
+    surfacer._loop_store.list.assert_awaited_once_with([LoopState.DRIFTING.value])
+
+
+async def test_once_per_window_follows_repush_after_days():
+    surfacer = _surfacer([_loop()], settings=LoopPushSettings(repush_after_days=2.0))
+    (candidate,) = await surfacer.candidates()
+    assert candidate.once_per.within == timedelta(days=2)
+
+
+async def test_relevance_is_read_only_when_the_thunk_is_awaited():
+    model = _relevance_model(0.7)
+    surfacer = _surfacer([_loop()], relevance_model=model)
+    (candidate,) = await surfacer.candidates()
+
+    model.build.assert_not_awaited()
+    assert await candidate.relevance() == 0.7
+    model.build.assert_awaited_once()
+
+
+async def test_evidence_labels_are_read_lazily_and_drop_empty_summaries(monkeypatch):
+    fetch = AsyncMock(return_value=[{"summary": "Maria asked"}, {"summary": ""}, {}])
+    monkeypatch.setattr("ze_worldstate.surfacing._fetch_evidence_summaries", fetch)
+    surfacer = _surfacer([_loop()])
+    (candidate,) = await surfacer.candidates()
+
+    fetch.assert_not_awaited()
+    assert await candidate.evidence_labels() == ("Maria asked",)
+
+
+async def test_thresholds_come_from_the_settings():
+    surfacer = _surfacer(
+        settings=LoopPushSettings(
+            thresholds={"tau_confidence": 0.7}, inline_cooldown_hours=6.0
+        )
+    )
+    thresholds = surfacer.thresholds
+    assert thresholds.confidence == 0.7
+    assert thresholds.inline_cooldown_hours == 6.0
+
+
+def test_surfacer_is_a_live_loop_source():
+    surfacer = _surfacer()
+    assert surfacer.source_kind == "loop"
+    assert surfacer.dry_run is False
 
 
 async def test_send_pushes_when_loop_still_drifting():
-    loop = _loop(confidence=0.8)
-    loop_store = AsyncMock()
-    loop_store.get = AsyncMock(return_value=loop)
+    loop = _loop()
     notifier = AsyncMock()
     notifier.notify = AsyncMock(return_value="delivered")
-    surfacer = LoopSurfacer(
-        loop_store=loop_store,
-        graph_store=AsyncMock(),
-        push_log=AsyncMock(),
-        notifier=notifier,
-    )
+    surfacer = _surfacer([loop], notifier=notifier)
+    surfacer._loop_store.get = AsyncMock(return_value=loop)
+    (candidate,) = await surfacer.candidates()
 
-    outcome = await surfacer.send(loop)
+    outcome = await surfacer.send(candidate)
 
     assert outcome == "delivered"
-    notifier.notify.assert_awaited_once()
-    args = notifier.notify.await_args
-    assert args.args[0].event_type == "loop_drift"
-    assert args.kwargs["budget_key"] == f"loop:{loop.id}"
-    assert args.kwargs["target_type"] == "open_loop"
+    args, kwargs = notifier.notify.call_args
+    assert args[1:] == ("Open loop", candidate.body)
+    assert kwargs["target_type"] == "open_loop"
+    assert kwargs["target_id"] == str(loop.id)
+    assert kwargs["once_per"] == candidate.once_per
 
 
-async def test_send_returns_false_when_loop_no_longer_drifting():
-    loop = _loop(confidence=0.8)
-    resolved = _loop(id=loop.id, state=LoopState.CLOSED)
-    loop_store = AsyncMock()
-    loop_store.get = AsyncMock(return_value=resolved)
+async def test_send_returns_none_when_loop_no_longer_drifting():
+    loop = _loop()
     notifier = AsyncMock()
-    surfacer = LoopSurfacer(
-        loop_store=loop_store,
-        graph_store=AsyncMock(),
-        push_log=AsyncMock(),
-        notifier=notifier,
-    )
+    surfacer = _surfacer([loop], notifier=notifier)
+    (candidate,) = await surfacer.candidates()
 
-    outcome = await surfacer.send(loop)
+    for current in (_loop(id=loop.id, state=LoopState.CLOSED), None):
+        surfacer._loop_store.get = AsyncMock(return_value=current)
+        assert await surfacer.send(candidate) is None
 
-    assert outcome is None
-    notifier.notify.assert_not_awaited()
-
-
-async def test_passes_push_bar_rejects_within_inline_cooldown():
-    loop = _loop(confidence=0.8)
-    surfacer = _push_bar_surfacer(relevance_value=0.8, inline_sent=True)
-    assert await surfacer.passes_push_bar(loop, loop.drift_rationale) is False
-
-
-# ── grounding checks the title (phase 170) ─────────────────────────────────────
-
-
-class _RecordingNli:
-    def __init__(self, score: float = 0.9):
-        self.pairs: list = []
-        self._score = score
-
-    async def scores(self, pairs):
-        self.pairs.extend(pairs)
-        return [self._score] * len(pairs)
-
-    def grounding_score(self, summary, labels, scores=None):
-        return max(scores) if scores else 0.0
-
-
-async def test_grounding_hypothesis_is_the_loop_title_not_the_rationale(monkeypatch):
-    from ze_worldstate import surfacing
-
-    async def fake_summaries(pool, loop_store, loop_id):
-        return [
-            {
-                "type": "episode",
-                "id": uuid4(),
-                "summary": "I need to send Maria the contract",
-            }
-        ]
-
-    monkeypatch.setattr(surfacing, "_fetch_evidence_summaries", fake_summaries)
-    loop = _loop(confidence=0.8)
-    nli = _RecordingNli()
-
-    passed = await _push_bar_surfacer(nli_client=nli).passes_push_bar(
-        loop, loop.drift_rationale
-    )
-
-    assert passed is True
-    assert nli.pairs == [("I need to send Maria the contract", loop.title)]
-
-
-async def test_grounding_fails_when_the_title_is_not_supported(monkeypatch):
-    from ze_worldstate import surfacing
-
-    async def fake_summaries(pool, loop_store, loop_id):
-        return [{"type": "episode", "id": uuid4(), "summary": "unrelated"}]
-
-    monkeypatch.setattr(surfacing, "_fetch_evidence_summaries", fake_summaries)
-    loop = _loop(confidence=0.8)
-    assert (
-        await _push_bar_surfacer(nli_client=_RecordingNli(score=0.01)).passes_push_bar(
-            loop, loop.drift_rationale
-        )
-        is False
-    )
-
-
-async def test_grounding_passes_without_evidence_labels():
-    loop = _loop(confidence=0.8)
-    nli = _RecordingNli(score=0.0)
-    assert (
-        await _push_bar_surfacer(nli_client=nli).passes_push_bar(
-            loop, loop.drift_rationale
-        )
-        is True
-    )
-    assert nli.pairs == []
-
-
-# ── the push bar holds on the path the sweep takes (phase 198, B4) ────────────
-
-
-class _MemoryPushLog:
-    """In-memory push log: payloads per event type, aged by an injectable clock."""
-
-    def __init__(self) -> None:
-        self.now = datetime(2026, 10, 1, 12, tzinfo=UTC)
-        self.rows: list[tuple[str, str, datetime]] = []
-
-    def add(self, event_type: str, payload: str, *, hours_ago: float) -> None:
-        self.rows.append((event_type, payload, self.now - timedelta(hours=hours_ago)))
-
-    async def list_recent_payloads(self, event_type, hours):
-        cutoff = self.now - timedelta(hours=hours)
-        return [p for e, p, at in self.rows if e == event_type and at > cutoff]
-
-    async def was_sent_within_hours(self, event_type, hours):
-        cutoff = self.now - timedelta(hours=hours)
-        return any(e == event_type and at > cutoff for e, _, at in self.rows)
-
-
-class _WordEmbedder:
-    """Bag-of-words vectors: identical text is identical, different text is not."""
-
-    _VOCAB: dict[str, int] = {}
-
-    def encode_passage(self, text: str):
-        import numpy as np
-
-        vec = np.zeros(256)
-        for word in text.lower().split():
-            index = self._VOCAB.setdefault(word, len(self._VOCAB))
-            vec[index % 256] += 1.0
-        return vec
-
-
-def _swept_surfacer(
-    loop: OpenLoop, *, push_log, nli_client, monkeypatch, evidence="I need to send it"
-):
-    from ze_worldstate import surfacing
-    from ze_worldstate.bootstrap import build_loop_surfacer
-
-    async def fake_summaries(pool, loop_store, loop_id):
-        return [{"type": "episode", "id": uuid4(), "summary": evidence}]
-
-    monkeypatch.setattr(surfacing, "_fetch_evidence_summaries", fake_summaries)
-    loop_store = AsyncMock()
-    loop_store.list = AsyncMock(return_value=[loop])
-    stack = SimpleNamespace(loop_store=loop_store, graph_store=AsyncMock(), pool=None)
-    return build_loop_surfacer(
-        stack,
-        push_log,
-        relevance_model=_relevance_model(0.8),
-        embedder=_WordEmbedder(),
-        nli_client=nli_client,
-    )
-
-
-async def test_sweep_path_drops_a_loop_whose_evidence_does_not_support_its_title(
-    monkeypatch,
-):
-    loop = _loop(confidence=0.8)
-    surfacer = _swept_surfacer(
-        loop,
-        push_log=_MemoryPushLog(),
-        nli_client=_RecordingNli(score=0.01),
-        monkeypatch=monkeypatch,
-    )
-
-    assert await surfacer.eligible_candidates(thresholds={}) == []
-
-
-async def test_sweep_path_keeps_a_loop_whose_evidence_supports_its_title(monkeypatch):
-    loop = _loop(confidence=0.8)
-    surfacer = _swept_surfacer(
-        loop,
-        push_log=_MemoryPushLog(),
-        nli_client=_RecordingNli(score=0.9),
-        monkeypatch=monkeypatch,
-    )
-
-    assert await surfacer.eligible_candidates(thresholds={}) == [loop]
-
-
-async def test_sweep_path_drops_a_loop_whose_push_text_repeats_a_recent_push(
-    monkeypatch,
-):
-    loop = _loop(confidence=0.8)
-    push_log = _MemoryPushLog()
-    push_log.add(
-        "attention_push",
-        format_hedged_mention(loop.title, loop.drift_rationale),
-        hours_ago=3,
-    )
-    surfacer = _swept_surfacer(
-        loop,
-        push_log=push_log,
-        nli_client=_RecordingNli(score=0.9),
-        monkeypatch=monkeypatch,
-    )
-
-    assert await surfacer.eligible_candidates(thresholds={}) == []
-
-
-async def test_sweep_path_ignores_the_retired_worldstate_loop_push_rows(monkeypatch):
-    loop = _loop(confidence=0.8)
-    push_log = _MemoryPushLog()
-    push_log.add(
-        "worldstate_loop_push",
-        format_hedged_mention(loop.title, loop.drift_rationale),
-        hours_ago=3,
-    )
-    surfacer = _swept_surfacer(
-        loop,
-        push_log=push_log,
-        nli_client=_RecordingNli(score=0.9),
-        monkeypatch=monkeypatch,
-    )
-
-    assert await surfacer.eligible_candidates(thresholds={}) == [loop]
+    notifier.notify.assert_not_called()
