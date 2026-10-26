@@ -51,8 +51,10 @@ rtk proxy grep -rn 'push_log\|PushLogStore' core plugins apps packages integrati
 
 # FR-013 / FR-014: the deleted names and the hand-rolled check are gone (expect no output)
 rtk proxy grep -rn 'budget_key\|dedup_hours\|exists_recent\|was_sent_within_hours\|list_recent_payloads\|passes_novelty\|passes_grounding\|list_recently_surfaced_summaries\|in ("delivered", "held")' \
-  core plugins apps packages --include='*.py' | grep -v '/tests/'
+  core plugins apps packages --include='*.py' | grep -v '/tests/' | grep -v 'ze_proactive/types.py'
 ```
+
+`is_sent` in `ze_proactive/types.py` is the one definition of the `delivered`/`held` check, so that file is excluded.
 
 ## 4. Migrations
 
