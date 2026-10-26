@@ -5,7 +5,7 @@ Quiet hours 23:00-08:00 Europe/Lisbon, discretionary budget 5 per 24 h.
 
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, time, timezone
 from itertools import count
 from zoneinfo import ZoneInfo
 
