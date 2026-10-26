@@ -47,7 +47,8 @@ chooses. Ze records the run in `workspace_runs` before it starts the command.
 - **One run at a time.** Ze refuses a second command while one runs. The refusal
   names the running command.
 - **Restart.** After `ze-api` restarts, Ze reattaches to runs that are still
-  running. If the computer lost a run, Ze marks it failed. It never invents a result.
+  running. If the computer lost a run, Ze marks it failed. It never invents a result. Ze
+  also resubmits the action record of any run that a crash left before its record was stored.
 - **Live output.** While a command runs, chat and Doing › Runs show the output
   so far. The `GET /api/v0/workspace/runs/{run_id}/events` route streams it. A page
   opened mid-run replays the lines already printed.

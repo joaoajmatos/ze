@@ -661,7 +661,7 @@ memory policies, checkpoint serde modules, REST stores, and proactive jobs from 
 plugin at startup — no manual list in `build_graph()`.
 
 If your plugin constructor requires a new shared service type (e.g. a domain store
-built before plugin discovery), add it to `plugin_deps` in `build_container()`.
+built before plugin discovery), add it to the dep map that `build_dep_map()` builds in `ze_api/wiring/agents.py`.
 Agent-scoped deps can be contributed via `agent_deps()` without touching the container.
 
 ---

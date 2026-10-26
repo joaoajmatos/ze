@@ -191,7 +191,7 @@ Ze sends a one-paragraph update per active goal (kind `goal_narrative`, `account
 
 ### Weekly goal suggestions (Sunday 7 PM UTC)
 
-Ze analyzes recent memory facts, episodes, and retrospectives to propose one new goal. Ze sends it as a `discretionary` push (kind `goal_suggestion`) with **Accept** / **Dismiss** options. Accepted suggestions pre-fill a goal creation flow. `GoalSuggestionJob` (`ze_automation/jobs/goal_suggestion.py`) drives this.
+Ze analyzes recent memory facts, episodes, and retrospectives to propose one new goal. Ze sends it as a `discretionary` push (kind `goal_suggestion`) with **Yes, create it**, **Dismiss** and **Tell me more** buttons. **Yes, create it** plans the goal and sends the usual plan proposal, where you start or cancel it. If Ze cannot plan or send the proposal, the idea stays open so you can try again. **Dismiss** records the dismissal. **Tell me more** repeats the rationale with the same buttons. `GoalSuggestionJob` (`ze_automation/jobs/goal_suggestion.py`) drives this.
 
 ### Stuck goal detection (Tuesday 9 AM UTC)
 

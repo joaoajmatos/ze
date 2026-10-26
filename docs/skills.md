@@ -199,7 +199,7 @@ def bundled_skill_paths(self) -> list[str]:
 
 `register_bundled_skills()` loads each path at startup with `source=bundled` and
 `status=active`. The write is idempotent on `(slug, source)`. Bundled skills have
-no `origin_url`, so refresh and the daily recheck skip them.
+no `origin_url`, so the daily recheck skips them.
 
 If a bundled skill includes scripts, those scripts still need executable approval
 before `workspace_run_skill_script` will run them. Shipping the file is not

@@ -13,14 +13,14 @@ It also owns accountability: the weekly narrative and cost-anomaly detection tha
 - Goals (`goals/`) — `GoalStore`, `GoalPlanner`, `GoalExecutor`, execution traces, adaptive replanning, stuck-goal detection (one row per goal, from the first open gate that has fired), cross-goal reuse hints
 - Workflows (`workflow/`) — `WorkflowStore`, `WorkflowPlanner`, `WorkflowScheduler`, step validation, retry, revision history (`workflow_revisions`)
 - Accountability (`accountability/`) — `AccountabilityStore`, weekly activity narrative, cost anomaly detection
-- Agents (`agents/`) — `GoalAgent`, `WorkflowAgent`, the conversational surface for both engines
+- Agents (`agents/`) — `GoalAgent`, `WorkflowManagerAgent`, the conversational surface for both engines
 - Holds (`holds/`) — per-step `approved_writes` from plan approval (`planned.py`), and held writes for unattended runs: `HeldWriteStore`, `HeldWriteResumer`, a 24-hour hold
 - Jobs (`jobs/`) — `AccountabilityJob`, `CostAnomalyJob`, `GoalNarrativeJob`, `GoalSuggestionJob`, `StuckGoalJob`, `HeldWriteExpiryJob`, all scheduled via `ze-proactive`
 - `runtime/contracts.py` — `AutomationPlanner` / `AutomationStore` protocols other packages code against instead of importing concrete goal/workflow types
 
 ### Integration
 
-`ze-api`'s container calls into `bootstrap.py` to construct the goal and workflow stacks, register their proactive jobs, and wire `GoalAgent` / `WorkflowAgent` into the routing graph — this package is wired directly by `ze-api`, not through the `ZePlugin` discovery path (it is core infrastructure, not a domain plugin). `ze-personal`, `ze-calendar`, and other plugins depend on `ze-automation` for goal/workflow types via `ze_sdk.automation`, never by importing `ze_automation` directly from plugin code.
+`ze-api`'s container calls into `bootstrap.py` to construct the goal and workflow stacks, register their proactive jobs, and wire `GoalAgent` / `WorkflowManagerAgent` into the routing graph — this package is wired directly by `ze-api`, not through the `ZePlugin` discovery path (it is core infrastructure, not a domain plugin). `ze-personal`, `ze-calendar`, and other plugins depend on `ze-automation` for goal/workflow types via `ze_sdk.automation`, never by importing `ze_automation` directly from plugin code.
 
 `screen_resolvers.py` registers screen resolvers for `goal`, `goal_gate`, `workflow`, `workflow_execution` and `held_write`, so "this" on a Doing page means that record.
 
@@ -31,7 +31,7 @@ It also owns accountability: the weekly narrative and cost-anomaly detection tha
 | `goals/` | `GoalStore` protocol + `PostgresGoalStore`, `GoalPlanner`, `GoalExecutor`, `GoalSuggestionStore`, types. `lifecycle.py` holds the one pause, abandon, and resume rule set that the chat tools and the goal screen both use. `learning.py` and `proposal.py` hold goal learnings and their promotion to memory |
 | `workflow/` | `WorkflowStore` protocol + `PostgresWorkflowStore`, `WorkflowPlanner`, `WorkflowScheduler`, `runner.py` (unattended runs that hold on a step needing approval), retry, `failure.py` (the `failure_summary` line), revision summaries, validation, types |
 | `accountability/` | `AccountabilityStore`, `ActivitySummary` / `AnomalyRecord` types, narrative building |
-| `agents/` | `GoalAgent`, `WorkflowAgent` |
+| `agents/` | `GoalAgent`, `WorkflowManagerAgent` |
 | `holds/` | `planned.py` (plan-time approval: a step's `approved_writes` lists the irreversible tools it may run, with any arguments; a step edit clears it), `store.py` (`HeldWriteStore` protocol + `PostgresHeldWriteStore`), `resumer.py` (`HeldWriteResumer`: approve, deny, edit, or timeout, then resume the parked run), `types.py` (`HeldWrite`, `HeldWriteStatus`) |
 | `jobs/` | Proactive job wrappers around the goal/workflow/accountability engines; `held_write_expiry.py` (`HeldWriteExpiryJob`, hourly by default) |
 | `runtime/contracts.py` | `AutomationPlanner`, `AutomationStore` — shared protocols |

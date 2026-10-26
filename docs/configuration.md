@@ -541,8 +541,7 @@ invocation ignores this floor.
 An optional System One gate can narrow automatic matches to one skill. It lives under
 [`system_one.surfaces.skills`](#surfacesskills). It is on in the shipped config.
 
-Set `recheck.enabled: false` to stop the daily job. Manual
-`POST /api/v0/skills/{id}/refresh` still works.
+Set `recheck.enabled: false` to stop the daily job. The job is the only refresh path.
 
 ---
 

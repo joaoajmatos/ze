@@ -6,7 +6,7 @@ Content ingestion pipeline — fetch, process, extract, and archive any external
 
 `ze-ingestion` is the pipeline that turns arbitrary external content — a URL, an uploaded file, raw text — into structured knowledge stored in Ze's memory. It classifies the content type, fetches it (via HTTP or browser sidecar), converts it to plain text, runs all registered extractors in parallel to pull out facts and entities, archives the result, and pushes facts to `ze-memory`.
 
-The pipeline is intentionally generic. Domain plugins extend it by registering `Extractor` implementations via `ZePlugin.ingestion_extractors()`. A finance plugin can register a `TransactionExtractor` for PDF bank statements; `ze-ingestion` ships a default `LLMExtractor` that handles everything else. When multiple extractors match, all run in parallel and their results are merged — no extractor has veto power over another.
+The pipeline is intentionally generic. Domain plugins extend it by registering `Extractor` implementations via `ZePlugin.ingestion_extractors()`. `ze-finance` registers a `FinanceIngestionExtractor` for PDF and CSV bank statements; `ze-ingestion` ships a default `LLMExtractor` that handles everything else. When multiple extractors match, all run in parallel and their results are merged — no extractor has veto power over another.
 
 ### Key features
 

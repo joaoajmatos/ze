@@ -212,7 +212,7 @@ The same server also answers `POST /eval/confirm` with `{"session_id": "...", "c
 
 Add `"force_agent": "research"` to the request body to skip routing and run a named agent. The trace shows `routing_method: "forced"`. Use it to measure what one agent does with a prompt the router would send elsewhere.
 
-The server accepts `force_agent` only when it runs with `EVAL_MODE=true`, which `make dev-eval` sets. Any other server answers `403` and runs nothing. An unknown agent name answers `400`. The WebSocket path has no way to set it.
+`/eval/chat`, `/eval/confirm` and `/api/v0/routing/log` exist only when the server runs with `EVAL_MODE=true`, which `make dev-eval` sets. Any other server answers `404` and leaves them out of its OpenAPI schema and `@myguyze/ze-client`. They take the same `Authorization: Bearer` key as the rest of the API. An unknown agent name in `force_agent` answers `400`. The WebSocket path has no way to set it.
 
 ### Sending a screen context
 
@@ -336,6 +336,10 @@ database connection (`DATABASE_URL`), because the API has no create route for mo
 records. Run these scenarios only against a throwaway database. `eval/scenarios/screen_context.yaml`
 covers deixis per place and one `chat_about` scenario per core kind.
 
+### Render scenarios
+
+`eval/scenarios/companion.yaml` has scenarios tagged `render`. Each asks for a table, metric, timeline or form and expects the agent that owns the render tool (research, finance or calendar). Two negative scenarios use `count: 0` entries to prove that no render tool ran on a plain-prose turn. Run them with `--tag render`.
+
 ### Sandbox-only scenarios
 
 A scenario that creates or deletes calendar events sets `requires_sandbox: true`. The
@@ -397,7 +401,7 @@ markdown fences and prose around the object. An unusable reply is recorded as
 `{"error": "unusable judge reply from <model> (...); starts with: '...'"}` on that
 scenario instead of a bare parse error.
 
-The judge sees more than the reply text. It also gets the tool calls from the trace, with a write that waits for confirmation marked as a draft, whether the turn waits for the user, and today's date. Server-side web search never appears in the tool list, and the prompt says so. Without this context the judge scored a pending goal as "no tool call" and a correct new Python release as a hallucination (2 of 5 each).
+The judge sees more than the reply text. It also gets the tool calls from the trace, with a write that waits for confirmation marked as a draft, whether the turn waits for the user, and today's date. For each rendered component it sees the kind and the data, without top-level styling keys, cut to 700 characters. Server-side web search never appears in the tool list, and the prompt says so. Without this context the judge scored a pending goal as "no tool call" and a correct new Python release as a hallucination (2 of 5 each).
 
 ### Multi-turn scenario
 

@@ -22,7 +22,7 @@ The React web client (`apps/ze-web`) uses [Feature-Sliced Design](https://featur
 
 </details>
 
-**Import rule:** a slice imports only from layers below it, via public `index.ts` exports. Enforced by `make lint-web` (`@feature-sliced/eslint-config`).
+**Import rule:** a slice imports only from a strictly lower layer, via public `index.ts` exports. Two slices on the same layer never import each other. Compose same-layer pieces on the layer above, or pass one in through a slot prop (`AppShell` takes `overlay`). `make lint-web` enforces the layer rule with `@feature-sliced/eslint-config`; it does not check deep imports into a slice.
 
 ## The shell and the five places
 

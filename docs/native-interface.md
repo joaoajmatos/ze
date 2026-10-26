@@ -429,7 +429,8 @@ The web app shows the text as visible description text, not only as a tooltip.
 | `history_unavailable` | Ze cannot rewind the thread history, so it refuses before it undoes anything. Sent as a request-time refusal. |
 | `plan_changed` | The plan the client confirmed no longer matches. The frame carries the new `plan`. Nothing changed. Sent as a request-time refusal. |
 | `undo_not_confirmed` | The reply has a plan and the frame did not confirm it. Nothing changed. Sent as a request-time refusal. |
-| `disconnected` | Set by the web app when the socket is down. The server never returns it. |
+
+When the socket is down, the web app disables Retry with its own "Reconnecting" text. The server never returns a reason code for that.
 
 A denied or expired confirmation counts as no action. A failed write call still counts,
 because it may have run in part.
