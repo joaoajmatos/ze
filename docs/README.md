@@ -37,7 +37,7 @@ Design specs (what comes next) live in [`specs/`](../specs/), not here. The cons
 | [ingestion.md](ingestion.md) | Fetchers, processors, extractors, plugin sinks |
 | [news.md](news.md) | RSS ingestion, ranking, credibility |
 | [finance.md](finance.md) | Data sources, CSV import, categories, privacy, deletion |
-| [onboarding.md](onboarding.md) | Plugin-extensible setup, seed review, reset scopes |
+| [onboarding.md](onboarding.md) | Plugin-extensible setup and seed review |
 | [skills.md](skills.md) | Agent Skills — import, review, matching, scripts in the workspace |
 | [data-portability.md](data-portability.md) | Export, import, deletion — `DataDomain` contract |
 

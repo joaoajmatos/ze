@@ -101,6 +101,7 @@ to write the one-line summary the user sees. See [docs/sdk.md](sdk.md#asks-first
 ```python
 from ze_sdk import agent, BaseAgent
 from ze_sdk.types import AgentContext, AgentResult
+from ze_agents.client import LLMClient
 
 _AGENT_INSTRUCTIONS = """
 You are Ze's <name> agent. <Purpose, scope, tone.>
@@ -118,7 +119,8 @@ class MyAgent(BaseAgent):
     timeout      = 30
     tools        = ["get_record", "create_record"]
 
-    def __init__(self, store: MyStore) -> None:
+    def __init__(self, client: LLMClient, store: MyStore) -> None:
+        self._client = client
         self._store = store
 
     async def run(self, ctx: AgentContext) -> AgentResult:
@@ -153,8 +155,8 @@ Plugin discovery is automatic via the `ze.plugins` entry point. If your agent's
 `__init__` takes a type that is not already in the bootstrap dep map, either:
 
 - contribute it from an existing plugin via `agent_deps()`, or
-- add the service to `plugin_deps` in `ze_api/wiring/container.py` inside
-  `build_container()` when it is a shared infra type constructed before plugins load.
+- add the service to the map in `build_dep_map()` in `ze_api/wiring/agents.py` when it is
+  a shared infra type constructed before plugins load.
 
 `NLIClient`, `LLMClient`, `SentenceTransformer` (embedder), and `asyncpg.Pool` are
 already in the dep map — annotate them on your `ZePlugin.__init__` when a job or
@@ -350,8 +352,8 @@ dependencies = [
 ```
 
 Ze discovers and instantiates the plugin at startup via the entry point. Only add
-types to `plugin_deps` in `build_container()` when the plugin constructor needs a
-shared service that is not already in the dep map.
+types to `build_dep_map()` in `ze_api/wiring/agents.py` when the plugin constructor
+needs a shared service that is not already in the dep map.
 
 ### 5. Create a database migration
 
@@ -481,14 +483,14 @@ if not result:
 ```
 
 The error hierarchy:
-- `ZeError` — base class
+- `ZeCoreError` — base class (`ze_agents.errors` also names it `ZeError`)
   - `AgentError` — unrecoverable agent failure
     - `AgentAbortedError` — loop cancelled via `AbortToken`
     - `AgentConfigError` — misconfiguration caught at startup
   - `ChannelError` — channel failure
     - `ChannelSendError` — channel transport failure
 
-`ze_sdk.errors` re-exports these and the rest of the hierarchy (workflow, goal, persona, contribution errors, and more).
+`ze_sdk.errors` re-exports these and the rest of the hierarchy (workflow, goal, persona, channel, UI and more).
 
 ---
 
@@ -501,7 +503,7 @@ The error hierarchy:
 - [ ] `tools.py` with `@tool` functions — `access` and `description` set on each; `reversibility` and `effect_phrase` set on each `WRITE` tool
 - [ ] Module paths added to `plugin.agent_module_paths()` (tools module listed first)
 - [ ] All `__init__` parameters type-annotated
-- [ ] New shared dependencies added to `plugin_deps` in `ze_api/wiring/container.py` (only when no plugin already provides the type)
+- [ ] New shared dependencies added to `build_dep_map()` in `ze_api/wiring/agents.py` (only when no plugin already provides the type)
 - [ ] Progress keys added to `locales/en.yaml` (and `pt.yaml`) in the plugin package
 - [ ] Tests cover the golden path and the park path for asks-first tools
 

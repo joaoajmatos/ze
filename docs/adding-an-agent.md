@@ -1,7 +1,7 @@
 # Ze — Adding a New Agent
 
 This guide explains how to write a new agent. Read it alongside the existing agents
-(`ze_personal/agents/research/`, `ze_messenger/agents/messenger/`) as working examples.
+(`ze_personal/agents/research/`, `ze_calendar/agents/reminders/`) as working examples.
 
 ---
 
@@ -36,19 +36,11 @@ global tool registry when the module is imported.
 
 ```python
 from ze_sdk import tool, ToolAccess, ToolReversibility
-from ze_sdk.types import ToolCall
 
 @tool(access=ToolAccess.READ, description="Search the web for current information.")
-async def web_search(query: str, client: SomeClient, max_results: int = 5) -> ToolCall:
+async def web_search(query: str, client: SomeClient, max_results: int = 5) -> dict:
     results = await client.search(query, max_results=max_results)
-    return ToolCall(
-        tool_name="web_search",
-        args={"query": query, "max_results": max_results},
-        result=results,
-        duration_ms=...,
-        success=True,
-        error=None,
-    )
+    return {"results": results}
 
 @tool(
     access=ToolAccess.WRITE,
@@ -56,7 +48,7 @@ async def web_search(query: str, client: SomeClient, max_results: int = 5) -> To
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="sent an email",
 )
-async def send_email(to: str, subject: str, body: str, client: GmailClient) -> ToolCall:
+async def send_email(to: str, subject: str, body: str, client: GmailClient) -> dict:
     ...
 
 @tool(
@@ -67,7 +59,7 @@ async def send_email(to: str, subject: str, body: str, client: GmailClient) -> T
     undo_note="Does not recall a notification that already showed",
     effect_phrase="set a reminder",
 )
-async def set_reminder(label: str, fire_at: str, store: ReminderStore) -> ToolCall:
+async def set_reminder(label: str, fire_at: str, store: ReminderStore) -> dict:
     ...
 ```
 
@@ -172,7 +164,7 @@ without the reason. A `REVERSIBLE` tool cannot ask first.
     summarize=lambda a: f"to {a.get('to', '')}: {a.get('subject', '')}",
     description="Send an email via Gmail.",
 )
-async def send_email(to: str, subject: str, body: str, client: GmailClient) -> ToolCall:
+async def send_email(to: str, subject: str, body: str, client: GmailClient) -> dict:
     ...
 ```
 
@@ -207,10 +199,9 @@ parameters. They do not import from global state or access `self`.
 ## 3. Write the agent (`agent.py`)
 
 ```python
-from ze_sdk import agent, BaseAgent
+from ze_sdk import agent, BaseAgent, Settings
 from ze_sdk.types import AgentContext, AgentResult
 from ze_agents.client import LLMClient
-from ze_api.settings import Settings
 
 _AGENT_INSTRUCTIONS = """
 You are Ze's <name> agent. <One paragraph: what you do, what you don't do, tone.>
@@ -237,7 +228,6 @@ class MyAgent(BaseAgent):
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"  # optional — used only for a turn System One judges light (complexity surface, on in the shipped config); omit if the agent already uses Haiku
-    vision_capable = False                         # set True if agent should receive image data
     timeout = 30
     workspace_opt_out = False                      # True keeps the workspace_* tools off a store-backed specialist
     tools = ["tool_one", "tool_two"]               # must match @tool-registered names
@@ -252,11 +242,17 @@ class MyAgent(BaseAgent):
 
         result = await self.call_tool("tool_one", ctx, param=ctx.prompt, client=self._client)
 
-        response, loop_calls = await self.agentic_loop(ctx, client=self._client)
+        response, loop_calls = await self.agentic_loop(
+            ctx,
+            client=self._client,
+            messages=list(ctx.messages),
+            system=system,
+            deps=self.tool_deps(),
+        )
 
         return AgentResult(
             agent=self.name,
-            output=response,
+            response=response,
             tool_calls=loop_calls,
         )
 ```
@@ -266,7 +262,7 @@ class MyAgent(BaseAgent):
 | Helper | Description |
 |---|---|
 | `self._build_system_prompt(instructions, ctx)` | Assembles datetime, memory constitution, persona, your job instructions, then retrieved biography |
-| `self.agentic_loop(ctx, client=…)` | Runs the LLM-driven ReAct tool loop; returns `(response, tool_calls)` |
+| `self.agentic_loop(ctx, client, messages, system, deps=…)` | Runs the LLM-driven ReAct tool loop; returns `(response, tool_calls)` |
 | `self.call_tool(name, ctx, **kwargs)` | Runs a single tool, or parks it when the tool asks first; logs the call |
 | `self._model(ctx)` | Returns the model for this turn: the model the engine set on the context, else the class `model`. The engine sets `model_simple` there only for a turn that the complexity surface judges light |
 | `self.emit(ctx, key)` | Sends a localized progress message to the client mid-turn (see [Progress messages](#progress-messages)) |
@@ -277,32 +273,26 @@ Phase 80+ exposes a local cross-encoder via `NLIClient` — already wired in the
 bootstrap dep map. Use it when an agent or plugin job needs to compare text pairs
 (entailment, contradiction) or score how well a claim is grounded in evidence.
 
-**In agents** — inject `NLIClient` in `__init__`, pass it through `agentic_loop`
-deps, and optionally register the shared tools:
+**In agents** — inject `NLIClient` in `__init__` and pass it to your tools through the
+`agentic_loop` deps. Ze ships no shared NLI tools, so write the tool that uses the client:
 
 ```python
-from ze_agents.nli import NLIClient
-from ze_agents.nli_tools import nli_check_entailment, nli_grounding
+from ze_sdk import NLIClient
 
 @agent
 class MyAgent(BaseAgent):
-    tools = ["my_tool", "nli_check_entailment", "nli_grounding"]
+    tools = ["my_tool"]
 
     def __init__(self, openrouter_client: LLMClient, nli_client: NLIClient) -> None:
         self._client = openrouter_client
         self._nli = nli_client
 
-    async def run(self, ctx: AgentContext) -> AgentResult:
-        response, tool_calls = await self.agentic_loop(
-            ctx,
-            client=self._client,
-            deps={"nli_client": self._nli},
-        )
-        ...
+    def tool_deps(self) -> dict:
+        return {"nli_client": self._nli}
 ```
 
-List `ze_agents.nli_tools` in your plugin's `agent_module_paths()` **before** the
-agent module so `@tool` registration runs at import time.
+`my_tool` takes `nli_client: NLIClient` as an internal parameter and calls
+`await nli_client.scores(...)`.
 
 **In plugin jobs and services** — type-annotate `nli_client: NLIClient` on the
 plugin constructor; the bootstrapper resolves it automatically. For batch scoring
@@ -317,8 +307,8 @@ Agents can send localized status strings to the client while they work. The clie
 displays them as a typing indicator with text instead of a plain spinner.
 
 Call `self.emit(ctx, key)` at any point inside `run()` or inside a tool that has
-`reporter` in its deps. Each call resets the 3-second typing indicator timer, so
-long-running operations should emit periodically to keep the indicator alive.
+`reporter` in its deps. Each call sends a `typing` frame with the new text, so
+long-running operations should emit when their stage changes.
 
 **Key convention:** `<domain>.<state>` — e.g. `"news.fetching"`, `"calendar.reading"`.
 
@@ -378,7 +368,7 @@ async def shutdown(self) -> None:
 
 Agents are discovered at startup by importing every module listed in the owning
 plugin's `agent_module_paths()`. Goal and workflow agents are imported directly in
-`ze_api/wiring/container.py` because `ze-automation` is a core package, not a plugin. The
+`ze_api/wiring/agents.py` because `ze-automation` is a core package, not a plugin. The
 bootstrapper then resolves each `@agent` class's
 `__init__` parameters by type-matching against the shared `_dep_map` of services.
 
@@ -398,14 +388,15 @@ def agent_module_paths(self) -> list[str]:
 Ze refuses to start if an agent declares a tool in `tools = [...]` that isn't
 registered — the discrepancy is caught before the app accepts traffic.
 
-**All `__init__` parameters must be type-annotated** — `bootstrap.py` uses
+**All `__init__` parameters must be type-annotated** — `ze_agents/bootstrap.py` uses
 `get_type_hints()` for dependency resolution. Parameters without annotations raise
 `AgentConfigError` at startup.
 
-**If your agent needs a dependency not already in `_dep_map`**, add it to the map
-in `ze_api/wiring/container.py`'s `build_container()` where the dep_map is built, then
-pass it to `bootstrap_agents(deps=...)`. The dep_map keys are Python types; values
-are the live instances.
+**If your agent needs a dependency not already in `_dep_map`**, return it from your
+plugin's `agent_deps()` hook, or add it to the map in `build_dep_map()` in
+`ze_api/wiring/agents.py`. `build_agent_deps()` passes the result to
+`bootstrap_agents(deps=...)`. The dep_map keys are Python types; values are the live
+instances.
 
 ---
 

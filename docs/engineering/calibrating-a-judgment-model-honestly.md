@@ -2,7 +2,7 @@
 
 A gate is only as good as the data it never saw.
 
-Ze uses a small model, System One, for closed questions. It never writes text. It returns a choice among labels, a yes/no probability, or a score. Code reads the answer, compares it with a bar, and decides. Five parts of Ze use it: the commitment intake (facts and loops from conversation), routing, skill matching, the open-loop gate for email, calendar, and ingestion, and loop corroboration. See [System One](../system-one.md) for the design.
+Ze uses a small model, System One, for closed questions. It never writes text. It returns a choice among labels, a yes/no probability, or a score. Code reads the answer, compares it with a bar, and decides. Six parts of Ze use it: the commitment intake (facts and loops from conversation), routing, skill matching, the open-loop gate for email, calendar, and ingestion, loop corroboration, and the choice of model tier. See [System One](../system-one.md) for the design.
 
 This post is about the bars. A bar is the number that says "trust this answer." Picking a bar is easy. Picking one you can defend is the work. Ze's record has five lessons, and several of them are failures.
 
@@ -48,7 +48,7 @@ It had zero research-to-companion misses and zero harmful trusts at every bar. T
 
 The spec did not hide this and did not move the bar quietly. It added a dated clarification. The one miss sits below the trust bar of 0.5, so Ze never acts on it. It falls back to the old decompose path, which is today's behavior. The acceptance rule changed to what actually protects the user: zero harmful trusts, calibration error at most 0.10, zero research-to-companion misses. Raw accuracy stays in the report but does not gate. The user approved the amendment, and the script's FAIL line stays in the record with a note that it is expected.
 
-The complexity score fared worse. It overlapped across levels, so its bar stays unset, and the word-count classifier still picks the model tier.
+The complexity score fared worse. It overlapped across levels, so its bar stayed unset. Phase 182 replaced it with a yes/no question, `needs_deep_reasoning`, and that surface passed a held-out run on 2026-10-16 in both languages. It is on at a bar of 0.40.
 
 ## Lesson 3: the baseline you skip can be broken
 

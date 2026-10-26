@@ -42,6 +42,7 @@ All tests run from the **repository root**. Every package has a `make test-<name
 | `make test-prospecting` | ze-prospecting | pytest |
 | `make test-news` | ze-news | pytest |
 | `make test-finance` | ze-finance | pytest |
+| `make test-scripts` | `scripts/` process kit and graphify re-exports | pytest |
 | `make test-web` / `make web-test` | @myguyze/ze-ui + ze-web | vitest |
 | `make typecheck-web` | @myguyze/ze-ui + ze-web | tsc |
 | `make test-py` | all Python packages | pytest |
@@ -92,8 +93,9 @@ exits non-zero and names each failed target. CI runs `make test-py`, so a local 
 ### Real-Postgres tests
 
 Some regressions need a real Postgres. They live in `apps/ze-api/tests/pg/` and carry the
-`pg` marker: the drift sweep, stuck-goal detection, loop evidence, and the two acceptance
-runs.
+`pg` marker. They cover SQL that mocks cannot check: the drift sweep, stuck-goal detection,
+loop evidence, loop resolution and claim kinds, migration data repairs (`zm025`, `zm026`),
+and the acceptance runs.
 
 `make test-pg` starts a throwaway `pgvector/pgvector:pg16` container, applies the
 migrations, runs the `pg` tests, and removes the container. The container maps a random

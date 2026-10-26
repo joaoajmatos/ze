@@ -24,6 +24,7 @@ Standalone from the runtime path — no import from `ze-api` at startup. Invoked
 |---|---|
 | `runner.py` | Scenario execution against a running Ze instance |
 | `scenario.py` | YAML scenario loading and parsing |
+| `fixtures.py` | Setup rows: inserts the records a scenario points at, and deletes them after |
 | `judge.py` | LLM-as-judge scoring |
 | `verifier.py` | Deterministic assertion checks |
 | `scoring.py` | Score aggregation |

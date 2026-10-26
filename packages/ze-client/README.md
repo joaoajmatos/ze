@@ -12,7 +12,7 @@ Typed TypeScript client for the `ze-api` REST API and WebSocket protocol.
 - Request and response types for every route
 - Types for every WebSocket frame
 - Helpers for file export, archive import, and health checks
-- Plugin UI helpers: load plugin pages, settings, and operations by name
+- Plugin UI helpers: load a plugin settings section, or any manifest operation, by name
 
 ### Integration
 
@@ -27,7 +27,7 @@ Typed TypeScript client for the `ze-api` REST API and WebSocket protocol.
 | `src/generated/ws.ts` | WebSocket frame types |
 | `src/client.ts` | `configure()` and `createZeClient()` |
 | `src/blob.ts` | `downloadExport`, `importArchive`, `healthCheck` |
-| `src/plugin-ui.ts` | `loadPluginPage`, `loadPluginSettings` |
+| `src/plugin-ui.ts` | `loadPluginSettings` |
 | `src/sdk-dispatch.ts` | `invokeSdkOperation`, `loadPluginOperation` |
 | `src/error.ts` | `ApiError` |
 

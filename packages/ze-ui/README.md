@@ -20,7 +20,7 @@ Agents describe UI as trees of primitives (text, table, form, stat row, card, an
 
 ### Integration
 
-`apps/ze-web` renders chat components and plugin pages with this package. Run `make codegen` after you change a `ze-components` primitive. The command rewrites `src/generated/`. A tag that matches `pkg-v*` publishes the package to GitHub Packages.
+`apps/ze-web` renders chat components and plugin modules with this package. Run `make codegen` after you change a `ze-components` primitive. The command rewrites `src/generated/`. A tag that matches `pkg-v*` publishes the package to GitHub Packages.
 
 ## Responsibilities
 
@@ -58,8 +58,9 @@ const actions = {
 <PrimitiveTreeRenderer nodes={nodes} actions={actions} />
 ```
 
-- `classNames` maps a part (`heading`, `body`, `label`, `muted`, `badge`, `card`, `table`, `steps`, `connections`, `button`, `buttonPrimary`, `buttonDanger`, `claimCard`, `claimTimeline`, `divider`) to a class. A mapped part replaces the default classes. An unmapped part keeps them, so a host without a map looks as before.
+- `classNames` maps a part (`heading`, `subheading`, `body`, `label`, `caption`, `code`, `muted`, `badge`, `card`, `table`, `steps`, `connections`, `button`, `buttonPrimary`, `buttonDanger`, `claimCard`, `claimTimeline`, `divider`) to a class. A mapped part replaces the default classes. An unmapped part keeps them, so a host without a map looks as before.
 - `renderHeadline` draws the `headline` primitive. Without it, the text renders as plain type.
+- `onChatAbout` shows the "Chat about this" chip on a claim card and receives a `ChatAboutEvent`.
 
 ## Testing
 
