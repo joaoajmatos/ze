@@ -47,7 +47,7 @@ from ze_automation.push_kinds import (
     GOAL_PLAN_ADAPTED,
     GOAL_REUSE,
 )
-from ze_proactive.types import PushKind, PushOutcome
+from ze_proactive.types import OncePer, PushKind, PushOutcome
 from ze_automation.workspace_unattended import unattended_workspace
 from ze_automation.holds.resumer import (
     confirmation_from_loop,
@@ -800,7 +800,7 @@ class GoalExecutor:
             f"{_html.escape(milestone.reuse_hint)}",
             goal_id=goal.id,
             format="html",
-            budget_key=f"goal_reuse:{milestone.id}",
+            once_per=OncePer(f"goal_reuse:{milestone.id}"),
         )
 
     async def _fetch_prior_work(

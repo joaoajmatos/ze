@@ -1,15 +1,15 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
-import pytest
+from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, create_autospec
 
 from ze_personal.contacts.types import StaleFollowUpNudge
 from ze_personal.jobs.briefing import MorningBriefing
 from ze_personal.push_kinds import MORNING_BRIEF
 from ze_sdk.memory import PostgresMemoryStore
-from ze_sdk.proactive import PushLogEntry
 from ze_agents.settings import Settings
-from ze_sdk.proactive import ProactiveNotifier
+from ze_sdk.proactive import OncePer, ProactiveNotifier
+from ze_automation.workflow.types import WorkflowFailure
 from ze_news.types import Article
 
 
@@ -23,6 +23,7 @@ def make_settings():
 def make_notifier(outcome="delivered"):
     n = MagicMock(spec=ProactiveNotifier)
     n.notify = AsyncMock(return_value=outcome)
+    n.on_cooldown = AsyncMock(return_value=False)
     return n
 
 
@@ -49,12 +50,8 @@ def make_briefing(
     memory_store=None,
     priority_view=None,
 ):
-    push_log = MagicMock()
-    push_log.was_sent_within_hours = AsyncMock(return_value=dedup)
-    push_log.list_workflow_failures_within_hours = AsyncMock(
-        return_value=failures or []
-    )
-    push_log.log = AsyncMock()
+    notifier = notifier or make_notifier()
+    notifier.on_cooldown = AsyncMock(return_value=dedup)
 
     memory = memory_store or MagicMock()
     if memory_store is None:
@@ -66,17 +63,17 @@ def make_briefing(
 
     workflow_store = MagicMock()
     workflow_store.list_enabled_scheduled = AsyncMock(return_value=workflows or [])
+    workflow_store.list_failed_executions = AsyncMock(return_value=failures or [])
 
     b = MorningBriefing(
-        notifier=notifier or make_notifier(),
-        push_log_store=push_log,
+        notifier=notifier,
         memory_store=memory,
         workflow_store=workflow_store,
         settings=settings or make_settings(),
         news_store=news_store,
         priority_view=priority_view or make_priority_view(stale_contacts),
     )
-    return b, push_log
+    return b, workflow_store
 
 
 async def test_briefing_sends_stats():
@@ -97,10 +94,13 @@ async def test_briefing_sends_stats():
 
 async def test_briefing_dedup_skips():
     notifier = make_notifier()
-    b, push_log = make_briefing(dedup=True, notifier=notifier)
+    b, workflow_store = make_briefing(dedup=True, notifier=notifier)
     await b.run()
+    notifier.on_cooldown.assert_awaited_once_with(
+        OncePer("morning_brief", within=timedelta(hours=20))
+    )
     notifier.notify.assert_not_awaited()
-    push_log.log.assert_not_awaited()
+    workflow_store.list_failed_executions.assert_not_awaited()
 
 
 async def test_briefing_includes_nudge_above_threshold():
@@ -124,33 +124,52 @@ async def test_briefing_no_nudge_below_threshold():
 async def test_briefing_includes_failure_summary():
     notifier = make_notifier()
     failures = [
-        PushLogEntry(
-            event_type="workflow_failure:abc",
-            payload="daily_report",
-            sent_at=datetime(2026, 5, 20, 2, 0, tzinfo=timezone.utc),
+        WorkflowFailure(
+            workflow_id=uuid4(),
+            workflow_name="daily_report",
+            execution_id=uuid4(),
+            failed_at=datetime(2026, 5, 20, 2, 0, tzinfo=timezone.utc),
+            error="boom",
         )
     ]
+    b, workflow_store = make_briefing(failures=failures, notifier=notifier)
+    await b.run()
+
+    workflow_store.list_failed_executions.assert_awaited_once_with(24)
+    text = notifier.notify.call_args[0][2]
+    assert "Recent failure: daily_report at 02:00 UTC" in text
+
+
+async def test_briefing_lists_every_failure_of_one_workflow():
+    """Two failed runs of one workflow both appear, alerted or not (US3, SC-004)."""
+    wid = uuid4()
+    failures = [
+        WorkflowFailure(
+            wid,
+            "daily_report",
+            uuid4(),
+            datetime(2026, 5, 20, h, 0, tzinfo=timezone.utc),
+            "x",
+        )
+        for h in (6, 2)
+    ]
+    notifier = make_notifier()
     b, _ = make_briefing(failures=failures, notifier=notifier)
     await b.run()
 
     text = notifier.notify.call_args[0][2]
-    assert "Recent failure" in text
-    assert "daily_report" in text
+    assert text.count("Recent failure: daily_report") == 2
+    assert "at 06:00 UTC" in text and "at 02:00 UTC" in text
 
 
-@pytest.mark.parametrize(
-    ("outcome", "logged"),
-    [("delivered", True), ("held", True), ("failed", False)],
-)
-async def test_briefing_writes_push_log_only_after_delivered_or_held(outcome, logged):
-    notifier = make_notifier(outcome)
-    b, push_log = make_briefing(notifier=notifier)
+async def test_briefing_notifies_once_per_morning_brief():
+    notifier = make_notifier()
+    b, _ = make_briefing(notifier=notifier)
     await b.run()
 
-    if logged:
-        push_log.log.assert_awaited_once_with("morning_brief")
-    else:
-        push_log.log.assert_not_awaited()
+    assert notifier.notify.call_args.kwargs["once_per"] == OncePer(
+        "morning_brief", within=timedelta(hours=20)
+    )
 
 
 async def test_briefing_calls_memory_store_real_interface():
@@ -297,10 +316,8 @@ def make_briefing_with_personalization(
     goal_store=None,
     dedup=False,
 ):
-    push_log = MagicMock()
-    push_log.was_sent_within_hours = AsyncMock(return_value=dedup)
-    push_log.list_workflow_failures_within_hours = AsyncMock(return_value=[])
-    push_log.log = AsyncMock()
+    notifier = notifier or make_notifier()
+    notifier.on_cooldown = AsyncMock(return_value=dedup)
 
     memory = memory_store or MagicMock()
     if not isinstance(memory, MagicMock) or not hasattr(
@@ -311,10 +328,10 @@ def make_briefing_with_personalization(
 
     workflow_store = MagicMock()
     workflow_store.list_enabled_scheduled = AsyncMock(return_value=[])
+    workflow_store.list_failed_executions = AsyncMock(return_value=[])
 
     b = MorningBriefing(
-        notifier=notifier or make_notifier(),
-        push_log_store=push_log,
+        notifier=notifier,
         memory_store=memory_store or memory,
         workflow_store=workflow_store,
         settings=make_settings(),
