@@ -11,8 +11,6 @@ from ze_logging import get_logger
 from ze_agents.screen import ScreenContext
 from ze_agents.types import (
     AgentContext,
-    ConductorState,
-    DelegateTally,
     RetrievalRequest,
 )
 from ze_core.orchestration.state import AgentState
@@ -359,16 +357,6 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     from ze_core.orchestration.procedure_activation import attach_procedure_matches
 
     await attach_procedure_matches(agent_context, config, agent_name)
-
-    ledgers = state.get("conductor_ledgers") or []
-    agent_context.conductor = ConductorState(
-        hint=state.get("conductor_hint"),
-        ledger=list(ledgers[0]) if ledgers else [],
-        tally=DelegateTally(
-            counts=dict(state.get("conductor_delegate_counts") or {}),
-            total=int(state.get("conductor_delegate_total") or 0),
-        ),
-    )
 
     user_message_id = config["configurable"].get("user_message_id")
     if user_message_id is not None:

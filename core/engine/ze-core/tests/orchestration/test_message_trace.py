@@ -30,15 +30,13 @@ async def test_record_trace_serializes_procedure_invocation_ids() -> None:
                 subtasks=[],
             ),
             "agent_result": AgentResult(agent="companion", response="ok"),
-            "agent_context": AgentContext(
-                session_id="s1",
-                prompt="clear inbox",
-                procedure_invocation=ProcedureInvocation(
-            invocation_id=str(invocation_id),
-            procedure_id=str(procedure_id),
-            version_id=str(version_id),
-        ),
-            ),
+            "procedure_invocations": [
+                ProcedureInvocation(
+                    invocation_id=str(invocation_id),
+                    procedure_id=str(procedure_id),
+                    version_id=str(version_id),
+                )
+            ],
         },
         {"configurable": {}},
     )

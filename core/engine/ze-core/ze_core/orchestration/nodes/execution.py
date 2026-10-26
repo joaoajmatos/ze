@@ -11,7 +11,7 @@ from langgraph.types import interrupt
 
 from ze_agents.effects import effect_imperative
 from ze_agents.budget import has_budget, partial_answer
-from ze_agents.derive import for_subtask
+from ze_agents.derive import ChildRunOutcome, for_subtask, outcome_of
 from ze_agents.errors import AgentTimeoutError, LoopParked, UnknownAgentError
 from ze_agents.park import (
     ConfirmItem,
@@ -24,6 +24,7 @@ from ze_agents.registry import get_agent, get_agent_class
 from ze_core.orchestration.child_runs import (
     conductor_input,
     gate_input,
+    merge_outcomes,
     procedure_input,
     runtime_handles,
     tally_from,
@@ -306,35 +307,24 @@ async def _execute_single(
         conductor=conductor_input(state, 0, tally),
         procedure=procedure_input(state, 0),
     )
-    result = await _run_with_timeout(
+    result, outcome = await _run_with_timeout(
         subtask.agent, ctx, token_queue=token_queue, index=0
     )
+    merged = merge_outcomes(state, [outcome], tally)
     if isinstance(result, ParkedSubtask):
-        return {
-            **_park_updates(state, [result]),
-            "agent_context": base_ctx,
-            "conductor_ledgers": [list(ctx.conductor.ledger)],
-            "conductor_delegate_counts": dict(ctx.conductor.tally.counts),
-            "conductor_delegate_total": ctx.conductor.tally.total,
-        }
+        return {**_park_updates(state, [result]), **merged}
     from ze_core.orchestration.procedure_activation import record_guided_actions
 
-    await record_guided_actions(ctx, result, config)
-    base_ctx.procedure_invocation = ctx.procedure_invocation
-    base_ctx.conductor.ledger = ctx.conductor.ledger
-    base_ctx.conductor.tally = ctx.conductor.tally
+    await record_guided_actions(outcome.procedure, result, config)
     components: list = list(state.get("preset_components") or [])
     if component_hook is not None:
         components += component_hook.pop_components(ctx.session_id)
     return {
         **_park_updates(state, []),
+        **merged,
         "agent_result": result,
         "subtask_results": [],
         "components": components,
-        "agent_context": base_ctx,
-        "conductor_ledgers": [list(ctx.conductor.ledger)],
-        "conductor_delegate_counts": dict(ctx.conductor.tally.counts),
-        "conductor_delegate_total": ctx.conductor.tally.total,
     }
 
 
@@ -383,6 +373,7 @@ async def _execute_compound(
         if i not in completed_set and _agent_enabled(st.agent)
     ]
     new_parked: list[ParkedSubtask] = []
+    outcomes: list[ChildRunOutcome] = []
     if to_run:
         ran = await asyncio.gather(
             *[
@@ -390,20 +381,24 @@ async def _execute_compound(
                 for i, st in to_run
             ]
         )
-        for (i, _), outcome in zip(to_run, ran):
-            if isinstance(outcome, ParkedSubtask):
-                new_parked.append(outcome)
+        from ze_core.orchestration.procedure_activation import record_guided_actions
+
+        for (i, _), (result, outcome) in zip(to_run, ran):
+            outcomes.append(outcome)
+            if isinstance(result, ParkedSubtask):
+                new_parked.append(result)
             else:
-                results_by_index[i] = outcome
+                results_by_index[i] = result
+                await record_guided_actions(outcome.procedure, result, config)
 
     ordered_indexes = sorted(results_by_index)
     return {
         **_park_updates(state, new_parked),
+        **merge_outcomes(state, outcomes, tally),
         "agent_result": None,
         "subtask_results": [results_by_index[i] for i in ordered_indexes],
         "completed_subtask_indexes": ordered_indexes,
         "components": list(state.get("preset_components") or []),
-        "agent_context": base_ctx,
     }
 
 
@@ -412,14 +407,18 @@ async def _run_with_timeout(
     ctx: AgentContext,
     token_queue: asyncio.Queue | None = None,
     index: int = 0,
-) -> AgentResult | ParkedSubtask:
+) -> tuple[AgentResult | ParkedSubtask, ChildRunOutcome]:
     """Run one agent. A loop that parked asks-first writes comes back as a
-    `ParkedSubtask`; nothing here ever pauses the graph."""
+    `ParkedSubtask`; nothing here ever pauses the graph. The outcome carries the
+    child's conductor and procedure state either way."""
     try:
-        return await _run_agent(agent_name, ctx, token_queue)
+        result: AgentResult | ParkedSubtask = await _run_agent(
+            agent_name, ctx, token_queue
+        )
     except LoopParked as parked:
         log.info("orchestration_subtask_parked", agent=agent_name, index=index)
-        return ParkedSubtask(index=index, loop=parked.loop)
+        result = ParkedSubtask(index=index, loop=parked.loop)
+    return result, outcome_of(ctx, index)
 
 
 async def _run_agent(

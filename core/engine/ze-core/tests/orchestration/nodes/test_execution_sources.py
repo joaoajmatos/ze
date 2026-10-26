@@ -33,7 +33,7 @@ async def test_context_sources_are_added_to_the_agent_result():
         prompt="p",
     )
 
-    result = await _run_with_timeout("research", ctx)
+    result, _ = await _run_with_timeout("research", ctx)
 
     assert [s.url for s in result.sources] == ["https://ctx.test"]
 
@@ -45,6 +45,6 @@ async def test_result_sources_are_kept_without_duplicates():
         prompt="p",
     )
 
-    result = await _run_with_timeout("research", ctx)
+    result, _ = await _run_with_timeout("research", ctx)
 
     assert [s.url for s in result.sources] == ["https://ctx.test", "https://b.test"]
