@@ -1,28 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 560 868" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dependencies-title dependencies-desc">
+<svg viewBox="0 0 560 1036" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dependencies-title dependencies-desc">
 <title id="dependencies-title">ze-sdk dependencies</title>
-<desc id="dependencies-desc">packages/ze-sdk is the flat re-export layer plugin authors import from, depending on ze-agents, ze-automation, ze-communication, ze-data, ze-logging, ze-memory, ze-onboarding, ze-plugin, and ze-proactive.</desc>
+<desc id="dependencies-desc">packages/ze-sdk is the flat re-export layer plugin authors import from, depending on ze-agents, ze-automation, ze-collision, ze-communication, ze-correlation, ze-data, ze-logging, ze-memory, ze-onboarding, ze-plugin, and ze-proactive.</desc>
 <defs>
 <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
 <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
 </defs>
 <rect width="100%" height="100%" fill="#f7f6f4"/>
-<path d="M 200,400.0 H 262.0 Q 270.0,400.0 270.0,392.0 V 88.0 Q 270.0,80.0 278.0,80.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
-<path d="M 200,404.0 H 262.0 Q 270.0,404.0 270.0,396.0 V 172.0 Q 270.0,164.0 278.0,164.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
-<path d="M 200,408.0 H 262.0 Q 270.0,408.0 270.0,400.0 V 256.0 Q 270.0,248.0 278.0,248.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
-<path d="M 200,412.0 H 262.0 Q 270.0,412.0 270.0,404.0 V 340.0 Q 270.0,332.0 278.0,332.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
-<path d="M 200,416.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
-<path d="M 200,420.0 H 262.0 Q 270.0,420.0 270.0,428.0 V 492.0 Q 270.0,500.0 278.0,500.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
-<path d="M 200,424.0 H 262.0 Q 270.0,424.0 270.0,432.0 V 576.0 Q 270.0,584.0 278.0,584.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
-<path d="M 200,428.0 H 262.0 Q 270.0,428.0 270.0,436.0 V 660.0 Q 270.0,668.0 278.0,668.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
-<path d="M 200,432.0 H 262.0 Q 270.0,432.0 270.0,440.0 V 744.0 Q 270.0,752.0 278.0,752.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,483.3333333333333 H 262.0 Q 270.0,483.3333333333333 270.0,475.3333333333333 V 88.0 Q 270.0,80.0 278.0,80.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,486.6666666666667 H 262.0 Q 270.0,486.6666666666667 270.0,478.6666666666667 V 172.0 Q 270.0,164.0 278.0,164.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,490.0 H 262.0 Q 270.0,490.0 270.0,482.0 V 256.0 Q 270.0,248.0 278.0,248.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,493.3333333333333 H 262.0 Q 270.0,493.3333333333333 270.0,485.3333333333333 V 340.0 Q 270.0,332.0 278.0,332.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,496.6666666666667 H 262.0 Q 270.0,496.6666666666667 270.0,488.6666666666667 V 424.0 Q 270.0,416.0 278.0,416.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,500.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,503.3333333333333 H 262.0 Q 270.0,503.3333333333333 270.0,511.3333333333333 V 576.0 Q 270.0,584.0 278.0,584.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,506.6666666666667 H 262.0 Q 270.0,506.6666666666667 270.0,514.6666666666667 V 660.0 Q 270.0,668.0 278.0,668.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,510.0 H 262.0 Q 270.0,510.0 270.0,518.0 V 744.0 Q 270.0,752.0 278.0,752.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,513.3333333333334 H 262.0 Q 270.0,513.3333333333334 270.0,521.3333333333334 V 828.0 Q 270.0,836.0 278.0,836.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,516.6666666666666 H 262.0 Q 270.0,516.6666666666666 270.0,524.6666666666666 V 912.0 Q 270.0,920.0 278.0,920.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
 
-      <rect x="48" y="376.0" width="32" height="12" rx="2" fill="#f7f6f4"/>
-      <rect x="48" y="376.0" width="32" height="12" rx="2" fill="transparent" stroke="#8052ff" stroke-opacity="0.4" stroke-width="0.8"/>
-      <text x="64" y="385.0" fill="#8052ff" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SDK</text>
-      <rect x="40" y="396.0" width="160" height="40" rx="6" fill="#f7f6f4"/>
-      <rect x="40" y="396.0" width="160" height="40" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
-      <text x="120.0" y="420.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-sdk</text>
+      <rect x="48" y="460.0" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="48" y="460.0" width="32" height="12" rx="2" fill="transparent" stroke="#8052ff" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="64" y="469.0" fill="#8052ff" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SDK</text>
+      <rect x="40" y="480.0" width="160" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="40" y="480.0" width="160" height="40" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="120.0" y="504.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-sdk</text>
     
 
       <rect x="348" y="40" width="32" height="12" rx="2" fill="#f7f6f4"/>
@@ -46,7 +48,7 @@
       <text x="364" y="217" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
       <rect x="340" y="228" width="168" height="40" rx="6" fill="#f7f6f4"/>
       <rect x="340" y="228" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-      <text x="424.0" y="252.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-communication</text>
+      <text x="424.0" y="252.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-collision</text>
     
 
       <rect x="348" y="292" width="32" height="12" rx="2" fill="#f7f6f4"/>
@@ -54,7 +56,7 @@
       <text x="364" y="301" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
       <rect x="340" y="312" width="168" height="40" rx="6" fill="#f7f6f4"/>
       <rect x="340" y="312" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-      <text x="424.0" y="336.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-data</text>
+      <text x="424.0" y="336.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-communication</text>
     
 
       <rect x="348" y="376" width="32" height="12" rx="2" fill="#f7f6f4"/>
@@ -62,7 +64,7 @@
       <text x="364" y="385" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
       <rect x="340" y="396" width="168" height="40" rx="6" fill="#f7f6f4"/>
       <rect x="340" y="396" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-      <text x="424.0" y="420.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-logging</text>
+      <text x="424.0" y="420.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-correlation</text>
     
 
       <rect x="348" y="460" width="32" height="12" rx="2" fill="#f7f6f4"/>
@@ -70,7 +72,7 @@
       <text x="364" y="469" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
       <rect x="340" y="480" width="168" height="40" rx="6" fill="#f7f6f4"/>
       <rect x="340" y="480" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-      <text x="424.0" y="504.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-memory</text>
+      <text x="424.0" y="504.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-data</text>
     
 
       <rect x="348" y="544" width="32" height="12" rx="2" fill="#f7f6f4"/>
@@ -78,7 +80,7 @@
       <text x="364" y="553" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
       <rect x="340" y="564" width="168" height="40" rx="6" fill="#f7f6f4"/>
       <rect x="340" y="564" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-      <text x="424.0" y="588.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-onboarding</text>
+      <text x="424.0" y="588.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-logging</text>
     
 
       <rect x="348" y="628" width="32" height="12" rx="2" fill="#f7f6f4"/>
@@ -86,7 +88,7 @@
       <text x="364" y="637" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
       <rect x="340" y="648" width="168" height="40" rx="6" fill="#f7f6f4"/>
       <rect x="340" y="648" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-      <text x="424.0" y="672.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-plugin</text>
+      <text x="424.0" y="672.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-memory</text>
     
 
       <rect x="348" y="712" width="32" height="12" rx="2" fill="#f7f6f4"/>
@@ -94,12 +96,28 @@
       <text x="364" y="721" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
       <rect x="340" y="732" width="168" height="40" rx="6" fill="#f7f6f4"/>
       <rect x="340" y="732" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-      <text x="424.0" y="756.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-proactive</text>
+      <text x="424.0" y="756.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-onboarding</text>
     
-<line x1="30" y1="820" x2="530" y2="820" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
-<text x="30" y="836" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
-<rect x="120" y="828" width="12" height="12" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1"/>
-<text x="138" y="838" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">This package</text>
-<rect x="280" y="828" width="12" height="12" rx="2" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-<text x="298" y="838" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Dependency</text>
+
+      <rect x="348" y="796" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="796" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="805" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="816" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="816" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="840.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-plugin</text>
+    
+
+      <rect x="348" y="880" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="880" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="889" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="900" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="900" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="924.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-proactive</text>
+    
+<line x1="30" y1="988" x2="530" y2="988" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+<text x="30" y="1004" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="996" width="12" height="12" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1"/>
+<text x="138" y="1006" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">This package</text>
+<rect x="280" y="996" width="12" height="12" rx="2" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+<text x="298" y="1006" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Dependency</text>
 </svg>

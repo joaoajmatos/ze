@@ -443,7 +443,7 @@ The graph layer stores typed relationships between memory objects in the
 
 ### Predicates
 
-![Node and edge diagram of the memory graph layer's seven predicates: Entity DESCRIBES Fact, Fact SOURCED_FROM Episode, Episode MENTIONS Entity, Event PARTICIPATES_IN Entity, Event PROMOTES_TO Fact, TaskState BELONGS_TO_GOAL Goal or Workflow, and Procedure USES_PROCEDURE Goal or Workflow.](diagrams/docs/memory-graph-predicates.svg)
+![Node and edge diagram of the memory graph layer's nine predicates: Entity DESCRIBES Fact, Fact SOURCED_FROM Episode, Episode MENTIONS Entity, Event PARTICIPATES_IN Entity, Event PROMOTES_TO Fact, TaskState BELONGS_TO_GOAL Goal or Workflow, Procedure USES_PROCEDURE TaskState (defined, but no code writes it), Person WORKS_ON Project and Person COLLABORATES_WITH Person (both between Entities).](diagrams/docs/memory-graph-predicates.svg)
 
 <sub>[Interactive version](diagrams/docs/memory-graph-predicates.html)</sub>
 

@@ -19,10 +19,10 @@
 <body>
   <div class="frame">
     <p class="eyebrow">ER / graph layer · Ze memory</p>
-    <h1>The seven typed predicates of the memory graph</h1>
+    <h1>The nine typed predicates of the memory graph</h1>
     <svg viewBox="0 0 1240 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="predicates-title predicates-desc">
       <title id="predicates-title">Typed relationship predicates connecting memory object types in the memory_relationships graph table</title>
-      <desc id="predicates-desc">Node and edge diagram of the memory graph layer's seven predicates: Entity DESCRIBES Fact, Fact SOURCED_FROM Episode, Episode MENTIONS Entity, Event PARTICIPATES_IN Entity, Event PROMOTES_TO Fact, TaskState BELONGS_TO_GOAL Goal or Workflow, and Procedure USES_PROCEDURE Goal or Workflow. Entity is the central referenced type in the first cluster; Goal or Workflow is the fan-in target in the second.</desc>
+      <desc id="predicates-desc">Node and edge diagram of the memory graph layer's nine predicates: Entity DESCRIBES Fact, Fact SOURCED_FROM Episode, Episode MENTIONS Entity, Event PARTICIPATES_IN Entity, Event PROMOTES_TO Fact, TaskState BELONGS_TO_GOAL Goal or Workflow, Procedure USES_PROCEDURE TaskState (defined, but no code writes it), Person WORKS_ON Project and Person COLLABORATES_WITH Person (both between Entities). Entity is the central referenced type.</desc>
       <defs>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
@@ -30,6 +30,10 @@
       <rect width="100%" height="100%" fill="#f7f6f4"/>
 
       <!-- Edges (behind boxes) -->
+      <!-- Entity -> Entity : WORKS_ON (person -> project) -->
+      <path d="M360,100 V78 Q360,70 368,70 H392 Q400,70 400,78 V98" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- Entity <-> Entity : COLLABORATES_WITH (person <-> person) -->
+      <path d="M440,100 V78 Q440,70 448,70 H472 Q480,70 480,78 V98" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
       <!-- Entity -> Fact : DESCRIBES -->
       <path d="M500,128 H632 Q640,128 640,136 V180" fill="none" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
       <!-- Fact -> Episode : SOURCED_FROM -->
@@ -41,9 +45,9 @@
       <!-- Event -> Fact : PROMOTES_TO (offset attach point, x=680, to avoid overlapping SOURCED_FROM's x=640 column) -->
       <path d="M200,236 V372 Q200,380 208,380 H672 Q680,380 680,372 V236" fill="none" stroke="#6b6b6b" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
       <!-- TaskState -> Goal/Workflow : BELONGS_TO_GOAL -->
-      <path d="M860,156 V224 Q860,224 868,224 H1000" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <!-- Procedure -> Goal/Workflow : USES_PROCEDURE -->
-      <path d="M860,316 V248 Q860,248 868,248 H1000" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M880,156 V224 Q880,224 888,224 H1000" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- Procedure -> TaskState : USES_PROCEDURE (defined in predicates.py; no code writes it) -->
+      <path d="M820,316 V164" fill="none" stroke="#6b6b6b" stroke-width="1.2" stroke-dasharray="2,3" marker-end="url(#arrow)"/>
 
       <!-- Edge labels -->
       <rect x="590" y="106" width="76" height="12" rx="2" fill="#f7f6f4"/>
@@ -61,11 +65,17 @@
       <rect x="214" y="292" width="98" height="12" rx="2" fill="#f7f6f4"/>
       <text x="263" y="301" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">PROMOTES_TO</text>
 
-      <rect x="878" y="196" width="108" height="12" rx="2" fill="#f7f6f4"/>
-      <text x="932" y="205" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">BELONGS_TO_GOAL</text>
+      <rect x="890" y="196" width="108" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="944" y="205" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">BELONGS_TO_GOAL</text>
 
-      <rect x="878" y="256" width="108" height="12" rx="2" fill="#f7f6f4"/>
-      <text x="932" y="265" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">USES_PROCEDURE</text>
+      <rect x="704" y="256" width="108" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="758" y="265" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">USES_PROCEDURE</text>
+
+      <rect x="347" y="46" width="66" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="380" y="55" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">WORKS_ON</text>
+
+      <rect x="417" y="46" width="126" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="480" y="55" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">COLLABORATES_WITH</text>
 
       <!-- Node: Entity (focal, aggregate root) -->
       <rect x="340" y="100" width="160" height="56" rx="6" fill="#f7f6f4"/>
@@ -103,7 +113,7 @@
       <text x="860" y="338" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Procedure</text>
       <text x="860" y="354" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">procedure_versions</text>
 
-      <!-- Node: Goal / Workflow (fan-in target) -->
+      <!-- Node: Goal / Workflow -->
       <rect x="1000" y="208" width="160" height="56" rx="6" fill="#f7f6f4"/>
       <rect x="1000" y="208" width="160" height="56" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
       <text x="1080" y="232" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Goal / Workflow</text>
@@ -118,6 +128,8 @@
       <text x="320" y="440" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Standard memory type</text>
       <line x1="540" y1="437" x2="568" y2="437" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
       <text x="576" y="440" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Written on Event.outcome extraction</text>
+      <line x1="800" y1="437" x2="828" y2="437" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="2,3" marker-end="url(#arrow)"/>
+      <text x="836" y="440" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Defined; nothing writes it yet</text>
     </svg>
   </div>
 </body>

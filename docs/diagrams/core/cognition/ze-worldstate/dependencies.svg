@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 560 784" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dependencies-title dependencies-desc">
 <title id="dependencies-title">ze-worldstate dependencies</title>
-<desc id="dependencies-desc">core/cognition/ze-worldstate is the open-loop substrate, depending on ze-agents, ze-components, ze-correlation, ze-data, ze-logging, ze-memory, ze-proactive, and ze-sdk.</desc>
+<desc id="dependencies-desc">core/cognition/ze-worldstate is the open-loop substrate, depending on ze-agents, ze-collision, ze-correlation, ze-data, ze-logging, ze-memory, ze-plugin, and ze-proactive.</desc>
 <defs>
 <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
 <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
@@ -37,7 +37,7 @@
       <text x="364" y="133" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
       <rect x="340" y="144" width="168" height="40" rx="6" fill="#f7f6f4"/>
       <rect x="340" y="144" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-      <text x="424.0" y="168.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-components</text>
+      <text x="424.0" y="168.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-collision</text>
     
 
       <rect x="348" y="208" width="32" height="12" rx="2" fill="#f7f6f4"/>
@@ -77,15 +77,15 @@
       <text x="364" y="553" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
       <rect x="340" y="564" width="168" height="40" rx="6" fill="#f7f6f4"/>
       <rect x="340" y="564" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-      <text x="424.0" y="588.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-proactive</text>
+      <text x="424.0" y="588.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-plugin</text>
     
 
       <rect x="348" y="628" width="32" height="12" rx="2" fill="#f7f6f4"/>
       <rect x="348" y="628" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
-      <text x="364" y="637" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SDK</text>
+      <text x="364" y="637" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
       <rect x="340" y="648" width="168" height="40" rx="6" fill="#f7f6f4"/>
       <rect x="340" y="648" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-      <text x="424.0" y="672.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-sdk</text>
+      <text x="424.0" y="672.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-proactive</text>
     
 <line x1="30" y1="736" x2="530" y2="736" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
 <text x="30" y="752" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>

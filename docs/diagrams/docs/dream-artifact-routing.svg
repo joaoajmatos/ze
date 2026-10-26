@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 1080 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dream-routing-title dream-routing-desc">
   <title id="dream-routing-title">Dream artifact auto-promotion routing</title>
-  <desc id="dream-routing-desc">Routing diagram showing how each dream artifact type reaches its destination: schema and policy candidates stay in staging, synthesized insights and procedures pass through the gates-and-critic check before promoting to memory_facts or procedure_candidates, borderline cases fall back to review, and hindsight facts always require a user decision.</desc>
+  <desc id="dream-routing-desc">Routing diagram showing how each dream artifact type reaches its destination: schema and policy candidates stay in staging, synthesized insights and procedures pass through the gates-and-critic check before promoting to memory_facts or procedure_candidates, a synthesized item that fails the gates or the support bar is rejected, and hindsight facts are always rejected.</desc>
   <defs>
     <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
     <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
@@ -15,10 +15,10 @@
   <rect x="500" y="74" width="80" height="12" rx="2" fill="#f7f6f4"/>
   <text x="540" y="83" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.02em">ALWAYS STAGING</text>
 
-  <!-- hindsight_fact -> User decision (direct, with arc hop over the diamond's borderline path) -->
+  <!-- hindsight_fact -> Rejected (direct, with arc hop over the diamond's failing path) -->
   <path d="M260,380 H550 A10,10 0 0 1 570,380 H820" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
   <rect x="380" y="360" width="128" height="12" rx="2" fill="#f7f6f4"/>
-  <text x="444" y="369" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.02em">NEVER AUTO-PROMOTE</text>
+  <text x="444" y="369" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.02em">ALWAYS REJECTED</text>
 
   <!-- synthesized_insight -> gate diamond (upper-left edge) -->
   <path d="M260,188 H460 Q468,188 468,196 V210 Q468,218 476,218 H492" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
@@ -36,10 +36,10 @@
   <rect x="712" y="292" width="104" height="12" rx="2" fill="#f7f6f4"/>
   <text x="764" y="301" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">PROCEDURE · STRESS-TEST</text>
 
-  <!-- gate diamond -> User decision (borderline, dashed, offset entry from hindsight's straight line) -->
+  <!-- gate diamond -> Rejected (gate or support failure, dashed, offset entry from hindsight's straight line) -->
   <path d="M560,306 V396 Q560,404 568,404 H820" fill="none" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
-  <rect x="590" y="386" width="90" height="12" rx="2" fill="#f7f6f4"/>
-  <text x="635" y="395" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">BORDERLINE</text>
+  <rect x="580" y="386" width="110" height="12" rx="2" fill="#f7f6f4"/>
+  <text x="635" y="395" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">FAILS GATE OR SUPPORT</text>
 
   <!-- Source nodes -->
   <rect x="40" y="60" width="220" height="64" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
@@ -58,7 +58,7 @@
 
   <rect x="40" y="348" width="220" height="64" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
   <text x="150" y="384" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">hindsight_fact</text>
-  <text x="150" y="398" fill="#6b6b6b" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">always needs_review</text>
+  <text x="150" y="398" fill="#6b6b6b" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">always rejected</text>
 
   <!-- Gate diamond (focal) -->
   <polygon points="560,166 650,236 560,306 470,236" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
@@ -80,8 +80,8 @@
   <text x="930" y="302" fill="#6b6b6b" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">creation_method=synthesized</text>
 
   <rect x="820" y="348" width="220" height="64" rx="6" fill="rgba(10,10,10,0.05)" stroke="#6b6b6b" stroke-width="1"/>
-  <text x="930" y="384" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">User decision</text>
-  <text x="930" y="398" fill="#6b6b6b" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">status=needs_review</text>
+  <text x="930" y="384" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Rejected</text>
+  <text x="930" y="398" fill="#6b6b6b" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">status=rejected</text>
 
   <!-- Legend -->
   <line x1="40" y1="416" x2="1040" y2="416" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
@@ -91,5 +91,5 @@
   <rect x="300" y="444" width="14" height="10" rx="2" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
   <text x="320" y="452" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Bypasses gate</text>
   <line x1="500" y1="449" x2="528" y2="449" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
-  <text x="536" y="452" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Falls back to review</text>
+  <text x="536" y="452" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Fails gate or support</text>
 </svg>

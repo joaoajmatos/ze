@@ -356,7 +356,7 @@ Both TTLs are read from `settings.config["memory"]`.
 
 ### Episode archival — `archive_episodes()`
 
-Episodes older than `episode_recency_days` (default: 14 days) that have not yet
+Episodes older than `episode_archive_days` (default: 7 days) that have not yet
 been archived are candidates. If at least `episode_min_archive_batch` (default: 10)
 candidates exist, an LLM summarises the batch into a single archival record
 (`is_archive = true`), and the originals are deleted.
@@ -414,7 +414,7 @@ All memory settings live under `config["memory"]` in `settings.config`:
 | `merge_llm_threshold` | `0.85` | LLM-assisted merge |
 | `contradicted_ttl_days` | `30` | Days before a contradicted fact is hard-deleted |
 | `unreviewed_ttl_days` | `90` | Days before an unreviewed fact is soft-expired |
-| `episode_recency_days` | `14` | Days before an episode is an archival candidate |
+| `episode_archive_days` | `7` | Days before an episode is an archival candidate |
 | `episode_archive_batch` | `20` | Max episodes per archival LLM call |
 | `episode_min_archive_batch` | `10` | Minimum candidates before archival runs |
 
