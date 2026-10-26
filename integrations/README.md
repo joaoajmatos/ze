@@ -29,7 +29,7 @@ ze-google         ←  ze-communication
 ze-trading212     ←  no ze deps
 ze-browser        ←  ze-agents
 ze-notifications  ←  no ze deps
-ze-yt             ←  ze-ingestion
+ze-yt             ←  ze-ingestion, ze-logging
 ```
 
 ## Where new code goes

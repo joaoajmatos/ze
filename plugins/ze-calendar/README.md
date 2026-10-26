@@ -17,7 +17,7 @@ Calendar is one of the most-used agent domains. Users ask about upcoming events,
 
 ### Integration
 
-Entry point `ze_calendar`. Depends on `ze-google` for Calendar API access and `ze-personal` for contact linking. Contributes two agents, the reminder job, REST store for reminders, data domains for reset, and `CalendarSignalSource`.
+Entry point `ze_calendar`. Depends on `ze-google` for Calendar API access and `ze-personal` for contact linking. Contributes two agents, the reminder job, REST store for reminders, data domains (export, import, delete) for the reminder tables, seed domains, and `CalendarSignalSource`.
 
 ```python
 from ze_calendar.plugin import CalendarPlugin
@@ -33,6 +33,13 @@ from ze_calendar.plugin import CalendarPlugin
 | `reminders/` | `ReminderStore`, `CalendarReminderService`, `CalendarReminderStore` |
 | `jobs/` | `CalendarReminderJob` — fires reminders via `ProactiveScheduler` |
 | `timezone/` | `TimezoneService`, `world_time` `@tool` |
+| `api/` | `GET /api/v0/reminders` route and schemas |
+| `signals.py` | `CalendarSignalSource` |
+| `push_kinds.py` | `PushKind`s for user and calendar reminders |
+| `action_records.py` | Action records for reminder and calendar writes |
+| `screen_resolvers.py` | The `reminder` screen resolver |
+| `seed.py` | Dev seed domain (`calendar.dev`) |
+| `migrations/` | `zcal001` — `calendar_reminders`, `user_reminders` |
 | `plugin.py` | `CalendarPlugin(ZePlugin)` — registers agents and jobs |
 
 Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.

@@ -20,7 +20,7 @@ Text-only responses aren't enough for structured data — goal cards, confirmati
 
 ### Integration
 
-Agents call component tools during execution. A harness hook in `ze-api` collects descriptors from the agentic loop and attaches them to the WebSocket message frame's `components` field. `ze-web`'s `ComponentRenderer` deserialises and renders them.
+Agents call component tools during execution. `ComponentCollectionHook` (`hook.py`), registered by `ze-api`, collects descriptors from the agentic loop. `ze-api` attaches them to the WebSocket message frame's `components` field. `PrimitiveRenderer` in `@myguyze/ze-ui` renders them in `ze-web`.
 
 ## Responsibilities
 
@@ -31,7 +31,10 @@ Agents call component tools during execution. A harness hook in `ze-api` collect
 | `atoms/`, `molecules/`, `organisms/`, `patterns/` | Component descriptor dataclasses and helpers |
 | `claims.py` | `ClaimPosture`, `Readout`, `CardAction`, `TimelineEntry`, `headline_text()`, `claim_tone()` |
 | `context.py` | Component context helpers, including `append_serialized()` for components that are already dicts |
-| `tools.py` | Agent tool integration for emitting components |
+| `tools.py` | `render_*` agent tools for emitting components |
+| `hook.py` | `ComponentCollectionHook` — collects the descriptors a loop emits |
+| `serialize.py` | `serialize_primitive` and `serialize_tree` — dataclass to dict, dropping `None` fields |
+| `summary.py` | `describe_components` — a short sentence naming what a reply showed, for history and push bodies |
 
 ## Dependencies
 
@@ -44,9 +47,10 @@ Depends on `ze-agents` and `ze-logging`. No third-party runtime dependencies.
 Agents call component tools during execution; the resulting descriptors are serialised and sent as a `components` field in the WebSocket message frame.
 
 ```python
-from ze_components.types import ComponentDescriptor
+from ze_components import Card, text
+from ze_components.serialize import serialize_tree
 
-descriptor = ComponentDescriptor(type="goal_card", props={"title": "...", "status": "active"})
+tree = serialize_tree([Card(title="Goal", children=[text("On track")])])
 ```
 
 ## Code generation
@@ -57,7 +61,7 @@ Component schemas are generated from Python dataclasses:
 make codegen
 ```
 
-TypeScript types for the web client are generated alongside the JSON schema.
+`make codegen` runs `scripts/codegen.ts`. It writes the TypeScript types and validators for `@myguyze/ze-ui` and `@myguyze/ze-client` alongside the JSON schema.
 
 ## Testing
 

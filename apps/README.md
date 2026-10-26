@@ -22,7 +22,7 @@ implementations. It owns:
 
 - The WebSocket endpoint (`/ws`) and REST management routes
 - `NativeAppInterface` — WebSocket + ntfy push delivery
-- The Alembic meta-runner (`migrate.py`) that runs every package's migration chain. `ze-api` owns no tables.
+- The Alembic meta-runner (`ze_api/cli/migrate.py`) that runs every package's migration chain. `ze-api` owns no tables.
 - `config/config.yaml` and `config/persona.yaml`
 
 ```bash

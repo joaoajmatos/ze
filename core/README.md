@@ -34,9 +34,9 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 | [ze-components](kernel/ze-components/) | Server-driven UI component descriptors for the React web client |
 | [ze-agents](contracts/ze-agents/) | Developer API — `BaseAgent`, `@agent`, `@tool`, shared types, harness hooks |
 | [ze-communication](contracts/ze-communication/) | Channel contract — `Channel`/`InboundChannel` ABCs, message types, `ChannelRegistry` |
-| [ze-plugin](contracts/ze-plugin/) | Plugin framework — `ZePlugin`, channels, signals, `ZeIntegration` protocol |
+| [ze-plugin](contracts/ze-plugin/) | Plugin framework — `ZePlugin`, signals, contribution seam, UI manifest, `ZeIntegration` protocol |
 | [ze-proactive](contracts/ze-proactive/) | Job scheduling — `ProactiveScheduler`, `ProactiveJob`, push log |
-| [ze-core](engine/ze-core/) | LangGraph orchestration, routing, capability gate, OpenRouter and System One clients, telemetry |
+| [ze-core](engine/ze-core/) | LangGraph orchestration, routing, OpenRouter and System One clients, telemetry |
 | [ze-collision](seam/ze-collision/) | Contribution collision detection — cross-function conflict logging |
 | [ze-memory](cognition/ze-memory/) | Memory persistence and retrieval — facts, episodes, graph, consolidation |
 | [ze-correlation](cognition/ze-correlation/) | Cross-domain hypothesis formation from the memory graph |
@@ -45,7 +45,7 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 | [ze-skills](automation/ze-skills/) | Agent Skills — import, review, matching, tool-narrowing |
 | [ze-priority](arbitration/ze-priority/) | Attention arbitration — `PriorityView`, shared push budget, user-directed priority override |
 | [ze-workspace](ops/ze-workspace/) | Isolated computer — files, shell, skill scripts |
-| [ze-onboarding](ops/ze-onboarding/) | Plugin-extensible onboarding coordinator and reset domain types |
+| [ze-onboarding](ops/ze-onboarding/) | Plugin-extensible onboarding coordinator, step and seed types, session store |
 | [ze-ingestion](ops/ze-ingestion/) | Content ingestion pipeline — fetch, process, extract, and archive any external content |
 | [ze-seed](ops/ze-seed/) | Dev data seeder — curated narrative fixtures for local development |
 | [ze-eval](ops/ze-eval/) | Eval infrastructure — runner, judge, verifier, MCP server |
@@ -93,7 +93,7 @@ The plugin entry point (`ze-sdk`) lives in [`packages/ze-sdk`](../packages/ze-sd
 |----------|---------|
 | New agent execution primitive (`BaseAgent` hook, `@tool` behavior) | `ze-agents` |
 | New plugin seam (`ZePlugin` hook, channel type, signal contract) | `ze-plugin` |
-| New infrastructure primitive (router, gate, graph node) | `ze-core` |
+| New infrastructure primitive (router, graph node) | `ze-core` |
 | New memory retrieval policy, graph predicate, or consolidation strategy | `ze-memory` |
 | New cross-domain correlation logic | `ze-correlation` |
 | New server-driven UI component type | `ze-components` |

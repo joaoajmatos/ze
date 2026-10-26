@@ -18,7 +18,6 @@ The pipeline is intentionally generic. Domain plugins extend it by registering `
 - `IngestionStore` — archives processed text and extraction results in `ingested_content`
 - `MemorySink` — pushes extracted facts to `ze-memory` tagged with `source=ingestion:<id>`
 - `IngestionAgent` — routes "save this link / learn from this PDF" intents
-- `POST /api/v0/ingest` REST endpoint for direct ingestion from the web client or CLI
 
 ### Integration
 
@@ -26,10 +25,8 @@ The pipeline is intentionally generic. Domain plugins extend it by registering `
 
 `ze-yt` (in `integrations/`) provides `YtDlpFetcher`, which is registered in the container alongside plugin-contributed fetchers when installed. The pipeline's fetcher priority order is: yt-dlp matchers → plugin fetchers → browser → web fallback.
 
-The `IngestionAgent` is registered via `ze_ingestion.agent` through
-`ZePlugin.agent_module_paths()` and core `import_agent_modules()` in the ze-api container.
-The migration `zi001` (branch `ze_ingestion`) creates the `ingested_content` table and
-is discovered automatically by `ze_api/migrate.py`.
+`ze_ingestion.bootstrap` builds the stack (`build_ingestion_stack`) and exposes `agent_module_paths()` and `import_agent_modules()`, which import `ze_ingestion.agent` so `@agent` registration fires. ze-ingestion is not a `ZePlugin`.
+The migration `zi001` (branch `ze_ingestion`) creates the `ingested_content` table. `ze_api/cli/migrate.py` finds it through `_ZE_INGESTION_VERSIONS`.
 
 ## Responsibilities
 
@@ -41,6 +38,7 @@ is discovered automatically by `ze_api/migrate.py`.
 | `fetchers/` | `Fetcher` protocol, `WebFetcher` (httpx), `BrowserFetcher` (ze-browser) |
 | `processors/` | `Processor` protocol, `HtmlProcessor`, `PdfProcessor`, `AudioProcessor`, `ImageProcessor`, `TextProcessor` |
 | `extractors/` | `Extractor` protocol, `LLMExtractor` (default — JSON summary/facts/entities/tags) |
+| `bootstrap.py` | `build_ingestion_stack` — wires fetchers, processors, extractors, store, and sink; `agent_module_paths()`, `import_agent_modules()` |
 | `pipeline.py` | `IngestionPipeline` — orchestrates classify → fetch → process → extract → store → sink |
 | `store.py` | `IngestionStore` — writes to `ingested_content` table |
 | `sink.py` | `MemorySink` — submits extracted facts to `ze-memory` through the contribution seam (`submit_perception_facts`) |
@@ -56,7 +54,7 @@ Every `WRITE` tool in this package declares `reversibility` and an `effect_phras
 
 <sub>[Interactive version](../../docs/diagrams/core/ops/ze-ingestion/dependencies.html)</sub>
 
-Third-party: `httpx`, `beautifulsoup4`, `pypdf`.
+Third-party: `asyncpg`, `httpx`, `beautifulsoup4`, `pypdf`.
 
 ## Usage
 
@@ -100,18 +98,6 @@ class MyApiFetcher:
 def ingestion_fetchers(self) -> list:
     return [MyApiFetcher()]
 ```
-
-### REST endpoint
-
-```
-POST /api/v0/ingest
-Content-Type: multipart/form-data
-  url:   (optional) URL to ingest
-  file:  (optional) uploaded file
-  label: (optional) user-supplied title
-```
-
-Exactly one of `url` or `file` must be present; 422 otherwise.
 
 ## Testing
 
