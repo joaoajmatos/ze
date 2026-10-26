@@ -25,7 +25,7 @@ or persona.
 - **Accountability** — `ActivitySummary`, `AnomalyRecord`, `build_narrative`: weekly
   synthesis of goal + workflow activity into a user-readable narrative with anomaly
   detection
-- **Agents** — `GoalAgent`, `WorkflowAgent`: conversation agents for goal/workflow
+- **Agents** — `GoalAgent`, `WorkflowManagerAgent`: conversation agents for goal/workflow
   management, routing targets for automation-related messages
 - **Jobs** — goal sweep, workflow sweep, accountability job, goal suggestion job
 - Migrations — `zc` chain continuation (zc006–zc009, zc011, zc014)
@@ -62,8 +62,8 @@ core/automation/ze-automation/ze_automation/
     types.py            ← AnomalyRecord, ActivitySummary
     narrative.py        ← build_narrative (LLM synthesis)
   agents/
-    goal_agent.py       ← GoalAgent (@agent)
-    workflow_agent.py   ← WorkflowAgent (@agent)
+    goals/agent.py      ← GoalAgent (@agent)
+    workflow/agent.py   ← WorkflowManagerAgent (@agent)
   jobs/                 ← goal, workflow, accountability proactive jobs
   runtime/              ← AutomationPlanner, AutomationStore contracts
   migrations/           ← zc continuation chain

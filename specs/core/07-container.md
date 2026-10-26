@@ -14,8 +14,9 @@ the application. The container is responsible for:
 3. Instantiating enabled agents via type-based dependency injection.
 4. Constructing all framework singletons (router, gate, memory store, graph).
 5. Providing a clean `close()` lifecycle hook.
-6. Exposing `invoke()`, `invoke_raw()`, and `resume()` as the preferred graph entry
-   points (optional `AppInterface` and `InputPreprocessor`).
+6. Exposing `invoke()` and `resume()` as graph entry points (optional `AppInterface`).
+   Streamed conversation turns run through `invoke_raw_turn`
+   (`ze_core/conversation/turn.py`).
 
 Ze Core's container is intentionally minimal — it wires the framework, not the
 application. Ze-specific concerns (Telegram bot, proactive schedulers, cost
@@ -35,7 +36,7 @@ telemetry, browser sidecar) are not part of Ze Core's container.
 - Register live agent instances so `get_agent()` works at graph execution time.
 - Call `agent.startup()` on every instantiated agent.
 - Call `agent.shutdown()` on every instantiated agent during `close()`.
-- Run conversation turns via `invoke()` / `invoke_raw()` with optional confirmation
+- Run conversation turns via `invoke()` with optional confirmation
   handling through `AppInterface`.
 
 ## Out of Scope
@@ -94,7 +95,6 @@ class Container:
     memory_consolidator: MemoryConsolidator
     graph: CompiledGraph
     interface: AppInterface | None = None
-    preprocessor: InputPreprocessor | None = None
 
     async def close(self) -> None:
         """Shut down all agents, then release shared resources."""
@@ -110,9 +110,8 @@ class Container:
         log.info("container_closed")
 ```
 
-`interface` and `preprocessor` are optional. When `interface` is set, `invoke()` and
-`resume()` deliver responses and handle the confirmation loop. When `preprocessor` is
-set, `invoke_raw()` runs it before delegating to `invoke()`.
+`interface` is optional. When it is set, `invoke()` and `resume()` deliver responses
+and handle the confirmation loop.
 
 ---
 
@@ -147,16 +146,11 @@ Returns `InvokeResult` with `response`, `confirmation_pending`, or `error`.
 When `interface` is `None`, the graph runs once and the result is returned without
 delivery calls (eval, tests, scripts).
 
-### `invoke_raw(raw, session_id, …)`
+### `invoke_raw_turn`
 
-Runs a turn from transport-layer `RawInput`.
-
-1. If `preprocessor` is registered → `await preprocessor.process(raw, openrouter_client)`.
-2. Else → build `ProcessedInput` from `raw.text` and infer modality from `raw.audio` / `raw.image`.
-3. Call `invoke()` with `processed.prompt`, `processed.input_modality`, and image fields.
-
-Transport handlers (Telegram voice/photo, etc.) should use this entry point when a
-preprocessor is wired. Text-only paths may call `invoke()` directly.
+Transport turns do not go through the container. They call `invoke_raw_turn`
+(`ze_core/conversation/turn.py`) with a `RawInput`; the graph's `preprocess` node
+captions an image. Text-only paths may call `invoke()` directly.
 
 ### `resume(session_id)`
 
@@ -167,14 +161,9 @@ Delivers `final_response` via `interface.send()` when configured.
 
 ```python
 from ze_core.container import Container
-from ze_core.interface.types import RawInput
 
 # Text turn (CLI or pre-normalised Telegram text)
 result = await container.invoke("What's on my calendar?", session_id="user-1")
-
-# Multimodal turn (Telegram photo handler)
-raw = RawInput(text=message.caption, image=jpeg_bytes, image_mime="image/jpeg")
-result = await container.invoke_raw(raw, session_id=str(chat_id))
 
 # Async confirmation resume (Telegram callback handler)
 result = await container.resume(session_id=str(chat_id))
@@ -595,7 +584,6 @@ misconfigured application must not start.
 | `ze_core.memory.store` | `MemoryStore` construction |
 | `ze_core.memory.consolidator` | `MemoryConsolidator` construction |
 | `ze_core.orchestration.graph` | `build_graph()`, `graph_builder()` |
-| `ze_core.interface.base` | `InputPreprocessor` (optional on container) |
 | `ze_core.interface.types` | `RawInput`, `ProcessedInput`, `InvokeResult` |
 | `ze_core.errors` | `AgentConfigError`, `RoutingError`, `InterfaceConfigError` |
 | `ze_core.logging` | Structured logging |

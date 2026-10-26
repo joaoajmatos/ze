@@ -22,12 +22,12 @@ framework imports Telegram, aiogram, Slack SDKs, or any other transport library.
 - `push()` — deliver a proactive notification the user did not request (briefings,
   reminders, alerts, insights).
 - Input normalisation is **not** part of `AppInterface`. Transport adapters build
-  `RawInput` and call `Container.invoke_raw()`, or call `Container.invoke()` directly
-  when input is already text (see Input preprocessing below).
+  `RawInput` and call `invoke_raw_turn` (`ze_core/conversation/turn.py`), or call
+  `Container.invoke()` directly when input is already text (see Input preprocessing below).
 
 Message ingestion (`receive()`) is intentionally absent from this Protocol. The
 transport layer (Telegram webhook handler, CLI input loop) normalises user input
-and invokes the graph via `Container.invoke()` or `Container.invoke_raw()`.
+and invokes the graph via `Container.invoke()` or `invoke_raw_turn`.
 Ze Core does not poll for messages.
 
 ## Out of Scope
@@ -97,18 +97,19 @@ class AppInterface(Protocol):
 
 ## Input Preprocessing
 
-Multimodal transports pass raw bytes (audio, images) to the graph via `RawInput`.
-All LLM-based pre-processing — transcription and vision captioning — happens inside
-the graph's `preprocess` node via `OpenRouterClient` (see `zc-05-orchestration.md`).
+Multimodal transports pass an image to the graph via `RawInput`. Vision captioning
+happens inside the graph's `preprocess` node via `OpenRouterClient` (see
+`zc-05-orchestration.md`). Voice is transcribed before the turn by
+`POST /api/v0/voice/transcriptions`; the turn then carries the transcript as text plus a
+`VoiceInput`.
 
-`Container.invoke_raw()` maps `RawInput` fields directly to `AgentState`:
-- `audio` bytes → `audio_data` / `audio_mime` in graph state
+`invoke_raw_turn` maps `RawInput` fields to `AgentState`:
 - `image` bytes → `image_data` / `image_mime` in graph state
 - `text` → `prompt`
 
 No application-level preprocessor is needed. Transport adapters are responsible only
-for downloading bytes from transport-specific sources (e.g. Telegram CDN) before
-calling `invoke_raw()`. All LLM calls stay inside the graph boundary.
+for obtaining the bytes before calling `invoke_raw_turn`. All LLM calls stay inside the
+graph boundary.
 
 ---
 
@@ -168,7 +169,7 @@ class Notification:
 
 @dataclass
 class InvokeResult:
-    """Return value from Container.invoke(), invoke_raw(), and resume()."""
+    """Return value from Container.invoke() and resume()."""
     session_id: str
     response: str | None = None
     confirmation_pending: bool = False
@@ -294,7 +295,7 @@ The CLI adapter:
 |---|---|
 | `ze_core.errors` | `InterfaceError` base class |
 | `ze_core.orchestration.state` | `AgentState` — read/written by `await_confirmation` node |
-| `ze_core.container` | `invoke_raw()` — calls `InputPreprocessor` when registered |
+| `ze_core.conversation.turn` | `invoke_raw_turn()` — the streamed turn entry point |
 
 ---
 
@@ -302,7 +303,7 @@ The CLI adapter:
 
 | Spec | Relationship |
 |---|---|
-| `zc-07-container.md` | `invoke()`, `invoke_raw()`, `resume()` — graph entry points |
+| `zc-07-container.md` | `invoke()`, `resume()` — graph entry points; `invoke_raw_turn` lives in `ze_core/conversation/turn.py` |
 | `phases/019-multimodal-input/spec.md` | Ze Telegram handlers + Whisper/vision (application layer) |
 | `zc-05-orchestration.md` | `AgentState.input_modality`, `image_data`, vision caption in `embed_route` |
 

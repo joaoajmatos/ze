@@ -21,7 +21,7 @@ other plugins. `bootstrap_agents()` discovers agent module paths via
    mechanism instantiates all agents.
 3. Adding a new plugin agent requires only `agent_module_paths()` on the plugin — no
    edits to ze-api bootstrap (ze-api has no bootstrap module; wiring is in
-   `ze_api/container.py`).
+   `ze_api/wiring/container.py`).
 
 ---
 
@@ -46,7 +46,7 @@ container collects paths from all plugins plus core packages, then calls
 
 | Agent | Package | Module |
 |-------|---------|--------|
-| GoalAgent, WorkflowAgent | `ze-automation` | `ze_automation/agents/` |
+| GoalAgent, WorkflowManagerAgent | `ze-automation` | `ze_automation/agents/` |
 | ResearchAgent, CompanionAgent | `ze-personal` | `ze_personal/agents/` |
 | CalendarAgent, RemindersAgent | `ze-calendar` | `ze_calendar/agents/` |
 | EmailAgent | `ze-email` | `ze_email/agents/` |
@@ -64,7 +64,7 @@ def bootstrap_agents(..., extra_module_paths: list[str] | None = None) -> None:
 ```
 
 ```python
-# ze_api/container.py (simplified)
+# ze_api/wiring/container.py (simplified)
 from ze_agents.bootstrap import bootstrap_agents, import_agent_modules
 from ze_plugin.bootstrap import discover_plugins, instantiate_plugins
 

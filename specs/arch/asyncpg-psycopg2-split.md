@@ -85,4 +85,4 @@ env var convention and documentation.
 ## Links
 
 - `apps/ze-api/ze_api/` — `DATABASE_URL` and `DATABASE_URL_SYNC` in `settings.py`
-- `apps/ze-api/ze_api/migrate.py` — meta-runner using psycopg2-backed Alembic
+- `apps/ze-api/ze_api/cli/migrate.py` — meta-runner using psycopg2-backed Alembic

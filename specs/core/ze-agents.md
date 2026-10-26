@@ -20,7 +20,7 @@ of routing, graph execution, or dependency injection — those live in `ze-core`
 
 ## Responsibilities
 
-- `@agent` — registers a class in `AgentRegistry` at import time; raises at duplicate name
+- `@agent` — registers a class in the module-level agent registry at import time; raises at duplicate name
 - `BaseAgent` — ABC that every agent subclasses; owns `agentic_loop` (ReAct: call LLM → dispatch tool → repeat)
 - `@tool` — registers a callable in the tool registry; enforces type annotations; optional `constraint_gate` (default false) plus `constraint_describe` for writes that must check reviewed constraint facts
 - `LLMClient` — Protocol for `complete` / `stream_complete_with_tools`; injected by engine, never constructed by agents
@@ -48,7 +48,7 @@ of routing, graph execution, or dependency injection — those live in `ze-core`
 ```
 core/contracts/ze-agents/ze_agents/
   base_agent.py       ← BaseAgent ABC + agentic_loop
-  registry.py         ← @agent decorator + AgentRegistry
+  registry.py         ← @agent decorator + module-level agent registry
   tool.py             ← @tool decorator + ToolAccess
   client.py           ← LLMClient Protocol
   db.py               ← DBPool Protocol

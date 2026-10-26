@@ -87,7 +87,7 @@ ze_myplugin = "ze_myplugin.plugin:MyPlugin"
 ```
 
 The engine discovers all `ze.plugins` entry points at startup, instantiates them,
-orders by `plugin_deps`, and calls `startup` in dependency order.
+orders by each plugin's `depends_on`, and calls `startup` in dependency order.
 
 ---
 

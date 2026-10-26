@@ -108,7 +108,7 @@ def _load_agent_embeddings(self) -> None:
         raise RoutingError("No enabled agents found")
     self._agent_names = sorted(enabled.keys())
     descriptions = [enabled[n].description.strip() for n in self._agent_names]
-    self._agent_matrix = self._embedder.encode(descriptions)
+    self._agent_matrix = self._embedder.encode_passage(descriptions)
 ```
 
 Sorted order is deterministic across restarts — important for test fixtures.

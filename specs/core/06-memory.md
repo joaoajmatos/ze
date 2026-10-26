@@ -2,6 +2,8 @@
 >
 > **Current write/read/routing (Phases 140–142, high level):** Conversation facts are not persisted from `AgentResult.memory_proposals` (field removed). Explicit remember/forget is companion tools (`remember_fact` / `forget_fact`) through `submit_perception_facts`. Post-turn extraction is a keep/drop gate with closed predicate families and a `speech_act` field; non-`fact` acts write no facts. Companion retrieval pins reviewed facts always-on; `_format_memory` shows origin/confidence/recency; `_build_system_prompt` leads with constitution + job, then biography. Timed “remember to”, loops, and goals are not biography facts (Phase 142). Constraint veto on mail/calendar writes is not implemented.
 
+> **Dropped tables:** `user_facts`, `episodes` and `user_profile` no longer exist (`zc037`). Facts, episodes and profile facets live in the `memory_*` tables owned by ze-memory; the table sections below are historical.
+
 ---
 
 # Ze Core — Memory — Spec

@@ -41,7 +41,7 @@ integration.
 **Chosen option: Alembic raw SQL (Option 3).**
 
 Migrations are hand-written SQL in `op.execute()` blocks. Each package owns its own
-Alembic chain with a distinct prefix (`zc`, `zm`, `zcal`, etc.). `ze_api/migrate.py`
+Alembic chain with a distinct prefix (`zc`, `zm`, `zcal`, etc.). `ze_api/cli/migrate.py`
 is a meta-runner that discovers all chains via `version_locations` and applies them
 against a single `alembic_version` table.
 
@@ -86,6 +86,6 @@ still requires shims; adds a layer between the SQL and the reader.
 
 ## Links
 
-- `apps/ze-api/ze_api/migrate.py` — meta-runner (discover all chains, run once)
-- `apps/ze-api/migrations/env.py` — Alembic env with `version_locations`
+- `apps/ze-api/ze_api/cli/migrate.py` — meta-runner (discover all chains, run once)
+- `apps/ze-api/ze_api/migrations/env.py` — Alembic env with `version_locations`
 - CLAUDE.md "Migration ownership" — per-package prefix convention
