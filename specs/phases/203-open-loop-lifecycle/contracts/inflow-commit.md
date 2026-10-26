@@ -113,7 +113,7 @@ async def _commit_with_episode(commit, admission, episode_task):
                         evidence=refs, source=admission.source)
 ```
 
-The container sets `configurable["loop_commit"] = self.commitment_intake.loop_inflow.commit` (`apps/ze-api/ze_api/wiring/container.py`, beside `commitment_intake`).
+The container sets `configurable["loop_commit"] = self.commitment_intake.loop_inflow.commit` inside the same `if self.commitment_intake is not None:` block that sets `commitment_intake` (`apps/ze-api/ze_api/wiring/container.py:369-370`).
 
 ## Trace and calibration (spec Clarifications 2026-10-26)
 

@@ -32,9 +32,9 @@ Readers keep reading the same rows: REST lists, matching, surfacing, `PriorityVi
 | `RESOLVE` | → C | → C | → C | no change (`None`) | no change (`None`) | `closed_at`; evidence links. Never a fingerprint (the loop was done, not wrong) |
 | `CLOSE` | refused | → C | → C | refused | refused | `closed_at` |
 | `DROP` | → X | → X | → X | refused | refused | `closed_at`; fingerprint of the loop's evidence, read under the row lock |
-| `EXPIRE` | → X | no change (`None`) | no change (`None`) | no change (`None`) | no change (`None`) | `closed_at`; fingerprint, as `DROP` |
+| `EXPIRE` | → X | no change (`None`) | no change (`None`) | no change (`None`) | no change (`None`) | `closed_at`; fingerprint as `DROP`, except that an empty evidence set writes `NULL` (see below) |
 | `LINK` | S | A | D | no change (`False`) | no change (`False`) | `reminder_id` / `goal_id`, set once, never overwritten; returns whether anything changed |
-| `DECAY` | S (confidence only) | → D | D (confidence only) | C (confidence only) | X (confidence only) | confidence from the evidence-weighted profile; A only: state and the contradiction rationale |
+| `DECAY` | S (confidence only) | → D | D (confidence only) | C (confidence only) | X (confidence only) | under the row lock: read confidence and the evidence count, then write the confidence from the evidence-weighted profile; A only: state and the contradiction rationale |
 | `DRIFT` | no change | → D if `drift_deadline <= now()` | no change | no change | no change | state; the absence rationale |
 
 Rules the table states (FR-003):
@@ -48,7 +48,10 @@ Rules the table states (FR-003):
 
 ### Fingerprint of an empty evidence set
 
-`compute_evidence_fingerprint([])` is the SHA-256 of the empty string, as today. A dropped loop with no evidence therefore blocks a later suspected loop that matches it and also has no evidence. This is today's behavior for a user drop, and a stale expiry now gets it too.
+`compute_evidence_fingerprint([])` is the SHA-256 of the empty string, as today.
+
+- **`DROP`** writes it. A loop the user dropped with no evidence blocks a later matching suspected loop that also has no evidence. This is today's behavior: the user said the concern was wrong.
+- **`EXPIRE`** writes `NULL` instead. An expired hunch with no evidence (a calendar inflow, say) must not block every later evidence-less loop with the same title forever; FR-006 is about the *same evidence* coming back, and there is none. Today an expiry blocks nothing, so this keeps the evidence-less case as it is.
 
 ## The declared stamp (`rules.DeclaredStamp`)
 

@@ -13,7 +13,7 @@ Items are ticked when the artifacts answer them; the answer's location follows t
 - [x] CHK003 - Are all fourteen events named consistently across spec, data model and contract? [Completeness, Spec §FR-001] → FR-001, data-model.md, `LoopEvent`
 - [x] CHK004 - Is the declared stamp's full field set (confidence, `confirmed_at`, deadline, rationale) defined once, with the window source for each user? [Completeness, Spec §FR-004] → data-model.md "The declared stamp"; research R3
 - [x] CHK005 - Is it specified which evidence the drop and expire fingerprints hash (all of the loop's evidence links at the moment of the event)? [Completeness, Spec §FR-006] → data-model.md DROP row
-- [x] CHK006 - Is the fingerprint of a loop with no evidence defined? [Edge Case, Gap] → data-model.md "Fingerprint of an empty evidence set" (added by this checklist)
+- [x] CHK006 - Is the fingerprint of a loop with no evidence defined, separately for drop and expire? [Edge Case, Gap] → data-model.md "Fingerprint of an empty evidence set" (added by this checklist; split for expire after review)
 
 ## Requirement Clarity
 
@@ -32,6 +32,7 @@ Items are ticked when the artifacts answer them; the answer's location follows t
 ## Scenario Coverage (races and recovery)
 
 - [x] CHK015 - Is the ordering between a drop and a concurrent evidence link defined, so the fingerprint cannot miss evidence linked in the same instant? [Coverage, Gap] → research R2 "Row lock first" (added by this checklist)
+- [x] CHK026 - Is decay's computed confidence specified as read under the row lock, so two concurrent decays compose? [Coverage, Gap] → research R2; data-model.md DECAY row (added after review)
 - [x] CHK016 - Are expire-vs-confirm and promote-vs-drop races defined? [Coverage] → data-model.md EXPIRE row (A: no change), PROMOTE row (X: refused) and contracts/inflow-commit.md (`Corroborator` never raises)
 - [x] CHK017 - Is recovery after a failed event specified (nothing kept, error to the caller; fire-and-forget commit logs and never raises)? [Recovery, Spec §SC-001, §FR-010] → contracts/lifecycle-events.md "Atomic"; research R7
 - [x] CHK018 - Is it stated that collision detection cannot roll back a committed create? [Exception Flow] → research R5 (detection runs fire-and-forget after the writer, `ze_collision/detect.py:175-190`)

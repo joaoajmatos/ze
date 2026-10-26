@@ -117,7 +117,7 @@ A maintainer reads how an admitted loop becomes a row. One loop-inflow module ho
 - **Two inflows corroborate the same suspected loop at once.** Only one promotion wins. The other records its source row as a corroboration and does not promote twice (guarded by state, as today).
 - **The title writer returns nothing.** The commit writes nothing and reports why.
 - **A resolve matches no live loop.** Nothing changes, and it is reported as "no match", not as an error.
-- **A stale-suspicion expiry.** It is a drop that records a fingerprint, so an expired hunch does not come straight back from the same evidence.
+- **A stale-suspicion expiry.** It is a drop that records a fingerprint, so an expired hunch does not come straight back from the same evidence. An expiry with no evidence records no fingerprint, so it blocks nothing (as today).
 - **A confirm on a loop that is already active.** It is refused with the same typed error the REST route maps to 409 today.
 - **Decay on a closed or dropped loop.** Confidence may change, but the state never moves.
 
@@ -149,7 +149,8 @@ A maintainer reads how an admitted loop becomes a row. One loop-inflow module ho
   - the declared-create alignment (FR-005);
   - the fingerprint on stale expiry (FR-006);
   - the intake outcome kind strings on the trace, renamed to the commit vocabulary (Clarifications 2026-10-26);
-  - a promote that loses a race no longer lowers the winner's confidence (research R10).
+  - a promote that loses a race no longer lowers the winner's confidence (research R10);
+  - a declared loop whose evidence does not exist is no longer created: the contribution seam now checks the declared path's evidence as it already checks the suspected path's, so the commit reports `error` and writes nothing.
 
 ### Key Entities
 

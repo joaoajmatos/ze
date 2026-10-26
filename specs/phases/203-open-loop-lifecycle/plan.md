@@ -87,8 +87,9 @@ Agreed 2026-10-26 (Handoffs note "203 Handoffs"; Cairn records the same in 202's
 
 | Floor | Shared file | 203's hunk | Rule |
 |---|---|---|---|
-| 201 typed turn services (Specified) | `apps/ze-api/ze_api/wiring/container.py`, `api/deps.py`, the `*Stack`s | one `configurable["loop_commit"]` line beside `commitment_intake`; `LoopTracker(...)` arguments; `get_loop_lifecycle`; `WorldstateStack.lifecycle` | whichever lands second carries the other's lines; 201 moves `loop_commit` into its services object |
-| 204 push bar and cooldowns (Specified) | `ze_worldstate/bootstrap.py` | `build_worldstate_stack` only (the lifecycle and its dep) | 204 owns `build_loop_surfacer`; no shared lines |
+| 201 typed turn services (Specified) | `apps/ze-api/ze_api/wiring/container.py`, `api/deps.py`, the `*Stack`s | one `configurable["loop_commit"]` line inside the same `if self.commitment_intake is not None:` block as `commitment_intake`; `LoopTracker(...)` arguments; `get_loop_lifecycle`; `WorldstateStack.lifecycle` | whichever lands second carries the other's lines; 201 moves `loop_commit` into its services object |
+| 204 push bar and cooldowns (Ready) | `ze_worldstate/bootstrap.py` (204's `bar` lane: `LoopPushSettings`, `build_loop_surfacer`); `apps/ze-api/ze_api/wiring/container.py` (204's `lead`); `wiring/hooks.py` | `build_worldstate_stack` and `WorldstateStack.lifecycle`; the `loop_commit` key and `LoopTracker(...)` in `container.py`; `install_contradiction_hook`, `wire_collision_detection`, `build_commitment_intake` in `hooks.py` | hunks are disjoint; whichever lands second rebases. 204's R14 says it shares no file with 203: the Maestro relays this row to 204's architect so 204's plan lists it too |
+| 200 agent context derivation (Specified) | `apps/ze-api/ze_api/wiring/container.py` | as above | disjoint hunks; rebase note in both plans (relayed by the Maestro) |
 | 212 contribution submitter (Specified, depends on 203) | the loop submit sites | they move from `extraction.py` / `tracking.py` to `lifecycle/events.py` | 212's spec must be re-pointed when it is planned; recorded here for its architect |
 
 ## Project Structure
