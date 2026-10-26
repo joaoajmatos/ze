@@ -80,7 +80,8 @@ specs/phases/200-agent-context-derivation/
 ├── data-model.md        # parts, the 31-field derivation table, AgentState lifetimes
 ├── quickstart.md        # offline validation
 ├── contracts/derivation.md
-├── checklists/requirements.md
+├── checklists/requirements.md   # spec quality (specify)
+├── checklists/derivation.md     # derivation and lifetime requirements (both kept)
 └── tasks.md             # /speckit-tasks
 ```
 
@@ -188,3 +189,14 @@ None.
 | F8 | LOW | T043 and T045 both edited `AGENTS.md`/`specs/README.md` | Rows belong to `docs` |
 | F9 | LOW | T012 rg glob could miss nested test dirs | `**/tests/**/*.py` |
 | F10 | LOW | R3 omitted `ProcedureInvocation.subtask` | Added |
+
+## Review
+
+Vigil, 2026-10-26, range `5426cce1..29582177`: **APPROVE**. Fixed in place:
+
+| # | Severity | Finding | Fix |
+|---|----------|---------|-----|
+| 1 | MEDIUM | `complete_procedure_invocations` indexed `subtask_results[i]`, but that list is ordered by completed index | Pair through `completed_subtask_indexes` (contract, R4, T022); T021 adds the skipped-subtask case |
+| 2 | LOW | `conductor_ledgers` slots beyond routing's single slot were undefined | A missing slot reads `[]`; the merge pads (R5, R7, data-model); T018 (g) |
+| 3 | LOW | Spec Context field counts were off | 19 named + up to 19 spread; delegate 20 |
+| 4 | INFO | Two checklists | Both kept; the tree says so |

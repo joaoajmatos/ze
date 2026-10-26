@@ -57,7 +57,7 @@ Each operation builds its kwargs by walking `dataclasses.fields(AgentContext)` t
 - The new `procedure_invocations: list[ProcedureInvocation]` is ordered by subtask, and each entry carries `subtask: int`.
 - `fetch_context` stops copying conductor state onto the turn context. `execute_tool` builds each child's `ConductorState` from the state (R5) and writes the merged outcome back (R7).
 - `record_trace` reads `turn_ledger(state)`, the flattened ledgers in subtask order, and `procedure_invocations[0]`. The trace fallback that prefers the context's copy (`trace.py:336-341`) is deleted.
-- `write_memory` completes each invocation with its own subtask's result.
+- `write_memory` completes each invocation with its own subtask's result, paired through `completed_subtask_indexes` (`subtask_results` is ordered by completed index; a disabled or parked subtask has no entry).
 
 **Rationale**: the turn context in `state["agent_context"]` is checkpointed and was mutated in place, partly shared by reference (`counts`) and partly copied (`total`, an empty `ledger`). That is how a pause loses state. Two bugs found while re-checking:
 - After a parked delegate resumes, `conductor_delegate_total` drops back to the pre-turn value, because the copy-back reads `base_ctx.total`, which the park path never updated.
@@ -80,7 +80,7 @@ for_subtask(turn, *, prompt, model, messages, runtime, gate, conductor, procedur
 - ze-core's new `orchestration/child_runs.py` builds the inputs from `state`, `config` and the subtask index:
   - `runtime_handles(config, stream=...)` returns a `RuntimeHandles`. The `stream` flag is set only on the single path, so compound subtasks get no `token_sink` (today's behaviour).
   - `gate_input(turn, state, config, index)` returns a `WriteGateState`: the `_pre_approved` union, `_resume_kwargs`, and `retry_mode` from the turn.
-  - `conductor_input(state, index, tally)` returns a `ConductorState`: the state hint, a copy of `conductor_ledgers[index]`, and the shared tally.
+  - `conductor_input(state, index, tally)` returns a `ConductorState`: the state hint, a copy of `conductor_ledgers[index]` (or `[]` when the list has no slot `index`; routing writes one slot for the conductor rewrite, and a compound turn starts with none), and the shared tally.
   - `procedure_input(state, index)` returns the subtask's `ProcedureInvocation`, if it has one.
 - `_build_messages` stays in `execution.py` and is passed as `messages` (the image edge case).
 
@@ -105,7 +105,7 @@ for_subtask(turn, *, prompt, model, messages, runtime, gate, conductor, procedur
 - `ChildRunOutcome(index, conductor, procedure)` is read from the child context with `outcome_of(ctx, index)`. This runs after a run finishes and also after it parks, because `LoopParked` still leaves the context in hand.
 - `_run_with_timeout` returns `(AgentResult | ParkedSubtask, ChildRunOutcome)`.
 - `merge_outcomes(state, outcomes, tally)` in `child_runs.py` returns the state updates:
-  - `conductor_ledgers` with each run subtask's slot replaced.
+  - `conductor_ledgers` with each run subtask's slot replaced, the list first padded with `[]` up to the highest index.
   - `conductor_delegate_counts` and `conductor_delegate_total` from the shared tally.
   - `procedure_invocations` merged by subtask.
 - `execute_tool` calls `merge_outcomes` once per pass, on both the single and the compound path.

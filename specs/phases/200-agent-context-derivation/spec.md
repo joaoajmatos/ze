@@ -24,9 +24,9 @@ Today the derivation of a child context from the turn context has no owner. Each
 
 | Site | What it copies | What it drops (examples) |
 |---|---|---|
-| `ze_core/orchestration/nodes/execution.py:388` (`_execute_single`) | 18 named fields (`timezone` since phase 198), plus four `**_*_kwargs` helpers that spread 16 more | `extensions` (so `user_message_id` is lost), `memory_store`, `sources` |
+| `ze_core/orchestration/nodes/execution.py:388` (`_execute_single`) | 19 named fields (`timezone` since phase 198), plus four `**_*_kwargs` helpers that spread up to 19 more (resume 1–4, prompt notes 5, procedure 6, conductor 4) | `extensions` (so `user_message_id` is lost), `memory_store`, `sources` |
 | `nodes/execution.py:494` (`_execute_compound._make_ctx`) | the same list, written out a second time (line 509 is misindented) | the same |
-| `ze_agents/delegate.py:270` (specialist delegate) | 19 named fields (`timezone` since phase 198) | `embed_fn`, `memory_store`, `token_sink`, `screen_context_note`, `preset_note`, `resume_recap`, `open_priorities_note`, `active_skills`, `skill_tool_names`, the procedure fields (including the `procedure_tool_names` narrowing) and the conductor fields. It also *replaces* `extensions` with `{"_delegate_depth": …}`, so `user_message_id` is lost. Some of these drops may be deliberate; the code does not say which |
+| `ze_agents/delegate.py:270` (specialist delegate) | 20 named fields (`timezone` since phase 198) | `embed_fn`, `memory_store`, `token_sink`, `screen_context_note`, `preset_note`, `resume_recap`, `open_priorities_note`, `active_skills`, `skill_tool_names`, the procedure fields (including the `procedure_tool_names` narrowing) and the conductor fields. It also *replaces* `extensions` with `{"_delegate_depth": …}`, so `user_message_id` is lost. Some of these drops may be deliberate; the code does not say which |
 | `ze_automation/goals/executor.py:908` (goal milestone) | 6 fields (`timezone` since phase 198) plus the resume kwargs | `tool_sink`, `abort_token`, `reporter` |
 | `ze_agents/base_agent.py:355` (`run_undo`), `apps/ze-api/ze_api/api/ws/ui_actions.py:152` (screen action) | `session_id` and an empty prompt | everything, by design |
 

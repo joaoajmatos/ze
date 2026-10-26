@@ -107,7 +107,7 @@ Guarantees:
 | new `orchestration/child_runs.py` | — | `runtime_handles(config, *, stream)`, `gate_input(turn, state, config, index)`, `conductor_input(state, index, tally)`, `tally_from(state)`, `procedure_input(state, index)`, `merge_outcomes(state, outcomes, tally) -> dict`, `turn_ledger(state) -> list[dict]` |
 | `_run_with_timeout(...)` | returns `AgentResult \| ParkedSubtask` | returns `(AgentResult \| ParkedSubtask, ChildRunOutcome)` |
 | `procedure_usage_trace(ctx)` | reads the context | `procedure_usage_trace(state)` reads `procedure_invocations[0]` |
-| `complete_procedure_invocation(ctx, result, config)` | one invocation | `complete_procedure_invocations(state, config)`: each invocation with its own subtask's result |
+| `complete_procedure_invocation(ctx, result, config)` | one invocation | `complete_procedure_invocations(state, config)`: each invocation with its own subtask's result, paired through `dict(zip(completed_subtask_indexes, subtask_results))` (`subtask_results` is ordered by completed index, not subtask index), or `agent_result` on the single path |
 | `record_guided_actions(ctx, result, config)` | single path only | called per finished subtask with that subtask's invocation |
 | `AgentState.conductor_ledger` | `list` | `conductor_ledgers: list[list[dict]]` |
 | `AgentState.procedure_matches` | written, never read | deleted |

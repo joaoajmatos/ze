@@ -98,7 +98,7 @@ Markers (R8): **Input** (supplied by the turn's caller) · **Turn(reset)** · **
 | `conductor_delegate_counts` | Turn | `{}` | |
 | `resume_recap_applied`, `open_items_query` | Turn | `False` | newly reset (FR-008) |
 | `loop_offer_ids`, `pre_approved_writes` | Turn | `[]` | newly reset (FR-008) |
-| `conductor_ledgers` | Turn | `[]` | renamed from `conductor_ledger`; one ledger per subtask |
+| `conductor_ledgers` | Turn | `[]` | renamed from `conductor_ledger`; one ledger per subtask index. A missing slot reads as `[]`; the merge pads before assigning |
 | `procedure_invocations` | Turn | `[]` | new; `list[ProcedureInvocation]` by subtask |
 | `messages`, `last_active_at` | Thread | — | |
 | ~~`procedure_matches`~~ | — | — | deleted (R13) |
