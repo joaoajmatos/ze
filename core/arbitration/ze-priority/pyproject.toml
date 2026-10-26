@@ -14,6 +14,7 @@ dependencies = [
     "ze-automation",
     "ze-correlation",
     "ze-plugin",
+    "ze-proactive",
     "ze-collision",
     "ze-logging",
     "asyncpg==0.31.0",
@@ -39,6 +40,7 @@ ze-worldstate  = { workspace = true }
 ze-automation  = { workspace = true }
 ze-correlation = { workspace = true }
 ze-plugin      = { workspace = true }
+ze-proactive   = { workspace = true }
 ze-collision   = { workspace = true }
 ze-logging = { workspace = true }
 
