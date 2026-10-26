@@ -171,3 +171,20 @@ After the contract merges, each file below has exactly one owner.
 ## Complexity Tracking
 
 None.
+
+## Analysis
+
+`/speckit-analyze`, 2026-10-26, after tasks. There are no CRITICAL or HIGH findings and no constitution conflict. Coverage: 14 of 14 FR and 5 of 5 SC have tasks. Fixed in place:
+
+| ID | Severity | Finding | Fix |
+|----|----------|---------|-----|
+| F1 | MEDIUM | FR-010 did not allow the pause fixes or per-subtask guided actions | FR-010 names them |
+| F2 | MEDIUM | FR-011 implied `loop_active` is inherited | FR-011: it always starts `False` |
+| F3 | MEDIUM | Spec named two lifetimes; plan has four | FR-006 and the Field lifetime entity name all four |
+| F4 | MEDIUM | 198's B1/B6 regression tests not protected by a task | T017, T024, T028, T029 keep them |
+| F5 | MEDIUM | "Per declaring class" reading was unneeded | Verified that a merged cross-module `TypedDict` resolves on Python 3.12.8; `turn_reset(state_type)` takes the merged type |
+| F6 | LOW | Spec had three kinds; plan adds `action` | FR-001, the Derivation entity, SC-001 and the edge case updated |
+| F7 | LOW | "Ledger delta" wording | Child run outcome entity reworded |
+| F8 | LOW | T043 and T045 both edited `AGENTS.md`/`specs/README.md` | Rows belong to `docs` |
+| F9 | LOW | T012 rg glob could miss nested test dirs | `**/tests/**/*.py` |
+| F10 | LOW | R3 omitted `ProcedureInvocation.subtask` | Added |

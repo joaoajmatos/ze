@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-22
 
-**Status**: Draft
+**Status**: Ready to implement
 
 **Depends on**: 198
 
@@ -117,7 +117,7 @@ Each `AgentState` field, including the fields of plugin state extensions, declar
 - **Resumed subtasks.** On resume, the resume kwargs (`_resume_kwargs`: `resume`, `write_decisions`, `approval_request_id`, `write_round`) differ per subtask index. They are inputs to the derivation, not fields it inherits.
 - **Retry runs.** `retry_mode` must reach every derived context, including delegates, because the write gates read it.
 - **Delegate depth.** A delegate's `extensions` carries `_delegate_depth`. The derivation must merge it with the inherited extensions, not replace them, or `user_message_id` is lost again.
-- **Undo and screen actions.** `run_undo` and the screen action run with no turn context. They stay a separate, explicitly minimal construction, also covered by the table test.
+- **Undo and screen actions.** `run_undo` and the screen action run with no turn context. They stay an explicitly minimal construction, made by the owner's `action` kind and covered by the table test.
 - **Workflow steps.** A workflow step is a turn for lifetime purposes. At each step the generated turn reset runs, then the step sets its own prompt and pre-approved writes. Run-scoped workflow fields (`workflow_steps`, `workflow_step_results`, `visit_counts` and the rest of the extension) are declared as such.
 - **Two subtasks invoke a procedure.** Today the compound path records none. With the merge, each subtask's invocation is kept in the child-run outcome, records its own guided actions and is completed with its own subtask's result. The turn's single procedure trace shows the invocation of the lowest subtask index (plan research R7), so REST and WS do not change.
 - **A pause in the middle of a subtask.** Conductor and procedure state from before the pause are kept in the turn state, not on the turn context, so the resumed run starts from them. Today a resumed delegate resets the turn's delegate total, and a procedure invoked before the pause is never completed.
@@ -128,18 +128,18 @@ Each `AgentState` field, including the fields of plugin state extensions, declar
 
 ### Functional Requirements
 
-- **FR-001**: The engine MUST have one owner for deriving a child `AgentContext`, with one operation per kind of run: subtask, delegate, unattended. Child contexts MUST NOT be built field by field anywhere else.
+- **FR-001**: The engine MUST have one owner for deriving a child `AgentContext`, with one operation per kind of run: subtask, delegate, unattended, and the minimal context of an undo or screen action. Child contexts MUST NOT be built field by field anywhere else.
 - **FR-002**: Each `AgentContext` field MUST declare, per kind of derivation, whether it is inherited or reset. A field with no declaration MUST fail a test.
 - **FR-003**: A routed agent, compound subtask, delegate and goal milestone MUST receive the user's timezone.
 - **FR-004**: A derived context MUST keep the parent's `extensions` (including `user_message_id`), merged with any keys that kind of derivation adds, such as `_delegate_depth`.
 - **FR-005**: Conductor state (hint, ledger, per-agent delegate counts, total) and procedure invocation state MUST flow from a child run back to the turn through one returned value. Code that copies these fields back from a child context MUST be deleted.
-- **FR-006**: Each `AgentState` field MUST declare its lifetime (turn or thread) and its reset value where it lives. The graph input for a new turn MUST be generated from those declarations.
+- **FR-006**: Each `AgentState` field MUST declare its lifetime (turn, with its reset value; input, supplied by whoever starts the turn; thread; or run, kept across one workflow run) where it lives. The graph input for a new turn MUST be generated from those declarations.
 - **FR-007**: Plugin state extensions MUST declare field lifetimes the same way. Building the graph MUST fail when an extension field has none.
 - **FR-008**: `resume_recap_applied`, `open_items_query`, `loop_offer_ids` and `pre_approved_writes` MUST each be declared, so the generated reset covers them, or they are thread-scoped with a recorded reason. `AgentState.procedure_matches`, which nothing reads, MUST be deleted (pre-v1 hard cut). (`compaction_span` was cut by phase 198.)
 - **FR-009**: The `getattr(..., default)` guards on `AgentContext` fields in `nodes/execution.py` and `nodes/trace.py` that exist only because the fields might be missing MUST be removed, because the type guarantees the fields.
-- **FR-010**: Behaviour MUST NOT change otherwise, apart from FR-012 (a delegate now gets the timezone and `user_message_id`), FR-013 and FR-014. The existing turn, conductor, write-confirmation, retry and workflow test suites MUST pass unchanged, apart from tests that asserted the old hand copies.
+- **FR-010**: Behaviour MUST NOT change otherwise, apart from FR-012 (a delegate now gets the timezone and `user_message_id`), FR-013 (including each compound subtask now recording its own procedure's guided actions), FR-014, and the two pause fixes that follow from FR-005 (edge case "A pause in the middle of a subtask"). The existing turn, conductor, write-confirmation, retry and workflow test suites MUST pass unchanged, apart from tests that asserted the old hand copies.
 
-- **FR-011**: The write-gate fields (`resume`, `write_decisions`, `pre_approved_writes`, `write_round`, `approval_request_id`, `loop_active`, `retry_mode`) MUST be grouped into one part of `AgentContext`. Each derivation MUST declare that part as one unit: a subtask and a delegate inherit it, with the resume inputs set per subtask, and an unattended run gets only its pre-approved writes and no Retry.
+- **FR-011**: The write-gate fields (`resume`, `write_decisions`, `pre_approved_writes`, `write_round`, `approval_request_id`, `loop_active`, `retry_mode`) MUST be grouped into one part of `AgentContext`. Each derivation MUST declare that part as one unit: a subtask and a delegate inherit it, with the resume inputs set per subtask, and an unattended run gets only its pre-approved writes and no Retry. `loop_active` always starts `False` in a derived context, because only the child's own loop sets it.
 - **FR-012**: A delegate MUST inherit the caller's timezone, `extensions` (merged with `_delegate_depth`), `embed_fn` and `memory_store`. It MUST NOT inherit the token sink, the prompt notes (screen, preset, resume recap, open priorities, preset key), the skill narrowing (`active_skills`, `skill_tool_names`) or the procedure state and narrowing. Each reset MUST carry its reason in the derivation declaration.
 - **FR-013**: In a compound turn, the child-run outcomes of all subtasks MUST merge into the turn: ledger entries concatenate in subtask order, per-agent delegate counts and the delegate total sum, and the per-specialist and per-turn delegate caps MUST apply across all subtasks of the turn.
 - **FR-014**: The workflow graph MUST reset turn-scoped state at every step from the same declarations. `load_workflow_step` MUST NOT keep its own reset list. Workflow extension fields MUST be declared run-scoped.
@@ -147,16 +147,16 @@ Each `AgentState` field, including the fields of plugin state extensions, declar
 ### Key Entities
 
 - **Turn context**: the `AgentContext` that `fetch_context` builds for one turn. Every other context in the turn is derived from it.
-- **Derivation**: one named way to make a child context: subtask, delegate or unattended. Each declares what it inherits and what it resets.
-- **Child run outcome**: what a child run hands back besides its `AgentResult`: the conductor ledger delta, delegate counts and procedure invocation.
-- **Field lifetime**: whether an `AgentState` field is turn-scoped (reset at each turn, and at each workflow step) or thread-scoped (kept across turns; a workflow run's own fields are kept for the run).
+- **Derivation**: one named way to make a child context: subtask, delegate, unattended or action (the minimal undo and screen-action context). Each declares what it inherits and what it resets.
+- **Child run outcome**: what a child run hands back besides its `AgentResult`: its conductor ledger, the delegate counts and total of the turn, and its procedure invocation.
+- **Field lifetime**: whether an `AgentState` field is turn-scoped (reset at each turn, and at each workflow step), an input (supplied by whoever starts the turn, such as the prompt and the session id), thread-scoped (kept across turns) or run-scoped (a workflow run's own fields, kept across its steps).
 - **Write-gate state**: the part of a context that the write gates read: the parked loop to resume, the user's decisions, pre-approved writes, the confirmation round and request id, whether the loop is active, and Retry mode. Phase 209's write gate reads it.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: No file outside the derivation owner builds an `AgentContext` from another `AgentContext`. A grep for `AgentContext(` finds the turn context in `fetch_context`, the derivation owner, and the two minimal constructions (undo and screen action).
+- **SC-001**: No file outside the derivation owner builds an `AgentContext` from another `AgentContext`. A grep for `AgentContext(` in source finds only the turn context in `fetch_context` and the derivation owner; the two minimal constructions (undo and screen action) go through the owner too.
 - **SC-002**: The derivation table test covers every `AgentContext` field for every derivation kind: 100% of fields declared.
 - **SC-003**: The reset test covers every `AgentState` and state-extension key: 0 undeclared keys.
 - **SC-004**: Adding a new `AgentContext` field requires editing exactly one place for inheritance, down from three to six today.

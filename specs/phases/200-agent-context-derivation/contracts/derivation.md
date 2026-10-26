@@ -86,13 +86,13 @@ class Run:
 Lifetime = Turn | Input | Thread | Run
 
 def field_lifetimes(td: type) -> dict[str, Lifetime]: ...   # raises UndeclaredLifetimeError
-def turn_reset(*tds: type) -> dict[str, Any]: ...           # fresh value per call
+def turn_reset(state_type: type) -> dict[str, Any]: ...     # merged type OK; fresh value per call
 ```
 
 Usage on a `TypedDict` field: `judgments: Annotated[list, Turn(factory=list)]`.
 
 Guarantees:
-- `field_lifetimes` reads `get_type_hints(td, include_extras=True)` on the class that declares the fields and takes the first lifetime marker in the `Annotated` metadata.
+- `field_lifetimes` reads `get_type_hints(td, include_extras=True)` (a merged `TypedDict` resolves on Python 3.12) and takes the first lifetime marker in the `Annotated` metadata.
 - An unannotated field raises `UndeclaredLifetimeError`, which names the class and field.
 - `turn_reset` returns a new list or dict on every call, so two turns never share one.
 

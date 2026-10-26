@@ -43,7 +43,7 @@ Repo-root paths below:
   - `turn_reset` returns only `Turn` keys.
   - Two `turn_reset` calls never share a list or dict (mutate one, check the other).
   - `Input`, `Thread` and `Run` keys are omitted.
-  - A merged `type(..., (A, B), {})` `TypedDict` is never read directly (`field_lifetimes` is called per declaring class).
+  - A merged `type("M", (A, B), {})` `TypedDict` built from two modules with forward refs resolves, and `turn_reset(M)` covers both bases.
 - [ ] T003 [L:lead] Implement `AG/ze_agents/lifetime.py` (`Turn`, `Input`, `Thread`, `Run`, `field_lifetimes`, `turn_reset`) per `contracts/derivation.md`. Add `UndeclaredLifetimeError` and `UndeclaredDerivationError` (both `ZeError`) to `AG/ze_agents/errors.py`. T002 passes.
 - [ ] T004 [L:lead] In `AG/ze_agents/types.py`, add `WriteGateState`, `DelegateTally`, `ConductorState` and `ProcedureInvocation`, and regroup `AgentContext` into the 31 fields of `data-model.md`. The 15 flat fields go: no alias, no property (Principle VIII). Keep the "runtime-only, never checkpoint" comments on the fields that stay.
 - [ ] T005 [P] [L:lead] Write `AG/tests/test_derive_table.py` (failing first):
@@ -65,7 +65,7 @@ Repo-root paths below:
   - Rename `conductor_ledger` to `conductor_ledgers: list` (one ledger per subtask).
   - Add `procedure_invocations: list` and delete `procedure_matches`.
   - `build_state_type` calls `field_lifetimes` on `AgentState` and on each extension before merging.
-  - Add `with_turn_reset(node, state_type)`: an async wrapper returning `{**turn_reset(*declaring classes), **await node(state, config)}`.
+  - Add `with_turn_reset(node, state_type)`: an async wrapper returning `{**turn_reset(state_type), **await node(state, config)}`.
 
   Tests:
   - New `ZC/tests/orchestration/test_state_lifetimes.py`: every key is declared (SC-003); the reset values equal the data-model table; an extension `TypedDict` with an unmarked field makes `build_state_type([plugin])` and `build_graph(..., plugins=[plugin])` raise `UndeclaredLifetimeError` naming the field (US3 scenario 3); `with_turn_reset` output starts from the reset and lets the node's keys win.
@@ -88,7 +88,7 @@ Repo-root paths below:
 - [ ] T012 [L:lead] Mechanical test updates. Find every test that sets or reads a folded field or `conductor_ledger`:
 
   ```
-  rg -l 'ctx\.(resume|write_decisions|pre_approved_writes|write_round|approval_request_id|loop_active|retry_mode|conductor_|procedure_invo|procedure_tool_names)|(write_decisions|pre_approved_writes|write_round|approval_request_id|loop_active|conductor_[a-z_]+|procedure_invo[a-z_]+|procedure_tool_names)=|"conductor_ledger"|"procedure_matches"' --glob '*/tests/*.py' core plugins apps packages
+  rg -l 'ctx\.(resume|write_decisions|pre_approved_writes|write_round|approval_request_id|loop_active|retry_mode|conductor_|procedure_invo|procedure_tool_names)|(write_decisions|pre_approved_writes|write_round|approval_request_id|loop_active|conductor_[a-z_]+|procedure_invo[a-z_]+|procedure_tool_names)=|"conductor_ledger"|"procedure_matches"' --glob '**/tests/**/*.py' core plugins apps packages
   ```
 
   The list includes `AgentContext(retry_mode=…)` kwargs. Rewrite each to the parts; assertions keep their meaning. The list in `research.md` R3 counts about 40 files across ze-agents, ze-core, ze-memory, ze-automation, ze-calendar, ze-messenger and ze-api.
@@ -118,7 +118,7 @@ Repo-root paths below:
   - Only the single path gets a `token_sink`.
   - An image turn's child gets the image message.
 - [ ] T016 [L:engine] [US1] Create `ZC/ze_core/orchestration/child_runs.py` with `runtime_handles(config, *, stream)`, `gate_input(turn, state, config, index)` (moves `_pre_approved` and `_resume_kwargs`), `tally_from(state)`, `conductor_input(state, index, tally)` and `procedure_input(state, index)`.
-- [ ] T017 [L:engine] [US1] In `ZC/ze_core/orchestration/nodes/execution.py`, both paths build the child with `for_subtask(...)` from `child_runs`. Delete `_conductor_kwargs`, `_prompt_note_kwargs`, `_procedure_kwargs`, `_pre_approved`, `_resume_kwargs` and the second hand-written list in `_make_ctx` (this also removes the misindented line). T015 passes. `ZC/tests/orchestration/nodes/test_execution_context_notes.py` and `test_execution.py` pass; update only the assertions that checked the deleted helpers.
+- [ ] T017 [L:engine] [US1] In `ZC/ze_core/orchestration/nodes/execution.py`, both paths build the child with `for_subtask(...)` from `child_runs`. Delete `_conductor_kwargs`, `_prompt_note_kwargs`, `_procedure_kwargs`, `_pre_approved`, `_resume_kwargs` and the second hand-written list in `_make_ctx` (this also removes the misindented line). T015 passes. `ZC/tests/orchestration/nodes/test_execution_context_notes.py` and `test_execution.py` pass; update only the assertions that checked the deleted helpers. Keep phase 198's B1 timezone regression tests as they are.
 
 ### Edges lane (delegate, goal milestone, screen action)
 
@@ -128,8 +128,8 @@ Repo-root paths below:
   - It has no `token_sink`, notes, skills, procedure state, or `conductor.deadline`, even when the caller's deadline is set (no `WRAP_UP_NOTE` in the specialist's loop).
   - `retry_mode` reaches it (edge case "Retry runs").
   - A depth-1 caller is still refused.
-- [ ] T028 [L:edges] [US1] In `AG/ze_agents/delegate.py`, build `sub_ctx` with `for_delegate(ctx, prompt=prompt, resume=resume)`. Delete the hand-written construction. T027 and the rest of `test_delegate.py` pass.
-- [ ] T029 [P] [L:edges] [US1] In `ZA/ze_automation/goals/executor.py`, `_execute_milestone` builds with `for_unattended(session_id=…, prompt=…, timezone=self._timezone, memory_store=self._memory, extensions={"goal_id": …}, pre_approved=…, resume=resume.gate() if resume else None)`. Add a test in `ZA/tests/goal_engine/test_executor.py` that the milestone prompt shows the executor's timezone (SC-005). `test_executor_hold.py` passes (held resume).
+- [ ] T028 [L:edges] [US1] In `AG/ze_agents/delegate.py`, build `sub_ctx` with `for_delegate(ctx, prompt=prompt, resume=resume)`. Delete the hand-written construction. T027 and the rest of `test_delegate.py` pass, including phase 198's B1 delegate timezone test.
+- [ ] T029 [P] [L:edges] [US1] In `ZA/ze_automation/goals/executor.py`, `_execute_milestone` builds with `for_unattended(session_id=…, prompt=…, timezone=self._timezone, memory_store=self._memory, extensions={"goal_id": …}, pre_approved=…, resume=resume.gate() if resume else None)`. Add a test in `ZA/tests/goal_engine/test_executor.py` that the milestone prompt shows the executor's timezone (SC-005). `test_executor_hold.py` passes (held resume), and so does phase 198's B1 milestone timezone test.
 - [ ] T030 [P] [L:edges] [US1] `API/ze_api/api/ws/ui_actions.py` `_context` returns `for_action(thread_id)`. `API/tests/api/ws/test_ui_actions.py` passes.
 
 **Checkpoint**: US1 is done when T015–T017 and T027–T030 are green.
@@ -165,7 +165,7 @@ Repo-root paths below:
   - `nodes/trace.py`: use `turn_ledger(state)`, the conductor hint from state, and the procedure from state; delete `_conductor_ledger`'s context fallback (FR-009).
   - `nodes/context.py`: stop setting conductor state on the turn context.
   - T021 passes.
-- [ ] T024 [L:engine] [US2] Update the assertions that pinned the old hand copies in `ZC/tests/orchestration/test_write_confirmation_compound.py`, `test_write_confirmation_e2e.py`, `test_message_trace.py`, `test_retry_mode.py` and `nodes/test_execution.py`. Only assertions about copies change; behaviour assertions stay (FR-010).
+- [ ] T024 [L:engine] [US2] Update the assertions that pinned the old hand copies in `ZC/tests/orchestration/test_write_confirmation_compound.py`, `test_write_confirmation_e2e.py`, `test_message_trace.py`, `test_retry_mode.py` and `nodes/test_execution.py`. Only assertions about copies change; behaviour assertions stay (FR-010), and so does phase 198's B6 test (`test_compaction_readout.py`).
 - [ ] T025 [L:engine] [US2] Run the grep gate:
   - `rg -n 'getattr\((ctx|base_ctx|agent_context), "' ZC/ze_core/orchestration/nodes/{execution,trace}.py` finds no `AgentContext` field (FR-009).
   - `rg -n "_sync_procedure_invocation|base_ctx\.conductor|conductor_delegate_total = " core` finds nothing (FR-005).
@@ -185,7 +185,7 @@ Repo-root paths below:
   - Every `Turn` key of `AgentState` equals its reset value; every `Input` key comes from the `RawInput`; no `Thread` or `Run` key is present.
   - A `state_type` with an extra `Turn` key gets that key reset.
   - A two-turn graph run (with `write_confirmation_harness.build_graph`) shows that `loop_offer_ids`, `open_items_query`, `resume_recap_applied` and `pre_approved_writes` set in turn 1 start empty in turn 2 (US3 scenario 1, FR-008), and `messages` and `last_active_at` survive (US3 scenario 2).
-- [ ] T032 [L:edges] [US3] `ZC/ze_core/conversation/turn.py`: `make_graph_input(raw, session_id, state_type=AgentState)` returns `{**turn_reset(AgentState, *extension classes of state_type), **inputs}`. Delete the hand-kept dict and its docstring note about `messages`; keep the docstring's explanation of why `Thread` keys are absent. `make_graph_input_from_raw_text` is unchanged.
+- [ ] T032 [L:edges] [US3] `ZC/ze_core/conversation/turn.py`: `make_graph_input(raw, session_id, state_type=AgentState)` returns `{**turn_reset(state_type), **inputs}`. Delete the hand-kept dict and its docstring note about `messages`; keep the docstring's explanation of why `Thread` keys are absent. `make_graph_input_from_raw_text` is unchanged.
 - [ ] T033 [L:edges] [US3] `Container.state_type` (default `AgentState`) in `ZC/ze_core/container.py`, set where the graph is built (`:369`) from `build_state_type(resolved_plugins)`. Set it in `API/ze_api/wiring/container.py` (`:626`). `invoke_raw_turn` and `Container.invoke` pass it to `make_graph_input`. T031 passes.
 - [ ] T034 [P] [L:edges] [US3] Write `API/tests/test_workflow_turn_reset.py` (failing first). Build the workflow graph with stub nodes and run two steps: step 1 writes `judgments`, `components`, `tier` and a conductor ledger; step 2 starts with all four empty, while `workflow_steps`, `workflow_step_results` and `visit_counts` keep their values (US3 scenario 4). The cancel short-circuit still reaches `workflow_cancelled` with the step results.
 - [ ] T035 [L:edges] [US3] `API/ze_api/wiring/workflow_graph.py`:
@@ -209,7 +209,7 @@ Repo-root paths below:
   - SC-005: confirm the four timezone tests (T015 single and compound, T027 delegate, T029 milestone) are named in the run.
   - Record the results in "200 Handoffs".
 - [ ] T042 [L:lead] Run `graphify update .`, then `graphify affected AgentContext --depth 1`, and confirm no new construction site. Save the outcome with `graphify save-result ... --memory-dir /Users/joaoamatos/coding/ze/graphify-out/memory`.
-- [ ] T043 [L:lead] After the docs lane: tick every task. Set `spec.md` Status to Implemented, the `specs/README.md` 200 row, and the AGENTS.md phase row (with docs), then run the after_implement hook (`speckit-process-after-implement`).
+- [ ] T043 [L:lead] After the docs lane: tick every task, set `spec.md` Status to Implemented, and run the after_implement hook (`speckit-process-after-implement`). The `AGENTS.md` and `specs/README.md` rows belong to `docs` (T045).
 - [ ] T044 [P] [L:docs] Public docs, following the `doc-style` skill:
   - `docs/architecture.md`: replace "Graph input factory" with how lifetimes generate the turn input and the workflow step reset; add an "Agent context derivation" subsection (one owner, four kinds, a delegate's inheritance, one outcome per child run).
   - `docs/sdk.md`: the `AgentContext` table gets `write_gate`, `conductor` and `procedure_invocation`; the `state_extensions()` row says every field needs a `Turn`/`Input`/`Thread`/`Run` marker from `ze_sdk.types` or startup fails; list the new `ze_sdk.types` exports and `UndeclaredLifetimeError`.
@@ -217,8 +217,8 @@ Repo-root paths below:
 - [ ] T045 [P] [L:docs] Package READMEs and indexes:
   - `core/contracts/ze-agents/README.md`: module rows for `derive.py` and `lifetime.py`.
   - `packages/ze-sdk/README.md`: the `types.py` row names the lifetime markers.
-  - `AGENTS.md`: layout rows for `derive.py`, `lifetime.py` and `ze_core/orchestration/child_runs.py`, and the phase 200 row.
-  - `specs/README.md`: the 200 row.
+  - `AGENTS.md`: layout rows for `derive.py`, `lifetime.py` and `ze_core/orchestration/child_runs.py`, and the phase 200 row, set to Implemented.
+  - `specs/README.md`: the 200 row, set to Implemented.
 - [ ] T046 [L:docs] Docs coverage check:
   - `git diff main...HEAD --stat` and `git diff main...HEAD -- '*.py' | rg '^\+(def|class) '`. Every renamed or new public symbol (`for_*`, `Turn`/`Input`/`Thread`/`Run`, `WriteGateState`, `ConductorState`, `ProcedureInvocation`, `conductor_ledgers`, `make_graph_input(state_type)`, `begin_workflow_turn(state_type)`) is described in a touched doc, or the docs lane notes why no public doc mentions it.
   - `rg -n "conductor_ledger\b|procedure_invocation_id|pre_approved_writes|write_decisions|AgentState.procedure_matches" docs README.md core/*/*/README.md packages/*/README.md` finds no stale mention.

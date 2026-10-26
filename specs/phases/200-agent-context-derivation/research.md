@@ -35,7 +35,7 @@ Each operation builds its kwargs by walking `dataclasses.fields(AgentContext)` t
 
 - `WriteGateState`: `resume`, `decisions`, `pre_approved`, `round`, `approval_request_id`, `loop_active`, `retry_mode`. It is `AgentContext.write_gate` (FR-011). Phase 209's gate reads it. The name avoids a clash with 209's `WriteGate`.
 - `ConductorState`: `hint`, `ledger`, `tally: DelegateTally` (`counts`, `total`), `deadline: float | None`, `stalls: dict[str, str]`. It is `AgentContext.conductor`.
-- `ProcedureInvocation`: `invocation_id`, `procedure_id`, `version_id`, `tool_names`. It is `AgentContext.procedure_invocation: ProcedureInvocation | None`.
+- `ProcedureInvocation`: `invocation_id`, `procedure_id`, `version_id`, `tool_names`, `subtask`. It is `AgentContext.procedure_invocation: ProcedureInvocation | None`.
 
 `procedure_guidance` and `procedure_matches` stay flat: they are turn inputs from `fetch_context`, not run results.
 
@@ -124,7 +124,7 @@ for_subtask(turn, *, prompt, model, messages, runtime, gate, conductor, procedur
 - `Thread(reason)`: kept across turns (`messages`, `last_active_at`).
 - `Run(reason)`: kept across the steps of one workflow run and set when the run starts. The reset treats it like `Thread`.
 
-`field_lifetimes(td)` reads `get_type_hints(td, include_extras=True)` on each declaring `TypedDict`, never on the merged class. A field with no marker raises `UndeclaredLifetimeError` (new `ZeError` in `ze_agents/errors.py`), which names the field and its class. `turn_reset(td)` returns `{key: fresh reset value}` for every `Turn` key.
+`field_lifetimes(td)` reads `get_type_hints(td, include_extras=True)`. This works on the merged class too: Python 3.12.8 resolves forward refs of a `type("M", (A, B), {})` `TypedDict` whose bases come from different modules (scratch check, 2026-10-26). `build_state_type` still validates `AgentState` and each extension separately, so the error names the declaring class. A field with no marker raises `UndeclaredLifetimeError` (new `ZeError` in `ze_agents/errors.py`), which names the field and its class. `turn_reset(td)` returns `{key: fresh reset value}` for every `Turn` key.
 
 - `build_state_type(plugins)` validates `AgentState` and every extension, so a missing declaration fails graph build, which is startup (US3 scenario 3).
 - `make_graph_input(raw, session_id, state_type=AgentState)` returns `{**turn_reset(state_type), **inputs}`.

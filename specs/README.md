@@ -263,7 +263,7 @@ depend on code the earlier waves change.
 |---|---|---|---|---|
 | 198 | [Audit Bug Fixes](phases/198-audit-bug-fixes/spec.md) | 0 | — | ✅ Implemented (no migration) |
 | 199 | [Claim Honesty Fixes](phases/199-claim-honesty-fixes/spec.md) | 0 | — | ✅ Implemented |
-| 200 | [Agent Context Derivation](phases/200-agent-context-derivation/spec.md) | 1 | 198 | 📝 Specified |
+| 200 | [Agent Context Derivation](phases/200-agent-context-derivation/spec.md) | 1 | 198 | 🔲 Ready to implement (no migration) |
 | 201 | [Typed Turn Services](phases/201-typed-turn-services/spec.md) | 1 | 200 | 📝 Specified |
 | 202 | [Judgment Surface](phases/202-judgment-surface/spec.md) | 1 | 198 | 📝 Specified |
 | 203 | [Open-Loop Lifecycle](phases/203-open-loop-lifecycle/spec.md) | 1 | 199 | 📝 Specified |
