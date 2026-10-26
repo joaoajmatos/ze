@@ -119,7 +119,9 @@ Each `AgentState` field, including the fields of plugin state extensions, declar
 - **Delegate depth.** A delegate's `extensions` carries `_delegate_depth`. The derivation must merge it with the inherited extensions, not replace them, or `user_message_id` is lost again.
 - **Undo and screen actions.** `run_undo` and the screen action run with no turn context. They stay a separate, explicitly minimal construction, also covered by the table test.
 - **Workflow steps.** A workflow step is a turn for lifetime purposes. At each step the generated turn reset runs, then the step sets its own prompt and pre-approved writes. Run-scoped workflow fields (`workflow_steps`, `workflow_step_results`, `visit_counts` and the rest of the extension) are declared as such.
-- **Two subtasks invoke a procedure.** Today the compound path records none. With the merge, each subtask's invocation is kept in the child-run outcome; planning decides how the turn's single procedure trace shows more than one.
+- **Two subtasks invoke a procedure.** Today the compound path records none. With the merge, each subtask's invocation is kept in the child-run outcome, records its own guided actions and is completed with its own subtask's result. The turn's single procedure trace shows the invocation of the lowest subtask index (plan research R7), so REST and WS do not change.
+- **A pause in the middle of a subtask.** Conductor and procedure state from before the pause are kept in the turn state, not on the turn context, so the resumed run starts from them. Today a resumed delegate resets the turn's delegate total, and a procedure invoked before the pause is never completed.
+- **Conductor run state.** The soft deadline and the stall details are the conductor's own run state. They live in the conductor part, not in `extensions`, so a delegate that inherits `extensions` does not inherit the companion's deadline.
 - **Goal milestones** run unattended with no turn. `for_unattended` lists what an unattended run gets: the timezone from settings, `memory_store`, `pre_approved_writes` and the goal id. It does not get prompt notes.
 
 ## Requirements *(mandatory)*
