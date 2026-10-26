@@ -117,7 +117,7 @@ Depends on `ze-agents`, `ze-data`, and `ze-logging`.
 | `ze_sdk.memory` | `MemoryContext`, `Fact`, `Episode`, `Procedure`, `Entity`, `TaskState`, `RetrievalRequest`, `MemoryStore`, `PostgresMemoryStore` |
 | `ze_sdk.onboarding` | `OnboardingProvider`, `OnboardingStep`, `OnboardingField`, `OnboardingSeed`, `OnboardingResult`, setup seed and submission types |
 | `ze_sdk.automation` | `Goal`, `GoalStatus`, `GoalStore`, `GoalSuggestionStore`, `Workflow`, `WorkflowStep`, `WorkflowStore`, `WorkflowScheduler`, `AutomationPlanner`, `AutomationStore` |
-| `ze_sdk.errors` | The error hierarchy, rooted at `ZeCoreError` |
+| `ze_sdk.errors` | The error hierarchy, rooted at `ZeError` |
 | `ze_sdk.contribution` | Contribution seam types and `validate_and_submit` |
 | `ze_sdk.correlation` | Signal and hypothesis types for correlation |
 | `ze_sdk.screen` | Screen-context contract: `ScreenResolver`, `ScreenRef`, `ScreenLine`, `sanitize_text` |

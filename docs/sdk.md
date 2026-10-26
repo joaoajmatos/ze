@@ -24,7 +24,7 @@ from ze_sdk.screen import ScreenResolver, ScreenLine, ScreenRef
 from ze_sdk.ui import UiContribution, ModuleSubject, ModuleResult
 from ze_sdk.api import require_api_key
 from ze_sdk.onboarding import OnboardingProvider, OnboardingStep, OnboardingField, OnboardingSeed, OnboardingResult
-from ze_sdk.errors import ZeCoreError, AgentError, AgentAbortedError, AgentConfigError, ChannelSendError
+from ze_sdk.errors import ZeError, AgentError, AgentAbortedError, AgentConfigError, ChannelSendError
 ```
 
 ---
@@ -571,11 +571,11 @@ Re-exports the goal and workflow types, stores and contracts: `Goal`, `Milestone
 
 ## `ze_sdk.errors` — error hierarchy
 
-Always raise a typed `ZeCoreError` subclass. Never raise bare `Exception` or `ValueError`.
+Always raise a typed `ZeError` subclass. Never raise bare `Exception` or `ValueError`.
 
 | Error class | When to raise |
 |-------------|--------------|
-| `ZeCoreError` | Base class (`ze_agents.errors` also names it `ZeError`). Do not raise directly. |
+| `ZeError` | Base class. Do not raise directly. |
 | `AgentError` | Unrecoverable agent-level failure (unexpected LLM response, missing result). |
 | `AgentAbortedError` | Agent loop was cancelled via `AbortToken`. |
 | `AgentConfigError` | Misconfiguration detected at startup (missing type hints, unregistered tool). |
