@@ -1,8 +1,7 @@
 # Ze — Communication Channels
 
-Ze connects to the user's communication channels and treats them as first-class
-parts of the assistant system — not just output sinks for sending messages.
-This document covers the channel abstraction, the inbound pipeline, thread
+Ze connects to the user's communication channels. A channel is a source of
+input as well as a place to send messages. This document covers the channel abstraction, the inbound pipeline, thread
 routing, and how to add a new channel.
 
 For the architectural invariants that all phases must respect, see
@@ -44,7 +43,7 @@ whatsapp:+351912345678
 `channel_id` identifies the *instance*. Routing, watermarks, and thread
 ownership all key off `channel_id`, never `ChannelType` alone.
 
-`GmailChannel` resolves its `channel_id` lazily — it makes a `getProfile` call
+`GmailChannel` resolves its `channel_id` lazily. It makes a `getProfile` call
 on first use and caches the result. Until resolved it falls back to `"email"`.
 The polling job forces resolution before writing the watermark row, so the DB
 always gets the stable key.
@@ -99,9 +98,9 @@ an LLM call.
 
 `ChannelRegistry` holds two indexes:
 
-- `dict[ChannelType, Channel]` — last registered wins per type (for non-routed
+- `dict[ChannelType, Channel]`: last registered wins per type (for non-routed
   access, e.g. `registry.get(ChannelType.EMAIL)`)
-- `dict[channel_id, InboundChannel]` — one entry per instance
+- `dict[channel_id, InboundChannel]`: one entry per instance
 
 ```python
 registry.inbound_channels()          # all InboundChannel instances
@@ -180,22 +179,22 @@ them from conversation grouping.
 
 ### `MessagingSignalSource`
 
-Push-then-drain buffer: `InboundMessageProcessor` pushes a `Signal` per
-significant message; the correlation engine drains it on each cycle.
+`MessagingSignalSource` is a push-then-drain buffer. `InboundMessageProcessor` pushes a `Signal` per
+significant message, and the correlation engine drains it on each cycle.
 
-`external_ref = message_id` is the dedup key — the admission gate in `ze-memory`
+`external_ref = message_id` is the dedup key. The admission gate in `ze-memory`
 skips signals already seen, so restarting the polling job never double-counts.
 
 ---
 
 ## Thread ownership and routing
 
-A thread belongs to exactly one of Ze's channel instances — the one that
+A thread belongs to exactly one of Ze's channel instances: the one that
 received or sent the first message in that thread.
 
 **`ThreadChannelMap`** is the single source of truth. The following populate it:
-- `InboundMessageProcessor.process()` — for every non-automated message with a `thread_id`
-- `send_email` tool — after every successful send
+- `InboundMessageProcessor.process()`, for every non-automated message with a `thread_id`
+- the `send_email` tool, after every successful send
 
 **Send routing priority** (in `send_email`):
 1. Thread known → use its mapped channel
@@ -232,7 +231,7 @@ records on `user_channel_watermarks` (`last_outcome`, `last_outcome_at`): `ok`,
 `auth_failed`, or `failed`. A channel with polling turned off reports `off` first;
 otherwise a push channel, or one with no recorded outcome yet, reports `unknown`.
 The job never moves the watermark on a failure, so a channel that has never
-worked still shows up — it is registered on its first failed poll, not only on
+worked still shows up: Ze registers it on its first failed poll, not only on
 success. A 401 from Google counts as `needs_reauth` (`ze_google.is_auth_failure`).
 
 Sample response:
@@ -309,7 +308,7 @@ class ProtonMailChannel(InboundChannel):
 | `get_thread` | Messages sorted by `sent_at` ascending. `is_outbound=True` for Ze's messages. |
 | `poll_new_messages` | Return only messages received after `since`. Populate `headers` with transport-level headers. `subject` is `None` for channels that don't have a subject concept. |
 
-Wrap transport exceptions as `ChannelSendError` (from `ze_sdk.errors`) — never
+Wrap transport exceptions as `ChannelSendError` (from `ze_sdk.errors`). Never
 let raw provider errors escape the channel boundary.
 
 ### 3. Wire via a plugin
@@ -332,7 +331,7 @@ class ProtonPlugin(ZePlugin):
 ```
 
 The polling job, message processor, signal source, thread map, and status route all
-pick it up automatically — you need no further wiring.
+pick it up automatically. You need no further wiring.
 
 ### 4. Automated sender classification
 

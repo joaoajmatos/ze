@@ -43,7 +43,7 @@ Its summary line is blunt: the executive layer was built broadly and worked narr
 
 **F3: stuck-goal detection crashed.** The query for stuck goals called `.tzinfo` on a timestamp that is null for gates that have not fired. A goal with one open gate and any later gate raised an error. On the dev database, a goal idle for 108 days never produced an alert, and it dropped out of the priority ranking.
 
-The audit also noted that the speech-act judge and the loop gate both read every message and could disagree (Phase 173 later merged them into one intake), that interruption governance covered two sources while about fifteen others were free, and that the dev database held no loops at all. It states its own limit up front: there was no real usage to measure, so nothing in it shows that the layer helps. That candor made the repair list credible.
+The audit also noted that the speech-act judge and the loop gate both read every message and could disagree (Phase 173 later merged them into one intake), that interruption governance covered two sources while about fifteen others were free, and that the dev database held no loops at all. It states its own limit up front: there was no real usage to measure, so nothing in it shows that the layer helps.
 
 ## The repairs
 
@@ -63,7 +63,7 @@ Phase 170 is the most instructive. The fix for F1 was not clever. It switched dr
 
 ## Independence is code, not a model opinion
 
-Phase 172 shows a design habit worth copying. When a new text matches a suspected loop, Ze must decide whether it counts as corroboration. A second mention from the same email thread should not count twice.
+Phase 172 shows a design habit. When a new text matches a suspected loop, Ze must decide whether it counts as corroboration. A second mention from the same email thread should not count twice.
 
 Code decides independence. A source counts only when its key (the inflow plus a thread, event, or document reference) is new to the loop, its evidence is not already linked, and its key does not sit on a matching dropped loop. If the source is not independent, Ze makes no model request.
 
@@ -75,7 +75,7 @@ The model judges meaning. Code judges everything else.
 
 ## What is still open
 
-The note ends with honest limits, and so does this post.
+The note ends with its limits, and so does this post.
 
 - The corroboration surface is off, and the judgment behind it needs a larger held-out set before another verdict.
 - Intake runs from conversation, email, calendar, and ingestion. Waiting-for tracking and a Today view were recommended next and are not built.

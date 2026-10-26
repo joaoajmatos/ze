@@ -29,7 +29,7 @@ Five of the six surfaces are on in the shipped config, each with bars measured o
 
 ## Goal engine
 
-Hand Ze an objective and it decomposes into milestones, dispatches them to specialist agents on a schedule, pauses at verification gates with a progress narrative, replans on failure, and writes a retrospective when it finishes. Steer mid-flight by talking — no slash commands. Background sweep runs every 15 minutes regardless of whether you're online.
+Hand Ze an objective and it decomposes into milestones, dispatches them to specialist agents on a schedule, pauses at verification gates with a progress narrative, replans on failure, and writes a retrospective when it finishes. You steer mid-flight by talking, with no slash commands. A background sweep runs every 15 minutes whether or not you're online.
 
 Goals are the heavyweight, declared end of Ze's executive function. Most real commitments never get declared as a goal.
 
@@ -45,7 +45,7 @@ Most of what someone means to follow up on is smaller than a goal: a promise mad
 
 <sub>[Interactive version](diagrams/root/open-loops.html)</sub>
 
-Goals and open loops are Ze's two hands of executive function: one heavyweight and declared, one lightweight and ambient. Together they're the shipped first slice of what the doctrine calls **active concerns** — the fourth face of Ze's world-state, the model of you the rest of the system attaches to. See [the doctrine](../specs/arch/ze-doctrine.md) and [cognitive architecture](cognitive-architecture.md).
+Goals and open loops are Ze's two tools for executive function: one heavyweight and declared, one lightweight and ambient. Together they are the shipped first slice of what the doctrine calls active concerns, the fourth face of Ze's world-state. See [the doctrine](../specs/arch/ze-doctrine.md) and [cognitive architecture](cognitive-architecture.md).
 
 Hypotheses Ze forms from cross-domain evidence are listed over REST, and you can dismiss one (not relevant, or muted). A dismissed hypothesis is no longer pushed, ranked or offered in conversation, and clearing the dismissal brings it back. Dismissal applies to that one hypothesis: if Ze later forms the same connection again, it is a new hypothesis. A confirmed hypothesis stays listed as confirmed whatever its feedback. Reminders are listed over REST as upcoming, overdue or fired. Confidence values are stored in single precision and only the last change is kept, so clients should round and compare with a tolerance.
 
@@ -62,11 +62,11 @@ Ze extracts facts and episodes after each turn, consolidates them nightly, and s
 
 ## Dreaming
 
-Every night Ze runs an offline memory improvement loop — sleep pass then dream pass. The sleep pass replays high-priority episodes, compresses old sessions, deduplicates facts, and identifies schema and policy clusters using structural analysis (the sleep pass makes no model call of its own). The dream pass then synthesizes those clusters into insights, procedures, and plan stress-tests using a haiku-class generator.
+Every night Ze runs an offline memory improvement loop: a sleep pass, then a dream pass. The sleep pass replays high-priority episodes, compresses old sessions, deduplicates facts, and identifies schema and policy clusters using structural analysis (the sleep pass makes no model call of its own). The dream pass then synthesizes those clusters into insights, procedures, and plan stress-tests using a haiku-class generator.
 
 Nothing synthetic goes straight to memory. Every artifact passes three cheap pre-gates (NLI groundedness, embedding novelty, retrievability) and two adversarial LLM critic calls at sonnet-class before reaching a morning integration step that enforces session-diversity and temporal-spread requirements. Promoted facts carry lineage that traces each run. The morning step promotes or rejects every artifact; no review queue exists. Synthetic facts that go uncorroborated for 90 days are automatically expired.
 
-The design is drawn from neuroscience (NREM/REM ordering, targeted memory reactivation) and ML (PER, Constitutional AI-style critic filtering, generative replay safety). It's the first layer of Ze becoming genuinely self-improving rather than just accumulating facts.
+The design is drawn from neuroscience (NREM/REM ordering, targeted memory reactivation) and ML (PER, Constitutional AI-style critic filtering, generative replay safety).
 
 ## How Ze gets sharper
 
@@ -76,15 +76,15 @@ Memory isn't a single inflow. Everything feeds the same substrate:
 
 <sub>[Interactive version](diagrams/root/memory-inflow.html)</sub>
 
-Conversations write what Ze learns from talking. Ingestion (`ze-ingestion`) feeds knowledge from any URL, PDF, YouTube video, or file — extracted facts land in the same store. Domain plugins emit `SignalSource` events; Ze scores them for relevance, writes them to the memory graph, and feeds them into the correlation engine. Goals promote learnings on completion. Every inflow compounds.
+Conversations write what Ze learns from talking. Ingestion (`ze-ingestion`) feeds knowledge from any URL, PDF, YouTube video, or file. Extracted facts land in the same store. Domain plugins emit `SignalSource` events; Ze scores them for relevance, writes them to the memory graph, and feeds them into the correlation engine. Goals promote learnings on completion.
 
-The design intent is that Ze gets sharper without being explicitly fed. Drop a PDF in. Share a video. The facts join everything else Ze already knows.
+The design intent is that Ze gets sharper without being explicitly fed. Drop in a PDF or share a video, and the facts join everything else Ze already knows.
 
-Every domain plugin also declares a `DataDomain` — an export, import, and delete contract. The portability service honours it. You own the data at every layer.
+Every domain plugin also declares a `DataDomain`, an export, import, and delete contract. The portability service honors it. You own the data at every layer.
 
 ## Proactive surface
 
-Ze doesn't wait to be asked. Morning briefings, calendar reminders, weekly insights, goal suggestions, stuck-goal alerts, news fetch — all background jobs, configurable in `config.yaml`. Every push declares a class: reminders you set always fire, reports you switched on are never budgeted, and only discretionary nudges claim one shared budget, counted over a rolling 24 hours. The budget, the next free slot and what each job last ran are visible over REST. Quiet hours hold everything but reminders, then release it as a batch. After downtime, a job that missed its time runs once. Offline push goes through ntfy; the in-app notification center (REST + WebSocket) surfaces the same events while you're in ze-web.
+Ze doesn't wait to be asked. Morning briefings, calendar reminders, weekly insights, goal suggestions, stuck-goal alerts, and news fetches are all background jobs, configurable in `config.yaml`. Every push declares a class: reminders you set always fire, reports you switched on are never budgeted, and only discretionary nudges claim one shared budget, counted over a rolling 24 hours. The budget, the next free slot and what each job last ran are visible over REST. Quiet hours hold everything but reminders, then release it as a batch. After downtime, a job that missed its time runs once. Offline push goes through ntfy; the in-app notification center (REST + WebSocket) surfaces the same events while you're in ze-web.
 
 ## Agents
 
@@ -131,7 +131,7 @@ Ze asks before it does anything it cannot undo. An irreversible write waits unti
 | `ui_contributions()` | Modules in fixed slots, Ask preset chips, and settings sections in ze-web |
 | `rest_routes()` | Plugin-owned REST routers under `/api/v0/` |
 
-The hooks compose. The finance plugin registers a `FinanceIngestionExtractor` so that ingesting a bank statement produces structured transaction facts — which land in memory, which surface in retrieval, which the correlation engine can cross with calendar and news. That chain is the whole point.
+The hooks compose. The finance plugin registers a `FinanceIngestionExtractor` so that ingesting a bank statement produces structured transaction facts, which land in memory, which surface in retrieval, which the correlation engine can cross with calendar and news.
 
 ## Monorepo
 

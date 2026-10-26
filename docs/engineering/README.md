@@ -1,6 +1,6 @@
 # Engineering notes
 
-Short write-ups of real design decisions in Ze. Each one cites the specs and the git history it draws on.
+Short write-ups of design decisions in Ze. Each one cites the specs and the git history it draws on.
 
 | Note | What it covers |
 |---|---|

@@ -42,7 +42,7 @@ TRADING212_DEMO=false   # set true to use the demo environment
 The `Trading212DataSource` wraps `ze_trading212.Trading212Client` and maps the
 raw API responses to Ze's domain types (`Position`, `Transaction`, `Account`).
 The Phase 63 integration framework wires it automatically — you don't need to
-change `container.py` manually.
+change `ze_api/wiring/container.py` manually.
 
 Data fetched on each sync:
 - Account info and cash balance
@@ -450,7 +450,7 @@ finance:
 
 ## Future: Risk Engine (ze-risk)
 
-Ze-finance serves as the substrate for a full factor-based risk engine, inspired
+Ze-finance is the base for a full factor-based risk engine, inspired
 by [RiskOS](https://github.com/joaoajmatos/riskos). The risk layer is a separate
 plugin (`ze-risk`) that imports from `ze_finance.risk.types`.
 

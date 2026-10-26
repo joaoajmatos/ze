@@ -18,12 +18,12 @@ registered domains and drives the export, import, and delete flows against them.
 Click **Export your data**. Ze downloads a ZIP archive named
 `ze-export-<timestamp>.zip` to your browser.
 
-The archive contains one JSON file per data domain — memories, goals, contacts,
+The archive contains one JSON file per data domain: memories, goals, contacts,
 messages, reply feedback, reminders, costs, and more. A `manifest.json` at the root records the
 export timestamp and the schema revision set, which is used to validate the archive
 at import time.
 
-Nothing is omitted or summarized. Every stored row is included verbatim.
+Nothing is omitted or summarized. Every stored row is included.
 
 Reply feedback travels with the messages it rates. The `feedback.records` domain holds
 your thumbs up, thumbs down, and Retry requests. Messages keep their `replaces` and
@@ -61,7 +61,7 @@ To import:
 ### What is not imported
 
 Ze exports LangGraph checkpoint blobs for completeness but does not re-insert them on
-import. A restored instance starts with no in-flight conversation graphs — this is the
+import. A restored instance starts with no in-flight conversation graphs. This is the
 correct state after a restore.
 
 ---

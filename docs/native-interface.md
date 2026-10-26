@@ -2,7 +2,7 @@
 
 Ze's native interface connects the React web app (`ze-web`) to the backend (`ze-api`)
 over a persistent WebSocket. When the app is not connected, Ze falls back to
-**ntfy push notifications**.
+ntfy push notifications.
 
 **Module:** `ze_api/interface/native.py` · `ze_api/api/ws/` (`endpoint.py`, `connection.py`)  
 **WebSocket endpoint:** `GET /ws`
@@ -20,7 +20,7 @@ saves every outbound message to `MessageStore` (for unread replay on reconnect),
 it to the active WebSocket connection if one exists, and falls back to ntfy if the
 client is offline.
 
-**One connection at a time.** A new WebSocket connection displaces the previous one
+One connection at a time: a new WebSocket connection displaces the previous one
 with close code `4000`.
 
 ---
@@ -533,7 +533,7 @@ and Ze's proactive pushes) to Postgres. On WebSocket connect, the server replays
 messages with `read = false` in order before new messages flow. The client marks them
 read via `ack` frames.
 
-**REST fallback** — `GET /api/v0/messages` returns the same unread list for scenarios where the
+REST fallback: `GET /api/v0/messages` returns the same unread list for scenarios where the
 client needs to poll rather than hold a persistent connection.
 
 ---
@@ -725,5 +725,4 @@ stores it on `app.state.connection_manager`. It exposes:
 | `is_busy(thread_id) → bool` | Report whether that thread has a turn in flight |
 | `clear_busy(thread_id)` | Release the invocation slot of that thread |
 
-Never instantiate `ConnectionManager` outside the FastAPI lifespan — there must only
-be one instance.
+Never instantiate `ConnectionManager` outside the FastAPI lifespan. Only one instance may exist.

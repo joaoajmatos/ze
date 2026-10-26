@@ -143,8 +143,8 @@ ze_confirm(choice="deny", session_id="eval")
 ze_confirm(choice="approve", session_id="eval", edits={"<item id>": "new body"})
 ```
 
-`choice` is `approve` or `deny`. Approving runs exactly the parked calls, so it really
-sends or deletes: use it only when Ze's Google account is a sandbox. `edits` maps a
+`choice` is `approve` or `deny`. Approving runs exactly the parked calls, so it
+sends or deletes for real. Use it only when Ze's Google account is a sandbox. `edits` maps a
 confirmation item id to replacement text for an editable item. The result has the same
 shape as `ze_chat`. The call fails with `409` when the session has no open confirmation.
 
@@ -446,7 +446,7 @@ uv run python eval/run.py report --compare       # same as eval-diff
 
 Ze saves results to `eval/results/<timestamp>.json`. The judge uses
 `OPENROUTER_API_KEY` from your `.env` and scores each response on:
-- **quality** (1–5): Does Ze actually answer the question?
+- **quality** (1–5): Does Ze answer the question?
 - **tone** (1–5): Is the tone appropriate and in character?
 - **tool_use** (1–5 or null): Did Ze use tools correctly?
 - **pass** (bool): Would a real user be satisfied?
@@ -473,7 +473,7 @@ a slow test, so it runs only with `SLOW=1`.
 
 ## Latency and token tracking
 
-Every scenario run captures two latency signals automatically — no extra config needed:
+Every scenario run captures two latency signals automatically, with no extra config:
 
 | Signal | Source | What it measures |
 |--------|--------|-----------------|
@@ -517,7 +517,7 @@ every 15 min, and the runner does not use it.
 | `memory.yaml` | 25 | Fact storage and recall, contradiction, admission, remember/forget, retrieval relevance, compaction |
 | `edge_cases.yaml` | 8 | Emoji-only, code paste, language switch, very long, topic switch |
 | `calendar.yaml` | 11 | Read, create, delete, free slots, credential errors, multi-turn |
-| `email.yaml` | 9 | Read, compose, reply, summarise, credential errors, multi-turn |
+| `email.yaml` | 9 | Read, compose, reply, summarize, credential errors, multi-turn |
 | `goals.yaml` | 12 | Create, list, progress check, milestone update, verification cadence, suggestions |
 | `workflow.yaml` | 6 | Create, list, pause, manual trigger, approval flow, error inquiry |
 | `contacts.yaml` | 6 | Lookup, list, add, update, company search, multi-turn |

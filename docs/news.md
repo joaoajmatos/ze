@@ -1,6 +1,6 @@
 # Ze — News Package (`ze-news`)
 
-The `ze-news` plugin adds RSS ingestion, personalised article ranking, and credibility
+The `ze-news` plugin adds RSS ingestion, personalized article ranking, and credibility
 analysis to Ze. It runs as a `ZePlugin`, keeping all news-specific concerns isolated
 from `ze-core` and `ze-personal`.
 
@@ -75,7 +75,7 @@ class Article:
 | `published_at` | `TIMESTAMPTZ` | Publication timestamp from RSS |
 | `tags` | `TEXT[]` | Tags from source config |
 | `embedding` | `VECTOR(768)` | Shared local embedder on `title + summary` (`zn001` creates it; `zm013` resizes older 384-dim tables) |
-| `credibility_analysis` | `JSONB` | `CredibilityReport` serialised; `NULL` until scored |
+| `credibility_analysis` | `JSONB` | `CredibilityReport` serialized; `NULL` until scored |
 | `fetched_at` | `TIMESTAMPTZ` | When Ze first ingested the article |
 
 ---
@@ -101,11 +101,11 @@ skipped, unless the run is forced (`refresh_news` forces it).
 
 ---
 
-## Personalisation
+## Personalization
 
 ### How it works
 
-When the news agent or morning briefing requests personalised headlines,
+When the news agent or morning briefing requests personalized headlines,
 `NewsPreferenceBuilder.build()` builds a `PersonalizationContext` from four sources.
 Each source adds weighted `NewsPreference` entries:
 
@@ -328,7 +328,7 @@ discovery. Default `0.2` means one in five briefing headlines is deliberately of
 articles. At `limit=5`, `ceil(0.2 × 5) = 1` — a single discovery article is not
 meaningful serendipity.
 
-**`credibility.llm_scoring: false`** gives a useful intermediate state: heuristics
+**`credibility.llm_scoring: false`** is an intermediate state: heuristics
 are free and catch Betteridge violations, clickbait phrases, and common weasel words.
 Useful if OpenRouter costs become a concern (`~$1/day` at current source volume).
 
@@ -433,7 +433,7 @@ Use the news agent in conversation to query current news:
 - *"Were any of today's headlines flagged?"* — agent surfaces credibility flags with context
 
 The agent calls `refresh_news` automatically when the user asks for today's or recent
-news so the local store is always up-to-date before presenting headlines. The scheduled
+news so the local store is up to date before presenting headlines. The scheduled
 `NewsFetchJob` (every 30 minutes) continues to run in the background for the morning
 briefing and proactive delivery; `refresh_news` bypasses the interval guard for
 on-demand requests.

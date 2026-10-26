@@ -26,7 +26,7 @@ See [configuration.md](configuration.md#workspace-sidecar) for env vars.
 
 ## Access
 
-There is no stored execution mode. Conversation always may use the workspace when
+There is no stored execution mode. Conversation may always use the workspace when
 it is available: reads proceed, writes and commands confirm in the thread, reset
 confirms. Unattended work (goals, workflows) uses the same computer without that
 pause. Skill scripts still need executable approval.
@@ -171,7 +171,7 @@ Then `make dev` as usual.
 
 ### Sidecar only
 
-Build and run from `sidecar/workspace/` — see
+Build and run from `sidecar/workspace/`. See
 [sidecar/workspace/README.md](../sidecar/workspace/README.md) for the control API
 and a non-Docker setup.
 
@@ -189,7 +189,7 @@ cd sidecar/workspace
 fly deploy
 ```
 
-The main backend deploy does not redeploy the sidecar — release them independently.
+The main backend deploy does not redeploy the sidecar. Release them independently.
 Full Fly setup: [sidecar/workspace/README.md](../sidecar/workspace/README.md).
 
 ---

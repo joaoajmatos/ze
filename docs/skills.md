@@ -2,7 +2,7 @@
 
 Skills add reusable instructions (and, after a second approval, scripts) to every
 agent. They do not grant new tools. An imported skill cannot affect a conversation
-until you review it. Scripts never inherit that approval — they run only after a
+until you review it. Scripts never inherit that approval. They run only after a
 separate executable approval, and only inside the [workspace sidecar](workspace.md).
 
 **Package:** `core/automation/ze-skills/ze_skills/`  
@@ -25,7 +25,7 @@ archive includes extras, as reference files and script files.
 | Reference files | Non-script extras (markdown, JSON, CSV, …) stored with the skill |
 | Scripts | `.py` / `.sh` / `.js` / `.ts` / `.rb` / `.pl` files; run in the workspace only after executable approval |
 
-Matching is **global**. An active skill is eligible on every agent. There is no
+Matching is global. An active skill is eligible on every agent. There is no
 per-agent assignment.
 
 Skills are not plugins. A plugin can *ship* bundled skills; the skill system itself
@@ -54,7 +54,7 @@ When the user asks for a weekly review, gather open goals and this week's
 calendar, then write a one-page summary.
 ```
 
-`allowed-tools` is optional. Naming a tool the agent does not have has no effect —
+`allowed-tools` is optional. Naming a tool the agent does not have has no effect, because
 a restriction can only narrow access.
 
 Ze sets `has_scripts` when the frontmatter lists `scripts:`, when the body
@@ -100,7 +100,7 @@ the plugin.
 
 Approving instructions also submits the skill as a procedure candidate to memory's
 admission service, which decides whether it becomes a procedure. Approving
-instructions does **not** set `executable_approved`. That flag is a
+instructions does not set `executable_approved`. That flag is a
 separate gate. See [Workspace integration](#workspace-integration).
 
 ---
@@ -108,7 +108,7 @@ separate gate. See [Workspace integration](#workspace-integration).
 ## Matching
 
 The `match_skills` graph node runs after `fetch_context`. It reads `SkillMatcher`
-from `config["configurable"]` — `ze-core` never imports `ze_skills`.
+from `config["configurable"]`; `ze-core` never imports `ze_skills`.
 
 Two independent paths combine on the same turn:
 
@@ -150,7 +150,7 @@ named with `/skill-name` bypass the judgment and still stack on top.
 
 A skill can apply below `match_threshold`, as long as it scores at or above
 `shortlist_floor` and both answers clear their bars. The trace panel marks it
-**below floor**. No skill under `shortlist_floor` applies, except by `/skill-name`.
+"below floor". No skill under `shortlist_floor` applies, except by `/skill-name`.
 
 Measured on the calibration set, the floor does not bind today. E5 scores 0.71 to 0.89
 for every message, including messages that need no skill, so every active skill
@@ -211,22 +211,22 @@ permission to execute it.
 
 The trace on Ask lists every skill used on the turn (the Skills row): name, source
 (`bundled` / `imported`), trigger (`automatic` / `explicit`), similarity for
-automatic matches, a **below floor** mark when the gate applied the skill under
-`match_threshold`, and a **script ran** mark when
+automatic matches, a "below floor" mark when the gate applied the skill under
+`match_threshold`, and a "script ran" mark when
 `workspace_run_skill_script` succeeded.
 
-On conductor turns the trace also shows a **Conductor** row: the Haiku
+On conductor turns the trace also shows a Conductor row: the Haiku
 hint (not a DAG), each specialist’s ledger status, and confirmation
 `request_id`s. Independent parallel compounds omit that row.
 
-The trace has a **Workspace** row when the sidecar ran on that turn.
+The trace has a Workspace row when the sidecar ran on that turn.
 
 ---
 
 ## Workspace integration
 
 Skills without scripts stop at instructions. Skills with scripts need the
-workspace — the isolated computer beside Ze — before anything executes.
+workspace (the isolated computer beside Ze) before anything executes.
 
 ![Flowchart showing an imported skill approved for instructions, becoming active for matching, then a second executable approval before workspace_run_skill_script can run the bundled script in the workspace sidecar](diagrams/docs/skills-workspace.svg)
 
@@ -242,22 +242,22 @@ workspace — the isolated computer beside Ze — before anything executes.
 A skill that you approved as instructions-only in the first skills phase does not
 silently start running scripts. You must approve executables again.
 
-A content-change recheck reverts the skill to `pending_review` **and** clears
+A content-change recheck reverts the skill to `pending_review` and clears
 `executable_approved`. Re-approve instructions, then re-approve executables.
 
 Disabled and pending skills never run scripts.
 
 ### How a script actually runs
 
-Matching a skill does **not** auto-exec its scripts. The agent (or unattended work)
+Matching a skill does not auto-run its scripts. The agent (or unattended work)
 calls `workspace_run_skill_script(skill_id, filename)`.
 
 That tool:
 
 1. Loads the skill. Refuses unless `status == active` and `executable_approved`.
 2. Loads the stored script bytes from `skill_scripts`.
-3. Asks `WorkspaceGate` (action `run_script` × origin). Conversation confirms;
-   unattended may run. See [workspace.md](workspace.md#access).
+3. Asks `WorkspaceGate` (action `run_script` × origin). In conversation the user confirms;
+   an unattended run may proceed. See [workspace.md](workspace.md#access).
 4. Writes the file under `/workspace` and runs it in the sidecar (`python3` or
    `bash`). Ze secrets are not in the child environment.
 5. Records a `workspace_runs` row with `skill_id` and `skill_script_path`, and

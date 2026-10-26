@@ -16,7 +16,7 @@ Every System One surface follows the same rules, written in [specs/arch/system-o
 - A skip, a timeout, or a malformed answer sends Ze down the old path. System One never blocks a turn.
 - Rows come in English and Portuguese, and each language gets its own verdict.
 
-These rules cost time. The next four stories show what they bought.
+These rules cost time. The five lessons below show what they bought.
 
 ## Lesson 1: a confident model can be wrong
 

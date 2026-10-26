@@ -2,7 +2,7 @@
 
 Most multi-agent assistants work like a switchboard. A router reads your message and hands it to a specialist. The specialist answers in its own voice, with its own context. The assistant feels like a set of tools with a front desk.
 
-Ze chose a different shape. This post explains the choice, the two layers that carry it, and the code Ze deleted to keep it honest.
+Ze chose a different shape. This post explains the choice, the two layers that carry it, and the code Ze deleted so only one path remains.
 
 ## The commitment
 
@@ -22,7 +22,7 @@ Ze has thirteen agents, but only companion talks to you. When a request needs se
 
 [The conductor roadmap](../../specs/arch/companion-conductor-roadmap.md) pins the rules, so later specs do not reopen them:
 
-1. **One speaker.** Specialists never take the microphone. Hand-offs and swarms are out.
+1. **One speaker.** Specialists never speak to you directly. Hand-offs and swarms are out.
 2. **One conductor.** Only companion lists `delegate_to_agent`. Research lost it. Specialists do not delegate again, and nesting stops at one level.
 3. **The decomposition is a hint.** A small model splits the request, but the conductor may throw that split away after the first specialist returns.
 4. **Independent work stays parallel.** "Check my calendar and summarize the news" fans out in the graph and merges in a synthesize step. Sequential or dependent work goes to companion.

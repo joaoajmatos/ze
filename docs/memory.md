@@ -1,9 +1,8 @@
 # Ze — Memory System
 
-Ze maintains persistent, multi-layered memory through the `ze-memory` package
-(`ze_memory`). Memory is backed by Postgres + pgvector and comprises five
-complementary layers. An optional graph layer adds typed relationships between
-memory objects for richer context retrieval.
+The `ze-memory` package (`ze_memory`) keeps Ze's persistent, layered memory. Postgres and
+pgvector back it, and it has five layers. An optional graph layer adds typed relationships
+between memory objects, which gives retrieval more context.
 
 **Package:** `core/cognition/ze-memory/ze_memory/`  
 **Main store:** `ze_memory.retriever.PostgresMemoryStore`
@@ -398,15 +397,15 @@ Before every agent execution, `fetch_context` runs:
 5. **Graph augmentation** — when `memory.graph.enabled: true` (default),
    `BoundedExpansionPolicy` expands entity and fact seed IDs from the retrieved
    context one hop. It appends neighbor entities, facts, episodes, and procedures
-   to the context. Failures are silently swallowed — the base context is
-   always returned.
+   to the context. Ze swallows failures and always returns the base
+   context.
 6. **Prompt assembly** — `build_identity_block()` from `ze_personal.persona` renders
    persona traits. `BaseAgent._build_system_prompt()` puts constitution and the agent
    job before the retrieved biography. `_format_memory` prints origin, confidence,
    and recency. Companion retrieval pins reviewed facts always-on (`CompanionPolicy`).
    Calendar, messenger, and news share that assembler (no second builder) and the
    same silent-use / no unsolicited “I remember that you…” job family. They do not
-   list `remember_fact` / `forget_fact`; they import companion `enforce_memory_confirmations`
+   list `remember_fact` / `forget_fact`; they use `enforce_memory_confirmations` from `ze_agents.honesty`
    so they cannot claim those tools succeeded. Constraint write veto is a separate
    gate (144). Recitation stripping as its own product is 145.
    `TurnSurfacing` still owns unsolicited open-item mentions.
@@ -527,7 +526,7 @@ Two steps run in order.
 1. **Session archival** (`session_grouping_enabled`, default `true`). The consolidator
    picks up to `max_sessions_per_run` (10) sessions that have at least
    `min_session_episodes` (3) old raw episodes. A session that already has an entry in
-   `memory_session_summaries` skips the LLM call — the consolidator deletes its raw rows
+   `memory_session_summaries` skips the LLM call, and the consolidator deletes its raw rows
    directly. For any other session, Haiku writes one summary, stored as an archive
    episode, and the consolidator deletes the raw rows.
 2. **Batch archival.** The remaining old raw episodes (up to `episode_archive_batch`,
@@ -663,8 +662,8 @@ Migrations: `core/cognition/ze-memory/ze_memory/migrations/versions/` (raw SQL, 
 - **Reviewed facts are never auto-merged or auto-expired.** Only the user can modify them.
 - **Embeddings are stored at write time only.** At query time they are dropped from context
   objects so `AgentState` stays JSON-serializable for the LangGraph checkpointer.
-- **Graph augmentation is best-effort.** Failures silently fall back to the base context
-  — the store always returns something useful.
+- **Graph augmentation is best-effort.** Failures silently fall back to the base context,
+  so the store always returns something useful.
 - **Memory is editorial, not automatic.** Extracted facts start unreviewed and expire
   if the user never reviews them (`unreviewed_ttl_days`). Facts the user asks Ze to
   remember start reviewed. Episodes are automatic because they archive away after

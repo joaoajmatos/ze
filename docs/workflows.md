@@ -84,8 +84,7 @@ For a workflow with N steps, the graph runs through the following loop for each 
 <sub>[Interactive version](diagrams/docs/workflow-graph.html)</sub>
 
 `load_workflow_step` resets per-step state and sets `prompt` to the step's task.
-The graph then routes normally — `embed_route` picks the right agent, memory is
-injected, and irreversible writes still ask first — exactly as if the user had typed the task.
+The graph then routes normally, exactly as if the user had typed the task. `embed_route` picks the right agent, Ze injects memory, and irreversible writes still ask first.
 
 ### Branching
 
@@ -93,8 +92,8 @@ A step can declare `branches` (a list of `condition` → target pairs) and a `de
 
 ### Step verification
 
-Each step can optionally declare a `verify` criterion — a natural-language description
-of what a successful output looks like:
+Each step can declare a `verify` criterion: a natural-language description of what a
+successful output looks like.
 
 ```json
 {
@@ -109,8 +108,8 @@ Verification runs three checks in order:
 1. **Tool success** — any tool call that returned `success=False` fails the step immediately. A call that is parked or denied for confirmation does not count as a failure.
 2. **Non-empty output** — an empty agent result fails the step.
 3. **Criteria check** — if `verify` is set, Haiku evaluates the output against the
-   criteria string. Ze logs a Haiku failure (e.g. timeout) as a warning but does
-   not fail the step — the check is non-blocking.
+   criteria string. Ze logs a Haiku failure (for example, a timeout) as a warning
+   and does not fail the step. The check never blocks.
 
 ### Retries and failure policy
 
@@ -179,7 +178,7 @@ Every create and step edit appends a revision with a short diff summary and the 
 
 `WorkflowScheduler` wraps APScheduler with a Postgres job store. On startup it
 loads all `enabled = true`, `schedule IS NOT NULL` workflows and registers
-`CronTrigger` jobs. APScheduler itself holds no persistent state — the Postgres
+`CronTrigger` jobs. APScheduler itself holds no persistent state. The Postgres
 records are the source of truth. On restart, `WorkflowScheduler` re-registers
 all active jobs from the database.
 
@@ -227,8 +226,8 @@ The page has no "Current definition" banner.
 
 ## Caveats
 
-- Steps execute one at a time — no parallelism within a workflow. Branches can loop back, within the four-visit limit.
+- Steps execute one at a time. A workflow has no parallelism. Branches can loop back, within the four-visit limit.
 - Workflows cannot call each other.
-- External webhook triggers are not supported — scheduling and on-demand are the
+- External webhook triggers are not supported. Scheduling and on-demand runs are the
   only entry points.
 - Ze does not notify you of step-by-step progress for scheduled runs. You get a failure alert, and you can read the summary on the run page.

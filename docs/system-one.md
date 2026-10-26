@@ -128,7 +128,7 @@ Open-loop extraction on email, calendar events, and ingested content decides whe
 
 Each question has its own bar (`loop_hold` and `resolves_hold`). Code decides in this order: a high `resolves_existing` closes a matching loop; a low `is_open_concern` holds; anything else creates a suspected loop. A positive answer then calls Haiku to write the title, and to suggest a window in days for a new loop. Haiku never decides whether a loop exists. Matching, dismissed-loop checks, confidence, and drift stay in code.
 
-Email, calendar, and ingestion run the gate. They can create suspected loops and resolve existing ones, log their judgments, and write no message-trace rows. Only a user can declare a loop, so these inflows never ask `explicit_declaration`. When the surface is off, uncalibrated, skipped, or returns an invalid answer, Ze runs the older Haiku gate. That gate strips the code fence Haiku wraps around its JSON. Before phase 168 it did not, all 136 replies in the calibration runs failed to parse, and loop extraction created no loops in production.
+Email, calendar, and ingestion run the gate. They can create suspected loops and resolve existing ones, log their judgments, and write no message-trace rows. Only a user can declare a loop, so these inflows never ask `explicit_declaration`. When the surface is off, uncalibrated, skipped, or returns an invalid answer, Ze runs the older Haiku gate. That gate strips the code fence Haiku wraps around its JSON. Before phase 168 it did not: all 136 replies in the calibration runs failed to parse, and loop extraction created no loops in production.
 
 Conversation no longer uses this gate. Since phase 173 the commitment intake judges conversation turns, with its own loop bars.
 

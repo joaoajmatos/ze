@@ -13,16 +13,16 @@
 Ze is organized by **domain** (calendar, news, finance, memory, automation…). That is the
 right axis for ownership, dependencies, and migrations. But domains are not the axis that shows
 whether a *mind* is complete. A system can have excellent domain packages and still be missing
-an entire cognitive function — and it stays invisible, because no package is "missing";
+an entire cognitive function. The gap stays invisible because no package is missing;
 a *capability* is.
 
 So we add a functional taxonomy alongside it. A subsystem is not primarily "the news plugin"; it is
-**perception that happens to be sourced from news**. Reading Ze this way used to make one thing
-immediately clear: Ze perceived, remembered, reflected, and acted well, but its executive
+**perception that happens to be sourced from news**. Reading Ze this way used to show one thing
+clearly: Ze perceived, remembered, reflected, and acted well, but its executive
 function was under-built. `core/cognition/ze-worldstate` (Phases 109–110, repaired in Phase 170) and `core/arbitration/ze-priority`
 (Phases 123, 127) narrowed that gap: loops drift and rank, goals are surfaced, and the priority snapshot
 reports the sources it could not read. The confirmation gap (Phase 171) and the duplicate-intake gap (Phase 173) are closed. The next gap this lens surfaces is **social
-cognition** — third-party relationship modeling is still partial (see function 4 below).
+cognition**. Third-party relationship modeling is still partial (see function 4 below).
 
 The seven functions below are from the external architecture review and are adopted verbatim
 as the functional vocabulary.
@@ -46,7 +46,7 @@ Maturity: 🟢 substantial — `ze-calendar`, `ze-messenger`, `ze-news`, `ze-fin
 channels), signal admission (Phase 55/56).
 
 **State:** strong and broad. The admission gate (`relevance_to_user + intrinsic_magnitude`)
-is the right discipline — perception is already relevance-filtered rather than firehose.
+is the right discipline: perception is already relevance-filtered, not a firehose.
 **Gap:** "sensors" (location, device, ambient) is unbuilt; not urgent.
 
 ### 2. Memory — retaining and structuring experience
@@ -57,7 +57,7 @@ Maturity: 🟢 substantial — `ze-memory`: facts (semantic), episodes (episodic
 (procedural), events, profile facets, the relationship **graph**, temporal via
 `as_of`/timeline (Phase 93), consolidation + dream.
 
-**State:** the deepest function in the system. Genuinely multi-layer.
+**State:** the deepest function in the system, with several layers.
 **Gap:** "project" and "social" memory are *implicit* — they live scattered across contacts,
 goals, and episodes rather than as first-class structures. This is the same gap seen from the
 memory side: there is no durable "state of project X" or "state of
@@ -71,7 +71,7 @@ Maturity: 🟢 substantial — `ze-automation`: goals (heavyweight, explicit, mu
 (multi-step plans), scheduler. `core/cognition/ze-worldstate` (Phases 109–110): open loops — the
 lightweight, implicitly-opened active concerns (`suspected → active → drifting →
 closed|dropped`), extracted from all four inflows through System One (the commitment intake for conversation, Phase 173; the loop gate for email, calendar, and ingestion, Phase 168) with a Haiku title writer behind it (the earlier all-Haiku gate could not parse Haiku's fenced JSON, so before 168 no loops were extracted in production; its parse now tolerates the fence), with drift detection and hedged,
-push-bar-gated surfacing. Before Phase 170 the drift predicate never matched a real row, so no loop drifted by absence; the sweep now fires once the deadline passes, and new evidence moves the deadline (`record_corroboration`). The push grounding gate checks the loop title. You can also ask Ze to track a concern (Phase 169, `track_loop`). That loop starts `active`. An explicit ask can bring a `drifting` loop back to `active`, the only `drifting → active` path. Suspected loops reach the user through the World page and a resume question (Phase 171). A confirm, from the page or the `confirm_loop` tool, stamps the loop like a declaration: confidence 0.9 and a 7-day deadline. Each confidence change keeps the value before it, with the time (Phase 185), so a client can draw a real confidence movement. A second, independent source that matches a suspected loop is judged by one System One Noul, `same_concern`; at or above a calibrated bar its confidence rises, and at or above a stricter bar the loop is promoted to `active` at confidence 0.7 (Phase 172). Independence is code: the source key is new to the loop, the evidence is not already linked, and the key was never recorded on a matching dropped loop. `core/arbitration/ze-priority` (Phase 123, 127): `PriorityView` ranks loops,
+push-bar-gated surfacing. Before Phase 170 the drift predicate never matched a real row, so no loop drifted by absence; the sweep now fires once the deadline passes, and new evidence moves the deadline (`record_corroboration`). The push grounding gate checks the loop title. You can also ask Ze to track a concern (Phase 169, `track_loop`). That loop starts `active`. An explicit ask can bring a `drifting` loop back to `active`, the only `drifting → active` path. Suspected loops reach the user through the World page and a resume question (Phase 171). A confirm, from the page or the `confirm_loop` tool, stamps the loop like a declaration: confidence 0.9 and a 7-day deadline. Each confidence change keeps the value before it, with the time (Phase 185), so a client can draw confidence movement. A second, independent source that matches a suspected loop is judged by one System One Noul, `same_concern`; at or above a calibrated bar its confidence rises, and at or above a stricter bar the loop is promoted to `active` at confidence 0.7 (Phase 172). Independence is code: the source key is new to the loop, the evidence is not already linked, and the key was never recorded on a matching dropped loop. `core/arbitration/ze-priority` (Phase 123, 127): `PriorityView` ranks loops,
 goals, and correlation hypotheses together, plus user-directed priority override.
 One shared attention budget (Phase 177) now covers every discretionary push, and a single interruption
 governor holds accountability and discretionary pushes during quiet hours.
@@ -90,7 +90,7 @@ executive layer: a loop drifts when its deadline passes, gate-created loops carr
 are found and ranked, and the priority snapshot reports the sources it could not read. The findings and
 the repair record are in [executive-function.md](../specs/arch/executive-function.md). What exists now handles both ends: goals for
 objectives deliberately declared, and open loops for the ambient, never-formalized concerns
-that make up most of a real life:
+that make up most of daily life:
 
 - a promise made in an email thread,
 - a decision left pending,
@@ -112,7 +112,7 @@ reorderings merge inside `PriorityView.rank()`, so `rank()` returns the user's o
   shared query surface for "everything open right now" beyond that ranked view. Whether and how
   to reconcile the two stores themselves is an open follow-up, not yet specced.
 
-### 4. Social cognition — modelling people and calibrating interaction
+### 4. Social cognition — modeling people and calibrating interaction
 
 > *tone, relationship memory, boundaries, interaction style*
 
@@ -139,12 +139,12 @@ Maturity: 🟢 substantial — `ze-memory` dream (sleep→dream two-pass), night
 weekly insights, NLI contradiction detection (Phase 79), correlation engine (hypotheses with
 uncertainty).
 
-**State:** rich — arguably *ahead* of what currently consumes it. The doctrine resolves the
+**State:** rich, and it produces more than the rest of Ze consumes. The doctrine resolves the
 "is dreaming premature?" question: reflection is justified **iff it improves the world-state.**
-Today much of its output (synthesized facts, insights) flows back into memory tables rather
-than into a live executive layer, because that layer does not yet exist. **Reflection is not
-overbuilt; its consumer is underbuilt.** Building executive function retroactively justifies
-the reflection investment.
+Much of its output (synthesized facts, insights) flows back into memory tables. The executive
+layer reads the correlation hypotheses, which `PriorityView` ranks beside loops and goals.
+**Reflection is not overbuilt; its consumers are still few.** Each new consumer in the executive
+layer adds to the case for the reflection investment.
 
 ### 6. Action — changing the world on the user's behalf
 
@@ -189,7 +189,7 @@ spine, not a pipeline with a start and end:
 - **The world-state is the hub** (doctrine §"The one commitment"). Every function reads from
   and writes to it; nothing holds a competing private truth.
 - **Executive function now has a cross-concern view.** `core/cognition/ze-worldstate` gives the "active
-  concerns" face a real representation (open loops), and `core/arbitration/ze-priority`'s `PriorityView`
+  concerns" face a representation (open loops), and `core/arbitration/ze-priority`'s `PriorityView`
   (Phase 123) ranks loops, goals, and correlation hypotheses together against one shared
   attention budget that now (Phase 177) covers every discretionary push — closing the "several
   attention mechanisms" gap this section used to flag.
@@ -202,10 +202,10 @@ spine, not a pipeline with a start and end:
 
 ## Functions are permanent; implementations are the organs
 
-The reason this lens is worth maintaining alongside the domain taxonomy: the **functions are
+This lens earns its place beside the domain taxonomy because the **functions are
 the enduring structure**, and the domain packages are replaceable implementations of them. The
 news plugin is one implementation of perception; the goals module is one implementation of
-executive function. Organs churn over the years; the seven functions do not. This is the sharp
+executive function. Organs churn over the years; the seven functions do not. This is the precise
 form of "what stays continuous" (`ze-doctrine.md` §The one commitment): not just the
 world-state data, but the functional decomposition around it.
 
@@ -248,12 +248,12 @@ concerns" got its own domain home, `core/cognition/ze-worldstate`, rather than a
 
 ## What this implies for sequencing (not a commitment)
 
-The aperture decision is resolved (open loops, ratified). A 2026-07 review session found the
-seven-function lens itself was fraying at the seams — six independently scheduled proactive job
+The aperture decision is resolved (open loops, ratified). A 2026-07 review session found a problem with the
+seven-function lens: six independently scheduled proactive job
 families (automation, correlation, worldstate, memory consolidation, dream, notifications) had
 each grown their own confidence scheme, provenance vocabulary, and staleness-sweep logic instead
 of sharing one. `specs/arch/claim-topology.md`, `specs/arch/contribution-seam.md`, and
-`specs/arch/attention-arbitration.md` were scoped to arrest that, and the first two items below
+`specs/arch/attention-arbitration.md` were written to stop that, and the first two items below
 have since shipped:
 
 1. ~~Cross-concern prioritization + one attention budget.~~ **Done** — Phase 123

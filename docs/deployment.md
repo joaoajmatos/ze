@@ -106,7 +106,7 @@ Look for `ze_startup_complete` to confirm the app is healthy.
 fly deploy
 ```
 
-Or run the **Deploy backend** workflow by hand: Actions → Deploy backend → Run workflow.
+Or run the Deploy backend workflow by hand: Actions → Deploy backend → Run workflow.
 A push to `main` does not deploy.
 
 ### View logs
@@ -131,7 +131,7 @@ build (`apps/ze-api/Dockerfile`) pre-downloads both.
 
 ```bash
 fly scale memory 2048   # upgrade to 2 GB if needed
-fly scale count 1       # always 1 — Ze is single-user, no horizontal scaling
+fly scale count 1       # always 1: Ze is single-user, no horizontal scaling
 ```
 
 ### Run migrations on production
@@ -168,17 +168,17 @@ Fly restarts the machine automatically after a secret update.
 
 Three workflows live in `.github/workflows/`:
 
-**`ci.yml`** — runs on every push to `main` and every pull request to `main`. Each job runs all its
+`ci.yml` runs on every push to `main` and every pull request to `main`. Each job runs all its
 gates, even when an earlier gate fails, so one red run shows every broken gate:
 - **Web:** `make typecheck-web`, `make lint-web`, `make web-build`, `make test-web`
 - **Backend:** `make lint` (ruff), then `make test-py` (every Python package suite,
   fast tests only)
 
-**`deploy-backend.yml`** — runs only when you start it (`workflow_dispatch`). It calls
+`deploy-backend.yml` runs only when you start it (`workflow_dispatch`). It calls
 `flyctl deploy . --remote-only` with `apps/ze-api/fly.toml` and
 `apps/ze-api/Dockerfile`, using the `FLY_API_TOKEN` secret. It does not run CI first.
 
-**`publish-packages.yml`** — runs when you push a tag that matches `pkg-v*`. It
+`publish-packages.yml` runs when you push a tag that matches `pkg-v*`. It
 publishes the shared npm packages.
 
 ### One-time GitHub setup
@@ -190,7 +190,7 @@ publishes the shared npm packages.
 2. Add it as a GitHub Actions secret named `FLY_API_TOKEN`:
    - Repo → Settings → Secrets and variables → Actions → New repository secret
 
-GitHub needs no other secrets — all runtime secrets live in Fly.
+GitHub needs no other secrets. All runtime secrets live in Fly.
 
 ---
 
@@ -235,7 +235,7 @@ The cold start (machine wake + model load) takes ~5–10 seconds. If this latenc
 is unacceptable, set `min_machines_running = 1` to keep the machine always warm
 (increases monthly cost).
 
-**Note:** WebSocket connections require the machine to stay awake. If you rely on
+Note: WebSocket connections require the machine to stay awake. If you rely on
 a persistent WebSocket from the web app, set `min_machines_running = 1` or use
 ntfy push notifications as the fallback when the machine is cold.
 
@@ -268,8 +268,8 @@ The app failed during startup. Common causes:
 
 - Verify `ZE_API_KEY` secret is set and matches what the app sends as the bearer token.
 - Check `fly logs` for `ws_handler_error` events.
-- If using `auto_stop_machines = true`, the machine may be cold — the first WebSocket
-  connect triggers a wake; subsequent reconnects will be faster.
+- If using `auto_stop_machines = true`, the machine may be cold. The first WebSocket
+  connect wakes it, and later reconnects are faster.
 
 **Database migrations not applied**
 

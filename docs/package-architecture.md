@@ -273,9 +273,9 @@ depends on `ze-agents`, `ze-data`, `ze-logging`, `ze-plugin`, `ze-collision`, an
 
 ## ze-automation — Core Automation Engine
 
-`ze_automation` owns the complete automation stack as a first-class core package. It
-is wired directly into `ze_api`'s container — not via the plugin registry — so goals
-and workflows are always present. It depends on `ze-agents`, `ze-logging`,
+`ze_automation` owns the complete automation stack as a core package. `ze_api`'s
+container wires it directly, not through the plugin registry, so goals and workflows
+are always present. It depends on `ze-agents`, `ze-logging`,
 `ze-proactive`, `ze-memory`, `ze-data`, `ze-components`, and `ze-plugin`.
 
 | Module | What it provides |

@@ -1,9 +1,9 @@
 # Ze — Dreaming
 
-Ze runs an offline **dream phase** when it is not in active use. The phase replays
+Ze runs an offline dream phase when it is not in active use. The phase replays
 recent experience, compresses it, tests abstractions, and promotes only validated
-changes into stable memory. The point is not random generation — it is a controlled
-learning loop that improves retention, abstraction, and robustness.
+changes into stable memory. It is a controlled learning loop, not random generation,
+and it improves retention, abstraction, and robustness.
 
 **Package:** `core/cognition/ze-memory/ze_memory/dream/`
 **Architecture:** [specs/arch/dream-memory.md](../specs/arch/dream-memory.md)
@@ -44,10 +44,10 @@ learning loop that improves retention, abstraction, and robustness.
    queue. An artifact below the support bar is rejected, and its source episodes keep their
    retrieval weight. An artifact that fails a critic is rejected, and Ze lowers the
    retrieval weight of its source episodes. A dream journal entry
-   surfaces what changed.
+   shows what changed.
 
 Nothing synthetic writes directly to live memory. Every promoted fact carries
-`provenance=synthesized`, `dream_run_id`, and `derived_from` lineage, so each fact stays traceable to its run.
+`provenance=synthesized`, `dream_run_id`, and `derived_from` lineage, so each fact traces back to its run.
 
 ---
 
@@ -68,8 +68,8 @@ Nothing synthetic writes directly to live memory. Every promoted fact carries
 | **78a** | Done | Sleep pass, wake hook, migration, dream journal API, retrieval weight enforcement |
 | **78b** | Done | Dream synthesis, NLI gates, two-critic pipeline, auto-promotion, confidence decay, `valid_until` expiry |
 
-**NLI model (Phase 79, done):** `cross-encoder/nli-deberta-v3-small` loads as a shared
-singleton in `ze_core/nli.py` (the `NLIClient` protocol lives in `ze_agents/nli.py`) — used for
+NLI model (Phase 79, done): `cross-encoder/nli-deberta-v3-small` loads as a shared
+singleton in `ze_core/nli.py` (the `NLIClient` protocol lives in `ze_agents/nli.py`). It serves
 write-time contradiction, nightly dedup, session-cached retrieval re-rank, and correlation
 grounding. `DreamJob` passes the same client to `ScoringGates.gate1_nli` in `gates.py` (no second
 download). For non-Latin text, or when the NLI call fails, gate 1 falls back to an LLM groundedness
@@ -119,7 +119,7 @@ fields live on the metadata side table.
 | `policy_candidate` | No (input to synthesis) | Staging only |
 | `synthesized_insight` | Yes, if gates + support pass | `memory_facts` |
 | `synthesized_procedure` | Yes, if gates + support pass | `procedure_candidates` (lifecycle admission decides) |
-| `hindsight_fact` | Never — always rejected | None |
+| `hindsight_fact` | Never (always rejected) | None |
 | `plan_stress_test` | Yes, if gates + support pass | `procedure_candidates` (risk heuristic) |
 
 </details>
@@ -156,7 +156,7 @@ dream:
   inactivity_check_interval_minutes: 30
 ```
 
-**Inactivity trigger** (`inactivity_trigger_enabled`) — when enabled, a watcher runs every `inactivity_check_interval_minutes` and fires the dream job if `MAX(sessions.last_active_at)` is older than `inactivity_threshold_hours` AND no successful dream run has completed since that last session. This means Ze dreams when you take a long break rather than waiting for the 3 AM cron. Disabled by default — the fixed cron is sufficient for v1.
+Inactivity trigger (`inactivity_trigger_enabled`): when enabled, a watcher runs every `inactivity_check_interval_minutes` and fires the dream job if `MAX(sessions.last_active_at)` is older than `inactivity_threshold_hours` AND no successful dream run has completed since that last session. So Ze dreams when you take a long break instead of waiting for the 3 AM cron. It is off by default because the fixed cron is enough for v1.
 
 See [configuration.md](configuration.md) for the full key reference.
 

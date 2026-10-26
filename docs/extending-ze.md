@@ -1,8 +1,8 @@
 # Extending Ze
 
-Ze is extended through **plugins** — self-contained domain packages that contribute
+Ze is extended through **plugins**. A plugin is a self-contained domain package that contributes
 agents, proactive jobs, channels, and graph behavior without touching the engine.
-This guide covers the full lifecycle of building an extension: from deciding where code
+This guide covers the full lifecycle of building an extension, from deciding where code
 belongs to wiring it into the running app.
 
 Read this alongside:
@@ -21,7 +21,7 @@ Start here before writing anything.
 
 <sub>[Interactive version](diagrams/docs/package-routing.html)</sub>
 
-New agent that needs contacts or persona context routes to `ze-personal` (`ze_personal/agents/<name>/`). Goals or workflows go to `ze-automation` (`ze_automation/agents/<name>/`). Email/Gmail agents go to `ze-messenger` (`ze_messenger/agents/messenger/`). Calendar/reminders go to `ze-calendar` (`ze_calendar/agents/<name>/`). Prospecting/outreach goes to `ze-prospecting` (`ze_prospecting/agents/`). A new coherent domain (finance, health) gets a new plugin package — see "Creating a new plugin package" below.
+New agent that needs contacts or persona context routes to `ze-personal` (`ze_personal/agents/<name>/`). Goals or workflows go to `ze-automation` (`ze_automation/agents/<name>/`). Email/Gmail agents go to `ze-messenger` (`ze_messenger/agents/messenger/`). Calendar/reminders go to `ze-calendar` (`ze_calendar/agents/<name>/`). Prospecting/outreach goes to `ze-prospecting` (`ze_prospecting/agents/`). A new coherent domain (finance, health) gets a new plugin package. See "Creating a new plugin package" below.
 
 See [docs/package-architecture.md](package-architecture.md) for the full decision table and the criteria for when a new package is warranted.
 
@@ -29,7 +29,7 @@ See [docs/package-architecture.md](package-architecture.md) for the full decisio
 
 ## Adding an agent to an existing plugin
 
-The short path — no new package needed.
+The short path needs no new package.
 
 ### 1. Write a spec first
 
