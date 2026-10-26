@@ -162,7 +162,9 @@ class PushBar:
             labels = list(await candidate.evidence_labels())
             if not labels:
                 return True
-            scores = await self._nli.scores([(label, candidate.claim) for label in labels])
+            scores = await self._nli.scores(
+                [(label, candidate.claim) for label in labels]
+            )
             grounded = self._nli.grounding_score(candidate.claim, labels, scores=scores)
             if grounded < thresholds.grounding:
                 log.info(

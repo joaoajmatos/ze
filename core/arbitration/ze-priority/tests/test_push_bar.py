@@ -48,7 +48,9 @@ class FakeNLI:
 
 
 class FakeHistory:
-    def __init__(self, bodies: list[str] | None = None, *, raises: bool = False) -> None:
+    def __init__(
+        self, bodies: list[str] | None = None, *, raises: bool = False
+    ) -> None:
         self._bodies = bodies or []
         self._raises = raises
         self.calls: list[float] = []
@@ -153,9 +155,7 @@ async def test_irrelevant():
 
 
 async def test_mentioned_recently():
-    verdict = await _only(
-        _bar(mentions=FakeMentions(mentioned=True)), _candidate()
-    )
+    verdict = await _only(_bar(mentions=FakeMentions(mentioned=True)), _candidate())
     assert (verdict.passed, verdict.reason) == (False, "mentioned_recently")
 
 
@@ -215,9 +215,7 @@ async def test_evidence_labels_called_only_at_grounding_step():
 
 async def test_relevance_exception_rejects_as_irrelevant():
     with capture_logs() as logs:
-        verdict = await _only(
-            _bar(), _candidate(relevance=Counter(0.9, raises=True))
-        )
+        verdict = await _only(_bar(), _candidate(relevance=Counter(0.9, raises=True)))
     assert (verdict.passed, verdict.reason) == (False, "irrelevant")
     assert any(e["event"] == "push_bar_relevance_check_failed" for e in logs)
 
@@ -246,9 +244,7 @@ async def test_empty_evidence_skips_grounding():
 
 async def test_mention_exception_passes_and_logs():
     with capture_logs() as logs:
-        verdict = await _only(
-            _bar(mentions=FakeMentions(raises=True)), _candidate()
-        )
+        verdict = await _only(_bar(mentions=FakeMentions(raises=True)), _candidate())
     assert verdict.passed is True
     assert any(e["event"] == "push_bar_mention_check_failed" for e in logs)
 
@@ -271,9 +267,7 @@ async def test_grounding_exception_passes_and_logs():
 
 async def test_evidence_labels_exception_passes_and_logs():
     with capture_logs() as logs:
-        verdict = await _only(
-            _bar(), _candidate(labels=Counter((), raises=True))
-        )
+        verdict = await _only(_bar(), _candidate(labels=Counter((), raises=True)))
     assert verdict.passed is True
     assert any(e["event"] == "push_bar_grounding_check_failed" for e in logs)
 

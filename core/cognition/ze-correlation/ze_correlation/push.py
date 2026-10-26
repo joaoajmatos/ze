@@ -92,9 +92,7 @@ class CorrelationPushCandidateSource:
             confidence=self._cfg.tau_push,
             relevance=self._cfg.tau_relevance,
             novelty_similarity_max=self._cfg.novelty_similarity_max,
-            grounding=float(
-                nli_config(settings).get("nli_grounding_threshold", 0.30)
-            ),
+            grounding=float(nli_config(settings).get("nli_grounding_threshold", 0.30)),
             inline_cooldown_hours=None,
         )
 
