@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Depends on**: 199, which lands the `suspected → closed` resolve edge (`suspected-loop-resolution.md`) and a loop's claim kind derived from its state (`loop-claim-kind-from-state.md`). Coordinate `ze_worldstate/admission.py` with 202, which also edits it.
+**Depends on**: 199 (landed), which added the `suspected → closed` resolve edge as `LoopStore.resolve` (`suspected-loop-resolution.md`) and a loop's claim kind derived from its state (`loop-claim-kind-from-state.md`). 202 (judgment surface) also edits `admission.py`, `intake.py`, `commitment_judge.py`, `loop_judge.py`, `corroboration.py` and `nodes/memory.py`: 202 lands first and this phase rebases onto it. The hunk split is in plan.md, "Coordination with 202".
 
 **Input**: Architecture review 2026-10-22, candidate C7 plus the loop-inflow commit (cognition #5): "A lifecycle module whose interface is the domain events (create declared/suspected, confirm, track, corroborate, promote, resolve, drop, decay, drift); each event is atomic; transition and stamp rules live inside it; the store shrinks to rows and queries; the closure and the 16-parameter threading are removed; one decision vocabulary; tests against test-pg. Hypotheses and suspected loops stay separate concepts."
 
@@ -18,34 +18,42 @@ An **open loop** moves through `suspected → active → drifting → closed | d
 |---|---|---|
 | Confirm | `transition(ACTIVE)` (stamps `confirmed_at`), then `stamp_declared` (stamps confidence, deadline, rationale and `confirmed_at` again), then fields patched by hand | `review.py:16-33` |
 | Drop | `list_evidence`, `transition(DROPPED)`, then `set_dismissed_evidence_fingerprint`. If the run fails between the last two, the fingerprint is lost and the same evidence can bring the loop back | `review.py:41-53` |
-| Decay | `set_confidence`, `transition(DRIFTING)`, `set_drift_rationale`. The state check reads the loop from before the decay | `decay.py:38-61` |
+| Decay | `set_confidence`, `transition(DRIFTING)`, `set_drift_rationale`. The state check reads the loop from before the decay | `decay.py:38-57` |
 | Drift sweep | `transition(DRIFTING)`, then `set_drift_rationale` | `jobs/drift_sweep.py:26-32` |
 | Stale suspicion | `transition(DROPPED)`, no fingerprint | `jobs/stale_suspicion.py:31` |
-| Declared create (inflow) | contribution + `create`, `set_drift_deadline`, evidence and entity links, origin source. The contribution omits the evidence the suspected path includes | `extraction.py:347-377` |
-| Declared create (`track_loop`) | contribution + `create` with no existence checkers, then `stamp_declared`, then entity links. No evidence, no origin source | `tracking.py:126-153` |
+| Declared create (inflow) | contribution + `create`, `set_drift_deadline`, evidence and entity links, origin source. The contribution omits the evidence the suspected path includes | `extraction.py:349-375` |
+| Suspected create (inflow) | contribution + `create`, then evidence and entity links, then origin source, each a separate write | `extraction.py:459-480` |
+| Declared create (`track_loop`) | contribution + `create` with no existence checkers, then `stamp_declared`, then entity links. No evidence, no origin source | `tracking.py:124-152` |
 | Track: confirm, reinforce or revive | `set_confidence`, or `transition(ACTIVE, user_asked=...)` then `stamp_declared` | `tracking.py:90-108` |
-| Corroborate / promote | `promote` (one statement) or `set_confidence`, then source rows | `corroboration.py:182-199`, `store.py:512-533` |
-| Resolve | `find_matching_loop`, then `transition(CLOSED)` | `extraction.py:380-400` |
+| Note evidence (170) | evidence links, entity links, then `record_corroboration` (moves an active loop's deadline), each a separate write | `extraction.py:204-240` |
+| Corroborate / promote (172) | evidence links, `add_source`, then `promote` (one statement) and `mark_source_promoted`, or `set_confidence` | `corroboration.py:166-199`, `store.py:564-585` |
+| Resolve | `find_matching_loop`, then `resolve` (199: one transaction, but a store method that holds a lifecycle rule) | `extraction.py:378-399`, `store.py:272-320` |
+| Close (user) | `transition(CLOSED)` from active or drifting (REST, page, `close_loop` tool) | `review.py:36-38` |
+| Link a reminder or goal | `link`, guarded by the live states (173) | `intake.py:347-367`, `store.py:425-447` |
 
 The "declared stamp" rule (confidence 0.9, a fresh 7-day drift window, rationale cleared) is restated four times: `review.confirm_loop`, `tracking._stamp`, `extraction` (through `compute_drift_deadline`) and `promote(window_days=7)`. The comment at `store.py:24-25` says only drift and decay move a loop from active to drifting. The table does not enforce that; any caller can make the move.
 
 The commit path for a loop that was admitted is shallow:
 
-- `LoopInflow` (`admission.py:30-56`) holds eleven dependencies. `commit_for` (`admission.py:97-124`) builds a closure that passes them all back to the free function `propose_loop_candidates`, which takes 16 parameters (`extraction.py:552-570`).
-- That function threads them on into `_commit_admitted` (16 parameters, `extraction.py:485-501`), then into `_create_declared_loop` and `_create_suspected_loop`.
-- `LoopAdmission.commit` is a mutable callable attribute, and `source` is set after the record is built (`admission.py:65-67`, `intake.py:196`).
-- The decision type makes a round trip. `IntakeOutcome` kinds are remapped by string to `LoopGateDecision` kinds (`intake.py:46-50`), and `loop_judge.DecisionKind` lists `create_declared`, which only that remap produces.
+- `LoopInflow` (`admission.py:30-56`) holds eleven dependencies. `commit_for` (`admission.py:93-120`) builds a closure that passes them all back to the free function `propose_loop_candidates`, which takes 16 parameters (`extraction.py:550-568`).
+- That function threads them on into `_commit_admitted` (16 parameters, `extraction.py:483-500`), then into `_create_declared_loop` (15) and `_create_suspected_loop` (14). `corroborate_match` takes 11 more, including a `link` closure (`corroboration.py:81-94`).
+- `LoopAdmission.commit` is a mutable callable attribute, and `source` is set after the record is built (`admission.py:70`, `intake.py:198`).
+- The decision type makes a round trip. `IntakeOutcome` kinds are remapped by string to `LoopGateDecision` kinds (`intake.py:45-49`), and `loop_judge.DecisionKind` lists `create_declared`, which only that remap produces.
+- `propose_loop_candidates` still has a `provenance == "user_declared"` branch (`extraction.py:588-605`) that no caller reaches: `track_loop` uses `LoopTracker`.
 
 Unit tests mock the store, so ordering and atomicity bugs are not caught. `make test-pg` exists (phase 170).
 
 ### Blast radius
 
-The loop-store mutations listed above have 16 production call sites, all in `ze_worldstate` (`review.py`, `decay.py`, `tracking.py`, `corroboration.py`, `extraction.py`, `jobs/drift_sweep.py`, `jobs/stale_suspicion.py`). The callers outside the package reach loops through:
+The loop-store mutations listed above have 26 production call sites plus 3 `create` sites, all in `ze_worldstate` (`review.py`, `decay.py`, `tracking.py`, `corroboration.py`, `extraction.py`, `intake.py`, `jobs/drift_sweep.py`, `jobs/stale_suspicion.py`; counted 2026-10-26). The real-Postgres tests in `apps/ze-api/tests/pg/` call the same write methods about 60 times for setup. plan.md lists the callers by package. The callers outside the package reach loops through:
 
 - REST: `apps/ze-api/ze_api/api/v0/loops/router.py`, through `ze_worldstate/rest.py`;
 - the `loops` agent tools in `ze_worldstate/agents/`;
 - the inflow wiring in `ze_worldstate/inflow.py` and `bootstrap.py`;
-- the commitment intake in `intake.py`.
+- the commitment intake in `intake.py`, and `write_memory` (`ze_core/orchestration/nodes/memory.py:197-200, 292-300`), which runs the loop commit fire-and-forget;
+- the contradiction hook in `apps/ze-api/ze_api/wiring/hooks.py:43-48`, which calls the decay cascade;
+- the trace: the `intake_outcome` row carries the intake kind strings, which ze-web maps to sentences (`apps/ze-web/src/widgets/assemble/lib/instruments/judgments.ts:84-86`);
+- the calibration runners `eval/calibration/commitment_intake.py` and `loop_gate.py`, which read the kind strings and import the 109 gate from `extraction.py`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -110,12 +118,13 @@ A maintainer reads how an admitted loop becomes a row. One loop-inflow module ho
 
 ### Functional Requirements
 
-- **FR-001**: One lifecycle module MUST own every open-loop event: create declared, create suspected, confirm, track (confirm / reinforce / revive), corroborate, promote, resolve, drop, decay from evidence, and drift from absence.
+- **FR-001**: One lifecycle module MUST own every open-loop event: create declared, create suspected, confirm, track (confirm / reinforce / revive), note evidence (170), corroborate, promote, resolve, close (user), drop, expire (stale suspicion), link a reminder or goal, decay from evidence, and drift from absence.
 - **FR-002**: Each event MUST be atomic. It is one statement, or one transaction across the loop row, its evidence and entity links and its source rows. It returns the loop as stored.
 - **FR-003**: Which moves are legal, and who may make each one, MUST live inside the lifecycle module:
   - only drift and decay may move a loop from active to drifting;
   - only an explicit user request may revive a drifting loop;
-  - only the resolve event may move a loop from suspected to closed (199).
+  - only the resolve event may move a loop from suspected to closed (199);
+  - only promote, confirm and track may move a loop from suspected to active.
 - **FR-004**: The declared stamp (confidence 0.9, a fresh drift window, rationale cleared, `confirmed_at` set) MUST be defined once, and confirm, track, declared create and promote all use it. Promote keeps its own rule, `GREATEST(confidence, 0.7)` (phase 172).
 - **FR-005**: The two declared-create paths (an inflow, and `track_loop`) MUST record the same things: evidence on the contribution, evidence links, entity links, and an origin source when one is known.
 - **FR-006**: Drop and stale-suspicion expiry MUST record the dismissed-evidence fingerprint in the same atomic write as the state change.
@@ -146,7 +155,7 @@ A maintainer reads how an admitted loop becomes a row. One loop-inflow module ho
 
 - **SC-001**: With the second write of each event forced to fail on test-pg, 100% of events leave the loop fully unchanged or fully changed.
 - **SC-002**: The declared stamp is defined in exactly one place (today four).
-- **SC-003**: No function in the commit path takes more than 8 parameters (today up to 16). The commit closure is gone.
+- **SC-003**: No function or method that a commit calls takes more than 8 parameters (today up to 16). Constructors, which receive injected dependencies, are not counted. The commit closure is gone.
 - **SC-004**: Every lifecycle event has at least one real-Postgres test, and the transition table test covers every (event, starting state) pair.
 - **SC-005**: A dropped loop is never brought back by the same evidence, including after a stale expiry, across a 30-day replay of the seed fixtures.
 
