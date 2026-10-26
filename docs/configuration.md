@@ -15,7 +15,7 @@ A profile is a YAML file in `config/profiles/` that overrides part of `config.ya
 `make dev`, `make dev-full`, and `make dev-eval` set `ZE_PROFILE=quiet`. The `quiet` profile turns off the work nobody watches while you develop:
 
 - It scores news with heuristics only (no model call per article) and fetches once a day.
-- It turns off the weekly insight and goal jobs, the nightly dream and memory consolidation jobs, and session summaries. Contacts consolidation goes with memory consolidation.
+- It turns off the weekly insight, goal, and accountability jobs, the nightly dream and memory consolidation jobs, and session summaries. Contacts consolidation goes with memory consolidation.
 - It stops the correlation scan.
 - It stops a restart from running every job it missed.
 

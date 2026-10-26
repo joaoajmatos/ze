@@ -371,7 +371,8 @@ Before every agent execution, `fetch_context` runs:
    memory type, and `episode` ships at 0.30). The floor filters on raw E5 cosine, and that
    cosine rarely falls below it: the lowest score measured for an unrelated pair is 0.73
    (query against passage) and 0.79 (passage against passage). In practice the floor
-   removes almost nothing, so do not rely on it to drop unrelated memories. Retrieval then
+   removes almost nothing, so do not rely on it to drop unrelated memories. Setting a floor that
+   works needs a labeled retrieval set, which does not exist yet. Retrieval then
    orders the candidates by a composite score:
    a weighted sum of similarity, recency (30-day half-life), and confidence, set by
    `memory.composite_weights` (0.6 / 0.25 / 0.15). With `memory.entity_anchor.enabled` (default `true`), entities
