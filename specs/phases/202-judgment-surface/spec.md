@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Depends on**: 198 (audit bug floor). Coordinate `ze_worldstate/admission.py` with 203, which also edits it.
+**Depends on**: 198 (audit bug floor, landed). Shares `ze_worldstate/admission.py`, `intake.py`, `types.py`, `commitment_judge.py`, `corroboration.py` and `nodes/memory.py` with 203, which also edits them. 202 lands first and 203 rebases onto it; the hunk split is in [plan.md](plan.md#coordination-with-203).
 
 **Input**: Architecture review 2026-10-22, candidate C6: "One System One judgment-surface module that owns config parsing, the calibrated rule, the single-attempt call, exception → skip, warn-once and one Judgment record carrying surface and bars; the trace rows come from it, with `judgment_bars.py` and the five carrier types deleted; plus one shared calibration harness that `eval/calibration` runners use, calling the production surface. Each surface keeps its questions, state, bars and `decide()`, as the ADR requires. Unify the drifted semantics (trace rows on exception, `skip_reason`)."
 
@@ -16,13 +16,13 @@ Ze asks System One typed questions at seven **judgment points** (config key `sys
 
 | Surface | Questions and pure decide | Orchestration |
 |---|---|---|
-| routing | `ze_core/routing/judge.py` (197 lines) | `RoutingRouter._judge`, `routing/router.py:159-191` |
-| complexity | `routing/tier.py:104-117` | `TierJudge.choose`, `tier.py:146-180` |
-| skills | `ze_skills/judge.py` (192) | `SkillMatcher`, `ze_skills/matching.py:134-170` |
-| loop_gate | `ze_worldstate/loop_judge.py` (125) | `LoopInflow._judge`, `admission.py:144-191` |
-| corroboration | `corroboration_judge.py` (99) | `corroboration._judge`, `corroboration.py:59-78` |
-| commitment_intake | `commitment_judge.py` (340) | `CommitmentIntake`, `intake.py:118-168` |
-| fact_judge (Haiku-path label) | `ze_memory/fact_judge.py` (97) | `nodes/memory.py:177-195` |
+| routing | `ze_core/routing/judge.py` (197 lines) | `EmbeddingRouter._judge`, `routing/router.py:159-192` |
+| complexity | `routing/tier.py:104-119` | `TierJudge.choose`, `tier.py:146-180`, gate in `nodes/tier.py:49-53` |
+| skills | `ze_skills/judge.py` (192) | `SkillMatcher.match`, `ze_skills/matching.py:134-184` |
+| loop_gate | `ze_worldstate/loop_judge.py` (125) | `LoopInflow._judge`, `admission.py:146-191` |
+| corroboration | `corroboration_judge.py` (99) | `corroboration._judge` and `_corroborate`, `corroboration.py:59-78`, `136-146` |
+| commitment_intake | `commitment_judge.py` (340) | `CommitmentIntake.admit`, `intake.py:121-177` |
+| fact_judge (Haiku-path label) | `ze_memory/fact_judge.py` (97) | `nodes/memory.py:178-193` (unreachable, see below) |
 
 Each orchestration repeats the same steps:
 
@@ -38,54 +38,63 @@ There are five carrier shapes with the same four fields (result, question kinds,
 
 - `RoutingJudgment` (`routing/types.py:24`), shared by routing and complexity;
 - `SkillsJudgment` (`ze_skills/types.py:138`);
-- `LoopAdmission` (`ze_worldstate/types.py:112`);
-- `IntakeAdmission` (`intake.py:62`);
+- `LoopAdmission` (`ze_worldstate/types.py:128`);
+- `IntakeAdmission` (`intake.py:61`);
 - `FactAdmission` (`ze_memory/types.py:123`).
 
 ### Verified drift
 
+Checked against main at `5426cce1` (198 and 199 landed), 2026-10-26.
+
 - **Exception handling differs.**
-  - Routing, complexity and skills turn an exception into `SystemOneResult(outcome="skip", skip_reason="error")`, so the trace gets one skip row per question (`router.py:176-178`, `tier.py:149-152`, `matching.py:162-164`).
+  - Routing, complexity and skills turn an exception into `SystemOneResult(outcome="skip", skip_reason="error")`, so the trace gets one skip row per question (`router.py:175-179`, `tier.py:151-155`, `matching.py:151-155`).
   - Commitment intake on an exception falls back with `judgment=None` (`intake.py:146-157`), so the conversation trace shows **no** judgment rows for that turn.
-  - Loop admission and corroboration also return no result on an exception (`admission.py:174-181`, `corroboration.py:72-74`). Those two inflows log their judgments and write no trace rows by design (phase 168), so this drift shows only in their logs.
+  - Loop admission and corroboration also return no result on an exception (`admission.py:173-180`, `corroboration.py:72-74`). Those two inflows log their judgments and write no trace rows by design (phase 168), so this drift shows only in their logs.
 - **`skip_reason` means three different things.**
-  - Complexity sets it only for `invalid_answer` (`tier.py:161-163`).
-  - Routing and skills set it for "decision skip while the outcome is ok" (`router.py:186-190`, `matching.py:171-175`).
+  - Complexity sets it only for `invalid_answer` (`tier.py:162-164`).
+  - Routing and skills set it for "decision skip while the outcome is ok" (`router.py:186-190`, `matching.py:162-166`).
   - Intake and loop admission set it for every fallback.
 - **Check order differs.**
   - `corroboration_judge.decide` checks `enabled` and `calibrated` itself (`corroboration_judge.py:85-88`).
-  - `loop_judge.decide` checks the answer is valid before the bars (`loop_judge.py:105-110`).
+  - `loop_judge.decide` checks the answer is valid before the bars (`loop_judge.py:106-113`).
   - The orchestrations differ in the same way.
-- **Warnings differ.** Complexity warns once (`TierJudge.warn_uncalibrated_once`). Routing, skills, loop gate and intake log their uncalibrated warning on every call (`router.py:166`, `matching.py:138`, `admission.py:156`, `intake.py:127`).
+- **Warnings differ.** Complexity warns once per `TierJudge` (`TierJudge.warn_uncalibrated_once`). Routing, skills, loop gate, corroboration and intake log their uncalibrated warning on every call (`router.py:166`, `matching.py:138`, `admission.py:156`, `corroboration.py:141`, `intake.py:126`). The worldstate surfaces re-parse their config on every call, so an invalid bar also warns on every call.
 - **Bar names are stored twice.**
   - The commitment intake's bar names are in `commitment_judge._BAR_NAMES` (`commitment_judge.py:157`) and again in `judgment_bars._INTAKE_BARS`, which also parses the config a second time, because ze-core cannot import ze-worldstate (`judgment_bars.py:11-38`).
   - The routing, skills and complexity bar maps are written inline at the nodes (`nodes/routing.py:85-88`, `nodes/skills.py:58-61`, `nodes/tier.py:83`).
-  - The fact-judge path passes `bars={}` (`nodes/memory.py:193`).
 - **Validation is copied.** `decide_tier` re-implements `valid_noul` inline (`tier.py:109-116`).
-- **Unreachable decision kind.** `loop_judge.DecisionKind` lists `create_declared`, but `loop_judge.decide` can no longer return it (`loop_judge.py:89-125`). Only the intake's remap (`intake.py:46-50`) produces it.
+- **Unreachable decision kind.** `loop_judge.DecisionKind` lists `create_declared`, but `loop_judge.decide` can no longer return it (`loop_judge.py:90-125`). Only the intake's remap (`intake.py:45-49`) produces it. Phase 203 owns this fix (FR-009).
+- **Dead trace path.** `write_memory`'s non-intake branch builds `fact_judge` rows from `FactAdmission.judgment` with `bars={}` (`nodes/memory.py:182-193`). The only production fact extractor, `gather_fact_proposals` (`ze_memory/extractor.py:439-467`), never sets a judgment. Only the commitment intake does (`intake.py:262`, `306`), and the node reads `intake.judgment`, not the fact admission's. The branch and `FactAdmission`'s four judgment fields have no production reader.
 
 ### Calibration
 
-`eval/calibration` has seven runners (4.8k lines). Each re-implements the same pieces:
+`eval/calibration` holds nine Python files (4,838 lines): six System One runners, the commitment-intake baseline, `open_query.py` and `companion_research_check.py`. Each System One runner re-implements the same pieces:
 
-- `load_rows`, `_norm`, `check_sets` and the reliability report (`loop_gate.py:80-92` matches `corroboration.py:88-100`);
-- `suggest_bars`, the verdict printout, and saving and loading results;
-- its own copy of the surface config.
+- `load_rows`, `_norm`, `check_sets`, the set-shape core and the reliability report (`loop_gate.py:80-92` matches `corroboration.py:88-100`);
+- `suggest_bars`, the bar grid, the verdict printout, and (only `commitment_intake.py`) saving and loading results;
+- its own read of the surface config from `config.yaml` (`config_model`, `system_one_config`).
 
-Because calibration does not call the production config parser or `decide()`, it can drift from production.
+The runners already call the production `decide()`. They do not call the production config parser: they build the surface config dataclasses positionally. That has already drifted: `loop_gate.py:536` builds `LoopGateSurfaceConfig(True, 0.9, 0.9, 0.9)`, four values for a class that has had three fields since phase 173, so the "no bar pair passes" path of `make calibrate-loop-gate` raises `TypeError`.
 
 ### Blast radius
 
-`graphify affected judgments_from_result --depth 2` reaches:
+`graphify affected <symbol> --depth 2` on the symbols this phase changes (full list by package in [plan.md](plan.md#blast-radius)):
 
-- 4 production nodes: `embed_route`, `match_skills`, `choose_tier`, `write_memory`;
-- 13 test modules in `core/engine/ze-core/tests`.
-
-Each surface-config parser has one production caller, plus tests and its calibration runner.
+- `judgments_from_result` reaches 4 production nodes (`embed_route`, `match_skills`, `choose_tier`, `write_memory`) and 13 test modules in `core/engine/ze-core/tests`;
+- the six surface-config parsers reach their production callers (`routing/factory.py`, `ze_skills/bootstrap.py`, `api/v0/system/models.py`, `admission.py`, `corroboration.py`, `intake.py`), their surface tests and the calibration runners;
+- `RoutingEnvelope.judgment` is checkpointed with the graph state, so the record type joins the checkpoint allowlist.
 
 ### What does not change
 
 `system-one-models.md` holds that each surface keeps its own questions, state builder, bars and pure `decide()`, and that code owns arithmetic and policy. This phase moves only the orchestration and trace pattern. The bars in `config.yaml` stay as they are, and the System One client contract (`SystemOneClient`, two adapters) is unchanged.
+
+## Clarifications
+
+### Session 2026-10-26
+
+- Q: The `fact_judge` trace path (`nodes/memory.py:182-193`) is unreachable in production. Keep it with real bars, or delete it? → A: Delete it. The branch and `FactAdmission`'s `judgment`, `question_ids`, `consumed` and `skip_reason` fields are removed (pre-v1 hard cut). FR-004 and the edge cases say so.
+- Q: SC-004's 40% line drop is out of reach without rewriting per-surface scoring. Restate it? → A: Yes. SC-004 is structural: row loading, the set-shape core, reliability bins, the bar grid, the verdict printout, saving and loading results, and the config read are each defined once, in the harness, with zero copies in the runners. Calibration lines drop by at least 25%.
+- Q: 202 and 203 both edit the loop decision kinds. Who owns FR-009? → A: 203 owns it entirely. 202 lands first and changes no decision kinds; 203 rebases onto 202.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -99,7 +108,7 @@ The user opens the trace panel for a reply. The System One call behind a convers
 
 **Acceptance Scenarios**:
 
-1. **Given** the commitment intake is enabled and calibrated, **When** its System One call raises, **Then** the trace shows six commitment-intake rows marked skipped with reason `error`, and the Haiku fallback still runs.
+1. **Given** the commitment intake is enabled and calibrated, **When** its System One call raises, **Then** the trace shows six commitment-intake question rows marked skipped with reason `error`, plus the `intake_outcome` row (`fallback:error`), and the Haiku fallback still runs.
 2. **Given** routing is calibrated, **When** its call times out, **Then** the trace shows routing rows with reason `timeout` (the client's own skip reason), exactly as today.
 3. **Given** a surface is enabled but uncalibrated, **When** a turn runs, **Then** no request is made, no rows are written, and the uncalibrated warning is logged once per process for that surface.
 
@@ -124,7 +133,7 @@ A maintainer adds a new System One judgment point. They write its questions, its
 
 The calibration operator runs `make calibrate-<surface>`. The runner parses the surface config, checks calibration and calls `decide()` through the same module that production uses. Row loading, set-shape checks, the live loop, the reliability and bar-grid reports, the verdict printout and saving results come from one shared harness. Each runner keeps only its gold columns and its acceptance rule.
 
-**Why this priority**: It removes about half of the calibration code and stops calibration verdicts from drifting from production behaviour. But it changes no runtime behaviour.
+**Why this priority**: It removes the copied calibration code and stops calibration verdicts from drifting from production behaviour. But it changes no runtime behaviour.
 
 **Independent Test**: For every runner, `--check-sets` gives the same output as before, and a recorded results file gives the same report and verdict as before.
 
@@ -137,13 +146,14 @@ The calibration operator runs `make calibrate-<surface>`. The runner parses the 
 
 ### Edge Cases
 
-- **A result with outcome `ok` but a missing answer for one question.** That question gets its own skip row with the decision's skip reason, as today (`judgments.py:37-49`).
+- **A result with outcome `ok` but a missing answer for one question.** That question gets its own skip row with the decision's skip reason, as today (`judgments.py:37-48`).
 - **The client returns `skip` with its own reason** (timeout, overload). The client's reason wins over a decision reason.
 - **A surface whose decision consumes no questions** (a hold). Rows are written with `consumed=false`.
 - **Commitment intake with a reminder or goal created this turn, which suppresses the loop.** Rows still cover all six questions. Suppression is a decision outcome, not a skip.
 - **Email, calendar and ingestion loop gates and corroboration.** They write no trace rows (phase 168), but their logged judgment line uses the same record and the same skip semantics.
-- **The fact-judge label** (no commitment intake wired). Rows carry surface `fact_judge` and the family and biography bars in force, not an empty bar map.
-- **A bar invalid in config** (out of [0, 1], a boolean or a string). It parses to unset, logs once, and the surface reads as uncalibrated, as today.
+- **No commitment intake wired.** `write_memory` runs the Haiku fact extractor and writes no fact judgment rows; the old `fact_judge` row path is deleted (it had no production producer).
+- **A bar invalid in config** (out of [0, 1], a boolean or a string). It parses to unset, logs once per surface and bar per process, and the surface reads as uncalibrated, as today.
+- **Corroboration with `corroborate_hold` above `promote_hold`.** The surface reads as uncalibrated, as today (`corroboration_judge.py:56`). The shared calibrated rule takes a per-surface consistency check.
 
 ## Requirements *(mandatory)*
 
@@ -152,7 +162,7 @@ The calibration operator runs `make calibrate-<surface>`. The runner parses the 
 - **FR-001**: One judgment-surface module MUST sit beside the `SystemOneClient` contract in ze-agents. It owns:
   - reading `system_one.surfaces.<name>`;
   - parsing named bars and surface extras (for example `shortlist_k`);
-  - the "calibrated" rule: enabled and every required bar set;
+  - the "calibrated" rule: enabled and every required bar set, plus an optional per-surface consistency check;
   - the single-attempt call;
   - mapping any exception to a skip result with reason `error`;
   - logging the uncalibrated warning once per surface per process.
@@ -166,19 +176,19 @@ The calibration operator runs `make calibrate-<surface>`. The runner parses the 
 - **FR-003**: Judging MUST return one judgment record with these fields: surface name, the raw result, each question's kind, the consumed set, the skip reason, and the bar in force for each question (name and value, or unset).
 - **FR-004**: The five carrier shapes MUST stop carrying their own copies of the judgment fields:
   - `RoutingJudgment` and `SkillsJudgment` are deleted;
-  - `LoopAdmission`, `IntakeAdmission` and `FactAdmission` hold one judgment record instead of their four loose fields.
+  - `LoopAdmission` and `IntakeAdmission` hold one judgment record instead of their loose fields;
+  - `FactAdmission` loses its `judgment`, `question_ids`, `consumed` and `skip_reason` fields, which have no production reader (Clarifications 2026-10-26).
 - **FR-005**: Turning a judgment record into trace rows MUST need nothing else.
   - `ze_core/orchestration/judgment_bars.py` (`bar_map`, `intake_bars`, `_INTAKE_BARS`) is deleted.
   - The four nodes stop building bar maps.
+  - The `fact_judge` row branch in `write_memory` is deleted.
 - **FR-006**: An exception during the call MUST produce a skip result for every surface. A conversation-turn surface (routing, skills, complexity, commitment intake) then writes one skip row per question with reason `error`. Today the commitment intake writes none.
 - **FR-007**: `skip_reason` MUST have one meaning across all surfaces: why the surface's answer was not used.
   - It is the client's skip reason when the outcome is `skip`.
-  - Otherwise it is the decision's fallback or skip reason (for example `invalid_answer`, `uncalibrated`, `abstain`).
-  - It is empty when the answer was used, or deliberately held under a bar.
+  - Otherwise it is the decision's fallback or skip reason (for example `invalid_answer`, `uncalibrated`).
+  - It is empty when the answer was used, or deliberately held under a bar (for example routing's `abstain` and the intake's `hold`).
 - **FR-008**: Answer validation MUST use the shared `valid_noul` and `valid_choice`. The inline copy in `decide_tier` is removed.
-- **FR-009**: `loop_judge.DecisionKind` MUST list only the kinds `loop_judge.decide` can return.
-  - The intake's commit decision is named by the decision vocabulary that phase 203 defines, not by a string remap.
-  - Until 203 lands, the remap stays and is the only producer of `create_declared`.
+- **FR-009**: Delivered by phase 203 (Clarifications 2026-10-26). 203's single commit-decision vocabulary removes the intake's string remap and leaves `loop_judge.DecisionKind` with only the kinds `loop_judge.decide` returns. 202 changes no decision kinds.
 - **FR-010**: A shared calibration harness MUST provide:
   - row loading with duplicate-id checks;
   - per-language set-shape checks;
@@ -192,7 +202,7 @@ The calibration operator runs `make calibrate-<surface>`. The runner parses the 
 ### Key Entities
 
 - **Judgment point (surface)**: One place where Ze asks System One typed questions. It has a name, its questions, its bars and its pure decision.
-- **Judgment record**: One attempted or skipped System One request at one judgment point. It holds what was asked, what came back, which answers the decision used, why the answer was not used (if it was not), and the bar each question was held to.
+- **Judgment record**: One attempted System One request at one judgment point (a call that raised counts as attempted). It holds what was asked, what came back, which answers the decision used, why the answer was not used (if it was not), and the bar each question was held to. A surface that was not asked (off, uncalibrated, no client) has no record.
 - **Bar**: A threshold in [0, 1], set by calibration, that a question's answer must clear before the decision acts on it.
 
 ## Success Criteria *(mandatory)*
@@ -202,14 +212,15 @@ The calibration operator runs `make calibrate-<surface>`. The runner parses the 
 - **SC-001**: For each of the four conversation-turn surfaces, a forced client exception yields one trace row per question with reason `error`. Today: 3 of 4 surfaces; target: 4 of 4.
 - **SC-002**: Adding a test surface needs only questions, a state builder, bar names and `decide()`. Zero node edits and zero trace-glue lines.
 - **SC-003**: `surface_block` is called from one module only (today: 7).
-- **SC-004**: Calibration line count drops by at least 40% (today about 4.8k lines), with identical `--check-sets` output and identical verdicts on saved results.
-- **SC-005**: Every existing surface decision test and node judgment test passes. The only edits allowed are construction and import changes, never expected decisions or bars.
+- **SC-004**: Row loading, the set-shape core, reliability bins, the bar grid, the verdict printout, saving and loading results, and the config read are each defined once, in the harness, with zero copies in the runners. Calibration lines (the nine Python files in `eval/calibration`, today 4,838, plus the harness) drop by at least 25%. `--check-sets` output and the verdicts on recorded results stay identical.
+- **SC-005**: Every existing surface decision test and node judgment test passes. The only edits allowed are construction, import and patch-target changes, never expected decisions or bars.
 - **SC-006**: Each surface's uncalibrated warning appears at most once per process.
 
 ## Assumptions
 
 - **Where the module lives.** It lives in `ze_agents` next to `system_one.py`, so ze-core, ze-skills, ze-worldstate and ze-memory can all use it without new dependency edges. The trace row type stays in ze-core, which converts records to rows.
 - **Out of scope.** The email, calendar and ingestion loop gates and corroboration keep writing no trace rows. Adding trace rows to background inflows is out of scope.
-- **The loop commit vocabulary.** It is redesigned in 203. This phase only stops `loop_judge` from listing a kind it cannot produce.
-- **No live calibration.** No live calibration runs are needed. The calibration refactor is verified offline on saved results and `--check-sets`.
-- **Pre-v1 hard cut** (constitution Principle VIII). The carrier types and `judgment_bars.py` are deleted, not deprecated.
+- **The loop commit vocabulary.** It is redesigned in 203, which also owns FR-009.
+- **No live calibration.** No live calibration runs are needed. The calibration refactor is verified offline: golden `--check-sets` output and golden reports from a deterministic replay client, captured before the refactor.
+- **No migration, no REST or WS change.** `JudgmentTrace` keeps its shape.
+- **Pre-v1 hard cut** (constitution Principle VIII). The carrier types, `judgment_bars.py`, the six `*_surface_config` functions and the `fact_judge` row branch are deleted, not deprecated.
