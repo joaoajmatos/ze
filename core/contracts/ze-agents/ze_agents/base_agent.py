@@ -13,6 +13,7 @@ from typing import Any, AsyncIterator
 
 from ze_agents.client import LLMClient
 from ze_agents import budget
+from ze_agents.derive import for_action
 from ze_agents.defaults import MODEL_AGENT_DEFAULT, MODEL_AGENT_TIMEOUT
 from ze_agents.errors import (
     AgentAbortedError,
@@ -270,7 +271,7 @@ class BaseAgent(ABC):
             )
             persona_block, biography_block = _split_identity(identity)
         rendered = agent_instructions.format(**extra) if extra else agent_instructions
-        preset_note = getattr(ctx, "preset_note", None)
+        preset_note = ctx.preset_note
         if preset_note:
             rendered = f"{preset_note}\n\n{rendered}"
         if ctx.screen_context_note:
@@ -282,10 +283,10 @@ class BaseAgent(ABC):
         skills_block = self._format_active_skills(ctx)
         if skills_block:
             rendered = f"{skills_block}\n\n{rendered}"
-        procedure_block = getattr(ctx, "procedure_guidance", None)
+        procedure_block = ctx.procedure_guidance
         if procedure_block:
             rendered = f"{procedure_block}\n\n{rendered}"
-        hint = getattr(ctx, "conductor_hint", None)
+        hint = ctx.conductor.hint
         if hint:
             lines = [
                 "Routing hint (optional, not a DAG — scale effort; skip unused agents):"
@@ -305,7 +306,7 @@ class BaseAgent(ABC):
 
     def _visible_tool_names(self, ctx: AgentContext, names: list[str]) -> list[str]:
         visible = list(names)
-        skill_tool_names = getattr(ctx, "skill_tool_names", None)
+        skill_tool_names = ctx.skill_tool_names
         if skill_tool_names is not None:
             allowed = set(skill_tool_names)
             visible = [
@@ -313,16 +314,15 @@ class BaseAgent(ABC):
                 for n in visible
                 if n in allowed or n in (_PROCEDURE_INVOKE_TOOL, SCRIPT_TOOL_NAME)
             ]
-        procedure_tool_names = getattr(ctx, "procedure_tool_names", None)
-        if procedure_tool_names is not None:
-            allowed = set(procedure_tool_names)
+        if ctx.procedure_invocation is not None:
+            allowed = set(ctx.procedure_invocation.tool_names)
             visible = [n for n in visible if n in allowed or n == SCRIPT_TOOL_NAME]
         return visible
 
     def _format_active_skills(self, ctx: AgentContext) -> str:
         """Render each active skill's instructions (and any reference-file content,
         FR-022) as a system-prompt preamble block. No-op when no skills matched."""
-        skills = getattr(ctx, "active_skills", None)
+        skills = ctx.active_skills
         if not skills:
             return ""
         blocks: list[str] = []
@@ -352,7 +352,7 @@ class BaseAgent(ABC):
         The undo is the action the person consented to, so it runs as a normal
         approved call: not a retry run, hooks and the constraint veto still apply.
         """
-        ctx = AgentContext(session_id=session_id, prompt="", retry_mode=False)
+        ctx = for_action(session_id)
         merged = _merge_deps(tool, args, {**self.tool_deps(), "ctx": ctx})
         # The person asked for this undo, so an asks-first undo tool runs as an
         # approved call; a hard constraint veto still applies.
@@ -387,10 +387,10 @@ class BaseAgent(ABC):
             raise UiActionRefusedError(f"tool {tool!r} is not a screen action")
         _check_action_args(spec, args)
         call_id = approval.call_id if approval is not None else uuid4().hex
-        ctx.approval_request_id = approval_request_id
+        ctx.write_gate.approval_request_id = approval_request_id
         merged = _merge_deps(tool, args, {**self.tool_deps(), "ctx": ctx})
-        previous_active = ctx.loop_active
-        ctx.loop_active = True
+        previous_active = ctx.write_gate.loop_active
+        ctx.write_gate.loop_active = True
         try:
             return await self.call_tool(
                 tool,
@@ -401,7 +401,7 @@ class BaseAgent(ABC):
                 **merged,
             )
         finally:
-            ctx.loop_active = previous_active
+            ctx.write_gate.loop_active = previous_active
 
     # ── Tool execution ────────────────────────────────────────────────────────
 
@@ -471,7 +471,7 @@ class BaseAgent(ABC):
 
         if (
             spec.access.value == "write"
-            and ctx.retry_mode
+            and ctx.write_gate.retry_mode
             and spec.reversibility is ToolReversibility.IRREVERSIBLE
         ):
             log.info("tool_blocked_retry", tool=name, agent=self.name)
@@ -499,11 +499,11 @@ class BaseAgent(ABC):
                     return _refusal(name, stored_args, veto.message, result=veto.result)
                 confirmation_gate = "approved"
                 approval = {
-                    "request_id": ctx.approval_request_id,
+                    "request_id": ctx.write_gate.approval_request_id,
                     "outcome": "approved",
                 }
             else:
-                pre_approved = name in ctx.pre_approved_writes
+                pre_approved = name in ctx.write_gate.pre_approved
                 resolution = await self._resolve_ask(
                     spec, ctx, dict(kwargs), hooks, veto_only=pre_approved
                 )
@@ -518,14 +518,14 @@ class BaseAgent(ABC):
                             resolution.refuse,
                             result=resolution.result,
                         )
-                    if ctx.write_round >= MAX_WRITE_ROUNDS:
+                    if ctx.write_gate.round >= MAX_WRITE_ROUNDS:
                         return _refusal(
                             name,
                             stored_args,
                             OVER_CAP_RESULT,
                             gate="refused_over_cap",
                         )
-                    if not ctx.loop_active:
+                    if not ctx.write_gate.loop_active:
                         raise AgentConfigError(
                             f"asks-first tool {name!r} called outside the agent loop"
                         )
@@ -651,7 +651,7 @@ class BaseAgent(ABC):
         from ze_agents.script_step import script_parent_id
 
         for pw in resume.parked:
-            decision = ctx.write_decisions.get(pw.item_id)
+            decision = ctx.write_gate.decisions.get(pw.item_id)
             approved = decision is not None and decision.outcome in (
                 "approved",
                 "edited",
@@ -813,8 +813,8 @@ class BaseAgent(ABC):
 
         Raises `LoopParked` after a response whose asks-first calls were parked.
         """
-        previous_active = ctx.loop_active
-        ctx.loop_active = True
+        previous_active = ctx.write_gate.loop_active
+        ctx.write_gate.loop_active = True
         try:
             return await self._run_loop(
                 ctx,
@@ -828,7 +828,7 @@ class BaseAgent(ABC):
                 max_tokens,
             )
         finally:
-            ctx.loop_active = previous_active
+            ctx.write_gate.loop_active = previous_active
 
     async def _run_loop(
         self,
@@ -886,9 +886,9 @@ class BaseAgent(ABC):
             add_sources(ctx.sources, found)
 
         start_iteration = 0
-        resume = ctx.resume
+        resume = ctx.write_gate.resume
         if resume is not None and resume.agent == self.name:
-            ctx.resume = None
+            ctx.write_gate.resume = None
             messages[:] = list(resume.messages)
             accumulated.extend(resume.accumulated)
             await self._apply_resume(ctx, resume, messages, accumulated, _deps)
@@ -923,7 +923,7 @@ class BaseAgent(ABC):
             if max_history_tokens is not None:
                 _truncate_messages(messages, max_history_tokens)
 
-            _token_sink = getattr(ctx, "token_sink", None)
+            _token_sink = ctx.token_sink
             if _token_sink is not None and hasattr(
                 client, "stream_complete_with_tools"
             ):
@@ -1005,7 +1005,7 @@ class BaseAgent(ABC):
             invoke_calls = [
                 tc for tc in tool_calls if tc["name"] == _PROCEDURE_INVOKE_TOOL
             ]
-            if invoke_calls and getattr(ctx, "procedure_invocation_id", None) is None:
+            if invoke_calls and ctx.procedure_invocation is None:
                 tool_calls = invoke_calls[:1]
 
             parked_writes: list[ParkedWrite] = []

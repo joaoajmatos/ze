@@ -14,6 +14,7 @@ from typing_extensions import TypedDict
 
 from ze_agents.interface.types import RawInput
 from ze_agents.park import ConfirmItem, WriteConfirmation
+from ze_core.orchestration.state import AgentState
 from ze_core.conversation.messages.types import MessageTrace
 from ze_core.conversation.turn import invoke_raw_turn, resume_turn
 from ze_core.orchestration.timing import add_timed_node
@@ -112,6 +113,7 @@ def _graph(clock: Clock, *, pause: bool = False, fail_after_trace: bool = False)
 def _container(graph, interface=None):
     c = SimpleNamespace()
     c.graph = graph
+    c.state_type = AgentState
     c.interface = interface
     c.turn_telemetry = TurnTelemetryRegistry()
     c._build_config = lambda thread_id, **kw: {

@@ -1,3 +1,4 @@
+from ze_agents.types import WriteGateState
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
@@ -25,13 +26,7 @@ def make_client(response: str = "Reminder set.") -> AsyncMock:
 
 
 def make_ctx(prompt: str = "remind me in 1 hour") -> AgentContext:
-    return AgentContext(
-        session_id="test",
-        prompt=prompt,
-        pre_approved_writes=frozenset(["cancel_reminder"]),
-        memory=MemoryContext(),
-        messages=[{"role": "user", "content": prompt}],
-    )
+    return AgentContext(session_id="test", prompt=prompt, memory=MemoryContext(), messages=[{"role": "user", "content": prompt}], write_gate=WriteGateState(pre_approved=frozenset(["cancel_reminder"])))
 
 
 def make_agent(client=None) -> RemindersAgent:

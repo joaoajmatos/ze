@@ -7,6 +7,7 @@ regeneration calls tools directly), the message store, the interface.
 
 from __future__ import annotations
 
+from ze_agents.types import WriteGateState
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from types import SimpleNamespace
@@ -254,11 +255,7 @@ class Env:
         return (await record_trace(state, {"configurable": {}}))["message_trace"]
 
     async def _run_tools(self, steps, *, retry: bool):
-        ctx = AgentContext(
-            session_id=THREAD,
-            prompt="x",
-            retry_mode=retry,
-        )
+        ctx = AgentContext(session_id=THREAD, prompt="x", write_gate=WriteGateState(retry_mode=retry))
         calls = []
         for agent, name, args in steps:
             # The original turn ran its calls with the user's approval; a retry

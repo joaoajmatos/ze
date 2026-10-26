@@ -16,6 +16,7 @@ from typing_extensions import TypedDict
 from ze_agents.interface.types import RawInput
 from ze_agents.park import ConfirmItem, WriteConfirmation
 from ze_agents.types import AbortToken
+from ze_core.orchestration.state import AgentState
 from ze_core.container import Container
 from ze_core.conversation.turn import invoke_raw_turn, resume_turn
 
@@ -79,7 +80,7 @@ class Probe:
 
 
 def _container(graph, *, with_registry: bool = True) -> Any:
-    container = SimpleNamespace(graph=graph, interface=None)
+    container = SimpleNamespace(graph=graph, interface=None, state_type=AgentState)
     container._build_config = lambda thread_id, **extra: {
         "configurable": {"thread_id": thread_id, **extra}
     }
