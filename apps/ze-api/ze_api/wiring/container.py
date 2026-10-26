@@ -74,6 +74,7 @@ from ze_core.orchestration.graph import build_graph
 from ze_core.orchestration.state import build_state_type
 from ze_priority.view import PriorityView
 from ze_priority.push_bar import PushBar
+from ze_priority.surfacing_memory import PostgresSurfacingMemory
 from ze_priority.turn import TurnSurfacing
 from ze_data.portability.service import DataPortabilityService
 from ze_seed.service import DevDataSeeder, collect_seed_domains
@@ -554,7 +555,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         graph_store=worldstate.graph_store,
         loop_store=worldstate.loop_store,
         embedder=shared.embedder,
-        push_log=stores.push_log_store,
+        memory=PostgresSurfacingMemory(pool),
     )
     world_composer = WorldComposer(
         priority_view=priority_view,
