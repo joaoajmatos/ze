@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 
-def begin_workflow_turn(workflow: Any) -> dict[str, Any]:
+def begin_workflow_turn(workflow: Any, *, state_type: type) -> dict[str, Any]:
     """Set the telemetry flow and return the engine's base graph input for a workflow run."""
     from ze_agents.interface.types import RawInput
     from ze_core.conversation import make_graph_input
@@ -15,7 +15,9 @@ def begin_workflow_turn(workflow: Any) -> dict[str, Any]:
 
     session_id = f"workflow:{workflow.id}"
     set_flow_context("workflow_execution", session_id=session_id)
-    return make_graph_input(RawInput(text=f"[workflow] {workflow.name}"), session_id)
+    return make_graph_input(
+        RawInput(text=f"[workflow] {workflow.name}"), session_id, state_type
+    )
 
 
 def build_workflow_graph(
@@ -28,7 +30,7 @@ def build_workflow_graph(
 
     from ze_core.orchestration.edges import after_embed_route
     from ze_core.orchestration.graph import graph_builder
-    from ze_core.orchestration.state import build_state_type
+    from ze_core.orchestration.state import build_state_type, with_turn_reset
     from ze_core.orchestration.timing import add_timed_node
     from ze_personal.graph.workflow import (
         after_preflight_workflow,
@@ -48,7 +50,11 @@ def build_workflow_graph(
     state_type = build_state_type(plugins or [])
     builder = graph_builder(state_type=state_type, node_overrides=node_overrides)
 
-    add_timed_node(builder, "load_workflow_step", load_workflow_step)
+    add_timed_node(
+        builder,
+        "load_workflow_step",
+        with_turn_reset(load_workflow_step, state_type),
+    )
     add_timed_node(builder, "verify_step", verify_step)
     add_timed_node(builder, "route_branch", route_branch)
     add_timed_node(builder, "handle_step_failure", handle_step_failure)

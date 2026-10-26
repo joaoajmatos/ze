@@ -5,7 +5,7 @@ Usage: recruit.py <name> <role> <tier> <floor> <brief-file> [--note "<Floor> Han
   role/tier rules come from roles.toml; ZE_ROLE is set on the agent's command.
   --connect wires the new agent to each named agent (its reviewer, its lead), since `maestri ask`
   reaches connected agents only. Waits for the TUI, sends the brief with a "reply ready" ping, retries once with recruit --replace.
-Tunables (tests): ZE_RECRUIT_BOOT_SECS (60), ZE_RECRUIT_REPLY_SECS (120), ZE_RECRUIT_POLL_SECS (2).
+Tunables (tests): ZE_RECRUIT_BOOT_SECS (120), ZE_RECRUIT_REPLY_SECS (300; recruits take ~5 min under load), ZE_RECRUIT_POLL_SECS (2).
 """
 
 import argparse
@@ -136,8 +136,8 @@ def main(argv: list[str]) -> int:
         )
         return 0
 
-    boot = float(os.environ.get("ZE_RECRUIT_BOOT_SECS", 60))
-    reply = float(os.environ.get("ZE_RECRUIT_REPLY_SECS", 120))
+    boot = float(os.environ.get("ZE_RECRUIT_BOOT_SECS", 120))
+    reply = float(os.environ.get("ZE_RECRUIT_REPLY_SECS", 300))
     poll = float(os.environ.get("ZE_RECRUIT_POLL_SECS", 2))
     if not recruit_and_connect(recruit, args.name, args.connect):
         print("recruit failed", file=sys.stderr)

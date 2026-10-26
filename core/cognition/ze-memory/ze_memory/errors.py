@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from ze_agents.errors import ZeCoreError
+from ze_agents.errors import ZeError
 
 
-class MemoryError(ZeCoreError):
+class MemoryError(ZeError):
     pass
 
 

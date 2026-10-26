@@ -483,7 +483,7 @@ if not result:
 ```
 
 The error hierarchy:
-- `ZeCoreError` — base class (`ze_agents.errors` also names it `ZeError`)
+- `ZeError` — base class
   - `AgentError` — unrecoverable agent failure
     - `AgentAbortedError` — loop cancelled via `AbortToken`
     - `AgentConfigError` — misconfiguration caught at startup

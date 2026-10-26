@@ -16,6 +16,7 @@ from langgraph.types import Command
 
 from ze_core.conversation import make_graph_input
 from ze_core.conversation.turn import open_confirmation
+from ze_core.orchestration.state import AgentState, build_state_type
 from ze_core.routing.factory import build_embedding_router, build_tier_judge
 from ze_core.telemetry.context import enter_turn_context
 from ze_core.telemetry.turn import TurnTelemetryRegistry
@@ -47,6 +48,9 @@ class Container:
     _fact_extractor: Any = None  # ze_memory.extractor.gather_fact_proposals or None
     _turn_extractor: Any = None  # ze_memory.extractor.gather_turn_proposals or None
     turn_telemetry: TurnTelemetryRegistry = field(default_factory=TurnTelemetryRegistry)
+    state_type: type = (
+        AgentState  # the merged graph state; make_graph_input resets its Turn keys
+    )
 
     def _build_config(self, thread_id: str, **extra: Any) -> dict:
         """Build the LangGraph configurable dict for a conversation thread."""
@@ -102,6 +106,7 @@ class Container:
                 image_mime=image_mime,
             ),
             thread_id,
+            self.state_type,
         )
         # Only overwrite the checkpointed history when the caller supplies one;
         # otherwise the prior turns persist and write_memory keeps appending.
@@ -367,6 +372,7 @@ class Container:
             await checkpointer.setup()
 
         graph = build_graph(checkpointer, plugins=resolved_plugins)
+        state_type = build_state_type(resolved_plugins)
 
         log.info("container_ready", agents=list(instances.keys()))
         return cls(
@@ -380,6 +386,7 @@ class Container:
             memory_store=memory_store,
             memory_consolidator=memory_consolidator,
             graph=graph,
+            state_type=state_type,
             interface=interface,
             plugins=resolved_plugins,
             _fact_extractor=gather_fact_proposals,

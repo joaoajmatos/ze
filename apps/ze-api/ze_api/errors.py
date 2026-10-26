@@ -1,6 +1,6 @@
 """Ze application exceptions."""
 
-from ze_agents.errors import ZeCoreError as ZeError
+from ze_agents.errors import ZeError
 
 
 class ProfileConfigError(ZeError):

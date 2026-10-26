@@ -111,13 +111,55 @@ for independent compound turns. Sequential multi-specialist turns rewrite to
 companion as primary (conductor). Ze layers plugin graph nodes and edges in at
 startup.
 
-### Graph input factory
+### Turn reset from lifetimes
 
-All conversation graph invocations build initial state via
-`make_graph_input()` in `ze_core/conversation/turn.py`. `Container.invoke()` and
-`invoke_raw_turn()` both route through this factory so new `AgentState` fields
-are initialized in one place. Plugin-specific fields belong in plugin
-`state_extensions()` TypedDicts — not in ad-hoc dict literals at call sites.
+Each graph-state field declares how long its value lives. The markers come from
+`ze_agents/lifetime.py`:
+
+- `Turn`: reset at every turn, and at every workflow step, to the declared value.
+- `Input`: set by whoever starts the turn. The reset leaves it alone.
+- `Thread`: kept across turns. The declaration states why.
+- `Run`: kept across the steps of one workflow run. The declaration states why.
+
+A field with no marker fails graph build at startup.
+
+`make_graph_input(raw, session_id, state_type)` in `ze_core/conversation/turn.py` builds the
+input for each turn. It takes the `Turn` reset from `state_type`, so no second list of fields
+exists to fall out of step. `Container.invoke()` and `invoke_raw_turn()` both build input this
+way. A workflow run builds its input with `begin_workflow_turn(workflow, state_type=...)`
+in `apps/ze-api/ze_api/wiring/workflow_graph.py`. The workflow's step loader runs under
+`with_turn_reset`, so each step starts from the turn reset. `Run` fields such as
+`workflow_step_results` and `visit_counts` carry across the steps.
+
+Plugin-specific fields belong in plugin `state_extensions()` TypedDicts, each field with a
+marker. Do not add them as ad-hoc dict literals at call sites.
+
+### Agent context derivation
+
+`ze_agents/derive.py` is the one place that builds a child `AgentContext`. A child run has one
+of four kinds:
+
+- `subtask`: a routed specialist, or one subtask of a compound turn (`for_subtask`).
+- `delegate`: a specialist the companion hands a brief to (`for_delegate`).
+- `unattended`: a goal milestone. It runs with no turn (`for_unattended`).
+- `action`: an undo or a screen action. It carries the session id and an empty prompt (`for_action`).
+
+The `DERIVATION` table gives each `AgentContext` field one rule per kind. A rule is `Inherit`
+(copy the value from the parent), `Given` (take it from an argument of the operation) or `Reset`
+(use the default and state why). A field with no row raises `UndeclaredDerivationError`.
+Adding a field means adding one row.
+
+A delegate inherits the session, memory, contacts, persona and live handles from its caller.
+It does not inherit the caller's model, token stream, sources, skills, procedure state or
+conductor deadline. Its brief becomes its prompt and its only message.
+
+Conductor state (`ConductorState`), write-gate state (`WriteGateState`) and the procedure
+invocation (`ProcedureInvocation`) each travel as one value. Each child run returns a
+`ChildRunOutcome`, read by `outcome_of` even when the run parked for a write confirmation.
+`ze_core/orchestration/child_runs.py` builds one state update from the outcomes of an execution
+pass (`merge_outcomes`), so the pass writes them to `AgentState` once. Per-subtask conductor
+ledgers live in `conductor_ledgers`. `AgentState` is the only copy of conductor and procedure
+state between steps.
 
 ### Checkpoint serialization
 
