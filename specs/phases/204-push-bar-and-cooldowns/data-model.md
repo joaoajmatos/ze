@@ -98,11 +98,14 @@ class PushCandidate:
     body: str                   # the exact push body (novelty compares it)
     claim: str                  # the statement grounding checks
     confidence: float
-    relevance: float
-    evidence_labels: tuple[str, ...]
+    relevance: Callable[[], Awaitable[float]]                  # read only if confidence passes
+    evidence_labels: Callable[[], Awaitable[tuple[str, ...]]]  # read only at the grounding step
+    once_per: OncePer                                           # the claim send() will use
 ```
 
-| Source | `body` | `claim` | `relevance` | `evidence_labels` |
+`relevance` and `evidence_labels` are thunks so the bar keeps today's short-circuit: a loop that fails on confidence costs no relevance build, no entity read and no evidence read (review 2026-10-26, note 1). A source with a plain value wraps it (`async def: return value`).
+
+| Source | `body` | `claim` | `relevance` (thunk result) | `evidence_labels` (thunk result) |
 |---|---|---|---|---|
 | loop | `format_hedged_mention(title, drift_rationale)` | `title` (phase 170) | `RelevanceModel.score(...)` on the loop's entity names | evidence summaries |
 | hypothesis | `f"{summary}\n\n{narrative}"` | `summary` | `hypothesis.relevance` | evidence ref labels |

@@ -132,7 +132,7 @@ apps/ze-api/config/config.yaml                                 # worldstate.push
 - **Between the contract step and the merge**, call sites a lane does not own may fail with the new `notify` signature. Each lane runs only its own package suites; `lead` runs `make test-py` after the last merge.
 - **`jr1` is Haiku** because each task names the file, the exact replacement and the test to change (mechanical `budget_key=` → `once_per=OncePer(...)`, `is_sent`, and two deletions in the calendar).
 - **`docs` runs last**, from the finished diff.
-- **Cross-floor** (research R14): `ze_api/wiring/container.py` is also edited by floor 201 (and later 207, 210, 211). Whichever floor lands second rebases; keep this phase's container hunks small. 203 touches no file here. 213 starts after this phase lands.
+- **Cross-floor** (research R14): `ze_api/wiring/container.py` is also edited by floors 200, 201 and 203 (and later 207, 210, 211). Whichever floor lands second rebases; keep this phase's container hunks small. 203 touches no file here. 213 starts after this phase lands.
 
 ## Complexity Tracking
 

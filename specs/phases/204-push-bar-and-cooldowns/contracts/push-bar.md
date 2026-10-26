@@ -42,11 +42,11 @@ class PushBar:
 1. Read `history.recent_discretionary_bodies(novelty_lookback_hours)` once per call and encode each body once.
 2. For each candidate, in input order, the first failing condition names the reason:
    - `low_confidence`: `confidence < thresholds.confidence`;
-   - `irrelevant`: `relevance < thresholds.relevance`;
+   - `irrelevant`: `await relevance() < thresholds.relevance` (called only after confidence passes);
    - `mentioned_recently`: `thresholds.inline_cooldown_hours` is set and `mentions.mentioned_inline_within(kind, id, hours)` is true;
    - `not_novel`: the cosine similarity of `body` to any history body is `> novelty_similarity_max`;
-   - `ungrounded`: `nli` is set, `evidence_labels` is not empty, and `nli.grounding_score(claim, labels, scores=await nli.scores([(label, claim) …]))` is `< thresholds.grounding`.
-3. An exception inside a condition passes that condition and logs `push_bar_<condition>_check_failed` (research R11).
+   - `ungrounded`: `nli` is set, `labels = await evidence_labels()` (called only here) is not empty, and `nli.grounding_score(claim, labels, scores=await nli.scores([(label, claim) …]))` is `< thresholds.grounding`.
+3. An exception inside the mention, novelty or grounding check (including the `evidence_labels` thunk) passes that condition and logs `push_bar_<condition>_check_failed` (research R11). An exception from the `relevance` thunk rejects the candidate as `irrelevant` and logs `push_bar_relevance_check_failed`: an interruption is not sent on a relevance score that could not be computed.
 
 The formulas are the ones in `ze_correlation/push.py:33-88` on main; only their home and inputs change.
 
@@ -75,7 +75,10 @@ class LoopSurfacer:
     async def send(self, candidate: PushCandidate) -> PushOutcome | None:
         # re-reads the loop; None unless still drifting (today's FR-011);
         # notify(LOOP_DRIFT, "Open loop", candidate.body, target_type="open_loop",
-        #        target_id=str(id), once_per=OncePer(f"loop:{id}", within=timedelta(days=settings.repush_after_days)))
+        #        target_id=str(id), once_per=candidate.once_per)
+        # candidates() builds once_per=OncePer(f"loop:{id}", within=timedelta(days=settings.repush_after_days)),
+        # relevance as a thunk over RelevanceModel.build/score on the loop's entity names,
+        # evidence_labels as a thunk over the evidence summaries
 ```
 
 `LoopPushSettings` (`ze_worldstate/bootstrap.py`) gains `repush_after_days: float = 7.0` read from `worldstate.push.repush_after_days`, and a `bar_thresholds()` method mapping the existing keys to `BarThresholds` (see data-model.md). `build_loop_surfacer(stack, relevance_model, notifier, settings)` loses `push_log`, `embedder` and `nli_client`. `passes_push_bar` and `eligible_candidates` are deleted. `format_hedged_mention` stays (TurnSurfacing uses it).
@@ -90,7 +93,8 @@ class CorrelationPushCandidateSource:
     dry_run: bool                   # correlation.push.dry_run
     async def candidates(self) -> list[PushCandidate]: ...   # [] when correlation.push.enabled is false
     async def send(self, candidate: PushCandidate) -> PushOutcome:
-        # notify(HYPOTHESIS, ..., once_per=OncePer(f"hypothesis:{id}")); if is_sent(outcome): mark_surfaced
+        # notify(HYPOTHESIS, ..., once_per=candidate.once_per); if is_sent(outcome): mark_surfaced
+        # candidates() builds once_per=OncePer(f"hypothesis:{id}") and wraps relevance and labels in thunks
 ```
 
 `passes_*`, `_passes_push_bar`, `_passes_novelty`, `_passes_grounding` and `_NOVELTY_LOOKBACK_HOURS` are deleted. `build_correlation_push_candidate_source(stack, notifier, settings)` loses `embedder` and `nli_client`. `PostgresHypothesisStore.list_recently_surfaced_summaries` is deleted.
@@ -108,7 +112,7 @@ class AttentionArbitrationJob:
 `run`:
 
 1. Return when `notifier.remaining_budget() == 0`.
-2. For each source: `candidates()`, then `bar.screen(candidates, source.thresholds)`. Log `push_bar_rejected` (`source_kind`, `source_id`, `reason`) per rejection. When `source.dry_run`, log `push_candidate_dry_run` per passing candidate and drop them.
+2. For each source: `candidates()`; drop each candidate whose `notifier.on_cooldown(candidate.once_per)` is true, logging `push_candidate_cooling` (`source_kind`, `source_id`), so a cooling loop costs no embedding or NLI (review 2026-10-26, note 2); then `bar.screen(remaining, source.thresholds)`. Log `push_bar_rejected` (`source_kind`, `source_id`, `reason`) per rejection. When `source.dry_run`, log `push_candidate_dry_run` per passing candidate and drop them.
 3. Rank the passing candidates with `priority_view.rank_subset([PriorityCandidateRef(c.source_kind, c.entity) …])`.
 4. In ranked order, `send` through the owning source. Stop on `is_sent(outcome)` or `suppressed_budget`; otherwise log `attention_arbitration_candidate_skipped` with the outcome (`deduped`, `failed`, `None`) and try the next.
 

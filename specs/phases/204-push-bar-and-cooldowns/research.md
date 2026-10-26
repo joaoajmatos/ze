@@ -99,6 +99,8 @@ The table is not a data domain, like `priority_overrides` today. Phase 217 (Data
 
 **Rationale**: `finish_execution` stamps `status` and `completed_at` before the handler runs (`scheduler.py:256`), and the runner marks step failures `failed` too, so the run table is already the complete record.
 
+**Behaviour change, intended**: `recover_stale` (`workflow/postgres.py:494-499`) marks runs interrupted by a restart `failed`, and those never reached the failure handler, so the old ledger missed them. They now appear in `/status`, the weekly report and the brief. That is what SC-004 asks ("every failed run"); do not filter them out.
+
 ## R8. Calendar reminders (FR-012)
 
 **Decision**: delete the `push_log.log("calendar_reminder:<id>")` write and the `push_log_store` parameter from `CalendarReminderService` and `CalendarPlugin`. Nothing reads the row; `mark_sent`/`mark_unsent` is the idempotency record. No calendar migration.
@@ -121,13 +123,14 @@ The table is not a data domain, like `priority_overrides` today. Phase 217 (Data
 
 - a claim-store error lets the push go ahead unclaimed and logs `push_claim_failed` (today `attention_claim_failed`);
 - a novelty or grounding error passes that condition and logs `push_bar_novelty_check_failed` / `push_bar_grounding_check_failed`;
-- a surfacing-memory read error passes `mentioned_recently` and logs `push_bar_mention_check_failed`.
+- a surfacing-memory read error passes `mentioned_recently` and logs `push_bar_mention_check_failed`;
+- a `relevance` thunk error is the one fail-closed case: the candidate is rejected as `irrelevant` (`push_bar_relevance_check_failed`). Today such an error escapes and aborts the sweep; rejecting one candidate is narrower.
 
 A failed quiet-hours release keeps the claim (Clarifications Q2): `deliver_held` does not touch claims.
 
 ## R12. Bar result and order of conditions
 
-**Decision**: `PushBar.screen(candidates, thresholds) -> list[BarVerdict]`, one per candidate, in input order. Conditions run cheapest first: `low_confidence`, `irrelevant`, `mentioned_recently`, `not_novel`, `ungrounded`. The first failure names the reason. The job logs `push_bar_rejected` with `source_kind`, `source_id` and `reason` for each rejection. Candidates passing in the same run are not compared with each other (as today).
+**Decision**: `PushBar.screen(candidates, thresholds) -> list[BarVerdict]`, one per candidate, in input order. Conditions run cheapest first: `low_confidence`, `irrelevant`, `mentioned_recently`, `not_novel`, `ungrounded`. `relevance` and `evidence_labels` are thunks on the candidate, so they are read only when their condition is reached, as `passes_push_bar` does today. Before screening, the job drops candidates whose `once_per` is cooling (`notifier.on_cooldown`), so a loop pushed 2 days ago costs no embedding or NLI each sweep (specs review 2026-10-26, notes 1-2). The first failure names the reason. The job logs `push_bar_rejected` with `source_kind`, `source_id` and `reason` for each rejection. Candidates passing in the same run are not compared with each other (as today).
 
 ## R13. Dependency graph changes
 
@@ -139,7 +142,7 @@ A failed quiet-hours release keeps the claim (Clarifications Q2): `deliver_held`
 
 ## R14. Coordination with other floors
 
-- **201 (Typed Turn Services)** and later 207, 210, 211 edit `ze_api/wiring/container.py`. This phase's container edits are small (notifier construction, surfacer, turn surfacing, arbitration sources, the bar). Whichever floor lands second rebases; the `lead` lane owns the file here.
-- **203 (Open-Loop Lifecycle)** edits ze-worldstate's lifecycle files, not `surfacing.py` or `bootstrap.py`'s push settings. No shared file; the loop re-push window needs no loop schema change.
+- **200 (Agent Context Derivation, two hunks), 201 (Typed Turn Services), 203 (Open-Loop Lifecycle, one hunk)** and later 207, 210, 211 edit `ze_api/wiring/container.py`. This phase's container edits are small (notifier construction, surfacer, turn surfacing, arbitration sources, the bar). Whichever floor lands second rebases; the `lead` lane owns the file here.
+- **203 (Open-Loop Lifecycle)** edits ze-worldstate's lifecycle files, not `surfacing.py` or `bootstrap.py`'s push settings; its only shared file with this phase is `container.py` (above). The loop re-push window needs no loop schema change.
 - **213 (One Scheduler)** builds on this phase: after 204, no job reads the push log for its cooldown (213 assumption).
 - The `configurable["loop_surfacer"]` key in `ZeContainer` has no reader on main (grep for `"loop_surfacer"` finds only the writer); it goes with the surfacer's new constructor.
