@@ -123,7 +123,7 @@ class Tracked:
 - **Atomic**: one transaction; on any error nothing the event writes is kept (SC-001).
 - **Returns the stored row**: the `OpenLoop` comes from `RETURNING *` (or a read in the same transaction), never patched in Python. The confirm REST response matches the row (US1 scenario 2).
 - **Guarded by state**: the `WHERE` clause uses `allowed_from(event)`; a refused move raises `InvalidLoopTransitionError`, a missing loop `LoopNotFoundError`, a no-change race returns `None` / `False` (data-model.md).
-- **Logs once**: `open_loop_<event>` with `loop_id`, `from_state`, `to_state` (the existing `open_loop_transitioned` and `open_loop_created` event names are replaced by these).
+- **Logs once**, keeping today's names: `open_loop_created` (`loop_id`, `state`, `provenance`) for the creates; `open_loop_transitioned` (`loop_id`, `from_state`, `to_state`, `via=<event>`) for every state move (`PG/test_loop_resolve_pg.py` reads it); `open_loop_updated` (`loop_id`, `via=<event>`) for a write that keeps the state.
 - **Never** writes a fingerprint on resolve; **always** writes one on drop and expire, in the same statement as the state change (FR-006).
 
 ## What the store keeps (`PostgresLoopStore`, `LoopStore` protocol)

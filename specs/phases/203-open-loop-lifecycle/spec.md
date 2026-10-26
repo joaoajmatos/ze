@@ -135,7 +135,7 @@ A maintainer reads how an admitted loop becomes a row. One loop-inflow module ho
 - **FR-004**: The declared stamp (confidence 0.9, a fresh drift window, rationale cleared, `confirmed_at` set) MUST be defined once, and confirm, track, declared create and promote all use it. Promote keeps its own rule, `GREATEST(confidence, 0.7)` (phase 172).
 - **FR-005**: The two declared-create paths (an inflow, and `track_loop`) MUST record the same things: evidence on the contribution, evidence links, entity links, and an origin source when one is known.
 - **FR-006**: Drop and stale-suspicion expiry MUST record the dismissed-evidence fingerprint in the same atomic write as the state change.
-- **FR-007**: The loop store MUST shrink to row reads and writes plus queries. It exposes no method that changes state, confidence, deadline, rationale or fingerprint on its own, outside a lifecycle event.
+- **FR-007**: The loop store MUST shrink to row reads and queries. It exposes no method that writes a loop, its links or its source rows; every write is a lifecycle event. (The portability import and the eval fixtures keep inserting rows directly, as they do today.)
 - **FR-008**: One loop-inflow module MUST hold its dependencies and expose one commit method. The method takes a commit decision, the text, inflow, evidence and source.
   - `commit_for`, the mutable `LoopAdmission.commit` attribute, and the parameter threading through `propose_loop_candidates`, `_commit_admitted` and `_create_*_loop` are removed.
 - **FR-009**: One commit-decision vocabulary MUST exist: resolve, create declared, create suspected, hold, fallback.
@@ -162,16 +162,16 @@ A maintainer reads how an admitted loop becomes a row. One loop-inflow module ho
 
 ### Measurable Outcomes
 
-- **SC-001**: With the second write of each event forced to fail on test-pg, 100% of events leave the loop fully unchanged or fully changed.
+- **SC-001**: For every event that writes more than one row or table, forcing its second write to fail on test-pg leaves the loop fully unchanged (100% of those events). Every single-statement event writes all the fields it stamps in that one statement.
 - **SC-002**: The declared stamp is defined in exactly one place (today four).
 - **SC-003**: No function or method that a commit calls takes more than 8 parameters (today up to 16). Constructors, which receive injected dependencies, are not counted. The commit closure is gone.
 - **SC-004**: Every lifecycle event has at least one real-Postgres test, and the transition table test covers every (event, starting state) pair.
-- **SC-005**: A dropped loop is never brought back by the same evidence, including after a stale expiry, across a 30-day replay of the seed fixtures.
+- **SC-005**: A dropped loop is never brought back by the same evidence, including after a stale expiry, across a 30-day simulated replay on test-pg (the same texts and evidence committed once per simulated day, with both sweeps run each day).
 
 ## Assumptions
 
 - **What 199 has already landed.** 199 lands the resolve edge and the derived claim kind first. This phase moves them into the lifecycle module and does not decide them again.
 - **The store protocol.** The `LoopStore` protocol keeps its row and query methods for readers (REST lists, matching, surfacing). Its write surface becomes the lifecycle module's private implementation.
 - **No migration.** Atomicity comes from transactions and single statements on the existing tables.
-- **202's ownership.** 202 edits the judgment fields of `LoopAdmission` and the call in `admission.py`; this phase edits the commit side of the same files. The lane plan assigns `admission.py` to one lane, and the other lane rebases onto it.
+- **202's ownership.** 202 edits the judgment side of `admission.py`, `intake.py`, `types.py`, the judges, `corroboration.py` and `nodes/memory.py`; this phase edits the commit side. 202 lands first and this phase rebases onto it; this phase owns the commit vocabulary, including `loop_judge.DecisionKind` (user decision 2026-10-26). Within this phase one lane, `inflow`, owns the shared hunks.
 - **Pre-v1 hard cut** (constitution Principle VIII). Removed store methods and the closure are deleted, not wrapped.
