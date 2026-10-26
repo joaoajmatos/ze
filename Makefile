@@ -526,7 +526,7 @@ format:
 # ── Dead-code report (report only, never a gate) ──────────────────────────────
 # `make deadcode` lists definitions nothing references (tests count as callers).
 # `make deadcode-tests-only` lists definitions only tests reference.
-# Needs `uvx` (uv) and network on the first run. Triage rules: specs/arch/cleanup-report-2026-10.md §1 and §10.
+# Needs `uvx` (uv) and network on the first run. Triage rules: docs/testing.md, Dead-code report.
 .PHONY: deadcode deadcode-tests-only test-scripts
 
 VULTURE         := uvx vulture@2.16
