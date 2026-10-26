@@ -1,6 +1,6 @@
 # ze-priority
 
-Attention arbitration — one ranking of what Ze should care about, and one push budget.
+Attention arbitration: one ranking of what Ze should care about, and one push budget.
 
 ## Role in Ze
 

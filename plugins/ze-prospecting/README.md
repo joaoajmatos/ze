@@ -4,7 +4,7 @@ Autonomous prospect research for Ze. Provides the `ProspectingAgent`, campaign s
 
 ## Role in Ze
 
-Prospecting is Ze's autonomous outreach research mode. Given a target profile, the agent browses the web, gathers intelligence, drafts outreach messages, and tracks campaigns over multiple iterations — all without the user micromanaging each step.
+Prospecting is Ze's autonomous outreach research mode. Given a target profile, the agent browses the web, gathers intelligence, drafts outreach messages, and tracks campaigns over multiple iterations, without the user micromanaging each step.
 
 ### Key features
 

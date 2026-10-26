@@ -1,6 +1,6 @@
 # ze-browser
 
-Headless browser sidecar for [Ze](../../README.md). A small FastAPI service that loads web pages with Playwright and returns extracted text. Ze's prospecting agent and the ingestion pipeline call it over the private network — not exposed to the public internet.
+Headless browser sidecar for [Ze](../../README.md). A small FastAPI service that loads web pages with Playwright and returns extracted text. Ze's prospecting agent and the ingestion pipeline call it over the private network. It is not exposed to the public internet.
 
 ## Why a separate service
 
@@ -57,7 +57,7 @@ Used by Ze at startup (`BrowserClient.health()`) to detect whether browser extra
 | `200` with `status_code: 504` and empty `text` | Page load timed out on both the `networkidle` and `domcontentloaded` attempts |
 | `200` with `status_code: 403` and empty `text` | Blocked, CAPTCHA, or body too short (< 200 chars) |
 
-No LLM runs in this service — Ze's agents decide what to do with the returned text.
+No LLM runs in this service. Ze's agents decide what to do with the returned text.
 
 ---
 
@@ -135,7 +135,7 @@ fly deploy
 
 `fly.toml` keeps `min_machines_running = 1` to avoid a 30–60 s cold start on the first browser call after idle. The VM is `shared-cpu-1x` with **1 GB** memory for Chromium headroom.
 
-Ze does **not** redeploy this app when the main backend deploys — version and release them independently. Breaking changes to `/extract` must be coordinated with `integrations/ze-browser/ze_browser/client.py`.
+Ze does **not** redeploy this app when the main backend deploys. Version and release them independently. Breaking changes to `/extract` must be coordinated with `integrations/ze-browser/ze_browser/client.py`.
 
 ---
 

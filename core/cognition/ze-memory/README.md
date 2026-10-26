@@ -1,19 +1,19 @@
 # ze-memory
 
-Memory persistence and retrieval for Ze — facts, episodes, semantic search, graph traversal, and consolidation.
+Memory persistence and retrieval for Ze: facts, episodes, semantic search, graph traversal, and consolidation.
 
 ## Role in Ze
 
-Memory is how Ze remembers the user across conversations. Facts and episodes are extracted after each turn, stored in Postgres with pgvector embeddings, and retrieved semantically before agent execution. A memory graph connects entities and supports the correlation engine's cross-domain reasoning.
+Ze extracts facts and episodes after each turn, stores them in Postgres with pgvector embeddings, and retrieves them semantically before an agent runs. This is how Ze remembers the user across conversations. A memory graph connects entities and supports the correlation engine's cross-domain reasoning.
 
 ### Key features
 
 - Fact and episode storage with semantic retrieval (local embedding model, no API cost)
-- Fact provenance: perception writes `prompt_supplied`, and only the dream writes `synthesized` (with a `dream_run_id`). Dream decay and expiry touch only facts with a `dream_run_id`. Migration `zm026` re-stamped the older perception facts `synthesized` → `prompt_supplied`. When nightly dedup merges two similar facts into a new one, it does so only when both have no `dream_run_id` and share provenance and claim kind, and the merged fact keeps them
+- Fact provenance: perception writes `prompt_supplied`, and only the dream writes `synthesized` (with a `dream_run_id`). Dream decay and expiry touch only facts with a `dream_run_id`. Migration `zm026` re-stamped the older perception facts `synthesized` → `prompt_supplied`. Nightly dedup merges two similar facts into a new one only when both have no `dream_run_id` and share provenance and claim kind. The merged fact keeps them
 - LLM-driven extraction and session-grouped episode consolidation
 - Per-agent retrieval policies — plugins register domain-specific memory access rules
-- Memory graph — entity linking, traversal, and neighbourhood expansion for correlation
-- **Signal substrate** — `Signal` storage, relevance-scored admission gate, and graph ingestion for cross-domain correlation
+- Memory graph — entity linking, traversal, and neighborhood expansion for correlation
+- Signal substrate — `Signal` storage, relevance-scored admission gate, and graph ingestion for cross-domain correlation
 - User profile synthesis from accumulated facts and episodes
 
 ### Integration
@@ -22,7 +22,7 @@ Memory is how Ze remembers the user across conversations. Facts and episodes are
 
 Plugins emit candidate signals via `SignalSource` (defined in `ze-plugin`, type in `ze_memory.types`). The admission gate scores each signal for relevance; admitted signals are written to the memory graph and become seeds for `ze-correlation`.
 
-`screen_resolvers.py` registers screen resolvers for `entity`, `fact` and `procedure`. A fact line carries its stored claim kind, source and confidence.
+`screen_resolvers.py` registers screen resolvers for `entity`, `fact` and `procedure`. A fact line carries its stored claim kind, source, and confidence.
 
 ## Responsibilities
 
@@ -54,7 +54,7 @@ Plugins emit candidate signals via `SignalSource` (defined in `ze-plugin`, type 
 | `vectors.py` | `to_vector_literal` — pgvector text literal for embedding binds |
 | `types.py` | Memory domain types (`Fact`, `Episode`, `Signal`, …) |
 
-`Entity` is the aggregate root every other type ultimately links back to — facts, episodes, signals, and events all reference one or more entities:
+`Entity` is the aggregate root every other type links back to. Facts, episodes, signals, and events all reference one or more entities:
 
 ![ze-memory core domain types](../../../docs/diagrams/core/cognition/ze-memory/memory-domain-types.svg)
 

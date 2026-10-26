@@ -113,7 +113,7 @@ Google Calendar and Gmail: `make google-auth`. All keys: [docs/configuration.md]
 
 ## Engineering notes
 
-Short write-ups of real design decisions, with evidence from the specs and the git history.
+Short write-ups of design decisions, with evidence from the specs and the git history.
 
 - [Calibrating a judgment model honestly](docs/engineering/calibrating-a-judgment-model-honestly.md)
 - [One mind, not a router](docs/engineering/one-mind-not-a-router.md)

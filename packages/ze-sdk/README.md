@@ -16,7 +16,7 @@ Public SDK surface for Ze plugin development. Flat re-export layer — plugin pa
 
 ### Integration
 
-Every plugin's `pyproject.toml` lists `ze-sdk`. A plugin may also depend on other plugins or core packages, but it never depends on `ze-core`. The SDK has no runtime wiring of its own — it is a compile-time boundary that keeps the dependency graph one-directional: `plugins → ze-sdk → core packages`, never `plugins → ze-core`.
+Every plugin's `pyproject.toml` lists `ze-sdk`. A plugin may also depend on other plugins or core packages, but it never depends on `ze-core`. The SDK has no runtime wiring of its own. It keeps the dependency graph one-directional: `plugins → ze-sdk → core packages`, never `plugins → ze-core`.
 
 ## Responsibilities
 

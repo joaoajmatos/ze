@@ -1,6 +1,6 @@
 # ze-news
 
-News fetching and personalised headlines for Ze. Fetches articles from curated RSS sources on a schedule, ranks them by the user's interest profile, and exposes them via the `NewsAgent`.
+News fetching and personalized headlines for Ze. Fetches articles from curated RSS sources on a schedule, ranks them by the user's interest profile, and exposes them via the `NewsAgent`.
 
 ## Role in Ze
 
@@ -9,7 +9,7 @@ Ze keeps the user informed without them having to check feeds manually. RSS sour
 ### Key features
 
 - Curated RSS ingestion with configurable sources and fetch schedule
-- pgvector-ranked personalisation against the user's memory profile
+- pgvector-ranked personalization against the user's memory profile
 - Source credibility scoring (optional LLM-assisted; optional local NLI headline check)
 - Semantic story dedup (optional NLI + embedding clustering on fetch)
 - `NewsAgent` — headline queries and article search

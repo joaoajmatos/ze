@@ -1,6 +1,6 @@
 # ze-seed
 
-Dev data seeder for Ze — curated narrative fixtures for local development.
+Dev data seeder for Ze: curated narrative fixtures for local development.
 
 ## Role in Ze
 

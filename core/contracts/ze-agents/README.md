@@ -1,6 +1,6 @@
 # ze-agents
 
-Developer API for Ze — agent execution primitives, shared types, and harness hooks. Plugin authors reach this package through `ze-sdk`, not by importing `ze_agents` directly.
+Developer API for Ze: agent execution primitives, shared types, and harness hooks. Plugin authors reach this package through `ze-sdk`, not by importing `ze_agents` directly.
 
 ## Role in Ze
 

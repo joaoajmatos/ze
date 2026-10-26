@@ -3,7 +3,7 @@
 Domain plugin packages. Each plugin implements `ZePlugin` and contributes agents,
 stores, background jobs, and migrations to the Ze graph. Ze discovers plugins
 automatically via `[project.entry-points."ze.plugins"]` in each package's
-`pyproject.toml` — no manual registration in `ze-api`.
+`pyproject.toml`. `ze-api` needs no manual registration.
 
 **Rule:** plugins may import from `packages/ze-sdk` (and transitively `core/`) and
 `integrations/` but never from `apps/`.

@@ -1,10 +1,10 @@
 # ze-notifications
 
-Push notification abstraction for Ze. Decouples notification delivery from the rest of the system — currently implemented via [ntfy](https://ntfy.sh).
+Push notification abstraction for Ze. It separates notification delivery from the rest of the system. [ntfy](https://ntfy.sh) is the only backend today.
 
 ## Role in Ze
 
-When the user is away from the web app, Ze still needs to reach them — morning briefings, calendar reminders, stuck goal alerts, correlation insights. `ze-notifications` abstracts push delivery so the rest of the system doesn't depend on a specific provider.
+When the user is away from the web app, Ze still needs to reach them — morning briefings, calendar reminders, stuck goal alerts, correlation insights. `ze-notifications` hides the push provider, so the rest of the system does not depend on one.
 
 ### Key features
 

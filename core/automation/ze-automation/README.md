@@ -6,7 +6,7 @@ Shared automation substrate for Ze — goals, workflows, accountability, store p
 
 Goals (multi-week autonomous objectives, verification gates, replanning) and workflows (recurring multi-step tasks) are Ze's two declared, heavyweight forms of executive follow-through. `ze-automation` owns both engines end to end — types, Postgres stores, planners, executors, schedulers, and the proactive jobs that run them in the background — so that `ze-personal` and other domain plugins stay focused on persona and contacts rather than re-implementing multi-step execution.
 
-It also owns accountability: the weekly narrative and cost-anomaly detection that turn what the automation engines did into a summary a user can actually read.
+It also owns accountability: the weekly narrative and cost-anomaly detection that turn what the automation engines did into a summary a user can read.
 
 ### Key features
 

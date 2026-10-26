@@ -1,15 +1,15 @@
 # ze-correlation
 
-Correlation engine for Ze — cross-domain hypothesis formation from the memory graph, with neighbourhood expansion and signal pinning.
+Correlation engine for Ze. It forms cross-domain hypotheses from the memory graph, with neighborhood expansion and signal pinning.
 
 ## Role in Ze
 
-Ze's memory graph connects facts, episodes, contacts, news signals, and calendar events. The correlation engine traverses this graph to surface non-obvious connections — "this news article relates to your goal about Rust" — and can push high-salience hypotheses proactively.
+Ze's memory graph connects facts, episodes, contacts, news signals, and calendar events. The correlation engine traverses this graph to surface non-obvious connections, such as "this news article relates to your goal about Rust", and can push high-salience hypotheses proactively.
 
 ### Key features
 
 - `CorrelationEngine` — LLM-driven hypothesis formation from graph seeds
-- Graph neighbourhood expansion with configurable hop limits and recall guarantees
+- Graph neighborhood expansion with configurable hop limits and recall guarantees
 - `PostgresHypothesisStore` — persists hypotheses with evidence references
 - Proactive push delivery for high-salience correlations (discretionary, shared budget, via ntfy)
 - Inline correlation during conversation turns (the `correlate` graph node in `ze-core`)

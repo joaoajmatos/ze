@@ -9,8 +9,8 @@ Google Calendar and Gmail are the two primary external services Ze integrates wi
 ### Key features
 
 - Single refresh token covers Calendar and Gmail scopes
-- Automatic access-token refresh — no manual token management
-- `from_settings()` factory — returns `None` when env vars are absent (graceful disable)
+- Automatic access-token refresh, with no manual token management
+- `from_settings()` factory that returns `None` when env vars are absent, which disables the integration
 
 ### Integration
 

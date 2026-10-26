@@ -1,6 +1,6 @@
 # ze-skills
 
-Standard-compatible Agent Skills system for Ze — import, review, matching, and
+Standard-compatible Agent Skills system for Ze: import, review, matching, and
 tool-narrowing. Bundled scripts persist here and run in the workspace after a
 second executable approval.
 
@@ -16,15 +16,16 @@ instructions review gate.
 Matching is global across every agent. A turn picks up a skill in two ways:
 embedding similarity of the message against the skill's name + description, or an
 explicit `/skill-name` token in the message. An optional System One gate (off in the
-code default, on in the shipped config) turns similarity into a shortlist and lets a typed judgment pick at most one
-automatic skill. Matched skills prepend their
+code default, on in the shipped config) turns similarity into a shortlist and lets a
+typed judgment pick at most one automatic skill. Matched skills prepend their
 instructions to the system prompt, intersect (never union) `allowed-tools` with the
 agent's own `tools` list, and show up on `MessageTrace.skills_used`.
 
 Scripts are a separate gate. Approving instructions does not set
 `executable_approved`. After that second approval, the agent may call
 `workspace_run_skill_script`; the [workspace sidecar](../../../docs/workspace.md)
-writes the stored bytes under `/workspace` and runs them after the workspace gate (conversation confirms; unattended may run).
+writes the stored bytes under `/workspace` and runs them after the workspace gate. In
+conversation the user confirms; an unattended run may proceed.
 
 ### Key features
 
@@ -32,8 +33,9 @@ writes the stored bytes under `/workspace` and runs them after the workspace gat
   frontmatter + Markdown body, store reference files and script bytes
 - Review (`review.py`) — pending → active/rejected, disable/enable without a new
   review, remove (imported only), refresh that reverts to pending review when
-  source content changes, `approve_skill_executables()` as a second gate
-  Approving a skill's instructions also submits it as a procedure candidate to memory's admission service (`procedure_candidates.py`)
+  source content changes, `approve_skill_executables()` as a second gate.
+  Approving a skill's instructions also submits it as a procedure candidate to
+  memory's admission service (`procedure_candidates.py`)
 - Matching (`matching.py`) — `SkillMatcher` caches embeddings of active skills,
   cosine-compares the message (one E5 query encode in the matcher), and parses
   `/skill-name` tokens. It returns a `SkillMatchOutcome`: the matches plus the
@@ -52,12 +54,12 @@ writes the stored bytes under `/workspace` and runs them after the workspace gat
 from every loaded plugin. The `match_skills` graph node
 (`ze_core.orchestration.nodes.skills`) runs after `fetch_context` and populates
 `AgentContext.active_skills` / `skill_tool_names`. The `/api/v0/skills` routes
-(`rest.py`) are the management surface for `ze-web`'s Skills queue on Doing (`widgets/skills-queue`).
-This package is wired directly by `ze-api`, not as a `ZePlugin`.
+(`rest.py`) are the management surface for `ze-web`'s Skills queue on Doing
+(`widgets/skills-queue`). This package is wired directly by `ze-api`, not as a `ZePlugin`.
 
 User-facing guide: [docs/skills.md](../../../docs/skills.md).
 
-`screen_resolvers.py` registers the `skill` screen resolver, which reports a skill's name and review status.
+`screen_resolvers.py` registers the `skill` screen resolver. It reports a skill's name and review status.
 
 ## Responsibilities
 

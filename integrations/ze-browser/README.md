@@ -1,10 +1,10 @@
 # ze-browser
 
-Playwright browser sidecar client for Ze. Provides a lightweight Python client that communicates with a separately running browser sidecar service, used by the prospecting agent for autonomous web research.
+Playwright browser sidecar client for Ze. A lightweight Python client that talks to a separately running browser sidecar service. The prospecting agent uses it for autonomous web research.
 
 ## Role in Ze
 
-Some agents need to read web pages that have no API — prospect research, company lookups, outreach target discovery. `ze-browser` is the Python client for a headless Playwright sidecar that fetches and extracts page text on demand.
+Some agents need to read web pages that have no API: prospect research, company lookups, outreach target discovery. `ze-browser` is the Python client for a headless Playwright sidecar that fetches and extracts page text on demand.
 
 ### Key features
 

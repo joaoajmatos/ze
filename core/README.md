@@ -1,13 +1,12 @@
 # core/
 
-Shared infrastructure packages. These packages contain no personal-assistant domain
-logic — only the framework primitives that every other package builds on.
+Shared infrastructure packages. They contain no personal-assistant domain logic, only the
+framework primitives that every other package builds on.
 
 **Rule:** a `core/` package may never import from `plugins/` or `apps/`.
 
-Packages are grouped into tiers by role. Each tier is a plain directory (not a
-package itself) — it exists to make the dependency shape legible, not to add
-another import boundary.
+Packages are grouped into tiers by role. Each tier is a plain directory, not a package.
+Tiers make the dependency shape easier to read. They add no import boundary.
 
 Package READMEs follow [docs/package-readme-template.md](../docs/package-readme-template.md).
 Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md](../docs/testing.md).
@@ -18,11 +17,11 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 
 | Tier | Packages | Role |
 |------|----------|------|
-| [kernel/](kernel/) | [ze-logging](kernel/ze-logging/), [ze-data](kernel/ze-data/), [ze-components](kernel/ze-components/) | Zero/near-zero Ze deps — pure infra leaves |
+| [kernel/](kernel/) | [ze-logging](kernel/ze-logging/), [ze-data](kernel/ze-data/), [ze-components](kernel/ze-components/) | Few or no Ze dependencies. Pure infrastructure |
 | [contracts/](contracts/) | [ze-agents](contracts/ze-agents/), [ze-communication](contracts/ze-communication/), [ze-plugin](contracts/ze-plugin/), [ze-proactive](contracts/ze-proactive/) | Developer-facing ABCs/protocols the engine implements against |
 | [engine/](engine/) | [ze-core](engine/ze-core/) | The orchestration engine itself |
-| [seam/](seam/) | [ze-collision](seam/ze-collision/) | Cross-cutting substrate consumed by every domain layer below |
-| [cognition/](cognition/) | [ze-memory](cognition/ze-memory/), [ze-correlation](cognition/ze-correlation/), [ze-worldstate](cognition/ze-worldstate/) | Memory, correlation, world-state — the "mind" substrate |
+| [seam/](seam/) | [ze-collision](seam/ze-collision/) | Cross-cutting layer that every domain tier below uses |
+| [cognition/](cognition/) | [ze-memory](cognition/ze-memory/), [ze-correlation](cognition/ze-correlation/), [ze-worldstate](cognition/ze-worldstate/) | Memory, correlation, and world state |
 | [automation/](automation/) | [ze-automation](automation/ze-automation/), [ze-skills](automation/ze-skills/) | Goals, workflows, skills — built on cognition |
 | [arbitration/](arbitration/) | [ze-priority](arbitration/ze-priority/) | Consumes cognition + automation to rank/order attention |
 | [ops/](ops/) | [ze-workspace](ops/ze-workspace/), [ze-onboarding](ops/ze-onboarding/), [ze-ingestion](ops/ze-ingestion/), [ze-seed](ops/ze-seed/), [ze-eval](ops/ze-eval/) | Environment, onboarding, ingestion, seed data, eval |
@@ -51,7 +50,7 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 | [ze-eval](ops/ze-eval/) | Eval infrastructure — runner, judge, verifier, MCP server |
 
 `ze-browser` and `ze-notifications` moved to [`integrations/`](../integrations/) —
-they're thin external-service wrappers (browser sidecar, ntfy), the same shape as
+they are thin external-service wrappers (browser sidecar, ntfy), the same shape as
 `integrations/ze-google`, not core infra.
 
 ## Dependency graph

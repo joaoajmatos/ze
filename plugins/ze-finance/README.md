@@ -4,16 +4,16 @@ Finance domain plugin for Ze — portfolio positions, bank transactions, spendin
 
 ## Role in Ze
 
-Ze-finance gives Ze awareness of the user's financial life. It ingests investment data from Trading212 and bank transactions from CSV statements, stores them in normalised Postgres tables, and exposes them through the `FinanceAgent` and a daily snapshot job. All LLM calls in this plugin are pinned to Anthropic via OpenRouter — financial data never reaches another provider.
+`ze-finance` lets Ze see the user's financial life. It ingests investment data from Trading212 and bank transactions from CSV statements, stores them in normalized Postgres tables, and exposes them through the `FinanceAgent` and a daily snapshot job. All LLM calls in this plugin are pinned to Anthropic via OpenRouter — financial data never reaches another provider.
 
-The plugin is designed as the substrate for a full factor-based risk engine (`ze-risk`, future). The domain types and protocol stubs are already defined under `risk/` and `models/` so the risk layer can import from `ze_finance.*` without restructuring.
+The plugin is the base for a future factor-based risk engine (`ze-risk`). The domain types and protocol stubs are already defined under `risk/` and `models/` so the risk layer can import from `ze_finance.*` without restructuring.
 
 ### Key features
 
 - `FinanceAgent` — conversational interface for portfolio, spending, and recurring expense questions
 - Trading212 integration — positions, P&L, order and dividend history
 - CSV bank statement import with LLM-assisted column mapping inference (cached per source)
-- Two-tier spending categorisation: keyword rules first, optional Anthropic haiku batch for unmatched descriptions
+- Two-tier spending categorization: keyword rules first, optional Anthropic haiku batch for unmatched descriptions
 - Recurring expense detection — algorithmic detection of subscriptions and fixed charges at any cadence (weekly, biweekly, monthly, quarterly, …); optional NLI merchant-alias merging; opt-in, with confirm/dismiss UX and price-change resurface
 - Daily snapshot job — syncs all data sources, updates categories, emits signals
 - Monthly recurring detection job — detects new recurring charges, nudges on stale CSV data
@@ -37,7 +37,7 @@ from ze_finance.plugin import FinancePlugin
 | `errors.py` | `FinanceError`, `ZeIntegrationError`, `FinanceParseError` |
 | `ingestion/extractor.py` | `FinanceIngestionExtractor` — extracts transactions from PDF, text, and document content during ingestion |
 | `push_kinds.py` | `FINANCE_STALE_NUDGE`, `FINANCE_RECURRING_NEW`, `FINANCE_PRICE_CHANGE` — push kinds for the interruption governor |
-| `jobs/snapshot.py` | `DailySnapshotJob` — syncs all data sources, runs categorisation, emits signals |
+| `jobs/snapshot.py` | `DailySnapshotJob` — syncs all data sources, runs categorization, emits signals |
 | `jobs/recurring.py` | `RecurringDetectionJob` — monthly job; detects new recurring charges, handles CSV staleness nudges |
 | `models/alpha.py` | `AlphaModel` Protocol stub (future `ze-risk` extension point) |
 | `plugin.py` | `FinancePlugin(ZePlugin)` — registers agent, jobs, signal source, and data domains |

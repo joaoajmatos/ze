@@ -1,6 +1,6 @@
 # ze-components
 
-Server-driven UI component descriptors for Ze. Allows agents to emit structured component payloads that the React web client (`ze-web`) renders without requiring app updates.
+Server-driven UI component descriptors for Ze. Agents emit structured component payloads, and the React web client (`ze-web`) renders them without an app update.
 
 ## Role in Ze
 
@@ -44,7 +44,7 @@ Depends on `ze-agents` and `ze-logging`. No third-party runtime dependencies.
 
 ## Usage
 
-Agents call component tools during execution; the resulting descriptors are serialised and sent as a `components` field in the WebSocket message frame.
+Agents call component tools during execution; Ze serializes the resulting descriptors and sends them as a `components` field in the WebSocket message frame.
 
 ```python
 from ze_components import Card, text
