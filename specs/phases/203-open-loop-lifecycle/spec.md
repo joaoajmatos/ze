@@ -55,6 +55,13 @@ The loop-store mutations listed above have 26 production call sites plus 3 `crea
 - the trace: the `intake_outcome` row carries the intake kind strings, which ze-web maps to sentences (`apps/ze-web/src/widgets/assemble/lib/instruments/judgments.ts:84-86`);
 - the calibration runners `eval/calibration/commitment_intake.py` and `loop_gate.py`, which read the kind strings and import the 109 gate from `extraction.py`.
 
+## Clarifications
+
+### Session 2026-10-26
+
+- Q: The commitment intake names its loop outcomes `resolve_loop` / `create_loop_declared` / `create_loop_suspected`, and the trace and ze-web read those strings. Rename them to the shared commit vocabulary, or keep them? → A: Rename to `resolve` / `create_declared` / `create_suspected`. ze-web's `judgments.ts` map is updated with the same sentences. No alias for old stored traces (pre-v1 hard cut).
+- Q: `track_loop` runs before the turn's episode exists, so it has no evidence to link. Link the episode after the turn, or not? → A: Defer. `track_loop` goes through the same declared-create event with no evidence plus an origin source (conversation, thread id). Linking the turn episode to a tracked loop later is out of scope.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A loop is never left half-changed (Priority: P1)
@@ -83,7 +90,7 @@ The user says "keep an eye on the budget for Ana" (`track_loop`). An email also 
 
 **Acceptance Scenarios**:
 
-1. **Given** no matching loop, **When** `track_loop` creates one, **Then** it carries the declared stamp, an origin source for the conversation, and the evidence passed in, exactly like a declared loop created by an inflow.
+1. **Given** no matching loop, **When** `track_loop` creates one, **Then** it goes through the same declared-create event as an inflow: the declared stamp, entity links and an origin source for the conversation thread. It passes no evidence, because the turn's episode does not exist yet (Clarifications 2026-10-26).
 2. **Given** a drifting loop, **When** the user explicitly asks to keep it in mind, **Then** it is revived. **When** the REST confirm route, decay or the sweep act on it, **Then** they cannot revive it.
 3. **Given** a suspected loop, **When** a turn or an email says it is done, **Then** it moves to `closed` with the resolving evidence recorded (199's edge), and no error is swallowed.
 4. **Given** any caller other than drift or decay, **When** it asks to move an active loop to drifting, **Then** the move is refused.
@@ -140,7 +147,9 @@ A maintainer reads how an admitted loop becomes a row. One loop-inflow module ho
 - **FR-013**: Behaviour seen through REST, the `loops` agent tools, the World page and the trace MUST be unchanged, except for:
   - the atomicity fixes;
   - the declared-create alignment (FR-005);
-  - the fingerprint on stale expiry (FR-006).
+  - the fingerprint on stale expiry (FR-006);
+  - the intake outcome kind strings on the trace, renamed to the commit vocabulary (Clarifications 2026-10-26);
+  - a promote that loses a race no longer lowers the winner's confidence (research R10).
 
 ### Key Entities
 

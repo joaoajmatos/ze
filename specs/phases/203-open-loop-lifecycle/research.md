@@ -72,7 +72,7 @@ The generic `transition()` and `_ALLOWED_TRANSITIONS` are deleted. No caller can
 
 **Decision**: `create_suspected` and `create_declared` call `submit_and_detect_collisions(contribution, writer, …)` as today. The `writer` callback is the whole create transaction: the `INSERT`, evidence links, entity links and the origin source row. Both creates put the evidence on the contribution and pass the existence checkers built from `memory_store` (FR-005). `LoopLifecycle` takes `pool`, `memory_store`, `collision_store` and `nli_client` in its constructor.
 
-`track_loop`'s create passes no evidence (the turn's episode does not exist when the tool runs) and an origin source `(conversation, <thread id>)`. The tool gets the thread id as `session_id: Injected[str | None]`: `session_id` is the LangGraph `thread_id` (`ze_core/conversation/turn.py:36-38`), and tools already receive it this way (`ze_automation/agents/workflow/tools.py:196`). With an origin row, a later suspected match from the same thread is not counted as independent corroboration (172's rule). *(Pending Maestro Q2; see the plan's open questions.)*
+`track_loop`'s create passes no evidence (the turn's episode does not exist when the tool runs) and an origin source `(conversation, <thread id>)`. The tool gets the thread id as `session_id: Injected[str | None]`: `session_id` is the LangGraph `thread_id` (`ze_core/conversation/turn.py:36-38`), and tools already receive it this way (`ze_automation/agents/workflow/tools.py:196`). With an origin row, a later suspected match from the same thread is not counted as independent corroboration (172's rule). Linking the turn's episode afterwards is deferred (spec Clarifications 2026-10-26).
 
 **Rationale**: The seam validates first and writes through the callback (`specs/arch/contribution-seam.md`), so the transaction fits inside it unchanged. Phase 212 (contribution submitter) depends on 203 and will find the loop submit sites in `lifecycle/events.py` instead of `extraction.py` and `tracking.py`.
 
@@ -87,7 +87,7 @@ GateKind   = Literal["resolve", "create_suspected", "hold", "fallback"]   # what
 ```
 
 - `loop_judge.decide` returns a `CommitDecision` whose kind is a `GateKind`; `LoopGateDecision` and `loop_judge.DecisionKind` are deleted (agreed with 202: 203 owns this entirely).
-- `commitment_judge.OutcomeKind` uses the same three loop kinds: `resolve_loop` → `resolve`, `create_loop_declared` → `create_declared`, `create_loop_suspected` → `create_suspected`. `CommitmentIntake._apply` builds `CommitDecision(outcome.kind, outcome.reason, outcome.consumed)` directly. `_LOOP_KIND` is deleted. *(Pending Maestro Q1, option A.)*
+- `commitment_judge.OutcomeKind` uses the same three loop kinds: `resolve_loop` → `resolve`, `create_loop_declared` → `create_declared`, `create_loop_suspected` → `create_suspected`. `CommitmentIntake._apply` builds `CommitDecision(outcome.kind, outcome.reason, outcome.consumed)` directly. `_LOOP_KIND` is deleted (spec Clarifications 2026-10-26).
 - The 109 Haiku gate produces a `CommitDecision` too: `extraction.decide_with_109_gate(text, llm, model)` maps `_ExtractionGateResult` to resolve, create declared, create suspected or hold, and carries `title` and `window_days` from the gate. A failed gate is `hold` with reason `gate_failed`.
 - `title` and `window_days` are set only by the 109 gate. On the System One path they are empty and the commit asks the title writer.
 
@@ -95,7 +95,7 @@ GateKind   = Literal["resolve", "create_suspected", "hold", "fallback"]   # what
 
 **Rationale**: FR-009 and SC-003. The remap goes; the gate subset is a type, so a test asserts `decide` never returns `create_declared`.
 
-**Alternatives considered**: keep the intake strings and add a typed field (Maestro Q1 option B).
+**Alternatives considered**: keep the intake strings and add a typed field. Rejected by the user (two names for one thing).
 
 ## R7. One loop-inflow commit method
 
@@ -191,6 +191,6 @@ For single-statement events the test asserts every field the event stamps (SC-00
 
 **Decision**: The phase serves **executive function** (world-state is the spine: open loops are Ze's model of unfinished business). No eval scenario is added; `eval/scenarios/loops.yaml` is the live regression (optional, costs credits). The calibration runners change only their kind literals (R6), after rebasing on 202.
 
-## R15. Trace and web (Maestro Q1)
+## R15. Trace and web
 
-**Decision** (option A, pending): the `intake_outcome` trace row's answer becomes `resolve:…`, `create_declared:…`, `create_suspected:…`. `apps/ze-web/src/widgets/assemble/lib/instruments/judgments.ts:84-86` maps the new keys to the same sentences; its test rows change with it. Old stored traces show the raw key (pre-v1 hard cut).
+**Decision** (spec Clarifications 2026-10-26): the `intake_outcome` trace row's answer becomes `resolve:…`, `create_declared:…`, `create_suspected:…`. `apps/ze-web/src/widgets/assemble/lib/instruments/judgments.ts:84-86` maps the new keys to the same sentences; its test rows change with it. Old stored traces show the raw key (pre-v1 hard cut).

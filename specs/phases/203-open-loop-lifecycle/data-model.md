@@ -93,7 +93,7 @@ Used by `CREATE_DECLARED`, `CONFIRM`, `TRACK` (S and D) and, with its own confid
 
 ### `IntakeOutcome.kind` (`commitment_judge.py`, changed)
 
-The three loop kinds become `resolve`, `create_declared`, `create_suspected` (research R6, Maestro Q1). The others (`persist_fact`, `link`, `hold`, `fallback`) are unchanged.
+The three loop kinds become `resolve`, `create_declared`, `create_suspected` (research R6, spec Clarifications 2026-10-26). The others (`persist_fact`, `link`, `hold`, `fallback`) are unchanged.
 
 ### Removed
 

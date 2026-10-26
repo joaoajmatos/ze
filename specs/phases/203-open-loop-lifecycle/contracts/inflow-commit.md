@@ -115,7 +115,7 @@ async def _commit_with_episode(commit, admission, episode_task):
 
 The container sets `configurable["loop_commit"] = self.commitment_intake.loop_inflow.commit` (`apps/ze-api/ze_api/wiring/container.py`, beside `commitment_intake`).
 
-## Trace and calibration (Maestro Q1, option A)
+## Trace and calibration (spec Clarifications 2026-10-26)
 
 - The `intake_outcome` row's answer carries the new kind strings.
 - `apps/ze-web/src/widgets/assemble/lib/instruments/judgments.ts` maps `resolve`, `create_declared`, `create_suspected` to the same three sentences; `judgments.test.ts` rows change with it.
