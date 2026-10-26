@@ -98,9 +98,7 @@ DERIVATION: Mapping[str, FieldRule] = {
     ),
     "memory": _row(_I, _I, Reset(_NO_TURN)),
     "contacts": _row(_I, _I, Reset(_NO_TURN)),
-    "tool_calls": _row(
-        Reset(_FRESH), Reset(_FRESH), Reset(_FRESH), Reset(_FRESH)
-    ),
+    "tool_calls": _row(Reset(_FRESH), Reset(_FRESH), Reset(_FRESH), Reset(_FRESH)),
     "messages": _row(
         Given("the first message of the turn (an image turn builds its own)"),
         Given("the delegate brief as the only message"),
@@ -112,24 +110,14 @@ DERIVATION: Mapping[str, FieldRule] = {
         Reset("the specialist runs on its own model, not the caller's"),
         Reset("the agent runs on its own model"),
     ),
-    "reporter": _row(
-        Given("runtime handles"), _I, Reset(_NO_CLIENT)
-    ),
-    "identity_builder": _row(
-        Given("runtime handles"), _I, Reset(_NO_CLIENT)
-    ),
+    "reporter": _row(Given("runtime handles"), _I, Reset(_NO_CLIENT)),
+    "identity_builder": _row(Given("runtime handles"), _I, Reset(_NO_CLIENT)),
     "abort_token": _row(Given("runtime handles"), _I, Reset(_NO_CLIENT)),
-    "memory_store": _row(
-        _I, _I, Given("the goal executor's memory store")
-    ),
-    "embed_fn": _row(
-        Given("runtime handles"), _I, Reset(_NO_CLIENT)
-    ),
+    "memory_store": _row(_I, _I, Given("the goal executor's memory store")),
+    "embed_fn": _row(Given("runtime handles"), _I, Reset(_NO_CLIENT)),
     "token_sink": _row(
         Given("runtime handles (single-agent path only)"),
-        Reset(
-            "the specialist's tokens must not stream into the companion's reply"
-        ),
+        Reset("the specialist's tokens must not stream into the companion's reply"),
         Reset(_NO_CLIENT),
     ),
     "tool_sink": _row(Given("runtime handles"), _I, Reset(_NO_CLIENT)),
@@ -193,9 +181,7 @@ DERIVATION: Mapping[str, FieldRule] = {
         _I,
         Given("the goal executor: goal_id"),
     ),
-    "timezone": _row(
-        _I, _I, Given("application settings"), Reset(_NO_PARENT)
-    ),
+    "timezone": _row(_I, _I, Given("application settings"), Reset(_NO_PARENT)),
 }
 
 
@@ -240,7 +226,9 @@ def _inherited(name: str, parent: AgentContext) -> Any:
     return value
 
 
-def _build(kind: str, parent: AgentContext | None, given: dict[str, Any]) -> AgentContext:
+def _build(
+    kind: str, parent: AgentContext | None, given: dict[str, Any]
+) -> AgentContext:
     kwargs: dict[str, Any] = {}
     for f in fields(AgentContext):
         rule = _rule(f.name, kind)

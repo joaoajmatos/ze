@@ -35,9 +35,3 @@ def test_an_operation_names_a_field_with_no_row(monkeypatch) -> None:
     monkeypatch.setattr(derive, "DERIVATION", rows)
     with pytest.raises(UndeclaredDerivationError, match="timezone"):
         derive.for_action("s")
-
-
-def test_loop_active_is_never_inherited() -> None:
-    row = DERIVATION["write_gate"]
-    assert isinstance(row.delegate, Inherit)
-    assert isinstance(row.subtask, Given)

@@ -82,3 +82,8 @@ def test_merged_typed_dict_resolves_both_bases():
 def test_turn_with_both_reset_and_factory_is_rejected():
     with pytest.raises(UndeclaredLifetimeError):
         Turn(reset=1, factory=list)
+
+
+def test_turn_rejects_a_mutable_reset_value():
+    with pytest.raises(UndeclaredLifetimeError):
+        Turn(reset=[])

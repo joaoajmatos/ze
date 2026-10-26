@@ -31,6 +31,10 @@ class Turn:
             raise UndeclaredLifetimeError(
                 "Turn takes either a reset value or a factory, not both"
             )
+        if isinstance(self.reset, (list, dict, set)):
+            raise UndeclaredLifetimeError(
+                "Turn(reset=...) takes an immutable value; use factory=list or factory=dict"
+            )
 
     def value(self) -> Any:
         return self.factory() if self.factory is not None else self.reset

@@ -237,7 +237,9 @@ class TestOutcomeOf:
         tally = DelegateTally(counts={"a": 1}, total=1)
         ctx = _subtask(
             _turn(),
-            conductor=ConductorState(ledger=[{"agent": "a", "status": "done"}], tally=tally),
+            conductor=ConductorState(
+                ledger=[{"agent": "a", "status": "done"}], tally=tally
+            ),
             procedure=ProcedureInvocation("i", "p", "v"),
         )
         outcome = outcome_of(ctx, 3)

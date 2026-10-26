@@ -109,7 +109,9 @@ class AgentState(TypedDict):
     ]  # routing hint, used only when screen_hint is on
 
     # ── Routing context (populated by pre-route plugin nodes) ────────────────
-    routing_hints: Annotated[str | None, Turn()]  # injected by inject_goal_routing_context
+    routing_hints: Annotated[
+        str | None, Turn()
+    ]  # injected by inject_goal_routing_context
 
     # ── Trace (Phase 89 — populated by record_trace node) ────────────────────
     message_trace: Annotated[Any | None, Turn()]  # MessageTrace; saved after persist
