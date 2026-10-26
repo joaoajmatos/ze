@@ -97,6 +97,7 @@ def fake_cli(tmp_path, monkeypatch):
     monkeypatch.setenv("FAKE_LOG", str(log))
     monkeypatch.setenv("FAKE_CHECK", "❯ ready for input")
     monkeypatch.setenv("FAKE_ASK", "ready")
+    monkeypatch.setenv("ZE_TRANSCRIPTS_DIR", str(tmp_path / "transcripts"))
     # Generous budgets: every wait returns as soon as the fake answers, and no test waits out a deadline.
     # REPLY is also the `maestri ask` subprocess timeout, so 1 s failed whenever the load slowed the fake's start.
     for k in ("BOOT", "REPLY", "POLL"):
@@ -149,6 +150,7 @@ def test_recruit_starts_over_once_when_the_agent_never_replies(
     """L3: --replace keeps no --role or --command, so the retry dismisses and recruits again with them."""
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("FAKE_ASK", "zzz")
+    monkeypatch.setenv("ZE_RECRUIT_REPLY_SECS", "1")
     assert recruit.main(["Forge", "eng", "sonnet", "F", str(_brief(tmp_path))]) == 1
     lines = calls(fake_cli)
     assert not any("--replace" in line for line in lines)
@@ -164,6 +166,7 @@ def test_the_echoed_ping_is_not_a_ready_reply(fake_cli, tmp_path, monkeypatch):
     monkeypatch.setenv(
         "FAKE_ASK", "❯ brief... Reply with one line 'ready' first, then work."
     )
+    monkeypatch.setenv("ZE_RECRUIT_REPLY_SECS", "1")
     assert recruit.main(["Forge", "eng", "sonnet", "F", str(_brief(tmp_path))]) == 1
 
 
@@ -195,7 +198,7 @@ def test_recruit_refuses_a_bad_brief_before_calling_maestri(
 STUCK_CLI = """#!/usr/bin/env bash
 echo "$@" >> "$FAKE_LOG"
 case "$1" in
-  check) if grep -q -- "--raw" "$FAKE_LOG"; then echo "⏺ ready"; else echo "❯ $(head -c 40 "$FAKE_BRIEF")"; fi;;
+  check) if grep -q -- "--raw" "$FAKE_LOG"; then echo "⏺ ready"; else echo "❯ $(grep '^ask' "$FAKE_LOG" | tail -1 | cut -c1-60)"; fi;;
   ask) echo "";;
 esac
 """
@@ -210,6 +213,7 @@ def test_recruit_submits_a_brief_stuck_in_the_input_box(tmp_path, monkeypatch):
     monkeypatch.setenv("MAESTRI_CLI", str(cli))
     monkeypatch.setenv("FAKE_LOG", str(log))
     monkeypatch.setenv("FAKE_BRIEF", str(brief))
+    monkeypatch.setenv("ZE_TRANSCRIPTS_DIR", str(tmp_path / "transcripts"))
     monkeypatch.setenv("ZE_RECRUIT_BOOT_SECS", "30")
     monkeypatch.setenv("ZE_RECRUIT_REPLY_SECS", "30")
     monkeypatch.setenv("ZE_RECRUIT_POLL_SECS", "0.1")
@@ -217,6 +221,73 @@ def test_recruit_submits_a_brief_stuck_in_the_input_box(tmp_path, monkeypatch):
     assert recruit.main(["Forge", "eng", "sonnet", "F", str(brief)]) == 0
     assert any("--raw" in line for line in calls(log))
     assert not any(line.startswith("dismiss") for line in calls(log))
+
+
+def test_a_busy_agent_counts_as_briefed_and_is_never_replaced(
+    fake_cli, tmp_path, monkeypatch
+):
+    """The 'ready' line scrolled off and `ask` timed out, but the agent is working: no restart."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("FAKE_ASK", "")
+    monkeypatch.setenv(
+        "FAKE_CHECK", "✻ Working… (12s)\n❯ \n  ⏵⏵ auto mode on · esc to interrupt"
+    )
+    assert recruit.main(["Forge", "eng", "sonnet", "F", str(_brief(tmp_path))]) == 0
+    assert not any(line.startswith("dismiss") for line in calls(fake_cli))
+
+
+def test_the_brief_carries_a_short_token_for_the_stuck_check(
+    fake_cli, tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    recruit.main(["Forge", "eng", "sonnet", "F", str(_brief(tmp_path))])
+    asks = [line for line in calls(fake_cli) if line.startswith("ask Forge")]
+    assert asks and asks[0].startswith("ask Forge [bf")
+
+
+TRANSCRIPT_CLI = """#!/usr/bin/env bash
+echo "$@" >> "$FAKE_LOG"
+case "$1" in
+  check) echo "❯ ";;
+  ask) mkdir -p "$ZE_TRANSCRIPTS_DIR/proj"; echo "{\\"type\\":\\"user\\",\\"text\\":\\"$3\\"}" >> "$ZE_TRANSCRIPTS_DIR/proj/s.jsonl"; echo "";;
+esac
+"""
+
+
+def test_the_session_transcript_proves_delivery_when_the_screen_does_not(
+    tmp_path, monkeypatch
+):
+    """The screen shows an idle prompt and `ask` returned nothing, but the brief is in the agent's transcript."""
+    cli = tmp_path / "maestri"
+    cli.write_text(TRANSCRIPT_CLI)
+    cli.chmod(cli.stat().st_mode | stat.S_IEXEC)
+    log = tmp_path / "calls.log"
+    monkeypatch.setenv("MAESTRI_CLI", str(cli))
+    monkeypatch.setenv("FAKE_LOG", str(log))
+    monkeypatch.setenv("ZE_TRANSCRIPTS_DIR", str(tmp_path / "transcripts"))
+    for k, v in (("BOOT", "30"), ("REPLY", "5"), ("POLL", "0.1")):
+        monkeypatch.setenv(f"ZE_RECRUIT_{k}_SECS", v)
+    monkeypatch.chdir(tmp_path)
+    assert recruit.main(["Forge", "eng", "sonnet", "F", str(_brief(tmp_path))]) == 0
+    lines = calls(log)
+    assert not any("--raw" in line or line.startswith("dismiss") for line in lines)
+
+
+def test_an_old_transcript_with_another_token_is_not_delivery(tmp_path):
+    root = tmp_path / "t" / "proj"
+    root.mkdir(parents=True)
+    (root / "s.jsonl").write_text('{"text": "[bfaaaaaa] old brief"}\n')
+    import os
+
+    os.environ["ZE_TRANSCRIPTS_DIR"] = str(tmp_path / "t")
+    try:
+        assert recruit.in_transcript("[bfaaaaaa]", 0)
+        assert not recruit.in_transcript("[bfbbbbbb]", 0)
+        assert not recruit.in_transcript(
+            "[bfaaaaaa]", (root / "s.jsonl").stat().st_mtime + 60
+        )
+    finally:
+        del os.environ["ZE_TRANSCRIPTS_DIR"]
 
 
 def _repo(tmp_path):

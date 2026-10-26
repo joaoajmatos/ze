@@ -4,8 +4,8 @@
 Usage: recruit.py <name> <role> <tier> <floor> <brief-file> [--note "<Floor> Handoffs"] [--connect AGENT ...] [--dry-run]
   role/tier rules come from roles.toml; ZE_ROLE is set on the agent's command.
   --connect wires the new agent to each named agent (its reviewer, its lead), since `maestri ask`
-  reaches connected agents only. Waits for the TUI, sends the brief with a "reply ready" ping, retries once with recruit --replace.
-Tunables (tests): ZE_RECRUIT_BOOT_SECS (120), ZE_RECRUIT_REPLY_SECS (300; recruits take ~5 min under load), ZE_RECRUIT_POLL_SECS (2).
+  reaches connected agents only. Waits for the TUI, sends the brief without waiting for the agent's turn, counts it delivered once the agent says ready or is busy, presses Enter once on a brief stuck in the input box, and starts over once only if nothing arrived.
+Tunables (tests): ZE_RECRUIT_BOOT_SECS (60), ZE_RECRUIT_REPLY_SECS (90: the brief counts as delivered once the agent is busy), ZE_RECRUIT_POLL_SECS (2).
 """
 
 import argparse
@@ -15,6 +15,7 @@ import shlex
 import sys
 import time
 import tomllib
+import uuid
 from pathlib import Path
 
 HERE = Path(__file__).parent
@@ -63,22 +64,56 @@ def said_ready(screen: str) -> bool:
     return READY_LINE.search(screen) is not None
 
 
-def stuck_in_input(screen: str, brief: str) -> bool:
-    """The brief sits in the input box (under the prompt) and the agent has not answered (no reply marker)."""
-    return brief.strip()[:40] in screen and "\u23fa" not in screen
+REPLY_MARK = "\u23fa"
+BUSY_MARK = "esc to interrupt"
+SEND_SECS = 15
+
+
+def delivered(screen: str, before: str) -> bool:
+    """The agent answered 'ready', printed a new reply, or is busy working on the brief."""
+    return (
+        said_ready(screen)
+        or screen.count(REPLY_MARK) > before.count(REPLY_MARK)
+        or BUSY_MARK in screen
+    )
+
+
+def transcripts_root() -> Path:
+    return Path(
+        os.environ.get("ZE_TRANSCRIPTS_DIR") or Path.home() / ".claude" / "projects"
+    )
+
+
+def in_transcript(token: str, since: float) -> bool:
+    """The agent's Claude Code session log holds the token: the brief was submitted, whatever the screen shows."""
+    for log in transcripts_root().glob("*/*.jsonl"):
+        try:
+            if log.stat().st_mtime >= since and token in log.read_text(errors="ignore"):
+                return True
+        except OSError:
+            continue
+    return False
 
 
 def send_brief(name: str, brief: str, seconds: float, poll: float = 2.0) -> bool:
-    reply = handoff.maestri("ask", name, brief + PING, timeout=seconds)
-    if reply.returncode == 0 and said_ready(reply.stdout):
+    """Send without waiting for the agent's turn to end (`ask` blocks until it goes idle, and the agent
+    keeps working after 'ready'). The brief carries a short token: finding it in the agent's session
+    transcript proves delivery; the screen is the fallback, and a token still under the prompt (unsent,
+    even when the TUI wraps it) gets one Enter."""
+    before = handoff.maestri("check", name).stdout
+    token = f"[bf{uuid.uuid4().hex[:6]}]"
+    sent_at = time.time() - 1
+    reply = handoff.maestri("ask", name, f"{token} {brief}{PING}", timeout=SEND_SECS)
+    if said_ready(reply.stdout) or in_transcript(token, sent_at):
         return True
-    if not stuck_in_input(handoff.maestri("check", name).stdout, brief):
-        return False
-    handoff.maestri("ask", name, "--raw", "\r")
-    deadline = time.monotonic() + seconds
+    deadline, nudged = time.monotonic() + seconds, False
     while time.monotonic() < deadline:
-        if said_ready(handoff.maestri("check", name).stdout):
+        screen = handoff.maestri("check", name).stdout
+        if in_transcript(token, sent_at) or delivered(screen, before):
             return True
+        if token in screen and not nudged:
+            handoff.maestri("ask", name, "--raw", "\r", timeout=SEND_SECS)
+            nudged = True
         time.sleep(poll)
     return False
 
@@ -136,8 +171,8 @@ def main(argv: list[str]) -> int:
         )
         return 0
 
-    boot = float(os.environ.get("ZE_RECRUIT_BOOT_SECS", 120))
-    reply = float(os.environ.get("ZE_RECRUIT_REPLY_SECS", 300))
+    boot = float(os.environ.get("ZE_RECRUIT_BOOT_SECS", 60))
+    reply = float(os.environ.get("ZE_RECRUIT_REPLY_SECS", 90))
     poll = float(os.environ.get("ZE_RECRUIT_POLL_SECS", 2))
     if not recruit_and_connect(recruit, args.name, args.connect):
         print("recruit failed", file=sys.stderr)
