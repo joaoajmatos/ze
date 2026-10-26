@@ -16,12 +16,10 @@ from ze_correlation.job import CorrelationJob
 from ze_correlation.push import (
     CorrelationPushCandidateSource,
     CorrelationPushConsumer,
-    passes_confidence,
-    passes_grounding,
-    passes_novelty,
-    passes_relevance,
 )
 from ze_correlation.types import HypothesisEvidence, Hypothesis
+from ze_proactive.candidates import BarThresholds
+from ze_proactive.types import OncePer
 
 UTC = timezone.utc
 
@@ -108,9 +106,6 @@ def _make_candidate_source(
     settings: MagicMock | None = None,
     *,
     unsurfaced: list[Hypothesis] | None = None,
-    recent_summaries: list[str] | None = None,
-    embedder: MagicMock | None = None,
-    nli_client: MagicMock | None = None,
 ) -> tuple[CorrelationPushCandidateSource, dict]:
     if settings is None:
         settings = _make_settings()
@@ -118,24 +113,14 @@ def _make_candidate_source(
     hypothesis_store = MagicMock()
     hypothesis_store.list_unsurfaced = AsyncMock(return_value=unsurfaced or [])
     hypothesis_store.mark_surfaced = AsyncMock()
-    hypothesis_store.list_recently_surfaced_summaries = AsyncMock(
-        return_value=recent_summaries or []
-    )
 
     notifier = MagicMock()
     notifier.notify = AsyncMock(return_value="delivered")
-
-    if nli_client is None:
-        nli_client = AsyncMock()
-        nli_client.scores = AsyncMock(return_value=[])
-        nli_client.grounding_score = MagicMock(return_value=1.0)
 
     source = CorrelationPushCandidateSource(
         hypothesis_store=hypothesis_store,
         notifier=notifier,
         settings=settings,
-        embedder=embedder,
-        nli_client=nli_client,
     )
     mocks = {"hypothesis_store": hypothesis_store, "notifier": notifier}
     return source, mocks
@@ -206,56 +191,10 @@ async def test_correlation_job_delegates_to_consumer():
     consumer.run_once.assert_awaited_once()
 
 
-# ── CorrelationPushCandidateSource: eligibility ────────────────────────────────
+# ── CorrelationPushCandidateSource: candidates ────────────────────────────────
 
 
-async def test_eligible_candidates_returns_qualifying_hypotheses():
-    h = _make_hypothesis(confidence=0.75, relevance=0.65)
-    source, _ = _make_candidate_source(unsurfaced=[h])
-    result = await source.eligible_candidates()
-    assert result == [h]
-
-
-async def test_eligible_candidates_excludes_low_confidence():
-    h = _make_hypothesis(confidence=0.4, relevance=0.65)
-    source, _ = _make_candidate_source(unsurfaced=[h])
-    assert await source.eligible_candidates() == []
-
-
-async def test_eligible_candidates_excludes_low_relevance():
-    h = _make_hypothesis(confidence=0.75, relevance=0.2)
-    source, _ = _make_candidate_source(unsurfaced=[h])
-    assert await source.eligible_candidates() == []
-
-
-async def test_eligible_candidates_excludes_too_similar_novelty():
-    import numpy as np
-
-    embedder = MagicMock()
-    embedder.encode_passage = embedder.encode_query = MagicMock(
-        return_value=np.array([1.0, 0.0, 0.0])
-    )
-    h = _make_hypothesis(confidence=0.75, relevance=0.65, summary="A connects to B")
-    source, _ = _make_candidate_source(
-        unsurfaced=[h],
-        recent_summaries=["A connects to B almost identically"],
-        embedder=embedder,
-    )
-    assert await source.eligible_candidates() == []
-
-
-async def test_eligible_candidates_no_embedder_skips_novelty_check():
-    h = _make_hypothesis(confidence=0.75, relevance=0.65)
-    source, _ = _make_candidate_source(unsurfaced=[h], embedder=None)
-    assert await source.eligible_candidates() == [h]
-
-
-async def test_eligible_candidates_excludes_below_grounding_threshold():
-    nli = AsyncMock()
-    nli.scores = AsyncMock(
-        return_value=[{"contradiction": 0.5, "neutral": 0.4, "entailment": 0.1}]
-    )
-    nli.grounding_score = MagicMock(return_value=0.1)
+async def test_candidates_describe_each_unsurfaced_hypothesis():
     evidence = [
         HypothesisEvidence(
             kind="signal",
@@ -264,160 +203,120 @@ async def test_eligible_candidates_excludes_below_grounding_threshold():
             external_ref=None,
             origin="graph_recall",
             retrieved_at=datetime.now(UTC),
-        )
+        ),
+        HypothesisEvidence(
+            kind="signal",
+            id=uuid4(),
+            label="",
+            external_ref=None,
+            origin="graph_recall",
+            retrieved_at=datetime.now(UTC),
+        ),
     ]
-    h = Hypothesis(
-        id=uuid4(),
-        summary="User's coffee preference changed",
-        narrative="Possible link",
-        relation="pattern",
-        confidence=0.75,
-        relevance=0.65,
-        evidence=evidence,
-        entities=[uuid4()],
-        created_at=datetime.now(UTC),
-        claim_kind=ClaimKind.SUSPICION,
+    h = _make_hypothesis(confidence=0.75, relevance=0.65)
+    h = Hypothesis(**{**h.__dict__, "evidence": evidence})
+    source, _ = _make_candidate_source(unsurfaced=[h])
+
+    (candidate,) = await source.candidates()
+
+    assert candidate.source_kind == "hypothesis"
+    assert candidate.source_id == h.id
+    assert candidate.entity is h
+    assert candidate.body == f"{h.summary}\n\n{h.narrative}"
+    assert candidate.claim == h.summary
+    assert candidate.confidence == 0.75
+    assert await candidate.relevance() == 0.65
+    assert await candidate.evidence_labels() == ("Stock market moved sharply",)
+    assert candidate.once_per == OncePer(f"hypothesis:{h.id}")
+
+
+async def test_candidates_apply_no_bar_condition():
+    h = _make_hypothesis(confidence=0.1, relevance=0.0)
+    source, _ = _make_candidate_source(unsurfaced=[h])
+    assert len(await source.candidates()) == 1
+
+
+def test_thresholds_come_from_config_and_nli():
+    settings = _make_settings(
+        tau_push=0.7, tau_relevance=0.4, novelty_similarity_max=0.8
     )
-    settings = _make_settings()
-    settings.config["memory"] = {"nli_grounding_threshold": 0.30}
-    source, _ = _make_candidate_source(settings, unsurfaced=[h], nli_client=nli)
-    assert await source.eligible_candidates() == []
+    settings.config["memory"] = {"nli_grounding_threshold": 0.25}
+    source, _ = _make_candidate_source(settings)
+    assert source.thresholds == BarThresholds(
+        confidence=0.7,
+        relevance=0.4,
+        novelty_similarity_max=0.8,
+        grounding=0.25,
+        inline_cooldown_hours=None,
+    )
 
 
-async def test_eligible_candidates_permissive_on_store_failure():
+async def test_candidates_store_failure_returns_empty():
     source, mocks = _make_candidate_source()
     mocks["hypothesis_store"].list_unsurfaced = AsyncMock(
         side_effect=RuntimeError("db down")
     )
-    assert await source.eligible_candidates() == []
+    assert await source.candidates() == []
 
 
 # ── correlation push switch (phase 170 US5) ───────────────────────────────────
 
 
-async def test_eligible_candidates_disabled_skips_store():
+async def test_candidates_disabled_skips_store():
     settings = _make_settings(enabled=False, dry_run=False)
     h = _make_hypothesis(confidence=0.75, relevance=0.65)
     source, mocks = _make_candidate_source(settings, unsurfaced=[h])
 
-    assert await source.eligible_candidates() == []
+    assert await source.candidates() == []
     mocks["hypothesis_store"].list_unsurfaced.assert_not_awaited()
 
 
-async def test_eligible_candidates_dry_run_logs_each_and_returns_empty(mocker):
-    settings = _make_settings(enabled=True, dry_run=True)
-    h1 = _make_hypothesis(confidence=0.75, relevance=0.65, summary="A links B")
-    h2 = _make_hypothesis(confidence=0.8, relevance=0.7, summary="C links D")
-    source, mocks = _make_candidate_source(settings, unsurfaced=[h1, h2])
-    log = mocker.patch("ze_correlation.push.log")
-
-    assert await source.eligible_candidates() == []
-
-    mocks["hypothesis_store"].list_unsurfaced.assert_awaited_once()
-    dry_run_calls = [
-        call
-        for call in log.info.call_args_list
-        if call.args and call.args[0] == "correlation_push_dry_run"
-    ]
-    assert len(dry_run_calls) == 2
-    logged_ids = {call.kwargs["hypothesis_id"] for call in dry_run_calls}
-    assert logged_ids == {str(h1.id), str(h2.id)}
+@pytest.mark.parametrize("dry_run", [True, False])
+async def test_dry_run_follows_config(dry_run):
+    source, _ = _make_candidate_source(_make_settings(dry_run=dry_run))
+    assert source.dry_run is dry_run
 
 
-async def test_eligible_candidates_live_returns_candidates():
-    settings = _make_settings(enabled=True, dry_run=False)
-    h = _make_hypothesis(confidence=0.75, relevance=0.65)
-    source, _ = _make_candidate_source(settings, unsurfaced=[h])
-
-    assert await source.eligible_candidates() == [h]
+async def test_candidates_read_through_list_unsurfaced():
+    """list_unsurfaced carries the dismissed-feedback predicate (pinned in test_store)."""
+    source, mocks = _make_candidate_source()
+    await source.candidates()
+    mocks["hypothesis_store"].list_unsurfaced.assert_awaited()
 
 
 # ── CorrelationPushCandidateSource: send ───────────────────────────────────────
 
 
-async def test_send_pushes_and_marks_surfaced():
+async def _send(source, h):
+    (candidate,) = await source.candidates()
+    return await source.send(candidate)
+
+
+async def test_send_pushes_with_candidate_claim_and_marks_surfaced():
     h = _make_hypothesis()
-    source, mocks = _make_candidate_source()
-    outcome = await source.send(h)
-    assert outcome == "delivered"
+    source, mocks = _make_candidate_source(unsurfaced=[h])
+    assert await _send(source, h) == "delivered"
     mocks["notifier"].notify.assert_awaited_once()
     kw = mocks["notifier"].notify.await_args.kwargs
-    assert kw["budget_key"] == f"hypothesis:{h.id}"
+    assert kw["once_per"] == OncePer(f"hypothesis:{h.id}")
+    assert "budget_key" not in kw
     assert kw["target_type"] == "hypothesis"
+    assert kw["target_id"] == str(h.id)
     mocks["hypothesis_store"].mark_surfaced.assert_awaited_once_with(h.id)
 
 
 async def test_send_marks_surfaced_when_held():
     h = _make_hypothesis()
-    source, mocks = _make_candidate_source()
+    source, mocks = _make_candidate_source(unsurfaced=[h])
     mocks["notifier"].notify = AsyncMock(return_value="held")
-    assert await source.send(h) == "held"
+    assert await _send(source, h) == "held"
     mocks["hypothesis_store"].mark_surfaced.assert_awaited_once_with(h.id)
 
 
-@pytest.mark.parametrize("outcome", ["failed", "duplicate", "suppressed_budget"])
+@pytest.mark.parametrize("outcome", ["failed", "deduped", "suppressed_budget"])
 async def test_send_does_not_mark_surfaced_when_not_sent(outcome):
     h = _make_hypothesis()
-    source, mocks = _make_candidate_source()
+    source, mocks = _make_candidate_source(unsurfaced=[h])
     mocks["notifier"].notify = AsyncMock(return_value=outcome)
-    assert await source.send(h) == outcome
+    assert await _send(source, h) == outcome
     mocks["hypothesis_store"].mark_surfaced.assert_not_awaited()
-
-
-# ── extracted push-bar primitives (research.md §4) ─────────────────────────────
-
-
-def test_passes_confidence():
-    assert passes_confidence(0.6, 0.5) is True
-    assert passes_confidence(0.4, 0.5) is False
-
-
-def test_passes_relevance():
-    assert passes_relevance(0.6, 0.5) is True
-    assert passes_relevance(0.4, 0.5) is False
-
-
-async def test_passes_novelty_no_embedder_is_permissive():
-    assert await passes_novelty("summary", ["other"], None, 0.85) is True
-
-
-async def test_passes_novelty_no_recent_summaries_is_permissive():
-    embedder = MagicMock()
-    assert await passes_novelty("summary", [], embedder, 0.85) is True
-
-
-async def test_passes_novelty_rejects_similar_summary():
-    import numpy as np
-
-    embedder = MagicMock()
-    embedder.encode_passage = embedder.encode_query = MagicMock(
-        return_value=np.array([1.0, 0.0, 0.0])
-    )
-    result = await passes_novelty(
-        "A connects to B", ["A connects to B almost identically"], embedder, 0.85
-    )
-    assert result is False
-
-
-async def test_passes_grounding_no_nli_is_permissive():
-    assert await passes_grounding("summary", ["label"], None, 0.3) is True
-
-
-async def test_passes_grounding_no_evidence_labels_is_permissive():
-    nli = AsyncMock()
-    assert await passes_grounding("summary", [], nli, 0.3) is True
-
-
-async def test_passes_grounding_rejects_below_threshold():
-    nli = AsyncMock()
-    nli.scores = AsyncMock(return_value=[{"entailment": 0.1}])
-    nli.grounding_score = MagicMock(return_value=0.1)
-    result = await passes_grounding("summary", ["label"], nli, 0.3)
-    assert result is False
-
-
-async def test_push_sweep_reads_candidates_through_list_unsurfaced():
-    """list_unsurfaced carries the dismissed-feedback predicate (pinned in test_store)."""
-    source, mocks = _make_candidate_source()
-    await source.eligible_candidates()
-    mocks["hypothesis_store"].list_unsurfaced.assert_awaited()
