@@ -145,6 +145,7 @@ A loop that drifts, is pushed, and stays drifting can be pushed again after 7 da
 - The governor holds a push during quiet hours, then `QuietHoursReleaseJob` releases it. The release does not start a second cooldown. If the release fails, the cooldown stays (Clarifications, Q2).
 - The claim store fails. The push goes ahead unclaimed and the failure is logged, as the budget claim does today: a rare second send is better than a missed one.
 - Calendar reminders are `requested` pushes. They never take a cooldown from this module (FR-009).
+- A workflow fails in the scheduler before it writes an execution row. The failure alert push still goes out; `/status`, the weekly report and the briefing read `workflow_executions` (FR-011) and do not list it. This is intended: the ledger of failures is the execution table, and a failure without a row has no record to show.
 
 ## Requirements *(mandatory)*
 
