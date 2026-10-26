@@ -20,7 +20,10 @@ class _Row:
 
 class InMemoryPushLog:
     """The private claim-store contract held in memory, for tests that want a
-    real `ProactiveNotifier`. `clock` moves time without sleeping."""
+    real `ProactiveNotifier`. `clock` moves time without sleeping.
+
+    It takes no key lock, so it does not model two claims racing; the real
+    store's concurrency is covered by the pg test in `test_push_claims_pg.py`."""
 
     def __init__(
         self, clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc)
@@ -82,11 +85,9 @@ class InMemoryPushLog:
 
     async def recent_discretionary_payloads(self, hours: float) -> list[str]:
         floor = self._clock() - timedelta(hours=hours)
-        recent = [
-            r
-            for r in self._rows
-            if r.discretionary and r.payload is not None and r.sent_at > floor
-        ]
-        return [
-            r.payload for r in sorted(recent, key=lambda r: r.sent_at, reverse=True)
-        ]  # type: ignore[misc]
+        recent = sorted(
+            (r for r in self._rows if r.discretionary and r.sent_at > floor),
+            key=lambda r: r.sent_at,
+            reverse=True,
+        )
+        return [r.payload for r in recent if r.payload is not None]

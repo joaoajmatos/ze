@@ -87,7 +87,7 @@ from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.bootstrap import shared_push_budget
-from ze_proactive.data_domain import interruption_data_domains
+from ze_proactive.data_domain import proactive_data_domains
 from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_api.api.ws.connection import ConnectionManager
@@ -633,7 +633,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         + automation_data_domains(pool)
         + worldstate_data_domains(pool)
         + feedback_data_domains(pool)
-        + interruption_data_domains(pool)
+        + proactive_data_domains(pool)
         + [d for plugin in plugins for d in plugin.data_domains()]
     )
     data_portability_service = DataPortabilityService(pool=pool, domains=all_domains)

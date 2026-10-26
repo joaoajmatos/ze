@@ -8,7 +8,7 @@ from ze_automation.bootstrap import automation_data_domains
 from ze_core.bootstrap import engine_data_domains
 from ze_memory.feedback_records.data_domain import feedback_data_domains
 from ze_personal.plugin import PersonalPlugin
-from ze_proactive.data_domain import interruption_data_domains
+from ze_proactive.data_domain import proactive_data_domains
 from ze_worldstate.bootstrap import worldstate_data_domains
 
 _FROM = re.compile(r"FROM\s+(\w+)")
@@ -38,7 +38,7 @@ def _container_domains(pool):
         + automation_data_domains(pool)
         + worldstate_data_domains(pool)
         + feedback_data_domains(pool)
-        + interruption_data_domains(pool)
+        + proactive_data_domains(pool)
         + PersonalPlugin.data_domains(PersonalPlugin.__new__(PersonalPlugin))
     )
 

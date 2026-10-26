@@ -4,6 +4,7 @@ from datetime import datetime, time, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from structlog.testing import capture_logs
 
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.testing import InMemoryPushLog
@@ -149,13 +150,15 @@ async def test_a_requested_push_takes_no_claim():
     assert log.rows == []
 
 
-async def test_a_claim_store_error_lets_the_push_through(caplog):
+async def test_a_claim_store_error_lets_the_push_through():
     log = MagicMock()
     log.claim = AsyncMock(side_effect=RuntimeError("lock timeout"))
     log.release = AsyncMock()
     n, _, _, _, _ = _make(log=log)
-    assert await n.notify(DIS, "t", "b", once_per=KEY) == "delivered"
+    with capture_logs() as logs:
+        assert await n.notify(DIS, "t", "b", once_per=KEY) == "delivered"
     log.release.assert_not_awaited()
+    assert any(e["event"] == "push_claim_failed" and e["key"] == KEY.key for e in logs)
 
 
 async def test_deliver_held_never_claims_and_a_failed_release_keeps_the_claim():
