@@ -66,7 +66,7 @@ Hard rules:
 | Module | What it provides |
 |--------|-----------------|
 | `base_agent.py` | `BaseAgent` ABC with `agentic_loop`, `call_tool`, `emit`, `_build_system_prompt` |
-| `registry.py` | `@agent` decorator + `AgentRegistry` |
+| `registry.py` | `@agent` decorator + module-level agent registry |
 | `tool.py` | `@tool` decorator, `ToolAccess` enum, `validate_tool_declarations()` |
 | `reversibility.py` | `ToolReversibility` enum — required on every `WRITE` tool |
 | `types.py` | `AgentContext`, `AgentResult`, `ToolCall`, `AbortToken` |
@@ -75,7 +75,8 @@ Hard rules:
 | `db.py` | `DBPool` Protocol — structural type for asyncpg pools |
 | `interface/` | `AppInterface` ABC, `InputPreprocessor`, validation, types |
 | `progress/` | `ProgressReporter`, locale translations |
-| `hooks.py` | `HarnessHook` ABC — step-level abort, pre/post tool hooks |
+| `hooks.py` | `HarnessHook` Protocol — step-level abort, pre/post tool hooks |
+| `honesty.py` | Reply-honesty guards: `hold_token_sink`, `publish_honest_reply`, `enforce_memory_confirmations` |
 | `errors.py` | Typed `ZeError` exception hierarchy |
 | `settings.py` | `Settings` dataclass — config bridge |
 | `defaults.py` | Framework-level constants (model names, thresholds) |
@@ -98,6 +99,7 @@ Depends on `ze-agents`, `ze-data`, and `ze-logging`.
 | `governor.py` | `decide` — the pure deliver / hold / suppress rule |
 | `push_kinds.py` | process-wide `PushKind` registry; `QUIET_HOURS_SUMMARY` |
 | `quiet_hours.py` | `is_active` window check, `InterruptionSettingsStore` |
+| `data_domain.py` | `DataDomain` for interruption settings |
 | `catchup.py` | `missed_fire_time` — the most recent missed cron fire time |
 | `job_run_store.py` | `JobRunStore` — the last start and finish of each job |
 | `push_log_store.py` | `PushLogStore`, `PushLogEntry` — budget claim log; `window_sent_at` is the one window query behind `budget_status` |
@@ -110,7 +112,7 @@ Depends on `ze-agents`, `ze-data`, and `ze-logging`.
 
 | Module | What it re-exports |
 |--------|-----------------|
-| `ze_sdk` | `ZePlugin`, `agent`, `tool`, `ToolAccess`, `BaseAgent`, `get_logger`, `Settings`, `DBPool` |
+| `ze_sdk` | `ZePlugin`, `agent`, `tool`, `ToolAccess`, `BaseAgent`, `Injected`, `get_logger`, `Settings`, `DBPool`, `hold_token_sink`, `publish_honest_reply` |
 | `ze_sdk.types` | `AgentContext`, `AgentResult`, `ToolCall`, `AbortToken`, `Source`, `AskDecision`, `Action`, `Notification` |
 | `ze_sdk.proactive` | `ProactiveJob`, `proactive_job`, `ProactiveScheduler`, `ProactiveNotifier`, `PushKind`, `PushOutcome`, `PushLogStore`, `PushLogEntry` |
 | `ze_sdk.channels` | `Channel`, `ChannelType`, `ChannelHandle`, `Message`, `SentMessage`, `Thread`, `ThreadMessage`, `ChannelSendError` |
@@ -141,7 +143,7 @@ It does not know about WebSocket, FastAPI, or the web client.
 | `coordinator.py` | `OnboardingCoordinator` — orders providers, dispatches submissions, inserts review step, applies approved seeds through protocols |
 | `providers.py` | `CoreOnboardingProvider` — minimal built-in setup for name/timezone |
 
-`ze_api.api.ws` maps WebSocket commands and `component_submit` frames to the
+`ze_api.api.ws` (a package) maps WebSocket commands and `component_submit` frames to the
 coordinator. There is no reset flow: `ResetService` and its scoped reset types were
 removed in phase 194.
 
@@ -155,7 +157,7 @@ container. It depends on `ze-agents`, `ze-communication`, `ze-components`, `ze-d
 | Module | What it provides |
 |--------|-----------------|
 | `orchestration/` | LangGraph graph builder, node implementations, `AgentState` (graph-private), edges |
-| `routing/` | `EmbeddingRouter`, `tier.py` (model tier), `RoutingFallback` |
+| `routing/` | `EmbeddingRouter`, `tier.py` (model tier), `fallback.py` (LLM decomposition of compound prompts) |
 | `conversation/` | Message/session/confirmation stores + graph turn helpers (`turn.py`), `retry.py` (Retry eligibility), `rewind.py` (thread history rewind for Retry) |
 | `openrouter/` | `OpenRouterClient` (satisfies `LLMClient` Protocol), streaming, transcription |
 | `openrouter/audio.py` | `probe_duration` (measures a recording with `ffprobe`), audio format mapping, MP3 conversion with `ffmpeg` |
@@ -257,9 +259,10 @@ depends on `ze-agents`, `ze-data`, `ze-logging`, `ze-plugin`, `ze-collision`, an
 | `fact_judge.py` | System One fact questions (family Choice, biography Noul), bars, and the persist/hold rules the commitment intake reuses |
 | `policies.py` | `DefaultPolicyRegistry` — maps module names to retrieval policies |
 | `projection.py` | Budget-aware result projection — `budget_facts`, `budget_episodes`, `facets_from_rows` |
-| `types.py` | `Fact`, `Episode`, `Event`, `Procedure`, `TaskState`, `ProfileFacet`, `MemoryContext`, `RetrievalRequest` |
+| `types.py` | `Fact`, `Episode`, `Event`, `Procedure`, `TaskState`, `ProfileFacet`, `MemoryContext` |
+| `vectors.py` | `to_vector_literal` — pgvector literal for every store |
 | `defaults.py` | Consolidation thresholds and retrieval defaults |
-| `feedback_records/` | `FeedbackRecord`, `FeedbackStore`, `submit_feedback_record` — ratings and retry requests on assistant replies |
+| `feedback_records/` | `FeedbackRecord`, `FeedbackStore`, `submit_feedback_record`, the feedback `DataDomain` — ratings and retry requests on assistant replies |
 | `graph/store.py` | `PostgresGraphStore` — relationship storage and expansion |
 | `graph/traversal.py` | `BoundedExpansionPolicy` — one-hop graph context enrichment |
 | `graph/predicates.py` | Typed relationship predicates: `DESCRIBES`, `SOURCED_FROM`, `MENTIONS`, `BELONGS_TO_GOAL`, … |
@@ -280,7 +283,7 @@ and workflows are always present. It depends on `ze-agents`, `ze-logging`,
 | `goals/types.py` | `Goal`, `Milestone`, `VerificationGate`, `GoalLearning`, `GoalSuggestion`, `ExecutionTrace`, enums |
 | `goals/store.py` | `GoalStore` Protocol |
 | `goals/postgres.py` | `PostgresGoalStore` |
-| `goals/suggestion_store.py` | `GoalSuggestionStore`, `PostgresGoalSuggestionStore` |
+| `goals/suggestion_store.py` | `GoalSuggestionStore` (Postgres-backed) |
 | `goals/planner.py` | `GoalPlanner` — LLM-driven milestone decomposition, replanning, retrospective, suggestion synthesis |
 | `goals/executor.py` | `GoalExecutor` — advance loop, gate handling, steering, learning extraction |
 | `workflow/types.py` | `Workflow`, `WorkflowStep`, `WorkflowExecution`, `StepResult` |
@@ -441,12 +444,12 @@ OpenRouter.
 ## ze-browser — Sidecar Client
 
 `ze_browser` is a thin HTTP client for the browser sidecar service (Playwright + FastAPI
-running as a separate process). It has no ze dependencies.
+running as a separate process). It depends on `ze-agents` only.
 
 | Module | What it provides |
 |--------|-----------------|
 | `client.py` | `BrowserClient` — `httpx`-based async client |
-| `tool.py` | `@tool`-registered `browse_url` tool |
+| `tool.py` | `@tool`-registered `browser_extract` tool |
 | `types.py` | `BrowserResult` |
 | `errors.py` | `BrowserError` |
 
@@ -489,6 +492,7 @@ not import this package. Approved skill scripts run here via
 | `client.py` | `WorkspaceClient` — async HTTP client for the sidecar |
 | `gate.py` | Workspace ask check — decides per action and origin whether a call asks first |
 | `tools.py` | `workspace_*` tools |
+| `push_kinds.py` | `WORKSPACE_RUN_COMPLETED` push kind |
 | `store.py` | `workspace_state` and `workspace_runs` |
 | `rest.py` | `/api/v0/workspace` routes |
 | `sanitize.py` | Path confinement and secret redaction |
@@ -532,7 +536,10 @@ only wiring, transport, and configuration. It depends on every Ze package except
 
 | Module | What it provides |
 |--------|-----------------|
-| `api/` | FastAPI app, WebSocket endpoint (`/ws`), REST routes, message route |
+| `main.py`, `lifespan.py` | `create_app()` (`ze_api.main:app`) and startup |
+| `api/v0/<domain>/` | REST routers, one package per domain, each with its own `schemas.py` |
+| `api/ws/` | WebSocket endpoint (`/ws`) and its frame handlers |
+| `api/eval/` | Eval and debug routes, mounted only when `EVAL_MODE=true` |
 | `interface/native.py` | `NativeAppInterface` — WebSocket + ntfy delivery |
 | `wiring/container.py` | `ZeContainer` — composition entry; subclasses `ze_core.Container` |
 | `wiring/jobs.py` | `register_all_proactive_jobs()` — core + plugin cron registration |
@@ -577,8 +584,8 @@ import { applyConfig } from "@/lib/client";
 applyConfig();
 
 // any page — no route strings, no auth boilerplate
-import { listContacts } from "@myguyze/ze-client";
-const { data } = await listContacts();
+import { listGoals } from "@myguyze/ze-client";
+const { data } = await listGoals();
 ```
 
 ---

@@ -64,7 +64,7 @@ Ze extracts facts and episodes after each turn, consolidates them nightly, and s
 
 Every night Ze runs an offline memory improvement loop — sleep pass then dream pass. The sleep pass replays high-priority episodes, compresses old sessions, deduplicates facts, and identifies schema and policy clusters using structural analysis (the sleep pass makes no model call of its own). The dream pass then synthesizes those clusters into insights, procedures, and plan stress-tests using a haiku-class generator.
 
-Nothing synthetic goes straight to memory. Every artifact passes three cheap pre-gates (NLI groundedness, embedding novelty, retrievability) and two adversarial LLM critic calls at sonnet-class before reaching a morning integration step that enforces session-diversity and temporal-spread requirements. Promoted facts carry lineage that traces each run. Borderline cases wait in a review queue, and the morning briefing counts them. Synthetic facts that go uncorroborated for 90 days are automatically expired.
+Nothing synthetic goes straight to memory. Every artifact passes three cheap pre-gates (NLI groundedness, embedding novelty, retrievability) and two adversarial LLM critic calls at sonnet-class before reaching a morning integration step that enforces session-diversity and temporal-spread requirements. Promoted facts carry lineage that traces each run. The morning step promotes or rejects every artifact; no review queue exists. Synthetic facts that go uncorroborated for 90 days are automatically expired.
 
 The design is drawn from neuroscience (NREM/REM ordering, targeted memory reactivation) and ML (PER, Constitutional AI-style critic filtering, generative replay safety). It's the first layer of Ze becoming genuinely self-improving rather than just accumulating facts.
 
@@ -120,7 +120,7 @@ Ze asks before it does anything it cannot undo. An irreversible write waits unti
 | Hook | What it provides |
 |---|---|
 | `agents()` | Agents registered into the routing graph |
-| `ingestion_extractors()` | Domain-specific extractors (e.g. `TransactionExtractor` for PDFs) |
+| `ingestion_extractors()` | Domain-specific extractors (e.g. `FinanceIngestionExtractor` for bank statements) |
 | `ingestion_fetchers()` | Custom content fetchers (e.g. Notion, proprietary APIs) |
 | `signal_sources()` | Domain events fed into the correlation pipeline |
 | `data_domains()` | Export / import / delete contract for every table the plugin owns |
@@ -131,7 +131,7 @@ Ze asks before it does anything it cannot undo. An irreversible write waits unti
 | `ui_contributions()` | Modules in fixed slots, Ask preset chips, and settings sections in ze-web |
 | `rest_routes()` | Plugin-owned REST routers under `/api/v0/` |
 
-The hooks compose. The finance plugin registers a `TransactionExtractor` so that ingesting a bank statement produces structured transaction facts — which land in memory, which surface in retrieval, which the correlation engine can cross with calendar and news. That chain is the whole point.
+The hooks compose. The finance plugin registers a `FinanceIngestionExtractor` so that ingesting a bank statement produces structured transaction facts — which land in memory, which surface in retrieval, which the correlation engine can cross with calendar and news. That chain is the whole point.
 
 ## Monorepo
 
