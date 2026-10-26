@@ -113,7 +113,7 @@ Guarantees:
 | `AgentState.procedure_matches` | written, never read | deleted |
 | new `AgentState.procedure_invocations` | — | `list[ProcedureInvocation]` |
 
-ze-api: `begin_workflow_turn(workflow, state_type)`; `build_workflow_graph` registers `with_turn_reset(load_workflow_step, state_type)`; `ui_actions._context` calls `for_action`.
+ze-api: `begin_workflow_turn(workflow, *, state_type)`, injected into ze-automation's `configure_workflow_executor` through `functools.partial` (bootstrap unchanged); `build_workflow_graph` registers `with_turn_reset(load_workflow_step, state_type)`; `ui_actions._context` calls `for_action`.
 
 ze-automation: `_execute_milestone` calls `for_unattended`. `_HeldResume.context_kwargs()` becomes `_HeldResume.gate()`, which returns a `WriteGateState`.
 

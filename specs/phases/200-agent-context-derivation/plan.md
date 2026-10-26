@@ -109,7 +109,7 @@ core/engine/ze-core/ze_core/
 ├── orchestration/procedure_activation.py   # state-based usage trace and completion; per-subtask guided actions
 ├── conversation/turn.py                # make_graph_input generated from lifetimes
 └── container.py                        # Container.state_type
-core/automation/ze-automation/ze_automation/{goals/executor.py,bootstrap.py}
+core/automation/ze-automation/ze_automation/goals/executor.py
 plugins/ze-personal/ze_personal/graph/workflow.py   # Run markers; reset list deleted
 apps/ze-api/ze_api/{wiring/workflow_graph.py,wiring/container.py,api/ws/ui_actions.py}
 docs/{architecture.md,sdk.md,workflows.md}, core/contracts/ze-agents/README.md, packages/ze-sdk/README.md, AGENTS.md, specs/README.md
@@ -123,7 +123,7 @@ docs/{architecture.md,sdk.md,workflows.md}, core/contracts/ze-agents/README.md, 
 |---|---|---|---|
 | `AgentContext` | ze-agents 41, ze-core 20, ze-automation 8, ze-personal 7, ze-calendar 6, ze-news 4, ze-prospecting 3, ze-messenger 3, ze-finance 3, ze-worldstate 3, ze-priority 3, ze-memory 2, ze-ingestion 2, ze-api 2, ze-sdk 1, eval/calibration 2 | ~210 (ze-core 95, ze-agents 70, ze-api 11, ze-personal 7, ze-calendar 7, ze-automation 5, ze-messenger 5, ze-memory 3, others 7) | Only readers of the 15 folded fields change: `base_agent.py`, `delegate.py`, `budget.py`, `execution.py`, `trace.py`, `context.py`, `procedures/tools.py`, `procedure_activation.py`, `goals/executor.py`, plus about 40 test files (grep list in the contract task). Code that only types `ctx` does not change. |
 | `AgentState` | ze-core 48 | ze-core 7 | Readers of `conductor_ledger` (`routing.py`, `context.py`, `execution.py`, `trace.py`, `turn.py`) and `procedure_matches` (`context.py`) |
-| `make_graph_input` | ze-core 5, ze-api 2, ze-automation 1 (via `begin_workflow_turn`) | ze-core 17, ze-api 2 | New optional `state_type`; `begin_workflow_turn` gains `state_type` |
+| `make_graph_input` | ze-core 5, ze-api 2, ze-automation 1 (via the injected `begin_workflow_turn`) | ze-core 17, ze-api 2 | New optional `state_type`; `begin_workflow_turn` gains keyword `state_type`, bound by ze-api with `functools.partial` |
 | `build_state_type` | ze-core 2, ze-api 2 | ze-core 3 | Now validates lifetimes; `test_state_extensions.py` fixtures need markers |
 | `run_delegate` | ze-agents 3 | ze-agents 12, ze-core 2 | Signature unchanged; builds through `for_delegate` |
 | `_execute_single` / `_execute_compound` / `_conductor_kwargs` / `_sync_procedure_invocation` | ze-core 1–2 each | via `test_execution.py` | Rewritten or deleted |
@@ -154,9 +154,9 @@ After the contract merges, each file below has exactly one owner.
 
 | Lane | Model / role | Owns (files and dirs, disjoint) | Tasks | Starts after | Reviewer |
 |------|--------------|---------------------------------|-------|--------------|----------|
-| lead | Sonnet ENG lead | `ze_agents/{types,derive,lifetime,errors,budget}.py`, `ze_agents/tests/test_{derive_table,derive,lifetime}.py`, `ze_core/orchestration/state.py`, `ze_core/tests/orchestration/test_state_{lifetimes,extensions,serde}.py`, `packages/ze-sdk/ze_sdk/{types,errors}.py`, `ze_memory/procedures/tools.py`, `ze_agents/base_agent.py` (after contract: only `lead`), the mechanical test edits of the contract; integration and final gates | T001–T014, T040–T043 | - | Vigil |
+| lead | Sonnet ENG lead | `ze_agents/{types,derive,lifetime,errors,budget}.py`, `ze_agents/tests/test_{derive_table,derive,lifetime}.py`, `ze_core/orchestration/state.py`, `ze_core/tests/orchestration/test_state_{lifetimes,extensions,serde}.py`, `packages/ze-sdk/ze_sdk/{types,errors}.py`, `ze_memory/procedures/tools.py`, `ze_agents/tests/test_run_undo.py`, `ze_agents/base_agent.py` (after contract: only `lead`), the mechanical test edits of the contract; integration and final gates | T001–T014, T040–T043 | - | Vigil |
 | engine | Sonnet ENG | `ze_core/orchestration/nodes/{execution,context,routing,trace,memory}.py`, `ze_core/orchestration/{child_runs,procedure_activation}.py`, `ze_core/tests/orchestration/nodes/test_execution*.py`, `ze_core/tests/orchestration/test_{conductor_merge,write_confirmation_compound,write_confirmation_e2e,procedure_activation,message_trace,retry_mode}.py` | T015–T026 | contract step | Vigil |
-| edges | Sonnet ENG | `ze_agents/delegate.py`, `ze_agents/tests/{test_delegate,test_run_undo}.py`, `ze_core/conversation/turn.py`, `ze_core/container.py`, `ze_core/tests/conversation/test_make_graph_input.py`, `ze_automation/goals/executor.py`, `ze_automation/bootstrap.py`, `ze_automation/tests/goal_engine/test_executor*.py`, `plugins/ze-personal/ze_personal/graph/workflow.py`, `plugins/ze-personal/tests/graph/`, `apps/ze-api/ze_api/{wiring/workflow_graph.py,wiring/container.py,api/ws/ui_actions.py}`, `apps/ze-api/tests/{test_workflow_hold.py,test_workflow_graph_wiring.py,api/test_ui_actions.py}` | T027–T039 | contract step | Vigil |
+| edges | Sonnet ENG | `ze_agents/delegate.py`, `ze_agents/tests/test_delegate.py`, `ze_core/conversation/turn.py`, `ze_core/container.py`, `ze_core/tests/conversation/test_make_graph_input.py`, `ze_automation/goals/executor.py`, `ze_automation/tests/goal_engine/test_executor*.py`, `plugins/ze-personal/ze_personal/graph/workflow.py`, `plugins/ze-personal/tests/graph/`, `apps/ze-api/ze_api/{wiring/workflow_graph.py,wiring/container.py,api/ws/ui_actions.py}`, `apps/ze-api/tests/{test_workflow_hold.py,test_workflow_graph_timed.py,test_workflow_turn_reset.py,api/ws/test_ui_actions.py}` | T027–T039 | contract step | Vigil |
 | docs | Haiku DOCS | `docs/{architecture,sdk,workflows}.md`, `core/contracts/ze-agents/README.md`, `packages/ze-sdk/README.md`, `AGENTS.md`, `specs/README.md` (200 row only) | T044–T046 | engine and edges merged | Vigil |
 
 **Rules**:

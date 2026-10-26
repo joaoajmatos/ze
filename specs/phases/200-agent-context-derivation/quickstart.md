@@ -7,7 +7,7 @@ Everything runs offline: no database, no OpenRouter, no Docker. Run from the rep
 ```bash
 make test-agents   # tests/test_derive_table.py, tests/test_lifetime.py
 make test-core     # tests/orchestration/test_state_lifetimes.py, tests/conversation/test_make_graph_input.py
-make test-personal # tests/graph/test_workflow_lifetimes.py
+make test-personal # tests/graph/test_workflow.py (WorkflowAgentState fields are Run)
 ```
 
 Expected:
@@ -50,8 +50,8 @@ Expected:
 ## 4. Workflow steps start clean (US3 scenario 4)
 
 ```bash
-make test-personal   # tests/graph/test_workflow_step_reset.py
-make test            # apps/ze-api/tests/test_workflow_hold.py, test_workflow_graph_wiring.py
+make test-personal   # tests/graph/test_workflow.py
+make test            # apps/ze-api/tests/test_workflow_turn_reset.py, test_workflow_hold.py
 ```
 
 Expected:

@@ -152,7 +152,7 @@ for_subtask(turn, *, prompt, model, messages, runtime, gate, conductor, procedur
 **Decision**:
 - `Container` gains `state_type: type` (default `AgentState`). Both graph builders set it from `build_state_type(plugins)`: `ze_core/container.py:369` and `ze_api/wiring/container.py:626`.
 - `invoke_raw_turn` and `Container.invoke` pass `container.state_type` to `make_graph_input`.
-- `begin_workflow_turn(workflow, state_type)` takes it from `bootstrap.py`, which has the plugins.
+- `begin_workflow_turn(workflow, *, state_type)` gains the argument. ze-api's `wiring/container.py:766` injects it into `configure_workflow_executor` as `functools.partial(begin_workflow_turn, state_type=…)`, so `ze_automation/bootstrap.py` and its `Callable[[Any], dict]` parameter do not change, and ze-automation still never sees ze-core.
 
 **Rationale**: a plugin `Turn` field must be reset in the conversation graph too. Today no plugin declares one (all workflow fields are `Run`), so the generated input is unchanged in practice, but the mechanism is complete. Phase 201 moves `state_type` into the typed turn services. Plan "Seams for 201 and 208" names this.
 
