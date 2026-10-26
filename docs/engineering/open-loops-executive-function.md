@@ -54,7 +54,7 @@ The note recommended repairing first and adding features second. Phases 169 to 1
 | 168 | A System One gate asks yes/no questions (is this an open concern, does it resolve a loop, and for conversation, is it an explicit declaration). A small model writes only the title. |
 | 169 | A `track_loop` tool lets you say "keep the Porto move on my radar" and get a loop in the same turn. |
 | 170 | Drift fires on the deadline, and new evidence moves the deadline. Stuck-goal detection returns one row per goal. Loops carry evidence. A real-Postgres test harness was added (`make test-pg`) so SQL predicates run against real rows. |
-| 171 | Suspected loops reach you. The `/loops` page lists them, one confirmation stamps a 0.9 confidence and a 7-day deadline, and at the start of a session Ze asks about up to three of them. |
+| 171 | Suspected loops reach you. A page listed them (World's Needs you module does now), one confirmation stamps a 0.9 confidence and a 7-day deadline, and at the start of a session Ze asks about up to three of them. |
 | 172 | An independent source that matches a suspected loop can raise its confidence, and can promote it to active. This surface ships off (see [Calibrating a judgment model honestly](calibrating-a-judgment-model-honestly.md)). |
 | 173 | One System One request per conversation turn replaces the speech-act judge and the loop gate. A reminder that Ze sets no longer also opens a loop. The loop links to the reminder or goal. A message that says you are waiting on someone writes nothing. |
 | 177 | One governor sits on every proactive push. A shared daily budget covers discretionary nudges, quiet hours hold them, and reminders you set always fire. |

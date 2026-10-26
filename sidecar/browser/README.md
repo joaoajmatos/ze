@@ -1,6 +1,6 @@
 # ze-browser
 
-Headless browser sidecar for [Ze](../../README.md). A small FastAPI service that loads web pages with Playwright and returns extracted text. Ze's prospecting agent calls it over the private network — not exposed to the public internet.
+Headless browser sidecar for [Ze](../../README.md). A small FastAPI service that loads web pages with Playwright and returns extracted text. Ze's prospecting agent and the ingestion pipeline call it over the private network — not exposed to the public internet.
 
 ## Why a separate service
 
@@ -53,7 +53,8 @@ Used by Ze at startup (`BrowserClient.health()`) to detect whether browser extra
 |---|---|
 | `400` | Invalid URL |
 | `502` | Navigation failed |
-| `504` | Page load timed out |
+| `504` | The extractor raised a built-in `TimeoutError` |
+| `200` with `status_code: 504` and empty `text` | Page load timed out on both the `networkidle` and `domcontentloaded` attempts |
 | `200` with `status_code: 403` and empty `text` | Blocked, CAPTCHA, or body too short (< 200 chars) |
 
 No LLM runs in this service — Ze's agents decide what to do with the returned text.
@@ -107,11 +108,10 @@ playwright install chromium --with-deps
 uvicorn main:app --host 0.0.0.0 --port 8080
 ```
 
-Point Ze at the local sidecar by setting in `.env` or `config/config.yaml`:
+Point Ze at the local sidecar by setting `BROWSER_SERVICE_URL` in `apps/ze-api/.env`:
 
-```yaml
-browser:
-  service_url: "http://localhost:8080"
+```bash
+BROWSER_SERVICE_URL=http://localhost:8080
 ```
 
 ---
@@ -121,7 +121,7 @@ browser:
 First-time setup:
 
 ```bash
-cd ze-browser
+cd sidecar/browser
 fly launch --no-deploy   # accept generated fly.toml or adjust region
 fly deploy
 fly logs
@@ -146,6 +146,7 @@ Ze does **not** redeploy this app when the main backend deploys — version and 
 | `integrations/ze-browser/ze_browser/client.py` | `BrowserClient` — HTTP client for `/extract` and `/health` |
 | `integrations/ze-browser/ze_browser/tool.py` | `browser_extract` tool (rate limit + text truncation) |
 | `plugins/ze-prospecting/ze_prospecting/agents/` | Primary consumer — team pages, registries, search result URLs |
+| `core/ops/ze-ingestion/ze_ingestion/fetchers/browser.py` | `BrowserFetcher` — fetches JS-heavy pages for ingestion |
 
 `ze-api` reads these settings from the environment (see `apps/ze-api/.env.example`; the full list is in [integrations/ze-browser/README.md](../../integrations/ze-browser/README.md)):
 

@@ -31,11 +31,11 @@ Concrete channels live outside this package: `GmailChannel` in `ze-google`, for 
 
 ## Dependencies
 
-![ze-communication package dependencies](../../docs/diagrams/core/contracts/ze-communication/dependencies.svg)
+![ze-communication package dependencies](../../../docs/diagrams/core/contracts/ze-communication/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/contracts/ze-communication/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/contracts/ze-communication/dependencies.html)</sub>
 
-No third-party dependencies beyond the standard library.
+Depends on `ze-agents` (for `ChannelNotFoundError`). No third-party dependencies.
 
 ## Usage
 
@@ -53,4 +53,4 @@ From the repo root:
 make test-communication
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

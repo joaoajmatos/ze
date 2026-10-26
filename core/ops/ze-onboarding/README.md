@@ -1,10 +1,10 @@
 # ze-onboarding
 
-Plugin-extensible onboarding coordinator — setup flow contracts, step/seed types, and reset domain types.
+Plugin-extensible onboarding coordinator — setup flow contracts, step and seed types, and the Postgres session store.
 
 ## Role in Ze
 
-New users (or fresh installs) go through a multi-step onboarding flow before Ze is fully configured. `ze-onboarding` coordinates steps contributed by multiple plugins — persona setup, news source selection, Google auth prompts — and persists progress so the flow can resume across sessions.
+New users (or fresh installs) go through a multi-step onboarding flow before Ze is fully configured. `ze-onboarding` coordinates steps contributed by multiple plugins — a core profile step, persona setup, and news source selection — and persists progress so the flow can resume across sessions.
 
 ### Key features
 
@@ -14,7 +14,7 @@ New users (or fresh installs) go through a multi-step onboarding flow before Ze 
 
 ### Integration
 
-Plugins return an `OnboardingProvider` from `ZePlugin.onboarding()`. `ze-api` owns the Postgres onboarding store and exposes REST/WebSocket endpoints consumed by `ze-web`'s onboarding flow.
+Plugins return an `OnboardingProvider` from `ZePlugin.onboarding()`. `ze-api` builds the coordinator around this package's `OnboardingStore` and `OnboardingPersistence` (`ze_api/wiring/agents.py`) and serves the onboarding commands over the WebSocket (`ze_api/api/ws/onboarding.py`).
 
 ## Responsibilities
 
@@ -28,9 +28,9 @@ Plugins return an `OnboardingProvider` from `ZePlugin.onboarding()`. `ze-api` ow
 
 ## Dependencies
 
-![ze-onboarding package dependencies](../../docs/diagrams/core/ops/ze-onboarding/dependencies.svg)
+![ze-onboarding package dependencies](../../../docs/diagrams/core/ops/ze-onboarding/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/ops/ze-onboarding/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/ops/ze-onboarding/dependencies.html)</sub>
 
 ## Usage
 
@@ -49,4 +49,4 @@ From the repo root:
 make test-onboarding
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

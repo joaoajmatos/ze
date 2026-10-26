@@ -33,7 +33,7 @@ A write that is not approved holds the run:
 1. Ze holds the call and sends a `write_approval_held` push. The push counts as a
    requested notification, so quiet hours do not delay it.
 2. You answer the hold in one of three places:
-   - the notification bell in the web app;
+   - Needs you, on the World place and on the Doing place;
    - the REST API: `POST /api/v0/held-writes/{request_id}/decision` with `choice`
      (`approve` or `deny`) and optional `edits`. `GET /api/v0/held-writes?status=open`
      lists open holds;
@@ -106,7 +106,7 @@ of what a successful output looks like:
 
 Verification runs three checks in order:
 
-1. **Tool success** — any tool call that returned `success=False` fails the step immediately.
+1. **Tool success** — any tool call that returned `success=False` fails the step immediately. A call that is parked or denied for confirmation does not count as a failure.
 2. **Non-empty output** — an empty agent result fails the step.
 3. **Criteria check** — if `verify` is set, Haiku evaluates the output against the
    criteria string. Ze logs a Haiku failure (e.g. timeout) as a warning but does
@@ -148,7 +148,8 @@ workflows
   name         TEXT  (unique)
   description  TEXT
   steps        JSONB (list of WorkflowStep: task, agent_hint, verify,
-                      id, branches, default_next, on_failure)
+                      id, branches, default_next, on_failure,
+                      planned_writes, approved_writes)
   schedule     TEXT  (cron expression, NULL = on-demand only)
   enabled      BOOL
   last_run_at  TIMESTAMPTZ
@@ -170,7 +171,7 @@ workflow_revisions   (append-only)
   steps_before, steps_after, summary, actor (agent | api | system), created_at
 ```
 
-Every create and step edit, from the agent or the REST API, appends a revision with a short diff summary and the actor. For agent edits, the actor carries the session and message id, so the UI can link to the conversation.
+Every create and step edit appends a revision with a short diff summary and the actor. For agent edits, the actor carries the session and message id, so the UI can link to the conversation.
 
 ---
 
@@ -203,7 +204,6 @@ All routes live under `/api/v0/workflows`.
 |---|---|
 | `GET /` | List all workflows |
 | `GET /{id}` | Get a workflow with its steps |
-| `PATCH /{id}/steps` | Replace the step list (schedule and history stay) |
 | `GET /{id}/revisions` | Change history |
 | `POST /{id}/trigger` | Run a workflow immediately |
 | `GET /{id}/executions` | Execution history |

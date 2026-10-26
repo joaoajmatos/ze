@@ -12,11 +12,12 @@ Ze's memory graph connects facts, episodes, contacts, news signals, and calendar
 - Graph neighbourhood expansion with configurable hop limits and recall guarantees
 - `PostgresHypothesisStore` — persists hypotheses with evidence references
 - Proactive push delivery for high-salience correlations (discretionary, shared budget, via ntfy)
-- Inline correlation during conversation turns (graph node in `ze-core`)
+- Inline correlation during conversation turns (the `correlate` graph node in `ze-core`)
+- `HypothesisDecayJob` — decays hypothesis confidence over time
 
 ### Integration
 
-A graph node in `ze-core` runs inline correlation during `fetch_context`. `CorrelationJob` runs on a schedule from `ze-api`. Plugins contribute signal sources via `ZePlugin.signal_sources()` — news and calendar plugins feed the engine.
+The `correlate` graph node in `ze-core` runs inline correlation after `execute_tool`. `CorrelationJob` runs on a schedule from `ze-api`. Plugins contribute signal sources via `ZePlugin.signal_sources()` — the news, calendar, finance and messenger plugins feed the engine.
 
 `screen_resolvers.py` registers the `hypothesis` screen resolver. A hypothesis line says it is an inference.
 
@@ -30,14 +31,21 @@ A graph node in `ze-core` runs inline correlation during `fetch_context`. `Corre
 | `push.py` | `CorrelationPushConsumer` — delivers correlation insights as discretionary pushes |
 | `prompts.py` | LLM prompt templates for hypothesis generation |
 | `types.py` | `Hypothesis`, `HypothesisEvidence` |
+| `rest.py` | `list_hypotheses`, `set_feedback` — the REST query surface |
+| `bootstrap.py` | `build_correlation_stack`, `register_proactive_jobs` |
+| `push_kinds.py` | The `hypothesis` `PushKind` (discretionary) |
+| `screen_resolvers.py` | The `hypothesis` screen resolver |
+| `jobs/hypothesis_decay.py` | `HypothesisDecayJob` |
 
 ## Dependencies
 
-![ze-correlation package dependencies](../../docs/diagrams/core/cognition/ze-correlation/dependencies.svg)
+![ze-correlation package dependencies](../../../docs/diagrams/core/cognition/ze-correlation/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/cognition/ze-correlation/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/cognition/ze-correlation/dependencies.html)</sub>
 
 Third-party: `asyncpg`.
+
+Migrations: branch `zcor` — `zcor001` creates `correlation_hypothesis`, `zcor002` adds the claim kind, and `zcor003` adds `confirmed` and `promoted_at`.
 
 ## Usage
 
@@ -59,4 +67,4 @@ From the repo root:
 make test-correlation
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

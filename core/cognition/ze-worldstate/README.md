@@ -28,7 +28,7 @@ A loop's claim kind follows its state and is not stored: `suspicion` while `susp
 
 ### Integration
 
-`ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The commitment intake runs in the `write_memory` node and commits the loop fire-and-forget once the episode exists. A turn where `track_loop` or `confirm_loop` succeeded creates no second loop. The messenger, calendar, and ingestion inflows call a loop extractor (`ze_worldstate.inflow`) that runs the loop gate, can create suspected loops or resolve existing ones, logs its judgments, and writes no message-trace rows. When the intake or the gate is off, uncalibrated, or skips, the Haiku paths run: the Haiku fact extractor and the 109 Haiku loop gate (see the note above on its parse failure). `GET/POST /api/v0/loops` (`rest.py`) exposes review actions to `ze-web`'s `widgets/loop-review`.
+`ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The commitment intake runs in the `write_memory` node and commits the loop fire-and-forget once the episode exists. A turn where `track_loop` or `confirm_loop` succeeded creates no second loop. The messenger, calendar, and ingestion inflows call a loop extractor (`ze_worldstate.inflow`) that runs the loop gate, can create suspected loops or resolve existing ones, logs its judgments, and writes no message-trace rows. When the intake or the gate is off, uncalibrated, or skips, the Haiku paths run: the Haiku fact extractor and the 109 Haiku loop gate (see the note above on its parse failure). `GET /api/v0/loops` and `POST /api/v0/loops/{id}/confirm|close|drop` (`rest.py`) expose review actions to the web app. World's Loops rail and Needs you module use them.
 
 `screen_resolvers.py` registers the `loop` screen resolver: label, state, confidence and age of the loop the user is looking at.
 
@@ -74,7 +74,7 @@ Corroborate links evidence and entities, writes one `corroboration` source row w
 
 ### Sources (`open_loop_sources`, `zw003`)
 
-Every loop created through `propose_loop_candidates` with a key gets an `origin` row, whether the surface is on or off. Each counted corroboration adds a `corroboration` row with its score, model, and latency. `(loop_id, inflow, source_ref)` is unique, so a repeated key is a no-op and its judgment does not count. Rows are deleted with their loop. `GET /api/v0/loops` reports `promoted` and `source_inflows`; `GET /api/v0/loops/{id}` lists `sources` in time order.
+Every loop created through `propose_loop_candidates` with a key gets an `origin` row, whether the surface is on or off. Each counted corroboration adds a `corroboration` row with its score, model, and latency. `(loop_id, inflow, source_ref)` is unique, so a repeated key is a no-op and its judgment does not count. Rows are deleted with their loop. `GET /api/v0/loops` reports `promoted` and `source_inflows` for each loop. There is no per-loop route.
 
 ### Fail-open
 
@@ -102,16 +102,20 @@ The surface ships off with null bars. Off, uncalibrated, skipped, invalid, or fa
 | `inflow.py` | Wiring helpers for the four inflows (conversation, email, calendar, ingestion) |
 | `jobs/` | `DriftSweepJob`, `StaleSuspicionJob` |
 | `bootstrap.py` | `build_worldstate_stack()` — DI wiring for `ze-api` |
-| `rest.py` | `GET/POST /api/v0/loops` handlers |
-| `migrations/` | `zw001` (open_loops table), `zw002` (drift columns), `zw003` (open_loop_sources table), `zw004` (`reminder_id` on open_loops), `zw006` (drops `open_loops.claim_kind`) |
+| `agents/` | The `loops` agent and its tools (`list_open_loops`, `track_loop`, `confirm_loop`, `close_loop`, `drop_loop`) |
+| `contribution.py` | Turns a loop candidate into a seam contribution |
+| `push_kinds.py` | The `loop_drift` push kind |
+| `screen_resolvers.py` | The `loop` screen resolver |
+| `rest.py` | Handlers for the `/api/v0/loops` routes |
+| `migrations/` | `zw001` (open_loops table), `zw002` (drift columns), `zw003` (open_loop_sources table), `zw004` (`reminder_id` on open_loops), `zw005` (`confidence_prior`, `confidence_changed_at`), `zw006` (drops `open_loops.claim_kind`) |
 
 Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
 
 ## Dependencies
 
-![ze-worldstate package dependencies](../../docs/diagrams/core/cognition/ze-worldstate/dependencies.svg)
+![ze-worldstate package dependencies](../../../docs/diagrams/core/cognition/ze-worldstate/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/cognition/ze-worldstate/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/cognition/ze-worldstate/dependencies.html)</sub>
 
 Third-party: `asyncpg`.
 
@@ -139,4 +143,4 @@ From the repo root:
 make test-worldstate
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

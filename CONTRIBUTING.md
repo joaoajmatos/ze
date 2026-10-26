@@ -36,7 +36,7 @@ make web           # React web app on :5173
 
 3. **Run checks** before pushing:
    ```bash
-   make check       # ruff, ze-web ESLint (FSD boundaries) and ze-web tsc build — mirrors CI lint gates
+   make check       # ruff, ze-web ESLint (FSD boundaries) and the ze-web build (tsc and vite) — mirrors CI lint gates
    make test        # ze-api (skips slow) — must pass
    make test-web    # vitest — must pass if you changed ze-web
    make test-all    # optional, all packages including slow
@@ -70,7 +70,7 @@ These are enforced consistently across the codebase — please match them.
 
 ### Python
 
-- **Domain types**: dataclasses in `types.py`. Never use Pydantic models outside `ze_api/api/schemas.py`.
+- **Domain types**: dataclasses in `types.py`. Never use Pydantic models outside the API schema modules (`ze_api/api/v0/<area>/schemas.py`).
 - **File naming**: `types.py` everywhere (not `models.py`).
 - **Dependency injection**: constructor injection in all classes. `FastAPI Depends()` only in `ze_api/api/`.
 - **Logging**: `get_logger(__name__)` from structlog. No `print()`, no stdlib `logging`.
@@ -109,7 +109,7 @@ See [docs/adding-an-agent.md](docs/adding-an-agent.md) for the full authoring gu
 
 ## Adding a database migration
 
-Every package that owns tables owns its own Alembic chain. `ze_api/migrate.py` runs all the chains against one `alembic_version` table. [AGENTS.md](AGENTS.md#migration-ownership) lists each package, its prefix, and its tables.
+Every package that owns tables owns its own Alembic chain. `ze_api/cli/migrate.py` runs all the chains against one `alembic_version` table. [AGENTS.md](AGENTS.md#migration-ownership) lists each package, its prefix, and its tables.
 
 1. Put the new file in the owning package's `migrations/versions/` directory, for example `core/cognition/ze-worldstate/ze_worldstate/migrations/versions/`.
 2. Name it `{revision}_{feature}.py`, with the package prefix (for ze-worldstate, `zw`). The revision ID matches the file prefix. Never use a phase name.

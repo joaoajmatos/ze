@@ -30,15 +30,16 @@ Plugins self-register via `[project.entry-points."ze.plugins"]`. `bootstrap.py` 
 | `contribution.py` | `Contribution` and `validate_and_submit`. Perception holds two claim-kind licenses: `FACT` and `FEEDBACK_RECORD` |
 | `signals.py` | `SignalSource` protocol for cross-plugin signal collection |
 | `integration.py` | `ZeIntegration` protocol for third-party credential classes |
-| `ui.py` | `UiContribution`, `UiManifest`, `collect_ui_contributions` — plugin nav/settings manifest |
+| `ui.py` | `UiContribution`, `UiManifest`, `collect_ui_contributions` — plugin manifest of modules (bound to a slot), Ask presets, and settings sections. Plugins add no pages |
+| `ui_validate.py` | `validate_plugin_tree` — checks a plugin module's component tree: tool actions, claim kinds, and provenance |
 | `webhook.py` | `WebhookHandler` protocol for plugin-owned inbound webhooks |
 | `api_auth.py` | `require_api_key` — shared FastAPI bearer-token dependency |
 
 ## Dependencies
 
-![ze-plugin package dependencies](../../docs/diagrams/core/contracts/ze-plugin/dependencies.svg)
+![ze-plugin package dependencies](../../../docs/diagrams/core/contracts/ze-plugin/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/contracts/ze-plugin/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/contracts/ze-plugin/dependencies.html)</sub>
 
 ## Usage
 
@@ -64,4 +65,4 @@ From the repo root:
 make test-plugin
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

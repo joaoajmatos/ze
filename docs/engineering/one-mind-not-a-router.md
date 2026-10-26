@@ -27,7 +27,7 @@ Ze has thirteen agents, but only companion talks to you. When a request needs se
 3. **The decomposition is a hint.** A small model splits the request, but the conductor may throw that split away after the first specialist returns.
 4. **Independent work stays parallel.** "Check my calendar and summarize the news" fans out in the graph and merges in a synthesize step. Sequential or dependent work goes to companion.
 5. **Workers stay isolated.** A specialist gets a full brief and returns a structured result. Ze does not copy its transcript into the session.
-6. **Gate the call, not the plan.** Each delegate call checks that specialist and that intent against the capability gate.
+6. **Gate the call, not the plan.** Each delegate call runs through the specialist's own write gates. An irreversible write parks and asks first (phases 152 and 181).
 7. **Durable work leaves the turn.** If a job must outlive the chat, companion promotes it to a goal or a workflow.
 
 ## Eleven phases, in order

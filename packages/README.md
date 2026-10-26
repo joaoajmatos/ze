@@ -37,7 +37,7 @@ Generated TypeScript surface for the entire `ze-api` REST and WebSocket protocol
 | `src/client.ts` | `configure()` / `createZeClient()` — default client wiring |
 | `src/blob.ts` | `downloadExport`, `importArchive`, `healthCheck` |
 | `src/error.ts` | `ApiError` |
-| `src/plugin-ui.ts` | `loadPluginPage`, `loadPluginSettings` — plugin-contributed pages and settings |
+| `src/plugin-ui.ts` | `loadPluginSettings` — plugin-contributed settings sections |
 | `src/sdk-dispatch.ts` | `invokeSdkOperation`, `loadPluginOperation` — call an operation by name |
 
 ```typescript

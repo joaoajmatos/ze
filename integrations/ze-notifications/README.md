@@ -14,7 +14,7 @@ When the user is away from the web app, Ze still needs to reach them — morning
 
 ### Integration
 
-`NtfyNotifier` is constructed in `ze-api`'s lifespan and injected into `ProactiveNotifier` and `NativeAppInterface`. When the WebSocket is disconnected, outbound messages fall back to ntfy push; when connected, they flow over WebSocket instead.
+`ze-api` builds `NtfyNotifier` in `_build_push_notifier` (`ze_api/wiring/container.py`) when `NTFY_TOPIC` is set, and passes it to `NativeAppInterface`. `ProactiveNotifier` sends through that interface and holds no `NtfyNotifier` of its own. When the WebSocket is disconnected, outbound messages fall back to ntfy push; when connected, they flow over WebSocket instead.
 
 ## Responsibilities
 
@@ -52,8 +52,8 @@ The React web app (`ze-web`) uses browser URL routing for in-app navigation. ntf
 | Variable | Description |
 |---|---|
 | `NTFY_BASE_URL` | ntfy server URL (e.g. `https://ntfy.sh`) |
-| `NTFY_TOPIC` | Your topic name — keep non-guessable for ntfy.sh |
-| `NTFY_TOKEN` | Bearer token; required for ntfy.sh topics |
+| `NTFY_TOPIC` | Your topic name — keep non-guessable for ntfy.sh. Empty means no push. |
+| `NTFY_TOKEN` | Bearer token; `NtfyNotifier` refuses to start for an `ntfy.sh` URL without it |
 
 ## Notification priorities
 
@@ -63,7 +63,9 @@ The React web app (`ze-web`) uses browser URL routing for in-app navigation. ntf
 | 2 | low |
 | 3 | default |
 | 4 | high |
-| 5 | urgent — stuck goals, critical alerts |
+| 5 | urgent |
+
+`NativeAppInterface` maps a notification's urgency to a priority: `low` is 2, `normal` is 3, and `high` is 5.
 
 ## Testing
 

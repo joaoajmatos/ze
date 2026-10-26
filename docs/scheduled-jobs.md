@@ -59,7 +59,7 @@ same session. Ze also injects the user profile.
 **Module:** `ze_memory/consolidator.py`  
 **Config:** `memory.consolidation.*` in `config/config.yaml` (optional overrides; defaults in `ze_memory/defaults.py`)
 
-Three tasks run in sequence every night:
+These tasks run in sequence every night:
 
 ### 1. Fact deduplication
 
@@ -76,9 +76,9 @@ merges candidates above the configured thresholds:
 
 | Similarity | Action |
 |---|---|
-| > 0.95 (`merge_silent_threshold`) | Silent merge — keep the newer fact, mark the older `contradicted = true`. No LLM call. |
-| 0.85–0.95 (`merge_llm_threshold`) | NLI entailment confirms paraphrase → LLM merge (Haiku synthesises one value, marks both `contradicted = true`). NLI contradiction → mark older contradicted. |
-| 0.60–0.85 | NLI contradiction ≥ `nli_contradiction_threshold` → mark older `contradicted`. Otherwise skip. |
+| ≥ 0.95 (`merge_silent_threshold`) | Silent merge — keep the fact with the higher confidence, mark the other `contradicted = true`. No LLM call. |
+| 0.85–0.95 (`merge_llm_threshold`) | NLI contradiction ≥ `nli_contradiction_threshold` → mark the older fact `contradicted`. NLI entailment ≥ `nli_entailment_threshold` confirms a paraphrase → LLM merge (Haiku writes one value, Ze inserts it as a new fact and marks both inputs `contradicted = true`). Ze merges only when neither fact comes from a dream and both share provenance and claim kind. |
+| 0.60–0.85 (`nli_lower_cosine_bound`) | NLI contradiction ≥ `nli_contradiction_threshold` → mark older `contradicted`. Otherwise skip. |
 | < 0.60 | No action — skip NLI. |
 
 </details>
@@ -96,47 +96,60 @@ Three rules applied per run:
 | Contradicted cleanup | `contradicted = true` and older than `contradicted_ttl_days` (default: 30d) | Hard-delete |
 | Stale unreviewed | `reviewed = false` and no activity for `unreviewed_ttl_days` (default: 90d) | Soft-expire: set `expires_at = NOW() + expiry_grace_days` |
 
-Soft-expired facts appear in the morning briefing and in `GET /api/v0/memory/digest` so the
-user can save them before the grace period ends. Reviewed facts are **never** expired
-automatically.
+When `expires_at` passes, the grace-delete rule removes the fact. Ze never soft-expires a
+reviewed fact.
 
 ### 3. Episode archival
 
-Raw episodes accumulate quickly. Episodes older than `episode_recency_days` (default:
-14d) are candidates for archival. When a batch of at least `episode_min_archive_batch`
-(default: 10) candidates exists, Haiku summarizes them into a single archive row and
+Raw episodes accumulate quickly. Ze archives them in two steps.
+
+First, session archival (`session_grouping_enabled`, default on). Ze groups episodes older
+than `episode_archive_days` (default: 7d) by session. For each session with at least
+`min_session_episodes` (default: 3) episodes, Ze replaces the raw episodes with one session
+summary, up to `max_sessions_per_run` (default: 10) sessions per run. When the eager summary
+from the session summariser already exists, Ze reuses it and makes no LLM call.
+
+Second, batch archival. Episodes older than `episode_archive_days` that have no summary are
+candidates. When at least `episode_min_archive_batch` (default: 10) candidates exist, Haiku
+summarizes up to `episode_archive_batch` (default: 20) of them into a single archive row and
 Ze deletes the originals. This keeps the episodes table lean without losing history.
 
 ### 4. Profile facet synthesis (end of every consolidation pass)
 
-After dedup + expiry + archival, the consolidator calls `synthesise_profile()`. Haiku
-reads all reviewed facts and the most recent episodes (up to `profile.episode_limit`,
-default: 50) and produces a structured list of `ProfileFacet` objects upserted into
-`memory_profile_facets` by key.
+After dedup + expiry + archival, the consolidator calls `ProfileSynthesizer.update_profile()`
+(`ze_memory/synthesizer.py`). Haiku reads the 100 most recently updated facts that are not
+`contradicted` and the 20 most recent episode summaries. It returns a list of facets that Ze
+upserts into `memory_profile_facets` by key.
 
-Profile facets are key-value pairs with stability (`stable` | `dynamic`) and confidence
-scores. The current facets are available at `GET /api/v0/memory/profile`, and Ze injects them
-into every agent's system prompt. Agents see the full synthesized portrait, not individual facts.
+Profile facets are key-value pairs with stability (`stable` | `dynamic` | `transient`) and
+confidence scores. Ze injects the facets into the agents' system prompts (`ze_memory/policies.py`). Agents see the
+synthesized portrait, not only individual facts.
 
-Profile synthesis is skipped if fewer than `profile.min_facts` (default: 3) reviewed
-facts exist.
+Profile synthesis is skipped when there are no facts and no episode summaries.
 
 ---
 
-## Dream sleep pass (3 AM UTC)
+## Dream job (3 AM UTC)
 
-**Module:** `ze_memory/dream/job.py` (`DreamJob`)  
+**Module:** `ze_memory/dream/job.py` (`DreamJob`, job id `dream_memory`)  
 **Config:** `dream.*` in `config/config.yaml`
 
-When `dream.enabled: true`, the sleep pass runs nightly (default cron `0 3 * * *`):
+When `dream.enabled: true`, the job runs nightly (default cron `0 3 * * *`). It has three
+stages, each under `dream.job_timeout_seconds` (default 1800). A failed stage stops the later
+stages.
 
-1. **Replay scoring** — rank recent episodes by salience for future 78b synthesis.
-2. **Decay** — lower `retrieval_weight` on stale episodes; archive when below threshold.
-3. **Schema/policy candidates** — detect clusters for 78b artifact generation (staged only in 78a).
-4. **Retrieval-cache expiry** — delete `memory_retrieval_cache` rows older than 1 day
-   (Phase 79 session-cached NLI rerank; see [memory.md](memory.md)).
+1. **Sleep pass** — no LLM calls. Refreshes replay scores, picks replay candidates, archives
+   session episodes, deduplicates facts (the same routines as the nightly consolidation),
+   decays the `retrieval_weight` of episodes that were not replayed recently (and archives
+   them when the weight falls to the forgetting threshold), and detects schema and policy
+   candidate clusters.
+2. **Dream pass** — runs when an LLM client is available. Synthesizes artifacts from the
+   candidates and stages them for review.
+3. **Morning integration** — the promoter admits well-supported artifacts to memory.
 
-Ze writes journal entries to `memory_dream_journal` and surfaces them in the morning briefing.
+After the stages, the job deletes `memory_retrieval_cache` rows older than 1 day (Phase 79
+session-cached NLI rerank; see [memory.md](memory.md)) and writes a journal entry to
+`memory_dream_journal`. The morning briefing reports that entry.
 See [dreaming.md](dreaming.md) for the full wake/sleep/dream pipeline.
 
 ---
@@ -178,10 +191,13 @@ A daily digest, sent as the `accountability` push kind `morning_brief` via `Proa
 - **Unreviewed facts** — facts Ze proposed that you haven't confirmed or rejected yet.
   If the count is at or above `unreviewed_nudge_threshold` (default: 5), the briefing
   includes a direct nudge to review them.
-- **Upcoming workflows** — scheduled workflow runs in the next 24 hours.
+- **Scheduled workflows** — the names of the enabled scheduled workflows.
 - **Recent failures** — any workflow runs that failed in the past 24 hours.
+- **Follow-up nudges** — stale relationships that `PriorityView` ranks as `relationship` items.
+- **Dream summary** — when the latest dream journal entry promoted insights or left items for
+  review.
 - **Personalized headlines** — when the `ze-news` plugin is enabled, the briefing appends
-  a news section. With enough user facts (≥ `news.personalization.min_facts`, default 5),
+  a news section. With enough user preferences (≥ `news.personalization.min_preferences`, default 2),
   Ze ranks articles by cosine similarity against a snapshot of the user's interest
   vector built from stored facts and active goal titles. The section splits into two
   clearly labeled buckets:
@@ -228,12 +244,12 @@ events with same-day reminders.
 
 ## Workflow failure alerts (immediate)
 
-**Module:** `ze_automation/workflow/scheduler.py` + `ze_proactive/notifier.py`
+**Module:** `ze_automation/bootstrap.py` (the failure handler) + `ze_proactive/notifier.py`
 
 When a scheduled workflow step fails, Ze sends an `accountability` push (kind
 `workflow_failure`) immediately — no waiting for the morning briefing. A
 `workflow_failure_cooldown_hours` (default: 1h) prevents alert spam for
-repeatedly-failing workflows. The cooldown starts only after Ze delivers or holds an alert.
+repeatedly-failing workflows. The cooldown is per workflow. The cooldown starts only after Ze delivers or holds an alert.
 If the alert fails, the next failure inside the hour alerts again. Every failure is still
 recorded in the push log.
 
@@ -242,7 +258,7 @@ recorded in the push log.
 ## Goal advance sweep (every 15 minutes)
 
 **Module:** `ze_automation/goals/executor.py` · registered in `ze_automation/bootstrap.py`'s `register_goal_advance_sweep()`, called from `ze_api/wiring/jobs.py`  
-**Job id:** `goal_advance_sweep` · **Cron:** `*/15 * * * *`
+**Job id:** `goal_advance_sweep` · **Cron:** `*/15 * * * *` (configurable via `proactive.goal_advance_sweep.cron`)
 
 For each goal with status `ACTIVE`, the sweep calls `GoalExecutor.advance(goal_id)`.
 The advance loop either:
@@ -293,7 +309,7 @@ For each active goal, Ze synthesizes a one-paragraph weekly update: what was com
 **Module:** `ze_automation/jobs/goal_suggestion.py`  
 **Cron:** `0 19 * * 0` (configurable via `proactive.goal_suggestion.cron`)
 
-Analyzes recent memory facts, episodes, and past goal retrospectives to propose one new multi-week goal. Ze sends it as a `discretionary` push (kind `goal_suggestion`) with **Accept** / **Dismiss** options. Accepted suggestions open a goal creation flow. Suppressed if there are already 3+ active goals or if the last suggestion was dismissed within 7 days.
+Analyzes recent memory facts, episodes, and past goal retrospectives to propose one new multi-week goal. The titles of active goals go to the planner so that it does not duplicate them. Ze sends the suggestion as a `discretionary` push (kind `goal_suggestion`) with **Yes, create it** / **Dismiss** options. Accepted suggestions open a goal creation flow. The job skips a run when Ze saved a pending, accepted, or dismissed suggestion in the past 6 days. It also expires pending suggestions older than 30 days.
 
 ---
 
@@ -309,7 +325,7 @@ Checks all active goals for inactivity. The window is fixed in code at 7 days:
   counts the first open gate that has fired and ignores gates it has not reached, so
   each goal appears once.
 
-Ze sends one `discretionary` push per run (kind `stuck_goal`) that lists every blocked goal (one row per goal, from its first fired open gate), with **Resume** / **Abandon** / **Redirect** options. `last_stuck_alert_at` on each goal prevents duplicate alerts within the same window, and Ze marks a goal alerted only when the push was delivered or held.
+Ze sends one `discretionary` push per run (kind `stuck_goal`) that lists every blocked goal (one row per goal, from its first fired open gate), with action buttons. An idle active goal offers **Redirect**, **Pause**, and **Abandon**. A goal at a gate offers **Approve**, **Redirect**, and **Stop**. `last_stuck_alert_at` on each goal prevents a repeat alert for 14 days, and Ze marks a goal alerted only when the push was delivered or held.
 
 ---
 
@@ -419,7 +435,7 @@ estimated records in `llm_cost_log`. Runs frequently to keep cost data fresh.
 **Job id:** `recover_stale_campaigns` · **Cron:** `*/15 * * * *`
 
 Marks prospecting campaigns that have been running longer than
-`PROSPECTING_STALE_TIMEOUT_MINUTES` (default: 10 min) as failed, preventing stuck
+`PROSPECTING_STALE_TIMEOUT_MINUTES` (or `prospecting.stale_timeout_minutes` in `config.yaml`; default: 10 min) as failed, preventing stuck
 campaigns from blocking new runs.
 
 ---
@@ -479,6 +495,19 @@ releases the budget itself; the governor does. See [cognitive-architecture.md](c
 
 ---
 
+## Other scheduled jobs
+
+| Job id | Default cron | What it does | Config |
+|---|---|---|---|
+| `correlation_scan` | `0 */4 * * *` | Forms correlation hypotheses from recent signals (`ze_correlation/job.py`). Attention arbitration pushes them. | `correlation.push.schedule` |
+| `prune_notifications` | `0 4 * * *` | Deletes read notifications older than 90 days (`ze_proactive/jobs/prune_notifications.py`). | `proactive.notifications.prune_cron`, `.retention_days` |
+| `inbound_poll` | every 5 minutes | Polls the registered inbound channels for new messages (`ze_messenger/jobs/inbound_poll.py`). | `proactive.inbound_poll_interval_seconds` (whole minutes, minimum 1) |
+| `gmail_watch_renewal` | `0 0 * * 0` | Renews the Gmail push watch before it expires. Runs only when the Gmail channel supports push and `gmail_pubsub_topic` is set. | none |
+| `finance.daily_snapshot` | `0 8 * * *` | Syncs positions and transactions from every configured finance data source. | `finance.snapshot_schedule` |
+| `finance.recurring_detection` | `0 9 1 * *` | Detects recurring expenses. Off unless `finance.recurring_detection_enabled` is `true`. | `finance.recurring_detection_schedule` |
+
+---
+
 ## Interruption governor
 
 Every proactive push declares a `PushKind`: an event type plus a class, an urgency, and a source. One rule set in `ze_proactive/governor.py` decides what happens to each push.
@@ -495,7 +524,7 @@ Kinds by class:
 |---|---|
 | `requested` | `user_reminder`, `calendar_reminder`, `write_approval_held` |
 | `accountability` | `confirmation_request`, `confirmation_timeout`, `workspace_run_completed`, `workflow_failure`, `goal_plan_proposed`, `goal_attention_needed`, `goal_plan_adapted`, `goal_milestone_done`, `goal_completed`, `goal_gate`, `cost_anomaly`, `accountability_narrative`, `goal_narrative`, `morning_brief`, `calendar_reminders_scheduled`, `quiet_hours_summary` |
-| `discretionary` | `loop_drift`, `hypothesis`, `stuck_goal`, `goal_suggestion`, `goal_overlap`, `goal_reuse`, `dream_review`, `insight`, `contact_review`, `finance_stale_nudge`, `finance_recurring_new`, `finance_price_change`, `inbound_message` |
+| `discretionary` | `loop_drift`, `hypothesis`, `stuck_goal`, `goal_suggestion`, `goal_overlap`, `goal_reuse`, `insight`, `contact_review`, `finance_stale_nudge`, `finance_recurring_new`, `finance_price_change`, `inbound_message` |
 
 `proactive.budget.max_pushes_per_day` (default 5) is one shared budget for every discretionary push. It counts claims in a rolling 24-hour window. `GET /api/v0/notifications/budget` reports the count and when the next slot opens, and `GET /api/v0/proactive/job-runs` lists the last run of each job. Accountability and requested pushes never claim it. A discretionary push must carry a budget key; a repeat of the same key is a `duplicate` and goes no further.
 
@@ -503,7 +532,7 @@ Kinds by class:
 
 Quiet hours hold accountability and discretionary pushes. Ze records a held push in the bell with delivery `held`, sends no chat message and no ntfy, and releases it when quiet hours end. A requested push always buzzes, even during quiet hours. The budget check runs before the quiet hold. A discretionary push with no budget left is suppressed even during quiet hours, so the daily cap holds.
 
-The user sets quiet hours in Settings › Notifications. The window is stored in the `interruption_settings` table and evaluated in its own IANA zone. Quiet hours ship off. When the window ends, `QuietHoursReleaseJob` (`job_id = "quiet_hours_release"`, cron `proactive.notifications.release_cron`, default `*/5 * * * *`) delivers each held push in urgency order without a buzz, then sends one `quiet_hours_summary` push that buzzes once. A run with no held pushes does nothing.
+The user sets quiet hours in the Attention module of Governance (`/governance`). The window is stored in the `interruption_settings` table and evaluated in its own IANA zone. Quiet hours ship off. When the window ends, `QuietHoursReleaseJob` (`job_id = "quiet_hours_release"`, cron `proactive.notifications.release_cron`, default `*/5 * * * *`) delivers each held push in urgency order without a buzz, then sends one `quiet_hours_summary` push that buzzes once. A run with no held pushes does nothing.
 
 ### Catch-up for missed runs
 
@@ -582,10 +611,8 @@ Cron expressions are configurable in `config/config.yaml`. Jobs registered with
 
 | Endpoint | Description |
 |---|---|
-| `GET /api/v0/memory/facts` | All stored facts (with review status, expiry) |
-| `GET /api/v0/memory/digest` | Unreviewed facts + upcoming expiries |
-| `GET /api/v0/memory/profile` | Current user profile (latest synthesis) |
-| `POST /api/v0/memory/consolidate` | Trigger a consolidation run manually |
+| `GET /api/v0/memory/feed` | Facts and episodes, newest first (with review status) |
+| `GET /api/v0/memory/activity` | Per-day counts of facts and episodes between two dates |
 | `POST /api/v0/memory/facts/review` | Confirm, reject, or edit a proposed fact |
 
 ---
@@ -593,12 +620,5 @@ Cron expressions are configurable in `config/config.yaml`. Jobs registered with
 ## Adjusting the schedule
 
 All cron expressions and thresholds live in `config/config.yaml` under `memory.consolidation`,
-`memory.profile`, `memory.insights`, and `proactive`. See
+`dream`, `worldstate`, `correlation`, `skills`, `finance`, `news`, and `proactive`. See
 [docs/configuration.md](configuration.md) for the full reference.
-
-To trigger a consolidation manually (e.g. after bulk-approving many facts):
-
-```bash
-curl -X POST https://ze-backend.fly.dev/api/v0/memory/consolidate \
-  -H "Authorization: Bearer $ZE_API_KEY"
-```

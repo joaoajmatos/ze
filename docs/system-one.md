@@ -1,6 +1,6 @@
 # Ze — System One
 
-System One is a small model that answers closed questions. It never writes text. It returns a choice among labels, a yes/no probability, or a score. Ze uses it as a fast gate in five places. Code makes every final decision.
+System One is a small model that answers closed questions. It never writes text. It returns a choice among labels, a yes/no probability, or a score. Ze uses it as a fast gate in six places. Code makes every final decision.
 
 This page explains the layers around it, the three question types, where Ze asks the questions, and how Ze handles a failure. For setup and tuning, see [configuration.md](configuration.md#system_one).
 
@@ -8,7 +8,7 @@ This page explains the layers around it, the three question types, where Ze asks
 
 ## Where it fits
 
-Ze already has four ways to make a semantic choice. System One adds a fifth.
+Ze has four layers for semantic work. System One is the third.
 
 | Layer | Job | Output |
 |---|---|---|
@@ -61,7 +61,7 @@ A skip is not an error. A skip happens when the master switch is off, the key is
 
 ---
 
-## The five surfaces
+## The six surfaces
 
 Each surface follows the same pattern. Code builds the shortlist or the candidate. One request asks the questions. A pure function, `decide()`, turns the answers into an action using bars from `config.yaml`. If a bar is `null`, the surface counts as uncalibrated and skips.
 
@@ -165,6 +165,7 @@ make calibrate-routing
 make calibrate-skills       # add --recall for the offline shortlist check
 make calibrate-loop-gate    # tuned set by default; --set holdout gives the verdict
 make calibrate-corroboration   # tuned set by default; --set holdout --bars C,P gives the verdict
+make calibrate-complexity   # tuned set by default; --set holdout --simple-max X gives the verdict
 ```
 
 ---

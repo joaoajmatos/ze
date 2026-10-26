@@ -26,7 +26,7 @@ The React web client (`apps/ze-web`) uses [Feature-Sliced Design](https://featur
 
 ## The shell and the five places
 
-The app has five places: World, Ask, Doing, Mind and Governance. `shared/config/places.ts` lists them in order, maps a path to its place (`placeOf`), and holds the path helpers (`goalPath`, `workflowPath`, `askPath`, `settingsDataPath`).
+The app has five places: World, Ask, Doing, Mind and Governance. `shared/config/places.ts` lists them in order, maps a path to its place (`placeOf`), and holds the path helpers (`goalsPath`, `workflowsPath`, `goalPath`, `workflowPath`, `askPath`, `settingsDataPath`).
 
 `widgets/app-shell` draws the frame around every place:
 
@@ -90,6 +90,7 @@ Old paths redirect to their place and keep params, query and hash. The table is 
 | Old path | New path |
 |----------|----------|
 | `/loops` | `/` |
+| `/news` | `/ask` |
 | `/priority`, `/reminders`, `/world` | `/` |
 | `/goals` | `/doing#goals` |
 | `/goals/:id` | `/doing/goals/:id` |
@@ -174,7 +175,7 @@ Mind shows what Ze believes. `/mind` holds four modules: Beliefs, People, Find a
 
 The claim posture table (glyph, chip word, plain words per state) lives in `shared/lib/claim-posture.ts`. Beliefs publish their visible and selected rows to screen context, the entity page publishes its entity as the subject, and rows carry "Chat about this".
 
-Every place now has its own page: World, Ask, Doing, Mind and Governance. `/doing` holds the Doing modules and its two detail pages. Plugin pages still use `/:pluginPath` (phase 191 places them).
+Every place has its own page: World, Ask, Doing, Mind and Governance. `/doing` holds the Doing modules and its two detail pages. Plugins add no pages (see Plugin modules under Shared abstractions).
 
 
 ## Governance
@@ -195,7 +196,7 @@ Spend averages divide by the days since the first spend inside the 30-day window
 
 ## Adding a new screen
 
-Example: finance overview at `/finance`. Plugin screens normally arrive through the UI manifest. A core screen belongs to one of the five places.
+Example (hypothetical — the app has no finance screen): a finance overview at `/finance`. Plugin screens normally arrive through the UI manifest. A core screen belongs to one of the five places.
 
 1. **`entities/transaction/`** — `TransactionRow`, `useTransactionsQuery` wrapping `@myguyze/ze-client`
 2. **`widgets/finance-overview/`** — composes the entity list
@@ -248,13 +249,14 @@ Three slices serve the thumbs up, thumbs down, and Retry controls on assistant r
 
 ## Quiet hours and the notification bell
 
-`widgets/quiet-hours-settings/` renders the quiet-hours form under Settings › Notifications. It reads `entities/quiet-hours/` (`useQuietHoursQuery`, `useUpdateQuietHoursMutation` over the generated `getQuietHours` / `updateQuietHours`) and the nudge cap and held count from `entities/notification/` (`useAttentionBudgetQuery` over `getAttentionBudget`), prefills the timezone from `Intl.DateTimeFormat().resolvedOptions().timeZone` when the server value is null, and places each 422 field error from `detail[].loc` under the matching input.
+`widgets/attention/` renders the quiet-hours form in Governance, under "What can interrupt me?". It reads `entities/quiet-hours/` (`useQuietHoursQuery`, `useUpdateQuietHoursMutation` over the generated `getQuietHours` / `updateQuietHours`) and the nudge cap and held count from `entities/notification/` (`useAttentionBudgetQuery` over `getAttentionBudget`), prefills the timezone from `Intl.DateTimeFormat().resolvedOptions().timeZone` when the server value is null, and places each 422 field error from `detail[].loc` under the matching input.
 
-`widgets/notification-bell/ui/NotificationBell.tsx` labels a held item "Held for quiet hours" and a suppressed one "Not pushed: daily limit", and shows no label for any other delivery.
+`widgets/app-shell/ui/NotificationBell.tsx` labels a held item "Held for quiet hours" and a suppressed one "Not pushed: daily limit", and shows no label for any other delivery.
 
 ## Shared abstractions
 
-- **`shared/ui/layout/ListPage`** — standard list screen shell (header, skeleton, error, empty, children)
+- **`shared/ui/layout/`** — screen states: `EmptyState`, `ErrorState`, `ListSkeleton`, `NoticeBanner`, `ZeErrorBoundary`, `RedirectHintTarget`
+- **`shared/lib/page-header.tsx`** — `PageHeader`
 - **`shared/lib/query-keys.ts`** — TanStack Query key factory; extend when adding REST resources
 - **`shared/config/places.ts`** — the five places, the old-route redirect table and the path helpers; `app/router/routes.tsx` builds the routes from it
 - **Plugin modules** — a plugin adds no page. It contributes modules, Ask presets and settings sections through `GET /api/v0/ui/manifest` (`entities/ui-manifest`). `widgets/plugin-module` (`PluginModuleSlot`) fills a slot a place offers: `mind.entity` on the entity page, `doing.run` on a workflow run, `governance.connections` in Connections. Each module loads its tree from `GET /api/v0/ui/modules/{module_id}` (`getUiModule`) on place load, on a `refresh` frame with `screen: "module:<id>"`, and every 60 seconds while visible. A failed module shows one plain line and the rest of the place is unaffected; a module that does not apply shows nothing. Plugin presets appear after the core chips in Ask's Try chips, at most two. `/news` redirects to `/ask`, and an old top-level plugin path shows not found.
@@ -263,7 +265,7 @@ Three slices serve the thumbs up, thumbs down, and Retry controls on assistant r
 
 - REST and WebSocket types: `@myguyze/ze-client` (generated — never raw URL strings)
 - Server-driven UI: `@myguyze/ze-ui`, `@myguyze/ze-ui/react`
-- Entity query hooks wrap `@myguyze/ze-client` + `shared/lib/queryKeys`
+- Entity query hooks wrap `@myguyze/ze-client` + `shared/lib/query-keys`
 
 ## Shared UI
 
@@ -271,14 +273,15 @@ Three slices serve the thumbs up, thumbs down, and Retry controls on assistant r
 
 | Subfolder | Contents |
 |-----------|----------|
-| `primitives/` | Generic building blocks (shadcn-style `Button`, `Input`, `Sheet`) |
-| `layout/` | Ze screen patterns (`ListPage`, `PageHeader`, `EmptyState`, …) |
+| `primitives/` | Generic building blocks (shadcn-style `Button`, `Input`, `Slider`, plus `SearchBar`, `FilterChips`, `ViewToggle`, `SortSelect`) |
+| `layout/` | Screen states (`EmptyState`, `ErrorState`, `ListSkeleton`, `NoticeBanner`, error boundary) |
+| `hud/` | The HUD building blocks (`Module`, `Meter`, `Control`, `DotMatrix`, `SeriesSpark`, the orb) |
 
-Import from the public API: `import { Button, ListPage } from "@/shared/ui"`.
+Import from the public API: `import { Button, EmptyState } from "@/shared/ui"`.
 
 ## Configuration
 
-`shared/config/app-config.ts` stores the server URL and API key in `localStorage`. Set them during onboarding or in Settings. No `VITE_*` env vars.
+`shared/config/app-config.ts` stores the server URL and API key in `localStorage`. Set them during onboarding or in Governance › Connections. No `VITE_*` env vars.
 
 ## Commands
 

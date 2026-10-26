@@ -9,7 +9,7 @@ Proactive Ze runs on a schedule — morning briefings, calendar reminders, news 
 ### Key features
 
 - `ProactiveScheduler` — APScheduler wrapper started at the `ze-api` lifespan, with cron catch-up after downtime
-- `ProactiveJob` ABC with cron and interval registration
+- `ProactiveJob` Protocol and the `@proactive_job` decorator, with cron and interval registration
 - `ProactiveNotifier` — the single send path for proactive pushes; `push()` and `push_notification()` are gone
 - Interruption governor — every push declares a class (`requested`, `accountability`, `discretionary`) and an urgency (`low`, `normal`, `high`), and one rule set decides deliver, hold, or suppress
 - Quiet hours — a user setting; accountability and discretionary pushes are held silently and released together when quiet hours end
@@ -41,7 +41,12 @@ Cron jobs catch up after downtime. `JobRunStore` records each run in `proactive_
 | Module | What it provides |
 |---|---|
 | `scheduler.py` | `ProactiveScheduler` — thin wrapper around APScheduler with catch-up |
-| `job.py` | `ProactiveJob` ABC, `@proactive_job` registration |
+| `job.py` | `ProactiveJob` Protocol, `@proactive_job` registration |
+| `types.py` | `PushKind`, `PushClass`, `Urgency`, `PushOutcome`, `BudgetStatus`, `QuietHoursSetting`, `JobRun`, `Notification` |
+| `bootstrap.py` | `shared_push_budget` and `register_notification_jobs` (prune and quiet-hours release jobs) |
+| `data_domain.py` | `interruption_data_domains` — export, import, and delete for the `interruption_settings` table |
+| `staleness.py` | `is_stale` — the shared staleness helper |
+| `screen_resolvers.py` | the `notification` screen resolver |
 | `notifier.py` | `ProactiveNotifier` — the one send path; `notify`, `remaining_budget`, `deliver_held` |
 | `governor.py` | `decide` — the pure deliver / hold / suppress rule |
 | `push_kinds.py` | process-wide `PushKind` registry; `QUIET_HOURS_SUMMARY` |
@@ -51,17 +56,18 @@ Cron jobs catch up after downtime. `JobRunStore` records each run in `proactive_
 | `notification_store.py` | `NotificationStore` — bell rows, held rows, unread counts |
 | `push_log_store.py` | `PushLogStore` — Postgres-backed push delivery and budget log |
 | `attention_budget.py` | shared daily budget claims `try_claim_shared` / `release_shared` |
+| `jobs/prune_notifications.py` | `PruneNotificationsJob` — deletes old notification rows (default retention 90 days) |
 | `jobs/release_held.py` | `QuietHoursReleaseJob` — releases held pushes when quiet hours end |
 
 ## Migrations
 
-Branch `zpro`. `zpro004_interruption_governor` adds the `notifications` columns (`push_class`, `urgency`, `format`, `actions`, `delivery`, `delivered_at`) and the `interruption_settings` and `proactive_job_runs` tables.
+Branch `zpro`. `zpro001` creates `push_log`, `zpro002` creates `notifications`, `zpro003` adds the `push_log` idempotency key and its unique index, and `zpro005` adds `notifications.target_parent_id`. `zpro004_interruption_governor` adds the `notifications` columns (`push_class`, `urgency`, `format`, `actions`, `delivery`, `delivered_at`) and the `interruption_settings` and `proactive_job_runs` tables.
 
 ## Dependencies
 
-![ze-proactive package dependencies](../../docs/diagrams/core/contracts/ze-proactive/dependencies.svg)
+![ze-proactive package dependencies](../../../docs/diagrams/core/contracts/ze-proactive/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/contracts/ze-proactive/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/contracts/ze-proactive/dependencies.html)</sub>
 
 Third-party: `asyncpg`.
 
@@ -89,4 +95,4 @@ From the repo root:
 make test-proactive
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

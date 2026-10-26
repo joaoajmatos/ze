@@ -48,7 +48,7 @@ Ze is pre-v1. It has one user, runs locally, and is built in the open, one funct
 
 ## Status
 
-Ze is pre-v1. One person uses it, self-hosted on their own machine, and it is in active development. Each phase starts with a written spec, and `specs/phases/` holds more than 170 of them. Until v1, the project breaks APIs and schemas when the design is wrong ([pre-v1 hard cuts](specs/arch/pre-v1-hard-cuts.md)).
+Ze is pre-v1. One person uses it, self-hosted on their own machine, and it is in active development. Each phase starts with a written spec, and `specs/phases/` holds more than 200 of them. Until v1, the project breaks APIs and schemas when the design is wrong ([pre-v1 hard cuts](specs/arch/pre-v1-hard-cuts.md)).
 
 **What works today**
 
@@ -90,7 +90,7 @@ Every turn runs through a LangGraph graph checkpointed in Postgres.
 
 <sub>[Interactive version](docs/diagrams/root/graph-flow.html)</sub>
 
-The diagram shows the main path. The full graph also runs `decompose` for independent compound requests and `match_skills` after `fetch_context`. Partial `trace_update` frames stream to the trace panel as each node finishes, and tokens stream as the agent writes them. See [docs/architecture.md](docs/architecture.md) for node-by-node detail.
+The diagram shows the main path. The full graph also runs `resolve_screen` before `embed_route`, `decompose` for independent compound requests, and `match_skills` and `choose_tier` after `fetch_context`. Partial `trace_update` frames stream to the trace panel as each node finishes, and tokens stream as the agent writes them. See [docs/architecture.md](docs/architecture.md) for node-by-node detail.
 
 ---
 
@@ -133,7 +133,7 @@ make typecheck-web     # tsc for ze-web and @myguyze/ze-ui
 make eval              # agent evals (make dev-eval first)
 ```
 
-CI runs on every pull request to `main`: web typecheck, build, and tests, plus backend lint and `make test-py`. Every package has a README. Conventions: [CONTRIBUTING.md](CONTRIBUTING.md)
+CI runs on every pull request to `main`: web typecheck, lint, build, and tests, plus backend lint and `make test-py`. Every package has a README. Conventions: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
@@ -147,7 +147,7 @@ Full index, grouped by audience: [docs/README.md](docs/README.md)
 | [ze-doctrine.md](specs/arch/ze-doctrine.md) | What kind of mind Ze is — the constitutional layer |
 | [features.md](docs/features.md) | What Ze does today: agents, plugin hooks, monorepo layout |
 | [cognitive-architecture.md](docs/cognitive-architecture.md) | Seven cognitive functions mapped onto packages |
-| [system-one.md](docs/system-one.md) | Typed judgments, the five surfaces, calibration status |
+| [system-one.md](docs/system-one.md) | Typed judgments, the six surfaces, calibration status |
 | [architecture.md](docs/architecture.md) | System design, graph flow |
 | [package-architecture.md](docs/package-architecture.md) | Monorepo, `ZePlugin`, dependency rules |
 | [sdk.md](docs/sdk.md) / [extending-ze.md](docs/extending-ze.md) | SDK reference and how to add agents, plugins, jobs |

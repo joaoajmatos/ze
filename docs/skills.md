@@ -98,7 +98,9 @@ the plugin.
 | `disabled` | No | Enable (no re-review unless content changed) |
 | `rejected` | No | Kept as a record of that version |
 
-Approving instructions does **not** set `executable_approved`. That flag is a
+Approving instructions also submits the skill as a procedure candidate to memory's
+admission service, which decides whether it becomes a procedure. Approving
+instructions does **not** set `executable_approved`. That flag is a
 separate gate. See [Workspace integration](#workspace-integration).
 
 ---
@@ -207,18 +209,17 @@ permission to execute it.
 
 ## Visibility
 
-The Mind trace panel lists every skill used on the turn: name, source
+The trace on Ask lists every skill used on the turn (the Skills row): name, source
 (`bundled` / `imported`), trigger (`automatic` / `explicit`), similarity for
 automatic matches, a **below floor** mark when the gate applied the skill under
 `match_threshold`, and a **script ran** mark when
 `workspace_run_skill_script` succeeded.
 
-On conductor turns the same panel shows a **Conductor** section: the Haiku
+On conductor turns the trace also shows a **Conductor** row: the Haiku
 hint (not a DAG), each specialist’s ledger status, and confirmation
-`request_id`s. Independent parallel compounds omit that section.
+`request_id`s. Independent parallel compounds omit that row.
 
-The assistant bubble also shows a workspace chip when the sidecar ran on that
-turn. Skill attribution itself lives on the trace, not as a separate bubble chip.
+The trace has a **Workspace** row when the sidecar ran on that turn.
 
 ---
 
@@ -248,8 +249,8 @@ Disabled and pending skills never run scripts.
 
 ### How a script actually runs
 
-Matching a skill does **not** auto-exec its scripts. The agent (or unattended work
-in Auto mode) calls `workspace_run_skill_script(skill_id, filename)`.
+Matching a skill does **not** auto-exec its scripts. The agent (or unattended work)
+calls `workspace_run_skill_script(skill_id, filename)`.
 
 That tool:
 
@@ -280,18 +281,15 @@ All routes sit under `/api/v0/skills` and require the API key.
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/skills` | List, optional `status` / `source` filters |
-| `GET` | `/skills/{id}` | Detail, including instructions and script filenames. Pending re-review includes `previous_version`. |
-| `GET` | `/skills/{id}/reference-files/{filename}` | Stored reference-file content |
 | `POST` | `/skills/import` | Fetch a URL; create `pending_review` |
 | `POST` | `/skills/{id}/approve` | Instructions approval |
 | `POST` | `/skills/{id}/approve-executables` | Script approval |
 | `POST` | `/skills/{id}/reject` | Reject this version |
 | `POST` | `/skills/{id}/disable` | Stop matching |
 | `POST` | `/skills/{id}/enable` | Resume matching |
-| `POST` | `/skills/{id}/refresh` | Re-fetch an imported origin URL |
 | `DELETE` | `/skills/{id}` | Remove an imported skill |
 
-Refresh of a bundled skill returns an error — there is no origin URL.
+The daily `SkillRecheckJob` is the only way Ze re-fetches an imported skill. There is no route for it.
 
 ---
 
@@ -305,8 +303,6 @@ Refresh of a bundled skill returns an error — there is no origin URL.
 | Content unchanged | Unchanged | Updates `last_checked_at` |
 | Content changed | `pending_review` | Prior approved snapshot kept for comparison; `executable_approved` cleared |
 | Source unreachable | Unchanged | Sets `last_check_error`; the last approved version keeps working |
-
-You can trigger the same path with `POST /skills/{id}/refresh`.
 
 ---
 
@@ -330,7 +326,7 @@ blocks and [`surfaces.skills`](configuration.md#surfacesskills) for the gate.
 
 ## Further reading
 
-- [workspace.md](workspace.md) — sidecar modes, isolation, local and Fly setup
+- [workspace.md](workspace.md) — runs, isolation, local and Fly setup
 - [core/automation/ze-skills/README.md](../core/automation/ze-skills/README.md) — package modules
 - [core/ops/ze-workspace/README.md](../core/ops/ze-workspace/README.md) — client, gate, tools
 - [sdk.md](sdk.md#zeplugin--extension-point) — `bundled_skill_paths()`

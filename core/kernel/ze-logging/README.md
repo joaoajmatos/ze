@@ -6,7 +6,7 @@ Structured logging for Ze — `structlog` configuration, context binding, and no
 
 Every package in the monorepo logs the same way: structured, JSON in production, colorized in development, with session and agent identifiers attached automatically rather than passed at every call site. `ze-logging` is the one place that configuration lives, so it has zero Ze dependencies and can sit under every other package without creating a cycle.
 
-`get_logger(__name__)` is the only logging entry point allowed anywhere in the codebase — `print()` and the stdlib `logging` module are disallowed by convention (see the root `CLAUDE.md`).
+`get_logger(__name__)` is the only logging entry point allowed anywhere in the codebase — `print()` and the stdlib `logging` module are disallowed by convention (see the root `AGENTS.md`).
 
 ### Key features
 
@@ -47,4 +47,4 @@ From the repo root:
 make test-logging
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

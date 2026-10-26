@@ -4,7 +4,7 @@ Ze's native interface connects the React web app (`ze-web`) to the backend (`ze-
 over a persistent WebSocket. When the app is not connected, Ze falls back to
 **ntfy push notifications**.
 
-**Module:** `ze_api/interface/native.py` · `ze_api/api/ws.py`  
+**Module:** `ze_api/interface/native.py` · `ze_api/api/ws/` (`endpoint.py`, `connection.py`)  
 **WebSocket endpoint:** `GET /ws`
 
 ---
@@ -46,9 +46,9 @@ On connect, the server:
 1. Closes any previous connection with code `4000`.
 2. Fetches all unread messages from `MessageStore` and replays them as
    `{"type": "message", ...}` frames.
-3. If a confirmation was pending when the client disconnected, replays the
-   `confirm_request` frame so the user can still approve or cancel (see
-   [Confirmation flow](#confirmation-flow)).
+3. Replays every pending `confirm_request` frame, each tagged with its `thread_id`, so the
+   user can still approve or cancel (see [Confirmation flow](#confirmation-flow)). It also
+   re-sends open screen-action gates and open held writes.
 4. Begins forwarding new messages in real time.
 
 The client should send `{"type": "ack", "ids": [...]}` frames to mark messages as read.
@@ -67,10 +67,11 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "retry", "message_id": "<uuid>", "thread_id": "...", "confirmed_plan": ["<entry id>", ...]}` | User presses Retry on the latest reply | Undoes what the reply did, then regenerates it. `confirmed_plan` lists the undo entry ids the person confirmed. Omit it or send `null` when the plan is empty. See [Reply feedback and Retry](#reply-feedback-and-retry). |
 | `{"type": "confirm", "id": "<request id>", "choice": "approve" \| "deny", "edits": {...}}` | Answer a `confirm_request` | Approves or denies the parked writes in that request. `edits` is optional (see [Confirmation flow](#confirmation-flow)) |
 | `{"type": "action", "payload": "<action value>", "thread_id": "..."}` | User presses a prompt button that is not approve or deny | Runs the action named by the button value, e.g. a goal gate's `goal_plan:yes:<id>` (see [Confirmation flow](#confirmation-flow)) |
-| `{"type": "command", "name": "cancel"}` | Cancel the turn | Stops the turn that is running or resuming on that thread. It also aborts a turn that waits for a confirmation |
+| `{"type": "command", "name": "cancel", "thread_id": "..."}` | Cancel the turn | Stops the turn that is running or resuming on that thread. It also aborts a turn that waits for a confirmation. Without `thread_id` the server answers an `error` frame |
 | `{"type": "command", "name": "costs"}` | Introspection | Returns a 7-day cost summary message |
 | `{"type": "command", "name": "status", "period_days": 1}` | Accountability | Returns an activity narrative (default: past 24 h; set `period_days: 7` for the weekly view) |
 | `{"type": "command", "name": "onboarding"}` | Setup | Starts or resumes onboarding |
+| `{"type": "ui_action", "id": "...", "thread_id": "...", "action": {...}}` | User presses a tool-action button in a server-built tree | Runs one write tool through the write gates (see [Screen tool actions](#screen-tool-actions)) |
 | `{"type": "component_submit", "session_id": "...", "step_id": "...", "component_id": "...", "values": {...}}` | Interactive component | Submits structured onboarding form/button values |
 
 ### Server → Client
@@ -79,12 +80,16 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 |---|---|
 | `{"type": "pong"}` | Heartbeat reply |
 | `{"type": "typing"}` | Sent immediately after receiving a user message while Ze is processing. May include an optional `"text"` field with a localized progress string (e.g. `"📡 Fetching the latest news..."`). Re-sent mid-turn by agents to update the status and reset the client's 3-second display timer. |
+| `{"type": "token", "text": "..."}` | A streamed chunk of the reply that an agent is writing. The final `message` frame follows. |
 | `{"type": "message", "message": Message}` | Outbound message from Ze (see Message shape below) |
 | `{"type": "confirm_request", "id": "...", "kind": "write" \| "budget" \| "held" \| "prompt", "round": 1, "title": "...", "items": [...], "actions": [...], "expires_at": "..."}` | Asks the user to approve one or more parked writes, a spend-budget pause, a held unattended write, or a prompt (goal gate, goal suggestion, workspace reset) |
 | `{"type": "confirm_cancel", "id": "...", "thread_id": "...", "reason": "answered"}` | Closes the card for that `id`. `reason` is `answered` when the user approved or denied it, on any client. Ze sends the frame without `reason` when it supersedes or expires a request. |
 | `{"type": "message_superseded", "message_id": "...", "replaced_by": "...", "thread_id": "..."}` | A retry replaced `message_id` with `replaced_by`. Sent after the new `message` frame. |
 | `{"type": "message_rollback", "message_id": "...", "thread_id": "...", "rollback": {...}}` | The stored rollback record of `message_id` changed. Sent on each state change of a retry. |
 | `{"type": "notification", "id": "...", "event_type": "...", "target_parent_id": "...", "push_class": "...", "urgency": "...", "delivery": "..."}` | A proactive push entered the notification bell. `push_class` is `requested`, `accountability`, or `discretionary`. `delivery` is `delivered`, `held`, `suppressed`, `released`, or `failed`. A `held` or `suppressed` row arrives with no chat message and no ntfy. |
+| `{"type": "refresh", "screen": "..."}` | A screen's data changed, so the client refetches it. A `module:<id>` value targets one plugin module. |
+| `{"type": "trace_update", "message_id": "...", "partial": true \| false, ...}` | The trace of a turn, sent in parts while it runs and once more when committed (see [Trace telemetry frames](#trace-telemetry-frames)) |
+| `{"type": "ui_action_result", "id": "...", "ok": true \| false, "line": "..."}` | The outcome of a `ui_action` frame (see [Screen tool actions](#screen-tool-actions)) |
 | `{"type": "error", "detail": "...", "code": "..."}` | Error from the server (e.g. "busy"). `code` is optional; see [Error codes](#error-codes). |
 
 ### Progress messages
@@ -98,12 +103,11 @@ re-send the frame with text.
 { "type": "typing", "text": "📡 Fetching the latest news..." }
 ```
 
-Each `typing` frame resets the client's display timer (default 3 seconds). Long-running
-operations (e.g. RSS fetches, web searches) emit multiple frames to keep the indicator
-alive.
+Each `typing` frame replaces the status text. Long-running operations (e.g. RSS fetches,
+web searches) emit multiple frames to keep the status current.
 
-Clients should render `text` when present and fall back to a generic spinner when absent.
-`typingText` is exposed from `useChatSession` for this purpose.
+Clients should render `text` when present and fall back to a generic indicator when absent.
+The web app keeps it as `typingText` on the thread's turn state in `entities/conversation`.
 
 ### Message shape
 
@@ -117,7 +121,8 @@ Clients should render `text` when present and fall back to a generic spinner whe
   "thread_id": "string or null",
   "created_at": "ISO8601",
   "replaces": "uuid or null",
-  "replaced_by": "uuid or null"
+  "replaced_by": "uuid or null",
+  "rollback": "object or null"
 }
 ```
 
@@ -303,8 +308,9 @@ appears in-chat; otherwise it goes via ntfy (urgency `low`).
 
 ## Busy guard
 
-Only one graph invocation runs at a time. If the client sends a second `message` frame
-while a previous invocation is still in flight, the server responds:
+Only one graph invocation runs per thread at a time. Different threads can run at once. If
+the client sends a second `message` frame on a thread while a previous invocation is still in
+flight, the server responds:
 
 ```json
 {"type": "error", "detail": "busy", "code": "busy"}
@@ -445,7 +451,7 @@ because it may have run in part.
    before the old reply. It runs the graph with the original user text and `retry_mode`.
 6. On success the server stores the new reply with `replaces` set, marks the old reply
    superseded, and sends a `message` frame, then a `message_superseded` frame.
-7. If a reversible write needs a confirmation, the server sends a `confirmation` frame
+7. If a reversible write needs a confirmation, the server sends a `confirm_request` frame
    after the `retry` frame, and the retry waits. The `confirm` reply resolves it. An
    approved or denied confirmation that produces a reply supersedes the old reply as in
    step 6. If no reply results, the record state becomes `rolled_back_retry_failed`.
@@ -552,7 +558,7 @@ If `NTFY_TOPIC` is empty, ntfy delivery is disabled and Ze is WebSocket-only.
 
 ### Quiet hours
 
-The user sets quiet hours in Settings › Notifications. Two REST routes back the form:
+The user sets quiet hours in the Attention module of Governance (`/governance`). Two REST routes back the form:
 
 | Route | Purpose |
 |---|---|
@@ -671,7 +677,7 @@ Every primitive can carry a `claim` object. Code sets it from the stored record.
 | `state` | The record's state |
 | `slipped` | True for a drifting loop, a stuck goal, or a workflow whose last run failed |
 
-Three primitives carry this posture: `headline`, `claim_card`, and `claim_timeline`. A `claim_card` shows readouts and actions. Its action `intent` is one of `confirm_loop`, `drop_loop`, `approve_held_write`, `deny_held_write`, `approve_gate`, or `open`. The web app maps each intent to an existing REST call.
+The claim primitives `headline`, `claim_card`, `claim_timeline`, `claim_list` and `entity_facet` carry this posture. Most other primitives take an optional `claim`. A `claim_card` shows readouts and actions. Its action `intent` is one of `confirm_loop`, `drop_loop`, `approve_held_write`, `deny_held_write`, `approve_gate`, or `open`. The web app maps each intent to an existing REST call.
 
 ### Notification targets
 
@@ -705,17 +711,18 @@ Modules and cards show a bracketed "Chat about this" chip. On a device with hove
 
 ## Connection manager
 
-The app instantiates `ConnectionManager` (`ze_api/api/ws.py`) once at startup and
+The app instantiates `ConnectionManager` (`ze_api/api/ws/connection.py`) once at startup and
 stores it on `app.state.connection_manager`. It exposes:
 
 | Method | Description |
 |---|---|
-| `connect(ws, message_store, confirmation_store=None)` | Accept a new connection; closes the previous one; replays unread messages; replays any pending confirmation |
+| `connect(ws, message_store, confirmation_store=None, held_store=None)` | Accept a new connection; closes the previous one; replays unread messages, pending confirmations, open screen-action gates, and open held writes |
 | `disconnect(ws)` | Clear the active connection, but only when `ws` is still the live socket |
-| `push(message)` | Send a message frame; silently no-ops if disconnected |
-| `send_frame(frame)` | Send an arbitrary JSON frame |
-| `try_set_busy() → bool` | Claim the invocation slot; returns False if already busy |
-| `clear_busy()` | Release the invocation slot |
+| `push(message, thread_id=None)` | Send a message frame; silently no-ops if disconnected |
+| `send_frame(frame, thread_id=None)` | Send an arbitrary JSON frame, tagged with `thread_id` when given |
+| `try_set_busy(thread_id) → bool` | Claim the invocation slot of that thread; returns False if already busy |
+| `is_busy(thread_id) → bool` | Report whether that thread has a turn in flight |
+| `clear_busy(thread_id)` | Release the invocation slot of that thread |
 
 Never instantiate `ConnectionManager` outside the FastAPI lifespan — there must only
 be one instance.

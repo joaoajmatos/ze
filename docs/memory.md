@@ -44,7 +44,7 @@ class Fact:
 
 **Table:** `memory_facts` — pgvector embedding on `value`.
 
-**Provenance.** Perception writes `prompt_supplied`: conversation facts, ingested files and inbound messages. Only the dream writes `synthesized`, and those facts carry a `dream_run_id`. Confidence decay and expiry apply to facts with a `dream_run_id` only. `live_search` means a web search. Nightly dedup merges two facts only when both have no `dream_run_id` and share the same provenance and claim kind. The merged fact keeps that provenance and claim kind.
+**Provenance.** Perception writes `prompt_supplied`: conversation facts, ingested files and inbound messages. Only the dream writes `synthesized`, and those facts carry a `dream_run_id`. Confidence decay and expiry apply to facts with a `dream_run_id` only. `live_search` means a web search. When nightly dedup merges two similar facts into one new fact, it does so only when both have no `dream_run_id` and share the same provenance and claim kind. The merged fact keeps that provenance and claim kind.
 
 ### `Episode`
 
@@ -158,7 +158,7 @@ A single structured dimension of the user portrait, synthesized nightly.
 class ProfileFacet:
     key: str           # e.g. "communication_preference", "work_style"
     value: str         # e.g. "prefers async; avoids long meetings"
-    stability: str     # "stable" | "dynamic"
+    stability: str     # "stable" | "dynamic" | "transient"
     confidence: float = 1.0
     source_refs: list[UUID] = ...
 ```
@@ -264,10 +264,12 @@ already written this turn by `remember_fact` (`ok` true, same predicate+value
 identity after normalize) are dropped. Kept rows are
 `PROMPT_SUPPLIED`, `reviewed=false`. Eval threads (`eval-*`) skip this path.
 
-- Before insert, the store checks exact-predicate matches, then NLI contradiction
-  (`nli_write_time_check`, default `true`) on same-subject candidates with cosine ≥
-  `nli_lower_cosine_bound` (0.60). Hits are marked `contradicted = true`. Controlled
-  by `memory.nli_*` keys in `config.yaml`.
+- Before insert, the store marks every active fact with the same predicate and subject
+  `contradicted = true`. It then runs the NLI contradiction check
+  (`nli_write_time_check`, default `true`) on the 10 nearest same-subject facts with
+  cosine ≥ `nli_lower_cosine_bound` (0.60). A fact whose contradiction score reaches
+  `nli_contradiction_threshold` is marked `contradicted = true`. Controlled by
+  `memory.nli_*` keys in `config.yaml`.
 - `POST /api/v0/memory/facts/review` exposes review/edit/reject for the native app.
 
 **Reviewed facts are never auto-merged or auto-expired.**
@@ -293,7 +295,7 @@ episode text for known entity names and creates `MENTIONS` edges.
 ### Session summaries (automatic, near-real-time)
 
 `SessionSummariser` runs every 10 minutes (configurable). For each session that has
-been inactive for ≥ `session_inactivity_minutes` (default: 30) and has no up-to-date
+been inactive for ≥ the top-level `session_inactivity_minutes` setting (default: 30) and has no up-to-date
 summary, Haiku generates a single narrative covering the full session and writes it to
 `memory_session_summaries`. If the user reopens the session and adds new turns, the
 summary is regenerated on the next job tick. Raw episode rows are kept until the nightly
@@ -308,13 +310,15 @@ Events with `outcome` text automatically trigger LLM-based fact promotion with
 
 ### Procedures
 
-Ze writes a procedure when it detects a reusable multi-step pattern, and links it to
-the goal or workflow that produced it via `USES_PROCEDURE` graph edges.
+Sources submit procedure candidates to `ProcedureAdmissionService`. Admitted versions
+become retrievable playbooks (see [`Procedure`](#procedure)). The graph defines a
+`USES_PROCEDURE` predicate, but no code writes that edge today.
 
 ### Task state
 
-`GoalExecutor` and workflow nodes upsert task state to track in-flight progress, and
-link it to its goal via `BELONGS_TO_GOAL` graph edges.
+`GoalExecutor` and the workflow graph (`ze_personal/graph/workflow.py`) upsert task state to
+track in-flight progress. A task state that has a goal links to it via a
+`BELONGS_TO_GOAL` graph edge.
 
 ### Feedback records (evidence, not facts)
 
@@ -358,9 +362,20 @@ Before every agent execution, `fetch_context` runs:
    `memory_session_summaries` (closed-session narratives) against the current prompt
    embedding. A subquery excludes sessions with a summary row from the raw episode query
    so the caller never receives both fragments and summary for the same session.
-   `budget_facts` and `budget_episodes` project the token-budgeted results.
-3. **NLI retrieval re-rank** (when `memory.nli_retrieval_rerank: true`) — orchestration
-   policies return cosine-ranked results on turn 1 with no added latency. A background
+   Each policy then drops candidates below the relevance floor
+   (`memory.relevance_floor`, default 0.35; `relevance_floor_overrides` sets a floor per
+   memory type, and `episode` ships at 0.30). It orders the rest by a composite score:
+   a weighted sum of similarity, recency (30-day half-life), and confidence, set by
+   `memory.composite_weights` (0.6 / 0.25 / 0.15). With `memory.entity_anchor.enabled` (default `true`), entities
+   named in the query add their one-hop graph neighbors as a second entry point
+   (`ze_memory/entity_anchor.py`). `budget_facts` and `budget_episodes` project the
+   token-budgeted results.
+3. **NLI re-rank** — two parts. First, a live re-rank (`memory.live_rerank.enabled`,
+   default `true`) NLI-scores up to `candidate_limit` (20) fact candidates in the
+   current turn and reorders them. It has a timeout (`timeout_ms`, 120). On timeout or
+   error it keeps the original order. Second, the cached re-rank (when
+   `memory.nli_retrieval_rerank: true`): the first request in a session returns the
+   order from step 2 with no added latency. A background
    task (`build_retrieval_cache`) fetches `K × nli_rerank_candidate_multiplier`
    fact/summary candidates, NLI-reranks them, and writes ranked ID lists to
    `memory_retrieval_cache` keyed by `(session_id, query_hash)`. On turn 2+ with the
@@ -434,7 +449,9 @@ The graph layer stores typed relationships between memory objects in the
 | `PARTICIPATES_IN` | Event → Entity |
 | `PROMOTES_TO` | Event → Fact (from outcome extraction) |
 | `BELONGS_TO_GOAL` | TaskState → Goal |
-| `USES_PROCEDURE` | Procedure → Goal/Workflow |
+| `USES_PROCEDURE` | Procedure → TaskState (defined; no code writes it today) |
+| `WORKS_ON` | Person → Project (written by `ze-personal`: the contacts consolidator and extractors, and the promotion of social hypotheses) |
+| `COLLABORATES_WITH` | Person ↔ Person (written by `ze-personal`: the contacts consolidator and extractors, and the promotion of social hypotheses) |
 
 </details>
 
@@ -476,8 +493,8 @@ before LLM merge in the `0.85–0.95` band):
 
 | Similarity | Action |
 |---|---|
-| > 0.95 | Silent merge — keep newer, mark older `contradicted = true`. No LLM call. |
-| 0.85–0.95 | NLI entailment ≥ `nli_entailment_threshold` → LLM merge (Haiku synthesizes one value, marks both `contradicted = true`). NLI contradiction → mark older `contradicted`. Neutral → skip. |
+| ≥ 0.95 | Silent merge — keep the fact with the higher confidence, mark the other `contradicted = true`. No LLM call. |
+| 0.85–0.95 | NLI entailment ≥ `nli_entailment_threshold` → LLM merge (Haiku synthesizes one value, marks both `contradicted = true`), only for two facts without a `dream_run_id` that share provenance and claim kind. NLI contradiction → mark older `contradicted`. Otherwise skip. |
 | 0.60–0.85 | NLI contradiction ≥ `nli_contradiction_threshold` → mark older `contradicted` (`max(created_at)` wins). Otherwise skip. |
 | < 0.60 | No action — unrelated enough to skip NLI. |
 
@@ -495,20 +512,30 @@ Reviewed facts are **never** touched by consolidation.
 
 ### 3. Episode archival
 
-Episodes older than `episode_recency_days` (14d default) are candidates for archival.
-Sessions that already have an entry in `memory_session_summaries` skip the LLM call —
-the consolidator deletes their raw rows directly. Sessions without an eager summary
-are archived via the existing batch path: when at least `episode_min_archive_batch`
-(10 default) candidates exist, Haiku summarizes the batch into one archive row and
-the consolidator deletes the originals.
+Episodes older than `episode_archive_days` (7d default) are candidates for archival.
+Two steps run in order.
+
+1. **Session archival** (`session_grouping_enabled`, default `true`). The consolidator
+   picks up to `max_sessions_per_run` (10) sessions that have at least
+   `min_session_episodes` (3) old raw episodes. A session that already has an entry in
+   `memory_session_summaries` skips the LLM call — the consolidator deletes its raw rows
+   directly. For any other session, Haiku writes one summary, stored as an archive
+   episode, and the consolidator deletes the raw rows.
+2. **Batch archival.** The remaining old raw episodes (up to `episode_archive_batch`,
+   20 in code, 50 in the shipped config) are archived together: when at least `episode_min_archive_batch`
+   (10 default) exist, Haiku summarizes the batch into one archive row and the
+   consolidator deletes the originals. With fewer, it deletes archive summaries older
+   than twice `episode_archive_days`.
 
 ### 4. Profile facet synthesis
 
-After the three cleanup passes, Haiku reads all reviewed facts and recent episodes
-(up to `profile.episode_limit`, default: 50) and produces a structured list of
-`ProfileFacet` objects, upserted into `memory_profile_facets` by key.
+After the three cleanup passes, Haiku reads up to 100 recent facts that are not
+contradicted (reviewed or not) and up to 20 recent episode summaries. It produces a
+structured list of `ProfileFacet` objects, upserted into `memory_profile_facets` by key.
+Facets with an unknown `stability` or an empty key or value are dropped.
 
-Synthesis is skipped if fewer than `profile.min_facts` (3 default) reviewed facts exist.
+Synthesis is skipped when there are no facts and no episode summaries, or when the model
+returns no valid facet.
 
 ---
 
@@ -518,20 +545,18 @@ Synthesis is skipped if fewer than `profile.min_facts` (3 default) reviewed fact
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/v0/memory/facts` | All facts — query params: `reviewed`, `contradicted`, `expires_before` |
-| `GET /api/v0/memory/digest` | Unreviewed facts + facts near expiry |
-| `GET /api/v0/memory/profile` | Current profile facets (latest synthesis) |
-| `POST /api/v0/memory/facts/review` | Confirm, reject, or edit a proposed fact |
-| `POST /api/v0/memory/consolidate` | Trigger a consolidation run manually |
+| `GET /api/v0/memory/feed` | Facts and episodes, newest first — query params: `limit`, `before`, `type`, `agent`, `as_of`, `include_totals` |
+| `GET /api/v0/memory/timeline-bounds` | The earliest memory timestamp and the current time, for the date scrubber |
+| `GET /api/v0/memory/activity` | Per-day counts of facts and episodes between `start` and `end` |
+| `POST /api/v0/memory/facts/review` | Confirm, reject, or edit a fact (reject deletes the row) |
+| `GET /api/v0/memory/graph` | Top entities by relationship count with the edges between them |
+| `GET /api/v0/memory/entities` | Search entities by name or alias (`q`, `entity_type`, `limit`) |
+| `GET /api/v0/memory/graph/entity/{entity_id}` | Facts, episodes, and one-hop neighbors for one entity |
 
 The action ledger has its own read: `GET /api/v0/actions` lists records newest first, for one goal, workflow, workflow run or workspace run, with keyset paging on `(occurred_at, id)`. A record belongs to a subject when its context holds that subject's id. Goal, workflow and workspace records carry one. The workflow-finished record carries both the workflow id and the run id, so a workflow's list shows each run's outcome. Calendar, reminder and prospecting records do not. See [Accountability surfaces](native-interface.md#accountability-surfaces).
 
-### Manual consolidation
-
-```bash
-curl -X POST https://ze-backend.fly.dev/api/v0/memory/consolidate \
-  -H "Authorization: Bearer $ZE_API_KEY"
-```
+There is no REST route that starts a consolidation run. The `memory_consolidation`
+job runs on the `nightly_cron` schedule.
 
 ---
 
@@ -550,13 +575,18 @@ memory:
 
   # Optional consolidation overrides (defaults defined in ze_memory/defaults.py):
   consolidation:
+    enabled: true
     merge_silent_threshold: 0.95
     merge_llm_threshold: 0.85
     contradicted_ttl_days: 30
     unreviewed_ttl_days: 90
     expiry_grace_days: 7
-    episode_recency_days: 14
+    episode_archive_days: 7
+    episode_archive_batch: 50
     episode_min_archive_batch: 10
+    session_grouping_enabled: true
+    min_session_episodes: 3
+    max_sessions_per_run: 10
     nightly_cron: "0 2 * * *"
 
   session_summary:
@@ -567,9 +597,21 @@ memory:
     max_transcript_tokens: 6000    # oldest turns dropped first when exceeded
     model: anthropic/claude-haiku-4-5
 
-  profile:
-    min_facts: 3
-    episode_limit: 50
+  # Retrieval relevance (phase 106) — defaults in ze_memory/defaults.py
+  relevance_floor: 0.35
+  relevance_floor_overrides:
+    episode: 0.30
+  composite_weights:
+    similarity: 0.6
+    recency: 0.25
+    confidence: 0.15
+  entity_anchor:
+    enabled: true
+    match_constant: 0.75
+  live_rerank:
+    enabled: true
+    candidate_limit: 20
+    timeout_ms: 120
 
   # NLI cross-encoder (Phase 79) — defaults in ze_memory/defaults.py
   nli_contradiction_threshold: 0.60
@@ -599,8 +641,11 @@ memory:
 | `memory_profile_facets` | Structured user portrait — key/value facets with confidence |
 | `feedback_records` | Append-only ratings and retry requests on assistant replies (`zm024`). Evidence about replies, never read back into a turn |
 | `memory_retrieval_cache` | Session-scoped NLI rerank order for facts/summaries (`zm010`; 1-day TTL) |
+| `memory_signals` | Cross-domain signals from plugins (`zm006`) |
+| `action_records` | Append-only ledger of actions Ze took (`zm021`) |
+| `procedure_candidates` | Procedure candidates awaiting admission (`zm022`) |
 
-Migrations: `core/cognition/ze-memory/ze_memory/migrations/versions/` (raw SQL, Alembic meta-runner in `ze_api/migrate.py`).
+Migrations: `core/cognition/ze-memory/ze_memory/migrations/versions/` (raw SQL, Alembic meta-runner in `ze_api/cli/migrate.py`).
 
 ---
 
@@ -611,8 +656,10 @@ Migrations: `core/cognition/ze-memory/ze_memory/migrations/versions/` (raw SQL, 
   objects so `AgentState` stays JSON-serializable for the LangGraph checkpointer.
 - **Graph augmentation is best-effort.** Failures silently fall back to the base context
   — the store always returns something useful.
-- **Memory is editorial, not automatic.** Facts require user approval; agents propose,
-  users decide. Episodes are automatic because they archive away within ~2 weeks.
+- **Memory is editorial, not automatic.** Extracted facts start unreviewed and expire
+  if the user never reviews them (`unreviewed_ttl_days`). Facts the user asks Ze to
+  remember start reviewed. Episodes are automatic because they archive away after
+  about a week.
 
 ---
 

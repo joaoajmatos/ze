@@ -21,7 +21,7 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 
 ### Integration
 
-`ze-api` builds the `PriorityView`, the override store, and the arbitration job in `compose.py`. The job replaces the old per-source push sweeps in `ze-worldstate` and `ze-correlation`. Overrides enter the world-state as a pair of contributions through the seam. `ze-collision` logs a user-versus-Ze disagreement. The web app shows the snapshot at `/priority`.
+`ze-api` builds the `PriorityView` and the override store in `wiring/container.py`, and schedules the arbitration job in `wiring/jobs.py`. The job replaces the old per-source push sweeps in `ze-worldstate` and `ze-correlation`. Overrides enter the world-state as a pair of contributions through the seam. `ze-collision` logs a user-versus-Ze disagreement. The World place in the web app draws the snapshot as the Field.
 
 ## Responsibilities
 
@@ -44,7 +44,7 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 
 ## Dependencies
 
-`ze-agents`, `ze-components`, `ze-proactive`, `ze-worldstate`, `ze-automation`, `ze-correlation`, `ze-plugin`, `ze-collision`, `asyncpg`.
+`ze-agents`, `ze-components`, `ze-worldstate`, `ze-automation`, `ze-correlation`, `ze-plugin`, `ze-collision`, `ze-logging`, `asyncpg`, `numpy`.
 
 ## Configuration
 

@@ -22,7 +22,7 @@ The plugin is designed as the substrate for a full factor-based risk engine (`ze
 
 ### Integration
 
-Entry point `ze_finance`. Contributes `FinanceAgent`, `DailySnapshotJob`, `RecurringDetectionJob`, and `FinanceSignalSource`. Migrations under `zfin` branch.
+Entry point `ze_finance`. Contributes `FinanceAgent`, `DailySnapshotJob`, `RecurringDetectionJob` (registered only when `recurring_detection_enabled` is true), `FinanceSignalSource`, and `FinanceIngestionExtractor` (bank statements that arrive through ingestion). Migrations under `zfin` branch (`zfin001`, `zfin002`).
 
 ```python
 from ze_finance.plugin import FinancePlugin
@@ -35,6 +35,8 @@ from ze_finance.plugin import FinancePlugin
 | `agents/finance/` | `FinanceAgent` and its `@tool` functions (`get_portfolio_summary`, `get_positions`, `get_spending_summary`, `get_transactions`, `get_account_balance`, `get_recurring_expenses`, `confirm_recurring`, `dismiss_recurring`) |
 | `categoriser.py` | `CategoryInferrer` — keyword rules + optional Anthropic haiku batch for "Other" descriptions |
 | `errors.py` | `FinanceError`, `ZeIntegrationError`, `FinanceParseError` |
+| `ingestion/extractor.py` | `FinanceIngestionExtractor` — extracts transactions from PDF, text, and document content during ingestion |
+| `push_kinds.py` | `FINANCE_STALE_NUDGE`, `FINANCE_RECURRING_NEW`, `FINANCE_PRICE_CHANGE` — push kinds for the interruption governor |
 | `jobs/snapshot.py` | `DailySnapshotJob` — syncs all data sources, runs categorisation, emits signals |
 | `jobs/recurring.py` | `RecurringDetectionJob` — monthly job; detects new recurring charges, handles CSV staleness nudges |
 | `models/alpha.py` | `AlphaModel` Protocol stub (future `ze-risk` extension point) |
@@ -82,8 +84,14 @@ finance:
   recurring_staleness_days: 35                # CSV accounts older than this get a nudge
   recurring_nudge_cooldown_days: 14           # minimum days between nudges per account
   recurring_price_change_threshold: 0.10      # resurface dismissed items if amount changes >10%
-  recurring_lookback_days: 90                 # transaction history window for detection
+
+  # NLI merchant-alias merging — off by default
+  nli_merchant_merge_enabled: false
+  nli_merchant_cosine_threshold: 0.70
+  nli_merchant_entailment_threshold: 0.70
 ```
+
+Detection reads the last 90 days of transactions. This window is a constructor default of `RecurringDetectionJob`, not a config key.
 
 ## Testing
 

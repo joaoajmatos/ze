@@ -22,11 +22,11 @@ Every stage emits a progress key so the user sees live status during long operat
 |---|---|
 | `web_page` | Any HTTP URL returning HTML |
 | `pdf` | `.pdf` URL or uploaded PDF file |
-| `audio` | `.mp3`/`.ogg`/`.wav` URL or uploaded audio |
+| `audio` | `.mp3`/`.ogg`/`.wav`/`.m4a` URL or uploaded audio |
 | `video` | YouTube, Instagram Reels, TikTok, Vimeo (via `ze-yt`) |
-| `image` | `.png`/`.jpg`/`.webp` URL or uploaded image |
+| `image` | `.png`/`.jpg`/`.gif`/`.webp` URL or uploaded image |
 | `plain_text` | Raw text submitted by user |
-| `document` | Word docs, spreadsheets (treated as plain text) |
+| `document` | Reserved. No classifier rule returns it today; `TextProcessor` would treat it as plain text |
 | `unknown` | Fallback — `TextProcessor` handles as UTF-8 |
 
 ---
@@ -41,6 +41,8 @@ Every stage emits a progress key so the user sees live status during long operat
 2. MIME type hint — if the caller provides `mime_type`
 3. Magic bytes sniff — first 512 bytes (`%PDF-` → `pdf`, `ID3` → `audio`, etc.)
 4. Fallback — `unknown`
+
+After a URL fetch, the pipeline classifies again from the fetched MIME type and bytes when the first pass or the fetcher returned `unknown`.
 
 ### 2. Fetch
 
@@ -68,7 +70,7 @@ All `Extractor`s whose `content_types` includes the classified type (or is empty
 - `facts`, `entities`, `tags` — union, deduplicated by exact string match
 - `metadata` — dict merge (later extractor keys overwrite on conflict)
 
-If an extractor raises, the pipeline skips its result and logs the error. At least `LLMExtractor` always runs, so the merge never produces an empty result.
+If an extractor raises, the pipeline skips its result and logs the error. `LLMExtractor` matches every content type, so at least one extractor always runs. If every matching extractor fails, the merged result is empty.
 
 ### 5. Store
 
@@ -163,34 +165,15 @@ The pipeline emits progress messages at each stage, so the user sees live feedba
 ## Workspace files
 
 Ze can also ingest a file from the [workspace](workspace.md). The `ingest_workspace_file`
-tool and `POST /api/v0/workspace/files/{file_path}/ingest` download the file from the
-sidecar and run it through the same pipeline. The workspace file stays in place. Ze asks
-you to confirm the tool call in chat.
+tool downloads the file from the sidecar and runs it through the same pipeline. The
+workspace file stays in place. The tool does not ask for confirmation first: it saves a
+file you asked Ze to save, and nothing leaves Ze.
 
 ---
 
-## REST Endpoint
+## Entry points
 
-```
-POST /api/v0/ingest
-Content-Type: multipart/form-data
-
-Fields:
-  url    (string, optional)  URL to ingest
-  file   (file, optional)    Uploaded file
-  label  (string, optional)  User-supplied title
-
-Response 200:
-{
-  "ingestion_id": "...",
-  "content_type": "pdf",
-  "summary": "...",
-  "facts_count": 12,
-  "tags": ["finance", "investment"]
-}
-
-422 if neither or both of url/file are provided.
-```
+Ze has no REST route for ingestion. Content reaches the pipeline through the `ingest_url` and `ingest_text` agent tools and the `ingest_workspace_file` workspace tool.
 
 ---
 

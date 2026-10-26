@@ -24,6 +24,7 @@ Standalone from the runtime path — no import from `ze-api` at startup. Invoked
 |---|---|
 | `runner.py` | Scenario execution against a running Ze instance |
 | `scenario.py` | YAML scenario loading and parsing |
+| `fixtures.py` | Setup rows: inserts the records a scenario points at, and deletes them after |
 | `judge.py` | LLM-as-judge scoring |
 | `verifier.py` | Deterministic assertion checks |
 | `scoring.py` | Score aggregation |
@@ -47,7 +48,7 @@ python eval/run.py [--judge] [--tag X] [report]
 python eval/server.py   # MCP server — make eval-server
 ```
 
-See [docs/eval.md](../../docs/eval.md) for the full workflow.
+See [docs/eval.md](../../../docs/eval.md) for the full workflow.
 
 ## Testing
 
@@ -57,4 +58,4 @@ From the repo root:
 make test-eval
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

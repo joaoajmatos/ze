@@ -17,17 +17,17 @@ Plugin authors implement `ZePlugin.data_domains()` returning a list of `DataDoma
 
 ### Integration
 
-`ze-plugin` imports `DataDomain` from `ze-data` and re-exports it for backwards compatibility. `ze-api` wires `DataPortabilityService` in the container and exposes it via `/api/data/*` routes.
+`ze-plugin` imports `DataDomain` from `ze-data` and re-exports it. `ze-api` wires `DataPortabilityService` in the container and exposes it through the `/api/v0/data/*` routes.
 
 ## Responsibilities
 
 | Module | What it provides |
 |---|---|
-| `domain.py` | `DataDomain` dataclass |
+| `domain.py` | `DataDomain` dataclass (`export`, `delete`, `delete_order`, `importer`, `count`, `size_bytes`) |
 | `errors.py` | `SchemaMismatchError`, `InstanceNotEmptyError` |
 | `portability/service.py` | `DataPortabilityService` |
 | `portability/assembler.py` | `ExportAssembler`, `ImportAssembler`, `bulk_insert` |
-| `portability/types.py` | `ExportManifest`, `ImportResult` |
+| `portability/types.py` | `ExportManifest`, `ImportResult`, `DomainSummary` |
 
 ## Dependencies
 
@@ -61,4 +61,4 @@ DataDomain(
 make test-api
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

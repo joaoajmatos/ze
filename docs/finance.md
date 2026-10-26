@@ -89,8 +89,10 @@ protection layers that cannot be overridden by global configuration.
 ### LLM provider pinning
 
 Ze pins the LLM calls in `ze-finance` to **Anthropic** via OpenRouter. The
-agent and the CSV and categorization helpers ignore the global model setting. The
-one exception is `models.finance_ingestion`, which you can change. This applies to:
+agent and the CSV and categorization helpers ignore `models.default`. Two settings can
+still change a model: `models.finance_ingestion` (the statement parser) and
+`models.overrides` (which replaces any agent's declared model). Leave both on an
+Anthropic model. This applies to:
 
 - `FinanceAgent` — the conversational interface
 - `CsvSchemaInferrer` — column mapping inference on first import
@@ -172,9 +174,12 @@ the same CSV file is safe — already-present rows are skipped.
 
 ## Spending Categories
 
-Transactions are assigned a spending category at ingestion time (not at query
-time). The category is stored in `finance_transactions.category` alongside a
-`category_source` field (`keyword` or `llm`).
+The daily snapshot job assigns a spending category to each transaction it syncs
+from a live source (Trading212), not at query time. It stores the category in
+`finance_transactions.category` alongside a `category_source` field. The job writes
+`keyword` to that field for every row, including rows the LLM pass categorized.
+Transactions that arrive from ingested statements get no category, and
+`get_spending_summary` counts them under `Other`.
 
 ### Keyword rules (always on)
 
@@ -261,6 +266,7 @@ Ze detects any billing cycle that maps to a natural interval — not just monthl
 
 | Interval | Label |
 |---|---|
+| 1 day | daily |
 | 7 days | weekly |
 | 14 days | every 2 weeks |
 | 21 days | every 3 weeks |
@@ -269,6 +275,7 @@ Ze detects any billing cycle that maps to a natural interval — not just monthl
 | 42 days | every 6 weeks |
 | 60 days | every 2 months |
 | 90 days | quarterly |
+| 120 days | every 4 months |
 | 180 days | every 6 months |
 | 365 days | yearly |
 
@@ -450,7 +457,7 @@ plugin (`ze-risk`) that imports from `ze_finance.risk.types`.
 ### Factor taxonomy
 
 Ze-finance already defines the full factor taxonomy as a stub in
-`ze_finance.risk.types.FactorTaxonomy`. Twelve factors across three tiers:
+`ze_finance.risk.types.FactorTaxonomy`. Thirteen factors across three tiers:
 
 **Primary** (drive drift alerts on their own):
 `AI_SENTIMENT`, `RISK_APPETITE`, `CRYPTO_MOMENTUM`, `SEMICONDUCTOR_CYCLE`, `EM_STRESS`

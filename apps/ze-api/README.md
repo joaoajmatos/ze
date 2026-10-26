@@ -23,7 +23,7 @@ through `ze_agents.bootstrap`, domain stacks through package bootstrap modules �
 serves via uvicorn. Nothing in `core/` or `plugins/` runs standalone — `ze-api` is
 always the entry point.
 
-Collects plugin signal sources via `collect_plugin_signal_sources()` in `wiring/agents.py` — deduplicates by `source_key` and registers them with the correlation engine. Current emitters: `NewsSignalSource`, `CalendarSignalSource`.
+Collects plugin signal sources via `collect_plugin_signal_sources()` in `wiring/agents.py` — deduplicates by `source_key` and registers them with the correlation engine. Current emitters: `NewsSignalSource`, `CalendarSignalSource`, `FinanceSignalSource`, and `MessagingSignalSource`.
 
 ## Responsibilities
 
@@ -38,6 +38,7 @@ Collects plugin signal sources via `collect_plugin_signal_sources()` in `wiring/
 | `interface/native.py` | `NativeAppInterface` — WebSocket + ntfy delivery |
 | `wiring/container.py` | `ZeContainer` and `build_container()`, the only place that joins packages |
 | `wiring/stores.py`, `agents.py`, `hooks.py` | Phases of `build_container()`: stores, plugin and agent layer, cross-package hooks |
+| `wiring/db.py`, `push_kinds.py`, `screen.py`, `webhooks.py`, `workflow_graph.py` | Checkpointer connection, confirmation push kinds, the screen resolver registry, plugin webhook handlers, and the workflow execution graph |
 | `wiring/jobs.py` | `register_all_proactive_jobs()` — core + plugin cron registration |
 | `wiring/plugin_routes.py` | Plugin router collection; the OpenAPI export and the runtime mount share it |
 | `settings.py` | `ZeApiSettings` (Pydantic BaseSettings + YAML) |
@@ -56,7 +57,7 @@ Agents and proactive jobs live in plugin packages (`ze-personal`, `ze-messenger`
 
 ```bash
 make dev          # uvicorn --reload on :8000
-make dev-eval     # REST API without background jobs (for running evals)
+make dev-eval     # backend for evals: EVAL_MODE on, no dev seed data (background jobs still start)
 make dev-full     # backend + React web app together
 ```
 
@@ -102,9 +103,10 @@ Full protocol reference: [docs/native-interface.md](../../docs/native-interface.
 | `GET /api/v0/messages/feedback` | Batch read of ratings and Retry eligibility |
 | `GET /api/v0/held-writes` | List writes that unattended workflow and goal runs hold for approval |
 | `POST /api/v0/held-writes/{request_id}/decision` | Approve or deny a held write |
-| `GET /api/v0/memory/facts` | Inspect stored facts |
-| `GET /api/v0/memory/profile` | Get current user profile |
-| `GET /api/v0/routing/log` | Routing decision log |
+| `GET /api/v0/memory/feed` | Reverse-chronological stream of facts and episodes |
+| `POST /api/v0/memory/facts/review` | Review a stored fact |
+| `GET /api/v0/memory/graph` | Memory graph of entities and relationships |
+| `GET /api/v0/routing/log` | Routing decision log (only when `EVAL_MODE` is on) |
 | `GET /api/v0/costs/summary` | Token usage and cost breakdown |
 | `GET /api/v0/workflows` | List workflows |
 
@@ -112,7 +114,7 @@ All routes require `Authorization: Bearer <ZE_API_KEY>`.
 
 ## Configuration
 
-See the root [README](../../README.md#configuration) for all environment variables.
+See [docs/configuration.md](../../docs/configuration.md) for all environment variables and config keys.
 
 ## Testing
 

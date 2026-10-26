@@ -4,7 +4,7 @@ Public SDK surface for Ze plugin development. Flat re-export layer — plugin pa
 
 ## Role in Ze
 
-`ze-sdk` is the only supported import path for plugin authors. It flattens the developer-facing API from `ze-agents`, `ze-plugin`, `ze-proactive`, `ze-memory`, and `ze-onboarding` into a single stable surface, so plugins never depend on engine internals directly.
+`ze-sdk` is the only supported import path for plugin authors. It flattens the developer-facing API from `ze-agents`, `ze-automation`, `ze-collision`, `ze-communication`, `ze-correlation`, `ze-data`, `ze-logging`, `ze-memory`, `ze-onboarding`, `ze-plugin`, and `ze-proactive` into a single stable surface, so plugins never depend on engine internals directly.
 
 ### Key features
 
@@ -16,7 +16,7 @@ Public SDK surface for Ze plugin development. Flat re-export layer — plugin pa
 
 ### Integration
 
-Every plugin's `pyproject.toml` lists `ze-sdk` as its sole Ze dependency. The SDK has no runtime wiring of its own — it is a compile-time boundary that keeps the dependency graph one-directional: `plugins → ze-sdk → core packages`, never `plugins → ze-core`.
+Every plugin's `pyproject.toml` lists `ze-sdk`. A plugin may also depend on other plugins or core packages, but it never depends on `ze-core`. The SDK has no runtime wiring of its own — it is a compile-time boundary that keeps the dependency graph one-directional: `plugins → ze-sdk → core packages`, never `plugins → ze-core`.
 
 ## Responsibilities
 
@@ -31,6 +31,11 @@ Every plugin's `pyproject.toml` lists `ze-sdk` as its sole Ze dependency. The SD
 | `memory.py` | Memory types, `PostgresMemoryStore`, `SignalSource` re-export, `FactRestoreConflictError` |
 | `channels.py` | Channel ABC and registry re-exports |
 | `onboarding.py` | Onboarding provider types |
+| `automation.py` | Goal and workflow types, stores and planner contracts from `ze-automation` |
+| `correlation.py` | `Hypothesis`, `HypothesisStore` and the Postgres store from `ze-correlation` |
+| `screen.py` | Screen-context contract: `ScreenResolver`, `ScreenRef`, `ScreenLine`, `sanitize_text` |
+| `ui.py` | `UiContribution`, `ModuleSubject`, `ModuleResult` and the module helpers |
+| `api.py` | `require_api_key` for plugin REST routes |
 
 ## Dependencies
 

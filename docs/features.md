@@ -16,10 +16,11 @@ Ask answers with an assembled canvas, not a chat bubble. The reply is a sentence
 
 ## System One
 
-System One is a small model that returns typed judgments (a choice among labels, a yes/no probability, a score), never free text. Ze treats it as a fast gate, with code making the final decision. Five surfaces use it:
+System One is a small model that returns typed judgments (a choice among labels, a yes/no probability, a score), never free text. Ze treats it as a fast gate, with code making the final decision. Six surfaces use it:
 
 - **Commitment intake** decides what a finished conversation turn committed the user to: a durable fact worth keeping, a loop to open or close, or a link to a reminder or goal the turn already created.
-- **Routing choice** picks among the agents E5 shortlisted, decides whether the request needs more than one specialist, and grades how complex it is.
+- **Routing choice** picks among the agents E5 shortlisted and decides whether the request needs more than one specialist.
+- **Complexity** decides whether a single-specialist turn needs the agent's full model or its lighter `model_simple`.
 - **Skill gating** picks at most one automatic skill from the skills E5 shortlisted.
 - **Loop gate** decides whether email, calendar, or ingested text opens or resolves an open loop.
 - **Corroboration** decides whether an independent source is about the same open matter as a suspected loop, and can promote it.
@@ -38,7 +39,7 @@ World, the home screen, ranks drifting loops, stuck goals, and correlation hypot
 
 ## Open loops
 
-Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops, extracted from conversation, email, calendar, and ingestion. Extraction is gated: three System One yes/no questions decide whether text opens, declares, or resolves a loop, and Haiku writes only the title. If System One skips, the older Haiku judge runs as the fallback. When you say a loop is done, Ze closes it even if you never confirmed it, and links your message as the evidence. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. You can also ask Ze to keep something on the radar ("keep the Porto move on my radar"). The `loops` agent creates that loop in the same turn with the `track_loop` tool, and the post-turn gate skips that turn. When a later independent source matches a suspected loop, Ze asks one System One same-concern question, raises the loop's confidence, and can promote it to `active`; the loop records each source, and the Open loops page labels it "Promoted · seen in: chat, email". At the start of a new session, Ze asks whether to keep track of up to three loops it noticed. If the reply skips the question, Ze adds a short one in your language (English or Portuguese). Ask "what's still on my plate?" and the answer comes from the merged priority ranking, not from one agent's own list. The Open loops page (Automation) lists them for review. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear the salience bar. Loop pushes are discretionary, so they share one daily budget with every other unprompted nudge, and quiet hours hold them like the rest.
+Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops, extracted from conversation, email, calendar, and ingestion. Extraction is gated: three System One yes/no questions decide whether text opens, declares, or resolves a loop, and Haiku writes only the title. If System One skips, the older Haiku judge runs as the fallback. When you say a loop is done, Ze closes it even if you never confirmed it, and links your message as the evidence. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. You can also ask Ze to keep something on the radar ("keep the Porto move on my radar"). The `loops` agent creates that loop in the same turn with the `track_loop` tool, and the post-turn gate skips that turn. When a later independent source matches a suspected loop, Ze asks one System One same-concern question, raises the loop's confidence, and can promote it to `active`; the loop records each source, and the loops REST payload marks it `promoted` and lists its `source_inflows`. At the start of a new session, Ze asks whether to keep track of up to three loops it noticed. If the reply skips the question, Ze adds a short one in your language (English or Portuguese). Ask "what's still on my plate?" and the answer comes from the merged priority ranking, not from one agent's own list. The Loops module on World lists them for review, and suspected loops wait in Needs you. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear the salience bar. Loop pushes are discretionary, so they share one daily budget with every other unprompted nudge, and quiet hours hold them like the rest.
 
 ![State machine showing an open loop moving from suspected to active, by an independent corroboration or a confirmation, then to drifting, where a contradiction or a missed deadline is the guard that triggers drift, drifting loops finally resolving to closed or dropped, and a suspected loop closing when the user says it is done](diagrams/root/open-loops.svg)
 
@@ -50,7 +51,7 @@ Hypotheses Ze forms from cross-domain evidence are listed over REST, and you can
 
 ## Memory
 
-Ze extracts facts and episodes after each turn, consolidates them nightly, and synthesizes a profile weekly. `pgvector` handles retrieval. Several rules keep the store honest:
+Ze extracts facts and episodes after each turn, consolidates them nightly, and synthesizes a profile in the same nightly run. `pgvector` handles retrieval. Several rules keep the store honest:
 
 - **Admission.** A keep/drop extractor decides what becomes a fact. Facts enter through typed contributions with provenance and confidence, and a constraint check can veto a write.
 - **Say it, and Ze remembers it.** You can tell companion to remember or forget something. Ze says it remembered or forgot something only after the write succeeds.
@@ -61,9 +62,9 @@ Ze extracts facts and episodes after each turn, consolidates them nightly, and s
 
 ## Dreaming
 
-Every night Ze runs an offline memory improvement loop — sleep pass then dream pass. The sleep pass replays high-priority episodes, compresses old sessions, deduplicates facts, and identifies schema and policy clusters using only structural analysis (no LLM calls). The dream pass then synthesizes those clusters into insights, procedures, and plan stress-tests using a haiku-class generator.
+Every night Ze runs an offline memory improvement loop — sleep pass then dream pass. The sleep pass replays high-priority episodes, compresses old sessions, deduplicates facts, and identifies schema and policy clusters using structural analysis (the sleep pass makes no model call of its own). The dream pass then synthesizes those clusters into insights, procedures, and plan stress-tests using a haiku-class generator.
 
-Nothing synthetic goes straight to memory. Every artifact passes three cheap pre-gates (NLI groundedness, embedding novelty, retrievability) and two adversarial LLM critic calls at sonnet-class before reaching a morning integration step that enforces session-diversity and temporal-spread requirements. Promoted facts carry full lineage for per-run rollback. Borderline cases surface in the morning briefing for review. Synthetic facts that go uncorroborated for 90 days are automatically expired.
+Nothing synthetic goes straight to memory. Every artifact passes three cheap pre-gates (NLI groundedness, embedding novelty, retrievability) and two adversarial LLM critic calls at sonnet-class before reaching a morning integration step that enforces session-diversity and temporal-spread requirements. Promoted facts carry lineage that traces each run. Borderline cases wait in a review queue, and the morning briefing counts them. Synthetic facts that go uncorroborated for 90 days are automatically expired.
 
 The design is drawn from neuroscience (NREM/REM ordering, targeted memory reactivation) and ML (PER, Constitutional AI-style critic filtering, generative replay safety). It's the first layer of Ze becoming genuinely self-improving rather than just accumulating facts.
 
@@ -127,7 +128,7 @@ Ze asks before it does anything it cannot undo. An irreversible write waits unti
 | `channels()` | Communication channels (email, etc.) |
 | `jobs()` | Proactive background jobs |
 | `bundled_skill_paths()` | Agent Skills that ship with the plugin |
-| `ui_contributions()` | Nav items, settings sections, plugin pages in ze-web |
+| `ui_contributions()` | Modules in fixed slots, Ask preset chips, and settings sections in ze-web |
 | `rest_routes()` | Plugin-owned REST routers under `/api/v0/` |
 
 The hooks compose. The finance plugin registers a `TransactionExtractor` so that ingesting a bank statement produces structured transaction facts — which land in memory, which surface in retrieval, which the correlation engine can cross with calendar and news. That chain is the whole point.

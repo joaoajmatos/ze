@@ -22,7 +22,7 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 | [ze-calendar](ze-calendar/) | Calendar, reminders, and timezone domain |
 | [ze-prospecting](ze-prospecting/) | Autonomous prospect research, campaign store, outreach drafting |
 | [ze-news](ze-news/) | News ingestion, personalized ranking, credibility analysis, news agent |
-| [ze-finance](ze-finance/) | Finance domain — portfolio positions, bank transactions, spending summaries, proactive P&L alerts |
+| [ze-finance](ze-finance/) | Finance domain — portfolio positions, bank transactions, spending summaries, recurring-expense detection and nudges |
 
 ## Dependency graph
 

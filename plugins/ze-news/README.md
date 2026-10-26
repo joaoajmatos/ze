@@ -17,7 +17,7 @@ Ze keeps the user informed without them having to check feeds manually. RSS sour
 
 ### Integration
 
-Entry point `ze_news`. Contributes `NewsAgent`, `NewsFetchJob`, `NewsOnboardingProvider` (source selection during setup), and `NewsSignalSource`. Article storage and ranking depend on `ze-memory` embeddings.
+Entry point `ze_news`. Contributes `NewsAgent`, `NewsFetchJob`, `NewsOnboardingProvider` (topics to follow, topics to avoid, and source languages, stored as profile facets), `NewsSignalSource`, three UI contributions (the Ask preset, the Mind `Sources` module, and a settings section), and the `GET /api/v0/news/settings` route. The plugin turns itself off when `news.enabled` is false or `news.sources` is empty. Article ranking uses the shared embedder.
 
 ```python
 from ze_news.plugin import NewsPlugin
@@ -29,12 +29,18 @@ from ze_news.plugin import NewsPlugin
 
 | Module | What it provides |
 |---|---|
-| `agents/` | `NewsAgent` — answers news queries using `get_headlines` and `search_news` tools |
+| `agents/` | `NewsAgent` — answers news queries using `get_headlines`, `search_news`, and `refresh_news` tools |
 | `sources/` | RSS source definitions and fetcher |
 | `jobs/` | `NewsFetchJob` — periodic RSS fetch, stored and ranked |
 | `store.py` | `NewsStore` — Postgres-backed article storage with pgvector ranking |
 | `registry.py` | `SourceRegistry` — manages active RSS sources |
 | `credibility.py` | Source credibility scoring (heuristics, optional NLI, optional LLM) |
+| `preferences.py` | `NewsPreferenceBuilder` — builds include and exclude preferences from memory facts and the profile |
+| `onboarding.py` | `NewsOnboardingProvider` — one "Tune your news" step |
+| `signals.py` | `NewsSignalSource` |
+| `api/` | `GET /api/v0/news/settings` (`getNewsSettings`) |
+| `ui/settings.py` | Builds the settings section tree |
+| `locales/` | `en.yaml`, `pt.yaml` progress messages |
 | `plugin.py` | `NewsPlugin(ZePlugin)` — registers `NewsAgent` and `NewsFetchJob` |
 | `types.py` | Domain types |
 

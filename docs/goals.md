@@ -72,7 +72,7 @@ One rule set decides which goals each action accepts. It is the same in chat and
 
 Any other status gets a plain refusal that names the goal and its status. Nothing changes.
 
-Reading goals never pauses a turn. Each write tool (`create_goal`, `steer_goal`, `pause_goal`, `resume_goal`, `abandon_goal`) asks for your confirmation before it acts. On a single-agent turn the agent runs as a read, so the question comes from the tool. In a multi-step turn, the write intents keep their per-step confirmation, so the question comes first and no sibling step runs twice.
+Reading goals never pauses a turn. Only `abandon_goal` asks for your confirmation by default, because an abandoned goal stays abandoned. `create_goal` asks only when its plan names a milestone that may do an irreversible write. It then lists those writes. `steer_goal` declares that it needs no confirmation, because it queues your own instruction. `pause_goal` and `resume_goal` are reversible, so they run without a question.
 
 **Steering** (`steer_goal` tool) enqueues a free-text instruction that is applied before the next milestone runs: Ze re-plans the remaining milestones around the instruction and continues. Steering only works while the goal is `ACTIVE`; if the goal is `AWAITING_GATE`, resolve the gate first.
 
@@ -164,21 +164,20 @@ After each milestone, Ze extracts a learning and stores it as a `GoalLearning` c
 
 A redirect at a gate creates a learning too. Ze approves it at once, because you wrote it.
 
-Ze promotes a learning to user memory only when it is eligible:
+A learning counts as eligible when:
 
 - You confirmed it, or
 - At least two distinct supporting action records exist, and they come from at least two independent execution contexts.
 
-A learning with an unresolved contradiction is never eligible. Promotion goes through `submit_perception_facts` as a `prompt_supplied` fact with `reviewed = false`. It then follows the normal memory pipeline, including nightly dedup, and appears at `GET /api/v0/memory/facts`. A confirmed learning can become a `FACT`. Any other learning stays an `INFERENCE`.
+A learning with an unresolved contradiction is never eligible. When promotion runs, it writes a learning to user memory only if you confirmed it. A confirmed learning becomes a `FACT`. A learning that independent action records support, without your confirmation, stays an `INFERENCE`. Ze records that promotion as blocked and does not write it to memory.
 
-You review and promote learnings through the REST API:
+**Promotion does not run today.** The store has `promote_learning`, and a promoted learning would go through `submit_perception_facts` as a `prompt_supplied` fact with `reviewed = true`. But no route, tool or job calls it, so goal learnings never reach user memory.
+
+You review learnings through the REST API. `GET /api/v0/goals/{goal_id}` returns a goal's learnings with their evidence.
 
 | Route | Action |
 |---|---|
-| `GET /api/v0/goals/{goal_id}/learnings` | List a goal's learnings |
-| `GET /api/v0/goals/{goal_id}/learnings/{learning_id}` | Learning detail with evidence |
 | `POST /api/v0/goals/{goal_id}/learnings/{learning_id}/review` | Approve, reject, correct, defer, or retain |
-| `POST /api/v0/goals/{goal_id}/learnings/{learning_id}/promote` | Promote an eligible learning |
 
 Later milestones and replans see the eligible learnings of their goal. Ze labels each one `FACT` or `INFERENCE (tentative)`.
 
@@ -208,7 +207,7 @@ When planning a new goal (or replanning after a redirect), `GoalPlanner.plan()` 
 
 ### Learning promotion
 
-See [Goal learnings](#goal-learnings) above. A learning that you confirm, or that independent action records support, can enter user memory. Then every future agent can use it, not just the goal engine.
+See [Goal learnings](#goal-learnings) above. Promotion would let every agent use a learning that you confirmed, not just the goal engine. Nothing calls it yet.
 
 ### Procedure reuse within an active goal
 
@@ -284,11 +283,12 @@ The planner sets `reuse_hint` on milestones when a prior goal's output may be re
 ## Configuration
 
 The `@agent` class in `ze_automation/agents/goals/agent.py` declares the goal tools.
-An irreversible write asks first by default, and a read runs without asking.
+An irreversible write asks first by default, unless its tool declares otherwise. A read runs without asking.
 
-`ze_automation/bootstrap.py` fixes the advance sweep cron (`*/15 * * * *`, job id
-`goal_advance_sweep`). Proactive job crons are configurable via `proactive.*` in
-`config/config.yaml`. See [docs/scheduled-jobs.md](scheduled-jobs.md).
+`ze_automation/bootstrap.py` registers the advance sweep (job id `goal_advance_sweep`).
+Its cron defaults to `*/15 * * * *`. Set `proactive.goal_advance_sweep.cron` or
+`.enabled` in `config/config.yaml` to change it. The other proactive job crons are
+configurable under `proactive.*` the same way. See [docs/scheduled-jobs.md](scheduled-jobs.md).
 
 ---
 
@@ -298,5 +298,5 @@ An irreversible write asks first by default, and a read runs without asking.
 - Goals do not replace workflows — use workflows for recurring or one-shot automation.
 - Success is not auto-detected; Ze marks complete when all milestones finish; you confirm at gates along the way.
 - Steering only applies to remaining pending milestones; Ze never re-runs completed milestones.
-- Promoted facts from learning promotion enter memory as `reviewed=False` and go through the normal consolidation cycle before being treated as canonical.
+- Only a learning you confirmed enters memory. It enters as a `prompt_supplied` fact with `reviewed=True` and then goes through the normal consolidation cycle.
 - Procedures can be reused within the same goal once extracted.

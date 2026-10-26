@@ -18,16 +18,17 @@ The eval system is split into two parts:
 core/ops/ze-eval/          # ze_eval Python package — all eval infrastructure
   ze_eval/
     __init__.py        # public surface: ZeEvalClient, load_scenarios
-    types.py           # typed dataclasses: JudgeScore, VerifyResult, SessionMetrics, ScenarioResult
-    scenario.py        # load_scenarios(), load_scenario_by_id()
-    client.py          # ZeEvalClient — HTTP wrapper for /eval/chat
+    types.py           # typed dataclasses: JudgeScore, VerifyResult, SessionMetrics
+    scenario.py        # load_scenarios(), load_scenario_by_id(), context validation
+    fixtures.py        # setup rows: insert, bind and delete the records a scenario needs
+    client.py          # ZeEvalClient — HTTP wrapper for /eval/chat and /eval/confirm
     judge.py           # LLM-as-judge (structured for DeepEval swap in a follow-up phase)
     verifier.py        # DB outcome verification
     metrics.py         # session token + latency metrics from llm_cost_log
     scoring.py         # routing_correct(), tools_correct(), outcome_correct()
     runner.py          # orchestration: load → run → score → print → save
     report.py          # print_summary(), print_diff()
-    server.py          # MCP server: ze_chat, ze_list_scenarios, ze_run_scenario, ze_run_suite
+    server.py          # MCP server: ze_chat, ze_confirm, ze_list_scenarios, ze_run_scenario, ze_run_suite
 
 eval/                  # test data and thin entrypoints
   scenarios/           # YAML scenario definitions — add new ones here
@@ -124,12 +125,28 @@ ze_chat(prompt="What time is it?", session_id="eval")
 Returns:
 - `response` — Ze's text response
 - `agent_used` — which agent handled it (`companion`, `research`, `calendar`, etc.)
-- `routing` — confidence, routing method, per-agent scores
-- `pending_confirmation` — `true` if Ze paused to ask for user confirmation
+- `routing` — primary agent, confidence, routing method, per-agent scores
+- `pending_confirmation` — `true` if Ze paused to ask for user confirmation. Answer it with `ze_confirm`.
 - `error` — error message if the graph failed
 
 Use the same `session_id` across calls to simulate a multi-turn conversation.
 Use a fresh `session_id` for each independent test.
+
+---
+
+### `ze_confirm`
+
+Answer the open write confirmation of a session and get the resumed turn.
+
+```
+ze_confirm(choice="deny", session_id="eval")
+ze_confirm(choice="approve", session_id="eval", edits={"<item id>": "new body"})
+```
+
+`choice` is `approve` or `deny`. Approving runs exactly the parked calls, so it really
+sends or deletes: use it only when Ze's Google account is a sandbox. `edits` maps a
+confirmation item id to replacement text for an editable item. The result has the same
+shape as `ze_chat`. The call fails with `409` when the session has no open confirmation.
 
 ---
 
@@ -142,8 +159,10 @@ ze_list_scenarios()                  # all scenarios
 ze_list_scenarios(tag="routing")     # filtered by tag
 ```
 
-Tags: `companion`, `routing`, `persona`, `research`, `calendar`, `email`,
-`emotional`, `safety`, `compound`, `graceful_degradation`.
+Every scenario lists its tags in its YAML entry. Common tags: `companion`, `routing`,
+`persona`, `research`, `reminders`, `memory`, `calendar`, `email`, `goals`, `workflow`,
+`contacts`, `prospecting`, `emotional`, `safety`, `compound`, `retry`, `screen_context`,
+`graceful_degradation`.
 
 ---
 
@@ -171,7 +190,7 @@ ze_run_suite()               # all scenarios
 ze_run_suite(tag="persona")  # persona scenarios only
 ```
 
-Returns a summary with counts (`routing_correct`, `routing_wrong`, `errors`) and
+Returns a summary with counts (`total`, `routing_correct`, `routing_wrong`, `routing_unchecked`, `errors`) and
 per-scenario results for the evaluating LLM to review.
 
 ---
@@ -186,6 +205,8 @@ curl -X POST http://localhost:8000/eval/chat \
   -H "Authorization: Bearer <your-key>" \
   -d '{"prompt": "What is recursion?", "session_id": "test-1"}'
 ```
+
+The same server also answers `POST /eval/confirm` with `{"session_id": "...", "choice": "approve" | "deny", "edits": {}}`. It returns the resumed turn in the same shape, or `409` when the session has no open confirmation.
 
 ### Forcing an agent
 
@@ -342,7 +363,13 @@ Calendar and email write to Google's APIs, not Ze's DB, so they have no `verify`
 
 ### Retry scenarios
 
-`eval/scenarios/retry_text_only.yaml` and `eval/scenarios/retry_refused_after_write.yaml` (tag `retry`) cover Retry. The text-only turns must record no write call, so Retry stays available. The reminder and goal turns must record a write call, so Retry is unavailable. The scenario schema did not change.
+Three files (tag `retry`) cover Retry:
+
+- `eval/scenarios/retry_text_only.yaml`: the turns record no write call, so Retry stays available.
+- `eval/scenarios/retry_refused_after_write.yaml`: a reminder turn returns an undo payload, so Retry offers a rollback. A goal turn waits for its Start confirmation and records a write call, so Retry is unavailable.
+- `eval/scenarios/retry_rollback.yaml`: an irreversible write in the same reply, or a loop that already existed, makes Retry unavailable.
+
+The scenario schema did not change.
 
 ### Call limit
 
@@ -405,6 +432,7 @@ make eval                      # routing accuracy only — cheap, no LLM judge
 make eval-judge                # + LLM quality scores (costs tokens)
 make eval-report               # show last run summary
 make eval-diff                 # compare last two runs (regression detection)
+make eval-clean                # delete eval-namespaced rows and eval fixture rows from the dev database
 
 # Fine-grained control
 uv run python eval/run.py --tag routing          # filter by tag
@@ -421,7 +449,13 @@ Ze saves results to `eval/results/<timestamp>.json`. The judge uses
 
 ---
 
-## Detector calibration
+## Calibration
+
+Each System One surface has a calibration script in `eval/calibration/`. See
+[system-one.md](system-one.md) for the targets that call a live model and cost credits.
+Two calibrations are documented here.
+
+### Detector calibration
 
 `make calibrate-open-query` runs the open-query detector over the sets in
 `eval/calibration/open_query*.jsonl`. It runs locally and costs nothing. Use
@@ -429,7 +463,7 @@ Ze saves results to `eval/results/<timestamp>.json`. The judge uses
 tuned set. One held-out run gives the verdict. `test_open_query_holdout.py` is
 a slow test, so it runs only with `SLOW=1`.
 
-## Complexity calibration
+### Complexity calibration
 
 `make calibrate-complexity` runs the model-tier judgment over `eval/calibration/complexity.jsonl`. It calls System One and costs credits. Use `ARGS="--check-sets"` to validate the tuned and held-out files offline. The default run prints the Noul histogram by gold tier and the bar that the tuned set suggests. One held-out run gives the verdict: `ARGS="--set holdout --simple-max X"`, with the frozen bar `X`. The runner refuses a second scoring of the held-out set unless you pass `--rerun`. If most rows are skipped for transport reasons (timeouts, rate limits, a missing key), the run exits with code 3, prints no verdict and keeps the held-out set unspent. Fix the cause and run it again. See [Configuration](configuration.md#surfacescomplexity) for the bar rule and the acceptance rule.
 
@@ -471,25 +505,28 @@ every 15 min, and the runner does not use it.
 
 | File | Scenarios | Focus |
 |------|-----------|-------|
-| `companion.yaml` | 5 | Greeting, emotional check-in, capabilities, graceful degradation, memory |
+| `companion.yaml` | 16 | Greeting, check-in, capabilities, memory reference, `render_*` component tools |
 | `persona.yaml` | 5 | Sycophancy, honesty, refusal, tone, conciseness |
-| `routing.yaml` | 6 | Routing accuracy across all agents, compound tasks |
+| `routing.yaml` | 8 | Routing accuracy across all agents, compound tasks |
 | `research.yaml` | 6 | Research quality, coding questions, uncertainty, multi-turn |
 | `reminders.yaml` | 7 | Create/list/cancel reminders, edge cases, multi-turn |
-| `memory.yaml` | 6 | Fact storage, recall, contradiction handling, hallucination |
+| `memory.yaml` | 25 | Fact storage and recall, contradiction, admission, remember/forget, retrieval relevance, compaction |
 | `edge_cases.yaml` | 8 | Emoji-only, code paste, language switch, very long, topic switch |
-| `calendar.yaml` | 9 | Read, create, delete, free slots, credential errors, multi-turn |
-| `email.yaml` | 8 | Read, compose, reply, summarise, credential errors, multi-turn |
-| `goals.yaml` | 7 | Create, list, progress check, milestone update, verification cadence |
+| `calendar.yaml` | 11 | Read, create, delete, free slots, credential errors, multi-turn |
+| `email.yaml` | 9 | Read, compose, reply, summarise, credential errors, multi-turn |
+| `goals.yaml` | 12 | Create, list, progress check, milestone update, verification cadence, suggestions |
 | `workflow.yaml` | 6 | Create, list, pause, manual trigger, approval flow, error inquiry |
 | `contacts.yaml` | 6 | Lookup, list, add, update, company search, multi-turn |
+| `loops.yaml` | 5 | `track_loop`, no duplicate loop, "what's open" |
 | `write_confirmation.yaml` | 5 | Approve and deny for parked writes, compound read-then-send, conductor delegation |
-| `prospecting.yaml` | 6 | Company research, outreach draft, lead qualification, target lists |
+| `conductor.yaml` | 8 | Conductor delegation, mixed gather and act, stall, promote to workflow |
+| `retry_text_only.yaml`, `retry_refused_after_write.yaml`, `retry_rollback.yaml` | 2 each | Retry availability and rollback refusal |
+| `composed_answers.yaml` | 6 | Preset chips: slipping, decisions and topic, in English and Portuguese |
+| `screen_context.yaml` | 26 | Deixis per place and `chat_about` per record kind, with setup rows |
+| `tool_scripts.yaml` | 3 | `run_tool_script` replaces a chain of reads (`max_llm_calls`) |
+| `prospecting.yaml` | 7 | Company research, outreach draft, lead qualification, target lists |
 
-Available tags: `companion`, `routing`, `persona`, `research`, `reminders`,
-`memory`, `edge_case`, `multi_turn`, `emotional`, `safety`, `compound`,
-`graceful_degradation`, `honesty`, `tone`, `conciseness`, `capabilities`,
-`calendar`, `email`, `goals`, `workflow`, `contacts`, `prospecting`.
+Run `ze_list_scenarios()` for the current list of ids and tags.
 
 ---
 
@@ -501,9 +538,9 @@ Available tags: `companion`, `routing`, `persona`, `research`, `reminders`,
 |-------|------|-------------|
 | `response` | string | Ze's text response |
 | `agent_used` | string | Which agent handled it |
-| `routing` | object | confidence, routing_method, is_compound, score_gap, raw_scores |
+| `routing` | object | primary_agent, confidence, routing_method, is_compound, score_gap, raw_scores |
 | `pending_confirmation` | bool | True if Ze paused for user approval |
-| `tool_calls` | array | Tools invoked: name, args, duration_ms, success, error, gate, parked, turn. Judge remember/forget from `remember_fact` / `forget_fact`. |
+| `tool_calls` | array | Tools invoked: tool_name, args, duration_ms, success, error, gate, parked. The runner adds `turn`. Judge remember/forget from `remember_fact` / `forget_fact`. |
 | `components` | array | Rendered component trees (`render_*` tools). The judge reads their kind and data. |
 | `tokens_used` | int | Total tokens consumed by the agent |
 | `error` | string | Error message if the graph failed |
