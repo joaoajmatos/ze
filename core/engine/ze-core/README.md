@@ -25,24 +25,29 @@ The `ze_core/screen/` package holds the screen resolver registry and `build_scre
 | Module | What it provides |
 |---|---|
 | `orchestration/` | `graph_builder`, `AgentState`, graph nodes and edges |
-| `routing/` | `EmbeddingRouter`, `tier.py` (model tier), `PostgresRoutingStore`, fallback |
+| `routing/` | `EmbeddingRouter`, `judge.py` (System One routing choice), `tier.py` (model tier), `PostgresRoutingStore`, fallback |
 | `openrouter/` | `OpenRouterClient`, streaming, transcription. `audio.py` measures recordings with `ffprobe` and converts them with `ffmpeg` |
 | `voice.py` | `transcribe_audio`: measures, limits and transcribes one recording for the voice route |
-| `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context var |
+| `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context var, `TurnTelemetry` (`turn.py`, the per-turn recorder), `SpendBudgetChecker` (`budget.py`) and the static price table (`pricing.py`) |
 | `conversation/` | Message/session/confirmation stores + graph turn helpers. `retry.py` decides Retry eligibility from the trace, `rewind.py` rewinds thread history for a retry, `rollback.py` (`run_rollback`) undoes the actions of a reply before a retry and records each undo on `messages.rollback`, and messages carry `replaces`/`replaced_by`/`rollback` |
 | `container.py` | Base `Container` with DI wiring |
-| `embeddings.py` | Shared `paraphrase-multilingual-MiniLM-L12-v2` singleton |
+| `embeddings.py` | Shared `intfloat/multilingual-e5-base` singleton (enforces E5's `query:` / `passage:` prefixes) |
+| `nli.py`, `torch_lock.py` | The NLI cross-encoder (`NLIClient` implementation) and the lock that serializes access to the shared PyTorch models |
+| `screen/` | Screen resolver registry, owner map, and `build_screen_note` |
+| `bootstrap.py` | `build_engine_stack()` — builds the embedder, NLI client, OpenRouter client, cost tracker, memory store, consolidator, and session summariser |
+| `interface/cli.py` | `CLIInterface`, a terminal `AppInterface` implementation |
+| `migrations/` | The `zc` chain for engine tables (routing log, cost log, messages, sessions, confirmations, checkpoints) |
 | `checkpoint_serde.py` | LangGraph checkpoint serialisation for plugin types |
 
 Agent execution (`BaseAgent`, `@agent`, `@tool`), plugin framework (`ZePlugin`, channels), and memory live in sibling packages — `ze-agents`, `ze-plugin`, and `ze-memory`.
 
 ## Dependencies
 
-![ze-core package dependencies](../../docs/diagrams/core/engine/ze-core/dependencies.svg)
+![ze-core package dependencies](../../../docs/diagrams/core/engine/ze-core/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/engine/ze-core/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/engine/ze-core/dependencies.html)</sub>
 
-Third-party: `langgraph`, `openrouter`, `numpy`, `structlog`.
+Third-party: `openrouter`, `httpx`, `numpy`, `scipy`, `sentence-transformers`.
 
 ## Usage
 
@@ -62,4 +67,4 @@ From the repo root:
 make test-core
 ```
 
-Pass `SLOW=1` to include embedding model tests. See [docs/testing.md](../../docs/testing.md).
+Pass `SLOW=1` to include embedding model tests. See [docs/testing.md](../../../docs/testing.md).

@@ -1,8 +1,8 @@
 # Ze — Deployment Guide
 
-Ze runs on [Fly.io](https://fly.io) as a single-machine app with an attached
-Postgres database. GitHub Actions runs CI on every push and pull request to `main`.
-You start a deploy by hand.
+Ze runs locally for its author. You can also deploy it to [Fly.io](https://fly.io) as a
+single-machine app with an attached Postgres database. GitHub Actions runs CI on every
+push to `main` and every pull request to `main`. You start a deploy by hand.
 
 The deployment unit is `apps/ze-api/`. The `fly.toml` and `Dockerfile` both live
 there.
@@ -72,21 +72,14 @@ fly secrets list
 ### 4. Apply database migrations
 
 ```bash
-fly ssh console -C "python -m ze_api.migrate upgrade"
+fly ssh console -C "python -m ze_api.cli.migrate upgrade"
 ```
 
 Or use the `DATABASE_URL_SYNC` value locally and run `make migrate` pointed at the
 production database. The SSH console approach is simpler for initial setup.
 
-#### Upgrading after the conversation-module reorg (zc015–zc018)
-
-If your database was stamped with the old `ze` branch heads (`ze001`, `ze002`, `006`,
-`008`), run:
-
-```bash
-make migrate        # applies zc015–zc018 (no-op if tables already exist)
-make migrate-stamp  # purges orphan revision rows and sets correct heads
-```
+The app checks the schema at startup and refuses to start if migrations are pending.
+Set `AUTO_MIGRATE=true` as a secret to let the app apply them at startup instead.
 
 ### 5. Deploy
 
@@ -144,7 +137,7 @@ fly scale count 1       # always 1 — Ze is single-user, no horizontal scaling
 ### Run migrations on production
 
 ```bash
-fly ssh console -C "cd /app && python -m alembic upgrade head"
+fly ssh console -C "python -m ze_api.cli.migrate upgrade"
 ```
 
 Or from the repo root:
@@ -175,7 +168,7 @@ Fly restarts the machine automatically after a secret update.
 
 Three workflows live in `.github/workflows/`:
 
-**`ci.yml`** — runs on every push and pull request to `main`. Each job runs all its
+**`ci.yml`** — runs on every push to `main` and every pull request to `main`. Each job runs all its
 gates, even when an earlier gate fails, so one red run shows every broken gate:
 - **Web:** `make typecheck-web`, `make lint-web`, `make web-build`, `make test-web`
 - **Backend:** `make lint` (ruff), then `make test-py` (every Python package suite,
@@ -198,6 +191,15 @@ publishes the shared npm packages.
    - Repo → Settings → Secrets and variables → Actions → New repository secret
 
 GitHub needs no other secrets — all runtime secrets live in Fly.
+
+---
+
+## Sidecars
+
+The API image holds the backend only. The browser and workspace sidecars each have their
+own `fly.toml` in `sidecar/browser/` and `sidecar/workspace/`. Point the API at them with
+`BROWSER_SERVICE_URL`, `WORKSPACE_SERVICE_URL` and `WORKSPACE_API_TOKEN`. See
+[browser.md](browser.md) and [workspace.md](workspace.md).
 
 ---
 
@@ -260,7 +262,7 @@ The app failed during startup. Common causes:
 
 - Missing required env var (check `fly secrets list`)
 - Database not reachable (check `DATABASE_URL` and Postgres status)
-- Migration not applied (run `fly ssh console -C "python -m alembic upgrade head"`)
+- Migration not applied (run `fly ssh console -C "python -m ze_api.cli.migrate upgrade"`)
 
 **WebSocket disconnects / cannot connect**
 
@@ -272,8 +274,8 @@ The app failed during startup. Common causes:
 **Database migrations not applied**
 
 ```bash
-fly ssh console -C "cd /app && python -m alembic current"
-fly ssh console -C "cd /app && python -m alembic upgrade head"
+fly ssh console -C "python -m ze_api.cli.migrate current"
+fly ssh console -C "python -m ze_api.cli.migrate upgrade"
 ```
 
 **Machine OOM (out of memory)**

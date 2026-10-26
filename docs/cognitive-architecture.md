@@ -22,7 +22,7 @@ immediately clear: Ze perceived, remembered, reflected, and acted well, but its 
 function was under-built. `core/cognition/ze-worldstate` (Phases 109–110, repaired in Phase 170) and `core/arbitration/ze-priority`
 (Phases 123, 127) narrowed that gap: loops drift and rank, goals are surfaced, and the priority snapshot
 reports the sources it could not read. The confirmation gap (Phase 171) and the duplicate-intake gap (Phase 173) are closed. The next gap this lens surfaces is **social
-cognition** — third-party relationship modeling stays thin (see function 4 below).
+cognition** — third-party relationship modeling is still partial (see function 4 below).
 
 The seven functions below are from the external architecture review and are adopted verbatim
 as the functional vocabulary.
@@ -71,12 +71,12 @@ Maturity: 🟢 substantial — `ze-automation`: goals (heavyweight, explicit, mu
 (multi-step plans), scheduler. `core/cognition/ze-worldstate` (Phases 109–110): open loops — the
 lightweight, implicitly-opened active concerns (`suspected → active → drifting →
 closed|dropped`), extracted from all four inflows through System One (the commitment intake for conversation, Phase 173; the loop gate for email, calendar, and ingestion, Phase 168) with a Haiku title writer behind it (the earlier all-Haiku gate could not parse Haiku's fenced JSON, so before 168 no loops were extracted in production; its parse now tolerates the fence), with drift detection and hedged,
-push-bar-gated surfacing. Before Phase 170 the drift predicate never matched a real row, so no loop drifted by absence; the sweep now fires once the deadline passes, and new evidence moves the deadline (`record_corroboration`). The push grounding gate checks the loop title. You can also ask Ze to track a concern (Phase 169, `track_loop`). That loop starts `active`. An explicit ask can bring a `drifting` loop back to `active`, the only `drifting → active` path. Suspected loops reach the user through the Open loops page and a resume question (Phase 171). A confirm, from the page or the `confirm_loop` tool, stamps the loop like a declaration: confidence 0.9 and a 7-day deadline. Each confidence change keeps the value before it, with the time (Phase 185), so a client can draw a real confidence movement. A second, independent source that matches a suspected loop is judged by one System One Noul, `same_concern`; at or above a calibrated bar its confidence rises, and at or above a stricter bar the loop is promoted to `active` at confidence 0.7 (Phase 172). Independence is code: the source key is new to the loop, the evidence is not already linked, and the key was never recorded on a matching dropped loop. `core/arbitration/ze-priority` (Phase 123, 127): `PriorityView` ranks loops,
+push-bar-gated surfacing. Before Phase 170 the drift predicate never matched a real row, so no loop drifted by absence; the sweep now fires once the deadline passes, and new evidence moves the deadline (`record_corroboration`). The push grounding gate checks the loop title. You can also ask Ze to track a concern (Phase 169, `track_loop`). That loop starts `active`. An explicit ask can bring a `drifting` loop back to `active`, the only `drifting → active` path. Suspected loops reach the user through the World page and a resume question (Phase 171). A confirm, from the page or the `confirm_loop` tool, stamps the loop like a declaration: confidence 0.9 and a 7-day deadline. Each confidence change keeps the value before it, with the time (Phase 185), so a client can draw a real confidence movement. A second, independent source that matches a suspected loop is judged by one System One Noul, `same_concern`; at or above a calibrated bar its confidence rises, and at or above a stricter bar the loop is promoted to `active` at confidence 0.7 (Phase 172). Independence is code: the source key is new to the loop, the evidence is not already linked, and the key was never recorded on a matching dropped loop. `core/arbitration/ze-priority` (Phase 123, 127): `PriorityView` ranks loops,
 goals, and correlation hypotheses together, plus user-directed priority override.
 One shared attention budget (Phase 177) now covers every discretionary push, and a single interruption
 governor holds accountability and discretionary pushes during quiet hours.
 
-A loop records where it came from. The `open_loop_sources` table (Phase 172) holds the origin and every counted corroboration. The source key per inflow is:
+A loop's claim kind comes from its state (Phase 199): `suspicion` while it is suspected, `priority` once it is active, drifting, or closed, and none once it is dropped. A loop records where it came from. The `open_loop_sources` table (Phase 172) holds the origin and every counted corroboration. The source key per inflow is:
 
 | Inflow | Source key |
 |---|---|
@@ -85,7 +85,7 @@ A loop records where it came from. The `open_loop_sources` table (Phase 172) hol
 | Calendar | The event's `external_ref` |
 | Ingestion | The ingestion id |
 
-**State: the drift and ranking machinery runs; the confirmation path and duplicate intake remain open (see below).** Phase 170 repaired the
+**State: the drift, ranking, confirmation, and intake machinery runs.** Phase 170 repaired the
 executive layer: a loop drifts when its deadline passes, gate-created loops carry evidence, stuck goals
 are found and ranked, and the priority snapshot reports the sources it could not read. The findings and
 the repair record are in [executive-function.md](../specs/arch/executive-function.md). What exists now handles both ends: goals for
@@ -117,12 +117,18 @@ reorderings merge inside `PriorityView.rank()`, so `rank()` returns the user's o
 > *tone, relationship memory, boundaries, interaction style*
 
 Maturity: 🟡 partial — `ze-personal` persona (tone/dials, interaction style), contacts
-(`PersonStore`, channel handles), messenger.
+(`PersonStore`, channel handles), the social layer in `ze_personal/social/` (Phases 128, 130),
+messenger.
 
 **State:** interaction *style toward the user* is well-modeled (persona dials, identity
-block). Modeling of **third parties** — who matters to the user, the state and cadence of
-each relationship, boundaries per person — is thin. Contacts are a directory, not a
-relationship model. This is the "social memory" gap from function 2, seen from the behavioral
+block). Third parties now have some structure. The memory graph holds `project` entities and
+`WORKS_ON` and `COLLABORATES_WITH` edges, and each relationship edge carries a `last_contact`
+time. `PriorityView` ranks stale relationships as `relationship` items, and the morning briefing
+shows them as follow-up nudges. `SocialCooccurrenceJob` forms project-person co-occurrence
+hypotheses, Ze promotes them on corroboration, and the `who_is_on_project` tool answers with
+confirmed members and hedged candidates separately. **Gap:** a person still has no first-class
+view of the state and cadence of the relationship. Contacts remain closer to a directory than to
+a relationship model. This is the "social memory" gap from function 2, seen from the behavioral
 side.
 
 ### 5. Reflection — revising the model when not acting
@@ -270,8 +276,9 @@ have since shipped:
    `specs/arch/social-cognition.md`. Steps 1–2 shipped as Phase 128; step 3 (co-occurrence
    inference) shipped as Phase 130.
 4. ~~Perception facts still bypass the contribution seam.~~ **Done** — Phases 133–134 put
-   conversation, ingest, onboarding, and goal-learning facts on `submit_perception_facts`
-   and doctrine provenance. Phase 140 removed `AgentResult.memory_proposals` and added
+   conversation, ingest, onboarding, and inbound-message facts on `submit_perception_facts`
+   and doctrine provenance. Ze stores them as `prompt_supplied` (Phase 199). The goal-learning
+   promotion path uses the same seam. Phase 140 removed `AgentResult.memory_proposals` and added
    companion `remember_fact` / `forget_fact`. Remaining honesty gaps: extraction is still
    LLM-gated (not a hard classifier). Companion may still narrate memory if it skips tools.
    Constraint veto on gated writes is Phase 144 (`constraint_gate`). First adopters include

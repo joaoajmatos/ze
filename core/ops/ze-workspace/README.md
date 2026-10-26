@@ -15,15 +15,15 @@ The sidecar is not a browsing session. Web pages stay in `ze-browser`. This pack
 - `workspace_*` tools — list, read, write, delete, run, run skill script, ingest, reset
 - Durable `workspace_state` and `workspace_runs` in Postgres, with a run journal that survives `ze-api` restarts
 - Follow-through — a `RunWatcher` that watches detached runs, starts a follow-up turn, and pushes when the client is offline
-- REST routes under `/api/v0/workspace`
+- REST routes under `/api/v0/workspace`: status, files (list, upload, download, delete), and runs (list, events, cancel)
 
 ### Integration
 
 `ze-api` builds the stack, injects `WorkspaceClient` / `WorkspaceGate` / `WorkspaceStore`, and calls `workspace_tools.configure(...)`. `BaseAgent.agentic_loop` merges the workspace tool names in its `_PLATFORM_TOOLS` tuple. Unattended goal/workflow runs use a duck-typed gate in `ze-automation` so that package never imports `ze_workspace`.
 
-![ze-workspace package dependencies](../../docs/diagrams/core/ops/ze-workspace/dependencies.svg)
+![ze-workspace package dependencies](../../../docs/diagrams/core/ops/ze-workspace/dependencies.svg)
 
-<sub>[Interactive version](../../docs/diagrams/core/ops/ze-workspace/dependencies.html)</sub>
+<sub>[Interactive version](../../../docs/diagrams/core/ops/ze-workspace/dependencies.html)</sub>
 
 `screen_resolvers.py` registers `workspace_run` and the `workspace_placed` pseudo-ref, which names files the user placed this turn.
 
@@ -40,7 +40,10 @@ The sidecar is not a browsing session. Web pages stay in `ze-browser`. This pack
 | `action_records.py`, `action_handoff.py` | Action-record submissions for runs |
 | `scripts.py` | `WorkspaceScriptRunner` — runs a tool script over the sidecar's `WS /scripts` and serves its tool calls |
 | `script_learning.py` | `ScriptLearning` — one ledger row per script run; a procedure candidate after three straight successes |
-| `rest.py` | FastAPI helpers: status, files, reset |
+| `rest.py` | Helpers for the REST routes: status, files, and runs |
+| `procedure_candidates.py` | Turns a workspace run into a procedure candidate |
+| `push_kinds.py` | The `workspace_run_completed` push kind |
+| `screen_resolvers.py` | The `workspace_run` and `workspace_placed` screen resolvers |
 | `sanitize.py` | Path confinement and secret redaction |
 | `types.py` | Action, origin, run, and file types |
 | `errors.py` | `WorkspaceError` and subtypes |
@@ -50,7 +53,7 @@ Every `WRITE` tool in this package declares `reversibility` and an `effect_phras
 
 ## Dependencies
 
-`ze-agents`, `ze-logging`, `ze-data`, `ze-memory`, `ze-plugin`, `httpx`, `websockets`, `asyncpg`. `ze-core` and `ze-agents` must not depend on this package.
+`ze-agents`, `ze-logging`, `ze-memory`, `ze-plugin`, `ze-proactive`, `httpx`, `websockets`, `asyncpg`. `ze-core` and `ze-agents` must not depend on this package.
 
 ## Usage
 
@@ -78,8 +81,8 @@ stat = await client.stat()
 
 `WorkspaceStack.script_runner` is set only when both `WORKSPACE_SERVICE_URL` and `WORKSPACE_API_TOKEN` are set, because the sidecar refuses `/scripts` without a token. The runner checks `GET /stat` first and never opens the socket when `scripts_isolated` is false.
 
-See [docs/workspace.md](../../docs/workspace.md) for access, isolation, and local/Fly setup.
-See [docs/skills.md](../../docs/skills.md) for how skill scripts reach this sidecar.
+See [docs/workspace.md](../../../docs/workspace.md) for access, isolation, and local/Fly setup.
+See [docs/skills.md](../../../docs/skills.md) for how skill scripts reach this sidecar.
 
 ## Testing
 
@@ -89,4 +92,4 @@ From the repo root:
 make test-workspace
 ```
 
-See [docs/testing.md](../../docs/testing.md).
+See [docs/testing.md](../../../docs/testing.md).

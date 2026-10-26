@@ -131,7 +131,7 @@ so they never run scripts.
 3. The writable tree is `/workspace` only. Path resolution refuses anything that
    normalizes outside it.
 4. Shown command output redacts secrets (`OPENROUTER_API_KEY`, `DATABASE_URL`,
-   `ZE_API_KEY`, `WORKSPACE_API_TOKEN`, and keys matching `*_SECRET` / `*_TOKEN`).
+   `ZE_API_KEY`, `WORKSPACE_API_TOKEN`, and keys matching `*_SECRET`, `*_TOKEN` or `*_PASSWORD`).
 
 `ze-core` and `ze-agents` must not import `ze_workspace`.
 

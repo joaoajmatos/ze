@@ -1,7 +1,7 @@
 # Data Portability
 
 Ze lets you export all your personal data, restore it to another instance, and
-permanently delete everything. All three operations are in **Settings → Your data**.
+permanently delete everything. All three operations are in the Data module of **Governance** (`/governance#data`).
 
 The portability contract itself lives in `ze-data`. Plugins contribute `DataDomain`
 instances through `ZePlugin.data_domains()`; `DataPortabilityService` collects the
@@ -99,7 +99,7 @@ On success, Ze clears its local configuration and reloads to the setup screen.
 
 1. Optionally: **Export your data** if you want a backup.
 2. **Delete all data**.
-3. Ze resets to the onboarding screen.
+3. Ze clears its local configuration and reloads to the setup screen.
 
 ### Restoring from a backup
 

@@ -74,6 +74,20 @@ not `ZeApiSettings`.
 | `CONSOLIDATION_ENABLED` | `true` | Set to `false` to disable memory/contacts consolidation jobs (override via `config.yaml` `memory.consolidation.enabled`) |
 | `SCHEDULER_ENABLED` | `true` | Set to `false` to disable the workflow scheduler (override via `config.yaml` `workflows.scheduler_enabled`) |
 
+### Server and deployment
+
+| Variable | Default | Description |
+|---|---|---|
+| `PUBLIC_URL` | `""` | Public base URL of the server. Ze uses it to register the Gmail push webhook. |
+| `CORS_ORIGINS` | `*` | Allowed CORS origins: `*` or a comma-separated list |
+| `AUTO_MIGRATE` | `false` | Apply database migrations when the server starts |
+| `AUTO_SEED_DEV_DATA` | `false` | Seed the dev fixtures when the server starts (`make dev` sets it) |
+| `EVAL_MODE` | `false` | Unlock the eval endpoints (`make dev-eval` sets it) |
+| `ZE_PROFILE` | `""` | Name of a `config/profiles/<name>.yaml` overlay that Ze deep-merges over `config.yaml`. `make dev` sets `quiet`. Production leaves it empty. |
+| `CONFIG_DIR` | `apps/ze-api/config` | Directory that holds `config.yaml` and `persona.yaml` |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter API base URL |
+| `GMAIL_PUBSUB_TOPIC` | `""` | Pub/Sub topic for Gmail push. See [channels.md](channels.md). |
+
 ### Browser sidecar
 
 See [browser.md](browser.md) for Docker Compose, health checks, and deployment.
@@ -99,7 +113,10 @@ See [workspace.md](workspace.md) for access, runs, isolation, Docker Compose, an
 | Variable | Default | Description |
 |---|---|---|
 | `PROSPECTING_MAX_ITERATIONS` | `15` | Max ReAct loop iterations for the prospecting agent |
+| `PROSPECTING_MAX_LOOP_TOKENS` | `24000` | Token cap for one prospecting loop |
 | `PROSPECTING_STALE_TIMEOUT_MINUTES` | `10` | Minutes before an in-progress campaign is considered stuck |
+| `BROWSER_DELAY_MS` | `2000` | Pause before each browser tool call |
+| `BROWSER_MAX_TEXT_CHARS` | `8000` | Characters of page text the browser tool returns |
 
 ### Agent harness
 
@@ -125,7 +142,7 @@ fallback model is resolved via `models.overrides.router_fallback` / `models.defa
 
 ```yaml
 models:
-  default: tencent/hy3:free     # REQUIRED — fleet-wide fallback for every resolvable key
+  default: anthropic/claude-haiku-4-5   # REQUIRED — fleet-wide fallback for every resolvable key
   overrides: {}                 # OPTIONAL — per-key pins, e.g. {companion: anthropic/claude-sonnet-4-5}
   embedding:        intfloat/multilingual-e5-base   # capability-specific — never resolved via the chain
   whisper:          openai/gpt-audio                # capability-specific — never resolved via the chain
@@ -154,7 +171,7 @@ it under `models.overrides`:
 
 ```yaml
 models:
-  default: tencent/hy3:free
+  default: anthropic/claude-haiku-4-5
   overrides:
     companion: anthropic/claude-sonnet-4-5
 ```
@@ -197,6 +214,21 @@ point is cut off. If the turn still hits `budget_seconds`, Ze answers from the l
 specialists it called instead of failing in silence. Both keys are optional. Keep `budget_seconds` below the web app's delivery watchdog (120 s of silence); a test pins this.
 A specialist cut off at the deadline may have already done a write: the reply says it may have partly run, but the trace cannot show that one call because it never returned.
 
+### `budget:`
+
+An opt-in spend ceiling. Both keys ship as `null`, which means no limit.
+
+```yaml
+budget:
+  session_limit_usd: null   # e.g. 2.00
+  daily_limit_usd: null     # e.g. 10.00
+```
+
+Ze estimates spend from token counts. When the spend of the session, or of the day, has
+reached a limit, Ze pauses the turn before it runs and asks you to confirm (a
+`confirm_request` frame of kind `budget`). `proactive.budget` is a different setting: it caps
+pushes, not spend.
+
 ### `memory:`
 
 ```yaml
@@ -214,7 +246,11 @@ memory:
     unreviewed_ttl_days: 90
     expiry_grace_days: 7
     episode_archive_days: 7
+    episode_archive_batch: 50
     episode_min_archive_batch: 10
+    session_grouping_enabled: true
+    min_session_episodes: 3
+    max_sessions_per_run: 10
     nightly_cron: "0 2 * * *"
 
   # Idle-session summaries — defaults shown (ze_memory/defaults.py)
@@ -224,10 +260,6 @@ memory:
     min_episodes: 2
     max_sessions_per_run: 5
     max_transcript_tokens: 6000
-
-  profile:
-    min_facts: 3       # Skip profile synthesis below this many reviewed facts
-    episode_limit: 50  # Max episodes fed into the synthesis prompt
 
   # NLI cross-encoder (Phase 79) — contradiction, grounding, retrieval re-rank
   nli_contradiction_threshold: 0.60  # min contradiction prob to mark contradicted
@@ -268,7 +300,7 @@ worldstate:
 
 The drift window — how long an `active` loop waits before it drifts — is a code
 constant (7 days), not config. New evidence on an active loop moves the deadline to at
-least 7 days from now. See [scheduled-jobs.md](scheduled-jobs.md#open-loop-upkeep).
+least 7 days from now. See [scheduled-jobs.md](scheduled-jobs.md#open-loop-upkeep-4-am-and-5-am-utc).
 
 ### `correlation:`
 
@@ -279,6 +311,9 @@ correlation:
   push:
     enabled: false   # false → no hypothesis push candidates
     dry_run: true    # true → log would-be pushes and send none
+    schedule: "0 */4 * * *"   # when the scan that forms hypotheses runs
+    max_seeds_per_run: 20
+    seed_lookback_hours: 8
 ```
 
 The attention-arbitration job reads both keys. With `enabled: false` Ze prepares no
@@ -442,7 +477,7 @@ for how the sandbox enforces them.
 | `max_source_chars` | `8000` | Characters of script source that Ze accepts. |
 
 Each key takes a positive number. A wrong type or a value of zero or less keeps the default
-for that key and logs `script_limit_invalid`. The other keys keep their values. The
+for that key and logs `script_limit_invalid`. The other keys keep their values.
 The integer keys (`wall_seconds`, `max_inner_calls`, `max_proposed_writes`, `max_result_chars`
 and `max_source_chars`) must be whole numbers. `wall_seconds: 30.0` falls back to `30` with a
 warning. `max_spend_usd` accepts an integer or a float, so `max_spend_usd: 1` sets `1.0`.
@@ -465,9 +500,9 @@ news:
   personalization:
     enabled: true
     explore_ratio: 0.2             # Fraction reserved for off-profile discovery
-    candidate_multiplier: 3        # Over-fetch multiplier before filtering
+    candidate_multiplier: 4        # Over-fetch multiplier before filtering
     briefing_limit: 8
-    min_facts: 5                   # Min user facts required for interest ranking
+    min_preferences: 2             # Min user preferences required for interest ranking
 
   credibility:
     enabled: true

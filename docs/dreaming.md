@@ -27,7 +27,8 @@ learning loop that improves retention, abstraction, and robustness.
 
 2. **Sleep (NREM)** — The nightly job replays high-priority episodes, compresses old
    sessions, deduplicates facts, decays stale traces, and detects schema and policy
-   clusters. No LLM calls in this phase.
+   clusters. The pass makes no model call of its own. The `MemoryConsolidator` steps it
+   runs (session archival and fact dedup) can call Haiku, as in the nightly job.
 
 3. **Dream (REM)** — For each cluster candidate, a generator synthesizes insights,
    procedures, hindsight facts, or plan stress-tests. All outputs land in a staging
@@ -65,9 +66,11 @@ Nothing synthetic writes directly to live memory. Every promoted fact carries
 | **78b** | Done | Dream synthesis, NLI gates, two-critic pipeline, auto-promotion, confidence decay, `valid_until` expiry |
 
 **NLI model (Phase 79, done):** `cross-encoder/nli-deberta-v3-small` loads as a shared
-singleton in `ze_core/nli.py` via `NLIClient` — used for write-time contradiction, nightly dedup,
-session-cached retrieval re-rank, and correlation grounding. `ScoringGates.gate1_nli` in `gates.py`
-imports from the same module (no second download).
+singleton in `ze_core/nli.py` (the `NLIClient` protocol lives in `ze_agents/nli.py`) — used for
+write-time contradiction, nightly dedup, session-cached retrieval re-rank, and correlation
+grounding. `DreamJob` passes the same client to `ScoringGates.gate1_nli` in `gates.py` (no second
+download). For non-Latin text, or when the NLI call fails, gate 1 falls back to an LLM groundedness
+check.
 
 ### What ships across both sub-phases
 
