@@ -27,7 +27,9 @@ All claims checked against `main` at `9529da15` (2026-10-26). 198 and 199 have l
 3. If no row comes back, one `SELECT state FROM open_loops WHERE id = $1` in the same transaction tells `LoopNotFoundError` (no row) from `InvalidLoopTransitionError` (wrong state). Both types exist today (`errors.py`); REST maps the second to 409.
 4. The event's other writes (evidence links, entity links, source rows) in the same transaction.
 
-Events that read before they write (drop, expire, track, corroborate, promote) take the row lock first with `SELECT … FOR UPDATE`. Single-statement events (decay, drift, confirm, close, link) need no lock: the `WHERE` guard reads the current state.
+**Row lock first.** Every event on an existing loop that writes more than one statement (drop, expire, track, note evidence, corroborate, promote, resolve) takes the loop's row lock first with `SELECT … FOR UPDATE`, before it reads evidence or writes links. Two events on one loop therefore never interleave: a drop cannot compute its fingerprint while a note-evidence is adding a link. Single-statement events (decay, drift, confirm, close, link) need no separate lock: the guarded `UPDATE` locks the row and reads its current state.
+
+**No I/O inside a transaction.** Entity resolution, matching, embeddings, System One judgments and the title writer all run before the event is called. The event's transaction holds only SQL, so row locks last milliseconds.
 
 Decay is one statement per loop:
 `SET confidence = …, state = CASE WHEN state = 'active' THEN 'drifting' ELSE state END, drift_rationale = CASE WHEN state = 'active' THEN $r ELSE drift_rationale END`. A loop the sweep drifted a moment earlier is already `drifting`, so decay changes its confidence and leaves its state and rationale alone (US1 scenario 3).

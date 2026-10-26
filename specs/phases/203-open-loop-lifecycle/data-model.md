@@ -46,6 +46,10 @@ Rules the table states (FR-003):
 
 "No change" events (`EXPIRE`, `DRIFT`, `RESOLVE`, `LINK` on the wrong state) return without raising: a sweep or an inflow raced another event, which is normal. "Refused" events are a caller asking for something the loop cannot do.
 
+### Fingerprint of an empty evidence set
+
+`compute_evidence_fingerprint([])` is the SHA-256 of the empty string, as today. A dropped loop with no evidence therefore blocks a later suspected loop that matches it and also has no evidence. This is today's behavior for a user drop, and a stale expiry now gets it too.
+
 ## The declared stamp (`rules.DeclaredStamp`)
 
 | Field | Value |
