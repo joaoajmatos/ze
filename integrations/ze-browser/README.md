@@ -9,12 +9,12 @@ Some agents need to read web pages that have no API — prospect research, compa
 ### Key features
 
 - `BrowserClient` — async HTTP client for the sidecar service
-- `browser_extract` `@tool` — registered in the prospecting agent's tool set
+- `browser_extract` `@tool` — a read tool marked `egress`, so it stays out of tool-script stubs
 - Configurable timeouts, text truncation, and request delay for rate limiting
 
 ### Integration
 
-The sidecar runs as a separate Docker service (`sidecar/browser/`). `BrowserClient` is injected into `ProspectingPlugin` via `ze-api`'s container, and `ze-ingestion`'s bootstrap wires the same client for fetched-page extraction.
+The sidecar runs as a separate Docker service (`sidecar/browser/`). `ze-api` builds one `BrowserClient` in `ze_api/wiring/container.py`. It reaches agent tools through the agent dependency map (`ze_api/wiring/agents.py`), and `ze-ingestion` receives the same client for fetched-page extraction.
 
 ## Responsibilities
 
@@ -22,8 +22,8 @@ The sidecar runs as a separate Docker service (`sidecar/browser/`). `BrowserClie
 |---|---|
 | `client.py` | `BrowserClient` — async HTTP client for the sidecar service |
 | `tool.py` | `browser_extract` `@tool` — registered in the agent tool registry |
-| `types.py` | `BrowserResult` — request/response types |
-| `errors.py` | `BrowserError` and subtypes |
+| `types.py` | `BrowserResult` — `url`, `title`, `text`, `status_code` |
+| `errors.py` | `BrowserError` |
 
 ## Dependencies
 
@@ -36,9 +36,11 @@ The sidecar runs as a separate Docker service (`sidecar/browser/`). `BrowserClie
 ```python
 from ze_browser import BrowserClient
 
-client = BrowserClient(base_url="http://ze-browser.internal:8080", timeout_seconds=20)
-result = await client.fetch("https://example.com")
+client = BrowserClient(base_url="http://ze-browser.internal:8080", timeout=20)
+result = await client.extract("https://example.com")
 ```
+
+`extract()` raises `BrowserError` when the sidecar times out, cannot be reached, or answers with a 5xx status. `health()` returns `True` when the sidecar answers 200.
 
 ## Configuration
 

@@ -21,13 +21,14 @@ Satisfies the `ZeIntegration` protocol structurally. Plugins declare `GoogleCred
 | Module | What it provides |
 |---|---|
 | `auth.py` | `GoogleCredentials`, `SCOPES`, `calendar()` and `gmail()` client factories |
-| `gmail_channel.py` | `GmailChannel` — the Gmail `InboundChannel`: `send()`, `get_thread()`, `poll_new_messages()` |
+| `gmail_channel.py` | `GmailChannel` — the Gmail `InboundChannel`: `send()`, `get_thread()`, `poll_new_messages()`, `register_push()` (Gmail watch). `supports_push` is true when a public URL is set |
+| `auth_errors.py` | `is_auth_failure()` — true for a token refresh failure or a 401 from Google, so callers need not import `google.auth` |
 | `settings.py` | `GoogleSettings`, `get_google_settings()` — OAuth env vars |
 | `webhook.py` | `GmailWebhookVerifier` — verifies Pub/Sub push OIDC tokens |
 
 ## Dependencies
 
-Ze: `ze-communication` (channel types and the webhook verifier base). Third party: `google-auth`, `google-api-python-client`.
+Ze: `ze-communication` (channel types and the webhook verifier base) and `ze-agents`. Third party: `google-auth`, `google-auth-oauthlib`, `google-api-python-client`, `pydantic-settings`, `structlog`.
 
 ## Usage
 
@@ -53,7 +54,7 @@ Run the one-time OAuth2 flow from the repo root:
 make google-auth
 ```
 
-This writes a refresh token to `.env`.
+The script needs `client_secrets.json` (an OAuth 2.0 Desktop client) in the repo root. It opens a browser for consent, then prints the refresh token inside a `fly secrets set GOOGLE_REFRESH_TOKEN=...` line. It does not write any file. For a local run, copy the token into `apps/ze-api/.env` as `GOOGLE_REFRESH_TOKEN`, with `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
 ## Testing
 

@@ -19,25 +19,27 @@ from `ze-core` and `ze-personal`.
 ```
 plugins/ze-news/
   ze_news/
-    types.py          ← Article, CredibilityFlag, CredibilityReport, PersonalizationContext
-    store.py          ← NewsStore: upsert, get_recent, get_personalized, search, update_credibility
+    types.py          ← Article, CredibilityFlag, CredibilityReport, NewsPreference, PersonalizationSettings, PersonalizationContext
+    store.py          ← NewsStore: upsert, get_recent, get_personalized, search, by_tag, get_by_ref, update_credibility, dedup_new_articles, prune
     registry.py       ← SourceRegistry, build_registry()
-    credibility.py    ← run_heuristics(), run_llm_scoring(), score_article()
-    plugin.py         ← NewsPlugin(ZePlugin): agents, jobs, migrations, configurable_services
-    preferences.py    ← builds PersonalizationContext from memory facts and goals
-    signals.py        ← ArticleSignalAdapter + news SignalSource for the correlation engine
+    credibility.py    ← run_heuristics(), run_nli_headline_check(), run_llm_scoring(), score_article()
+    plugin.py         ← NewsPlugin(ZePlugin): agents, jobs, migrations, configurable_services, UI contributions
+    preferences.py    ← NewsPreferenceBuilder: builds PersonalizationContext from memory facts, profile facets, active goals, and the current request
+    signals.py        ← ArticleSignalAdapter + NewsSignalSource for the correlation engine
     onboarding.py     ← news onboarding provider
-    api/              ← REST routes (/api/v0/news …) and schemas
-    ui/               ← plugin UI contributions (news page, settings)
+    refs.py           ← article_ref_id(url), the ref id for the news_article screen kind
+    screen_resolvers.py ← the news_article screen resolver
+    api/              ← GET /api/v0/news/settings and its schema
+    ui/settings.py    ← builds the settings section tree
     locales/          ← progress-message strings (en, pt)
     sources/
       base.py         ← NewsSource ABC
-      rss.py          ← RssSource (feedparser + aiohttp)
+      rss.py          ← RSSSource (feedparser + httpx)
     agents/
       agent.py        ← NewsAgent(@agent)
       tools.py        ← refresh_news, get_headlines, search_news tools
     jobs/
-      fetch.py        ← NewsFetchJob(@proactive_job, force= param for on-demand use)
+      fetch.py        ← NewsFetchJob (job_id "news_fetch"; run(force=True) for on-demand use)
     migrations/
       versions/
         zn001_news_articles.py        ← creates news_articles table
@@ -85,11 +87,17 @@ class Article:
 1. Calls `source.fetch(limit=50)` — fetches and parses the RSS feed.
 2. Embeds each article (`title + summary`) using the shared
    `intfloat/multilingual-e5-base` singleton.
-3. Upserts into `news_articles` (`ON CONFLICT (url) DO NOTHING`).
-4. Returns the list of newly inserted articles.
+3. Upserts into `news_articles` (`ON CONFLICT (url) DO UPDATE SET fetched_at = now()`).
+   Only rows that did not exist before count as new.
+4. If `news.nli_dedup_enabled: true`, drops new articles that repeat an existing story.
 5. If `news.credibility.enabled: true` and new articles exist, fires an
    `asyncio.create_task` to score them — scoring never blocks the fetch loop.
-6. Prunes articles older than `news.retention_days`.
+6. Sends new articles to memory as signals, and asks the Sources modules to refresh.
+7. After all sources, deletes articles whose `fetched_at` is older than
+   `news.retention_days`.
+
+A source fetched less than `news.min_fetch_interval_minutes` ago (default 30) is
+skipped, unless the run is forced (`refresh_news` forces it).
 
 ---
 
@@ -97,39 +105,57 @@ class Article:
 
 ### How it works
 
-When the news agent or morning briefing requests personalised headlines, Ze builds
-a `PersonalizationContext` from memory:
+When the news agent or morning briefing requests personalised headlines,
+`NewsPreferenceBuilder.build()` builds a `PersonalizationContext` from four sources.
+Each source adds weighted `NewsPreference` entries:
+
+| Source | Weight | What it reads |
+|---|---|---|
+| Stored facts | 0.9 include, 1.0 exclude | Facts with a predicate that starts with `news_interest`, `interest_news`, or `topic_interest`, and facts that state a dislike ("not interested", "don't show", "avoid", …). Contradicted facts and facts below `min_confidence` are skipped |
+| Profile facets | 0.6 include, 0.9 exclude | `topics`, `preferences`, `news_preferences`, `news_interests` (include) and `news_exclusions` (exclude). The onboarding step writes these |
+| Active goals | 0.5 | One include entry per active goal title |
+| The current request | 1.0 | The user's query text, unless it is a diagnostic question such as "why do you keep showing me this?" |
 
 ```python
 @dataclass
 class PersonalizationContext:
-    interest_text: str       # pipe-joined "key: value" facts + active goal titles
-    exclusions: list[str]    # values from facts with exclusion keys ("not interested", "avoid", ...)
+    interest_text: str       # " | "-joined "source:topic" for every include entry
+    exclusions: list[str]    # excluded topics, de-duplicated
     explore_ratio: float     # fraction of results reserved for discovery (default: 0.2)
-    fact_count: int          # number of non-exclusion facts (used to check min_facts threshold)
+    fact_count: int          # number of include entries (checked against min_preferences)
+    query_text: str
+    preferences: list[NewsPreference]
+    max_per_topic: int
+    candidate_multiplier: int
 ```
 
 `NewsStore.get_personalized()` then:
 
-1. If `fact_count < min_facts` or `interest_text` is empty — falls back to plain
-   recency ordering and returns `(articles, [])`. The caller treats this as
-   "not enough signal yet."
+1. If there are fewer include entries than `min_preferences` and none comes from the
+   current request, falls back to recency order with exclusions applied and returns
+   `(articles, [])`. The caller treats this as "not enough signal yet."
 2. Otherwise, fetches `limit × candidate_multiplier` recent articles as candidates.
 3. Applies word-boundary exclusions (regex `\bterm\b`) — articles whose title or
    summary match any exclusion term are dropped.
-4. Scores the remaining candidates by cosine similarity against the interest vector
-   (numpy dot-product over L2-normalised embeddings).
-5. Splits into two buckets:
+4. Scores each candidate: `1.5 × request similarity + stored-preference similarity +
+   0.1 × freshness`. Similarity is the weighted cosine between the article embedding
+   and the embedding of each preference topic; the best match wins.
+5. Keeps at most `max_per_topic` articles for each topic (the first tag, or the first
+   word of the title).
+6. Splits into two buckets:
    - **Relevant** — top `ceil((1 − explore_ratio) × limit)` articles by score.
-   - **Discovery** — remaining candidates, re-sorted by recency (`published_at DESC`),
+   - **Discovery** — the next candidates, re-sorted by recency (`published_at DESC`),
      up to `limit − len(relevant)`.
+
+If no structured preferences exist, the older path runs: it embeds `interest_text` and
+ranks candidates by cosine similarity against it.
 
 ### Preference signals
 
-No new UI is needed. When the user says *"Ze, I don't care about football"*, memory
-stores a `UserFact(key="not interested in", value="football")`. On the next context
-build, "football" appears in `exclusions`, and word-boundary regex filters it from
-both buckets — so "sport" won't falsely exclude "transport" articles.
+No new UI is needed. When the user says *"Ze, I don't care about football"*, the memory
+extractor stores a fact that states the dislike. On the next context build, "football"
+appears in `exclusions`, and word-boundary regex filters it from both buckets — so
+"sport" won't falsely exclude "transport" articles.
 
 ### Briefing rendering
 
@@ -144,7 +170,7 @@ both buckets — so "sport" won't falsely exclude "transport" articles.
   • Off-profile article (source_key)
 ```
 
-- The "For you" header appears when `fact_count ≥ min_facts`. Below the threshold it
+- The "For you" header appears when `fact_count ≥ min_preferences`. Below the threshold it
   falls back to `📰 Headlines:`.
 - Discovery articles never show inline credibility labels (to avoid double-negative
   framing). Their flags are available via the news agent.
@@ -162,9 +188,13 @@ articles are never filtered out — the system informs, it does not censor.
 
 **Pass 1 — Heuristic pre-pass** (inline, zero cost)
 
-Runs on every new article immediately after upsert. Pure phrase and regex matching
-against the title and summary. Produces `CredibilityFlag` objects with
-`source="heuristic"`.
+Runs first inside `score_article()`, which the fetch job starts in the background for
+each batch of new articles (only when `news.credibility.enabled` is true). Pure phrase
+and regex matching against the title and summary. Produces `CredibilityFlag` objects
+with `source="heuristic"`. Only six types have heuristics: `betteridge`, `clickbait`,
+`vague_attribution`, `weasel_words`, `emotional_manipulation`, and `sensationalism`.
+The LLM pass alone covers `passive_agency`, `false_balance`, `missing_context`, and
+`headline_mismatch`.
 
 **Pass 1b — NLI headline check** (optional, local cross-encoder)
 
@@ -253,7 +283,8 @@ different URLs.
 news:
   enabled: true
   fetch_schedule: "*/30 * * * *"   # cron for fetch job
-  retention_days: 7                 # hard-delete articles older than N days
+  min_fetch_interval_minutes: 30    # skip a source fetched more recently than this
+  retention_days: 7                 # hard-delete articles fetched more than N days ago
   model: "openai/gpt-4o-mini"      # news agent model
   briefing_limit: 8                 # fallback if personalization.briefing_limit not set
 
@@ -262,7 +293,12 @@ news:
     explore_ratio: 0.2             # fraction of briefing reserved for discovery
     candidate_multiplier: 4        # over-fetch multiplier before scoring
     briefing_limit: 8              # total articles in morning briefing (≥ 8 recommended)
-    min_facts: 5                   # min user facts before scoring; below → recency fallback
+    min_preferences: 2             # min include preferences before scoring; below → recency fallback
+                                   # (min_facts is read when min_preferences is absent)
+    max_per_topic: 2               # cap per topic in the ranked list
+    fact_days: 365                 # how far back to read stored facts
+    fact_limit: 100                # max facts read
+    min_confidence: 0.65           # facts and facets below this are ignored
 
   credibility:
     enabled: true

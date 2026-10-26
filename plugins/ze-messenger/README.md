@@ -31,6 +31,7 @@ Channels themselves live elsewhere. The contract is in `ze-communication`, and `
 | `jobs/inbound_poll.py` | `InboundPollingJob` |
 | `jobs/gmail_watch_renewal.py` | `GmailWatchRenewalJob` |
 | `signals.py` | `MessagingSignalSource` |
+| `push_kinds.py` | `INBOUND_MESSAGE` — the push kind the interruption governor sees (discretionary, normal urgency) |
 | `outbound/` | Send ledger store, types, and action-record adapter |
 | `migrations/` | `zmsg001` — creates `messenger_outbound_sends` |
 

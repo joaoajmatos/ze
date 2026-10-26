@@ -7,13 +7,14 @@ image small and cold starts fast.
 | Piece | Location | Role |
 |---|---|---|
 | Sidecar service | `sidecar/browser/` | Playwright + FastAPI — `GET /health`, `POST /extract` |
-| Python client | `integrations/ze-browser/` | `BrowserClient` — injected into `ze-api`'s container |
+| Python client | `integrations/ze-browser/` | `BrowserClient` — built once in `ze-api`'s container |
 | Prospecting agent | `plugins/ze-prospecting/` | Primary consumer — `browser_extract` tool |
 | Ingestion | `core/ops/ze-ingestion/` | `BrowserFetcher` is the fallback: when `WebFetcher` fails with a fetch error, ingestion retries the page through the sidecar |
 
-If the sidecar is unreachable, Ze logs a warning at startup and prospecting falls back
-to web-search-only research. Individual `browser_extract` calls return an error string
-the agent can skip.
+If the sidecar is unreachable, the prospecting agent checks `GET /health` at the start of
+each campaign, logs a `browser_service_unreachable` warning, and drops `browser_extract`
+from its tools, so it uses web search only. Individual `browser_extract` calls return an
+error string the agent can skip.
 
 See [configuration.md](configuration.md#browser-sidecar) for env vars.
 

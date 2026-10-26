@@ -35,7 +35,7 @@ Concrete channels live outside this package: `GmailChannel` in `ze-google`, for 
 
 <sub>[Interactive version](../../docs/diagrams/core/contracts/ze-communication/dependencies.html)</sub>
 
-No third-party dependencies beyond the standard library.
+Depends on `ze-agents` (for `ChannelNotFoundError`). No third-party dependencies.
 
 ## Usage
 

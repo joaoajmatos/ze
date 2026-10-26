@@ -24,7 +24,7 @@ Packages involved:
 | `integrations/ze-google` | `GmailChannel` implementation |
 | `plugins/ze-messenger` | Polling job, message processor, signal source, `MessengerAgent` |
 | `plugins/ze-personal` | `UserChannelStore`, `ChannelWatermarkStore`, `ThreadChannelMap` |
-| `apps/ze-api` | `GET/PATCH /api/v0/channels` REST API |
+| `apps/ze-api` | `GET /api/v0/channels/status` REST route and the webhook dispatcher |
 
 ---
 
@@ -134,7 +134,7 @@ For each registered inbound channel:
 
 A channel with `supports_push = True` receives messages through
 `POST /api/v0/webhooks/{source}` instead of polling. `WebhookDispatcher`
-(`ze_api/webhook.py`) finds the channel by `ChannelType`, asks
+(`ze_api/wiring/webhooks.py`) finds the channel by `ChannelType`, asks
 `channel.webhook_verifier()` to check the payload, and parses it into
 `InboundMessage` objects. It drops duplicates by `(source, message_id)` for 24 hours,
 then hands each message to `InboundMessageProcessor`. A plugin can also register a
@@ -148,7 +148,7 @@ Pub/Sub topic (`GMAIL_PUBSUB_TOPIC`). A Gmail watch expires after 7 days, so
 
 Classifies each message and gates which memory paths activate:
 
-![Decision matrix showing four sender classes — known contact, replied-to thread, unknown human, and automated sender — against four gated outcomes: episode write, async fact extraction, signal emission, and push notification. Known contacts and replied-to threads unlock all four. Unknown humans only get an episode written, with facts, signal, and notification suppressed. Automated senders get nothing at all.](diagrams/docs/channel-sender-matrix.svg)
+![Decision matrix showing four sender classes — known contact, replied-to thread, unknown human, and automated sender — against four gated outcomes: episode write, async fact extraction, signal emission, and push notification. Known contacts unlock all four. Replied-to threads unlock all but the push notification. Unknown humans only get an episode written, with facts, signal, and notification suppressed. Automated senders get nothing at all.](diagrams/docs/channel-sender-matrix.svg)
 
 <sub>[Interactive version](diagrams/docs/channel-sender-matrix.html)</sub>
 
@@ -158,17 +158,21 @@ Classifies each message and gates which memory paths activate:
 | Sender class | Criteria | Episode | Facts | Signal | Notification |
 |---|---|---|---|---|---|
 | **Known contact** | Handle in `contact_channels` | ✅ | ✅ async | ✅ | ✅ |
-| **Replied-to** | Thread in `thread_channel_map` | ✅ | ✅ async | ✅ | ✅ |
+| **Replied-to** | Thread in `thread_channel_map` | ✅ | ✅ async | ✅ | ❌ |
 | **Unknown human** | Not in contacts, not replied-to | ✅ | ❌ | ❌ | ❌ |
 | **Automated** | Matches automated sender patterns | ❌ | ❌ | ❌ | ❌ |
 
 </details>
 
+A known contact and a replied-to thread both count as significant. Only a known contact
+triggers the push notification. Significant messages also go to the open-loop
+extractor when `ze-api` wires one (`InboundMessageProcessor.loop_extractor`).
+
 Automated sender detection is header-based (no LLM):
 - Address prefixes: `noreply@`, `no-reply@`, `notifications@`, `postmaster@`,
-  `mailer-daemon@`, `donotreply@`, `bounce@`
+  `mailer-daemon@`, `donotreply@`, `bounce@`, `daemon@`, `automated@`
 - `List-Unsubscribe` header present
-- `Precedence: bulk` or `Precedence: list`
+- `Precedence: bulk`, `Precedence: list`, or `Precedence: junk`
 - Configurable extra patterns via `messaging.automated_senders` in `config.yaml`
 
 Ze writes episodes with `agent="messenger"` so session consolidation excludes
@@ -190,7 +194,7 @@ A thread belongs to exactly one of Ze's channel instances — the one that
 received or sent the first message in that thread.
 
 **`ThreadChannelMap`** is the single source of truth. The following populate it:
-- `InboundMessageProcessor.process()` — for every polled message with a `thread_id`
+- `InboundMessageProcessor.process()` — for every non-automated message with a `thread_id`
 - `send_email` tool — after every successful send
 
 **Send routing priority** (in `send_email`):
@@ -218,9 +222,10 @@ received or sent the first message in that thread.
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/v0/channels` | List connected channels with poll state and last poll time |
-| `PATCH` | `/api/v0/channels/{channel_id}` | Toggle `poll_enabled`, set `is_default_outbound`, update `display_name` |
-| `GET` | `/api/v0/channels/status` | Report each channel's connection state (`off`, `unknown`, `connected`, `needs_reauth`, `error`) and last sync time |
+| `GET` | `/api/v0/channels/status` | Report each channel's connection state (`off`, `unknown`, `connected`, `needs_reauth`, `error`), last sync time, and whether it uses push |
+
+The REST API has no route to list channels or to change `poll_enabled`,
+`is_default_outbound`, or `display_name`. The `UserChannelStore` methods do that work.
 
 `GET /api/v0/channels/status` reads the poll outcome each `InboundPollingJob` run
 records on `user_channel_watermarks` (`last_outcome`, `last_outcome_at`): `ok`,
@@ -230,20 +235,20 @@ The job never moves the watermark on a failure, so a channel that has never
 worked still shows up — it is registered on its first failed poll, not only on
 success. A 401 from Google counts as `needs_reauth` (`ze_google.is_auth_failure`).
 
-Sample `GET` response:
+Sample response:
 
 ```json
 {
+  "google_configured": true,
   "channels": [
     {
       "channel_id": "gmail:joao@gmail.com",
       "channel_type": "email",
       "handle": "joao@gmail.com",
       "display_name": "Personal Gmail",
-      "is_default_outbound": true,
-      "poll_enabled": true,
-      "supports_push": false,
-      "last_polled_at": "2026-06-26T14:00:00Z"
+      "state": "connected",
+      "last_sync_at": "2026-06-26T14:00:00Z",
+      "push": false
     }
   ]
 }
@@ -326,7 +331,7 @@ class ProtonPlugin(ZePlugin):
         return [ProtonCredentials]
 ```
 
-The polling job, message processor, signal source, thread map, and REST API all
+The polling job, message processor, signal source, thread map, and status route all
 pick it up automatically — you need no further wiring.
 
 ### 4. Automated sender classification

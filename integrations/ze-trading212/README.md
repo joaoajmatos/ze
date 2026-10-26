@@ -15,7 +15,7 @@ Trading212 REST API client — account, portfolio, orders, and history.
 
 ### Integration
 
-`Trading212Client.from_settings()` returns `None` when no API key is set, so the Finance plugin simply skips this source. `ze-api` creates the client and passes it to `FinancePlugin`, which wraps it in `Trading212DataSource`.
+`Trading212Client.from_settings()` returns `None` when no API key is set, so the Finance plugin simply skips this source. `FinancePlugin` lists `Trading212Client` in `integration_types()`. The plugin bootstrapper (`ze_plugin/bootstrap.py`) calls `from_settings()` and passes the client to the plugin constructor. The plugin wraps it in `Trading212DataSource`.
 
 ## Responsibilities
 
