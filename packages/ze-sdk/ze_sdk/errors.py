@@ -1,5 +1,5 @@
 from ze_agents.errors import (
-    ZeCoreError,
+    ZeError,
     RoutingError,
     InvalidPromptError,
     AgentError,
@@ -33,7 +33,7 @@ from ze_agents.errors import (
 )
 
 __all__ = [
-    "ZeCoreError",
+    "ZeError",
     "RoutingError",
     "InvalidPromptError",
     "AgentError",

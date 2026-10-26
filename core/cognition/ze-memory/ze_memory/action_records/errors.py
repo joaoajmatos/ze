@@ -3,11 +3,11 @@ from __future__ import annotations
 from ze_agents.errors import (
     ActionRecordIdempotencyConflictError,
     ActionRecordValidationError,
-    ZeCoreError,
+    ZeError,
 )
 
 
-class ActionRecordError(ZeCoreError):
+class ActionRecordError(ZeError):
     """Base class for action-record ledger errors."""
 
 

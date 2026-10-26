@@ -1,5 +1,5 @@
-from ze_sdk.errors import ZeCoreError
+from ze_sdk.errors import ZeError
 
 
-class ContactSourceTypeError(ZeCoreError):
+class ContactSourceTypeError(ZeError):
     """A contact source named a source type that has no known provenance."""
