@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-22
 
-**Status**: Draft (clarified 2026-10-26; plan in progress)
+**Status**: Ready to implement (2026-10-26)
 
 **Depends on**: 198 (wiring fixes B4 and B11)
 
@@ -76,7 +76,7 @@ The user gets the morning brief, the weekly goal narrative and accountability su
 
 **Acceptance Scenarios**:
 
-1. **Given** a morning brief delivered at 07:00, **When** the job runs again at 09:00, **Then** no second brief is sent and the outcome is `deduped`.
+1. **Given** a morning brief delivered at 07:00, **When** the job runs again at 09:00, **Then** no second brief is sent: the job skips on its cooldown, and a run racing it gets `deduped` from `notify`.
 2. **Given** a morning brief whose push `failed` at 07:00, **When** the job runs at 07:15, **Then** the brief is sent.
 3. **Given** a brief suppressed by the budget, **When** the next run comes, **Then** the cooldown has not started.
 4. **Given** quiet hours hold a brief (`held`), **When** the job runs again inside the window, **Then** no second brief is queued.

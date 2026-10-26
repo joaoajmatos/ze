@@ -15,7 +15,7 @@ Two migrations, each on its owner's chain. Both are raw SQL Alembic files; `ze_a
   4. `ADD COLUMN discretionary BOOLEAN NOT NULL DEFAULT TRUE`; `ALTER COLUMN discretionary DROP DEFAULT`
   5. `CREATE INDEX push_log_claim_key_sent_at_idx ON push_log (claim_key, sent_at DESC)`; `CREATE INDEX push_log_discretionary_sent_at_idx ON push_log (sent_at) WHERE discretionary`
 - Downgrade: drop the two new indexes and `discretionary`, rename `claim_key` back, drop `NOT NULL`, recreate the two old indexes. Deleted rows stay deleted.
-- test-pg: `apps/ze-api/tests/pg/test_push_claims_pg.py` (replaces `test_push_log_window_pg.py`) checks the upgrade on seeded rows and the claim rules (research R2): a second claim of the same key inside the window is `cooling`; outside it, `won`; `within=None` cools forever; the budget count reaches `over_budget`; `release` frees the key; two concurrent `claim` calls on one key give one `won`.
+- test-pg: `apps/ze-api/tests/pg/test_push_claims_pg.py` (replaces `test_push_log_window_pg.py`) checks the claim rules (research R2); the upgrade over old rows is checked on a scratch database (tasks T041): a second claim of the same key inside the window is `cooling`; outside it, `won`; `within=None` cools forever; the budget count reaches `over_budget`; `release` frees the key; two concurrent `claim` calls on one key give one `won`.
 
 ### `zpri002_surfacing_memory` (ze-priority, lane `conv`)
 
