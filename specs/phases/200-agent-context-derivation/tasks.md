@@ -111,14 +111,14 @@ Repo-root paths below:
 
 ### Engine lane (routed agent and compound subtask)
 
-- [ ] T015 [P] [L:engine] [US1] Write `ZC/tests/orchestration/nodes/test_execution_derivation.py` (failing first). The turn context has `timezone="Europe/Lisbon"` and `extensions={"user_message_id": "m1"}`. Check:
+- [x] T015 [P] [L:engine] [US1] Write `ZC/tests/orchestration/nodes/test_execution_derivation.py` (failing first). The turn context has `timezone="Europe/Lisbon"` and `extensions={"user_message_id": "m1"}`. Check:
   - The single-path child context and each compound subtask context carry both values.
   - A stub agent's `_build_system_prompt` line shows Lisbon time (SC-005, US1 scenario 1).
   - A stub agent reading `ctx.extensions["user_message_id"]` (as the workflow agent does, `ze_automation/agents/workflow/agent.py:108`) gets `"m1"` when routed (US1 scenario 2).
   - Only the single path gets a `token_sink`.
   - An image turn's child gets the image message.
-- [ ] T016 [L:engine] [US1] Create `ZC/ze_core/orchestration/child_runs.py` with `runtime_handles(config, *, stream)`, `gate_input(turn, state, config, index)` (moves `_pre_approved` and `_resume_kwargs`), `tally_from(state)`, `conductor_input(state, index, tally)` and `procedure_input(state, index)`.
-- [ ] T017 [L:engine] [US1] In `ZC/ze_core/orchestration/nodes/execution.py`, both paths build the child with `for_subtask(...)` from `child_runs`. Delete `_conductor_kwargs`, `_prompt_note_kwargs`, `_procedure_kwargs`, `_pre_approved`, `_resume_kwargs` and the second hand-written list in `_make_ctx` (this also removes the misindented line). T015 passes. `ZC/tests/orchestration/nodes/test_execution_context_notes.py` and `test_execution.py` pass; update only the assertions that checked the deleted helpers. Keep phase 198's B1 timezone regression tests as they are.
+- [x] T016 [L:engine] [US1] Create `ZC/ze_core/orchestration/child_runs.py` with `runtime_handles(config, *, stream)`, `gate_input(turn, state, config, index)` (moves `_pre_approved` and `_resume_kwargs`), `tally_from(state)`, `conductor_input(state, index, tally)` and `procedure_input(state, index)`.
+- [x] T017 [L:engine] [US1] In `ZC/ze_core/orchestration/nodes/execution.py`, both paths build the child with `for_subtask(...)` from `child_runs`. Delete `_conductor_kwargs`, `_prompt_note_kwargs`, `_procedure_kwargs`, `_pre_approved`, `_resume_kwargs` and the second hand-written list in `_make_ctx` (this also removes the misindented line). T015 passes. `ZC/tests/orchestration/nodes/test_execution_context_notes.py` and `test_execution.py` pass; update only the assertions that checked the deleted helpers. Keep phase 198's B1 timezone regression tests as they are.
 
 ### Edges lane (delegate, goal milestone, screen action)
 
@@ -142,7 +142,7 @@ Repo-root paths below:
 
 **Independent Test**: `ZC/tests/orchestration/test_conductor_merge.py`.
 
-- [ ] T018 [P] [L:engine] [US2] Write `ZC/tests/orchestration/test_conductor_merge.py` (failing first), with stub companion and specialist agents and the write-confirmation harness (`write_confirmation_harness.py`):
+- [x] T018 [P] [L:engine] [US2] Write `ZC/tests/orchestration/test_conductor_merge.py` (failing first), with stub companion and specialist agents and the write-confirmation harness (`write_confirmation_harness.py`):
   - (a) A single turn with two delegates gives state `conductor_delegate_total == 2`, two `done` entries in `conductor_ledgers[0]`, and the trace's `conductor_ledger` equal to them (US2 scenario 1).
   - (b) A delegate that parks, followed by approval and resume, gives total 1 and exactly one ledger entry, `awaiting_confirmation` then `done` (US2 scenario 3; today's total resets to 0).
   - (c) In a compound turn, two companion subtasks delegating once each give ledgers concatenated in subtask order and summed counts.
@@ -150,28 +150,28 @@ Repo-root paths below:
   - (e) The per-specialist cap counts across subtasks.
   - (f) The same totals hold when one subtask pauses and resumes.
   - (g) A compound turn of three subtasks, with routing's one-slot `conductor_ledgers` (or none), where only subtask 2 delegates: subtasks 0 and 1 read `[]`, and the merged list is padded, `[[], [], [<entry>]]`.
-- [ ] T019 [L:engine] [US2] Add `merge_outcomes(state, outcomes, tally)` and `turn_ledger(state)` to `ZC/ze_core/orchestration/child_runs.py`. `_run_with_timeout` in `nodes/execution.py` returns `(result_or_parked, outcome_of(ctx, index))`, and does so on `LoopParked` too.
-- [ ] T020 [L:engine] [US2] In `nodes/execution.py`, `execute_tool` builds one `tally_from(state)` per pass, shares it across all subtasks, and returns `merge_outcomes(...)` on the single and the compound path. Stop mutating `base_ctx` and drop `"agent_context"` from the updates. Delete `_sync_procedure_invocation` and every copy-back (FR-005). `_out_of_time` reads `ctx.conductor.ledger`. T018 passes.
-- [ ] T021 [P] [L:engine] [US2] Extend `ZC/tests/orchestration/test_procedure_activation.py` (failing first):
+- [x] T019 [L:engine] [US2] Add `merge_outcomes(state, outcomes, tally)` and `turn_ledger(state)` to `ZC/ze_core/orchestration/child_runs.py`. `_run_with_timeout` in `nodes/execution.py` returns `(result_or_parked, outcome_of(ctx, index))`, and does so on `LoopParked` too.
+- [x] T020 [L:engine] [US2] In `nodes/execution.py`, `execute_tool` builds one `tally_from(state)` per pass, shares it across all subtasks, and returns `merge_outcomes(...)` on the single and the compound path. Stop mutating `base_ctx` and drop `"agent_context"` from the updates. Delete `_sync_procedure_invocation` and every copy-back (FR-005). `_out_of_time` reads `ctx.conductor.ledger`. T018 passes.
+- [x] T021 [P] [L:engine] [US2] Extend `ZC/tests/orchestration/test_procedure_activation.py` (failing first):
   - A single subtask's invocation is the turn's `procedure_invocations[0]`, and the trace's `procedure` matches it (US2 scenario 2).
   - In a compound turn with two invoking subtasks, each records its own guided actions and is completed with its own subtask's result; the trace shows the lowest index (research R7).
   - A procedure invoked before a pause is completed after the resume.
   - In a compound turn `[A, B (agent disabled), C]` where C invokes a procedure (`subtask=2`, `completed_subtask_indexes=[0, 2]`), C's invocation is completed with C's result: no `IndexError`, and not A's result.
-- [ ] T022 [L:engine] [US2] `ZC/ze_core/orchestration/procedure_activation.py`:
+- [x] T022 [L:engine] [US2] `ZC/ze_core/orchestration/procedure_activation.py`:
   - `procedure_usage_trace(state)` reads `procedure_invocations[0]`.
   - `complete_procedure_invocations(state, config)` pairs each invocation with its subtask's result through `results_by_index = dict(zip(state["completed_subtask_indexes"], state["subtask_results"]))`, never `subtask_results[i]`: that list is ordered by completed index, and disabled or parked subtasks have no entry. On the single path it uses `agent_result`. An invocation with no result for its subtask is completed as abandoned.
   - `record_guided_actions(invocation, result, config)` is called from `execute_tool` per finished subtask.
   - Log `procedure_invocations_extra` when there is more than one.
-- [ ] T023 [L:engine] [US2] Call sites:
+- [x] T023 [L:engine] [US2] Call sites:
   - `nodes/memory.py`: call `complete_procedure_invocations(state, config)`, keeping the `is_retry` skip.
   - `nodes/trace.py`: use `turn_ledger(state)`, the conductor hint from state, and the procedure from state; delete `_conductor_ledger`'s context fallback (FR-009).
   - `nodes/context.py`: stop setting conductor state on the turn context.
   - T021 passes.
-- [ ] T024 [L:engine] [US2] Update the assertions that pinned the old hand copies in `ZC/tests/orchestration/test_write_confirmation_compound.py`, `test_write_confirmation_e2e.py`, `test_message_trace.py`, `test_retry_mode.py` and `nodes/test_execution.py`. Only assertions about copies change; behaviour assertions stay (FR-010), and so does phase 198's B6 test (`test_compaction_readout.py`).
-- [ ] T025 [L:engine] [US2] Run the grep gate:
+- [x] T024 [L:engine] [US2] Update the assertions that pinned the old hand copies in `ZC/tests/orchestration/test_write_confirmation_compound.py`, `test_write_confirmation_e2e.py`, `test_message_trace.py`, `test_retry_mode.py` and `nodes/test_execution.py`. Only assertions about copies change; behaviour assertions stay (FR-010), and so does phase 198's B6 test (`test_compaction_readout.py`).
+- [x] T025 [L:engine] [US2] Run the grep gate:
   - `rg -n 'getattr\((ctx|base_ctx|agent_context), "' ZC/ze_core/orchestration/nodes/{execution,trace}.py` finds no `AgentContext` field (FR-009).
   - `rg -n "_sync_procedure_invocation|base_ctx\.conductor|conductor_delegate_total = " core` finds nothing (FR-005).
-- [ ] T026 [L:engine] [US2] Engine lane gate: `make test-core test-agents` green. Request review from Vigil on the lane range.
+- [x] T026 [L:engine] [US2] Engine lane gate: `make test-core test-agents` green. Request review from Vigil on the lane range.
 
 **Checkpoint**: US2 is done when T018–T026 are green.
 

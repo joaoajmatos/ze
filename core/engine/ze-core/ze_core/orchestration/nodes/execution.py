@@ -11,6 +11,7 @@ from langgraph.types import interrupt
 
 from ze_agents.effects import effect_imperative
 from ze_agents.budget import has_budget, partial_answer
+from ze_agents.derive import ChildRunOutcome, for_subtask, outcome_of
 from ze_agents.errors import AgentTimeoutError, LoopParked, UnknownAgentError
 from ze_agents.park import (
     ConfirmItem,
@@ -20,46 +21,18 @@ from ze_agents.park import (
 )
 from ze_logging import get_logger
 from ze_agents.registry import get_agent, get_agent_class
-from ze_core.orchestration.state import AgentState
-from ze_agents.types import (
-    AgentContext,
-    AgentResult,
-    ConductorState,
-    DelegateTally,
-    WriteGateState,
-    add_sources,
+from ze_core.orchestration.child_runs import (
+    conductor_input,
+    gate_input,
+    merge_outcomes,
+    procedure_input,
+    runtime_handles,
+    tally_from,
 )
+from ze_core.orchestration.state import AgentState
+from ze_agents.types import AgentContext, AgentResult, add_sources
 
 log = get_logger(__name__)
-
-
-def _conductor_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
-    base = base_ctx.conductor
-    return {
-        "conductor": ConductorState(
-            hint=base.hint,
-            ledger=base.ledger or [],
-            tally=DelegateTally(counts=base.tally.counts, total=base.tally.total),
-        )
-    }
-
-
-def _prompt_note_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
-    return {
-        "screen_context_note": base_ctx.screen_context_note,
-        "preset_note": base_ctx.preset_note,
-        "resume_recap": base_ctx.resume_recap,
-        "open_priorities_note": base_ctx.open_priorities_note,
-        "preset": base_ctx.preset,
-    }
-
-
-def _procedure_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
-    return {
-        "procedure_guidance": base_ctx.procedure_guidance,
-        "procedure_matches": base_ctx.procedure_matches,
-        "procedure_invocation": base_ctx.procedure_invocation,
-    }
 
 
 BUDGET_DENIED_REPLY = (
@@ -264,35 +237,6 @@ def _park_updates(state: dict, new_parked: list[ParkedSubtask]) -> dict:
     return updates
 
 
-def _pre_approved(
-    base_ctx: AgentContext, config: RunnableConfig, state: dict
-) -> frozenset[str]:
-    extra = config["configurable"].get("pre_approved_writes") or ()
-    step = state.get("pre_approved_writes") or ()
-    return frozenset(base_ctx.write_gate.pre_approved) | frozenset(extra) | frozenset(step)
-
-
-def _gate_kwargs(
-    base_ctx: AgentContext, config: RunnableConfig, state: dict, index: int
-) -> dict[str, Any]:
-    """The write-gate part for subtask `index`, re-entering its parked loop if it parked."""
-    parked = {ps.index: ps for ps in state.get("parked_subtasks") or []}
-    decisions = {d.item_id: d for d in state.get("write_decisions") or []}
-    confirmation = state.get("write_confirmation")
-    gate = WriteGateState(
-        retry_mode=base_ctx.write_gate.retry_mode,
-        pre_approved=_pre_approved(base_ctx, config, state),
-        round=int(state.get("write_rounds") or 0),
-    )
-    if index in parked and decisions:
-        gate.resume = parked[index].loop
-        gate.decisions = decisions
-        gate.approval_request_id = (
-            confirmation.request_id if confirmation is not None else None
-        )
-    return {"write_gate": gate}
-
-
 async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
     envelope = state.get("envelope")
     base_ctx = state.get("agent_context")
@@ -300,25 +244,12 @@ async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
     if not envelope or not base_ctx:
         return {"error": "Missing routing envelope or agent context"}
 
-    reporter = config["configurable"].get("reporter")
     token_queue: asyncio.Queue | None = config["configurable"].get("token_queue")
-    token_sink = config["configurable"].get("token_sink")
-    identity_builder = config["configurable"].get("identity_builder")
-    abort_token = config["configurable"].get("abort_token")
     component_hook = config["configurable"].get("component_hook")
-    embed_fn = _embed_fn(config)
 
     if envelope.is_compound:
         return await _execute_compound(
-            envelope.subtasks,
-            base_ctx,
-            state,
-            config,
-            reporter=reporter,
-            identity_builder=identity_builder,
-            abort_token=abort_token,
-            component_hook=component_hook,
-            embed_fn=embed_fn,
+            envelope.subtasks, base_ctx, state, config, component_hook=component_hook
         )
     return await _execute_single(
         envelope.subtasks[0],
@@ -326,23 +257,11 @@ async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
         state,
         config,
         token_queue=token_queue,
-        token_sink=token_sink,
-        reporter=reporter,
-        identity_builder=identity_builder,
-        abort_token=abort_token,
         component_hook=component_hook,
-        embed_fn=embed_fn,
     )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
-
-def _embed_fn(config: RunnableConfig) -> Any:
-    embedder = config["configurable"].get("embedder")
-    if embedder is None:
-        return None
-    return embedder.encode_query
 
 
 def _build_messages(state: dict, agent_name: str, base_ctx: AgentContext) -> list[dict]:
@@ -374,65 +293,38 @@ async def _execute_single(
     state: dict,
     config: RunnableConfig,
     token_queue: asyncio.Queue | None = None,
-    token_sink: Any = None,
-    reporter: Any = None,
-    identity_builder: Any = None,
-    abort_token: Any = None,
     component_hook: Any = None,
-    embed_fn: Any = None,
+    stream: bool = True,
 ) -> dict:
-    ctx = AgentContext(
-        session_id=base_ctx.session_id,
+    tally = tally_from(state)
+    ctx = for_subtask(
+        base_ctx,
         prompt=subtask.prompt,
-        memory=base_ctx.memory,
-        contacts=base_ctx.contacts,
-        persona=base_ctx.persona,
-        timezone=base_ctx.timezone,
-        model=subtask.model or None,
+        model=subtask.model,
         messages=_build_messages(state, subtask.agent, base_ctx),
-        reporter=reporter,
-        identity_builder=identity_builder,
-        abort_token=abort_token,
-        embed_fn=embed_fn,
-        token_sink=token_sink,
-        tool_sink=config["configurable"].get("tool_sink"),
-        script_runner=config["configurable"].get("script_runner"),
-        active_skills=base_ctx.active_skills,
-        skill_tool_names=base_ctx.skill_tool_names,
-        **_gate_kwargs(base_ctx, config, state, 0),
-        **_prompt_note_kwargs(base_ctx),
-        **_procedure_kwargs(base_ctx),
-        **_conductor_kwargs(base_ctx),
+        runtime=runtime_handles(config, stream=stream),
+        gate=gate_input(base_ctx, state, config, 0),
+        conductor=conductor_input(state, 0, tally),
+        procedure=procedure_input(state, 0),
     )
-    result = await _run_with_timeout(
+    result, outcome = await _run_with_timeout(
         subtask.agent, ctx, token_queue=token_queue, index=0
     )
+    merged = merge_outcomes(state, [outcome], tally)
     if isinstance(result, ParkedSubtask):
-        return {
-            **_park_updates(state, [result]),
-            "agent_context": base_ctx,
-            "conductor_ledgers": [list(ctx.conductor.ledger)],
-            "conductor_delegate_counts": dict(ctx.conductor.tally.counts),
-            "conductor_delegate_total": ctx.conductor.tally.total,
-        }
+        return {**_park_updates(state, [result]), **merged}
     from ze_core.orchestration.procedure_activation import record_guided_actions
 
-    await record_guided_actions(ctx, result, config)
-    base_ctx.procedure_invocation = ctx.procedure_invocation
-    base_ctx.conductor.ledger = ctx.conductor.ledger
-    base_ctx.conductor.tally = ctx.conductor.tally
+    await record_guided_actions(outcome.procedure, result, config)
     components: list = list(state.get("preset_components") or [])
     if component_hook is not None:
         components += component_hook.pop_components(ctx.session_id)
     return {
         **_park_updates(state, []),
+        **merged,
         "agent_result": result,
         "subtask_results": [],
         "components": components,
-        "agent_context": base_ctx,
-        "conductor_ledgers": [list(ctx.conductor.ledger)],
-        "conductor_delegate_counts": dict(ctx.conductor.tally.counts),
-        "conductor_delegate_total": ctx.conductor.tally.total,
     }
 
 
@@ -441,13 +333,7 @@ async def _execute_compound(
     base_ctx: AgentContext,
     state: dict,
     config: RunnableConfig,
-    reporter: Any = None,
-    identity_builder: Any = None,
-    abort_token: Any = None,
     component_hook: Any = None,
-    embed_fn: Any = None,
-    token_queue: asyncio.Queue | None = None,
-    token_sink: Any = None,
 ) -> dict:
     if len(subtasks) == 1:
         return await _execute_single(
@@ -455,13 +341,8 @@ async def _execute_compound(
             base_ctx,
             state,
             config,
-            token_queue=token_queue,
-            token_sink=token_sink,
-            reporter=reporter,
-            identity_builder=identity_builder,
-            abort_token=abort_token,
             component_hook=component_hook,
-            embed_fn=embed_fn,
+            stream=False,
         )
 
     completed_indexes = [int(i) for i in (state.get("completed_subtask_indexes") or [])]
@@ -471,30 +352,20 @@ async def _execute_compound(
     for idx, result in zip(completed_indexes, existing_results):
         results_by_index[idx] = result
 
+    runtime = runtime_handles(config, stream=False)
+    tally = tally_from(state)
+
     def _make_ctx(index: int, subtask: Any) -> AgentContext:
-        ctx = AgentContext(
-            session_id=base_ctx.session_id,
+        return for_subtask(
+            base_ctx,
             prompt=subtask.prompt,
-            memory=base_ctx.memory,
-            contacts=base_ctx.contacts,
-            persona=base_ctx.persona,
-            timezone=base_ctx.timezone,
-            model=subtask.model or None,
+            model=subtask.model,
             messages=_build_messages(state, subtask.agent, base_ctx),
-            reporter=reporter,
-            identity_builder=identity_builder,
-            abort_token=abort_token,
-            embed_fn=embed_fn,
-            tool_sink=config["configurable"].get("tool_sink"),
-            script_runner=config["configurable"].get("script_runner"),
-            active_skills=base_ctx.active_skills,
-            skill_tool_names=base_ctx.skill_tool_names,
-            **_gate_kwargs(base_ctx, config, state, index),
-            **_prompt_note_kwargs(base_ctx),
-            **_procedure_kwargs(base_ctx),
-            **_conductor_kwargs(base_ctx),
+            runtime=runtime,
+            gate=gate_input(base_ctx, state, config, index),
+            conductor=conductor_input(state, index, tally),
+            procedure=procedure_input(state, index),
         )
-        return ctx
 
     to_run = [
         (i, st)
@@ -502,6 +373,7 @@ async def _execute_compound(
         if i not in completed_set and _agent_enabled(st.agent)
     ]
     new_parked: list[ParkedSubtask] = []
+    outcomes: list[ChildRunOutcome] = []
     if to_run:
         ran = await asyncio.gather(
             *[
@@ -509,20 +381,24 @@ async def _execute_compound(
                 for i, st in to_run
             ]
         )
-        for (i, _), outcome in zip(to_run, ran):
-            if isinstance(outcome, ParkedSubtask):
-                new_parked.append(outcome)
+        from ze_core.orchestration.procedure_activation import record_guided_actions
+
+        for (i, _), (result, outcome) in zip(to_run, ran):
+            outcomes.append(outcome)
+            if isinstance(result, ParkedSubtask):
+                new_parked.append(result)
             else:
-                results_by_index[i] = outcome
+                results_by_index[i] = result
+                await record_guided_actions(outcome.procedure, result, config)
 
     ordered_indexes = sorted(results_by_index)
     return {
         **_park_updates(state, new_parked),
+        **merge_outcomes(state, outcomes, tally),
         "agent_result": None,
         "subtask_results": [results_by_index[i] for i in ordered_indexes],
         "completed_subtask_indexes": ordered_indexes,
         "components": list(state.get("preset_components") or []),
-        "agent_context": base_ctx,
     }
 
 
@@ -531,14 +407,18 @@ async def _run_with_timeout(
     ctx: AgentContext,
     token_queue: asyncio.Queue | None = None,
     index: int = 0,
-) -> AgentResult | ParkedSubtask:
+) -> tuple[AgentResult | ParkedSubtask, ChildRunOutcome]:
     """Run one agent. A loop that parked asks-first writes comes back as a
-    `ParkedSubtask`; nothing here ever pauses the graph."""
+    `ParkedSubtask`; nothing here ever pauses the graph. The outcome carries the
+    child's conductor and procedure state either way."""
     try:
-        return await _run_agent(agent_name, ctx, token_queue)
+        result: AgentResult | ParkedSubtask = await _run_agent(
+            agent_name, ctx, token_queue
+        )
     except LoopParked as parked:
         log.info("orchestration_subtask_parked", agent=agent_name, index=index)
-        return ParkedSubtask(index=index, loop=parked.loop)
+        result = ParkedSubtask(index=index, loop=parked.loop)
+    return result, outcome_of(ctx, index)
 
 
 async def _run_agent(
