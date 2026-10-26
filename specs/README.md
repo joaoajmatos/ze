@@ -265,7 +265,7 @@ depend on code the earlier waves change.
 | 199 | [Claim Honesty Fixes](phases/199-claim-honesty-fixes/spec.md) | 0 | — | ✅ Implemented |
 | 200 | [Agent Context Derivation](phases/200-agent-context-derivation/spec.md) | 1 | 198 | 📝 Specified |
 | 201 | [Typed Turn Services](phases/201-typed-turn-services/spec.md) | 1 | 200 | 📝 Specified |
-| 202 | [Judgment Surface](phases/202-judgment-surface/spec.md) | 1 | 198 | 📝 Specified |
+| 202 | [Judgment Surface](phases/202-judgment-surface/spec.md) | 1 | 198 | 🔲 Ready to implement (plan, tasks; lands before 203) |
 | 203 | [Open-Loop Lifecycle](phases/203-open-loop-lifecycle/spec.md) | 1 | 199 | 📝 Specified |
 | 204 | [Push Bar and Cooldowns](phases/204-push-bar-and-cooldowns/spec.md) | 1 | 198 | 📝 Specified |
 | 205 | [Web Turn State](phases/205-web-turn-state/spec.md) | 1 | 198 | 📝 Specified |

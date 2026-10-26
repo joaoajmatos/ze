@@ -125,7 +125,7 @@ Agreed with Tarn (floor 203) on 2026-10-26 (the "202 Handoffs" note holds both m
 - **`loop_judge.py`**: 202 moves the config dataclass and deletes the parser. 203 owns `DecisionKind` and `LoopGateDecision` (FR-009).
 - **`corroboration.py`**: 202 owns `_judge` and the config and warning block in `_corroborate`; 203 owns the effect side (about lines 164-199).
 - **`nodes/memory.py`**: 202 owns the judgment-row hunk (`_outcome_row`, lines 83-101, and lines 156-193). 203 owns the loop-commit hunk (lines 197-201).
-- **`eval/calibration`**: 202 owns it. After rebasing, 203 edits only the loop-kind string literals that read its vocabulary (`commitment_intake.py` and `loop_gate.py`).
+- **`eval/calibration`**: 202 owns it. After rebasing, 203 edits only the loop-kind string literals that read its vocabulary (`commitment_intake.py` and `loop_gate.py`). If a golden file under `apps/ze-api/tests/calibration/golden/` prints one of those kind names, 203 updates only those names in the golden file, in the same commit.
 - In 202 one lane (`ws`) owns every shared worldstate file.
 
 ## Lane Plan (Maestri crew)

@@ -69,7 +69,7 @@ The lane may rename or merge these while it builds, if the golden test stays gre
 
 ## Golden checks
 
-`capture_golden.py` runs before any runner changes (T030), against the code on the contract-step commit:
+`capture_golden.py` runs before any runner changes (T025), against the code on the contract-step commit:
 
 | Runner | Modes captured (today's flags) |
 |---|---|
@@ -86,11 +86,11 @@ Patched for every live mode: `OPENROUTER_API_KEY=replay`, `ze_core.openrouter.sy
 `test_calibration_golden.py`:
 
 1. each captured mode reproduces its golden file exactly;
-2. each live mode, run again with `--save tmp`, then with `--load tmp`, prints the same report (from T036, once `--save`/`--load` exist);
+2. each live mode, run again with `--save tmp`, then with `--load tmp`, prints the same report (T036, once `--save`/`--load` exist);
 3. `loop_gate.py`'s "no bar pair passes" path runs without error (R15; no golden, the old code raises).
 
 The `--set holdout*` modes run against the replay client, so they spend nothing and record nothing; they check the code path, not the set.
 
 ## SC-004 check
 
-`T041` measures `wc -l eval/calibration/*.py` (harness included) against the baseline 4,838 and greps that `load_rows`, `_norm`, `report_reliability`, `report_grid`, `save_results`, `load_results`, `parse_bars`, `config_model`, `system_one_config` and `config_system_one` are not defined in any runner.
+`T037` measures `wc -l eval/calibration/*.py` (harness included) against the baseline 4,838 and greps that `load_rows`, `_norm`, `report_reliability`, `report_grid`, `save_results`, `load_results`, `parse_bars`, `config_model`, `system_one_config` and `config_system_one` are not defined in any runner.

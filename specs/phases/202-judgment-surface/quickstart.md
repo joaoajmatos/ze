@@ -18,7 +18,7 @@ make lint
 
 ## 2. US1: an attempted judgment always shows on the trace
 
-`core/engine/ze-core/tests/orchestration/nodes/test_judgment_surface_errors.py` (T020) makes the fake System One client raise, one surface at a time, and asserts:
+`core/engine/ze-core/tests/orchestration/nodes/test_judgment_surface_errors.py` (T009) makes the fake System One client raise, one surface at a time, and asserts:
 
 | Surface | Rows | `skip_reason` | Extra |
 |---|---|---|---|
@@ -35,7 +35,7 @@ uv run pytest core/engine/ze-core/tests/orchestration/nodes/test_judgment_surfac
 
 ## 3. US2: a new surface is questions, state, bars and decide
 
-`core/contracts/ze-agents/tests/test_judgment.py` (T003) declares a test surface with two Nouls and two bars, judges it against a fake client and checks the record. `core/engine/ze-core/tests/conversation/test_judgments.py` (T006) turns that record into rows with no bar map.
+`core/contracts/ze-agents/tests/test_judgment.py` (T002) declares a test surface with two Nouls and two bars, judges it against a fake client and checks the record. `core/engine/ze-core/tests/conversation/test_judgments.py` (T004) turns that record into rows with no bar map.
 
 ## 4. US3: calibration is unchanged
 

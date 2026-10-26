@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-22
 
-**Status**: Draft
+**Status**: Ready to implement
 
 **Depends on**: 198 (audit bug floor, landed). Shares `ze_worldstate/admission.py`, `intake.py`, `types.py`, `commitment_judge.py`, `corroboration.py` and `nodes/memory.py` with 203, which also edits them. 202 lands first and 203 rebases onto it; the hunk split is in [plan.md](plan.md#coordination-with-203).
 

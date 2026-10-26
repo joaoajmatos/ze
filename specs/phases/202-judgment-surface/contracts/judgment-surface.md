@@ -1,6 +1,6 @@
 # Contract: `ze_agents.judgment`
 
-The Python interface every judgment point uses. Types are in [data-model.md](../data-model.md). This file is the contract step (`lead`, T002–T006): the other lanes build against it.
+The Python interface every judgment point uses. Types are in [data-model.md](../data-model.md). This file is the contract step (`lead`, T002–T007): the other lanes build against it.
 
 ## Public names
 
