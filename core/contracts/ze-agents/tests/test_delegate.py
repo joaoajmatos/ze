@@ -1,5 +1,6 @@
 """Tests for delegate_to_agent built-in harness tool."""
 
+import time
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -14,7 +15,13 @@ from ze_agents.delegate import (
     run_delegate,
 )
 from ze_agents.tool import clear_tool_registry
-from ze_agents.types import AbortToken, AgentContext, AgentResult, ToolCall
+from ze_agents.types import (
+    AbortToken,
+    AgentContext,
+    AgentResult,
+    ProcedureInvocation,
+    ToolCall,
+)
 
 _CALLER = "companion"
 
@@ -777,6 +784,104 @@ async def test_timezone_reaches_the_specialist_context() -> None:
     ctx.timezone = "Europe/Lisbon"
     await _run({"agent_name": "calendar", "objective": "x"}, ctx)
     assert seen["timezone"] == "Europe/Lisbon"
+
+
+# ── derivation (phase 200) ────────────────────────────────────────────────────
+
+
+def _capturing_specialist() -> dict:
+    seen: dict = {}
+
+    async def _run_impl(self, ctx: AgentContext) -> AgentResult:
+        seen["ctx"] = ctx
+        return AgentResult(agent="calendar", response="done")
+
+    cls = type(
+        "_CaptureSpecialist",
+        (BaseAgent,),
+        {"name": "calendar", "description": "calendar", "tools": [], "run": _run_impl},
+    )
+    agent(cls)
+    register_instance("calendar", cls())
+    return seen
+
+
+def _turn_ctx() -> AgentContext:
+    ctx = _ctx()
+    ctx.timezone = "Europe/Lisbon"
+    ctx.extensions["user_message_id"] = "m-42"
+    ctx.embed_fn = lambda text: [0.0]
+    ctx.memory_store = object()
+    ctx.token_sink = object()
+    ctx.screen_context_note = "screen"
+    ctx.preset_note = "preset"
+    ctx.resume_recap = "recap"
+    ctx.open_priorities_note = "open"
+    ctx.preset = "slipping"
+    ctx.active_skills = [object()]
+    ctx.skill_tool_names = ["x"]
+    ctx.procedure_guidance = "guide"
+    ctx.procedure_matches = [object()]
+    ctx.procedure_invocation = ProcedureInvocation(
+        invocation_id="i", procedure_id="p", version_id="v"
+    )
+    ctx.conductor.deadline = time.monotonic() + 1000
+    ctx.write_gate.retry_mode = True
+    return ctx
+
+
+async def test_specialist_keeps_timezone_message_id_and_depth() -> None:
+    seen = _capturing_specialist()
+    ctx = _turn_ctx()
+    await _run({"agent_name": "calendar", "objective": "x"}, ctx)
+    sub = seen["ctx"]
+    assert sub.timezone == "Europe/Lisbon"
+    assert sub.extensions["user_message_id"] == "m-42"
+    assert sub.extensions["_delegate_depth"] == 1
+
+
+async def test_specialist_keeps_embed_fn_and_memory_store() -> None:
+    seen = _capturing_specialist()
+    ctx = _turn_ctx()
+    await _run({"agent_name": "calendar", "objective": "x"}, ctx)
+    assert seen["ctx"].embed_fn is ctx.embed_fn
+    assert seen["ctx"].memory_store is ctx.memory_store
+
+
+async def test_specialist_gets_no_turn_notes_skills_or_procedure_state() -> None:
+    seen = _capturing_specialist()
+    await _run({"agent_name": "calendar", "objective": "x"}, _turn_ctx())
+    sub = seen["ctx"]
+    assert sub.token_sink is None
+    assert sub.screen_context_note is None
+    assert sub.preset_note is None
+    assert sub.resume_recap is None
+    assert sub.open_priorities_note is None
+    assert sub.preset is None
+    assert sub.active_skills == []
+    assert sub.skill_tool_names is None
+    assert sub.procedure_guidance is None
+    assert sub.procedure_matches is None
+    assert sub.procedure_invocation is None
+
+
+async def test_specialist_does_not_inherit_the_conductor_deadline() -> None:
+    seen = _capturing_specialist()
+    await _run({"agent_name": "calendar", "objective": "x"}, _turn_ctx())
+    assert seen["ctx"].conductor.deadline is None
+
+
+async def test_retry_mode_reaches_the_specialist() -> None:
+    seen = _capturing_specialist()
+    await _run({"agent_name": "calendar", "objective": "x"}, _turn_ctx())
+    assert seen["ctx"].write_gate.retry_mode is True
+
+
+async def test_a_depth_one_caller_is_still_refused() -> None:
+    _capturing_specialist()
+    result = await _run({"agent_name": "calendar", "objective": "x"}, _ctx(depth=1))
+    assert result.success is False
+    assert "depth" in (result.error or "")
 
 
 async def test_nested_rows_keep_the_script_step_and_its_inner_calls() -> None:

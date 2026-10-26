@@ -122,15 +122,15 @@ Repo-root paths below:
 
 ### Edges lane (delegate, goal milestone, screen action)
 
-- [ ] T027 [P] [L:edges] [US1] Extend `AG/tests/test_delegate.py` (failing first):
+- [x] T027 [P] [L:edges] [US1] Extend `AG/tests/test_delegate.py` (failing first):
   - The specialist context of a delegate from a caller with Lisbon time and `user_message_id` has both, plus `_delegate_depth=1` (US1 scenarios 1, 4 and 5).
   - It has `embed_fn` and `memory_store`.
   - It has no `token_sink`, notes, skills, procedure state, or `conductor.deadline`, even when the caller's deadline is set (no `WRAP_UP_NOTE` in the specialist's loop).
   - `retry_mode` reaches it (edge case "Retry runs").
   - A depth-1 caller is still refused.
-- [ ] T028 [L:edges] [US1] In `AG/ze_agents/delegate.py`, build `sub_ctx` with `for_delegate(ctx, prompt=prompt, resume=resume)`. Delete the hand-written construction. T027 and the rest of `test_delegate.py` pass, including phase 198's B1 delegate timezone test.
-- [ ] T029 [P] [L:edges] [US1] In `ZA/ze_automation/goals/executor.py`, `_execute_milestone` builds with `for_unattended(session_id=…, prompt=…, timezone=self._timezone, memory_store=self._memory, extensions={"goal_id": …}, pre_approved=…, resume=resume.gate() if resume else None)`. Add a test in `ZA/tests/goal_engine/test_executor.py` that the milestone prompt shows the executor's timezone (SC-005). `test_executor_hold.py` passes (held resume), and so does phase 198's B1 milestone timezone test.
-- [ ] T030 [P] [L:edges] [US1] `API/ze_api/api/ws/ui_actions.py` `_context` returns `for_action(thread_id)`. `API/tests/api/ws/test_ui_actions.py` passes.
+- [x] T028 [L:edges] [US1] In `AG/ze_agents/delegate.py`, build `sub_ctx` with `for_delegate(ctx, prompt=prompt, resume=resume)`. Delete the hand-written construction. T027 and the rest of `test_delegate.py` pass, including phase 198's B1 delegate timezone test.
+- [x] T029 [P] [L:edges] [US1] In `ZA/ze_automation/goals/executor.py`, `_execute_milestone` builds with `for_unattended(session_id=…, prompt=…, timezone=self._timezone, memory_store=self._memory, extensions={"goal_id": …}, pre_approved=…, resume=resume.gate() if resume else None)`. Add a test in `ZA/tests/goal_engine/test_executor.py` that the milestone prompt shows the executor's timezone (SC-005). `test_executor_hold.py` passes (held resume), and so does phase 198's B1 milestone timezone test.
+- [x] T030 [P] [L:edges] [US1] `API/ze_api/api/ws/ui_actions.py` `_context` returns `for_action(thread_id)`. `API/tests/api/ws/test_ui_actions.py` passes.
 
 **Checkpoint**: US1 is done when T015–T017 and T027–T030 are green.
 
