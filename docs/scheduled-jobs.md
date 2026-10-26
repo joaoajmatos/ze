@@ -249,9 +249,10 @@ events with same-day reminders.
 When a scheduled workflow step fails, Ze sends an `accountability` push (kind
 `workflow_failure`) immediately — no waiting for the morning briefing. A
 `workflow_failure_cooldown_hours` (default: 1h) prevents alert spam for
-repeatedly-failing workflows. The cooldown is per workflow. The cooldown starts only after Ze delivers or holds an alert.
-If the alert fails, the next failure inside the hour alerts again. Every failure is still
-recorded in the push log.
+repeatedly-failing workflows. The cooldown is per workflow: the alert claims
+`OncePer("workflow_failure_alert:<workflow id>")` for that window. The claim holds only
+after Ze delivers or holds the alert. If the alert fails, the next failure alerts
+again at once. The failure itself stays in the workflow's execution record.
 
 ---
 
@@ -360,7 +361,7 @@ Data sourced from:
 |---|---|
 | `llm_cost_log` | Per-agent run counts, token totals, and costs |
 | `goal_milestones` | Milestones completed this week; pending milestones idle > `stall_days` (default: 3) |
-| `push_log` | Workflow failures in the period |
+| Workflow runs | Workflow failures in the period (`list_failed_executions`) |
 | `accountability_anomalies` | Cost outliers flagged by `CostAnomalyJob` |
 
 Ze sends the narrative as an `accountability` push (kind `accountability_narrative`). The job is deduplicated with a 6-day window under key `weekly_accountability` — safe to retry without double-sending. No LLM call; the narrative is purely templated.
@@ -486,12 +487,23 @@ evidence. Set `correlation.hypothesis_decay.schedule` to change the default
 **Module:** `ze_priority/arbitration.py` (`AttentionArbitrationJob`)
 **Config:** `proactive.attention_arbitration.*`, `worldstate.push.*`, `correlation.push.*`
 
-One job replaces the old per-source push sweeps. It collects the push-eligible open
-loops and hypotheses, ranks them with `PriorityView`, and sends them through the
-interruption governor in rank order. It sends as many as the shared budget allows and
-stops at the first push the governor suppresses. Loop pushes honor `worldstate.push.enabled`; hypothesis pushes require `correlation.push.enabled: true` and `correlation.push.dry_run: false`. Loops (kind `loop_drift`) and
-hypotheses (kind `hypothesis`) are both `discretionary`. The job no longer claims or
-releases the budget itself; the governor does. See [cognitive-architecture.md](cognitive-architecture.md).
+One job replaces the old per-source push sweeps. Each source describes its candidates
+(`PushCandidate`), and one push bar (`ze_priority/push_bar.py`) screens them all. The bar
+checks confidence, relevance, inline mentions in the conversation, novelty against recent
+discretionary pushes, and grounding in evidence. The job drops a candidate whose
+`OncePer` is cooling before the bar runs. It ranks the survivors with `PriorityView` and
+sends the first one in rank order. It sends one push per run: it stops at the first push
+that is sent or held, or that the budget suppresses. A candidate that fails with another
+outcome passes to the next.
+
+The job returns at once when the shared budget has no room left. Loop pushes (kind
+`loop_drift`) require `worldstate.push.enabled: true`. A drifting loop is pushed at most
+once per `worldstate.push.repush_after_days` (default 7). Hypothesis pushes (kind
+`hypothesis`) require `correlation.push.enabled: true`, and `correlation.push.dry_run:
+false` sends them; in dry run the job logs each candidate and sends nothing. A hypothesis
+is pushed once ever (`OncePer("hypothesis:<id>")` with no window). Both kinds are
+`discretionary`. The job never claims or releases the budget itself; the governor does.
+See [cognitive-architecture.md](cognitive-architecture.md).
 
 ---
 
@@ -526,7 +538,7 @@ Kinds by class:
 | `accountability` | `confirmation_request`, `confirmation_timeout`, `workspace_run_completed`, `workflow_failure`, `goal_plan_proposed`, `goal_attention_needed`, `goal_plan_adapted`, `goal_milestone_done`, `goal_completed`, `goal_gate`, `cost_anomaly`, `accountability_narrative`, `goal_narrative`, `morning_brief`, `calendar_reminders_scheduled`, `quiet_hours_summary` |
 | `discretionary` | `loop_drift`, `hypothesis`, `stuck_goal`, `goal_suggestion`, `goal_overlap`, `goal_reuse`, `insight`, `contact_review`, `finance_stale_nudge`, `finance_recurring_new`, `finance_price_change`, `inbound_message` |
 
-`proactive.budget.max_pushes_per_day` (default 5) is one shared budget for every discretionary push. It counts claims in a rolling 24-hour window. `GET /api/v0/notifications/budget` reports the count and when the next slot opens, and `GET /api/v0/proactive/job-runs` lists the last run of each job. Accountability and requested pushes never claim it. A discretionary push must carry a budget key; a repeat of the same key is a `duplicate` and goes no further.
+`proactive.budget.max_pushes_per_day` (default 5) is one shared budget for every discretionary push. It counts claims in a rolling 24-hour window. `GET /api/v0/notifications/budget` reports the count and when the next slot opens, and `GET /api/v0/proactive/job-runs` lists the last run of each job. Accountability and requested pushes never claim it. A discretionary push must pass a `once_per` (`OncePer`) key. A key still inside its window returns `deduped` and sends nothing. The claim store is private to `ze-proactive` (table `push_log`, migration `zpro006`); other packages read the budget and the cooldowns through the notifier.
 
 ### Quiet hours and release
 
