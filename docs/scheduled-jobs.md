@@ -194,8 +194,7 @@ A daily digest, sent as the `accountability` push kind `morning_brief` via `Proa
 - **Scheduled workflows** — the names of the enabled scheduled workflows.
 - **Recent failures** — any workflow runs that failed in the past 24 hours.
 - **Follow-up nudges** — stale relationships that `PriorityView` ranks as `relationship` items.
-- **Dream summary** — when the latest dream journal entry promoted insights or left items for
-  review.
+- **Dream summary** — when the latest dream journal entry promoted insights.
 - **Personalized headlines** — when the `ze-news` plugin is enabled, the briefing appends
   a news section. With enough user preferences (≥ `news.personalization.min_preferences`, default 2),
   Ze ranks articles by cosine similarity against a snapshot of the user's interest
@@ -257,8 +256,8 @@ recorded in the push log.
 
 ## Goal advance sweep (every 15 minutes)
 
-**Module:** `ze_automation/goals/executor.py` · registered in `ze_automation/bootstrap.py`'s `register_goal_advance_sweep()`, called from `ze_api/wiring/jobs.py`  
-**Job id:** `goal_advance_sweep` · **Cron:** `*/15 * * * *` (configurable via `proactive.goal_advance_sweep.cron`)
+**Module:** `ze_automation/goals/executor.py` · registered by `register_goal_advance_sweep` in `ze_automation/bootstrap.py`, called from `ze_api/wiring/jobs.py`  
+**Job id:** `goal_advance_sweep` · **Config:** `proactive.goal_advance_sweep.enabled` and `.cron` (defaults `true` and `*/15 * * * *`)
 
 For each goal with status `ACTIVE`, the sweep calls `GoalExecutor.advance(goal_id)`.
 The advance loop either:
@@ -270,7 +269,9 @@ The advance loop either:
   `accountability`, e.g. *"✅ Draft target list done (2/8)"*).
 
 The sweep skips goals in `AWAITING_GATE`, `PAUSED`, `PLANNING`, `COMPLETED`, or
-`ABANDONED`. It is lightweight — it returns early when there is no actionable next step.
+`ABANDONED`. It is lightweight. An idle goal costs a few database reads and no model call,
+because `advance` returns before the model when a milestone is held or the goal is not
+`ACTIVE`.
 
 Ze handles gate responses conversationally, not on the cron tick: approving
 or redirecting calls `advance` again from the conversation handler.
@@ -309,7 +310,7 @@ For each active goal, Ze synthesizes a one-paragraph weekly update: what was com
 **Module:** `ze_automation/jobs/goal_suggestion.py`  
 **Cron:** `0 19 * * 0` (configurable via `proactive.goal_suggestion.cron`)
 
-Analyzes recent memory facts, episodes, and past goal retrospectives to propose one new multi-week goal. The titles of active goals go to the planner so that it does not duplicate them. Ze sends the suggestion as a `discretionary` push (kind `goal_suggestion`) with **Yes, create it** / **Dismiss** options. Accepted suggestions open a goal creation flow. The job skips a run when Ze saved a pending, accepted, or dismissed suggestion in the past 6 days. It also expires pending suggestions older than 30 days.
+Analyzes recent memory facts, episodes, and past goal retrospectives to propose one new multi-week goal. The titles of active goals go to the planner so that it does not duplicate them. Ze sends the suggestion as a `discretionary` push (kind `goal_suggestion`) with **Yes, create it**, **Dismiss**, and **Tell me more** options. **Yes, create it** plans the goal and sends the usual plan proposal (Start goal / Cancel). If Ze cannot plan or send it, the suggestion stays pending. **Dismiss** records the dismissal. **Tell me more** repeats the rationale with the same buttons. The job skips a run when Ze saved a pending, accepted, or dismissed suggestion in the past 6 days. It also expires pending suggestions older than 30 days.
 
 ---
 
@@ -424,8 +425,18 @@ but a one-time backlog won't visibly shrink there without a manual `VACUUM FULL`
 **Module:** `ze_core/telemetry/reconciler.py` (`CostReconciler`) · registered in `ze_core/bootstrap.py`'s `register_engine_jobs()`, called from `ze_api/wiring/jobs.py`  
 **Job id:** `cost_reconciliation` · **Cron:** `*/15 * * * *`
 
-Pulls actual billed costs from the OpenRouter API and reconciles them against
-estimated records in `llm_cost_log`. Runs frequently to keep cost data fresh.
+Every 15 minutes the reconciler prices up to 100 unpriced rows of `llm_cost_log`, newest
+first, between 2 minutes and 3 days old. It retries a 404, because OpenRouter may not have
+indexed the generation yet, and gives up on a generation after three misses in a row. It
+gives up at once on a 400 invalid id. A row older than 3 days keeps `cost_usd` NULL, which
+means unknown. Estimate it from `ze_core/telemetry/pricing.py`.
+
+Every LLM call logs a flow and an agent. A conversation turn logs flow `user_message`
+with the thread id as session. A cron job logs flow `proactive`, with the job id as agent
+and `job:<job id>` as session. Eval and workflow flows keep their own. Steps inside a turn
+log the agents `router`, `skills`, `memory_write`, `synthesis`, and `session_title`.
+`ze_core/telemetry/pricing.py` prices System One (`typesafe/jev-`) at $0.042 per million
+prompt tokens, with free completions, by slug prefix.
 
 ---
 
@@ -495,6 +506,20 @@ releases the budget itself; the governor does. See [cognitive-architecture.md](c
 
 ---
 
+## Contacts consolidation (3 AM UTC)
+
+**Module:** `ze_personal/contacts/consolidator.py` · registered by `PersonalPlugin`
+**Job id:** `contacts_consolidation` · **Cron:** `0 3 * * *` (configurable via `contacts.consolidation.nightly_cron`)
+
+The job reads conversation episodes from `memory_episodes`, skipping workflow, eval, and
+consolidator episodes. It resumes after the last episode it processed, which it records in
+`contacts_episode_watermark`, and it reads at most `contacts.consolidation.max_episodes_per_run`
+(default 50) episodes per run, in batches of `episode_batch_size` (default 10). From each
+batch the model extracts people, projects, and `WORKS_ON` / `COLLABORATES_WITH` edges. Ze
+then dedups and merges the people into the contact records.
+
+---
+
 ## Other scheduled jobs
 
 | Job id | Default cron | What it does | Config |
@@ -538,6 +563,13 @@ The user sets quiet hours in the Attention module of Governance (`/governance`).
 
 Ze runs on a laptop, so a scheduled time can pass while the host is asleep. `ProactiveScheduler` records each run in `proactive_job_runs`. On startup, it runs a catch-up job once when the scheduled time passed since the last recorded run, within the job's `catch_up_max_age_hours`. The morning briefing sets this from `proactive.briefing.catch_up_max_age_hours` (default 6). A job with no recorded run does not run at startup. APScheduler `misfire_grace_time=None` with `coalesce=True` covers a process that was suspended over a fire time. The `quiet_hours_release` job does not catch up.
 
+Two config keys control catch-up. `proactive.catch_up: false` turns it off for every job.
+`proactive.catch_up_max_age_hours` maps a job id to the oldest missed run that still
+catches up. A max age set at registration (the briefing) wins over this map. The shipped
+config limits `news_fetch`, `session_summary`, `goal_advance_sweep`, `inbound_poll`, and
+`quiet_hours_release` to 1 hour, and `correlation_scan` and `attention_arbitration_sweep`
+to 4 hours.
+
 ---
 
 ## Skill source recheck (6 AM UTC)
@@ -574,7 +606,7 @@ tier instead of literal clock position.
 | 3:00 AM daily | Hypothesis confidence decay | `ze_correlation/jobs/hypothesis_decay.py` |
 | 4:00 AM daily | Stale open-loop suspicion expiry | `ze_worldstate/jobs/stale_suspicion.py` |
 | 5:00 AM daily | Open-loop drift sweep | `ze_worldstate/jobs/drift_sweep.py` |
-| 3:00 AM daily | Contacts consolidation (dedup + merge) | `ze_personal/contacts/consolidator.py` |
+| 3:00 AM daily | Contacts consolidation (extract + dedup + merge) | `ze_personal/contacts/consolidator.py` |
 | 6:00 AM daily | Imported skill source-content recheck | `ze_skills/jobs/recheck.py` |
 | Every 10 min | Session summary generation | `ze_memory/session_summary.py` |
 | 7:00 AM Sun | Weekly insight generation | `ze_personal/jobs/insights.py` |

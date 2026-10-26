@@ -34,7 +34,7 @@ from ze_sdk.errors import ZeError, AgentError, AgentAbortedError, AgentConfigErr
 | Symbol | What it is |
 |--------|-----------|
 | `ZePlugin` | Abstract base class for domain extensions. Override only the hooks you need.|
-| `agent` | Class decorator that registers a `BaseAgent` subclass in the global `AgentRegistry`. |
+| `agent` | Class decorator that registers a `BaseAgent` subclass in the global agent registry (`ze_agents.registry`). |
 | `tool` | Function decorator that registers an async function as a callable tool. |
 | `ToolAccess` | Enum — `READ` or `WRITE`. A `WRITE` tool that is irreversible asks first by default. |
 | `Injected` | Type marker for a tool parameter that Ze supplies and the model never sees: `session_id: Injected[str \| None] = None`. |

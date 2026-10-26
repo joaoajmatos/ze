@@ -264,6 +264,11 @@ already written this turn by `remember_fact` (`ok` true, same predicate+value
 identity after normalize) are dropped. Kept rows are
 `PROMPT_SUPPLIED`, `reviewed=false`. Eval threads (`eval-*`) skip this path.
 
+The same step also calls `gather_turn_proposals` (`ze_memory/extractor.py`) for events and
+entities. It makes one model request that returns both, and it makes none for a trivial
+turn such as a greeting or an acknowledgement. The graph layer stores the events and
+upserts the entities.
+
 - Before insert, the store marks every active fact with the same predicate and subject
   `contradicted = true`. It then runs the NLI contradiction check
   (`nli_write_time_check`, default `true`) on the 10 nearest same-subject facts with
@@ -364,7 +369,11 @@ Before every agent execution, `fetch_context` runs:
    so the caller never receives both fragments and summary for the same session.
    Each policy then drops candidates below the relevance floor
    (`memory.relevance_floor`, default 0.35; `relevance_floor_overrides` sets a floor per
-   memory type, and `episode` ships at 0.30). It orders the rest by a composite score:
+   memory type, and `episode` ships at 0.30). The floor filters on raw E5 cosine, and that
+   cosine rarely falls below it: the lowest score measured for an unrelated pair is 0.73
+   (query against passage) and 0.79 (passage against passage). In practice the floor
+   removes almost nothing, so do not rely on it to drop unrelated memories. Retrieval then
+   orders the candidates by a composite score:
    a weighted sum of similarity, recency (30-day half-life), and confidence, set by
    `memory.composite_weights` (0.6 / 0.25 / 0.15). With `memory.entity_anchor.enabled` (default `true`), entities
    named in the query add their one-hop graph neighbors as a second entry point

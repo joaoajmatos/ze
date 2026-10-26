@@ -132,7 +132,8 @@ def tool_deps(self) -> dict:
 await self.agentic_loop(ctx, deps=self.tool_deps())
 ```
 
-`BaseAgent.run_undo` merges `tool_deps()` with the undo payload by parameter name. Every
+`BaseAgent.run_undo` merges `tool_deps()` with the undo payload by parameter name. Payload
+keys that fill `Injected` parameters still reach the undo tool. Every
 parameter of an undo tool that the model does not set must be a key of `tool_deps()` or
 of the payload. `run_undo` supplies `ctx` itself, with a rollback context that has no
 prompt and sets `retry_mode` off, so an undo tool needs no `ctx` from the payload.
@@ -193,6 +194,22 @@ with a reason. The registry sweep fails otherwise. See [sdk.md](sdk.md#tool-scri
 The agent's `run()` method passes all dependencies (API clients, settings) as keyword
 arguments — tools are pure functions that receive everything they need via
 parameters. They do not import from global state or access `self`.
+
+The model sees a parameter unless it is `Injected[...]` (from `ze_sdk`) or a dependency
+type: a store, a client, another class, `Any`, or `object`. A parameter with no default is
+required. `str | None` and `list[str]` show in the schema as typed optional and array
+entries. Mark an injected scalar like this:
+
+```python
+from ze_sdk import Injected
+
+async def my_tool(query: str, session_id: Injected[str | None] = None) -> dict:
+    ...
+```
+
+Registration fails for a visible parameter typed `set`, `tuple`, `Literal`, an `Enum`, or
+`str | int`. Use `str` or a plain `list[str]` instead, or mark the parameter `Injected[...]`.
+Ze drops any value the model sends for a hidden parameter.
 
 ---
 
@@ -347,8 +364,8 @@ async def my_long_tool(my_store: MyStore, reporter: Any = None) -> dict:
     return result
 ```
 
-`reporter` has a non-JSON-primitive type so it is never included in the LLM tool
-schema — it is injected silently from deps.
+`reporter` is typed `Any`, a dependency type, so it never appears in the tool schema and
+Ze fills it from deps.
 
 ### Lifecycle hooks
 
