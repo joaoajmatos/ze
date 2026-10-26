@@ -12,12 +12,13 @@ import time
 from typing import Any
 
 from ze_agents.budget import BUDGET_EXHAUSTED_ERROR, remaining_seconds
+from ze_agents.derive import for_delegate
 from ze_agents.errors import AgentAbortedError, LoopParked
 from ze_agents.park import ParkedLoop
 from ze_agents.registry import get_agent
 from ze_logging import get_logger
 from ze_agents.nested_tools import nested_row
-from ze_agents.types import AgentContext, ToolCall, WriteGateState, add_sources
+from ze_agents.types import AgentContext, ToolCall, add_sources
 
 log = get_logger(__name__)
 
@@ -250,30 +251,7 @@ async def run_delegate(
         _bump_delegate_counts(ctx, agent_name)
 
     prompt = assemble_delegate_prompt(arguments)
-    sub_ctx = AgentContext(
-        session_id=ctx.session_id,
-        prompt=prompt,
-        memory=ctx.memory,
-        contacts=ctx.contacts,
-        persona=ctx.persona,
-        timezone=ctx.timezone,
-        model=None,
-        messages=[{"role": "user", "content": prompt}],
-        reporter=ctx.reporter,
-        identity_builder=ctx.identity_builder,
-        abort_token=ctx.abort_token,
-        write_gate=WriteGateState(
-            resume=resume,
-            decisions=ctx.write_gate.decisions,
-            pre_approved=ctx.write_gate.pre_approved,
-            round=ctx.write_gate.round,
-            approval_request_id=ctx.write_gate.approval_request_id,
-            retry_mode=ctx.write_gate.retry_mode,
-        ),
-        tool_sink=ctx.tool_sink,
-        script_runner=ctx.script_runner,
-        extensions={"_delegate_depth": depth + 1},
-    )
+    sub_ctx = for_delegate(ctx, prompt=prompt, resume=resume)
 
     _update_conductor_ledger(ctx, agent_name, "running")
     await _emit_conductor_progress(ctx, agent_name)

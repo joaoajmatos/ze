@@ -7,13 +7,14 @@ from typing import Any, Awaitable, Callable
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 from ze_agents.errors import GoalExecutionError, LoopParked
 from ze_agents.park import ParkedLoop, WriteDecision
 from ze_memory.store import MemoryStore
 from ze_memory.types import Procedure, TaskState
-from ze_agents.types import AgentContext, ToolCall, WriteGateState
+from ze_agents.derive import for_unattended
+from ze_agents.types import ToolCall, WriteGateState
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.types import (
@@ -905,16 +906,14 @@ class GoalExecutor:
             learnings_block=await self._eligible_learnings_block(goal.id),
         )
 
-        ctx = AgentContext(
+        ctx = for_unattended(
             session_id=f"goal:{milestone.goal_id}",
             prompt=prompt,
+            timezone=self._timezone,
             memory_store=self._memory,
             extensions={"goal_id": str(milestone.goal_id)},
-            timezone=self._timezone,
-            write_gate=replace(
-                resume.gate() if resume else WriteGateState(),
-                pre_approved=frozenset(milestone.approved_writes),
-            ),
+            pre_approved=frozenset(milestone.approved_writes),
+            resume=resume.gate() if resume else None,
         )
 
         try:

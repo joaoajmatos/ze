@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from functools import partial
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -68,6 +69,7 @@ from ze_core.conversation.rewind import history_rewindable
 from ze_core.conversation.turn import turn_has_reply
 from ze_core.conversation.sessions import PostgresSessionStore
 from ze_core.orchestration.graph import build_graph
+from ze_core.orchestration.state import build_state_type
 from ze_priority.view import PriorityView
 from ze_priority.turn import TurnSurfacing
 from ze_data.portability.service import DataPortabilityService
@@ -624,6 +626,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     )
     component_hook = register_harness_hooks(settings, memory_store=shared.memory_store)
     graph = build_graph(checkpointer=checkpointer, plugins=plugins)
+    state_type = build_state_type(plugins)
 
     all_domains = (
         engine_data_domains(pool)
@@ -668,6 +671,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         memory_store=shared.memory_store,
         memory_consolidator=shared.memory_consolidator,
         graph=graph,
+        state_type=state_type,
         interface=interface,
         translations=translations,
         signal_sources=signal_sources,
@@ -724,9 +728,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         collision_store=stores.collision_store,
         nli_client=shared.nli_client,
         system_one_client=shared.system_one_client,
-        commitment_intake=build_commitment_intake(
-            shared, worldstate, stores, settings
-        ),
+        commitment_intake=build_commitment_intake(shared, worldstate, stores, settings),
         procedure_admission=stores.procedure_admission,
         procedure_discovery=stores.procedure_discovery,
         procedure_activator=stores.procedure_activator,
@@ -763,7 +765,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         router=router,
         persona_store=stores.persona_store,
         workflow_graph_builder=build_workflow_graph,
-        begin_workflow_turn=begin_workflow_turn,
+        begin_workflow_turn=partial(begin_workflow_turn, state_type=state_type),
         workspace_gate=workspace.gate,
     )
 
