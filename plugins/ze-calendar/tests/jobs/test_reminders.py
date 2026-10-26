@@ -6,7 +6,6 @@ from uuid import uuid4
 
 
 from ze_proactive.notifier import ProactiveNotifier
-from ze_automation.push_kinds import WORKFLOW_FAILURE
 from ze_calendar.push_kinds import CALENDAR_REMINDER, CALENDAR_REMINDERS_SCHEDULED
 from ze_calendar.reminders.calendar import (
     CalendarReminderService,
@@ -15,8 +14,6 @@ from ze_calendar.reminders.calendar import (
 )
 from ze_calendar.reminders.calendar_store import CalendarReminderStore
 from ze_automation.workflow.scheduler import WorkflowScheduler
-from ze_automation.workflow.types import Workflow
-from ze_proactive.push_log_store import PushLogStore
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -68,12 +65,9 @@ def make_reminder_service(conn=None, notifier=None, client=None, settings=None):
     store.create = AsyncMock(return_value=uuid4())
     store.mark_sent = AsyncMock(return_value=None)
     store.delete_unsent_for_event = AsyncMock(return_value=[])
-    push_log = MagicMock(spec=PushLogStore)
-    push_log.log = AsyncMock()
     return CalendarReminderService(
         notifier=notifier or make_notifier(),
         store=store,
-        push_log_store=push_log,
         openrouter_client=client or AsyncMock(),
         scheduler=make_workflow_scheduler(),
         settings=settings or make_settings(),
@@ -258,7 +252,6 @@ async def test_sync_schedules_new_event():
     svc = CalendarReminderService(
         notifier=notifier,
         store=store,
-        push_log_store=MagicMock(spec=PushLogStore),
         openrouter_client=client,
         scheduler=sched,
         settings=make_settings(),
@@ -302,7 +295,6 @@ async def test_sync_skips_known_event():
     svc = CalendarReminderService(
         notifier=notifier,
         store=store,
-        push_log_store=MagicMock(spec=PushLogStore),
         openrouter_client=client,
         scheduler=make_workflow_scheduler(),
         settings=make_settings(),
@@ -316,17 +308,14 @@ async def test_sync_skips_known_event():
 # ── fire_reminder ─────────────────────────────────────────────────────────────
 
 
-async def test_fire_reminder_pushes_and_logs():
+async def test_fire_reminder_pushes():
     rid = uuid4()
     store = MagicMock(spec=CalendarReminderStore)
     store.mark_sent = AsyncMock(return_value="Meeting in 1 hour")
-    push_log = MagicMock(spec=PushLogStore)
-    push_log.log = AsyncMock()
     notifier = make_notifier()
 
     svc, _ = make_reminder_service(notifier=notifier)
     svc._store = store
-    svc._push_log = push_log
     await svc.fire_reminder(rid)
 
     notifier.notify.assert_awaited_once()
@@ -334,7 +323,6 @@ async def test_fire_reminder_pushes_and_logs():
     assert call.args[0] is CALENDAR_REMINDER
     assert call.args[2] == "Meeting in 1 hour"
     assert call.kwargs["target_id"] == str(rid)
-    push_log.log.assert_awaited_once()
 
 
 async def test_fire_reminder_failed_push_clears_the_sent_mark():
@@ -342,16 +330,12 @@ async def test_fire_reminder_failed_push_clears_the_sent_mark():
     store = MagicMock(spec=CalendarReminderStore)
     store.mark_sent = AsyncMock(return_value="Meeting in 1 hour")
     store.mark_unsent = AsyncMock()
-    push_log = MagicMock(spec=PushLogStore)
-    push_log.log = AsyncMock()
 
     svc, _ = make_reminder_service(notifier=make_notifier("failed"))
     svc._store = store
-    svc._push_log = push_log
     await svc.fire_reminder(rid)
 
     store.mark_unsent.assert_awaited_once_with(rid)
-    push_log.log.assert_not_awaited()
 
 
 @pytest.mark.parametrize("outcome", ["delivered", "held"])
@@ -360,16 +344,12 @@ async def test_fire_reminder_keeps_the_sent_mark_after_delivered_or_held(outcome
     store = MagicMock(spec=CalendarReminderStore)
     store.mark_sent = AsyncMock(return_value="Meeting in 1 hour")
     store.mark_unsent = AsyncMock()
-    push_log = MagicMock(spec=PushLogStore)
-    push_log.log = AsyncMock()
 
     svc, _ = make_reminder_service(notifier=make_notifier(outcome))
     svc._store = store
-    svc._push_log = push_log
     await svc.fire_reminder(rid)
 
     store.mark_unsent.assert_not_awaited()
-    push_log.log.assert_awaited_once()
 
 
 async def test_mark_unsent_clears_sent_and_sent_at():
@@ -387,17 +367,13 @@ async def test_fire_reminder_noop_when_already_sent_or_missing():
     rid = uuid4()
     store = MagicMock(spec=CalendarReminderStore)
     store.mark_sent = AsyncMock(return_value=None)
-    push_log = MagicMock(spec=PushLogStore)
-    push_log.log = AsyncMock()
     notifier = make_notifier()
 
     svc, _ = make_reminder_service(notifier=notifier)
     svc._store = store
-    svc._push_log = push_log
     await svc.fire_reminder(rid)
 
     notifier.notify.assert_not_awaited()
-    push_log.log.assert_not_awaited()
 
 
 # ── replay_unsent ─────────────────────────────────────────────────────────────
@@ -485,97 +461,6 @@ async def test_replay_unsent_fires_overdue_reminder_late():
     call = notifier.notify.call_args
     assert call.args[0] is CALENDAR_REMINDER
     assert "(late, was due" in call.args[2]
-
-
-# ── WorkflowScheduler failure alerts ─────────────────────────────────────────
-
-
-def make_workflow(name="test_wf"):
-    wf = MagicMock(spec=Workflow)
-    wf.id = uuid4()
-    wf.name = name
-    return wf
-
-
-def make_failure_handler(settings=None, push_log=None, notifier=None):
-    """Build the same on_failure closure the container wires into WorkflowScheduler."""
-    _settings = settings or make_settings()
-    _push_log = push_log or MagicMock(spec=PushLogStore)
-    _notifier = notifier or make_notifier()
-
-    async def on_failure(workflow, exc):
-        alerts_cfg = _settings.proactive_config.get("alerts", {})
-        if not alerts_cfg.get("workflow_failure_enabled", True):
-            return
-        cooldown = int(alerts_cfg.get("workflow_failure_cooldown_hours", 1))
-        event_type = f"workflow_failure:{workflow.id}"
-        if await _push_log.was_sent_within_hours(event_type, cooldown):
-            return
-        await _notifier.notify(
-            WORKFLOW_FAILURE,
-            f'Workflow failed: "{workflow.name}"',
-            str(exc)[:200],
-            target_type="workflow_execution",
-            target_id=str(workflow.id),
-            target_parent_id=str(workflow.id),
-        )
-        await _push_log.log(event_type, workflow.name)
-
-    return on_failure
-
-
-async def test_workflow_failure_alert_fires():
-    push_log = MagicMock(spec=PushLogStore)
-    push_log.was_sent_within_hours = AsyncMock(return_value=False)
-    push_log.log = AsyncMock()
-    notifier = make_notifier()
-    handler = make_failure_handler(push_log=push_log, notifier=notifier)
-
-    wf = make_workflow("my_workflow")
-    await handler(wf, Exception("boom"))
-
-    notifier.notify.assert_awaited_once()
-    call = notifier.notify.call_args
-    assert call.args[0] is WORKFLOW_FAILURE
-    assert "my_workflow" in call.args[1]
-
-
-async def test_workflow_failure_alert_respects_cooldown():
-    push_log = MagicMock(spec=PushLogStore)
-    push_log.was_sent_within_hours = AsyncMock(return_value=True)
-    notifier = make_notifier()
-    handler = make_failure_handler(push_log=push_log, notifier=notifier)
-
-    await handler(make_workflow(), Exception("boom"))
-    notifier.notify.assert_not_awaited()
-
-
-async def test_workflow_failure_alert_disabled():
-    import yaml
-    import tempfile
-    import pathlib as pl
-    from tests.support.settings import TestSettings
-
-    tmp = pl.Path(tempfile.mkdtemp())
-    from tests.support.settings import CONFIG_DIR
-
-    real_cfg = CONFIG_DIR / "config.yaml"
-    cfg = yaml.safe_load(real_cfg.read_text())
-    cfg.setdefault("proactive", {}).setdefault("alerts", {})[
-        "workflow_failure_enabled"
-    ] = False
-    (tmp / "config.yaml").write_text(yaml.dump(cfg))
-    settings = TestSettings(
-        openrouter_api_key="k",
-        database_url="postgresql://ze:ze@localhost:5432/ze",
-        database_url_sync="postgresql+psycopg2://ze:ze@localhost:5432/ze",
-        config_dir=tmp,
-    )
-
-    notifier = make_notifier()
-    handler = make_failure_handler(settings=settings, notifier=notifier)
-    await handler(make_workflow(), Exception("boom"))
-    notifier.notify.assert_not_awaited()
 
 
 # ── schedule_at ───────────────────────────────────────────────────────────────
