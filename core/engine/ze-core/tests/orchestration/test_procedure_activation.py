@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-from ze_agents.types import AgentContext, AgentResult, ToolCall
+from ze_agents.types import AgentContext, AgentResult, ProcedureInvocation, ToolCall
 from ze_core.conversation.messages.types import ProcedureUsageTrace
 from ze_core.orchestration.nodes.trace import record_trace
 from ze_core.orchestration.procedure_activation import (
@@ -27,9 +27,11 @@ async def test_blocked_gate_records_not_executed_action_link() -> None:
     ctx = AgentContext(
         session_id="s1",
         prompt="clear inbox",
-        procedure_invocation_id=str(invocation_id),
-        procedure_invoked_id=str(uuid4()),
-        procedure_invoked_version_id=str(uuid4()),
+        procedure_invocation=ProcedureInvocation(
+            invocation_id=str(invocation_id),
+            procedure_id=str(uuid4()),
+            version_id=str(uuid4()),
+        ),
     )
     result = AgentResult(
         agent="companion",
@@ -60,7 +62,9 @@ async def test_complete_is_forwarded_once() -> None:
     ctx = AgentContext(
         session_id="s1",
         prompt="clear inbox",
-        procedure_invocation_id=str(invocation_id),
+        procedure_invocation=ProcedureInvocation(
+            invocation_id=str(invocation_id), procedure_id="p", version_id="v"
+        ),
     )
     result = AgentResult(
         agent="companion",
@@ -98,9 +102,11 @@ async def test_record_trace_includes_procedure_usage() -> None:
         "agent_context": AgentContext(
             session_id="s1",
             prompt="hi",
-            procedure_invocation_id=str(invocation_id),
-            procedure_invoked_id=str(procedure_id),
-            procedure_invoked_version_id=str(version_id),
+            procedure_invocation=ProcedureInvocation(
+            invocation_id=str(invocation_id),
+            procedure_id=str(procedure_id),
+            version_id=str(version_id),
+        ),
         ),
     }
     result = await record_trace(state, {"configurable": {}})
@@ -116,9 +122,11 @@ async def test_a_duplicate_call_is_allowed_but_not_executed_here() -> None:
     ctx = AgentContext(
         session_id="s1",
         prompt="cancel it",
-        procedure_invocation_id=str(uuid4()),
-        procedure_invoked_id=str(uuid4()),
-        procedure_invoked_version_id=str(uuid4()),
+        procedure_invocation=ProcedureInvocation(
+            invocation_id=str(uuid4()),
+            procedure_id=str(uuid4()),
+            version_id=str(uuid4()),
+        ),
     )
     result = AgentResult(
         agent="reminders",

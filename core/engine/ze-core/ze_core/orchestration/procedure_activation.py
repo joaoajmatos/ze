@@ -70,7 +70,9 @@ async def record_guided_actions(
     config: RunnableConfig,
 ) -> None:
     activator = config["configurable"].get("procedure_activator")
-    invocation_raw = getattr(ctx, "procedure_invocation_id", None)
+    invocation_raw = (
+        ctx.procedure_invocation.invocation_id if ctx.procedure_invocation else None
+    )
     if activator is None or not invocation_raw:
         return
     try:
@@ -119,7 +121,9 @@ async def complete_procedure_invocation(
     if ctx is None:
         return
     activator = config["configurable"].get("procedure_activator")
-    invocation_raw = getattr(ctx, "procedure_invocation_id", None)
+    invocation_raw = (
+        ctx.procedure_invocation.invocation_id if ctx.procedure_invocation else None
+    )
     if activator is None or not invocation_raw:
         return
     try:
@@ -146,9 +150,14 @@ async def complete_procedure_invocation(
 def procedure_usage_trace(ctx: AgentContext | None) -> dict[str, str] | None:
     if ctx is None:
         return None
-    invocation_id = getattr(ctx, "procedure_invocation_id", None)
-    procedure_id = getattr(ctx, "procedure_invoked_id", None)
-    version_id = getattr(ctx, "procedure_invoked_version_id", None)
+    invocation = ctx.procedure_invocation
+    if invocation is None:
+        return None
+    invocation_id, procedure_id, version_id = (
+        invocation.invocation_id,
+        invocation.procedure_id,
+        invocation.version_id,
+    )
     if not invocation_id or not procedure_id or not version_id:
         return None
     return {

@@ -21,22 +21,26 @@ from ze_agents.park import (
 from ze_logging import get_logger
 from ze_agents.registry import get_agent, get_agent_class
 from ze_core.orchestration.state import AgentState
-from ze_agents.types import AgentContext, AgentResult, add_sources
+from ze_agents.types import (
+    AgentContext,
+    AgentResult,
+    ConductorState,
+    DelegateTally,
+    WriteGateState,
+    add_sources,
+)
 
 log = get_logger(__name__)
 
 
 def _conductor_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
-    counts = getattr(base_ctx, "conductor_delegate_counts", None)
-    if counts is None:
-        base_ctx.conductor_delegate_counts = counts = {}
+    base = base_ctx.conductor
     return {
-        "conductor_hint": getattr(base_ctx, "conductor_hint", None),
-        "conductor_ledger": getattr(base_ctx, "conductor_ledger", None) or [],
-        "conductor_delegate_counts": counts,
-        "conductor_delegate_total": int(
-            getattr(base_ctx, "conductor_delegate_total", 0) or 0
-        ),
+        "conductor": ConductorState(
+            hint=base.hint,
+            ledger=base.ledger or [],
+            tally=DelegateTally(counts=base.tally.counts, total=base.tally.total),
+        )
     }
 
 
@@ -52,14 +56,9 @@ def _prompt_note_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
 
 def _procedure_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
     return {
-        "procedure_guidance": getattr(base_ctx, "procedure_guidance", None),
-        "procedure_matches": getattr(base_ctx, "procedure_matches", None),
-        "procedure_tool_names": getattr(base_ctx, "procedure_tool_names", None),
-        "procedure_invocation_id": getattr(base_ctx, "procedure_invocation_id", None),
-        "procedure_invoked_id": getattr(base_ctx, "procedure_invoked_id", None),
-        "procedure_invoked_version_id": getattr(
-            base_ctx, "procedure_invoked_version_id", None
-        ),
+        "procedure_guidance": base_ctx.procedure_guidance,
+        "procedure_matches": base_ctx.procedure_matches,
+        "procedure_invocation": base_ctx.procedure_invocation,
     }
 
 
@@ -270,22 +269,28 @@ def _pre_approved(
 ) -> frozenset[str]:
     extra = config["configurable"].get("pre_approved_writes") or ()
     step = state.get("pre_approved_writes") or ()
-    return frozenset(base_ctx.pre_approved_writes) | frozenset(extra) | frozenset(step)
+    return frozenset(base_ctx.write_gate.pre_approved) | frozenset(extra) | frozenset(step)
 
 
-def _resume_kwargs(state: dict, index: int) -> dict[str, Any]:
-    """AgentContext fields that re-enter subtask `index`'s parked loop, if it parked."""
+def _gate_kwargs(
+    base_ctx: AgentContext, config: RunnableConfig, state: dict, index: int
+) -> dict[str, Any]:
+    """The write-gate part for subtask `index`, re-entering its parked loop if it parked."""
     parked = {ps.index: ps for ps in state.get("parked_subtasks") or []}
     decisions = {d.item_id: d for d in state.get("write_decisions") or []}
     confirmation = state.get("write_confirmation")
-    kwargs: dict[str, Any] = {"write_round": int(state.get("write_rounds") or 0)}
+    gate = WriteGateState(
+        retry_mode=base_ctx.write_gate.retry_mode,
+        pre_approved=_pre_approved(base_ctx, config, state),
+        round=int(state.get("write_rounds") or 0),
+    )
     if index in parked and decisions:
-        kwargs["resume"] = parked[index].loop
-        kwargs["write_decisions"] = decisions
-        kwargs["approval_request_id"] = (
+        gate.resume = parked[index].loop
+        gate.decisions = decisions
+        gate.approval_request_id = (
             confirmation.request_id if confirmation is not None else None
         )
-    return kwargs
+    return {"write_gate": gate}
 
 
 async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
@@ -363,15 +368,6 @@ def _build_image_message(state: dict) -> dict:
     return {"role": "user", "content": content}
 
 
-def _sync_procedure_invocation(source: AgentContext, dest: AgentContext) -> None:
-    dest.procedure_invocation_id = getattr(source, "procedure_invocation_id", None)
-    dest.procedure_invoked_id = getattr(source, "procedure_invoked_id", None)
-    dest.procedure_invoked_version_id = getattr(
-        source, "procedure_invoked_version_id", None
-    )
-    dest.procedure_tool_names = getattr(source, "procedure_tool_names", None)
-
-
 async def _execute_single(
     subtask: Any,
     base_ctx: AgentContext,
@@ -392,7 +388,6 @@ async def _execute_single(
         contacts=base_ctx.contacts,
         persona=base_ctx.persona,
         timezone=base_ctx.timezone,
-        retry_mode=base_ctx.retry_mode,
         model=subtask.model or None,
         messages=_build_messages(state, subtask.agent, base_ctx),
         reporter=reporter,
@@ -404,8 +399,7 @@ async def _execute_single(
         script_runner=config["configurable"].get("script_runner"),
         active_skills=base_ctx.active_skills,
         skill_tool_names=base_ctx.skill_tool_names,
-        pre_approved_writes=_pre_approved(base_ctx, config, state),
-        **_resume_kwargs(state, 0),
+        **_gate_kwargs(base_ctx, config, state, 0),
         **_prompt_note_kwargs(base_ctx),
         **_procedure_kwargs(base_ctx),
         **_conductor_kwargs(base_ctx),
@@ -417,25 +411,16 @@ async def _execute_single(
         return {
             **_park_updates(state, [result]),
             "agent_context": base_ctx,
-            "conductor_ledger": list(getattr(ctx, "conductor_ledger", None) or []),
-            "conductor_delegate_counts": dict(
-                getattr(ctx, "conductor_delegate_counts", None) or {}
-            ),
-            "conductor_delegate_total": int(
-                getattr(ctx, "conductor_delegate_total", 0) or 0
-            ),
+            "conductor_ledgers": [list(ctx.conductor.ledger)],
+            "conductor_delegate_counts": dict(ctx.conductor.tally.counts),
+            "conductor_delegate_total": ctx.conductor.tally.total,
         }
     from ze_core.orchestration.procedure_activation import record_guided_actions
 
     await record_guided_actions(ctx, result, config)
-    _sync_procedure_invocation(ctx, base_ctx)
-    if getattr(ctx, "conductor_ledger", None) is not None:
-        base_ctx.conductor_ledger = ctx.conductor_ledger
-    if getattr(ctx, "conductor_delegate_counts", None) is not None:
-        base_ctx.conductor_delegate_counts = ctx.conductor_delegate_counts
-    base_ctx.conductor_delegate_total = int(
-        getattr(ctx, "conductor_delegate_total", 0) or 0
-    )
+    base_ctx.procedure_invocation = ctx.procedure_invocation
+    base_ctx.conductor.ledger = ctx.conductor.ledger
+    base_ctx.conductor.tally = ctx.conductor.tally
     components: list = list(state.get("preset_components") or [])
     if component_hook is not None:
         components += component_hook.pop_components(ctx.session_id)
@@ -445,13 +430,9 @@ async def _execute_single(
         "subtask_results": [],
         "components": components,
         "agent_context": base_ctx,
-        "conductor_ledger": list(getattr(ctx, "conductor_ledger", None) or []),
-        "conductor_delegate_counts": dict(
-            getattr(ctx, "conductor_delegate_counts", None) or {}
-        ),
-        "conductor_delegate_total": int(
-            getattr(ctx, "conductor_delegate_total", 0) or 0
-        ),
+        "conductor_ledgers": [list(ctx.conductor.ledger)],
+        "conductor_delegate_counts": dict(ctx.conductor.tally.counts),
+        "conductor_delegate_total": ctx.conductor.tally.total,
     }
 
 
@@ -498,7 +479,6 @@ async def _execute_compound(
             contacts=base_ctx.contacts,
             persona=base_ctx.persona,
             timezone=base_ctx.timezone,
-            retry_mode=base_ctx.retry_mode,
             model=subtask.model or None,
             messages=_build_messages(state, subtask.agent, base_ctx),
             reporter=reporter,
@@ -506,11 +486,10 @@ async def _execute_compound(
             abort_token=abort_token,
             embed_fn=embed_fn,
             tool_sink=config["configurable"].get("tool_sink"),
-        script_runner=config["configurable"].get("script_runner"),
+            script_runner=config["configurable"].get("script_runner"),
             active_skills=base_ctx.active_skills,
             skill_tool_names=base_ctx.skill_tool_names,
-            pre_approved_writes=_pre_approved(base_ctx, config, state),
-            **_resume_kwargs(state, index),
+            **_gate_kwargs(base_ctx, config, state, index),
             **_prompt_note_kwargs(base_ctx),
             **_procedure_kwargs(base_ctx),
             **_conductor_kwargs(base_ctx),
@@ -616,6 +595,6 @@ def _out_of_time(agent_name: str, ctx: AgentContext) -> AgentResult:
     log.warning("conductor_hard_timeout", agent=agent_name)
     return AgentResult(
         agent=agent_name,
-        response=partial_answer(ctx.conductor_ledger),
+        response=partial_answer(ctx.conductor.ledger),
         tool_calls=list(ctx.tool_calls),
     )

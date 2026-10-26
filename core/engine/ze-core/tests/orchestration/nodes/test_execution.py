@@ -272,7 +272,7 @@ class TestConductorHardTimeout:
         instance.run = slow_run.__get__(instance, cls)
         register_instance("conductor", instance)
         ctx = _ctx("conductor")
-        ctx.conductor_ledger = [{"agent": "research", "status": "running"}]
+        ctx.conductor.ledger = [{"agent": "research", "status": "running"}]
         state = {
             "envelope": _envelope("conductor"),
             "agent_context": ctx,

@@ -17,7 +17,7 @@ from ze_agents.park import ParkedLoop
 from ze_agents.registry import get_agent
 from ze_logging import get_logger
 from ze_agents.nested_tools import nested_row
-from ze_agents.types import AgentContext, ToolCall, add_sources
+from ze_agents.types import AgentContext, ToolCall, WriteGateState, add_sources
 
 log = get_logger(__name__)
 
@@ -108,9 +108,7 @@ def _update_conductor_ledger(
     status: str,
     request_id: str | None = None,
 ) -> None:
-    ledger = getattr(ctx, "conductor_ledger", None)
-    if ledger is None:
-        ctx.conductor_ledger = ledger = []
+    ledger = ctx.conductor.ledger
     if status in {"stalled", "replanned", "ask_user"}:
         if status == "stalled":
             for item in ledger:
@@ -141,40 +139,25 @@ def _update_conductor_ledger(
         entry["request_id"] = request_id
 
 
-def _delegate_counts(ctx: AgentContext) -> dict[str, int]:
-    counts = getattr(ctx, "conductor_delegate_counts", None)
-    if counts is None:
-        ctx.conductor_delegate_counts = counts = {}
-    return counts
-
-
 def _would_exceed_delegate_caps(ctx: AgentContext, agent_name: str) -> bool:
-    counts = _delegate_counts(ctx)
-    total = int(getattr(ctx, "conductor_delegate_total", 0) or 0)
+    tally = ctx.conductor.tally
     return (
-        counts.get(agent_name, 0) >= DELEGATE_PER_SPECIALIST_CAP
-        or total >= DELEGATE_TURN_CAP
+        tally.counts.get(agent_name, 0) >= DELEGATE_PER_SPECIALIST_CAP
+        or tally.total >= DELEGATE_TURN_CAP
     )
 
 
 def _bump_delegate_counts(ctx: AgentContext, agent_name: str) -> None:
-    counts = _delegate_counts(ctx)
-    counts[agent_name] = counts.get(agent_name, 0) + 1
-    ctx.conductor_delegate_counts = counts
-    ctx.conductor_delegate_total = (
-        int(getattr(ctx, "conductor_delegate_total", 0) or 0) + 1
-    )
+    tally = ctx.conductor.tally
+    tally.counts[agent_name] = tally.counts.get(agent_name, 0) + 1
+    tally.total += 1
 
 
 def _has_stalled(ctx: AgentContext, agent_name: str) -> bool:
     return any(
         item.get("agent") == agent_name and item.get("status") == "stalled"
-        for item in (getattr(ctx, "conductor_ledger", None) or [])
+        for item in ctx.conductor.ledger
     )
-
-
-def _stall_key(agent_name: str) -> str:
-    return f"stall:{agent_name}"
 
 
 def _inject_stall_context(arguments: dict[str, Any], detail: str) -> dict[str, Any]:
@@ -251,7 +234,7 @@ async def run_delegate(
         return _failed(arguments, _ASK_USER_ERROR)
 
     if resume is None and _has_stalled(ctx, agent_name):
-        detail = str(ctx.extensions.get(_stall_key(agent_name)) or "empty or error")
+        detail = str(ctx.conductor.stalls.get(agent_name) or "empty or error")
         arguments = _inject_stall_context(arguments, detail)
         _update_conductor_ledger(ctx, agent_name, "replanned")
 
@@ -259,7 +242,7 @@ async def run_delegate(
         instance = get_agent(agent_name)
     except Exception as exc:
         _bump_delegate_counts(ctx, agent_name)
-        ctx.extensions[_stall_key(agent_name)] = str(exc)
+        ctx.conductor.stalls[agent_name] = str(exc)
         _update_conductor_ledger(ctx, agent_name, "stalled")
         return _failed(arguments, str(exc))
 
@@ -279,12 +262,14 @@ async def run_delegate(
         reporter=ctx.reporter,
         identity_builder=ctx.identity_builder,
         abort_token=ctx.abort_token,
-        retry_mode=ctx.retry_mode,
-        pre_approved_writes=ctx.pre_approved_writes,
-        write_round=ctx.write_round,
-        approval_request_id=ctx.approval_request_id,
-        write_decisions=ctx.write_decisions,
-        resume=resume,
+        write_gate=WriteGateState(
+            resume=resume,
+            decisions=ctx.write_gate.decisions,
+            pre_approved=ctx.write_gate.pre_approved,
+            round=ctx.write_gate.round,
+            approval_request_id=ctx.write_gate.approval_request_id,
+            retry_mode=ctx.write_gate.retry_mode,
+        ),
         tool_sink=ctx.tool_sink,
         script_runner=ctx.script_runner,
         extensions={"_delegate_depth": depth + 1},
@@ -295,7 +280,7 @@ async def run_delegate(
     log.info("delegate_start", from_agent=caller_name, to_agent=agent_name, depth=depth)
     left = remaining_seconds(ctx)
     if left is not None and left <= 0:
-        ctx.extensions[_stall_key(agent_name)] = "time budget used up"
+        ctx.conductor.stalls[agent_name] = "time budget used up"
         _update_conductor_ledger(ctx, agent_name, "stalled")
         return _failed(arguments, BUDGET_EXHAUSTED_ERROR)
     try:
@@ -311,11 +296,11 @@ async def run_delegate(
         if remaining is None or remaining > 0:
             # The specialist raised its own timeout (a socket, an HTTP call).
             log.warning("delegate_error", to_agent=agent_name, error=str(exc))
-            ctx.extensions[_stall_key(agent_name)] = str(exc) or "timed out"
+            ctx.conductor.stalls[agent_name] = str(exc) or "timed out"
             _update_conductor_ledger(ctx, agent_name, "stalled")
             return _failed(arguments, str(exc) or "timed out", duration_ms=duration_ms)
         log.warning("delegate_over_budget", to_agent=agent_name)
-        ctx.extensions[_stall_key(agent_name)] = "time budget used up"
+        ctx.conductor.stalls[agent_name] = "time budget used up"
         _update_conductor_ledger(ctx, agent_name, "stalled")
         return ToolCall(
             tool_name=DELEGATE_TOOL_NAME,
@@ -345,7 +330,7 @@ async def run_delegate(
     except Exception as exc:
         duration_ms = int((time.monotonic() - start) * 1000)
         log.warning("delegate_error", to_agent=agent_name, error=str(exc))
-        ctx.extensions[_stall_key(agent_name)] = str(exc)
+        ctx.conductor.stalls[agent_name] = str(exc)
         _update_conductor_ledger(ctx, agent_name, "stalled")
         return _failed(arguments, str(exc), duration_ms=duration_ms)
 
@@ -354,7 +339,7 @@ async def run_delegate(
     nested = [nested_row(call) for call in result.tool_calls]
     if _is_empty_response(result.response):
         log.warning("delegate_stalled_empty", to_agent=agent_name)
-        ctx.extensions[_stall_key(agent_name)] = "empty response"
+        ctx.conductor.stalls[agent_name] = "empty response"
         _update_conductor_ledger(ctx, agent_name, "stalled")
         return ToolCall(
             tool_name=DELEGATE_TOOL_NAME,

@@ -13,7 +13,7 @@ from ze_agents.park import DECLINED_RESULT, WriteDecision
 from ze_agents.registry import agent, clear_registry, register_instance
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool
-from ze_agents.types import AgentContext, AgentResult
+from ze_agents.types import AgentContext, AgentResult, WriteGateState
 
 events: list[tuple] = []
 
@@ -84,7 +84,12 @@ class _Cal(BaseAgent):
 
 
 def _ctx(**kw) -> AgentContext:
-    return AgentContext(session_id="s", prompt="p", **kw)
+    gate = {
+        {"write_decisions": "decisions", "write_round": "round"}.get(k, k): kw.pop(k)
+        for k in list(kw)
+        if k in ("resume", "write_decisions", "write_round")
+    }
+    return AgentContext(session_id="s", prompt="p", write_gate=WriteGateState(**gate), **kw)
 
 
 async def _park(client) -> object:

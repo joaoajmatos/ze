@@ -9,10 +9,12 @@ from uuid import UUID
 
 from ze_agents.interface.types import RawInput
 
+from ze_agents.lifetime import turn_reset
 from ze_agents.park import WriteConfirmation
 from ze_agents.types import AbortToken
 from ze_logging import get_logger
 from ze_core.orchestration.nodes.trace import ROUTING_SCORES_SHOWN
+from ze_core.orchestration.state import AgentState
 from ze_core.telemetry.context import enter_turn_context
 from ze_core.telemetry.turn import (
     TurnTelemetry,
@@ -45,6 +47,7 @@ def make_graph_input(
     """
     modality = "voice" if raw.voice else "image" if raw.image else "text"
     return {
+        **turn_reset(AgentState),
         "prompt": raw.text or "",
         "session_id": session_id,
         "input_modality": modality,
@@ -55,38 +58,6 @@ def make_graph_input(
         ),
         "image_data": raw.image,
         "image_mime": raw.image_mime,
-        "image_caption": None,
-        "envelope": None,
-        "memory_context": None,
-        "agent_context": None,
-        "agent_result": None,
-        "subtask_results": [],
-        "completed_subtask_indexes": [],
-        "blocked": False,
-        "budget_status": None,
-        "budget_approved": False,
-        "parked_subtasks": [],
-        "write_confirmation": None,
-        "write_decisions": [],
-        "write_rounds": 0,
-        "write_outcomes": [],
-        "final_response": None,
-        "error": None,
-        "components": [],
-        "preset_components": [],
-        "conductor_hint": None,
-        "conductor_ledger": [],
-        "conductor_delegate_counts": {},
-        "conductor_delegate_total": 0,
-        "routing_hints": None,
-        "screen_note": None,
-        "screen_trace": None,
-        "screen_subject_line": None,
-        "correlations": [],
-        "message_trace": None,
-        "judgments": [],
-        "tier": None,
-        "skill_matches": None,
     }
 
 

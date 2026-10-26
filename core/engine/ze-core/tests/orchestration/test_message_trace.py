@@ -5,7 +5,12 @@ from __future__ import annotations
 from types import SimpleNamespace
 from uuid import uuid4
 
-from ze_agents.types import AgentContext, AgentResult
+from ze_agents.types import (
+    AgentContext,
+    AgentResult,
+    ProcedureInvocation,
+    WriteGateState,
+)
 from ze_core.conversation.messages.types import ProcedureUsageTrace
 from ze_core.orchestration.nodes.trace import record_trace
 
@@ -28,9 +33,11 @@ async def test_record_trace_serializes_procedure_invocation_ids() -> None:
             "agent_context": AgentContext(
                 session_id="s1",
                 prompt="clear inbox",
-                procedure_invocation_id=str(invocation_id),
-                procedure_invoked_id=str(procedure_id),
-                procedure_invoked_version_id=str(version_id),
+                procedure_invocation=ProcedureInvocation(
+            invocation_id=str(invocation_id),
+            procedure_id=str(procedure_id),
+            version_id=str(version_id),
+        ),
             ),
         },
         {"configurable": {}},
@@ -84,7 +91,7 @@ async def test_record_trace_copies_conductor_ledger() -> None:
             ),
             "agent_result": AgentResult(agent="companion", response="ok"),
             "conductor_hint": hint,
-            "conductor_ledger": ledger,
+            "conductor_ledgers": [ledger],
             "agent_context": AgentContext(
                 session_id="s1",
                 prompt="hello",
@@ -113,7 +120,7 @@ async def test_record_trace_marks_promote_offered_on_unfinished_close() -> None:
                 subtasks=[],
             ),
             "agent_result": AgentResult(agent="companion", response="ok"),
-            "conductor_ledger": ledger,
+            "conductor_ledgers": [ledger],
             "agent_context": AgentContext(
                 session_id="s1",
                 prompt="hello",
@@ -369,7 +376,7 @@ async def test_retry_refused_write_is_not_recorded_as_an_action(effect_tools) ->
         async def run(self, ctx):
             return AgentResult(agent=self.name, response="ok")
 
-    ctx = AgentContext(session_id="s", prompt="p", retry_mode=True)
+    ctx = AgentContext(session_id="s", prompt="p", write_gate=WriteGateState(retry_mode=True))
     refused = await _A().call_tool("send_email", ctx)
     result = AgentResult(agent="companion", response="ok", tool_calls=[refused])
     trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]

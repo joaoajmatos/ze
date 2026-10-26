@@ -157,7 +157,7 @@ async def decompose(state: AgentState, config: RunnableConfig) -> dict:
     return {
         "envelope": rewritten,
         "conductor_hint": hint,
-        "conductor_ledger": ledger,
+        "conductor_ledgers": [ledger],
     }
 
 

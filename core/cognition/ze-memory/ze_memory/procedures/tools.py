@@ -6,7 +6,7 @@ from typing import Any
 from uuid import UUID
 
 from ze_agents.tool import ToolAccess, tool
-from ze_agents.types import AgentContext
+from ze_agents.types import AgentContext, ProcedureInvocation
 from ze_logging import get_logger
 
 from ze_memory.procedures.errors import (
@@ -42,7 +42,7 @@ async def invoke_procedure(procedure_id: str, ctx: AgentContext | None = None) -
         return "[error: procedure invocation requires agent context]"
     if _activator is None:
         return "[error: procedure activation is unavailable]"
-    matches = getattr(ctx, "procedure_matches", None) or []
+    matches = ctx.procedure_matches or []
     try:
         wanted = UUID(procedure_id)
     except ValueError:
@@ -62,10 +62,12 @@ async def invoke_procedure(procedure_id: str, ctx: AgentContext | None = None) -
     except (BlockedProcedureError, IneligibleProcedureError) as exc:
         log.info("invoke_procedure_rejected", error=str(exc))
         return f"[error: {exc}]"
-    ctx.procedure_invocation_id = str(invocation.id)
-    ctx.procedure_invoked_id = str(match.procedure_id)
-    ctx.procedure_invoked_version_id = str(match.version_id)
-    ctx.procedure_tool_names = sorted(match.effective_tool_names)
+    ctx.procedure_invocation = ProcedureInvocation(
+        invocation_id=str(invocation.id),
+        procedure_id=str(match.procedure_id),
+        version_id=str(match.version_id),
+        tool_names=sorted(match.effective_tool_names),
+    )
     if match.source_kind == ProcedureSourceKind.TOOL_SCRIPT.value:
         return (
             "This is a script procedure: run it with "

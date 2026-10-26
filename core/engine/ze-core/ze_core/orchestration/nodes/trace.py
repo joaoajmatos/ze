@@ -335,10 +335,10 @@ async def _extract_workspace(
 
 def _conductor_ledger(state: AgentState) -> list[dict[str, str]]:
     ctx = state.get("agent_context")
-    from_ctx = getattr(ctx, "conductor_ledger", None) if ctx is not None else None
+    from_ctx = ctx.conductor.ledger if ctx is not None else None
     if from_ctx:
         return list(from_ctx)
-    return list(state.get("conductor_ledger") or [])
+    return [entry for ledger in state.get("conductor_ledgers") or [] for entry in ledger]
 
 
 def _routing_scores(envelope: Any) -> list[RoutingScore]:

@@ -9,7 +9,7 @@ import pytest
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import clear_registry
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool
-from ze_agents.types import AgentContext, AgentResult
+from ze_agents.types import AgentContext, AgentResult, ProcedureInvocation
 
 
 @pytest.fixture(autouse=True)
@@ -22,6 +22,13 @@ def clean():
 
 
 def _ctx(**kwargs) -> AgentContext:
+    if "procedure_tool_names" in kwargs:
+        kwargs["procedure_invocation"] = ProcedureInvocation(
+            invocation_id="i1",
+            procedure_id="p1",
+            version_id="v1",
+            tool_names=kwargs.pop("procedure_tool_names"),
+        )
     return AgentContext(session_id="s1", prompt="hello", **kwargs)
 
 

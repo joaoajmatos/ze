@@ -44,6 +44,17 @@ class AgentConfigError(AgentError):
     """Agent or tool misconfiguration detected at startup."""
 
 
+# ── Derivation and lifetimes ──────────────────────────────────────────────────
+
+
+class UndeclaredDerivationError(AgentConfigError):
+    """An AgentContext field has no row in the derivation table."""
+
+
+class UndeclaredLifetimeError(AgentConfigError):
+    """A graph-state field declares no lifetime (Turn, Input, Thread or Run)."""
+
+
 # ── Interface ─────────────────────────────────────────────────────────────────
 
 

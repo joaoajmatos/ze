@@ -156,10 +156,10 @@ class TestRunDelegate:
     async def test_ledger_marks_done_on_success(self):
         _make_agent("calendar", response="ok")
         ctx = _ctx()
-        ctx.conductor_ledger = [{"agent": "calendar", "status": "planned"}]
+        ctx.conductor.ledger = [{"agent": "calendar", "status": "planned"}]
         await _run({"agent_name": "calendar", "objective": "list"}, ctx)
-        assert ctx.conductor_ledger[-1]["status"] == "done"
-        assert ctx.conductor_ledger[-1]["agent"] == "calendar"
+        assert ctx.conductor.ledger[-1]["status"] == "done"
+        assert ctx.conductor.ledger[-1]["agent"] == "calendar"
 
     async def test_nested_cancel_payload_is_visible(self):
         @agent
@@ -634,7 +634,7 @@ class TestConductorStallReplan:
         )
         assert ran["n"] == 2
         assert third.success is False
-        statuses = [e["status"] for e in ctx.conductor_ledger]
+        statuses = [e["status"] for e in ctx.conductor.ledger]
         assert "stalled" in statuses
         assert "replanned" in statuses
         assert "ask_user" in statuses
@@ -646,7 +646,7 @@ class TestConductorStallReplan:
         ctx = _ctx()
         ok = await _run({"agent_name": "research", "objective": "look"}, ctx)
         assert ok.success is True
-        assert "stalled" not in [e["status"] for e in ctx.conductor_ledger]
+        assert "stalled" not in [e["status"] for e in ctx.conductor.ledger]
 
         ran = {"n": 0}
 
@@ -689,7 +689,7 @@ class TestConductorStallReplan:
         assert retry.args["prior_outputs"]
         assert "stalled" in retry.args["prior_outputs"].lower()
         assert "Prior outputs:" in received[1]
-        assert "replanned" in [e["status"] for e in ctx.conductor_ledger]
+        assert "replanned" in [e["status"] for e in ctx.conductor.ledger]
 
     async def test_block_requires_ask_user(self):
         _make_agent("research", response="")
@@ -699,7 +699,7 @@ class TestConductorStallReplan:
         blocked = await _run({"agent_name": "research", "objective": "c"}, ctx)
         assert blocked.success is False
         assert "ask_user" in (blocked.error or "")
-        assert any(e["status"] == "ask_user" for e in ctx.conductor_ledger)
+        assert any(e["status"] == "ask_user" for e in ctx.conductor.ledger)
 
     async def test_turn_cap_blocks_seventh_delegate(self):
         for i in range(7):
@@ -711,7 +711,7 @@ class TestConductorStallReplan:
         seventh = await _run({"agent_name": "agent6", "objective": "do"}, ctx)
         assert seventh.success is False
         assert "ask_user" in (seventh.error or "")
-        assert ctx.conductor_delegate_total == 6
+        assert ctx.conductor.tally.total == 6
 
     async def test_speech_act_one_shot_under_cap(self):
         _make_agent("reminders", response="cancelled dentist")
@@ -720,9 +720,9 @@ class TestConductorStallReplan:
             {"agent_name": "reminders", "objective": "forget the dentist"}, ctx
         )
         assert tc.success is True
-        assert ctx.conductor_delegate_total == 1
-        assert "stalled" not in [e["status"] for e in ctx.conductor_ledger]
-        assert "ask_user" not in [e["status"] for e in ctx.conductor_ledger]
+        assert ctx.conductor.tally.total == 1
+        assert "stalled" not in [e["status"] for e in ctx.conductor.ledger]
+        assert "ask_user" not in [e["status"] for e in ctx.conductor.ledger]
 
 
 # ── tool scripts (197) ────────────────────────────────────────────────────────

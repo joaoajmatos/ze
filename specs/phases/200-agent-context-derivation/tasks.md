@@ -29,7 +29,7 @@ Repo-root paths below:
 
 ## Phase 1: Setup
 
-- [ ] T001 [L:lead] Record the baseline on the floor branch: `make test-py` and `make lint`. Write any pre-existing failure into the "200 Handoffs" note, so no lane mistakes it for its own.
+- [x] T001 [L:lead] Record the baseline on the floor branch: `make test-py` and `make lint`. Write any pre-existing failure into the "200 Handoffs" note, so no lane mistakes it for its own.
 
 ---
 
@@ -37,16 +37,16 @@ Repo-root paths below:
 
 **Purpose**: the parts, the derivation owner, the lifetime markers and the mechanical move of every reader. Behaviour is unchanged and the floor stays green at the end of T014.
 
-- [ ] T002 [P] [L:lead] Write `AG/tests/test_lifetime.py` (failing first). Cover:
+- [x] T002 [P] [L:lead] Write `AG/tests/test_lifetime.py` (failing first). Cover:
   - `field_lifetimes` on a `TypedDict` with `from __future__ import annotations` and forward refs returns each marker.
   - A field with no marker raises `UndeclaredLifetimeError`; the message names the class and the field.
   - `turn_reset` returns only `Turn` keys.
   - Two `turn_reset` calls never share a list or dict (mutate one, check the other).
   - `Input`, `Thread` and `Run` keys are omitted.
   - A merged `type("M", (A, B), {})` `TypedDict` built from two modules with forward refs resolves, and `turn_reset(M)` covers both bases.
-- [ ] T003 [L:lead] Implement `AG/ze_agents/lifetime.py` (`Turn`, `Input`, `Thread`, `Run`, `field_lifetimes`, `turn_reset`) per `contracts/derivation.md`. Add `UndeclaredLifetimeError` and `UndeclaredDerivationError` (both `ZeError`) to `AG/ze_agents/errors.py`. T002 passes.
-- [ ] T004 [L:lead] In `AG/ze_agents/types.py`, add `WriteGateState`, `DelegateTally`, `ConductorState` and `ProcedureInvocation`, and regroup `AgentContext` into the 31 fields of `data-model.md`. The 15 flat fields go: no alias, no property (Principle VIII). Keep the "runtime-only, never checkpoint" comments on the fields that stay.
-- [ ] T005 [P] [L:lead] Write `AG/tests/test_derive_table.py` (failing first):
+- [x] T003 [L:lead] Implement `AG/ze_agents/lifetime.py` (`Turn`, `Input`, `Thread`, `Run`, `field_lifetimes`, `turn_reset`) per `contracts/derivation.md`. Add `UndeclaredLifetimeError` and `UndeclaredDerivationError` (both `ZeError`) to `AG/ze_agents/errors.py`. T002 passes.
+- [x] T004 [L:lead] In `AG/ze_agents/types.py`, add `WriteGateState`, `DelegateTally`, `ConductorState` and `ProcedureInvocation`, and regroup `AgentContext` into the 31 fields of `data-model.md`. The 15 flat fields go: no alias, no property (Principle VIII). Keep the "runtime-only, never checkpoint" comments on the fields that stay.
+- [x] T005 [P] [L:lead] Write `AG/tests/test_derive_table.py` (failing first):
   - `set(DERIVATION) == {f.name for f in fields(AgentContext)}`, so a missing row is named in the assertion message (SC-002).
   - Every `Reset` has a non-empty `reason` and every `Given` a `source`.
   - An operation called while a field lacks a row raises `UndeclaredDerivationError` naming it. Patch `DERIVATION` to drop one row.
@@ -58,9 +58,9 @@ Repo-root paths below:
   - `for_unattended` gives the timezone, `memory_store`, `extensions`, `pre_approved` and the held resume, with `retry_mode=False`, and no notes or handles.
   - `for_action` sets only `session_id`.
   - `outcome_of` stamps `procedure.subtask = index` and keeps the same `tally` object.
-- [ ] T006 [L:lead] Implement `AG/ze_agents/derive.py` per `contracts/derivation.md` and the `data-model.md` table. Write every `Reset` reason and `Given` source as a sentence, from data-model.md and research R6, R11 and R12. The operations walk `dataclasses.fields(AgentContext)`; no field list is written by hand. T005 passes.
-- [ ] T007 [P] [L:lead] Re-export from `packages/ze-sdk/ze_sdk/types.py`: `Turn`, `Input`, `Thread`, `Run`, `WriteGateState`, `ConductorState`, `DelegateTally`, `ProcedureInvocation`. Re-export `UndeclaredLifetimeError` from `packages/ze-sdk/ze_sdk/errors.py`. Update `__all__`. `make test-sdk` passes, including `test_plugin_boundaries.py`.
-- [ ] T008 [L:lead] In `ZC/ze_core/orchestration/state.py`:
+- [x] T006 [L:lead] Implement `AG/ze_agents/derive.py` per `contracts/derivation.md` and the `data-model.md` table. Write every `Reset` reason and `Given` source as a sentence, from data-model.md and research R6, R11 and R12. The operations walk `dataclasses.fields(AgentContext)`; no field list is written by hand. T005 passes.
+- [x] T007 [P] [L:lead] Re-export from `packages/ze-sdk/ze_sdk/types.py`: `Turn`, `Input`, `Thread`, `Run`, `WriteGateState`, `ConductorState`, `DelegateTally`, `ProcedureInvocation`. Re-export `UndeclaredLifetimeError` from `packages/ze-sdk/ze_sdk/errors.py`. Update `__all__`. `make test-sdk` passes, including `test_plugin_boundaries.py`.
+- [x] T008 [L:lead] In `ZC/ze_core/orchestration/state.py`:
   - Put `Annotated[..., <marker>]` on every `AgentState` key, per the `data-model.md` lifetime table.
   - Rename `conductor_ledger` to `conductor_ledgers: list` (one ledger per subtask).
   - Add `procedure_invocations: list` and delete `procedure_matches`.
@@ -71,13 +71,13 @@ Repo-root paths below:
   - New `ZC/tests/orchestration/test_state_lifetimes.py`: every key is declared (SC-003); the reset values equal the data-model table; an extension `TypedDict` with an unmarked field makes `build_state_type([plugin])` and `build_graph(..., plugins=[plugin])` raise `UndeclaredLifetimeError` naming the field (US3 scenario 3); `with_turn_reset` output starts from the reset and lets the node's keys win.
   - Update the fixtures in `ZC/tests/orchestration/test_state_extensions.py`.
   - Add a round trip of the four new dataclasses inside `AgentContext` to `ZC/tests/orchestration/test_state_serde.py`.
-- [ ] T009 [L:lead] In `ZP/ze_personal/graph/workflow.py`, give the ten `WorkflowAgentState` fields `Run("...")` markers imported from `ze_sdk.types`. Change only annotations here; `edges` deletes the reset list in T036. `make test-personal` passes.
-- [ ] T010 [L:lead] Mechanical move in ze-agents and ze-memory, behaviour unchanged:
+- [x] T009 [L:lead] In `ZP/ze_personal/graph/workflow.py`, give the ten `WorkflowAgentState` fields `Run("...")` markers imported from `ze_sdk.types`. Change only annotations here; `edges` deletes the reset list in T036. `make test-personal` passes.
+- [x] T010 [L:lead] Mechanical move in ze-agents and ze-memory, behaviour unchanged:
   - `AG/ze_agents/base_agent.py`: `ctx.write_gate.*` for the seven gate fields, `ctx.conductor.hint` for the routing hint, `ctx.procedure_invocation.tool_names` for the narrowing, the `procedure_invocation is None` check at the old `:1008`, and `getattr(ctx, …)` guards on `AgentContext` fields replaced by plain attribute reads (FR-009).
   - `AG/ze_agents/budget.py`: the soft deadline lives on `ctx.conductor.deadline`; `_SOFT_DEADLINE_KEY` is deleted.
   - `AG/ze_agents/delegate.py`: field access only. Use the tally, ledger and `stalls` on `ctx.conductor`, and `ctx.write_gate.*` in the still hand-built `sub_ctx`. `for_delegate` comes in T028.
   - `core/cognition/ze-memory/ze_memory/procedures/tools.py`: `invoke_procedure` sets `ctx.procedure_invocation = ProcedureInvocation(...)`.
-- [ ] T011 [L:lead] Mechanical move in ze-core and ze-automation, behaviour unchanged:
+- [x] T011 [L:lead] Mechanical move in ze-core and ze-automation, behaviour unchanged:
   - `ZC/ze_core/orchestration/nodes/execution.py`: the helpers build the parts; the copy-back targets the parts.
   - `nodes/context.py`: the conductor part is filled from state with `conductor_ledgers[0]`; the `procedure_matches` return key is dropped.
   - `nodes/routing.py`: returns `conductor_ledgers: [ledger]`.
@@ -85,15 +85,15 @@ Repo-root paths below:
   - `ZC/ze_core/conversation/turn.py`: renamed key only.
   - `ZC/ze_core/orchestration/procedure_activation.py`: reads `ctx.procedure_invocation`.
   - `ZA/ze_automation/goals/executor.py`: `_HeldResume.context_kwargs()` becomes `gate()`, returning a `WriteGateState`; `_execute_milestone` passes `write_gate=`.
-- [ ] T012 [L:lead] Mechanical test updates. Find every test that sets or reads a folded field or `conductor_ledger`:
+- [x] T012 [L:lead] Mechanical test updates. Find every test that sets or reads a folded field or `conductor_ledger`:
 
   ```
   rg -l 'ctx\.(resume|write_decisions|pre_approved_writes|write_round|approval_request_id|loop_active|retry_mode|conductor_|procedure_invo|procedure_tool_names)|(write_decisions|pre_approved_writes|write_round|approval_request_id|loop_active|conductor_[a-z_]+|procedure_invo[a-z_]+|procedure_tool_names)=|"conductor_ledger"|"procedure_matches"' --glob '**/tests/**/*.py' core plugins apps packages
   ```
 
   The list includes `AgentContext(retry_mode=…)` kwargs. Rewrite each to the parts; assertions keep their meaning. The list in `research.md` R3 counts about 40 files across ze-agents, ze-core, ze-memory, ze-automation, ze-calendar, ze-messenger and ze-api.
-- [ ] T013 [L:lead] `AG/ze_agents/base_agent.py` `run_undo` builds its context with `for_action(session_id)`, keeping `retry_mode=False` explicit through the action defaults. `AG/tests/test_run_undo.py` passes unchanged in meaning.
-- [ ] T014 [L:lead] Contract gate:
+- [x] T013 [L:lead] `AG/ze_agents/base_agent.py` `run_undo` builds its context with `for_action(session_id)`, keeping `retry_mode=False` explicit through the action defaults. `AG/tests/test_run_undo.py` passes unchanged in meaning.
+- [x] T014 [L:lead] Contract gate:
   - Run `make test-agents test-core test-memory test-automation test-personal test-sdk test`, then `make test-py` and `make lint`. All are green against the T001 baseline.
   - Commit the contract.
   - Post in "200 Handoffs" that `engine` and `edges` may start, with the contract commit hash.

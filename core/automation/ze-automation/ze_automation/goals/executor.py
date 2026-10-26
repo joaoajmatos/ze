@@ -7,13 +7,13 @@ from typing import Any, Awaitable, Callable
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ze_agents.errors import GoalExecutionError, LoopParked
 from ze_agents.park import ParkedLoop, WriteDecision
 from ze_memory.store import MemoryStore
 from ze_memory.types import Procedure, TaskState
-from ze_agents.types import AgentContext, ToolCall
+from ze_agents.types import AgentContext, ToolCall, WriteGateState
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.types import (
@@ -155,13 +155,13 @@ class _HeldResume:
     request_id: str
     round: int
 
-    def context_kwargs(self) -> dict[str, Any]:
-        return {
-            "resume": self.loop,
-            "write_decisions": self.decisions,
-            "approval_request_id": self.request_id,
-            "write_round": self.round,
-        }
+    def gate(self) -> WriteGateState:
+        return WriteGateState(
+            resume=self.loop,
+            decisions=self.decisions,
+            approval_request_id=self.request_id,
+            round=self.round,
+        )
 
 
 class GoalExecutor:
@@ -908,11 +908,13 @@ class GoalExecutor:
         ctx = AgentContext(
             session_id=f"goal:{milestone.goal_id}",
             prompt=prompt,
-            pre_approved_writes=frozenset(milestone.approved_writes),
             memory_store=self._memory,
             extensions={"goal_id": str(milestone.goal_id)},
             timezone=self._timezone,
-            **(resume.context_kwargs() if resume else {}),
+            write_gate=replace(
+                resume.gate() if resume else WriteGateState(),
+                pre_approved=frozenset(milestone.approved_writes),
+            ),
         )
 
         try:

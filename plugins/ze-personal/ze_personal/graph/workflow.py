@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import replace
-from typing import Any, TypedDict
+from typing import Annotated, Any, TypedDict
 from uuid import UUID
 
 from langchain_core.runnables import RunnableConfig
@@ -17,6 +17,7 @@ from langchain_core.runnables import RunnableConfig
 from ze_agents.claims import Provenance
 from ze_sdk.contribution import EvidenceRef
 from ze_sdk import parse_llm_json
+from ze_sdk.types import Run
 from ze_sdk.memory import candidate_from_procedure, ProcedureSourceKind
 from ze_agents.defaults import MODEL_WORKFLOW_VERIFY
 from ze_agents.model_resolution import resolve_model
@@ -42,16 +43,22 @@ class WorkflowAgentState(TypedDict, total=False):
     (plain conversation turns) remain valid without these keys.
     """
 
-    workflow_id: UUID | None
-    workflow_execution_id: UUID | None
-    workflow_steps: list | None  # list[WorkflowStep]
-    current_step_id: str
-    steps_by_id: dict[str, WorkflowStep]
-    visit_counts: dict[str, int]
-    workflow_step_results: list  # list[StepResult]
-    step_started_at: float | None
-    step_attempt: int
-    from_retry: bool
+    workflow_id: Annotated[UUID | None, Run("set when the run starts; kept across its steps")]
+    workflow_execution_id: Annotated[
+        UUID | None, Run("set when the run starts; kept across its steps")
+    ]
+    workflow_steps: Annotated[
+        list | None, Run("the run's step list; kept across its steps")
+    ]  # list[WorkflowStep]
+    current_step_id: Annotated[str, Run("the step the run is on; moved by the router")]
+    steps_by_id: Annotated[dict[str, WorkflowStep], Run("indexed once per run")]
+    visit_counts: Annotated[dict[str, int], Run("counts visits across the whole run")]
+    workflow_step_results: Annotated[
+        list, Run("results accumulate across the run's steps")
+    ]  # list[StepResult]
+    step_started_at: Annotated[float | None, Run("the current step's clock; set by load")]
+    step_attempt: Annotated[int, Run("retry counter for the current step")]
+    from_retry: Annotated[bool, Run("whether the step re-entered through a retry")]
 
 
 # ── Graph nodes ───────────────────────────────────────────────────────────────

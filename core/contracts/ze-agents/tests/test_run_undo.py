@@ -101,7 +101,7 @@ async def test_run_undo_context_is_a_normal_executing_context():
     await _Spy().run_undo("undo_it", {}, session_id="thread-9")
     ctx = seen["ctx"]
     assert ctx.session_id == "thread-9"
-    assert ctx.retry_mode is False
+    assert ctx.write_gate.retry_mode is False
     # The user asked for this undo: it runs as an approved call (Phase 181).
     assert isinstance(seen["approval"], ApprovedCall)
 
