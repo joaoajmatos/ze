@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-22
 
-**Status**: Draft
+**Status**: Ready to implement (plan, research, data model, contracts and tasks written 2026-10-26 against `main` `9529da15`; builds alongside 202 and rebases onto it after 202 lands)
 
 **Depends on**: 199 (landed), which added the `suspected → closed` resolve edge as `LoopStore.resolve` (`suspected-loop-resolution.md`) and a loop's claim kind derived from its state (`loop-claim-kind-from-state.md`). 202 (judgment surface) also edits `admission.py`, `intake.py`, `commitment_judge.py`, `loop_judge.py`, `corroboration.py` and `nodes/memory.py`: 202 lands first and this phase rebases onto it. The hunk split is in plan.md, "Coordination with 202".
 

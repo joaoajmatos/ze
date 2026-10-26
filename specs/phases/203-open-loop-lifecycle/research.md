@@ -76,6 +76,8 @@ The generic `transition()` and `_ALLOWED_TRANSITIONS` are deleted. No caller can
 
 `track_loop`'s create passes no evidence (the turn's episode does not exist when the tool runs) and an origin source `(conversation, <thread id>)`. The tool gets the thread id as `session_id: Injected[str | None]`: `session_id` is the LangGraph `thread_id` (`ze_core/conversation/turn.py:36-38`), and tools already receive it this way (`ze_automation/agents/workflow/tools.py:196`). With an origin row, a later suspected match from the same thread is not counted as independent corroboration (172's rule). Linking the turn's episode afterwards is deferred (spec Clarifications 2026-10-26).
 
+Collision detection is unchanged: `submit_and_detect_collisions` starts it fire-and-forget after the writer returns (`ze_collision/detect.py:175-190`), so it can never roll back a committed create.
+
 **Rationale**: The seam validates first and writes through the callback (`specs/arch/contribution-seam.md`), so the transaction fits inside it unchanged. Phase 212 (contribution submitter) depends on 203 and will find the loop submit sites in `lifecycle/events.py` instead of `extraction.py` and `tracking.py`.
 
 ## R6. One commit-decision vocabulary
