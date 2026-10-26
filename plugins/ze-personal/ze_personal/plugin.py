@@ -12,7 +12,6 @@ from ze_sdk.contribution import CollisionLogStore
 from ze_sdk.correlation import PostgresHypothesisStore
 from ze_agents.settings import Settings as CoreSettings
 from ze_proactive.notifier import ProactiveNotifier
-from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_sdk.memory import PostgresMemoryStore
 from ze_personal.channels.user_channel_store import UserChannelStore
@@ -48,7 +47,6 @@ class PersonalPlugin(ZePlugin):
         openrouter_client: LLMClient,
         settings: CoreSettings,
         notifier: ProactiveNotifier,
-        push_log_store: PushLogStore,
         memory_store: PostgresMemoryStore,
         workflow_store: WorkflowStore,
         workflow_planner: WorkflowPlanner,
@@ -92,7 +90,6 @@ class PersonalPlugin(ZePlugin):
 
         self.morning_briefing = MorningBriefing(
             notifier=notifier,
-            push_log_store=push_log_store,
             memory_store=memory_store,
             workflow_store=workflow_store,
             settings=settings,

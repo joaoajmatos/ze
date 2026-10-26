@@ -9,6 +9,7 @@ from ze_automation.workflow.types import (
     StepResult,
     Workflow,
     WorkflowExecution,
+    WorkflowFailure,
     WorkflowRevision,
     WorkflowStep,
 )
@@ -79,5 +80,9 @@ class WorkflowStore(Protocol):
     async def get_execution(
         self, workflow_id: UUID, execution_id: UUID
     ) -> WorkflowExecution | None: ...
+
+    async def list_failed_executions(
+        self, since_hours: float
+    ) -> list[WorkflowFailure]: ...
 
     async def recover_stale(self, timeout_minutes: int) -> int: ...

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
-
-import pytest
 
 from ze_automation.jobs.goal_narrative import GoalNarrativeJob
 from ze_automation.goals.types import (
@@ -16,6 +14,7 @@ from ze_automation.goals.types import (
     GateStatus,
 )
 from ze_automation.push_kinds import GOAL_NARRATIVE
+from ze_proactive.types import OncePer
 
 
 def _goal(title="Test Goal", status=GoalStatus.ACTIVE) -> Goal:
@@ -63,10 +62,7 @@ def _make_job(
 ):
     notifier = AsyncMock()
     notifier.notify = AsyncMock(return_value=outcome)
-
-    push_log = AsyncMock()
-    push_log.was_sent_within_hours = AsyncMock(return_value=dedup)
-    push_log.log = AsyncMock()
+    notifier.on_cooldown = AsyncMock(return_value=dedup)
 
     goal_store = AsyncMock()
     goal_store.list_active = AsyncMock(return_value=goals or [])
@@ -78,19 +74,26 @@ def _make_job(
 
     job = GoalNarrativeJob(
         notifier=notifier,
-        push_log_store=push_log,
         goal_store=goal_store,
         goal_planner=planner,
     )
-    return job, notifier, push_log, planner
+    return job, notifier, planner
 
 
 # ── Deduplication ─────────────────────────────────────────────────────────────
 
 
-async def test_run_skips_when_dedup_within_6_days():
-    job, notifier, _, _ = _make_job(dedup=True)
+async def test_run_skips_and_builds_nothing_while_cooling():
+    job, notifier, planner = _make_job(
+        goals=[_goal("Job search")],
+        milestones=[_milestone(1, MilestoneStatus.COMPLETED)],
+        dedup=True,
+    )
     await job.run()
+    notifier.on_cooldown.assert_awaited_once_with(
+        OncePer("goal_narrative", within=timedelta(hours=144))
+    )
+    planner.synthesize_weekly_narrative.assert_not_called()
     notifier.notify.assert_not_called()
 
 
@@ -98,7 +101,7 @@ async def test_run_skips_when_dedup_within_6_days():
 
 
 async def test_run_skips_when_no_active_goals():
-    job, notifier, _, _ = _make_job(goals=[])
+    job, notifier, _ = _make_job(goals=[])
     await job.run()
     notifier.notify.assert_not_called()
 
@@ -110,7 +113,7 @@ async def test_run_sends_narrative_for_goals_with_progress():
     goal = _goal("Job search")
     m1 = _milestone(1, MilestoneStatus.COMPLETED)
 
-    job, notifier, push_log, planner = _make_job(
+    job, notifier, planner = _make_job(
         goals=[goal],
         milestones=[m1],
         paragraph="Ze found 10 prospects this week.",
@@ -125,39 +128,19 @@ async def test_run_sends_narrative_for_goals_with_progress():
     assert call.args[1] == "Goal progress this week"
     assert "Job search" in call.args[2]
     assert "Ze found 10 prospects" in call.args[2]
-    push_log.log.assert_called_once_with("goal_narrative", "weekly")
-
-
-@pytest.mark.parametrize(
-    ("outcome", "logged"), [("failed", False), ("delivered", True), ("held", True)]
-)
-async def test_cooldown_starts_only_when_the_push_was_delivered_or_held(
-    outcome, logged
-):
-    job, _, push_log, _ = _make_job(
-        goals=[_goal("Job search")],
-        milestones=[_milestone(1, MilestoneStatus.COMPLETED)],
-        outcome=outcome,
+    assert call.kwargs["once_per"] == OncePer(
+        "goal_narrative", within=timedelta(hours=144)
     )
-
-    await job.run()
-
-    if logged:
-        push_log.log.assert_awaited_once_with("goal_narrative", "weekly")
-    else:
-        push_log.log.assert_not_awaited()
 
 
 async def test_run_skips_goals_with_no_progress_this_week():
     now = datetime.now(timezone.utc)
-    from datetime import timedelta
-
     old_date = now - timedelta(days=10)
 
     goal = _goal("Stale Goal")
     m1 = _milestone(1, MilestoneStatus.COMPLETED, completed_at=old_date)
 
-    job, notifier, _, planner = _make_job(goals=[goal], milestones=[m1])
+    job, notifier, planner = _make_job(goals=[goal], milestones=[m1])
 
     await job.run()
 
@@ -172,7 +155,7 @@ async def test_run_includes_awaiting_gate_even_without_weekly_progress():
     goal = _goal("Spanish learning", status=GoalStatus.AWAITING_GATE)
     gate = _gate("Week 1 review")
 
-    job, notifier, _, planner = _make_job(
+    job, notifier, planner = _make_job(
         goals=[goal],
         milestones=[],
         gate=gate,
@@ -195,9 +178,7 @@ async def test_run_continues_when_one_goal_narrative_fails():
     m = _milestone(1, MilestoneStatus.COMPLETED)
 
     notifier = AsyncMock()
-    push_log = AsyncMock()
-    push_log.was_sent_within_hours = AsyncMock(return_value=False)
-    push_log.log = AsyncMock()
+    notifier.on_cooldown = AsyncMock(return_value=False)
     goal_store = AsyncMock()
     goal_store.list_active = AsyncMock(return_value=[goal1, goal2])
     goal_store.list_milestones = AsyncMock(return_value=[m])
@@ -209,7 +190,6 @@ async def test_run_continues_when_one_goal_narrative_fails():
 
     job = GoalNarrativeJob(
         notifier=notifier,
-        push_log_store=push_log,
         goal_store=goal_store,
         goal_planner=planner,
     )
