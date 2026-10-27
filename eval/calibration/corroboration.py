@@ -24,16 +24,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import math
-import os
 import sys
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
-import yaml
 
 from ze_agents.system_one import SystemOneResult
 from ze_worldstate.corroboration_judge import (
@@ -44,11 +40,12 @@ from ze_worldstate.corroboration_judge import (
     decide,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import harness  # noqa: E402
+
 TUNED = Path(__file__).with_name("corroboration.jsonl")
 HOLDOUT = Path(__file__).with_name("corroboration_holdout.jsonl")
-CONFIG = ROOT / "apps" / "ze-api" / "config" / "config.yaml"
-LANGS = ("en", "pt")
+LANGS = harness.LANGS
 INFLOWS = ("conversation", "email", "calendar", "ingestion")
 KINDS = (
     "same",
@@ -60,8 +57,7 @@ KINDS = (
 )
 POSITIVE_KINDS = ("same", "paraphrase", "cross_lingual")
 HARD_NEGATIVE_KINDS = ("same_entity_other", "same_topic_other")
-GRID = [round(0.5 + 0.05 * i, 2) for i in range(10)]
-BINS = [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0001]
+GRID = harness.GRID
 MIN_TUNED_PER_LANG = 40
 MIN_HOLDOUT_PER_LANG = 20
 MIN_TUNED_PER_INFLOW = 4
@@ -85,19 +81,7 @@ class Row:
     kind: str
 
 
-def load_rows(path: Path) -> list[Row]:
-    rows = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            raw = json.loads(line)
-            rows.append(Row(**{k: raw[k] for k in Row.__dataclass_fields__}))
-    if len({r.id for r in rows}) != len(rows):
-        raise SystemExit(f"duplicate ids in {path.name}")
-    return rows
-
-
-def _norm(text: str) -> str:
-    return " ".join(text.lower().split())
+load_rows = harness.row_loader(Row)
 
 
 def shape_problems(tuned: list[Row], holdout: list[Row]) -> list[str]:
@@ -106,10 +90,9 @@ def shape_problems(tuned: list[Row], holdout: list[Row]) -> list[str]:
         ("tuned", tuned, MIN_TUNED_PER_LANG, MIN_TUNED_PER_INFLOW),
         ("holdout", holdout, MIN_HOLDOUT_PER_LANG, MIN_HOLDOUT_PER_INFLOW),
     ):
+        problems += harness.min_rows_problems(name, rows, min_lang)
         for lang in LANGS:
             scoped = [r for r in rows if r.lang == lang]
-            if len(scoped) < min_lang:
-                problems.append(f"{name}/{lang}: {len(scoped)} rows, need >= {min_lang}")
             for inflow in INFLOWS:
                 n = sum(r.inflow == inflow for r in scoped)
                 if n < min_inflow:
@@ -134,14 +117,7 @@ def shape_problems(tuned: list[Row], holdout: list[Row]) -> list[str]:
                 problems.append(f"{name}/{r.id}: unknown kind {r.kind!r}")
             elif r.gold_same != (r.kind in POSITIVE_KINDS):
                 problems.append(f"{name}/{r.id}: gold_same disagrees with kind {r.kind}")
-    ids = [r.id for r in tuned + holdout]
-    if len(ids) != len(set(ids)):
-        problems.append("ids repeat across tuned and holdout")
-    held = {_norm(r.text) for r in holdout}
-    for r in tuned:
-        if _norm(r.text) in held:
-            problems.append(f"tuned/{r.id}: text equals a held-out text")
-    return problems
+    return problems + harness.split_problems(tuned, holdout)
 
 
 # --- metrics -------------------------------------------------------------------------
@@ -199,6 +175,14 @@ def verdict(system: Counts, e5: Counts) -> tuple[bool, list[str]]:
     return not failing, failing
 
 
+def bars_config(corroborate_hold: float, promote_hold: float) -> CorroborationSurfaceConfig:
+    return harness.surface_config(
+        CorroborationSurfaceConfig,
+        corroborate_hold=corroborate_hold,
+        promote_hold=promote_hold,
+    )
+
+
 def kinds_for(
     rows: list[Row],
     results: dict[str, SystemOneResult],
@@ -221,7 +205,7 @@ def suggest_bars(
     precision-feasible `corroborate_hold`, each plus one grid step of margin."""
     promote_hold = None
     for p in GRID:
-        cfg = CorroborationSurfaceConfig(True, p, p)
+        cfg = bars_config(p, p)
         if score(rows, kinds_for(rows, results, cfg)).false_promotions == 0:
             promote_hold = p
             break
@@ -229,7 +213,7 @@ def suggest_bars(
         return None
     corroborate_hold = None
     for c in GRID:
-        cfg = CorroborationSurfaceConfig(True, c, 1.0)
+        cfg = bars_config(c, 1.0)
         if score(rows, kinds_for(rows, results, cfg)).precision >= PRECISION_FLOOR:
             corroborate_hold = c
             break
@@ -238,27 +222,10 @@ def suggest_bars(
     step = GRID[1] - GRID[0]
     promote_hold = round(min(1.0, promote_hold + step), 2)
     corroborate_hold = round(min(promote_hold, corroborate_hold + step), 2)
-    return CorroborationSurfaceConfig(True, corroborate_hold, promote_hold)
+    return bars_config(corroborate_hold, promote_hold)
 
 
 # --- live runs -----------------------------------------------------------------------
-
-
-async def run_system_one(
-    client: Any, rows: list[Row], concurrency: int
-) -> dict[str, SystemOneResult]:
-    sem = asyncio.Semaphore(concurrency)
-
-    async def one(row: Row) -> tuple[str, SystemOneResult]:
-        async with sem:
-            result = await client.evaluate(
-                build_state(row.loop_title, row.text, row.inflow),
-                {Q_SAME: QUESTION},
-                max_attempts=1,
-            )
-        return row.id, result
-
-    return dict(await asyncio.gather(*(one(r) for r in rows)))
 
 
 def e5_similarity(embedder: Any, rows: list[Row]) -> dict[str, float]:
@@ -312,39 +279,39 @@ def report_scores(
 
 
 def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
-    points = []
-    for r in rows:
-        res = results[r.id]
-        ans = res.answers.get(Q_SAME) if res.outcome == "ok" else None
-        if ans is not None and ans.noul is not None and not math.isnan(ans.noul):
-            points.append((ans.noul, r.gold_same))
-    print(f"\n== Noul reliability: {Q_SAME} (n={len(points)})")
-    print("bin          n   mean_noul   gold_same_rate")
-    for lo, hi in zip(BINS, BINS[1:]):
-        bucket = [(v, g) for v, g in points if lo <= v < hi]
-        if bucket:
-            print(
-                f"[{lo:.1f},{min(hi, 1.0):.1f})".ljust(11)
-                + f"{len(bucket):4d}   {sum(v for v, _ in bucket) / len(bucket):8.3f}"
-                f"   {sum(g for _, g in bucket) / len(bucket):8.3f}"
-            )
+    points = [
+        (ans.noul, r.gold_same)
+        for r in rows
+        if results[r.id].outcome == "ok"
+        if (ans := results[r.id].answers.get(Q_SAME))
+        and ans.noul is not None
+        and not math.isnan(ans.noul)
+    ]
+    harness.print_reliability(
+        f"Noul reliability: {Q_SAME} (n={len(points)})",
+        harness.reliability_bins(points, harness.NOUL_EDGES),
+        "mean_noul",
+        "gold_same_rate",
+    )
 
 
 def report_grid(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
-    print(
-        "\n== bar grid: false promotions / corroborate precision / recall"
-        " (promote_hold rows, corroborate_hold cols, C <= P)"
+    def cell(bars: dict[str, float]) -> Counts:
+        return score(rows, kinds_for(rows, results, bars_config(bars["c"], bars["p"])))
+
+    harness.print_grid(
+        "bar grid: false promotions / corroborate precision / recall"
+        " (promote_hold rows, corroborate_hold cols, C <= P)",
+        "P\\C        ",
+        harness.bar_grid({"p": GRID, "c": GRID}, cell),
+        "p",
+        "c",
+        lambda c: f"{c.false_promotions:>4d}/{c.precision:.2f}/{c.recall:.2f}",
+        width=15,
+        label_width=8,
+        gap=3,
+        skip=lambda p, c: c > p,
     )
-    print("P\\C        " + "".join(f"{c:>15.2f}" for c in GRID))
-    for p in GRID:
-        cells = ""
-        for c in GRID:
-            if c > p:
-                cells += f"{'-':>15s}"
-                continue
-            counts = score(rows, kinds_for(rows, results, CorroborationSurfaceConfig(True, c, p)))
-            cells += f"{counts.false_promotions:>4d}/{counts.precision:.2f}/{counts.recall:.2f}"
-        print(f"{p:>8.2f}   " + cells)
 
 
 def report_errors(
@@ -368,25 +335,6 @@ def report_errors(
 # --- main ----------------------------------------------------------------------------
 
 
-def parse_bars(text: str) -> CorroborationSurfaceConfig:
-    try:
-        corroborate_hold, promote_hold = (float(x) for x in text.split(","))
-    except ValueError:
-        raise SystemExit("--bars needs CORROBORATE,PROMOTE, e.g. 0.6,0.85")
-    if not all(0.0 <= v <= 1.0 for v in (corroborate_hold, promote_hold)):
-        raise SystemExit("--bars values must be within [0, 1]")
-    if corroborate_hold > promote_hold:
-        raise SystemExit("--bars needs CORROBORATE <= PROMOTE")
-    return CorroborationSurfaceConfig(True, corroborate_hold, promote_hold)
-
-
-def config_model() -> str | None:
-    system_one = (yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}).get(
-        "system_one"
-    ) or {}
-    return system_one.get("model")
-
-
 def get_embedder() -> Any:
     from ze_core.embeddings import get_embedder as _get
 
@@ -406,47 +354,32 @@ def check_sets() -> int:
                 f"  {lang}: {len(scoped)} rows, {pos} positive, {len(scoped) - pos} negative,"
                 f" {hard} hard negatives, inflows {dict(by_inflow)}"
             )
-    problems = shape_problems(tuned, holdout)
-    for p in problems:
-        print("PROBLEM:", p, file=sys.stderr)
-    return 1 if problems else 0
+    return harness.shape_report(shape_problems(tuned, holdout))
 
 
 async def main_async(args: argparse.Namespace) -> int:
     if args.check_sets:
         return check_sets()
-    api_key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not api_key:
-        print(
-            "OPENROUTER_API_KEY is required (this run is live and costs credits).",
-            file=sys.stderr,
-        )
-        return 2
-    from ze_core.openrouter.system_one import DEFAULT_MODEL, OpenRouterSystemOneClient
-
     holdout = args.set == "holdout"
     rows = load_rows(HOLDOUT if holdout else TUNED)
-    problems = shape_problems(load_rows(TUNED), load_rows(HOLDOUT))
-    if problems:
+    if shape_problems(load_rows(TUNED), load_rows(HOLDOUT)):
         print("Dataset problems; run --check-sets.", file=sys.stderr)
         return 1
     if holdout and not args.bars:
         print("--set holdout needs frozen --bars CORROBORATE,PROMOTE.", file=sys.stderr)
         return 2
     if holdout:
-        print(
-            "WARNING: held-out verdict run. Changing wording or bars after this run voids the set;"
-            " write a fresh held-out file before the next verdict (FR-020)."
-        )
-    system = OpenRouterSystemOneClient(
-        api_key=api_key,
-        model=args.model or config_model() or DEFAULT_MODEL,
-        timeout_ms=args.timeout_ms,
+        harness.held_out_warning("FR-020")
+    results = await harness.collect(
+        args,
+        rows,
+        lambda r: build_state(r.loop_title, r.text, r.inflow),
+        lambda _, r: {Q_SAME: QUESTION},
+        lambda model: f"model={model} set={args.set} rows={len(rows)}",
     )
-    print(f"model={system._model} set={args.set} rows={len(rows)}")
-    results = await run_system_one(system, rows, args.concurrency)
-    similarity = e5_similarity(get_embedder(), rows)
-    e5 = e5_kinds(rows, similarity)
+    if results is None:
+        return 2
+    e5 = e5_kinds(rows, e5_similarity(get_embedder(), rows))
     skipped = Counter(r.skip_reason for r in results.values() if r.outcome == "skip")
     if skipped:
         print(f"system one skipped rows (count as misses, never false promotions): {dict(skipped)}")
@@ -471,43 +404,40 @@ async def main_async(args: argparse.Namespace) -> int:
         return 0
 
     cfg = args.bars_cfg
-    kinds = kinds_for(rows, results, cfg)
-    out = report_scores(rows, kinds, e5, by_inflow=False)
-    print("\n== HELD-OUT VERDICT")
-    print(f"bars: corroborate_hold={cfg.corroborate_hold} promote_hold={cfg.promote_hold}")
-    overall = True
-    for lang in LANGS:
-        sys_c, e5_c = out[lang]
-        ok, failing = verdict(sys_c, e5_c)
-        overall &= ok
-        print(
-            f"[{lang}] {'ENABLE' if ok else 'KEEP OFF'}"
-            f"  system one: P={sys_c.precision:.3f} R={sys_c.recall:.3f} ({sys_c.true_counted}/{sys_c.positives})"
-            f" counted={sys_c.counted} falsePromotions={sys_c.false_promotions} fallback={sys_c.fallback}"
-            f" | e5: P={e5_c.precision:.3f} R={e5_c.recall:.3f} ({e5_c.true_counted}/{e5_c.positives})"
-            f" counted={e5_c.counted}"
-            + (f"\n      failing: {'; '.join(failing)}" if failing else "")
+    out = report_scores(rows, kinds_for(rows, results, cfg), e5, by_inflow=False)
+
+    def detail(s: Counts, e: Counts) -> str:
+        return (
+            f"system one: P={s.precision:.3f} R={s.recall:.3f} ({s.true_counted}/{s.positives})"
+            f" counted={s.counted} falsePromotions={s.false_promotions} fallback={s.fallback}"
+            f" | e5: P={e.precision:.3f} R={e.recall:.3f} ({e.true_counted}/{e.positives})"
+            f" counted={e.counted}"
         )
-    print(f"OVERALL: {'ENABLE' if overall else 'KEEP OFF'}")
+
+    harness.print_verdict(
+        {lang: (*verdict(*out[lang]), detail(*out[lang])) for lang in LANGS},
+        lead=[f"bars: corroborate_hold={cfg.corroborate_hold} promote_hold={cfg.promote_hold}"],
+    )
     return 0
 
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--check-sets", action="store_true", help="offline dataset shape check")
-    p.add_argument("--set", choices=("tuned", "holdout"), default="tuned")
-    p.add_argument(
-        "--bars", default=None, help="CORROBORATE,PROMOTE (required for --set holdout)"
+    harness.common_args(
+        p, sets=("tuned", "holdout"), bars="CORROBORATE,PROMOTE (required for --set holdout)"
     )
-    p.add_argument("--model", default=None)
-    p.add_argument("--timeout-ms", type=int, default=10_000)
-    p.add_argument("--concurrency", type=int, default=4)
     return p
 
 
 def main() -> None:
     args = parser().parse_args()
-    args.bars_cfg = parse_bars(args.bars) if args.bars else None
+    args.bars_cfg = (
+        harness.bars_config(
+            CorroborationSurfaceConfig, args.bars, ("corroborate_hold", "promote_hold")
+        )
+        if args.bars
+        else None
+    )
     raise SystemExit(asyncio.run(main_async(args)))
 
 

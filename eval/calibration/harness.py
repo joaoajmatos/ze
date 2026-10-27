@@ -13,6 +13,7 @@ import asyncio
 import itertools
 import json
 import os
+import statistics
 import sys
 from collections import Counter
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
@@ -161,18 +162,23 @@ def client_settings(args: argparse.Namespace) -> tuple[str, int]:
     return model, args.timeout_ms or int(settings.get("timeout_ms", 2000))
 
 
-def make_client(args: argparse.Namespace) -> SystemOneClient | None:
-    api_key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not api_key:
+def api_key() -> str | None:
+    key = os.environ.get("OPENROUTER_API_KEY", "")
+    if not key:
         print(
             "OPENROUTER_API_KEY is required (this run is live and costs credits).",
             file=sys.stderr,
         )
+    return key or None
+
+
+def make_client(args: argparse.Namespace) -> SystemOneClient | None:
+    if (key := api_key()) is None:
         return None
     from ze_core.openrouter.system_one import OpenRouterSystemOneClient
 
     model, timeout_ms = client_settings(args)
-    return OpenRouterSystemOneClient(api_key=api_key, model=model, timeout_ms=timeout_ms)
+    return OpenRouterSystemOneClient(api_key=key, model=model, timeout_ms=timeout_ms)
 
 
 async def bounded(
@@ -243,13 +249,16 @@ async def collect(
     rows: Sequence[R],
     state_of: Callable[[R], str | dict],
     questions_of: Callable[[int, R], Mapping[str, SystemOneQuestion]],
+    banner: Callable[[str], str],
 ) -> dict[str, SystemOneResult] | None:
     """Results from ``--load``, else a live run (saved to ``--save``); ``None`` without a key."""
     if args.load:
+        print(f"results loaded from {args.load}")
         return load_results(args.load)
     client = make_client(args)
     if client is None:
         return None
+    print(banner(client._model))
     results = await run_live(client, rows, state_of, questions_of, args.concurrency)
     if args.save:
         save_results(args.save, results)
@@ -309,6 +318,27 @@ def print_reliability(
         print(f"{label}{b.n:4d}   {b.mean:{mean_width}.3f}   {b.rate:8.3f}")
     if show_ece and (value := ece(bins)) is not None:
         print(f"ECE = {value:.3f}")
+
+
+def print_none_report(pairs: Iterable[tuple[str | None, str]], none: str = "none") -> None:
+    """Precision and recall of the ``none`` answer over ``(predicted, gold)`` pairs."""
+    pairs = list(pairs)
+    tp = sum(p == none and g == none for p, g in pairs)
+    fp = sum(p == none and g != none for p, g in pairs)
+    fn = sum(p != none and g == none for p, g in pairs)
+    precision = tp / (tp + fp) if tp + fp else 1.0
+    recall = tp / (tp + fn) if tp + fn else 0.0
+    print(f"\n== none: precision {precision:.2f} recall {recall:.2f} (tp={tp} fp={fp} fn={fn})")
+
+
+def print_noul_stats(title: str, groups: Mapping[str, Sequence[float]]) -> None:
+    print(f"\n== {title}")
+    for label, values in groups.items():
+        if values:
+            print(
+                f"{label:12s} n={len(values):3d} mean={statistics.mean(values):.2f}"
+                f" min={min(values):.2f} max={max(values):.2f}"
+            )
 
 
 def bar_grid(
@@ -393,7 +423,12 @@ def common_args(
     if bars:
         p.add_argument("--bars", default=None, help=bars)
     p.add_argument("--model", default=None)
-    p.add_argument("--timeout-ms", type=int, default=timeout_ms)
+    p.add_argument(
+        "--timeout-ms",
+        type=int,
+        default=timeout_ms,
+        help=None if timeout_ms else "default: system_one.timeout_ms from config.yaml",
+    )
     p.add_argument("--concurrency", type=int, default=4)
     if seed is not None:
         p.add_argument("--seed", type=int, default=seed)

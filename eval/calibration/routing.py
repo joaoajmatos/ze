@@ -23,24 +23,18 @@ import contextlib
 import io
 import importlib.util
 import json
-import os
 import random
-import statistics
 import sys
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from ze_agents.defaults import ROUTING_GAP_THRESHOLD, ROUTING_THRESHOLD
 from ze_agents.registry import get_enabled_agents
 from ze_agents.system_one import SystemOneResult
 from ze_core.orchestration.judgment_state import with_screen_line
-from ze_core.openrouter.system_one import DEFAULT_MODEL, OpenRouterSystemOneClient
 from ze_core.routing.judge import (
-    DEFAULT_SHORTLIST_K,
     RoutingSurfaceConfig,
     build_questions,
     build_state,
@@ -49,14 +43,14 @@ from ze_core.routing.judge import (
     shortlist,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import harness  # noqa: E402
+
 DATASET = Path(__file__).with_name("routing.jsonl")
-CONFIG = ROOT / "apps" / "ze-api" / "config" / "config.yaml"
 AGENT_MODULES = (
-    ROOT / "core" / "engine" / "ze-core" / "tests" / "support" / "agent_modules.py"
+    harness.ROOT / "core" / "engine" / "ze-core" / "tests" / "support" / "agent_modules.py"
 )
-GRID = [round(0.5 + 0.05 * i, 2) for i in range(10)]
-BINS = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0001]
+GRID = harness.GRID
 
 
 @dataclass
@@ -92,26 +86,7 @@ class Outcome:
         )
 
 
-def load_rows(path: Path) -> list[Row]:
-    rows = [
-        Row(
-            id=raw["id"],
-            lang=raw["lang"],
-            prompt=raw["prompt"],
-            gold_agent=raw["gold_agent"],
-            gold_multi=raw["gold_multi"],
-            history=raw.get("history"),
-            screen=raw.get("screen"),
-        )
-        for raw in (
-            json.loads(line)
-            for line in path.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        )
-    ]
-    if len({r.id for r in rows}) != len(rows):
-        raise SystemExit("duplicate ids in calibration set")
-    return rows
+load_rows = harness.row_loader(Row)
 
 
 def load_roster() -> tuple[dict[str, str], dict[str, str]]:
@@ -217,34 +192,34 @@ def shuffled_questions(criteria: dict[str, str], names: list[str], rng: random.R
     return build_questions({n: criteria[n] for n in order})
 
 
-async def run_rows(
-    client: Any,
+def prepare(
     embedder: Any,
     roster: dict[str, str],
     criteria: dict[str, str],
     rows: list[Row],
     *,
     seed: int,
-    concurrency: int,
     k: int,
-) -> list[Outcome]:
-    sem = asyncio.Semaphore(concurrency)
-
-    async def one(index: int, row: Row) -> Outcome:
+) -> dict[str, tuple[Row, list[str], float, float, dict, dict]]:
+    """Per row: the E5 shortlist and top cosines, then the production state and questions."""
+    prepared = {}
+    for index, row in enumerate(rows):
         text = row.prompt if not row.history else f"{row.prompt}\n\n{row.history}"
         ranked = rank(embedder, roster, text)
         names = shortlist([n for n, _ in ranked], k)
         questions = shuffled_questions(
             criteria, names, random.Random(seed * 100003 + index)
         )
-        state = build_state(
-            row.prompt, row.history, with_screen_line(None, row.screen)
+        state = build_state(row.prompt, row.history, with_screen_line(None, row.screen))
+        prepared[row.id] = (
+            row,
+            names,
+            ranked[0][1],
+            ranked[0][1] - ranked[1][1],
+            state,
+            questions,
         )
-        async with sem:
-            result = await client.evaluate(state, questions, max_attempts=1)
-        return Outcome(row, names, ranked[0][1], ranked[0][1] - ranked[1][1], result)
-
-    return list(await asyncio.gather(*(one(i, r) for i, r in enumerate(rows))))
+    return prepared
 
 
 def predicted(outcome: Outcome) -> tuple[str | None, float | None]:
@@ -291,109 +266,78 @@ def reliability_points(outcomes: list[Outcome]) -> list[tuple[float, bool]]:
 
 
 def ece(outcomes: list[Outcome]) -> float | None:
-    points = reliability_points(outcomes)
-    if not points:
-        return None
-    total = 0.0
-    for lo, hi in zip(BINS, BINS[1:]):
-        bucket = [(c, ok) for c, ok in points if lo <= c < hi]
-        if bucket:
-            conf = sum(c for c, _ in bucket) / len(bucket)
-            acc = sum(ok for _, ok in bucket) / len(bucket)
-            total += len(bucket) * abs(conf - acc)
-    return total / len(points)
+    return harness.ece(harness.reliability_bins(reliability_points(outcomes)))
 
 
 def report_reliability(outcomes: list[Outcome]) -> None:
-    print("\n== Choice peakedness reliability")
-    print("bin          n   mean_conf   accuracy")
-    points = reliability_points(outcomes)
-    for lo, hi in zip(BINS, BINS[1:]):
-        bucket = [(c, ok) for c, ok in points if lo <= c < hi]
-        if bucket:
-            conf = sum(c for c, _ in bucket) / len(bucket)
-            acc = sum(ok for _, ok in bucket) / len(bucket)
-            print(
-                f"[{lo:.1f},{min(hi, 1.0):.1f})".ljust(11)
-                + f"{len(bucket):4d}   {conf:8.3f}   {acc:8.3f}"
-            )
-    value = ece(outcomes)
-    if value is not None:
-        print(f"ECE = {value:.3f}")
-
-
-def report_none(outcomes: list[Outcome]) -> None:
-    scoped = single_rows(outcomes)
-    tp = sum(predicted(o)[0] == "none" and o.row.gold_agent == "none" for o in scoped)
-    fp = sum(predicted(o)[0] == "none" and o.row.gold_agent != "none" for o in scoped)
-    fn = sum(predicted(o)[0] != "none" and o.row.gold_agent == "none" for o in scoped)
-    precision = tp / (tp + fp) if tp + fp else 1.0
-    recall = tp / (tp + fn) if tp + fn else 0.0
-    print(
-        f"\n== none: precision {precision:.2f} recall {recall:.2f} (tp={tp} fp={fp} fn={fn})"
+    harness.print_reliability(
+        "Choice peakedness reliability",
+        harness.reliability_bins(reliability_points(outcomes)),
+        "mean_conf",
+        "accuracy",
+        show_ece=True,
     )
 
 
-def noul_values(outcomes: list[Outcome], multi: bool) -> list[float]:
-    values = []
-    for o in outcomes:
-        answer = o.result.answers.get("multi_specialist") if o.ok else None
-        if answer is not None and answer.noul is not None and o.row.gold_multi == multi:
-            values.append(answer.noul)
-    return values
+def report_none(outcomes: list[Outcome]) -> None:
+    harness.print_none_report(
+        (predicted(o)[0], o.row.gold_agent) for o in single_rows(outcomes)
+    )
 
 
 def report_noul(outcomes: list[Outcome]) -> None:
-    mixed, single = noul_values(outcomes, True), noul_values(outcomes, False)
-    print("\n== multiple-specialist Noul")
-    for label, values in (("gold mixed", mixed), ("gold single", single)):
-        if values:
-            print(
-                f"{label:12s} n={len(values):3d} mean={statistics.mean(values):.2f}"
-                f" min={min(values):.2f} max={max(values):.2f}"
-            )
+    def values(multi: bool) -> list[float]:
+        return [
+            answer.noul
+            for o in outcomes
+            if o.ok and o.row.gold_multi == multi
+            if (answer := o.result.answers.get("multi_specialist")) and answer.noul is not None
+        ]
+
+    harness.print_noul_stats(
+        "multiple-specialist Noul",
+        {"gold mixed": values(True), "gold single": values(False)},
+    )
 
 
 def grid_metrics(outcomes: list[Outcome]) -> list[dict[str, float]]:
     scored = [o for o in outcomes if o.ok]
-    out = []
-    for trust in GRID:
-        for hold in GRID:
-            cfg = RoutingSurfaceConfig(
-                enabled=True, choice_trust=trust, multi_specialist_hold=hold
+
+    def counts(bars: dict[str, float]) -> dict[str, float]:
+        cfg = harness.surface_config(
+            RoutingSurfaceConfig,
+            choice_trust=bars["trust"],
+            multi_specialist_hold=bars["hold"],
+        )
+        removed = harmful = 0
+        for o in scored:
+            decision = decide(o.result, cfg, o.names)
+            if decision.kind != "trust":
+                continue
+            correct = (
+                not o.row.gold_multi
+                and o.row.gold_agent not in ("none",)
+                and decision.agent == o.row.gold_agent
             )
-            removed = harmful = 0
-            for o in scored:
-                decision = decide(o.result, cfg, o.names)
-                if decision.kind != "trust":
-                    continue
-                correct = (
-                    not o.row.gold_multi
-                    and o.row.gold_agent not in ("none",)
-                    and decision.agent == o.row.gold_agent
-                )
-                if correct and o.would_decompose_160:
-                    removed += 1
-                elif not correct:
-                    harmful += 1
-            out.append(
-                {"trust": trust, "hold": hold, "removed": removed, "harmful": harmful}
-            )
-    return out
+            if correct and o.would_decompose_160:
+                removed += 1
+            elif not correct:
+                harmful += 1
+        return {**bars, "removed": removed, "harmful": harmful}
+
+    return [m for _, m in harness.bar_grid({"trust": GRID, "hold": GRID}, counts)]
 
 
 def report_grid(metrics: list[dict[str, float]]) -> tuple[float, float] | None:
-    print(
-        "\n== false compounds removed / harmful trusts (choice_trust rows, multi_specialist_hold cols)"
+    harness.print_grid(
+        "false compounds removed / harmful trusts (choice_trust rows, multi_specialist_hold cols)",
+        "trust\\hold ".ljust(11),
+        [({"trust": m["trust"], "hold": m["hold"]}, m) for m in metrics],
+        "trust",
+        "hold",
+        lambda m: f"{int(m['removed']):>6d}/{int(m['harmful']):<3d}",
+        width=10,
     )
-    print("trust\\hold ".ljust(11) + "".join(f"{h:>10.2f}" for h in GRID))
-    by_pair = {(m["trust"], m["hold"]): m for m in metrics}
-    for t in GRID:
-        cells = "".join(
-            f"{int(by_pair[(t, h)]['removed']):>6d}/{int(by_pair[(t, h)]['harmful']):<3d}"
-            for h in GRID
-        )
-        print(f"{t:>9.2f}  " + cells)
     safe = [m for m in metrics if m["harmful"] == 0 and m["removed"] > 0]
     if not safe:
         print(
@@ -513,7 +457,7 @@ SET_PATHS = (
 )
 REQUIRED_KEYS = {"id", "lang", "prompt", "gold_agent", "gold_multi"}
 OPTIONAL_KEYS = {"history", "screen"}
-LANGS = ("en", "pt")
+LANGS = harness.LANGS
 
 
 def set_problems(name: str, raws: list[dict]) -> list[str]:
@@ -561,59 +505,39 @@ def check_sets(paths: tuple[Path, ...] = SET_PATHS) -> int:
         for lang in LANGS:
             if not counts.get(lang):
                 problems.append(f"{path.stem}: no {lang} rows")
-    for problem in problems:
-        print(f"PROBLEM {problem}", file=sys.stderr)
-    return 1 if problems else 0
-
-
-def system_one_config() -> dict:
-    return (yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}).get(
-        "system_one"
-    ) or {}
+    return harness.shape_report(problems)
 
 
 async def main_async(args: argparse.Namespace) -> int:
-    if args.recall:
-        from ze_core.embeddings import get_embedder
-
-        report_recall(
-            get_embedder(),
-            load_roster()[0],
-            {path.stem: load_rows(path) for path in args.dataset},
-        )
-        return 0
-    api_key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not api_key:
-        print(
-            "OPENROUTER_API_KEY is required (this run is live and costs credits).",
-            file=sys.stderr,
-        )
-        return 2
     from ze_core.embeddings import get_embedder
 
-    config = system_one_config()
-    client = OpenRouterSystemOneClient(
-        api_key=api_key,
-        model=args.model or config.get("model", DEFAULT_MODEL),
-        timeout_ms=args.timeout_ms,
-    )
     roster, criteria = load_roster()
-    embedder = get_embedder()
-    print(f"model={client._model} agents={len(roster)} k={args.k} seed={args.seed}")
-    by_set: dict[str, list[Outcome]] = {}
-    for path in args.dataset:
-        rows = load_rows(path)
-        print(f"\n######## {path.stem} ({len(rows)} rows)")
-        outcomes = await run_rows(
-            client,
-            embedder,
-            roster,
-            criteria,
-            rows,
-            seed=args.seed,
-            concurrency=args.concurrency,
-            k=args.k,
+    sets = {path.stem: load_rows(path) for path in args.dataset}
+    if args.recall:
+        report_recall(get_embedder(), roster, sets)
+        return 0
+    prepared = {}
+    for rows in sets.values():
+        prepared |= prepare(
+            get_embedder(), roster, criteria, rows, seed=args.seed, k=args.k
         )
+    every = [p[0] for p in prepared.values()]
+    results = await harness.collect(
+        args,
+        every,
+        lambda row: prepared[row.id][4],
+        lambda _, row: prepared[row.id][5],
+        lambda model: f"model={model} agents={len(roster)} k={args.k} seed={args.seed}",
+    )
+    if results is None:
+        return 2
+    by_set: dict[str, list[Outcome]] = {}
+    for name, rows in sets.items():
+        print(f"\n######## {name} ({len(rows)} rows)")
+        outcomes = [
+            Outcome(row, names, top, gap, results[row.id])
+            for row, names, top, gap, _, _ in (prepared[r.id] for r in rows)
+        ]
         skipped = Counter(o.result.skip_reason for o in outcomes if not o.ok)
         if skipped:
             print(f"skipped rows (excluded from metrics): {dict(skipped)}")
@@ -621,7 +545,7 @@ async def main_async(args: argparse.Namespace) -> int:
             print("Every call was skipped; nothing to calibrate.", file=sys.stderr)
             return 1
         report(outcomes)
-        by_set[path.stem] = outcomes
+        by_set[name] = outcomes
     verdicts = report_verdicts(by_set)
     passing = [o for v in verdicts if v.passed for o in by_set[v.name]]
     if not passing:
@@ -641,22 +565,14 @@ async def main_async(args: argparse.Namespace) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    harness.common_args(parser, seed=164)
     parser.add_argument(
         "--dataset", type=Path, action="append", help="repeat for several sets"
     )
-    parser.add_argument("--model", default=None)
-    parser.add_argument("--timeout-ms", type=int, default=10_000)
-    parser.add_argument("--concurrency", type=int, default=4)
-    parser.add_argument("--seed", type=int, default=164)
     parser.add_argument(
         "--recall",
         action="store_true",
         help="offline E5 shortlist recall only; no OpenRouter call, no credits",
-    )
-    parser.add_argument(
-        "--check-sets",
-        action="store_true",
-        help="offline: validate every routing set (schema, per-language counts); no network",
     )
     parser.add_argument(
         "--k",
@@ -669,8 +585,7 @@ def main() -> None:
         raise SystemExit(check_sets())
     args.dataset = args.dataset or [DATASET]
     if args.k is None:
-        block = (system_one_config().get("surfaces") or {}).get("routing") or {}
-        args.k = block.get("shortlist_k", DEFAULT_SHORTLIST_K)
+        args.k = harness.configured(RoutingSurfaceConfig).shortlist_k
     raise SystemExit(asyncio.run(main_async(args)))
 
 
