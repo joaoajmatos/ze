@@ -249,7 +249,7 @@ def report_accuracy(outcomes: list[Outcome]) -> None:
                 print(f"   miss {o.row.id}: gold={o.row.gold} pred={predicted(o)[0]}")
 
 
-def report_reliability(outcomes: list[Outcome]) -> None:
+def show_reliability(outcomes: list[Outcome]) -> None:
     points = [
         (conf, choice == o.row.gold)
         for o in outcomes
@@ -326,7 +326,7 @@ def grid_metrics(outcomes: list[Outcome]) -> list[dict[str, float]]:
     return [m for _, m in grid]
 
 
-def report_grid(metrics: list[dict[str, float]]) -> tuple[float, float] | None:
+def show_grid(metrics: list[dict[str, float]]) -> tuple[float, float] | None:
     harness.print_grid(
         "wrong/correct/missed applies (choice_trust rows, needs_skill_hold cols)",
         "trust\\hold ".ljust(11),
@@ -350,10 +350,10 @@ def report_grid(metrics: list[dict[str, float]]) -> tuple[float, float] | None:
 
 def report(outcomes: list[Outcome]) -> dict[str, float | None]:
     report_accuracy(outcomes)
-    report_reliability(outcomes)
+    show_reliability(outcomes)
     report_none(outcomes)
     report_noul(outcomes)
-    pair = report_grid(grid_metrics(outcomes))
+    pair = show_grid(grid_metrics(outcomes))
     return {
         "choice_trust": pair[0] if pair else None,
         "needs_skill_hold": pair[1] if pair else None,

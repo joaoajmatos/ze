@@ -708,7 +708,7 @@ def report_choice(rows: list[Row], results: dict[str, RowResults]) -> None:
             )
 
 
-def report_reliability(rows: list[Row], results: dict[str, RowResults]) -> None:
+def show_reliability(rows: list[Row], results: dict[str, RowResults]) -> None:
     ok = [
         (r, results[r.id].system) for r in rows if results[r.id].system.outcome == "ok"
     ]
@@ -857,7 +857,7 @@ def report_tuned(
     forced: CommitmentIntakeSurfaceConfig | None,
 ) -> None:
     report_choice(rows, results)
-    report_reliability(rows, results)
+    show_reliability(rows, results)
     report_grids(rows, results)
     suggestion = suggest_bars(rows, results)
     cfg = forced or suggestion

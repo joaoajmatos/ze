@@ -159,11 +159,27 @@ def _patched(tmp: Path):
         yield
 
 
+@contextlib.contextmanager
+def _isolated_registries():
+    """Routing reloads the agent modules; put the registries and modules back for later tests."""
+    from ze_agents import registry, tool
+
+    saved = (dict(registry._registry), dict(registry._instances), dict(tool._tools))
+    modules = dict(sys.modules)
+    try:
+        yield
+    finally:
+        for live, old in zip((registry._registry, registry._instances, tool._tools), saved):
+            live.clear()
+            live.update(old)
+        sys.modules.update(modules)
+
+
 def run_mode(
     mode: Mode, tmp: Path, *, prepare: Callable[[ModuleType], None] | None = None
 ) -> str:
     """Run one mode; ``tmp`` is shared by the modes of one runner so ``--save`` feeds ``--replay``."""
-    with _patched(tmp):
+    with _patched(tmp), _isolated_registries():
         module = _load(mode.runner)
         try:
             if mode.runner == "complexity":

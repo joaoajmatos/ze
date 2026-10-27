@@ -320,7 +320,7 @@ def report_scores(
     return out
 
 
-def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
+def show_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
     gold = {Q_CONCERN: lambda r: r.gold_loop, Q_RESOLVES: lambda r: r.gold_resolves}
     for qid, truth in gold.items():
         points = [
@@ -337,7 +337,7 @@ def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> 
         )
 
 
-def report_grid(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
+def show_grid(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
     def cell(bars: dict[str, float]) -> Counts:
         cfg = gate_config(bars["loop"], bars["res"])
         return score(rows, _kinds_for(rows, results, cfg))
@@ -455,8 +455,8 @@ async def main_async(args: argparse.Namespace) -> int:
     )
 
     if not holdout:
-        report_reliability(rows, results)
-        report_grid(rows, results)
+        show_reliability(rows, results)
+        show_grid(rows, results)
         suggestion = suggest_bars(rows, results)
         cfg = args.bars_cfg or suggestion
         if cfg is None:

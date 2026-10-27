@@ -40,7 +40,6 @@ NOUL_EDGES = [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0001]
 R = TypeVar("R")
 C = TypeVar("C", bound=SurfaceConfig)
 M = TypeVar("M")
-Results = dict[str, Any]
 
 
 # --- rows ----------------------------------------------------------------------------
@@ -118,10 +117,6 @@ def load_config(path: Path = CONFIG) -> dict:
 
 def system_one_config() -> dict:
     return load_config().get("system_one") or {}
-
-
-def model_from_config() -> str | None:
-    return system_one_config().get("model")
 
 
 def surface_config(cls: type[C], *, enabled: bool = True, **bars: float | None) -> C:
@@ -233,7 +228,7 @@ def save_results(path: Path, results: Mapping[str, Any]) -> None:
     )
 
 
-def load_results(path: Path) -> Results:
+def load_results(path: Path) -> dict[str, Any]:
     """The inverse of ``save_results``; a nested value comes back as ``{name: result}``."""
 
     def revive(raw: dict) -> Any:

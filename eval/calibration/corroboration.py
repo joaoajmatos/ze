@@ -278,7 +278,7 @@ def report_scores(
     return out
 
 
-def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
+def show_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
     points = [
         (ans.noul, r.gold_same)
         for r in rows
@@ -295,7 +295,7 @@ def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> 
     )
 
 
-def report_grid(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
+def show_grid(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
     def cell(bars: dict[str, float]) -> Counts:
         return score(rows, kinds_for(rows, results, bars_config(bars["c"], bars["p"])))
 
@@ -385,8 +385,8 @@ async def main_async(args: argparse.Namespace) -> int:
         print(f"system one skipped rows (count as misses, never false promotions): {dict(skipped)}")
 
     if not holdout:
-        report_reliability(rows, results)
-        report_grid(rows, results)
+        show_reliability(rows, results)
+        show_grid(rows, results)
         suggestion = suggest_bars(rows, results)
         cfg = args.bars_cfg or suggestion
         if cfg is None:

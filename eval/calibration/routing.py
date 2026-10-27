@@ -269,7 +269,7 @@ def ece(outcomes: list[Outcome]) -> float | None:
     return harness.ece(harness.reliability_bins(reliability_points(outcomes)))
 
 
-def report_reliability(outcomes: list[Outcome]) -> None:
+def show_reliability(outcomes: list[Outcome]) -> None:
     harness.print_reliability(
         "Choice peakedness reliability",
         harness.reliability_bins(reliability_points(outcomes)),
@@ -328,7 +328,7 @@ def grid_metrics(outcomes: list[Outcome]) -> list[dict[str, float]]:
     return [m for _, m in harness.bar_grid({"trust": GRID, "hold": GRID}, counts)]
 
 
-def report_grid(metrics: list[dict[str, float]]) -> tuple[float, float] | None:
+def show_grid(metrics: list[dict[str, float]]) -> tuple[float, float] | None:
     harness.print_grid(
         "false compounds removed / harmful trusts (choice_trust rows, multi_specialist_hold cols)",
         "trust\\hold ".ljust(11),
@@ -438,10 +438,10 @@ def report(outcomes: list[Outcome], quiet: bool = False) -> dict[str, float | No
         with contextlib.redirect_stdout(buffer):
             return report(outcomes)
     report_accuracy(outcomes)
-    report_reliability(outcomes)
+    show_reliability(outcomes)
     report_none(outcomes)
     report_noul(outcomes)
-    pair = report_grid(grid_metrics(outcomes))
+    pair = show_grid(grid_metrics(outcomes))
     suggestion = {
         "choice_trust": pair[0] if pair else None,
         "multi_specialist_hold": pair[1] if pair else None,
