@@ -121,6 +121,8 @@ CONFIDENCE_STAMP: Final = (
 )
 
 SUSPECTED_CONFIDENCE: Final = 0.3
+# Phase 172: a promotion lifts a loop to at least this confidence.
+PROMOTED_CONFIDENCE: Final = 0.7
 
 
 class DeclaredStamp:
