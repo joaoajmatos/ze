@@ -48,8 +48,8 @@ def test_saved_results_reload_to_the_same_report(mode):
 
 
 _HARNESS_ONLY = (
-    "load_rows|_norm|report_reliability|report_grid|save_results|load_results|parse_bars"
-    "|config_model|system_one_config|config_system_one"
+    "load_rows|_norm|save_results|load_results|parse_bars|config_model|system_one_config"
+    "|config_system_one|reliability_bins|print_reliability|bar_grid|print_grid|print_verdict"
 )
 
 
