@@ -266,7 +266,7 @@ depend on code the earlier waves change.
 | 200 | [Agent Context Derivation](phases/200-agent-context-derivation/spec.md) | 1 | 198 | ✅ Implemented (no migration) |
 | 201 | [Typed Turn Services](phases/201-typed-turn-services/spec.md) | 1 | 200 | 📝 Specified |
 | 202 | [Judgment Surface](phases/202-judgment-surface/spec.md) | 1 | 198 | 📝 Specified |
-| 203 | [Open-Loop Lifecycle](phases/203-open-loop-lifecycle/spec.md) | 1 | 199, 202 (rebase) | 🔲 Ready to implement (no migration) |
+| 203 | [Open-Loop Lifecycle](phases/203-open-loop-lifecycle/spec.md) | 1 | 199, 202 (rebase) | ✅ Implemented (no migration) |
 | 204 | [Push Bar and Cooldowns](phases/204-push-bar-and-cooldowns/spec.md) | 1 | 198 | ✅ Implemented (`zpro006`, `zpri002`) |
 | 205 | [Web Turn State](phases/205-web-turn-state/spec.md) | 1 | 198 | 📝 Specified |
 | 206 | [Web Query Staleness](phases/206-web-query-staleness/spec.md) | 1 | — | 📝 Specified |

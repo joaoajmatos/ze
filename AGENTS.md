@@ -82,18 +82,18 @@ ze/                           # monorepo root
 │   │   └── ze-worldstate/        # Open-loop substrate — active concerns, honest provenance, evidence-linked confidence
 │   │       └── ze_worldstate/
 │   │           ├── types.py     # OpenLoop, LoopState, LoopClaimKind, LoopProvenance
-│   │           ├── store.py     # LoopStore Protocol + PostgresLoopStore
+│   │           ├── store.py     # LoopStore Protocol + PostgresLoopStore — reads only
 │   │           ├── matching.py  # entity-overlap + embedding-similarity dedup
-│   │           ├── decay.py     # confidence decay cascade, called at the evidence-writing code path
-│   │           ├── extraction.py # conservative relevance-gated loop extraction (109 Haiku gate = fallback)
+│   │           ├── lifecycle/   # LoopLifecycle — the one write surface: one method per domain event, one transaction each; rules.py holds the state table and stamps
+│   │           ├── extraction.py # 109 Haiku loop gate (fallback), Haiku title writer, resolve_entities
 │   │           ├── commitment_judge.py # System One commitment intake — Choice + fact/loop Nouls, six bars, pure decide()
 │   │           ├── intake.py    # CommitmentIntake — one request per conversation turn: facts, loop commit, reminder/goal links
 │   │           ├── loop_judge.py # System One loop gate for email/calendar/ingestion — two Nouls, bars, pure decide()
-│   │           ├── admission.py  # LoopInflow — gate + Haiku title writer + commit
-│   │           ├── corroboration.py # independence rule + confidence arithmetic + corroborate/promote effects
+│   │           ├── admission.py  # LoopInflow — gate + Haiku title writer; commit dispatches a CommitDecision to the lifecycle
+│   │           ├── corroboration.py # Corroborator — independence rule + confidence arithmetic; corroborate/promote through the lifecycle
 │   │           ├── corroboration_judge.py # System One same_concern Noul — state, bars, pure decide()
 │   │           ├── tracking.py   # LoopTracker — user-asked loop (track_loop tool): normalize, match, create/confirm/reinforce/revive
-│   │           ├── review.py    # confirm/close/drop lifecycle transitions
+│   │           ├── decision.py  # CommitDecision / CommitResult — resolve, create_declared, create_suspected, hold, fallback
 │   │           ├── inflow.py    # inflow wiring helpers (messenger/calendar/ingestion extractors)
 │   │           ├── jobs/        # stale-suspicion expiry job
 │   │           └── migrations/  # zw001 (open_loops), zw002 (drift columns), zw003 (open_loop_sources), zw004 (reminder_id), zw005 (confidence_prior)
@@ -680,6 +680,7 @@ preflight → blocked (disabled agent) → END
 | 199 | Claim Honesty Fixes — four wrong claim labels fixed. Perception (conversation, ingestion, inbound-message) facts are stored `prompt_supplied`, and dream decay and expiry also require `dream_run_id IS NOT NULL`, so only dream insights decay; the promoter no longer inserts a column `memory_facts` lacks; nightly dedup merges only two non-dream facts that share provenance and claim kind and the merge keeps them; `zm026` re-stamps existing perception facts. `open_loops.claim_kind` is dropped (`zw006`) and a loop's claim kind is derived from its state (`loop_claim_kind`: suspicion while suspected, priority once active, drifting or closed, none when dropped; the loops REST field is nullable). Executive is licensed for priority and suspicion only. `LoopStore.resolve` closes a suspected, active or drifting loop and links the resolving evidence in one transaction (the generic transition table is unchanged). A contact source's provenance follows its source type (`research` is `live_search`, the rest `prompt_supplied`), a new contact takes its first source's provenance, and `zc041` re-stamps existing rows | Implemented |
 | 200 | Agent Context Derivation — one owner builds every child `AgentContext` (`ze_agents/derive.py`: `for_subtask`, `for_delegate`, `for_unattended`, `for_action`; a `DERIVATION` row per field and child-run kind); lifetime markers (`ze_agents/lifetime.py`: `Turn`, `Input`, `Thread`, `Run`) generate the per-turn and per-step reset, and a field with no marker fails graph build; conductor, write-gate and procedure state each travel as one value; `ze_core/orchestration/child_runs.py` merges child outcomes once per pass; no migration | Implemented |
 | 204 | Push Bar and Cooldowns — one push bar in `ze-priority` (`push_bar.py`) screens every source's candidates for confidence, relevance, inline mention, novelty and grounding; sources describe `PushCandidate`s and never send them; `ze-proactive` owns the `OncePer` cooldowns (`notify(once_per=…)`, claims in `push_log`, private to `ze-proactive`, `zpro006`); `AttentionArbitrationJob` sends one push per run; resume-offer memory moves to `surfacing_memory` (`zpri002`); `worldstate.push.repush_after_days` (default 7); `ze-worldstate` drops `ze-correlation`; `budget_key`, `PushLogStore` in `ze_sdk`, the `duplicate` outcome and the failure ledger are removed | Implemented |
+| 203 | Open-Loop Lifecycle — `LoopLifecycle` (`ze_worldstate/lifecycle/`) is the one write surface for open loops: one method per domain event (create declared or suspected, confirm, track, corroborate, promote, resolve, close, drop, expire, link, note evidence, decay, drift), each one transaction under a row lock, with the state table and stamps in `rules.py`; `PostgresLoopStore` reads only; `review.py` and `decay.py` are deleted; intake outcome kinds are `resolve`, `create_declared` and `create_suspected` (no alias); `track_loop` creates with no evidence and an origin source row (linking the turn episode is deferred); no migration | Implemented (no migration)
 
 ## graphify
 
