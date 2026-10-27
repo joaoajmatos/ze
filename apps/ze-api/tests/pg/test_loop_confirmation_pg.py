@@ -6,6 +6,7 @@ from ze_priority.surfacing_memory import PostgresSurfacingMemory
 from ze_priority.turn import TurnSurfacing
 from ze_priority.view import PriorityView
 from ze_worldstate.jobs.drift_sweep import DriftSweepJob
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.review import confirm_loop
 from ze_worldstate.store import PostgresLoopStore
 from ze_worldstate.types import DECLARED_CONFIDENCE, LoopState
@@ -40,7 +41,7 @@ async def test_confirm_stamps_the_row_and_feeds_the_drift_sweep(pg_pool):
             "UPDATE open_loops SET drift_deadline = now() - interval '1 day' WHERE id = $1",
             loop.id,
         )
-    await DriftSweepJob(store).run()
+    await DriftSweepJob(store, LoopLifecycle(pg_pool)).run()
     assert (await store.get(loop.id)).state is LoopState.DRIFTING
 
 

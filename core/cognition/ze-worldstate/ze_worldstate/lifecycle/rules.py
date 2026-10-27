@@ -134,6 +134,7 @@ class DeclaredStamp:
         """SET fragment: confidence (with its prior), confirmed_at, deadline, no rationale.
 
         Promote passes `GREATEST(confidence, $c)` as its own confidence rule.
+        The caller sets `updated_at`; `LoopLifecycle._write` does for every event.
         """
         return (
             CONFIDENCE_STAMP.format(new=confidence_expr)

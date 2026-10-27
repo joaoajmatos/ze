@@ -15,11 +15,24 @@ from dataclasses import dataclass
 from typing import Any, Literal
 from uuid import UUID
 
+from ze_agents.claims import DecayProfile, decay
 from ze_agents.db import DBPool
 from ze_logging import get_logger
 from ze_plugin.contribution import EvidenceRef
 
-from ze_worldstate.types import OpenLoop, SourceKey
+from ze_worldstate import drift as drift_rationale
+from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
+from ze_worldstate.fingerprint import compute_evidence_fingerprint
+from ze_worldstate.lifecycle.rules import (
+    CONFIDENCE_STAMP,
+    DeclaredStamp,
+    LoopEvent,
+    Verdict,
+    allowed_from,
+    verdict,
+)
+from ze_worldstate.store import loop_from_row
+from ze_worldstate.types import LoopState, OpenLoop, SourceKey
 
 log = get_logger(__name__)
 
@@ -70,6 +83,73 @@ class LoopLifecycle:
         self.collision_store = collision_store
         self._nli_client = nli_client
 
+    @staticmethod
+    async def _lock(conn: Any, loop_id: UUID) -> Any:
+        row = await conn.fetchrow(
+            "SELECT * FROM open_loops WHERE id = $1 FOR UPDATE", loop_id
+        )
+        if row is None:
+            raise LoopNotFoundError(f"Loop {loop_id} not found")
+        return row
+
+    @staticmethod
+    def _verdict(event: LoopEvent, row: Any) -> Verdict:
+        """The rule for this event from the locked row's state; a refusal raises."""
+        state = LoopState(row["state"])
+        result = verdict(event, state)
+        if result is Verdict.REFUSED:
+            raise InvalidLoopTransitionError(
+                f"Cannot {event.value} loop {row['id']} from {state.value}"
+            )
+        return result
+
+    @staticmethod
+    def _stored(event: LoopEvent, before: Any, after: Any) -> OpenLoop:
+        """Log the write once and return the row as stored."""
+        loop = loop_from_row(after)
+        if before["state"] != after["state"]:
+            log.info(
+                "open_loop_transitioned",
+                loop_id=str(loop.id),
+                from_state=before["state"],
+                to_state=after["state"],
+                via=event.value,
+            )
+        else:
+            log.info("open_loop_updated", loop_id=str(loop.id), via=event.value)
+        return loop
+
+    @staticmethod
+    def _allowed(event: LoopEvent) -> list[str]:
+        return [state.value for state in allowed_from(event)]
+
+    @staticmethod
+    async def _evidence(conn: Any, loop_id: UUID) -> list[EvidenceRef]:
+        rows = await conn.fetch(
+            "SELECT target_type, target_id FROM memory_relationships"
+            " WHERE source_id = $1 AND source_type = 'open_loop'"
+            " AND predicate = 'derived_from'",
+            loop_id,
+        )
+        return [EvidenceRef(kind=r["target_type"], id=r["target_id"]) for r in rows]
+
+    async def _write(
+        self, conn: Any, event: LoopEvent, before: Any, set_sql: str, *params: Any
+    ) -> OpenLoop:
+        """One guarded UPDATE on the locked row; `$1` is the id, `$2` the allowed states."""
+        after = await conn.fetchrow(
+            f"UPDATE open_loops SET {set_sql}, updated_at = now()"
+            " WHERE id = $1 AND state = ANY($2::text[]) RETURNING *",
+            before["id"],
+            self._allowed(event),
+            *params,
+        )
+        if after is None:
+            raise InvalidLoopTransitionError(
+                f"Loop {before['id']} changed state before it could {event.value}"
+            )
+        return self._stored(event, before, after)
+
     async def create_suspected(self, draft: LoopDraft) -> OpenLoop:
         """Insert a suspected loop at 0.3 through the contribution seam.
 
@@ -95,7 +175,18 @@ class LoopLifecycle:
 
         Refused from every other state.
         """
-        raise NotImplementedError
+        async with self._pool.acquire() as conn, conn.transaction():
+            row = await self._lock(conn, loop_id)
+            self._verdict(LoopEvent.CONFIRM, row)
+            return await self._write(
+                conn,
+                LoopEvent.CONFIRM,
+                row,
+                "state = 'active', "
+                + DeclaredStamp.sql("$3", "$4"),
+                DeclaredStamp.CONFIDENCE,
+                DeclaredStamp.DEFAULT_WINDOW_DAYS,
+            )
 
     async def track(
         self, loop_id: UUID, *, window_days: int, entity_ids: Sequence[UUID] = ()
@@ -110,7 +201,12 @@ class LoopLifecycle:
 
     async def close(self, loop_id: UUID) -> OpenLoop:
         """The user closes an active or drifting loop: state and `closed_at`."""
-        raise NotImplementedError
+        async with self._pool.acquire() as conn, conn.transaction():
+            row = await self._lock(conn, loop_id)
+            self._verdict(LoopEvent.CLOSE, row)
+            return await self._write(
+                conn, LoopEvent.CLOSE, row, "state = 'closed', closed_at = now()"
+            )
 
     async def drop(self, loop_id: UUID) -> OpenLoop:
         """Suspected, active or drifting -> dropped.
@@ -119,7 +215,20 @@ class LoopLifecycle:
         and the evidence fingerprint in one statement. An empty set writes the
         fingerprint of nothing, as today.
         """
-        raise NotImplementedError
+        async with self._pool.acquire() as conn, conn.transaction():
+            row = await self._lock(conn, loop_id)
+            self._verdict(LoopEvent.DROP, row)
+            fingerprint = compute_evidence_fingerprint(
+                await self._evidence(conn, loop_id)
+            )
+            return await self._write(
+                conn,
+                LoopEvent.DROP,
+                row,
+                "state = 'dropped', closed_at = now(),"
+                " dismissed_evidence_fingerprint = $3",
+                fingerprint,
+            )
 
     async def link(
         self,
@@ -187,14 +296,88 @@ class LoopLifecycle:
         confidence, and for an active loop the move to drifting with the contradiction
         rationale, in one statement. Other states take the confidence alone.
         """
-        raise NotImplementedError
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT ol.id FROM open_loops ol JOIN memory_relationships mr"
+                " ON mr.source_id = ol.id WHERE mr.source_type = 'open_loop'"
+                " AND mr.predicate = 'derived_from' AND mr.target_type = $1"
+                " AND mr.target_id = $2",
+                evidence_type,
+                evidence_id,
+            )
+            updated: list[OpenLoop] = []
+            for loop_id in {r["id"] for r in rows}:
+                async with conn.transaction():
+                    updated.append(
+                        await self._decay_one(conn, loop_id, evidence_type, evidence_id)
+                    )
+            return updated
+
+    async def _decay_one(
+        self, conn: Any, loop_id: UUID, evidence_type: str, evidence_id: UUID
+    ) -> OpenLoop:
+        row = await self._lock(conn, loop_id)
+        total = await conn.fetchval(
+            "SELECT count(*) FROM memory_relationships WHERE source_id = $1"
+            " AND source_type = 'open_loop' AND predicate = 'derived_from'",
+            loop_id,
+        )
+        confidence = decay(
+            row["confidence"],
+            DecayProfile.EVIDENCE_WEIGHTED,
+            remaining_evidence=total - 1,
+            total_evidence=total,
+        )
+        stamp = CONFIDENCE_STAMP.format(new="$3")
+        if verdict(LoopEvent.DECAY, LoopState(row["state"])) is Verdict.MOVE:
+            loop = await self._write(
+                conn,
+                LoopEvent.DECAY,
+                row,
+                f"{stamp}, state = 'drifting', drift_rationale = $4",
+                confidence,
+                drift_rationale.compose_contradiction_rationale(
+                    evidence_type, evidence_id
+                ),
+            )
+        else:
+            after = await conn.fetchrow(
+                f"UPDATE open_loops SET {CONFIDENCE_STAMP.format(new='$2')}, updated_at = now()"
+                " WHERE id = $1 RETURNING *",
+                loop_id,
+                confidence,
+            )
+            loop = self._stored(LoopEvent.DECAY, row, after)
+        log.info(
+            "open_loop_confidence_decayed",
+            loop_id=str(loop_id),
+            new_confidence=confidence,
+            evidence_type=evidence_type,
+            evidence_id=str(evidence_id),
+        )
+        return loop
 
     async def drift(self, loop_id: UUID) -> OpenLoop | None:
         """Active -> drifting with the absence rationale when `drift_deadline <= now()`.
 
         A loop confirmed again after the sweep read it returns `None`.
         """
-        raise NotImplementedError
+        async with self._pool.acquire() as conn, conn.transaction():
+            row = await self._lock(conn, loop_id)
+            if self._verdict(LoopEvent.DRIFT, row) is Verdict.NO_CHANGE:
+                return None
+            absence = drift_rationale.compose_absence_rationale(loop_from_row(row))
+            after = await conn.fetchrow(
+                "UPDATE open_loops SET state = 'drifting', drift_rationale = $3,"
+                " updated_at = now() WHERE id = $1 AND state = ANY($2::text[])"
+                " AND drift_deadline <= now() RETURNING *",
+                loop_id,
+                self._allowed(LoopEvent.DRIFT),
+                absence,
+            )
+            if after is None:
+                return None
+            return self._stored(LoopEvent.DRIFT, row, after)
 
     async def expire(self, loop_id: UUID) -> OpenLoop | None:
         """A stale suspected loop -> dropped, with the evidence fingerprint.
@@ -202,4 +385,17 @@ class LoopLifecycle:
         An expiry with no evidence writes a `NULL` fingerprint, so it blocks nothing.
         Any other state returns `None`.
         """
-        raise NotImplementedError
+        async with self._pool.acquire() as conn, conn.transaction():
+            row = await self._lock(conn, loop_id)
+            if self._verdict(LoopEvent.EXPIRE, row) is Verdict.NO_CHANGE:
+                return None
+            evidence = await self._evidence(conn, loop_id)
+            fingerprint = compute_evidence_fingerprint(evidence) if evidence else None
+            return await self._write(
+                conn,
+                LoopEvent.EXPIRE,
+                row,
+                "state = 'dropped', closed_at = now(),"
+                " dismissed_evidence_fingerprint = $3",
+                fingerprint,
+            )

@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 from ze_worldstate.jobs.drift_sweep import DriftSweepJob
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.review import confirm_loop
 from ze_worldstate.store import PostgresLoopStore
 from ze_worldstate.types import LoopState
@@ -28,7 +29,7 @@ async def test_declared_loop_past_deadline_is_candidate_and_drifts(pg_pool):
     await _rewind(pg_pool, loop.id)
 
     assert [c.id for c in await store.list_drift_candidates()] == [loop.id]
-    await DriftSweepJob(store).run()
+    await DriftSweepJob(store, LoopLifecycle(pg_pool)).run()
 
     drifted = await store.get(loop.id)
     assert drifted.state is LoopState.DRIFTING
@@ -42,7 +43,7 @@ async def test_confirmed_suspected_loop_drifts(pg_pool):
     await _rewind(pg_pool, loop.id)
 
     assert [c.id for c in await store.list_drift_candidates()] == [loop.id]
-    await DriftSweepJob(store).run()
+    await DriftSweepJob(store, LoopLifecycle(pg_pool)).run()
     assert await _state(store, loop.id) is LoopState.DRIFTING
 
 
@@ -50,7 +51,7 @@ async def test_future_deadline_is_not_a_candidate(pg_pool):
     store = PostgresLoopStore(pg_pool)
     loop = await make_loop(pg_pool, deadline=utcnow() + timedelta(days=1))
     assert await store.list_drift_candidates() == []
-    await DriftSweepJob(store).run()
+    await DriftSweepJob(store, LoopLifecycle(pg_pool)).run()
     assert await _state(store, loop.id) is LoopState.ACTIVE
 
 
@@ -59,7 +60,7 @@ async def test_only_the_loop_past_its_deadline_drifts(pg_pool):
     late = await make_loop(pg_pool, title="late", deadline=utcnow() + timedelta(days=3))
     on_time = await make_loop(pg_pool, title="on time", deadline=utcnow() + timedelta(days=3))
     await _rewind(pg_pool, late.id)
-    await DriftSweepJob(store).run()
+    await DriftSweepJob(store, LoopLifecycle(pg_pool)).run()
     assert await _state(store, late.id) is LoopState.DRIFTING
     assert await _state(store, on_time.id) is LoopState.ACTIVE
 
@@ -102,7 +103,7 @@ async def test_revived_loop_can_drift_again(pg_pool):
     store = PostgresLoopStore(pg_pool)
     loop = await make_loop(pg_pool, deadline=utcnow() + timedelta(days=3))
     await _rewind(pg_pool, loop.id)
-    await DriftSweepJob(store).run()
+    await DriftSweepJob(store, LoopLifecycle(pg_pool)).run()
     assert await _state(store, loop.id) is LoopState.DRIFTING
 
     await store.transition(loop.id, "active", user_asked=True)

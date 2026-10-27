@@ -42,9 +42,7 @@ def wire_automation(
 
 def install_contradiction_hook(shared: EngineStack, worldstate: WorldstateStack) -> None:
     async def _worldstate_contradiction_hook(fact_id) -> None:
-        from ze_worldstate.decay import cascade_from_evidence
-
-        await cascade_from_evidence("fact", fact_id, worldstate.loop_store)
+        await worldstate.lifecycle.decay_from_evidence("fact", fact_id)
 
     shared.memory_consolidator.contradiction_hook = _worldstate_contradiction_hook
 

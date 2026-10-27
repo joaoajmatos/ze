@@ -8,6 +8,8 @@ from uuid import uuid4
 from ze_worldstate.errors import InvalidLoopTransitionError
 from ze_worldstate.jobs import drift_sweep
 from ze_worldstate.jobs.drift_sweep import DriftSweepJob
+from ze_worldstate.lifecycle import LoopLifecycle
+from ze_worldstate.store import PostgresLoopStore
 from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
 
@@ -22,49 +24,53 @@ def _loop(*, deadline_days_from_now: int, state: LoopState = LoopState.ACTIVE) -
     )
 
 
-def _store(candidates, transition=None) -> AsyncMock:
-    store = AsyncMock()
-    store.list_drift_candidates = AsyncMock(return_value=candidates)
-    store.transition = transition or AsyncMock()
-    store.set_drift_rationale = AsyncMock()
-    return store
+def _job(candidates, drift=None) -> tuple[DriftSweepJob, AsyncMock]:
+    store = AsyncMock(spec=PostgresLoopStore)
+    store.list_drift_candidates.return_value = candidates
+    lifecycle = AsyncMock(spec=LoopLifecycle)
+    lifecycle.drift = drift or AsyncMock(return_value=object())
+    return DriftSweepJob(loop_store=store, lifecycle=lifecycle), lifecycle
 
 
 async def test_passed_deadline_drifts():
     loop = _loop(deadline_days_from_now=-1)
-    store = _store([loop])
+    job, lifecycle = _job([loop])
 
-    await DriftSweepJob(loop_store=store).run()
+    await job.run()
 
-    store.transition.assert_awaited_once_with(loop.id, LoopState.DRIFTING.value)
-    store.set_drift_rationale.assert_awaited_once()
+    lifecycle.drift.assert_awaited_once_with(loop.id)
 
 
 async def test_future_deadline_is_left_alone_even_if_returned():
-    store = _store([_loop(deadline_days_from_now=2)])
-    await DriftSweepJob(loop_store=store).run()
-    store.transition.assert_not_awaited()
+    job, lifecycle = _job([_loop(deadline_days_from_now=2)])
+    await job.run()
+    lifecycle.drift.assert_not_awaited()
 
 
 async def test_non_active_states_untouched():
-    store = _store([_loop(deadline_days_from_now=-1, state=LoopState.DRIFTING)])
-    await DriftSweepJob(loop_store=store).run()
-    store.transition.assert_not_awaited()
+    job, lifecycle = _job([_loop(deadline_days_from_now=-1, state=LoopState.DRIFTING)])
+    await job.run()
+    lifecycle.drift.assert_not_awaited()
 
 
-async def test_sweep_continues_after_an_invalid_transition():
+async def test_sweep_continues_after_a_refused_or_raced_drift():
     first = _loop(deadline_days_from_now=-1)
     second = _loop(deadline_days_from_now=-2)
-    store = _store(
-        [first, second],
-        transition=AsyncMock(side_effect=[InvalidLoopTransitionError("moved"), None]),
+    third = _loop(deadline_days_from_now=-3)
+    job, lifecycle = _job(
+        [first, second, third],
+        drift=AsyncMock(
+            side_effect=[InvalidLoopTransitionError("moved"), None, object()]
+        ),
     )
 
-    await DriftSweepJob(loop_store=store).run()
+    await job.run()
 
-    assert store.transition.await_count == 2
-    store.set_drift_rationale.assert_awaited_once()
-    assert store.set_drift_rationale.await_args.args[0] == second.id
+    assert [c.args[0] for c in lifecycle.drift.await_args_list] == [
+        first.id,
+        second.id,
+        third.id,
+    ]
 
 
 def test_sweep_no_longer_uses_is_stale():
