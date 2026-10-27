@@ -22,7 +22,7 @@ Each item was answered by the architect against spec.md, plan.md, data-model.md,
 - [x] CHK008 Is `skip_reason`'s single meaning defined for each case (raised, client skip, invalid, held, used)? [Clarity, Spec §FR-007, contracts/judgment-surface.md Skip reason by surface]
 - [x] CHK009 Is "held under a bar" separated from "not used", with examples per surface? [Clarity, Spec §FR-007] — routing `abstain`, intake `hold`; research R5 corrects the earlier `abstain` example.
 - [x] CHK010 Is "identical calibration output" defined precisely (byte-for-byte, which modes, how wall-clock lines are handled)? [Clarity, contracts/calibration-harness.md Golden checks]
-- [x] CHK011 Is the SC-004 line target a number with a stated baseline and file set? [Clarity, Spec §SC-004] — 4,838 lines across nine files plus the harness; ≤4,257 (−12%, Clarifications 2026-10-27).
+- [x] CHK011 Is SC-004 free of a line target, with the structural check named? [Clarity, Spec §SC-004] — no line-count target (user, 2026-10-27); each shared helper defined once in the harness, checked by T036's scan.
 
 ## Requirement Consistency
 

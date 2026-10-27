@@ -44,7 +44,7 @@ make calibrate-routing ARGS=--check-sets
 make calibrate-complexity ARGS=--check-sets
 make calibrate-commitment-intake ARGS=--check-sets
 uv run pytest apps/ze-api/tests/calibration/test_calibration_golden.py -q
-wc -l eval/calibration/*.py     # baseline 4,838; target at most 4,257 (−12%), harness included
+wc -l eval/calibration/*.py     # informational only (baseline 4,838); SC-004 has no line target
 ```
 
 The golden test compares every captured mode (see [contracts/calibration-harness.md](contracts/calibration-harness.md#golden-checks)) byte for byte, then runs `--save`/`--load` and checks the reloaded report matches.

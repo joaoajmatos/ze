@@ -93,4 +93,4 @@ The `--set holdout*` modes run against the replay client, so they spend nothing 
 
 ## SC-004 check
 
-`T037` measures `wc -l eval/calibration/*.py` (harness included) against the baseline 4,838 (the total must be at most 4,257, a 12% drop) and greps that `load_rows`, `_norm`, `report_reliability`, `report_grid`, `save_results`, `load_results`, `parse_bars`, `config_model`, `system_one_config` and `config_system_one` are not defined in any runner.
+`T036` scans that `load_rows`, `_norm`, `save_results`, `load_results`, `parse_bars`, `config_model`, `system_one_config`, `config_system_one`, `reliability_bins`, `print_reliability`, `bar_grid`, `print_grid` and `print_verdict` are not defined in any runner.
