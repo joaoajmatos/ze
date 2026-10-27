@@ -253,13 +253,13 @@ calibrate-routing:
 	uv run python eval/calibration/routing.py $(ARGS)
 
 calibrate-skills:
-	uv run python eval/calibration/skills.py
+	uv run python eval/calibration/skills.py $(ARGS)
 
 calibrate-loop-gate:
-	uv run python eval/calibration/loop_gate.py
+	uv run python eval/calibration/loop_gate.py $(ARGS)
 
 calibrate-corroboration:
-	uv run python eval/calibration/corroboration.py
+	uv run python eval/calibration/corroboration.py $(ARGS)
 
 calibrate-complexity:
 	uv run python eval/calibration/complexity.py $(ARGS)
