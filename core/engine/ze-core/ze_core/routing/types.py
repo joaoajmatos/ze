@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 from ze_agents.defaults import (
     MODEL_ROUTER_FALLBACK,
     ROUTING_GAP_THRESHOLD,
     ROUTING_THRESHOLD,
 )
+from ze_agents.judgment import Judgment
 
 
 @dataclass
@@ -21,16 +21,6 @@ class SubTask:
 
 
 @dataclass
-class RoutingJudgment:
-    """One attempted System One request, carried so embed_route can build trace rows."""
-
-    result: Any  # ze_agents.system_one.SystemOneResult
-    question_kinds: dict[str, str]
-    consumed: frozenset[str] = frozenset()
-    skip_reason: str | None = None
-
-
-@dataclass
 class RoutingEnvelope:
     primary_agent: str
     confidence: float
@@ -41,7 +31,7 @@ class RoutingEnvelope:
     requires_synthesis: bool
     raw_scores: dict[str, float] = field(default_factory=dict)
     is_sequential: bool = False
-    judgment: RoutingJudgment | None = None
+    judgment: Judgment | None = None
     threshold: float = ROUTING_THRESHOLD
     gap_threshold: float = ROUTING_GAP_THRESHOLD
 

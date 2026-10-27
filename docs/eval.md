@@ -453,7 +453,18 @@ Ze saves results to `eval/results/<timestamp>.json`. The judge uses
 
 Each System One surface has a calibration script in `eval/calibration/`. See
 [system-one.md](system-one.md) for the targets that call a live model and cost credits.
-Two calibrations are documented here.
+This section starts with the shared harness, then documents two calibrations.
+
+### Shared harness
+
+`eval/calibration/harness.py` holds the plumbing that the System One runners share: loading rows, the surface config, the live run, the reliability and grid tables, saved results and the common flags. Each runner keeps its own rows, quotas, scoring, baselines and acceptance rule. The harness builds each surface config through the production parser (`SurfaceConfig.from_settings`), so a bar that production rejects is rejected in the runner too.
+
+The shared flags include `--model`, `--timeout-ms`, `--concurrency`, `--save` and `--load`. A runner adds `--set` and `--bars` when it has labeled sets and bars. Each runner that uses the harness takes `--check-sets`, except the skills runner, which takes `--recall` instead.
+
+- `--save PATH` stores the raw results as JSON.
+- `--load PATH` prints the report from a saved file. It makes no System One call.
+
+The golden test, `apps/ze-api/tests/calibration/test_calibration_golden.py`, runs every mode of every runner in-process against replay fakes. It compares each report with the captured text in `apps/ze-api/tests/calibration/golden/`. It needs no network and spends nothing. After a report changes on purpose, run `uv run python -m tests.calibration.capture_golden` from `apps/ze-api`. That command rewrites the golden files, so review the diff before you commit it.
 
 ### Detector calibration
 

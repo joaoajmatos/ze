@@ -1,0 +1,18 @@
+
+== gold recall by k (shortlist_floor=0.35)
+lang   k=3     k=4     k=5     k=6     k=7     k=8     
+en     0.103   0.103   0.103   0.103   0.103   0.103   
+pt     0.111   0.111   0.111   0.111   0.111   0.111   
+all    0.106   0.106   0.106   0.106   0.106   0.106   
+
+== gold recall by shortlist_floor (k=5)
+lang   f=0.30  f=0.35  f=0.40  f=0.45  f=0.50  f=0.60  f=0.70  f=0.75  
+en     0.205   0.103   0.077   0.051   0.000   0.000   0.000   0.000   
+pt     0.185   0.111   0.074   0.037   0.000   0.000   0.000   0.000   
+all    0.197   0.106   0.076   0.045   0.000   0.000   0.000   0.000   
+gold cosine, band above: n=42 mean=0.196 min=-0.009 max=0.464
+gold cosine, band below_floor: n=24 mean=0.213 min=-0.086 max=0.497
+top cosine on no-skill rows: n=12 mean=0.377 min=0.264 max=0.512
+
+No k in 3..8 reaches recall 0.95 in both languages.
+--- exit 0 ---

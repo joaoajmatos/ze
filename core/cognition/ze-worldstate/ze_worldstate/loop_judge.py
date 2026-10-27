@@ -9,18 +9,14 @@ Imports ze_agents types only; ze-worldstate never depends on ze-core.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
-from typing import Any, Literal
+from typing import ClassVar, Literal
 
+from ze_agents.judgment import DecisionUse, SurfaceConfig
 from ze_agents.system_one import (
     SystemOneQuestion,
     SystemOneResult,
-    parse_bar,
-    surface_block,
     valid_noul,
 )
-
-_bar = partial(parse_bar, event="loop_gate_bar_invalid")
 
 Q_CONCERN = "is_open_concern"
 Q_RESOLVES = "resolves_existing"
@@ -62,29 +58,15 @@ def build_state(text: str, provenance: str) -> dict[str, str]:
 
 
 @dataclass(frozen=True)
-class LoopGateSurfaceConfig:
-    enabled: bool = False
+class LoopGateSurfaceConfig(SurfaceConfig):
     loop_hold: float | None = None
     resolves_hold: float | None = None
 
-    @property
-    def calibrated(self) -> bool:
-        return (
-            self.enabled
-            and self.loop_hold is not None
-            and self.resolves_hold is not None
-        )
-
-
-def loop_gate_surface_config(settings: Any) -> LoopGateSurfaceConfig:
-    block = surface_block(settings, "loop_gate")
-    if block is None:
-        return LoopGateSurfaceConfig()
-    return LoopGateSurfaceConfig(
-        enabled=block.get("enabled") is True,
-        loop_hold=_bar(block.get("loop_hold"), "loop_hold"),
-        resolves_hold=_bar(block.get("resolves_hold"), "resolves_hold"),
-    )
+    SURFACE: ClassVar[str] = "loop_gate"
+    BARS: ClassVar[dict[str, str]] = {
+        "loop_hold": Q_CONCERN,
+        "resolves_hold": Q_RESOLVES,
+    }
 
 
 DecisionKind = Literal[
@@ -97,6 +79,13 @@ class LoopGateDecision:
     kind: DecisionKind
     reason: str
     consumed: frozenset[str] = frozenset()
+
+
+def read_decision(decision: LoopGateDecision) -> DecisionUse:
+    return DecisionUse(
+        decision.consumed,
+        decision.reason if decision.kind == "fallback" else None,
+    )
 
 
 def decide(

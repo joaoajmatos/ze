@@ -594,6 +594,8 @@ system_one:
       simple_max: 0.40            # shipped 0.40 — the frozen bar; set from make calibrate-complexity
 ```
 
+Every surface that is on but uncalibrated logs one `system_one_surface_uncalibrated` warning per process, with a `surface` field that names the surface. An invalid bar logs `system_one_bar_invalid` once per surface and bar, with the same `surface` field, and the bar becomes `null`.
+
 #### `surfaces.commitment_intake`
 
 After each non-trivial conversation turn, one System One request asks what the message committed the user to. It replaces the phase 163 speech-act request and the phase 168 conversation loop-gate request. Ze makes one attempt, with no retries. Code reads the turn's tool calls and decides:
@@ -615,7 +617,7 @@ The keys:
 - `explicit_hold` is the minimum probability for `explicit_declaration`. It applies to conversation only.
 - `resolves_hold` is the minimum probability for `resolves_existing`.
 
-Each bar is a number from 0 to 1. At the bar counts as positive. The surface needs all six bars set. If you enable it and leave any bar `null`, Ze logs `commitment_intake_uncalibrated` and uses the older paths. An out-of-range or non-numeric value becomes `null`, with a warning.
+Each bar is a number from 0 to 1. At the bar counts as positive. The surface needs all six bars set. If you enable it and leave any bar `null`, Ze logs `system_one_surface_uncalibrated` with `surface: commitment_intake` and uses the older paths. An out-of-range or non-numeric value becomes `null`, with a `system_one_bar_invalid` warning.
 
 The shipped bars (0.7, 0.7, 0.55, 0.6, 0.95 and 0.8) were chosen on the 160-row tuned set on 2026-10-16 and frozen. One verdict run on 147 blind held-out rows (73 English, 74 Portuguese) returned `ENABLE` in both languages. Per language, the intake made zero duplicate bookings and zero false loop creates, where the old two-request pipeline made 5 and 3 duplicates and 3 and 3 false creates. Fact precision was 1.00. Fact recall was 0.81 and 0.76 (old pipeline: 0.71 and 0.57). Loop precision was 1.00 (old: 0.73 and 0.79), and loop recall was 22 of 22. Choice accuracy was 1.00, and the intake wrote nothing on any of the 7 waiting-on rows. Two earlier held-out sets returned `KEEP OFF`. The wording was fixed on the tuned set after each, and each earlier set is spent.
 
@@ -642,7 +644,7 @@ Each agent can declare an optional `routing_criteria` attribute: "use for" and "
 
 Shipped state: the routing surface is on with `choice_trust: 0.5`, `multi_specialist_hold: 0.5` and `shortlist_k: 9`. Calibration on 2026-10-12 used 52 held-out EN and PT rows. It found zero research-to-companion misses, zero harmful trusts at this bar and an ECE of 0.080 and 0.013. After the loops and companion criteria were refined (an undecided matter the user asks Ze to keep on their radar is a loop), both held-out sets scored 1.000 in English and Portuguese on one run, with ECE of 0.041 and 0.014 and zero harmful trusts. Before that change, a loops question went to companion at confidence 0.29, and the bar kept Ze from trusting it. `make calibrate-routing` measures only the tuning set. To re-measure the held-out sets, run `OPENROUTER_API_KEY=... uv run python eval/calibration/routing.py --dataset eval/calibration/routing_holdout.jsonl --dataset eval/calibration/routing_holdout2.jsonl --k 9`. This run is live and costs credits. Both sets pass the acceptance rule.
 
-The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `routing_surface_uncalibrated` and routes by E5 alone. The code ships no default bars; the shipped `config.yaml` sets the bars above. To re-measure them, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.routing.enabled` to `true`.
+The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `system_one_surface_uncalibrated` with `surface: routing` and routes by E5 alone. The code ships no default bars; the shipped `config.yaml` sets the bars above. To re-measure them, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.routing.enabled` to `true`.
 
 When System One routes a turn, `routing_log.confidence` holds the peakedness of the agent choice instead of the E5 cosine score. Turns that fall back to E5 keep the cosine score.
 
@@ -659,7 +661,7 @@ Ze makes the request only when all of these hold:
 Ze uses `model_simple` only when the Noul is at or below `simple_max`. Every other outcome keeps the full model. That covers the surface off, an uncalibrated surface, a skip, a timeout, a malformed answer and an error.
 
 - `enabled` turns the surface on. The shipped config sets `true`. The code default without a `complexity` block is off.
-- `simple_max` is the bar, from 0 to 1. The shipped config sets `0.40`. While it is `null`, the surface stays off. Ze logs a warning once per process and records `uncalibrated` on the trace.
+- `simple_max` is the bar, from 0 to 1. The shipped config sets `0.40`. While it is `null`, the surface stays off. Ze logs `system_one_surface_uncalibrated` with `surface: complexity` once per process and records `uncalibrated` on the trace.
 
 What off means: when `enabled` is `false` or `simple_max` is `null`, every agent runs its full model, and Ze makes no System One request. If you pin an agent's model in `models.overrides`, both tiers resolve to that model, so no tiering happens.
 
@@ -693,7 +695,7 @@ The keys:
 - `shortlist_k` sets how many skills the choice sees. Values below 1 fall back to 5.
 - `shortlist_floor` is the lowest cosine score that can enter the shortlist. It can sit below `skills.match_threshold`, so a paraphrase can apply when both answers clear their bars. The trace panel marks such a skill **below floor**. A value above `match_threshold` is clamped to it, with a warning.
 
-The surface needs `choice_trust` and `needs_skill_hold` both set. If you enable it and leave either `null`, Ze logs `skills_surface_uncalibrated` and matches by similarity alone. An out-of-range or non-numeric value becomes `null` (bars) or the default (`shortlist_k`, `shortlist_floor`), with a warning. The code ships no default bars; the shipped `config.yaml` sets 0.75 and 0.6 (calibrated 2026-10-12). To re-measure them, run `OPENROUTER_API_KEY=... make calibrate-skills`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.skills.enabled` to `true`.
+The surface needs `choice_trust` and `needs_skill_hold` both set. If you enable it and leave either `null`, Ze logs `system_one_surface_uncalibrated` with `surface: skills` and matches by similarity alone. An out-of-range or non-numeric value becomes `null` (bars) or the default (`shortlist_k`, `shortlist_floor`), with a warning. The code ships no default bars; the shipped `config.yaml` sets 0.75 and 0.6 (calibrated 2026-10-12). To re-measure them, run `OPENROUTER_API_KEY=... make calibrate-skills`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.skills.enabled` to `true`.
 
 `shortlist_k` and `shortlist_floor` come from the shortlist recall table in the calibration report. That table needs no credits: pass `--recall` to the script (`uv run python eval/calibration/skills.py --recall`). The shipped values, `shortlist_k: 5` and `shortlist_floor: 0.35`, come from that table. On the 84-row English and Portuguese set, the gold skill appears in the shortlist at a rate of 0.955, 0.970, 0.985, 0.985, 0.985 and 0.985 for k = 3 to 8. English holds at 0.974 for every k. Portuguese rises from 0.926 to 1.0 at k = 5. The floor does not bind: E5 cosines run from 0.71 to 0.89, even for messages that need no skill, so every skill already clears `skills.match_threshold`. The floor matters only if your skills or model score lower.
 
@@ -713,9 +715,9 @@ The keys:
 - `loop_hold` is the minimum probability for `is_open_concern`.
 - `resolves_hold` is the minimum probability for `resolves_existing`.
 
-Each bar is a number from 0 to 1. At the bar counts as positive. The surface needs both bars set. If you enable it and leave either `null`, Ze logs a warning and uses the Haiku gate. An out-of-range or non-numeric value becomes `null`, with a warning. The code ships no default bars; the shipped `config.yaml` sets 0.75 and 0.8 (calibrated 2026-10-12).
+Each bar is a number from 0 to 1. At the bar counts as positive. The surface needs both bars set. If you enable it and leave either `null`, Ze logs `system_one_surface_uncalibrated` with `surface: loop_gate` and uses the Haiku gate. An out-of-range or non-numeric value becomes `null`, with a warning. The code ships no default bars; the shipped `config.yaml` sets 0.75 and 0.8 (calibrated 2026-10-12).
 
-To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-loop-gate`. This run is live and costs credits. It tunes on `eval/calibration/loop_gate.jsonl` by default and measures the Haiku gate on the same rows. Copy the suggested values into the file. Then run the script once on the held-out set (`--set holdout`). Set `surfaces.loop_gate.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese: zero false creates on negatives, recall no more than 0.05 below Haiku's, and precision at least Haiku's. `--check-sets` validates both files offline.
+To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-loop-gate`. This run is live and costs credits. It tunes on `eval/calibration/loop_gate.jsonl` by default and measures the Haiku gate on the same rows. Copy the suggested values into the file. Then run the script once on the held-out set: `OPENROUTER_API_KEY=... make calibrate-loop-gate ARGS="--set holdout"`. Set `surfaces.loop_gate.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese: zero false creates on negatives, recall no more than 0.05 below Haiku's, and precision at least Haiku's. `--check-sets` validates both files offline.
 
 #### `surfaces.corroboration`
 
@@ -734,7 +736,7 @@ The keys:
 
 Each bar is a number from 0 to 1. At the bar counts as positive. `corroborate_hold` must be at or below `promote_hold`; otherwise Ze logs a warning and makes no request. An out-of-range or non-numeric value becomes `null`, with a warning.
 
-To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-corroboration`. This run is live and costs credits. It tunes on `eval/calibration/corroboration.jsonl` and compares each row with the E5 title-cosine baseline at 0.75. Copy the suggested values into the file. Then run the script once on the held-out set (`--set holdout --bars C,P`). Set `surfaces.corroboration.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese: zero false promotions, corroborate precision at least 0.9 and at least the E5 baseline, and recall no more than 0.05 below the E5 baseline. `--check-sets` validates both files offline. On the 2026-10-15 run the script's arithmetic suggested 0.55 and 0.55, which collapses the two tiers; the ENG lead chose candidate bars 0.6 and 0.8. English passed on the held-out set, Portuguese missed one recall clause, and the surface ships off.
+To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-corroboration`. This run is live and costs credits. It tunes on `eval/calibration/corroboration.jsonl` and compares each row with the E5 title-cosine baseline at 0.75. Copy the suggested values into the file. Then run the script once on the held-out set: `OPENROUTER_API_KEY=... make calibrate-corroboration ARGS="--set holdout --bars C,P"`. Set `surfaces.corroboration.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese: zero false promotions, corroborate precision at least 0.9 and at least the E5 baseline, and recall no more than 0.05 below the E5 baseline. `--check-sets` validates both files offline. On the 2026-10-15 run the script's arithmetic suggested 0.55 and 0.55, which collapses the two tiers; the ENG lead chose candidate bars 0.6 and 0.8. English passed on the held-out set, Portuguese missed one recall clause, and the surface ships off.
 
 ## `config/persona.yaml`
 

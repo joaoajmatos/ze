@@ -10,6 +10,8 @@ from ze_core.conversation.messages.types import JudgmentTrace, MessageTrace
 from ze_core.orchestration.nodes.memory import write_memory
 from ze_memory.types import Fact, FactAdmission, MemoryContext
 
+from tests.support.judgments import make_judgment
+
 
 def _ctx(prompt: str = "I prefer aisle seats") -> AgentContext:
     return AgentContext(
@@ -88,8 +90,14 @@ def _persist_admission(facts=None) -> FactAdmission:
         if facts is not None
         else [Fact(predicate="preference", value="aisle seats")],
         path="system_one",
-        judgment=_ok_result(),
-        question_ids=_IDS,
+    )
+
+
+def _ok_judgment():
+    return make_judgment(
+        "commitment_intake",
+        _ok_result(),
+        {"family": "choice", "biography": "noul"},
         consumed=frozenset(_IDS),
     )
 
@@ -121,24 +129,24 @@ async def test_no_judgment_leaves_trace_unchanged():
 async def test_ok_judgment_appends_rows_after_existing():
     existing = JudgmentTrace(question_id="routing", kind="choice", latency_ms=1)
     trace = _trace([existing])
-    out, _ = await _run(_persist_admission(), trace)
+    out, _, _ = await _run_intake(AsyncMock(return_value=_intake_admission()), trace)
     rows = out["message_trace"].judgments
     assert rows[0] is existing
-    assert [r.question_id for r in rows[1:]] == list(_IDS)
-    assert all(r.consumed for r in rows[1:])
+    assert [r.question_id for r in rows[1:]] == list(_INTAKE_KINDS)
+    assert {r.question_id for r in rows[1:] if r.consumed} == set(_IDS)
     assert trace.judgments == [existing]
 
 
 async def test_trace_merge_also_in_compaction_branch():
-    async def extractor(_cfg, **_kwargs):
-        return _persist_admission()
-
     state = _state(_trace())
     state["messages"] = [
         {"role": "user" if i % 2 == 0 else "assistant", "content": f"m{i}"}
         for i in range(60)
     ]
-    config = _config(extractor)
+    config = _config(AsyncMock())
+    config["configurable"]["commitment_intake"] = AsyncMock(
+        return_value=_intake_admission()
+    )
     config["configurable"]["openrouter_client"] = AsyncMock()
     config["configurable"]["openrouter_client"].complete = AsyncMock(return_value="sum")
     with (
@@ -150,7 +158,7 @@ async def test_trace_merge_also_in_compaction_branch():
     ):
         out = await write_memory(state, config)
     assert out["messages"][0]["compaction_summary"] is True
-    assert len(out["message_trace"].judgments) == 2
+    assert len(out["message_trace"].judgments) == len(_INTAKE_KINDS)
 
 
 async def test_missing_message_trace_does_not_crash():
@@ -171,17 +179,13 @@ async def test_eval_thread_never_calls_extractor():
     assert "message_trace" not in out
 
 
-async def test_skip_path_admission_has_no_duplicate_identity_and_skip_rows():
-    skip = SystemOneResult(outcome="skip", skip_reason="timeout", latency_ms=2000)
+async def test_haiku_path_admission_has_no_duplicate_identity():
     admission = FactAdmission(
         facts=[
             Fact(predicate="preference", value="aisle seats"),
             Fact(predicate="preference", value="window"),
         ],
         path="haiku",
-        judgment=skip,
-        question_ids=_IDS,
-        skip_reason="timeout",
     )
     remembered = ToolCall(
         tool_name="remember_fact",
@@ -193,9 +197,7 @@ async def test_skip_path_admission_has_no_duplicate_identity_and_skip_rows():
     out, submit = await _run(admission, _trace(), tool_calls=[remembered])
     facts = [i.fact for i in submit.await_args.args[1]]
     assert [(f.predicate, f.value) for f in facts] == [("preference", "window")]
-    rows = out["message_trace"].judgments
-    assert [r.question_id for r in rows] == list(_IDS)
-    assert all(not r.consumed and r.skip_reason == "timeout" for r in rows)
+    assert "message_trace" not in out
 
 
 # --- phase 173: single commitment intake ---------------------------------------------
@@ -210,10 +212,12 @@ def _intake_admission(**over):
         fact=_persist_admission(),
         loop=None,
         link=None,
-        judgment=_ok_result(),
-        question_kinds=_INTAKE_KINDS,
-        consumed=frozenset({"family", "biography"}),
-        skip_reason=None,
+        judgment=make_judgment(
+            "commitment_intake",
+            _ok_result(),
+            _INTAKE_KINDS,
+            consumed=frozenset({"family", "biography"}),
+        ),
     )
     base.update(over)
     return SimpleNamespace(**base)
@@ -271,9 +275,9 @@ async def test_intake_skip_rows_carry_reason():
     skip = SystemOneResult(outcome="skip", skip_reason="timeout", latency_ms=2000)
     adm = _intake_admission(
         fact=FactAdmission(facts=[], path="haiku"),
-        judgment=skip,
-        consumed=frozenset(),
-        skip_reason="timeout",
+        judgment=make_judgment(
+            "commitment_intake", skip, _INTAKE_KINDS, skip_reason="timeout"
+        ),
     )
     out, _, _ = await _run_intake(AsyncMock(return_value=adm), _trace())
     rows = out["message_trace"].judgments

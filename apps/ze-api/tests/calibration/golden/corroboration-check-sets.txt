@@ -1,0 +1,7 @@
+tuned: 84 rows
+  en: 42 rows, 22 positive, 20 negative, 15 hard negatives, inflows {'email': 20, 'calendar': 8, 'conversation': 7, 'ingestion': 7}
+  pt: 42 rows, 22 positive, 20 negative, 15 hard negatives, inflows {'email': 20, 'calendar': 8, 'conversation': 7, 'ingestion': 7}
+holdout: 47 rows
+  en: 24 rows, 14 positive, 10 negative, 8 hard negatives, inflows {'email': 11, 'conversation': 4, 'calendar': 5, 'ingestion': 4}
+  pt: 23 rows, 13 positive, 10 negative, 8 hard negatives, inflows {'email': 11, 'conversation': 3, 'calendar': 5, 'ingestion': 4}
+--- exit 0 ---

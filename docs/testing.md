@@ -118,6 +118,10 @@ uv run pytest core/cognition/ze-memory/tests/test_store_writes.py -q
 uv run pytest apps/ze-api/tests -k test_health -q
 ```
 
+### Surface warnings
+
+`ze_agents.judgment` logs each uncalibrated surface once per process, and each invalid bar once per surface and bar. A test that asserts one of these warnings calls `reset_surface_warnings()` from `ze_agents.judgment` first, so the warning fires again.
+
 ---
 
 ## What to run when
@@ -130,6 +134,7 @@ uv run pytest apps/ze-api/tests -k test_health -q
 | Embedding / routing internals | `make test-core SLOW=1` or `make test-all` |
 | Open-query detector | `make test-priority SLOW=1` runs `test_open_query_holdout.py`; `make calibrate-open-query` sweeps the sets (local, free) |
 | Commitment intake | `make test-worldstate` and `make test-memory` cover the decision table and the labels; `make test-pg` covers the loop link. `uv run python eval/calibration/commitment_intake.py --check-sets` validates the labeled sets offline. `make calibrate-commitment-intake` is live and costs credits |
+| System One calibration runners | `make test-api` runs the golden test (`apps/ze-api/tests/calibration/test_calibration_golden.py`), which compares every runner's report with its captured golden file. It needs no network. The saved-results tests reload `--save` output through `--load` |
 
 ---
 

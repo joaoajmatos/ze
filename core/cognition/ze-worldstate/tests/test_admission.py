@@ -193,7 +193,7 @@ async def test_resolves_closes_matching_loop(monkeypatch):
     )
     adm = _admitted(inflow, "resolve", "I renewed my passport, it is done")
     assert adm.decision.kind == "resolve"
-    assert adm.consumed == frozenset({"resolves_existing"})
+    assert adm.decision.consumed == frozenset({"resolves_existing"})
     closed = await adm.commit()
     assert closed and closed[0].state == LoopState.CLOSED
     loop_store.resolve.assert_awaited_once()
@@ -275,3 +275,33 @@ async def test_writer_accepts_fenced_json():
     )
     assert written is not None
     assert (written.title, written.implied_window_days) == ("Renew passport", 4)
+
+
+# --- 202: the judgment log reads the record --------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("settings", "client", "skip_reason"),
+    [
+        ({}, FakeSystemOne(_ok()), "disabled"),
+        (_settings(), None, "unavailable"),
+        (_settings(), FakeSystemOne(exc=RuntimeError("down")), "error"),
+        (
+            _settings(),
+            FakeSystemOne(SystemOneResult(outcome="skip", skip_reason="timeout")),
+            "timeout",
+        ),
+    ],
+    ids=["disabled", "no_client", "raised", "skip"],
+)
+async def test_extract_logs_skip_reason_from_record_or_fallback(
+    settings, client, skip_reason
+):
+    from structlog.testing import capture_logs
+
+    inflow, _, _, llm = _inflow(client, settings=settings)
+    with capture_logs() as logs:
+        await inflow.extract("Daniel is still waiting on my answer", "email")
+    row = next(e for e in logs if e["event"] == "loop_gate_judgment")
+    assert row["outcome"] == "fallback"
+    assert row["skip_reason"] == skip_reason

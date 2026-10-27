@@ -1,0 +1,7 @@
+tuned: 94 rows
+  en: 47 rows; simple 23 {'companion': 9, 'research': 7, 'goals': 7}; full 24 {'companion': 8, 'research': 8, 'goals': 8}; conversation 17 anaphoric 13 (simple 4 full 9) single 16; memory 4 focus 6 skill 2 recap 3
+  pt: 47 rows; simple 23 {'companion': 9, 'research': 7, 'goals': 7}; full 24 {'companion': 8, 'research': 8, 'goals': 8}; conversation 17 anaphoric 13 (simple 4 full 9) single 16; memory 4 focus 6 skill 2 recap 3
+holdout: 54 rows
+  en: 27 rows; simple 14 {'companion': 5, 'research': 5, 'goals': 4}; full 13 {'companion': 6, 'research': 4, 'goals': 3}; conversation 13 anaphoric 8 (simple 4 full 4) single 5; memory 3 focus 3 skill 2 recap 2
+  pt: 27 rows; simple 14 {'companion': 5, 'research': 5, 'goals': 4}; full 13 {'companion': 6, 'research': 4, 'goals': 3}; conversation 14 anaphoric 9 (simple 5 full 4) single 4; memory 3 focus 3 skill 2 recap 2
+--- exit 0 ---

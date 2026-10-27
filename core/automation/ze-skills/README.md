@@ -63,14 +63,14 @@ User-facing guide: [docs/skills.md](../../../docs/skills.md).
 
 | Module | What it provides |
 |---|---|
-| `types.py` | `Skill`, `SkillReview`, `SkillScript`, `ReferenceFile`, `SkillMatch` (with `below_floor`), `SkillMatchOutcome`, `SkillsJudgment`, `SkillStatus` / `SkillSource` / `SkillTrigger` |
+| `types.py` | `Skill`, `SkillReview`, `SkillScript`, `ReferenceFile`, `SkillMatch` (with `below_floor`), `SkillMatchOutcome` (with its `Judgment`, from `ze_agents.judgment`), `SkillStatus` / `SkillSource` / `SkillTrigger` |
 | `errors.py` | `SkillParseError`, `SkillNotFoundError`, `InvalidSkillTransitionError` |
 | `parser.py` | `parse_skill_md()` — YAML frontmatter + Markdown body, script-ref detection |
 | `importer.py` | `fetch_skill_source()` — HTTP fetch of a `SKILL.md` URL or zip archive |
 | `store.py` | `SkillStore` protocol, `PostgresSkillStore` |
 | `review.py` | approve / reject / disable / enable / remove / refresh / approve executables |
 | `matching.py` | `SkillMatcher` — embedding similarity, optional System One gate, `/skill-name` invocation |
-| `judge.py` | `SkillsSurfaceConfig`, `skills_surface_config()`, `shortlist()`, `build_questions()`, `decide()` — the gate's pure logic |
+| `judge.py` | `SkillsSurfaceConfig` (a `SurfaceConfig` subclass), `shortlist()`, `build_questions()`, `decide()`, `read_decision()` — the gate's pure logic |
 | `rest.py` | Thin dict-returning wrappers for the `/api/v0/skills` routes |
 | `jobs/` | `SkillRecheckJob` — daily origin-URL content recheck |
 | `tools.py` | The `list_skills` tool |

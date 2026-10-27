@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ze_agents.system_one import SystemOneResult
+from ze_agents.judgment import gate, judge
 from ze_logging import get_logger
 
 from ze_skills.judge import (
@@ -11,6 +11,7 @@ from ze_skills.judge import (
     build_judgment_state_skills,
     build_questions,
     decide,
+    read_decision,
     shortlist,
     skill_keys,
 )
@@ -20,7 +21,6 @@ from ze_skills.types import (
     Skill,
     SkillMatch,
     SkillMatchOutcome,
-    SkillsJudgment,
     SkillTrigger,
 )
 
@@ -131,11 +131,9 @@ class SkillMatcher:
             if similarity >= self._threshold
         ]
 
-        if judgment_state is None or self._system_one is None or not scored:
+        if judgment_state is None or not scored:
             return SkillMatchOutcome(matches=e5_matches)
-        if not self._surface.calibrated:
-            if self._surface.enabled:
-                log.warning("skills_surface_uncalibrated")
+        if gate(self._surface, self._system_one) is not None:
             return SkillMatchOutcome(matches=e5_matches)
 
         candidates = shortlist(scored, floor=self._floor, k=self._surface.shortlist_k)
@@ -148,22 +146,13 @@ class SkillMatcher:
         state = build_judgment_state_skills(
             judgment_state, [skill for skill, _ in candidates]
         )
-        try:
-            result = await self._system_one.evaluate(state, questions, max_attempts=1)
-        except Exception as exc:
-            log.warning("skills_judgment_error", error=str(exc))
-            result = SystemOneResult(outcome="skip", skip_reason="error")
-
-        decision = decide(result, self._surface, list(keys))
-        judgment = SkillsJudgment(
-            result=result,
-            question_kinds={qid: q.type for qid, q in questions.items()},
-            consumed=decision.consumed,
-            skip_reason=(
-                decision.reason
-                if decision.kind == "skip" and result.outcome == "ok"
-                else None
-            ),
+        judgment, decision = await judge(
+            self._system_one,
+            self._surface,
+            state,
+            questions,
+            decide=lambda result: decide(result, self._surface, list(keys)),
+            read=read_decision,
         )
 
         if decision.kind == "apply" and decision.skill_key in keys:
