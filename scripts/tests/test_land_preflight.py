@@ -338,3 +338,32 @@ def test_an_approval_ending_outside_the_branch_does_not_count(world):
     p = run(floor)
     assert p.returncode == 1
     assert "no APPROVE review record continues" in p.stdout
+
+
+def test_parallel_lane_records_reach_head_through_any_path(world):
+    """203: contract -> callers (dead end) and contract -> inflow -> head. The search must find the inflow path."""
+    _, floor = world
+    (floor / ".gitignore").write_text(".process/\n")
+    git(floor, "add", ".gitignore")
+    git(floor, "commit", "-q", "-m", "ignore")
+    base = git(floor, "merge-base", "HEAD", "main")
+    contract = git(floor, "rev-parse", "HEAD")
+    git(floor, "checkout", "-q", "-b", "callers")
+    (floor / "c.py").write_text("c = 1\n")
+    git(floor, "add", "c.py")
+    git(floor, "commit", "-q", "-m", "callers")
+    callers = git(floor, "rev-parse", "HEAD")
+    git(floor, "checkout", "-q", "feat")
+    (floor / "i.py").write_text("i = 1\n")
+    git(floor, "add", "i.py")
+    git(floor, "commit", "-q", "-m", "inflow")
+    inflow = git(floor, "rev-parse", "HEAD")
+    git(floor, "merge", "-q", "--no-edit", "callers")
+    head = git(floor, "rev-parse", "HEAD")
+    make_review(floor, base, contract, name="contract")
+    make_review(floor, contract, callers, name="callers")
+    make_review(floor, contract, inflow, name="inflow")
+    make_review(floor, inflow, head, name="final")
+    make_receipt(floor)
+    p = run(floor)
+    assert p.returncode == 0, p.stdout

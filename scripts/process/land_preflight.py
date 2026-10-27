@@ -201,27 +201,22 @@ def check_reviews(floor: Path, base: str, head: str, into: str = "main") -> list
             if start and end and is_ancestor(floor, end, head):
                 approved.setdefault(start, []).append(end)
     starts = [base] + [s for s in approved if s != base and is_ancestor(floor, s, into)]
-    stuck = base
-    for start in starts:
-        cur = start
-        while cur != head:
-            nxt = [e for e in approved.get(cur, []) if e != cur]
-            if not nxt:
-                break
-            cur = max(
-                nxt,
-                key=lambda e: (
-                    git(floor, "rev-list", "--count", f"{cur}..{e}")
-                    .stdout.strip()
-                    .zfill(8)
-                ),
-            )
+    # Parallel lanes make the records a graph, not a line: search every path, not the longest step.
+    seen, todo = set(starts), list(starts)
+    while todo:
+        cur = todo.pop()
         if cur == head:
             return []
-        if start == base:
-            stuck = cur
+        for nxt in approved.get(cur, []):
+            if nxt not in seen:
+                seen.add(nxt)
+                todo.append(nxt)
+    furthest = max(
+        seen,
+        key=lambda c: git(floor, "rev-list", "--count", c).stdout.strip().zfill(8),
+    )
     return [
-        f"no APPROVE review record continues from {stuck[:8]} (review chain must reach {head[:8]})"
+        f"no APPROVE review record continues from {furthest[:8]} (review chain must reach {head[:8]})"
     ]
 
 

@@ -91,15 +91,13 @@ def approved_end(repo: Path, base: str, into: str = "main") -> str:
         if r.get("verdict") == "APPROVE" and is_ancestor(repo, r["to"], "HEAD"):
             edges.setdefault(r["from"], []).append(r["to"])
     starts = {base} | {s for s in edges if is_ancestor(repo, s, into)}
-    ends = []
-    for start in starts:
-        cur = start
-        while edges.get(cur):
-            cur = max(
-                edges[cur],
-                key=lambda e: int(git(repo, "rev-list", "--count", f"{cur}..{e}") or 0),
-            )
-        ends.append(cur)
+    # Parallel lanes make the records a graph: every end reachable from a start is a candidate.
+    ends, todo = set(starts), list(starts)
+    while todo:
+        for nxt in edges.get(todo.pop(), []):
+            if nxt not in ends:
+                ends.add(nxt)
+                todo.append(nxt)
     # Ancestry, not commit counts: after merging main the base has more ancestors than an approved end
     # that predates the merge, yet only that end carries floor work. Ends already on `into` carry none.
     best = base
