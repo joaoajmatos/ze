@@ -367,3 +367,19 @@ def test_parallel_lane_records_reach_head_through_any_path(world):
     make_receipt(floor)
     p = run(floor)
     assert p.returncode == 0, p.stdout
+
+
+def test_a_lane_worktree_record_completes_the_chain(world, tmp_path):
+    """A lane's review is recorded in the lane's own worktree; the preflight reads it there."""
+    ground, floor = world
+    (floor / ".gitignore").write_text(".process/\n")
+    git(floor, "add", ".gitignore")
+    git(floor, "commit", "-q", "-m", "ignore")
+    base = git(floor, "merge-base", "HEAD", "main")
+    head = git(floor, "rev-parse", "HEAD")
+    lane = tmp_path / "lane-wt"
+    git(ground, "worktree", "add", "-q", "-b", "feat-lane-y", str(lane), "feat")
+    make_review(lane, base, head, name="from-lane")
+    make_receipt(floor)
+    p = run(floor)
+    assert p.returncode == 0, p.stdout

@@ -184,9 +184,12 @@ def check_receipt(floor: Path, base: str, head: str) -> list[str]:
 
 
 def review_records(floor: Path) -> list[dict]:
+    """The floor's records plus its lanes' (a lane's reviews are recorded in the lane's own worktree)."""
+    branch = git(floor, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
     return [
         json.loads(p.read_text())
-        for p in sorted((floor / ".process" / "reviews").glob("*.json"))
+        for repo in [floor, *lane_checkouts(floor, branch)]
+        for p in sorted((repo / ".process" / "reviews").glob("*.json"))
     ]
 
 
