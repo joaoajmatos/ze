@@ -142,3 +142,27 @@ async def link_evidence(
             kind,
         )
     return evidence_id
+
+
+async def seed_source(
+    pool: asyncpg.Pool,
+    loop_id: UUID,
+    inflow: str = "email",
+    ref: str = "T1",
+    *,
+    role: str = "corroboration",
+    promoted: bool = False,
+) -> None:
+    """Seed an open_loop_sources row with plain SQL."""
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO open_loop_sources"
+            " (loop_id, role, inflow, source_ref, same_concern, promoted, model, latency_ms)"
+            " VALUES ($1, $2, $3, $4, $5, $6, 'm', 100)",
+            loop_id,
+            role,
+            inflow,
+            ref,
+            None if role == "origin" else 0.9,
+            promoted,
+        )

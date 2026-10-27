@@ -7,9 +7,9 @@ from ze_priority.turn import TurnSurfacing
 from ze_priority.view import PriorityView
 from ze_worldstate.jobs.drift_sweep import DriftSweepJob
 from ze_worldstate.lifecycle import LoopLifecycle
-from ze_worldstate.review import confirm_loop
 from ze_worldstate.store import PostgresLoopStore
-from ze_worldstate.types import DECLARED_CONFIDENCE, LoopState
+from ze_worldstate.lifecycle import DeclaredStamp
+from ze_worldstate.types import LoopState
 
 from tests.pg._builders import make_loop, utcnow
 
@@ -26,11 +26,11 @@ async def test_confirm_stamps_the_row_and_feeds_the_drift_sweep(pg_pool):
         confirmed_at=None,
     )
 
-    await confirm_loop(store, loop.id)
+    await LoopLifecycle(pg_pool).confirm(loop.id)
 
     row = await store.get(loop.id)
     assert row.state is LoopState.ACTIVE
-    assert row.confidence == pytest.approx(DECLARED_CONFIDENCE, abs=1e-6)
+    assert row.confidence == pytest.approx(DeclaredStamp.CONFIDENCE, abs=1e-6)
     assert row.provenance == "email"
     assert row.confirmed_at == row.updated_at
     expected = utcnow() + timedelta(days=7)
