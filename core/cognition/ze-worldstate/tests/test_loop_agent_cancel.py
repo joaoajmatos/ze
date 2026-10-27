@@ -5,6 +5,7 @@ from ze_agents.label_match import Ambiguous, Miss, Unique, precise_label_match
 from ze_agents.nested_tools import COULD_NOT_TRACK
 from ze_agents.types import AgentContext
 from ze_worldstate.agents.agent import LoopsAgent, _AGENT_INSTRUCTIONS
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.types import (
     LoopProvenance,
     LoopState,
@@ -40,8 +41,12 @@ def test_instructions_cover_tracking():
 class _FakeTracker:
     def __init__(self, result: TrackResult) -> None:
         self.result = result
+        self.sessions: list[str | None] = []
 
-    async def track(self, title: str, window_days: int = 0) -> TrackResult:
+    async def track(
+        self, title: str, window_days: int = 0, session_id: str | None = None
+    ) -> TrackResult:
+        self.sessions.append(session_id)
         return self.result
 
 
@@ -57,6 +62,13 @@ def _tracked_loop() -> OpenLoop:
 
 
 def _agent(result: TrackResult, reply: str) -> tuple[LoopsAgent, str]:
+    agent, _tracker = _agent_with_tracker(result, reply)
+    return agent, reply
+
+
+def _agent_with_tracker(
+    result: TrackResult, reply: str
+) -> tuple[LoopsAgent, _FakeTracker]:
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(
         side_effect=[
@@ -74,12 +86,14 @@ def _agent(result: TrackResult, reply: str) -> tuple[LoopsAgent, str]:
         ]
     )
     client.complete = AsyncMock(return_value=reply)
+    tracker = _FakeTracker(result)
     agent = LoopsAgent(
         openrouter_client=client,
         loop_store=AsyncMock(),
-        loop_tracker=_FakeTracker(result),
+        loop_tracker=tracker,
+        lifecycle=AsyncMock(spec=LoopLifecycle),
     )
-    return agent, reply
+    return agent, tracker
 
 
 def _ctx() -> AgentContext:
@@ -98,6 +112,17 @@ async def test_successful_track_loop_keeps_the_reply():
     result = await agent.run(_ctx())
 
     assert result.response == reply
+
+
+async def test_track_loop_receives_the_turn_session_id():
+    agent, tracker = _agent_with_tracker(
+        TrackResult(ok=True, outcome=TrackOutcome.CREATED, loop=_tracked_loop()),
+        "I'll keep that on my radar.",
+    )
+
+    await agent.run(_ctx())
+
+    assert tracker.sessions == ["s1"]
 
 
 async def test_failed_track_loop_strips_the_claim():
@@ -135,9 +160,8 @@ def test_forget_that_is_miss_not_a_write():
     assert isinstance(result, Miss)
 
 
-class _ConfirmStore:
+class _ConfirmLifecycle:
     def __init__(self, fail_confirm: bool = False) -> None:
-
         self.fail_confirm = fail_confirm
         self.bank = OpenLoop(
             id=uuid4(),
@@ -153,34 +177,28 @@ class _ConfirmStore:
             confidence=0.3,
             state=LoopState.SUSPECTED,
         )
-        self.transitions: list[tuple] = []
-        self.stamped: list = []
+        self.events: list[tuple] = []
+
+    async def confirm(self, loop_id):
+        if self.fail_confirm:
+            raise RuntimeError("db down")
+        self.events.append((loop_id, "confirm"))
+        return self.bank
+
+    async def drop(self, loop_id):
+        self.events.append((loop_id, "drop"))
+        return self.dentist
+
+
+class _ListStore:
+    def __init__(self, loops) -> None:
+        self.loops = loops
 
     async def list(self, states=None):
-        return [self.bank, self.dentist]
-
-    async def transition(self, loop_id, state, **kwargs):
-        if self.fail_confirm and state == "active":
-            raise RuntimeError("db down")
-        self.transitions.append((loop_id, state))
-        loop = self.bank if loop_id == self.bank.id else self.dentist
-        return loop
-
-    async def resolve(self, loop_id, evidence):
-        self.transitions.append((loop_id, "closed"))
-        return self.bank if loop_id == self.bank.id else self.dentist
-
-    async def stamp_declared(self, loop_id, *, confidence, deadline):
-        self.stamped.append(loop_id)
-
-    async def list_evidence(self, loop_id):
-        return []
-
-    async def set_dismissed_evidence_fingerprint(self, loop_id, fingerprint):
-        return None
+        return self.loops
 
 
-def _confirm_agent(store: _ConfirmStore, reply: str) -> LoopsAgent:
+def _confirm_agent(store: _ConfirmLifecycle, reply: str) -> LoopsAgent:
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(
         side_effect=[
@@ -206,8 +224,9 @@ def _confirm_agent(store: _ConfirmStore, reply: str) -> LoopsAgent:
     client.complete = AsyncMock(return_value=reply)
     return LoopsAgent(
         openrouter_client=client,
-        loop_store=store,
+        loop_store=_ListStore([store.bank, store.dentist]),
         loop_tracker=_FakeTracker(TrackResult(ok=False, error="unused")),
+        lifecycle=store,
     )
 
 
@@ -217,20 +236,21 @@ def test_loops_agent_declares_confirm_loop():
 
 
 async def test_confirm_and_drop_by_id_keep_the_reply():
-    store = _ConfirmStore()
+    store = _ConfirmLifecycle()
     reply = "I'll keep track of the bank switch and dropped the dentist one."
     agent = _confirm_agent(store, reply)
 
     result = await agent.run(_ctx())
 
-    assert (store.bank.id, "active") in store.transitions
-    assert (store.dentist.id, "dropped") in store.transitions
-    assert store.stamped == [store.bank.id]
+    assert store.events == [
+        (store.bank.id, "confirm"),
+        (store.dentist.id, "drop"),
+    ]
     assert result.response == reply
 
 
 async def test_failed_confirm_strips_the_tracking_claim():
-    store = _ConfirmStore(fail_confirm=True)
+    store = _ConfirmLifecycle(fail_confirm=True)
     agent = _confirm_agent(store, "I'll keep track of the bank switch.")
 
     result = await agent.run(_ctx())

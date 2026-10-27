@@ -15,6 +15,7 @@ from ze_api.api.deps import require_api_key
 from ze_api.api.v0.loops.router import router
 from ze_plugin.contribution import EvidenceRef
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.types import (
     LoopProvenance,
     LoopSource,
@@ -61,10 +62,11 @@ def _source(
     )
 
 
-def _make_app(loop_store=None) -> tuple[FastAPI, AsyncMock]:
+def _make_app(loop_store=None, lifecycle=None) -> tuple[FastAPI, AsyncMock]:
     app = FastAPI()
     store = loop_store or AsyncMock()
-    container = SimpleNamespace(loop_store=store)
+    lifecycle = lifecycle or AsyncMock(spec=LoopLifecycle)
+    container = SimpleNamespace(loop_store=store, loop_lifecycle=lifecycle)
     app.state.container = container
 
     app.dependency_overrides[require_api_key] = lambda: None
@@ -176,21 +178,14 @@ async def test_list_exposes_reminder_and_goal_ids():
 
 
 @pytest.mark.asyncio
-async def test_confirm_close_drop_persist_across_relist():
+async def test_confirm_and_close_go_through_the_lifecycle():
     loop = _loop()
-    store = AsyncMock()
-
-    async def _transition(loop_id, state):
-        target = LoopState(state)
-        confirmed_at = (
-            datetime.now(timezone.utc) if target == LoopState.ACTIVE else None
-        )
-        return _loop(id=loop_id, state=target, confirmed_at=confirmed_at)
-
-    store.transition = AsyncMock(side_effect=_transition)
-    store.list_evidence = AsyncMock(return_value=[])
-    store.set_dismissed_evidence_fingerprint = AsyncMock()
-    app, _ = _make_app(store)
+    lifecycle = AsyncMock(spec=LoopLifecycle)
+    lifecycle.confirm.return_value = _loop(
+        id=loop.id, state=LoopState.ACTIVE, confidence=0.9
+    )
+    lifecycle.close.return_value = _loop(id=loop.id, state=LoopState.CLOSED)
+    app, store = _make_app(lifecycle=lifecycle)
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
@@ -210,17 +205,17 @@ async def test_confirm_close_drop_persist_across_relist():
         assert close_resp.status_code == 200
         assert close_resp.json()["state"] == "closed"
 
+    lifecycle.confirm.assert_awaited_once_with(loop.id)
+    lifecycle.close.assert_awaited_once_with(loop.id)
+    assert store.method_calls == []
+
 
 @pytest.mark.asyncio
-async def test_drop_records_fingerprint_and_persists():
+async def test_drop_goes_through_the_lifecycle():
     loop = _loop()
-    store = AsyncMock()
-    store.list_evidence = AsyncMock(return_value=[])
-    store.transition = AsyncMock(
-        return_value=_loop(id=loop.id, state=LoopState.DROPPED)
-    )
-    store.set_dismissed_evidence_fingerprint = AsyncMock()
-    app, _ = _make_app(store)
+    lifecycle = AsyncMock(spec=LoopLifecycle)
+    lifecycle.drop.return_value = _loop(id=loop.id, state=LoopState.DROPPED)
+    app, store = _make_app(lifecycle=lifecycle)
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
@@ -232,49 +227,65 @@ async def test_drop_records_fingerprint_and_persists():
 
     assert resp.status_code == 200
     assert resp.json()["state"] == "dropped"
-    store.set_dismissed_evidence_fingerprint.assert_awaited_once()
+    lifecycle.drop.assert_awaited_once_with(loop.id)
+    assert store.method_calls == []
 
 
 @pytest.mark.asyncio
-async def test_invalid_transition_returns_409():
-    store = AsyncMock()
-    store.transition = AsyncMock(side_effect=InvalidLoopTransitionError("nope"))
-    app, _ = _make_app(store)
+@pytest.mark.parametrize(
+    ("event", "route"),
+    [("confirm", "confirm"), ("close", "close"), ("drop", "drop")],
+)
+async def test_invalid_transition_returns_409(event, route):
+    lifecycle = AsyncMock(spec=LoopLifecycle)
+    getattr(lifecycle, event).side_effect = InvalidLoopTransitionError("nope")
+    app, _ = _make_app(lifecycle=lifecycle)
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         resp = await client.post(
-            f"/api/v0/loops/{uuid4()}/confirm",
+            f"/api/v0/loops/{uuid4()}/{route}",
             headers={"Authorization": f"Bearer {API_KEY}"},
         )
 
     assert resp.status_code == 409
+    assert resp.json()["detail"] == "nope"
 
 
 @pytest.mark.asyncio
-async def test_confidence_decay_reflected_on_next_list():
-    """SC-006 / quickstart's evidence-retraction-cascade scenario, exercised through
-    the REST surface: once ze_worldstate.decay.cascade_from_evidence has lowered a
-    loop's stored confidence (unit-tested directly in test_decay.py), the next
-    GET /api/v0/loops must reflect the new value — not a cached one.
-    """
+@pytest.mark.parametrize(
+    ("event", "route"),
+    [("confirm", "confirm"), ("close", "close"), ("drop", "drop")],
+)
+async def test_transition_404_when_missing(event, route):
+    lifecycle = AsyncMock(spec=LoopLifecycle)
+    getattr(lifecycle, event).side_effect = LoopNotFoundError("missing")
+    app, _ = _make_app(lifecycle=lifecycle)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.post(
+            f"/api/v0/loops/{uuid4()}/{route}",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_list_reflects_the_stored_confidence_not_a_cached_one():
+    """SC-006: a confidence the lifecycle lowered shows on the next GET /loops."""
     from ze_agents.claims import CONFIDENCE_FLOOR
-    from ze_worldstate.decay import cascade_from_evidence
 
     loop = _loop(confidence=0.6)
     store = AsyncMock()
-    store.list_by_evidence = AsyncMock(return_value=[loop])
-    store.count_evidence_links = AsyncMock(return_value=1)
-    store.set_confidence = AsyncMock(
-        side_effect=lambda loop_id, c: setattr(loop, "confidence", c)
-    )
     store.list = AsyncMock(return_value=[loop])
     store.list_sources_for = AsyncMock(return_value={})
     app, _ = _make_app(store)
 
-    await cascade_from_evidence("fact", uuid4(), store)
-    assert loop.confidence == CONFIDENCE_FLOOR
+    loop.confidence = CONFIDENCE_FLOOR
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
@@ -285,23 +296,6 @@ async def test_confidence_decay_reflected_on_next_list():
 
     assert resp.status_code == 200
     assert resp.json()[0]["confidence"] == CONFIDENCE_FLOOR
-
-
-@pytest.mark.asyncio
-async def test_transition_404_when_missing():
-    store = AsyncMock()
-    store.transition = AsyncMock(side_effect=LoopNotFoundError("missing"))
-    app, _ = _make_app(store)
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        resp = await client.post(
-            f"/api/v0/loops/{uuid4()}/close",
-            headers={"Authorization": f"Bearer {API_KEY}"},
-        )
-
-    assert resp.status_code == 404
 
 
 async def _list(store, params):
