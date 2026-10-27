@@ -583,7 +583,7 @@ async def test_the_loop_admission_is_a_full_commit_decision(choice, kwargs, kind
     assert loop.decision.consumed == adm.outcome.consumed
     assert (loop.text, loop.inflow) == (PROMPT, "conversation")
     assert loop.source == SourceKey("conversation", "t1")
-    assert loop.commit is None
+    assert not hasattr(loop, "commit")
 
 
 async def test_the_source_is_set_at_construction_and_absent_without_a_thread():

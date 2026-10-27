@@ -355,7 +355,7 @@ class LoopLifecycle:
         """The user asked Ze to keep a loop in mind.
 
         Suspected: `confirmed`; drifting: `revived`; both take the declared stamp with
-        `window_days`. Active: `reinforced`, confidence `max(c, 0.9)`, deadline untouched.
+        `window_days`. Active: `reinforced`, confidence raised to the declared level, deadline untouched.
         Entity links in the same transaction. Refused from closed and dropped.
         """
         async with self._pool.acquire() as conn, conn.transaction():

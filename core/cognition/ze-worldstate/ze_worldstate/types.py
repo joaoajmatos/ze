@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
@@ -13,10 +12,6 @@ from ze_plugin.contribution import EvidenceRef
 from ze_worldstate.decision import CommitDecision
 
 LoopClaimKind = ClaimKind
-
-# Confidence for a user-stated ("declared") loop, shared by the 168 explicit
-# declaration path and the 169 user-asked track path.
-DECLARED_CONFIDENCE = 0.9
 
 
 class LoopProvenance:
@@ -137,4 +132,3 @@ class LoopAdmission:
     source: SourceKey | None = None
     text: str = ""
     inflow: str = ""
-    commit: Callable[[Sequence[EvidenceRef]], Awaitable[list[OpenLoop]]] | None = None

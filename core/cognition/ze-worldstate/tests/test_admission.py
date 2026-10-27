@@ -531,7 +531,7 @@ def test_finish_builds_the_full_record_and_attaches_nothing_callable():
         "hello", "conversation", _decision("create_suspected"), source=source
     )
     assert (adm.text, adm.inflow, adm.source) == ("hello", "conversation", source)
-    assert adm.commit is None
+    assert not hasattr(adm, "commit")
 
 
 # --- email, calendar and ingestion: judge, log, commit ---------------------------------
