@@ -13,7 +13,6 @@ from ze_worldstate.commitment_judge import (
     COMMITMENT_QUESTIONS,
     CommitmentIntakeSurfaceConfig,
     build_state,
-    commitment_intake_surface_config,
     decide,
 )
 
@@ -30,25 +29,25 @@ def _block(**kw):
 
 
 def test_missing_block_is_disabled():
-    assert commitment_intake_surface_config({}) == CommitmentIntakeSurfaceConfig()
-    assert not commitment_intake_surface_config({}).calibrated
+    assert CommitmentIntakeSurfaceConfig.from_settings({}) == CommitmentIntakeSurfaceConfig()
+    assert not CommitmentIntakeSurfaceConfig.from_settings({}).calibrated
 
 
 def test_calibrated_needs_enabled_and_all_six_bars():
-    assert commitment_intake_surface_config(_block(enabled=True, **_BARS)).calibrated
-    assert not commitment_intake_surface_config(
+    assert CommitmentIntakeSurfaceConfig.from_settings(_block(enabled=True, **_BARS)).calibrated
+    assert not CommitmentIntakeSurfaceConfig.from_settings(
         _block(enabled=False, **_BARS)
     ).calibrated
     for name in _BARS:
         partial = {**_BARS, name: None}
-        assert not commitment_intake_surface_config(
+        assert not CommitmentIntakeSurfaceConfig.from_settings(
             _block(enabled=True, **partial)
         ).calibrated
 
 
 @pytest.mark.parametrize("bad", [1.5, -0.1, "high", True, float("nan")])
 def test_bad_bar_becomes_none(bad):
-    cfg = commitment_intake_surface_config(
+    cfg = CommitmentIntakeSurfaceConfig.from_settings(
         _block(enabled=True, **{**_BARS, "loop_hold": bad})
     )
     assert cfg.loop_hold is None
@@ -57,17 +56,17 @@ def test_bad_bar_becomes_none(bad):
 
 def test_accepts_object_with_config_dict():
     settings = SimpleNamespace(config=_block(enabled=True, **_BARS))
-    assert commitment_intake_surface_config(settings).calibrated
+    assert CommitmentIntakeSurfaceConfig.from_settings(settings).calibrated
 
 
 def test_none_settings_is_disabled():
-    assert not commitment_intake_surface_config(None).enabled
+    assert not CommitmentIntakeSurfaceConfig.from_settings(None).enabled
 
 
 # ── questions ────────────────────────────────────────────────────────────────
 
 
-def test_question_ids_and_types():
+def test_question_types():
     assert {k: q.type for k, q in COMMITMENT_QUESTIONS.items()} == {
         "commitment": "choice",
         "family": "choice",

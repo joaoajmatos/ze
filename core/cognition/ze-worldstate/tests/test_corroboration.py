@@ -132,6 +132,7 @@ def test_higher_score_counts_more():
 from unittest.mock import AsyncMock  # noqa: E402
 
 from structlog.testing import capture_logs  # noqa: E402
+from ze_agents.judgment import reset_surface_warnings  # noqa: E402
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult  # noqa: E402
 
 from ze_worldstate.corroboration import corroborate_match  # noqa: E402
@@ -373,6 +374,7 @@ async def test_off_or_uncalibrated_makes_no_request(block):
 
 
 async def test_enabled_uncalibrated_warns():
+    reset_surface_warnings()
     with capture_logs() as logs:
         await _run(
             _loop(),
@@ -380,7 +382,8 @@ async def test_enabled_uncalibrated_warns():
             FakeSystemOne(_ok(0.99)),
             settings=_settings({"enabled": True, "corroborate_hold": 0.9, "promote_hold": 0.6}),
         )
-    assert any(e["log_level"] == "warning" for e in logs)
+    warnings = [e for e in logs if e["event"] == "system_one_surface_uncalibrated"]
+    assert [e["surface"] for e in warnings] == ["corroboration"]
 
 
 async def test_missing_client_is_the_170_behavior():

@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
+from structlog.testing import capture_logs
+from ze_agents.judgment import reset_surface_warnings
 from ze_agents.system_one import SystemOneResult
 from ze_agents.types import ToolCall
 from ze_plugin.contribution import EvidenceRef
@@ -15,7 +17,11 @@ from ze_plugin.contribution import EvidenceRef
 from tests.commitment_fixtures import _BARS, make
 from ze_worldstate import intake as intake_mod
 from ze_worldstate.admission import LoopInflow
-from ze_worldstate.commitment_judge import COMMITMENT_QUESTIONS, build_state
+from ze_worldstate.commitment_judge import (
+    COMMITMENT_QUESTIONS,
+    IntakeOutcome,
+    build_state,
+)
 from ze_worldstate.intake import CommitmentIntake
 from ze_worldstate.types import LoopProvenance, LoopState
 
@@ -150,10 +156,11 @@ async def test_exactly_one_request_with_single_attempt_and_all_questions():
     assert len(client.calls) == 1
     state, questions, attempts = client.calls[0]
     assert attempts == 1
-    assert questions is COMMITMENT_QUESTIONS
+    assert questions == COMMITMENT_QUESTIONS
+    assert list(questions) == list(COMMITMENT_QUESTIONS)
     assert state == build_state(PROMPT, "Noted.")
-    assert adm.question_ids == tuple(COMMITMENT_QUESTIONS)
     assert adm.judgment is not None
+    assert tuple(adm.judgment.question_kinds) == tuple(COMMITMENT_QUESTIONS)
 
 
 @pytest.mark.parametrize("prompt", ["thanks!", "ok", ""])
@@ -229,13 +236,69 @@ async def test_fallback_runs_haiku_fact_and_109_loop_gate(name, settings, client
         assert client.calls == []
 
 
-async def test_failing_fallback_requests_still_return_a_judgment_for_the_trace():
+_SIX_BARS = {
+    "commitment": ("choice_hold", _BARS["choice_hold"]),
+    "family": ("family_hold", _BARS["family_hold"]),
+    "biography": ("biography_hold", _BARS["biography_hold"]),
+    "is_open_concern": ("loop_hold", _BARS["loop_hold"]),
+    "explicit_declaration": ("explicit_hold", _BARS["explicit_hold"]),
+    "resolves_existing": ("resolves_hold", _BARS["resolves_hold"]),
+}
+
+
+def _assert_record(adm, *, skip_reason):
+    judgment = adm.judgment
+    assert judgment is not None
+    assert judgment.surface == "commitment_intake"
+    assert judgment.question_kinds == {
+        qid: q.type for qid, q in COMMITMENT_QUESTIONS.items()
+    }
+    assert list(judgment.question_kinds) == list(COMMITMENT_QUESTIONS)
+    assert judgment.skip_reason == skip_reason
+    assert {qid: (b.name, b.value) for qid, b in judgment.bars.items()} == _SIX_BARS
+
+
+async def test_skip_result_returns_a_judgment_for_the_trace():
     client = FakeSystemOne(SystemOneResult(outcome="skip", skip_reason="timeout"))
     intake, _, llm = _build(client)
     adm = await _admit(intake, llm)
-    assert adm.skip_reason == "timeout"
-    assert adm.judgment is client.result
-    assert set(adm.question_kinds) == set(COMMITMENT_QUESTIONS)
+    assert adm.outcome == IntakeOutcome("fallback", "timeout")
+    _assert_record(adm, skip_reason="timeout")
+    assert adm.judgment.result is client.result
+
+
+async def test_raised_call_returns_a_judgment_with_skip_reason_error():
+    client = FakeSystemOne(exc=RuntimeError("down"))
+    intake, _, llm = _build(client)
+    adm = await _admit(intake, llm)
+    assert adm.outcome == IntakeOutcome("fallback", "error")
+    _assert_record(adm, skip_reason="error")
+    assert adm.judgment.result.outcome == "skip"
+    assert adm.fact is not None and adm.fact.path == "haiku"
+
+
+async def test_uncalibrated_enabled_surface_makes_no_call_and_no_record():
+    reset_surface_warnings()
+    client = FakeSystemOne(make("loop"))
+    settings = {
+        "system_one": {
+            "surfaces": {
+                "commitment_intake": {"enabled": True, **{**_BARS, "loop_hold": None}}
+            }
+        }
+    }
+    intake, _, llm = _build(client, settings=settings)
+    with capture_logs() as logs:
+        adm = await _admit(intake, llm, settings=settings)
+        await _admit(intake, llm, settings=settings)
+    assert client.calls == []
+    assert adm.judgment is None
+    assert adm.outcome == IntakeOutcome("fallback", "uncalibrated")
+    warnings = [
+        e for e in logs if e["event"] == "system_one_surface_uncalibrated"
+    ]
+    assert len(warnings) == 1
+    assert warnings[0]["surface"] == "commitment_intake"
 
 
 async def test_fallback_skips_loop_gate_when_track_loop_succeeded():
@@ -309,7 +372,7 @@ async def test_resolve_closes_matching_loop(monkeypatch):
     loop_store.resolve = AsyncMock(return_value=existing)
     adm = await _admit(intake, llm, prompt="I renewed my passport, it is done")
     assert adm.outcome.kind == "resolve_loop"
-    assert adm.consumed == frozenset({"resolves_existing"})
+    assert adm.judgment.consumed == frozenset({"resolves_existing"})
     evidence = [EvidenceRef(kind="episode", id=uuid4())]
     assert await adm.loop.commit(evidence)
     loop_store.resolve.assert_awaited_once_with(existing.id, evidence)
