@@ -7,6 +7,7 @@ from ze_agents.client import LLMClient
 from ze_agents.nested_tools import enforce_domain_cancel_confirmations
 from ze_agents.registry import agent
 from ze_agents.types import AgentContext, AgentResult
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.store import LoopStore
 from ze_worldstate.tracking import LoopTracker
 import ze_worldstate.agents.tools  # noqa: F401
@@ -74,13 +75,19 @@ class LoopsAgent(BaseAgent):
         openrouter_client: LLMClient,
         loop_store: LoopStore,
         loop_tracker: LoopTracker,
+        lifecycle: LoopLifecycle,
     ) -> None:
         self._client = openrouter_client
         self._store = loop_store
         self._tracker = loop_tracker
+        self._lifecycle = lifecycle
 
     def tool_deps(self) -> dict:
-        return {"loop_store": self._store, "loop_tracker": self._tracker}
+        return {
+            "loop_store": self._store,
+            "loop_tracker": self._tracker,
+            "lifecycle": self._lifecycle,
+        }
 
     async def run(self, ctx: AgentContext) -> AgentResult:
         system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
@@ -97,7 +104,7 @@ class LoopsAgent(BaseAgent):
                 client=self._client,
                 messages=list(ctx.messages),
                 system=system,
-                deps=self.tool_deps(),
+                deps={**self.tool_deps(), "session_id": ctx.session_id},
             )
         finally:
             ctx.token_sink = original_sink
