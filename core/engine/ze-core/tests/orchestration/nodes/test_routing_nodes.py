@@ -395,7 +395,7 @@ class TestEmbedRouteJudgment:
 
     def _judgment(self):
         from ze_agents.system_one import SystemOneAnswer, SystemOneResult
-        from ze_core.routing.types import RoutingJudgment
+        from tests.support.judgments import make_judgment
 
         result = SystemOneResult(
             outcome="ok",
@@ -410,12 +410,10 @@ class TestEmbedRouteJudgment:
                 "multi_specialist": SystemOneAnswer(type="noul", noul=0.1),
             },
         )
-        return RoutingJudgment(
-            result=result,
-            question_kinds={
-                "agent": "choice",
-                "multi_specialist": "noul",
-            },
+        return make_judgment(
+            "routing",
+            result,
+            {"agent": "choice", "multi_specialist": "noul"},
             consumed=frozenset({"agent", "multi_specialist"}),
         )
 

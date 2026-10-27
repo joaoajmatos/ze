@@ -5,7 +5,7 @@ from ze_agents.registry import get_enabled_agents
 
 from ze_api.api.deps import get_container, require_api_key
 from ze_api.api.v0.system.schemas import AgentModelSetting, ModelSettingsResponse
-from ze_core.routing.tier import complexity_surface_config, resolve_agent_model
+from ze_core.routing.tier import ComplexitySurfaceConfig, resolve_agent_model
 
 router = APIRouter(dependencies=[Depends(require_api_key)])
 
@@ -21,7 +21,7 @@ router = APIRouter(dependencies=[Depends(require_api_key)])
 )
 async def get_model_settings(container=Depends(get_container)) -> ModelSettingsResponse:
     config = container.settings.config
-    surface = complexity_surface_config(config)
+    surface = ComplexitySurfaceConfig.from_settings(config)
     agents = get_enabled_agents()
     return ModelSettingsResponse(
         complexity_enabled=surface.calibrated,

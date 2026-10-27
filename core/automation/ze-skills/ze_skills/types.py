@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 if TYPE_CHECKING:
-    from ze_agents.system_one import SystemOneResult
+    from ze_agents.judgment import Judgment
 
 
 class SkillStatus(StrEnum):
@@ -135,16 +135,6 @@ class SkillMatch:
 
 
 @dataclass
-class SkillsJudgment:
-    """One attempted System One request, carried so `match_skills` can build trace rows."""
-
-    result: SystemOneResult
-    question_kinds: dict[str, str]
-    consumed: frozenset[str] = frozenset()
-    skip_reason: str | None = None
-
-
-@dataclass
 class SkillMatchOutcome:
     matches: list[SkillMatch]
-    judgment: SkillsJudgment | None = None
+    judgment: Judgment | None = None
