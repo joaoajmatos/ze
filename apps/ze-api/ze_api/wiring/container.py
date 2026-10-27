@@ -496,11 +496,10 @@ async def build_container(settings: Settings) -> ZeContainer:
     push_sender = _NotifierPushSender()
     loop_tracker = LoopTracker(
         loop_store=worldstate.loop_store,
+        lifecycle=worldstate.lifecycle,
         graph_store=worldstate.graph_store,
         entity_resolver=worldstate.entity_resolver,
         embedder=shared.embedder,
-        collision_store=stores.collision_store,
-        nli_client=shared.nli_client,
     )
     workspace = build_workspace_stack(
         shared,
