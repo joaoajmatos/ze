@@ -118,9 +118,13 @@ def build_commitment_intake(
 
 
 def wire_collision_detection(
-    shared: EngineStack, correlation: CorrelationStack, stores: CoreStores
+    shared: EngineStack,
+    correlation: CorrelationStack,
+    stores: CoreStores,
+    worldstate: WorldstateStack,
 ) -> None:
     shared.memory_store._collision_store = stores.collision_store
+    worldstate.lifecycle.collision_store = stores.collision_store
     correlation.correlation_engine._collision_store = stores.collision_store
     correlation.correlation_engine._nli_client = shared.nli_client
 

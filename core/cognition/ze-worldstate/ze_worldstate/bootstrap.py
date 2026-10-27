@@ -17,6 +17,7 @@ from ze_worldstate.jobs.stale_suspicion import (
     DEFAULT_STALE_WINDOW_DAYS,
     StaleSuspicionJob,
 )
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.store import LoopStore, PostgresLoopStore
 from ze_worldstate.surfacing import LoopSurfacer
 
@@ -49,6 +50,7 @@ def import_agent_modules() -> None:
 @dataclass
 class WorldstateStack:
     loop_store: PostgresLoopStore
+    lifecycle: LoopLifecycle
     graph_store: GraphStore
     entity_resolver: Any
     pool: Any
@@ -65,13 +67,21 @@ def build_worldstate_stack(shared: Any, settings: Any) -> WorldstateStack:
         matches = await match_entities_in_query(text, pool)
         return [m.entity.id for m in matches if m.entity.id is not None]
 
+    lifecycle = LoopLifecycle(
+        pool,
+        memory_store=shared.memory_store,
+        nli_client=shared.nli_client,
+    )
+
     deps: dict[type, Any] = {
         LoopStore: loop_store,
         PostgresLoopStore: loop_store,
+        LoopLifecycle: lifecycle,
     }
 
     return WorldstateStack(
         loop_store=loop_store,
+        lifecycle=lifecycle,
         graph_store=graph_store,
         entity_resolver=entity_resolver,
         pool=pool,

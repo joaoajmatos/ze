@@ -19,24 +19,52 @@ async def make_loop(
     confidence: float = 0.9,
     deadline: datetime | None = None,
     confirmed_at: datetime | None = None,
+    closed_at: datetime | None = None,
+    rationale: str | None = None,
+    fingerprint: str | None = None,
+    reminder_id: UUID | None = None,
+    goal_id: UUID | None = None,
+    confidence_prior: float | None = None,
+    created_at: datetime | None = None,
 ) -> OpenLoop:
-    """Create through the real store; the deadline is set through the real store method."""
-    store = PostgresLoopStore(pool)
+    """Seed a row with plain SQL: a seed is not a lifecycle event."""
     if confirmed_at is None and state in (LoopState.ACTIVE, LoopState.DRIFTING):
         confirmed_at = utcnow()
-    loop = await store.create(
-        OpenLoop(
-            title=title,
-            provenance=provenance,
-            confidence=confidence,
-            state=state,
-            confirmed_at=confirmed_at,
+    async with pool.acquire() as conn:
+        loop_id = await conn.fetchval(
+            """
+            INSERT INTO open_loops
+              (title, state, provenance, confidence, drift_deadline, confirmed_at,
+               closed_at, drift_rationale, dismissed_evidence_fingerprint,
+               reminder_id, goal_id, confidence_prior, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+                    COALESCE($13, now()))
+            RETURNING id
+            """,
+            title,
+            state.value,
+            provenance,
+            confidence,
+            deadline,
+            confirmed_at,
+            closed_at,
+            rationale,
+            fingerprint,
+            reminder_id,
+            goal_id,
+            confidence_prior,
+            created_at,
         )
-    )
-    if deadline is not None:
-        await store.set_drift_deadline(loop.id, deadline)
-        loop = await store.get(loop.id)
-    return loop
+    return await PostgresLoopStore(pool).get(loop_id)
+
+
+async def fail_writes_to(pool: asyncpg.Pool, table: str) -> None:
+    """Make every INSERT or UPDATE on `table` raise until the next reset (research R9)."""
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO ze_test_faults (table_name) VALUES ($1) ON CONFLICT DO NOTHING",
+            table,
+        )
 
 
 async def make_goal_with_gates(

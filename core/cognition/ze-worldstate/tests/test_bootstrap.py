@@ -98,3 +98,17 @@ def test_bar_thresholds_fill_defaults_and_apply_overrides():
     assert custom.confidence == 0.7
     assert custom.grounding == 0.4
     assert custom.inline_cooldown_hours == 6.0
+
+
+def test_build_worldstate_stack_builds_and_injects_the_lifecycle():
+    from ze_worldstate.bootstrap import build_worldstate_stack
+    from ze_worldstate.lifecycle import LoopLifecycle
+
+    shared = SimpleNamespace(
+        pool=object(), memory_store=object(), nli_client=object()
+    )
+    stack = build_worldstate_stack(shared, _settings({}))
+
+    assert isinstance(stack.lifecycle, LoopLifecycle)
+    assert stack.deps[LoopLifecycle] is stack.lifecycle
+    assert stack.lifecycle.collision_store is None

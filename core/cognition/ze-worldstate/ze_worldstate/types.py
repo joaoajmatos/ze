@@ -10,7 +10,7 @@ from ze_agents.claims import ClaimKind
 from ze_agents.system_one import SystemOneResult
 from ze_plugin.contribution import EvidenceRef
 
-from ze_worldstate.loop_judge import LoopGateDecision
+from ze_worldstate.decision import CommitDecision
 
 LoopClaimKind = ClaimKind
 
@@ -128,11 +128,13 @@ class TitleWriterResult:
 class LoopAdmission:
     """One loop-gate judgment. The node reads it by attribute; it never imports this type."""
 
-    decision: LoopGateDecision
+    decision: CommitDecision
     judgment: SystemOneResult | None = None
     question_ids: tuple[str, ...] = ()
     question_kinds: dict[str, str] = field(default_factory=dict)
     consumed: frozenset[str] = frozenset()
     skip_reason: str | None = None
     source: SourceKey | None = None
+    text: str = ""
+    inflow: str = ""
     commit: Callable[[Sequence[EvidenceRef]], Awaitable[list[OpenLoop]]] | None = None

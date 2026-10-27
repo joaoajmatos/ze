@@ -25,6 +25,7 @@ from ze_worldstate.bootstrap import (
     loop_push_settings,
     worldstate_data_domains,
 )
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.store import LoopStore
 from ze_worldstate.tracking import LoopTracker
 from ze_skills.bootstrap import (
@@ -294,6 +295,7 @@ class ZeContainer(CoreContainer):
     webhook_dispatcher: Any | None
     ui_manifest: Any
     loop_store: LoopStore
+    loop_lifecycle: LoopLifecycle
     job_run_store: JobRunStore
     hypothesis_store: PostgresHypothesisStore
     loop_graph_store: Any
@@ -648,7 +650,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     dev_data_seeder = DevDataSeeder(collect_seed_domains(plugins))
     log.info("dev_data_seeder_ready", domains=len(dev_data_seeder._domains))
 
-    wire_collision_detection(shared, correlation, stores)
+    wire_collision_detection(shared, correlation, stores, worldstate)
 
     screen_resolvers = build_screen_registry(
         goal_store=automation.goal_store,
@@ -721,6 +723,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         webhook_dispatcher=webhook_dispatcher,
         ui_manifest=ui_manifest,
         loop_store=worldstate.loop_store,
+        loop_lifecycle=worldstate.lifecycle,
         loop_graph_store=worldstate.graph_store,
         loop_entity_resolver=worldstate.entity_resolver,
         turn_surfacer=turn_surfacer,
