@@ -93,8 +93,12 @@ The runners already call the production `decide()`. They do not call the product
 ### Session 2026-10-26
 
 - Q: The `fact_judge` trace path (`nodes/memory.py:182-193`) is unreachable in production. Keep it with real bars, or delete it? → A: Delete it. The branch and `FactAdmission`'s `judgment`, `question_ids`, `consumed` and `skip_reason` fields are removed (pre-v1 hard cut). FR-004 and the edge cases say so.
-- Q: SC-004's 40% line drop is out of reach without rewriting per-surface scoring. Restate it? → A: Yes. SC-004 is structural: row loading, the set-shape core, reliability bins, the bar grid, the verdict printout, saving and loading results, and the config read are each defined once, in the harness, with zero copies in the runners. Calibration lines drop by at least 25%.
+- Q: SC-004's 40% line drop is out of reach without rewriting per-surface scoring. Restate it? → A: Yes. SC-004 is structural: row loading, the set-shape core, reliability bins, the bar grid, the verdict printout, saving and loading results, and the config read are each defined once, in the harness, with zero copies in the runners. Calibration lines drop by at least 25% (floor superseded on 2026-10-27: at least 12%).
 - Q: 202 and 203 both edit the loop decision kinds. Who owns FR-009? → A: 203 owns it entirely. 202 lands first and changes no decision kinds; 203 rebases onto 202.
+
+### Session 2026-10-27
+
+- Q: Review (Vigil, `5426cce1..d9a6d685`) measured the duplicated helper code at 1,155 lines; a 25% drop needs 1,210, so the 2026-10-26 floor cannot be met without rewriting the per-surface scoring FR-011 protects. Lower the floor? → A: Floor of 12%. The structural half of SC-004 stays exactly as chosen on 2026-10-26 (each shared helper defined once in the harness, zero copies in the runners, checked by T036's scan); calibration lines drop by at least 12% (at most 4,257 of 4,838, harness included). This replaces the 25% floor.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -212,7 +216,7 @@ The calibration operator runs `make calibrate-<surface>`. The runner parses the 
 - **SC-001**: For each of the four conversation-turn surfaces, a forced client exception yields one trace row per question with reason `error`. Today: 3 of 4 surfaces; target: 4 of 4.
 - **SC-002**: Adding a test surface needs only questions, a state builder, bar names and `decide()`. Zero node edits and zero trace-glue lines.
 - **SC-003**: `surface_block` is called from one module only (today: 7).
-- **SC-004**: Row loading, the set-shape core, reliability bins, the bar grid, the verdict printout, saving and loading results, and the config read are each defined once, in the harness, with zero copies in the runners. Calibration lines (the nine Python files in `eval/calibration`, today 4,838, plus the harness) drop by at least 25%. `--check-sets` output and the verdicts on recorded results stay identical.
+- **SC-004**: Row loading, the set-shape core, reliability bins, the bar grid, the verdict printout, saving and loading results, and the config read are each defined once, in the harness, with zero copies in the runners. Calibration lines (the nine Python files in `eval/calibration`, today 4,838, plus the harness) drop by at least 12%, to at most 4,257. `--check-sets` output and the verdicts on recorded results stay identical.
 - **SC-005**: Every existing surface decision test and node judgment test passes. The only edits allowed are construction, import and patch-target changes, never expected decisions or bars.
 - **SC-006**: Each surface's uncalibrated warning appears at most once per process.
 
