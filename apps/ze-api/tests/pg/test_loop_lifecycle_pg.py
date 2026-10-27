@@ -31,6 +31,7 @@ from tests.pg._builders import (
     make_episode,
     make_goal_with_gates,
     make_loop,
+    seed_source,
     utcnow,
 )
 
@@ -179,6 +180,17 @@ async def test_drop_reads_evidence_even_when_link_writes_would_fail(
     assert dropped.dismissed_evidence_fingerprint == compute_evidence_fingerprint(
         [EvidenceRef(kind="episode", id=evidence)]
     )
+
+
+async def test_drop_leaves_the_loops_sources_untouched(pg_pool, lifecycle, store):
+    loop = await make_loop(pg_pool, state=LoopState.ACTIVE)
+    await seed_source(pg_pool, loop.id, "conversation", "t1", role="origin")
+    await seed_source(pg_pool, loop.id, "email", "m1", promoted=True)
+    before = [(s.key, s.promoted) for s in await store.list_sources(loop.id)]
+
+    await lifecycle.drop(loop.id)
+
+    assert [(s.key, s.promoted) for s in await store.list_sources(loop.id)] == before
 
 
 @pytest.mark.parametrize("state", [LoopState.CLOSED, LoopState.DROPPED])

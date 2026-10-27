@@ -256,7 +256,7 @@ calibrate-skills:
 	uv run python eval/calibration/skills.py
 
 calibrate-loop-gate:
-	uv run python eval/calibration/loop_gate.py
+	uv run python eval/calibration/loop_gate.py $(ARGS)
 
 calibrate-corroboration:
 	uv run python eval/calibration/corroboration.py
