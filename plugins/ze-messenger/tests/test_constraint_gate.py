@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
+from ze_agents.types import WriteGateState
 from ze_agents.base_agent import BaseAgent
 from ze_agents.hooks import clear_hooks, register_hook
 from ze_agents.tool import get_tool
@@ -124,7 +125,9 @@ async def test_draft_email_person_level_confirms_never_contact():
         )
         tc = await _agent().call_tool(
             "draft_email",
-            _ctx().__class__(session_id="s1", prompt="p", loop_active=True),
+            _ctx().__class__(
+                session_id="s1", prompt="p", write_gate=WriteGateState(loop_active=True)
+            ),
             to="Bob",
             subject="hi",
             body="hello",

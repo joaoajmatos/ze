@@ -13,7 +13,8 @@ from ze_agents.errors import GoalExecutionError, LoopParked
 from ze_agents.park import ParkedLoop, WriteDecision
 from ze_memory.store import MemoryStore
 from ze_memory.types import Procedure, TaskState
-from ze_agents.types import AgentContext, ToolCall
+from ze_agents.derive import for_unattended
+from ze_agents.types import ToolCall, WriteGateState
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.types import (
@@ -46,7 +47,7 @@ from ze_automation.push_kinds import (
     GOAL_PLAN_ADAPTED,
     GOAL_REUSE,
 )
-from ze_proactive.types import PushKind, PushOutcome
+from ze_proactive.types import OncePer, PushKind, PushOutcome
 from ze_automation.workspace_unattended import unattended_workspace
 from ze_automation.holds.resumer import (
     confirmation_from_loop,
@@ -155,13 +156,13 @@ class _HeldResume:
     request_id: str
     round: int
 
-    def context_kwargs(self) -> dict[str, Any]:
-        return {
-            "resume": self.loop,
-            "write_decisions": self.decisions,
-            "approval_request_id": self.request_id,
-            "write_round": self.round,
-        }
+    def gate(self) -> WriteGateState:
+        return WriteGateState(
+            resume=self.loop,
+            decisions=self.decisions,
+            approval_request_id=self.request_id,
+            round=self.round,
+        )
 
 
 class GoalExecutor:
@@ -799,7 +800,7 @@ class GoalExecutor:
             f"{_html.escape(milestone.reuse_hint)}",
             goal_id=goal.id,
             format="html",
-            budget_key=f"goal_reuse:{milestone.id}",
+            once_per=OncePer(f"goal_reuse:{milestone.id}"),
         )
 
     async def _fetch_prior_work(
@@ -905,14 +906,14 @@ class GoalExecutor:
             learnings_block=await self._eligible_learnings_block(goal.id),
         )
 
-        ctx = AgentContext(
+        ctx = for_unattended(
             session_id=f"goal:{milestone.goal_id}",
             prompt=prompt,
-            pre_approved_writes=frozenset(milestone.approved_writes),
+            timezone=self._timezone,
             memory_store=self._memory,
             extensions={"goal_id": str(milestone.goal_id)},
-            timezone=self._timezone,
-            **(resume.context_kwargs() if resume else {}),
+            pre_approved=frozenset(milestone.approved_writes),
+            resume=resume.gate() if resume else None,
         )
 
         try:

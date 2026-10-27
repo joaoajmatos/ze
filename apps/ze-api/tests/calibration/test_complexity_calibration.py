@@ -451,6 +451,8 @@ def _holdout_args(calib, **over):
         concurrency=2,
         rerun=False,
         without=[],
+        save=None,
+        load=None,
     )
     base.update(over)
     return argparse.Namespace(**base)
@@ -467,7 +469,7 @@ def _prepare_holdout(calib, monkeypatch, tmp_path, answer_for):
     monkeypatch.setattr(calib, "VERDICT_MARKER", tmp_path / "results" / "marker.json")
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key-not-real")
 
-    async def fake_run(client, rows_, concurrency, without=()):
+    async def fake_run(client, rows_, state_of, questions_of, concurrency):
         out = {}
         for r in rows_:
             value = answer_for(r)
@@ -481,7 +483,7 @@ def _prepare_holdout(calib, monkeypatch, tmp_path, answer_for):
                 )
         return out
 
-    monkeypatch.setattr(calib, "run_system_one", fake_run)
+    monkeypatch.setattr(calib.harness, "run_live", fake_run)
     return rows
 
 

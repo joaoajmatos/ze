@@ -237,8 +237,8 @@ def test_saved_results_round_trip(cal, tmp_path):
         "a": cal.RowResults(_system("loop", concern=0.8), _r163("loop"), _r168())
     }
     path = tmp_path / "r.json"
-    cal.save_results(path, results)
-    back = cal.load_results(path)
+    cal.harness.save_results(path, results)
+    back = {k: cal.RowResults(**v) for k, v in cal.harness.load_results(path).items()}
     assert back["a"].system.answers["commitment"].choice == "loop"
     assert back["a"].r168.answers["is_open_concern"].noul == 0.05
 

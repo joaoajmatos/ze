@@ -9,10 +9,12 @@ from uuid import UUID
 
 from ze_agents.interface.types import RawInput
 
+from ze_agents.lifetime import turn_reset
 from ze_agents.park import WriteConfirmation
 from ze_agents.types import AbortToken
 from ze_logging import get_logger
 from ze_core.orchestration.nodes.trace import ROUTING_SCORES_SHOWN
+from ze_core.orchestration.state import AgentState
 from ze_core.telemetry.context import enter_turn_context
 from ze_core.telemetry.turn import (
     TurnTelemetry,
@@ -32,19 +34,21 @@ NO_PENDING_CONFIRMATION = "No pending confirmation."
 def make_graph_input(
     raw: RawInput,
     session_id: str,
+    state_type: type = AgentState,
 ) -> dict:
-    """Build AgentState input for the main conversation graph from raw transport input.
+    """Build the graph input for a new turn: the `Turn` reset of ``state_type`` plus the raw input.
 
     ``session_id`` is the conversation identifier — the same string used as
     ``thread_id`` in LangGraph config and as ``sessions.id`` / ``messages.thread_id``
     on the API layer.
 
-    ``messages`` and ``last_active_at`` are intentionally absent: LangGraph input
-    keys overwrite checkpointed channel values, and those two must survive across
+    `Thread` keys (``messages``, ``last_active_at``) are intentionally absent: LangGraph
+    input keys overwrite checkpointed channel values, and those must survive across
     turns so follow-ups keep conversation history (write_memory appends to them).
     """
     modality = "voice" if raw.voice else "image" if raw.image else "text"
     return {
+        **turn_reset(state_type),
         "prompt": raw.text or "",
         "session_id": session_id,
         "input_modality": modality,
@@ -55,38 +59,6 @@ def make_graph_input(
         ),
         "image_data": raw.image,
         "image_mime": raw.image_mime,
-        "image_caption": None,
-        "envelope": None,
-        "memory_context": None,
-        "agent_context": None,
-        "agent_result": None,
-        "subtask_results": [],
-        "completed_subtask_indexes": [],
-        "blocked": False,
-        "budget_status": None,
-        "budget_approved": False,
-        "parked_subtasks": [],
-        "write_confirmation": None,
-        "write_decisions": [],
-        "write_rounds": 0,
-        "write_outcomes": [],
-        "final_response": None,
-        "error": None,
-        "components": [],
-        "preset_components": [],
-        "conductor_hint": None,
-        "conductor_ledger": [],
-        "conductor_delegate_counts": {},
-        "conductor_delegate_total": 0,
-        "routing_hints": None,
-        "screen_note": None,
-        "screen_trace": None,
-        "screen_subject_line": None,
-        "correlations": [],
-        "message_trace": None,
-        "judgments": [],
-        "tier": None,
-        "skill_matches": None,
     }
 
 
@@ -284,7 +256,7 @@ async def invoke_raw_turn(
     from ze_core.conversation.messages.memory_chunks import extract_memory_chunks
 
     enter_turn_context(thread_id)
-    graph_input = make_graph_input(raw, thread_id)
+    graph_input = make_graph_input(raw, thread_id, container.state_type)
     abort_token = AbortToken()
     config = container._build_config(
         thread_id, **{**(config_extra or {}), "abort_token": abort_token}

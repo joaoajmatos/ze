@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -12,6 +13,7 @@ from ze_automation.goals.types import (
     GateStatus,
 )
 from ze_automation.push_kinds import STUCK_GOAL
+from ze_proactive.types import OncePer
 
 
 def _goal(title: str = "Learn Rust") -> Goal:
@@ -94,6 +96,7 @@ async def test_run_sends_notification_when_stuck_goals_found():
     call = notifier.notify.call_args
     assert call.args[0] is STUCK_GOAL
     assert call.args[1] == "Goals need attention"
+    assert call.kwargs["once_per"] == OncePer(f"stuck_goals:{date.today().isoformat()}")
 
 
 async def test_run_marks_all_goals_alerted_after_push():
@@ -212,7 +215,9 @@ async def test_list_stuck_skips_open_gate_without_fired_at():
     pool.acquire = MagicMock(return_value=acquire)
 
     with capture_logs() as logs:
-        result = await PostgresGoalStore(pool).list_stuck(idle_days=0, alert_cooldown_days=0)
+        result = await PostgresGoalStore(pool).list_stuck(
+            idle_days=0, alert_cooldown_days=0
+        )
 
     assert result == []
     assert any(e["event"] == "list_stuck_open_gate_without_fired_at" for e in logs)

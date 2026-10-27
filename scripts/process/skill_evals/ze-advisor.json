@@ -1,0 +1,112 @@
+{
+ "skill": "ze-advisor",
+ "triggers": [
+  {
+   "query": "I've tried two fixes for this failing staleness test and both failed; get a second opinion before a third try",
+   "should_trigger": true
+  },
+  {
+   "query": "The plan doesn't say whether the new loop event should live in admission.py or lifecycle.py; I need a design call",
+   "should_trigger": true
+  },
+  {
+   "query": "I'm about to write a migration that changes open_loops; check my approach first",
+   "should_trigger": true
+  },
+  {
+   "query": "Before I mark this concurrency story done, have a stronger model check what I missed",
+   "should_trigger": true
+  },
+  {
+   "query": "The spec and plan don't settle how the turn lock should be shared between threads; consult Opus",
+   "should_trigger": true
+  },
+  {
+   "query": "Ask the advisor whether my approach to the contribution seam change is sound",
+   "should_trigger": true
+  },
+  {
+   "query": "I'm a Haiku junior and this test keeps failing after two attempts at the same fix",
+   "should_trigger": true
+  },
+  {
+   "query": "I have three CHANGES findings including a HIGH one; have them challenged before I send the verdict",
+   "should_trigger": true
+  },
+  {
+   "query": "This touches claim posture and honesty enforcement; get an advisor read before I code it",
+   "should_trigger": true
+  },
+  {
+   "query": "Two ways to cache the System One bars and the plan leaves it open; which one should I pick?",
+   "should_trigger": true
+  },
+  {
+   "query": "Run the vitest suite for entities/goal",
+   "should_trigger": false
+  },
+  {
+   "query": "Send commits abc123..def456 to Selvage for review",
+   "should_trigger": false
+  },
+  {
+   "query": "What does the spec say about FR-008?",
+   "should_trigger": false
+  },
+  {
+   "query": "The user should decide whether pushes respect pins; ask the Maestro",
+   "should_trigger": false
+  },
+  {
+   "query": "Rename this variable to e5_matches",
+   "should_trigger": false
+  },
+  {
+   "query": "Write the docs for the staleness table",
+   "should_trigger": false
+  },
+  {
+   "query": "Grep for every caller of invalidateQueries",
+   "should_trigger": false
+  },
+  {
+   "query": "Verify the World page renders in my portal",
+   "should_trigger": false
+  },
+  {
+   "query": "Land the 206 floor into main",
+   "should_trigger": false
+  },
+  {
+   "query": "Fix the lint error on line 42",
+   "should_trigger": false
+  }
+ ],
+ "behaviors": [
+  {
+   "id": "advisor-via-opus-plan-subagent",
+   "prompt": "You failed twice to fix a flaky ordering test in entities/notification (tried sorting keys, tried awaiting the refresh). Decide what to do next.",
+   "judges": [
+    {
+     "op": "tool_called",
+     "tool": "Agent",
+     "match": "opus"
+    }
+   ]
+  },
+  {
+   "id": "product-question-goes-to-maestro",
+   "prompt": "The spec does not say whether the user wants pinned items pushed at all. Decide.",
+   "judges": [
+    {
+     "op": "cmd_matches",
+     "match": "maestri ask \"?Claude Code"
+    },
+    {
+     "op": "not_cmd_matches",
+     "match": "subagent_type"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,26 @@
+WARNING: held-out verdict run. Changing wording or bars after this run voids the set; write a fresh held-out file before the next verdict (FR-016).
+model=typesafe/jev-1.13 haiku=anthropic/claude-haiku-4-5 set=holdout rows=36
+
+production 109 gate as-is (json.loads, no fence handling): 0/36 replies unparseable; n=36 fb=0 P=0.316 R=0.429 (6/14) creates=19 falseC=13 falseRes=3 resAcc=0.861
+baseline below = the same prompt, fence-tolerant (what the 109 gate does when it parses)
+
+== [en]
+  system one: n=18 fb=0 P=0.500 R=0.143 (1/7) creates=2 falseC=1 falseRes=5 resAcc=0.667
+  haiku(tol): n=18 fb=0 P=0.375 R=0.429 (3/7) creates=8 falseC=5 falseRes=3 resAcc=0.778
+
+== [pt]
+  system one: n=18 fb=0 P=0.667 R=0.286 (2/7) creates=3 falseC=1 falseRes=0 resAcc=1.000
+  haiku(tol): n=18 fb=0 P=0.273 R=0.429 (3/7) creates=11 falseC=8 falseRes=0 resAcc=0.944
+
+== [all]
+  system one: n=36 fb=0 P=0.600 R=0.214 (3/14) creates=5 falseC=2 falseRes=5 resAcc=0.833
+  haiku(tol): n=36 fb=0 P=0.316 R=0.429 (6/14) creates=19 falseC=13 falseRes=3 resAcc=0.861
+
+== HELD-OUT VERDICT
+bars: loop_hold=0.75 resolves_hold=0.8
+[en] KEEP OFF  system one: P=0.500 R=0.143 (1/7) creates=2 falseCreates=1 fallback=0 | haiku: P=0.375 R=0.429 (3/7) creates=8 falseCreates=5
+      failing: false creates 1 != 0; recall 0.143 < Haiku 0.429 - 0.05
+[pt] KEEP OFF  system one: P=0.667 R=0.286 (2/7) creates=3 falseCreates=1 fallback=0 | haiku: P=0.273 R=0.429 (3/7) creates=11 falseCreates=8
+      failing: false creates 1 != 0; recall 0.286 < Haiku 0.429 - 0.05
+OVERALL: KEEP OFF
+--- exit 0 ---

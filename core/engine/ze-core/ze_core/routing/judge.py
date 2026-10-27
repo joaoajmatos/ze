@@ -9,14 +9,12 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from functools import partial
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
+from ze_agents.judgment import DecisionUse, SurfaceConfig
 from ze_agents.system_one import (
     SystemOneQuestion,
     SystemOneResult,
-    parse_bar,
-    surface_block,
     valid_choice,
     valid_noul,
 )
@@ -53,46 +51,33 @@ _AGENT_INSTRUCTIONS = (
 )
 
 
-@dataclass(frozen=True)
-class RoutingSurfaceConfig:
-    enabled: bool = False
-    choice_trust: float | None = None
-    multi_specialist_hold: float | None = None
-    shortlist_k: int = DEFAULT_SHORTLIST_K
-    # Appends the screen subject line to the routing state. Off until a user-approved live calibration (phase 195).
-    screen_hint: bool = False
-
-    @property
-    def calibrated(self) -> bool:
-        return (
-            self.enabled
-            and self.choice_trust is not None
-            and self.multi_specialist_hold is not None
-        )
-
-
-_bar = partial(parse_bar, event="routing_bar_invalid")
-
-
 def _shortlist_k(value: Any) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < MIN_SHORTLIST:
         return DEFAULT_SHORTLIST_K
     return value
 
 
-def routing_surface_config(settings: Any) -> RoutingSurfaceConfig:
-    block = surface_block(settings, "routing")
-    if block is None:
-        return RoutingSurfaceConfig()
-    return RoutingSurfaceConfig(
-        enabled=block.get("enabled") is True,
-        choice_trust=_bar(block.get("choice_trust"), "choice_trust"),
-        multi_specialist_hold=_bar(
-            block.get("multi_specialist_hold"), "multi_specialist_hold"
-        ),
-        shortlist_k=_shortlist_k(block.get("shortlist_k", DEFAULT_SHORTLIST_K)),
-        screen_hint=block.get("screen_hint") is True,
-    )
+def _screen_hint(value: Any) -> bool:
+    return value is True
+
+
+@dataclass(frozen=True)
+class RoutingSurfaceConfig(SurfaceConfig):
+    choice_trust: float | None = None
+    multi_specialist_hold: float | None = None
+    shortlist_k: int = DEFAULT_SHORTLIST_K
+    # Appends the screen subject line to the routing state. Off until a user-approved live calibration (phase 195).
+    screen_hint: bool = False
+
+    SURFACE: ClassVar[str] = "routing"
+    BARS: ClassVar[dict[str, str]] = {
+        "choice_trust": Q_AGENT,
+        "multi_specialist_hold": Q_MULTI,
+    }
+    EXTRAS: ClassVar[dict[str, Any]] = {
+        "shortlist_k": _shortlist_k,
+        "screen_hint": _screen_hint,
+    }
 
 
 def shortlist(ranked_agents: Sequence[str], k: int) -> list[str]:
@@ -194,4 +179,11 @@ def decide(
         agent=choice.choice,
         confidence=peakedness,
         consumed=consumed,
+    )
+
+
+def read_decision(decision: RoutingDecision) -> DecisionUse:
+    return DecisionUse(
+        consumed=decision.consumed,
+        unused_reason=decision.reason if decision.kind == "skip" else None,
     )

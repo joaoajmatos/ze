@@ -111,13 +111,55 @@ for independent compound turns. Sequential multi-specialist turns rewrite to
 companion as primary (conductor). Ze layers plugin graph nodes and edges in at
 startup.
 
-### Graph input factory
+### Turn reset from lifetimes
 
-All conversation graph invocations build initial state via
-`make_graph_input()` in `ze_core/conversation/turn.py`. `Container.invoke()` and
-`invoke_raw_turn()` both route through this factory so new `AgentState` fields
-are initialized in one place. Plugin-specific fields belong in plugin
-`state_extensions()` TypedDicts — not in ad-hoc dict literals at call sites.
+Each graph-state field declares how long its value lives. The markers come from
+`ze_agents/lifetime.py`:
+
+- `Turn`: reset at every turn, and at every workflow step, to the declared value.
+- `Input`: set by whoever starts the turn. The reset leaves it alone.
+- `Thread`: kept across turns. The declaration states why.
+- `Run`: kept across the steps of one workflow run. The declaration states why.
+
+A field with no marker fails graph build at startup.
+
+`make_graph_input(raw, session_id, state_type)` in `ze_core/conversation/turn.py` builds the
+input for each turn. It takes the `Turn` reset from `state_type`, so no second list of fields
+exists to fall out of step. `Container.invoke()` and `invoke_raw_turn()` both build input this
+way. A workflow run builds its input with `begin_workflow_turn(workflow, state_type=...)`
+in `apps/ze-api/ze_api/wiring/workflow_graph.py`. The workflow's step loader runs under
+`with_turn_reset`, so each step starts from the turn reset. `Run` fields such as
+`workflow_step_results` and `visit_counts` carry across the steps.
+
+Plugin-specific fields belong in plugin `state_extensions()` TypedDicts, each field with a
+marker. Do not add them as ad-hoc dict literals at call sites.
+
+### Agent context derivation
+
+`ze_agents/derive.py` is the one place that builds a child `AgentContext`. A child run has one
+of four kinds:
+
+- `subtask`: a routed specialist, or one subtask of a compound turn (`for_subtask`).
+- `delegate`: a specialist the companion hands a brief to (`for_delegate`).
+- `unattended`: a goal milestone. It runs with no turn (`for_unattended`).
+- `action`: an undo or a screen action. It carries the session id and an empty prompt (`for_action`).
+
+The `DERIVATION` table gives each `AgentContext` field one rule per kind. A rule is `Inherit`
+(copy the value from the parent), `Given` (take it from an argument of the operation) or `Reset`
+(use the default and state why). A field with no row raises `UndeclaredDerivationError`.
+Adding a field means adding one row.
+
+A delegate inherits the session, memory, contacts, persona and live handles from its caller.
+It does not inherit the caller's model, token stream, sources, skills, procedure state or
+conductor deadline. Its brief becomes its prompt and its only message.
+
+Conductor state (`ConductorState`), write-gate state (`WriteGateState`) and the procedure
+invocation (`ProcedureInvocation`) each travel as one value. Each child run returns a
+`ChildRunOutcome`, read by `outcome_of` even when the run parked for a write confirmation.
+`ze_core/orchestration/child_runs.py` builds one state update from the outcomes of an execution
+pass (`merge_outcomes`), so the pass writes them to `AgentState` once. Per-subtask conductor
+ledgers live in `conductor_ledgers`. `AgentState` is the only copy of conductor and procedure
+state between steps.
 
 ### Checkpoint serialization
 
@@ -475,6 +517,9 @@ See [docs/ingestion.md](ingestion.md) for the pipeline, extractors, and plugin h
 
 Correlation turns memory and external signals into hypotheses and surfaced
 connections. It can run inline during chat turns and as a proactive background job.
+Its proactive pushes do not send themselves. `CorrelationPushCandidateSource` describes each
+hypothesis as a candidate, and the attention arbitration job screens it through the push bar
+in `ze-priority`.
 
 See [specs/phases/057-correlation-engine/spec.md](../specs/phases/057-correlation-engine/spec.md)
 and [specs/phases/058-inline-correlation/spec.md](../specs/phases/058-inline-correlation/spec.md)
@@ -486,7 +531,7 @@ for the deeper design notes.
 
 **Package:** `ze-worldstate`
 
-Open loops are the lightweight, ambient half of Ze's executive function. A promise in an email thread, a decision left pending, and a project stalling all belong here. Conversation turns reach them through the commitment intake (Phase 173), one System One request that also decides facts and links a loop to a reminder or goal the turn created. Email, calendar, and ingestion use the loop gate (Phase 168). Haiku writes only the title. A loop moves through `suspected → active → drifting → closed | dropped`. An explicit ask (`track_loop`, Phase 169) or a confirm (`confirm_loop`, Phase 171) sets a loop `active` at confidence 0.9. An independent second source that matches a suspected loop is judged by one System One Noul, `same_concern` (Phase 172); above a calibrated bar its confidence rises, and above a stricter bar it is promoted to `active` at confidence 0.7. A contradiction or a missed deadline moves an `active` loop to `drifting`, and `PriorityView` ranks it with goals and hypotheses.
+Open loops are the lightweight, ambient half of Ze's executive function. A promise in an email thread, a decision left pending, and a project stalling all belong here. Conversation turns reach them through the commitment intake (Phase 173), one System One request that also decides facts and links a loop to a reminder or goal the turn created. Email, calendar, and ingestion use the loop gate (Phase 168). Haiku writes only the title. A loop moves through `suspected → active → drifting → closed | dropped`. An explicit ask (`track_loop`, Phase 169) or a confirm (`confirm_loop`, Phase 171) sets a loop `active` at confidence 0.9. An independent second source that matches a suspected loop is judged by one System One Noul, `same_concern` (Phase 172); above a calibrated bar its confidence rises, and above a stricter bar it is promoted to `active` at confidence 0.7. A contradiction or a missed deadline moves an `active` loop to `drifting`, and `PriorityView` ranks it with goals and hypotheses. Every write goes through `LoopLifecycle`, one method per domain event, each in one transaction; the loop store only reads.
 
 Each loop records its sources (`open_loop_sources`, migration `zw003`): its origin and every counted corroboration, with the `same_concern` score. The source key per inflow:
 
@@ -1150,7 +1195,8 @@ it owns no tables and no revision files.
 | `checkpoints` | LangGraph `AsyncPostgresSaver` graph state — pruned hourly, see [scheduled-jobs.md](scheduled-jobs.md#checkpoint-pruning-hourly) |
 | `workflows` | Persisted multi-step workflow definitions |
 | `workflow_executions` | Per-run state for each workflow |
-| `push_log` | Budget claims for proactive pushes (not outcomes; outcomes are `notifications.delivery`) |
+| `push_log` | Claims for proactive pushes: the `OncePer` cooldowns and the shared daily budget (`zpro006`). Owned by `ze-proactive`. Outcomes are `notifications.delivery`. |
+| `surfacing_memory` | Inline mentions and resume offers the conversation has raised, read by the push bar (`zpri002`). Owned by `ze-priority`. |
 | `calendar_reminders` | Synced calendar events scheduled for reminders |
 | `llm_cost_log` | Per-call token usage and estimated cost |
 | `persona_state` | Single-row table: active profile name + dial overrides (JSONB) |

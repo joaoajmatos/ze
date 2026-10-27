@@ -1,0 +1,204 @@
+replaying <TMP>/tuned.json (160 rows, no network)
+
+== [en] Choice accuracy (turn created nothing, not a resolves row): 8/52 = 0.154 (skipped count as wrong)
+   rows where the turn created a reminder or goal (24): the outcome is a link whatever the Choice says; Choice read as reminder/goal/loop on 5
+label         gold  pred       P       R
+reminder         3     4    0.00    0.00
+loop            16     3    1.00    0.19
+goal             3     4    0.00    0.00
+waiting_on       7     7    0.14    0.14
+fact             9    11    0.18    0.22
+forget           3     7    0.14    0.33
+ingest           3     5    0.00    0.00
+clarify          3     3    0.00    0.00
+none             5     8    0.12    0.20
+confusions (gold->pred:n): loop->fact:6, fact->none:3, fact->waiting_on:3, goal->forget:2, loop->waiting_on:2, loop->ingest:2, loop->goal:2, waiting_on->reminder:2, none->ingest:2, reminder->none:1, reminder->clarify:1, reminder->goal:1, goal->waiting_on:1, loop->clarify:1, waiting_on->forget:1, waiting_on->none:1, waiting_on->ingest:1, waiting_on->fact:1, fact->forget:1, forget->none:1, forget->reminder:1, ingest->forget:1, ingest->none:1, ingest->fact:1, clarify->fact:1, clarify->reminder:1, clarify->goal:1, none->clarify:1, none->forget:1
+
+== [pt] Choice accuracy (turn created nothing, not a resolves row): 5/52 = 0.096 (skipped count as wrong)
+   rows where the turn created a reminder or goal (24): the outcome is a link whatever the Choice says; Choice read as reminder/goal/loop on 6
+label         gold  pred       P       R
+reminder         3     5    0.00    0.00
+loop            16     3    0.33    0.06
+goal             3     9    0.00    0.00
+waiting_on       7     8    0.12    0.14
+fact             9     8    0.12    0.11
+forget           3     5    0.00    0.00
+ingest           3     3    0.00    0.00
+clarify          3     5    0.00    0.00
+none             5     6    0.33    0.40
+confusions (gold->pred:n): loop->goal:4, loop->fact:3, fact->waiting_on:3, reminder->clarify:2, loop->forget:2, loop->none:2, loop->clarify:2, waiting_on->reminder:2, fact->goal:2, ingest->fact:2, none->waiting_on:2, reminder->fact:1, goal->reminder:1, goal->forget:1, goal->ingest:1, loop->waiting_on:1, loop->ingest:1, waiting_on->loop:1, waiting_on->clarify:1, waiting_on->goal:1, waiting_on->forget:1, fact->none:1, fact->reminder:1, fact->ingest:1, forget->waiting_on:1, forget->reminder:1, forget->none:1, ingest->loop:1, clarify->goal:1, clarify->forget:1, clarify->fact:1, none->goal:1
+
+== commitment Choice confidence vs accuracy (n=160)
+bin          n   mean_value   accuracy
+[0.5,0.6)    34       0.554      0.118
+[0.6,0.7)    23       0.643      0.130
+[0.7,0.8)    46       0.742      0.109
+[0.8,0.9)    25       0.841      0.120
+[0.9,1.0)    32       0.948      0.094
+ECE = 0.632
+
+== family Choice confidence vs accuracy (fact rows) (n=18)
+bin          n   mean_value   accuracy
+[0.5,0.6)     5       0.522      0.200
+[0.6,0.7)     2       0.673      0.000
+[0.7,0.8)     3       0.760      0.667
+[0.8,0.9)     3       0.823      0.333
+[0.9,1.0)     5       0.952      0.000
+ECE = 0.526
+
+== Noul reliability: biography (n=160)
+bin          n   mean_value   gold_fact_rate
+[0.0,0.5)    91       0.260      0.110
+[0.5,0.6)    13       0.546      0.231
+[0.6,0.7)     8       0.646      0.000
+[0.7,0.8)    17       0.746      0.000
+[0.8,0.9)    16       0.841      0.125
+[0.9,1.0)    15       0.956      0.200
+ECE = 0.365
+
+== Noul reliability: is_open_concern (n=160)
+bin          n   mean_value   gold_loop_rate
+[0.0,0.5)    83       0.275      0.241
+[0.5,0.6)    14       0.567      0.143
+[0.6,0.7)    18       0.646      0.111
+[0.7,0.8)    13       0.751      0.077
+[0.8,0.9)    18       0.853      0.278
+[0.9,1.0)    14       0.957      0.143
+ECE = 0.306
+
+== Noul reliability: explicit_declaration (n=32)
+bin          n   mean_value   gold_explicit_rate
+[0.0,0.5)    18       0.300      0.500
+[0.5,0.6)     2       0.588      0.500
+[0.6,0.7)     2       0.639      0.000
+[0.7,0.8)     2       0.758      1.000
+[0.8,0.9)     4       0.850      0.250
+[0.9,1.0)     4       0.945      0.250
+ECE = 0.335
+
+== Noul reliability: resolves_existing (n=160)
+bin          n   mean_value   gold_resolves_rate
+[0.0,0.5)    78       0.252      0.038
+[0.5,0.6)    20       0.557      0.050
+[0.6,0.7)    18       0.650      0.111
+[0.7,0.8)    14       0.749      0.071
+[0.8,0.9)    11       0.856      0.000
+[0.9,1.0)    19       0.944      0.053
+ECE = 0.452
+
+== fact precision/recall (choice_hold=family_hold rows, biography_hold cols; loop bars fixed 0.75/0.85/0.8)
+choice\bio         0.50        0.55        0.60        0.65        0.70        0.75        0.80        0.85        0.90        0.95
+     0.50     0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00
+     0.55     0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00
+     0.60     0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00
+     0.65     0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00
+     0.70     0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00   0.00/0.00
+     0.75     1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00
+     0.80     1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00
+     0.85     1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00
+     0.90     1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00
+     0.95     1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00   1.00/0.00
+
+== dup+falseCreate / loop recall (loop_hold rows, resolves_hold cols; choice/family/biography 0.7, explicit 0.85)
+loop\res         0.50      0.55      0.60      0.65      0.70      0.75      0.80      0.85      0.90      0.95
+    0.50      4/0.00    4/0.00    4/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00
+    0.55      4/0.00    4/0.00    4/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00
+    0.60      4/0.00    4/0.00    4/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00
+    0.65      4/0.00    4/0.00    4/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00
+    0.70      4/0.00    4/0.00    4/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00    5/0.00
+    0.75      3/0.00    3/0.00    3/0.00    4/0.00    4/0.00    4/0.00    4/0.00    4/0.00    4/0.00    4/0.00
+    0.80      3/0.00    3/0.00    3/0.00    4/0.00    4/0.00    4/0.00    4/0.00    4/0.00    4/0.00    4/0.00
+    0.85      3/0.00    3/0.00    3/0.00    4/0.00    4/0.00    4/0.00    4/0.00    4/0.00    4/0.00    4/0.00
+    0.90      1/0.00    1/0.00    1/0.00    2/0.00    2/0.00    2/0.00    2/0.00    2/0.00    2/0.00    2/0.00
+    0.95      1/0.00    1/0.00    1/0.00    1/0.00    1/0.00    1/0.00    1/0.00    1/0.00    1/0.00    1/0.00
+
+No bar set reaches zero duplicates and false loop creates with a fact hit on this set.
+
+bars used: choice_hold=0.9 family_hold=0.9 biography_hold=0.9 loop_hold=0.9 explicit_hold=0.9 resolves_hold=0.9
+
+== [en]
+  intake:   n=80 fb=0 factP=1.000 factR=0.000 (0/9) loopP=0.500 loopR=0.062 (1/16) dup=0 falseC=1 falseRes=11 falseDecl=0 explAcc=0.625 resAcc=0.825 choiceAcc=0.154 linkAcc=0.833 (20/24)
+  baseline: n=80 fb=0 factP=1.000 factR=0.000 (0/9) loopP=0.227 loopR=0.312 (5/16) dup=7 falseC=10 falseRes=14 falseDecl=3 explAcc=0.562 resAcc=0.787
+  waiting_on rows written to a store (SC-005): 1/7
+
+== [pt]
+  intake:   n=80 fb=0 factP=1.000 factR=0.000 (0/9) loopP=0.500 loopR=0.062 (1/16) dup=0 falseC=1 falseRes=6 falseDecl=0 explAcc=0.562 resAcc=0.875 choiceAcc=0.096 linkAcc=0.917 (22/24)
+  baseline: n=80 fb=0 factP=1.000 factR=0.000 (0/8) loopP=0.087 loopR=0.125 (2/16) dup=10 falseC=11 falseRes=8 falseDecl=3 explAcc=0.625 resAcc=0.850
+  waiting_on rows written to a store (SC-005): 2/7
+
+== [all]
+  intake:   n=160 fb=0 factP=1.000 factR=0.000 (0/18) loopP=0.500 loopR=0.062 (2/32) dup=0 falseC=2 falseRes=17 falseDecl=0 explAcc=0.594 resAcc=0.850 choiceAcc=0.125 linkAcc=0.875 (42/48)
+  baseline: n=160 fb=0 factP=1.000 factR=0.000 (0/17) loopP=0.156 loopR=0.219 (7/32) dup=17 falseC=21 falseRes=22 falseDecl=6 explAcc=0.594 resAcc=0.819
+  waiting_on rows written to a store (SC-005): 3/14
+
+== tuned-set errors at the bars used (id, kind, gold -> outcome, answers)
+  ci-t-en-007 reminder_loop_wording: gold reminder/created=reminder -> resolve:resolves  commitm=none@0.76 family=drop@0.82 biograp=0.06 is_open=0.45 resolve=0.98 explici=0.03
+  ci-t-en-012 reminder_not_created: gold reminder/created=none -> create_suspected:implied  commitm=goal@0.56 family=drop@0.70 biograp=0.72 is_open=0.95 resolve=0.36 explici=0.90
+  ci-t-en-018 goal_loop_wording: gold goal/created=goal -> resolve:resolves  commitm=goal@0.87 family=constraint@0.92 biograp=0.57 is_open=0.06 resolve=0.95 explici=0.71
+  ci-t-en-024 loop: gold loop/created=none -> hold:loop_unsure  commitm=loop@0.55 family=contact_detail@0.97 biograp=0.57 is_open=0.83 resolve=0.01 explici=0.36
+  ci-t-en-025 loop: gold loop/created=none -> hold:waiting_on  commitm=waiting_on@0.76 family=relationship@0.92 biograp=0.32 is_open=0.10 resolve=0.46 explici=0.20
+  ci-t-en-026 loop: gold loop/created=none -> hold:choice_unsure  commitm=ingest@0.60 family=relationship@0.97 biograp=0.28 is_open=0.25 resolve=0.32 explici=0.62
+  ci-t-en-027 loop: gold loop/created=none -> hold:choice_unsure  commitm=fact@0.72 family=preference@0.58 biograp=0.68 is_open=0.41 resolve=0.23 explici=0.59
+  ci-t-en-028 loop: gold loop/created=none -> hold:choice_unsure  commitm=fact@0.77 family=drop@0.86 biograp=0.94 is_open=0.10 resolve=0.58 explici=0.99
+  ci-t-en-029 loop: gold loop/created=none -> hold:choice_unsure  commitm=clarify@0.63 family=preference@0.68 biograp=0.18 is_open=0.80 resolve=0.76 explici=0.40
+  ci-t-en-030 loop: gold loop/created=none -> hold:choice_unsure  commitm=fact@0.51 family=drop@0.79 biograp=0.90 is_open=0.37 resolve=0.85 explici=0.90
+  ci-t-en-031 loop: gold loop/created=none -> hold:not_open_concern  commitm=loop@0.99 family=contact_detail@0.62 biograp=0.47 is_open=0.17 resolve=0.90 explici=0.81
+  ci-t-en-032 loop_declared: gold loop/created=none -> hold:waiting_on  commitm=waiting_on@0.86 family=preference@0.72 biograp=0.10 is_open=0.63 resolve=0.53 explici=0.48
+  ci-t-en-033 loop_declared: gold loop/created=none -> hold:not_open_concern  commitm=goal@0.81 family=identity@0.68 biograp=0.23 is_open=0.28 resolve=0.28 explici=0.14
+  ci-t-en-035 loop_declared: gold loop/created=none -> hold:choice_unsure  commitm=fact@0.78 family=drop@0.52 biograp=0.26 is_open=0.48 resolve=0.77 explici=0.82
+  ci-t-en-036 loop_declared: gold loop/created=none -> hold:loop_unsure  commitm=loop@0.64 family=constraint@0.61 biograp=0.42 is_open=0.86 resolve=0.56 explici=0.32
+  ci-t-en-037 loop_turn_reminder: gold loop/created=reminder -> resolve:resolves  commitm=forget@0.73 family=constraint@0.77 biograp=0.14 is_open=0.48 resolve=0.96 explici=0.04
+  ci-t-en-043 waiting_on: gold waiting_on/created=none -> resolve:resolves  commitm=forget@0.75 family=constraint@0.67 biograp=0.64 is_open=0.38 resolve=0.95 explici=0.36
+  ci-t-en-048 fact: gold fact/created=none -> hold:choice_unsure  commitm=none@0.78 family=relationship@0.92 biograp=0.51 is_open=0.45 resolve=0.75 explici=0.11
+  ci-t-en-049 fact: gold fact/created=none -> hold:none  commitm=none@0.98 family=constraint@0.52 biograp=0.41 is_open=0.74 resolve=0.52 explici=0.61
+  ci-t-en-050 fact: gold fact/created=none -> resolve:resolves  commitm=fact@0.81 family=constraint@0.69 biograp=0.55 is_open=0.86 resolve=0.91 explici=0.61
+  ci-t-en-051 fact: gold fact/created=none -> hold:waiting_on  commitm=waiting_on@0.57 family=preference@0.51 biograp=0.07 is_open=0.23 resolve=0.50 explici=0.17
+  ci-t-en-052 fact: gold fact/created=none -> resolve:resolves  commitm=forget@0.53 family=identity@0.97 biograp=0.35 is_open=0.56 resolve=0.99 explici=0.98
+  ci-t-en-053 fact: gold fact/created=none -> hold:waiting_on  commitm=waiting_on@0.60 family=relationship@0.78 biograp=0.27 is_open=0.84 resolve=0.00 explici=0.76
+  ci-t-en-058 ingest: gold ingest/created=none -> resolve:resolves  commitm=none@0.71 family=drop@0.80 biograp=0.17 is_open=0.95 resolve=0.91 explici=0.42
+  ci-t-en-059 ingest: gold ingest/created=none -> resolve:resolves  commitm=fact@0.80 family=contact_detail@0.96 biograp=0.13 is_open=0.84 resolve=0.96 explici=0.80
+  ci-t-en-063 none: gold none/created=none -> resolve:resolves  commitm=ingest@0.75 family=drop@0.82 biograp=0.32 is_open=0.42 resolve=0.95 explici=0.12
+  ci-t-en-068 resolves: gold none/created=none -> hold:choice_unsure  commitm=clarify@0.50 family=preference@0.94 biograp=0.80 is_open=0.48 resolve=0.37 explici=0.01
+  ci-t-en-069 resolves: gold none/created=none -> hold:choice_unsure  commitm=ingest@0.64 family=relationship@0.65 biograp=0.39 is_open=0.60 resolve=0.63 explici=0.25
+  ci-t-en-071 resolves: gold none/created=none -> hold:choice_unsure  commitm=ingest@0.85 family=drop@0.64 biograp=0.45 is_open=0.23 resolve=0.56 explici=0.59
+  ci-t-en-072 mixed: gold reminder/created=reminder -> resolve:resolves  commitm=forget@0.91 family=relationship@0.92 biograp=0.30 is_open=0.84 resolve=0.95 explici=0.50
+  ci-t-en-073 mixed: gold fact/created=none -> hold:choice_unsure  commitm=none@0.71 family=relationship@0.93 biograp=0.91 is_open=0.39 resolve=0.68 explici=0.89
+  ci-t-en-074 mixed: gold loop/created=none -> hold:choice_unsure  commitm=ingest@0.59 family=relationship@0.78 biograp=0.18 is_open=0.16 resolve=0.50 explici=0.59
+  ci-t-pt-001 reminder: gold reminder/created=reminder -> resolve:resolves  commitm=forget@0.94 family=contact_detail@0.83 biograp=0.17 is_open=0.73 resolve=0.92 explici=0.38
+  ci-t-pt-018 goal_loop_wording: gold goal/created=goal -> resolve:resolves  commitm=ingest@0.53 family=identity@0.72 biograp=0.05 is_open=0.67 resolve=0.98 explici=0.84
+  ci-t-pt-024 loop: gold loop/created=none -> hold:choice_unsure  commitm=forget@0.77 family=preference@0.61 biograp=0.44 is_open=0.01 resolve=0.81 explici=0.88
+  ci-t-pt-025 loop: gold loop/created=none -> hold:choice_unsure  commitm=none@0.69 family=constraint@0.59 biograp=0.45 is_open=0.43 resolve=0.40 explici=0.39
+  ci-t-pt-027 loop: gold loop/created=none -> hold:not_biography  commitm=fact@0.99 family=preference@0.91 biograp=0.22 is_open=0.45 resolve=0.77 explici=0.07
+  ci-t-pt-028 loop: gold loop/created=none -> hold:loop_unsure  commitm=loop@0.79 family=preference@0.87 biograp=0.98 is_open=0.45 resolve=0.54 explici=0.45
+  ci-t-pt-029 loop: gold loop/created=none -> hold:not_open_concern  commitm=goal@0.81 family=relationship@0.98 biograp=0.54 is_open=0.89 resolve=0.70 explici=0.36
+  ci-t-pt-030 loop: gold loop/created=none -> hold:waiting_on  commitm=waiting_on@0.79 family=drop@0.98 biograp=0.44 is_open=0.78 resolve=0.36 explici=0.09
+  ci-t-pt-031 loop: gold loop/created=none -> hold:ingest  commitm=ingest@0.95 family=preference@0.50 biograp=0.62 is_open=0.56 resolve=0.46 explici=0.98
+  ci-t-pt-032 loop_declared: gold loop/created=none -> hold:goal_not_created  commitm=goal@0.92 family=relationship@0.97 biograp=0.22 is_open=0.12 resolve=0.13 explici=0.31
+  ci-t-pt-033 loop_declared: gold loop/created=none -> hold:choice_unsure  commitm=none@0.73 family=relationship@0.83 biograp=0.91 is_open=0.65 resolve=0.43 explici=0.44
+  ci-t-pt-034 loop_declared: gold loop/created=none -> hold:choice_unsure  commitm=fact@0.63 family=relationship@0.72 biograp=0.40 is_open=0.28 resolve=0.79 explici=0.46
+  ci-t-pt-035 loop_declared: gold loop/created=none -> hold:choice_unsure  commitm=fact@0.54 family=relationship@0.57 biograp=0.81 is_open=0.88 resolve=0.83 explici=0.76
+  ci-t-pt-036 loop_declared: gold loop/created=none -> hold:clarify  commitm=clarify@0.90 family=constraint@0.50 biograp=0.17 is_open=0.49 resolve=0.70 explici=0.75
+  ci-t-pt-045 waiting_on: gold waiting_on/created=none -> resolve:resolves  commitm=reminder@0.76 family=contact_detail@0.66 biograp=0.49 is_open=0.86 resolve=0.93 explici=1.00
+  ci-t-pt-048 fact: gold fact/created=none -> hold:none  commitm=none@0.96 family=constraint@0.81 biograp=0.93 is_open=0.46 resolve=0.61 explici=0.76
+  ci-t-pt-049 fact: gold fact/created=none -> hold:waiting_on  commitm=waiting_on@0.93 family=constraint@0.80 biograp=0.57 is_open=0.97 resolve=0.70 explici=0.95
+  ci-t-pt-050 fact: gold fact/created=none -> hold:not_open_concern  commitm=reminder@0.53 family=preference@0.79 biograp=0.11 is_open=0.14 resolve=0.83 explici=0.65
+  ci-t-pt-051 fact: gold fact/created=none -> hold:goal_not_created  commitm=goal@0.94 family=identity@0.55 biograp=0.34 is_open=0.11 resolve=0.31 explici=0.36
+  ci-t-pt-052 fact: gold fact/created=none -> hold:choice_unsure  commitm=fact@0.68 family=drop@0.66 biograp=0.81 is_open=0.40 resolve=0.31 explici=0.76
+  ci-t-pt-053 fact: gold fact/created=none -> resolve:resolves  commitm=goal@0.98 family=identity@0.94 biograp=0.21 is_open=0.79 resolve=0.94 explici=0.73
+  ci-t-pt-060 clarify: gold clarify/created=none -> create_suspected:implied  commitm=goal@0.65 family=preference@0.88 biograp=0.86 is_open=0.94 resolve=0.63 explici=0.65
+  ci-t-pt-068 resolves: gold none/created=none -> hold:not_open_concern  commitm=reminder@0.78 family=contact_detail@0.70 biograp=0.71 is_open=0.66 resolve=0.70 explici=0.82
+  ci-t-pt-069 resolves: gold none/created=none -> hold:none  commitm=none@0.97 family=drop@0.54 biograp=0.04 is_open=0.79 resolve=0.65 explici=0.51
+  ci-t-pt-070 resolves: gold none/created=none -> hold:not_open_concern  commitm=goal@0.54 family=preference@0.84 biograp=0.98 is_open=0.73 resolve=0.27 explici=0.99
+  ci-t-pt-071 resolves: gold none/created=none -> hold:waiting_on  commitm=waiting_on@0.72 family=relationship@0.97 biograp=0.91 is_open=0.76 resolve=0.34 explici=0.53
+  ci-t-pt-073 mixed: gold fact/created=none -> hold:waiting_on  commitm=waiting_on@0.65 family=contact_detail@0.85 biograp=0.88 is_open=0.08 resolve=0.77 explici=0.76
+  ci-t-pt-074 mixed: gold loop/created=none -> hold:choice_unsure  commitm=clarify@0.86 family=identity@0.60 biograp=0.12 is_open=0.43 resolve=0.45 explici=0.19
+  ci-t-en-077 fact: gold fact/created=none -> hold:waiting_on  commitm=waiting_on@0.80 family=preference@0.71 biograp=1.00 is_open=0.98 resolve=0.58 explici=0.90
+  ci-t-en-078 fact: gold fact/created=none -> resolve:resolves  commitm=fact@0.59 family=contact_detail@0.52 biograp=0.01 is_open=0.58 resolve=0.95 explici=0.90
+  ci-t-en-079 loop: gold loop/created=none -> hold:choice_unsure  commitm=fact@0.72 family=constraint@0.53 biograp=0.18 is_open=0.51 resolve=0.59 explici=0.89
+  ci-t-en-080 loop_declared: gold loop/created=none -> hold:choice_unsure  commitm=fact@0.64 family=relationship@0.71 biograp=0.74 is_open=0.17 resolve=0.16 explici=0.30
+  ci-t-pt-076 waiting_on: gold waiting_on/created=none -> resolve:resolves  commitm=forget@0.54 family=drop@0.85 biograp=0.28 is_open=0.20 resolve=0.94 explici=0.96
+  ci-t-pt-077 fact: gold fact/created=none -> hold:ingest  commitm=ingest@0.95 family=relationship@0.99 biograp=0.16 is_open=0.09 resolve=0.58 explici=0.79
+  ci-t-pt-078 fact: gold fact/created=none -> hold:waiting_on  commitm=waiting_on@0.61 family=identity@0.51 biograp=0.11 is_open=0.95 resolve=0.30 explici=0.99
+  ci-t-pt-079 loop: gold loop/created=none -> hold:choice_unsure  commitm=forget@0.57 family=preference@0.77 biograp=0.40 is_open=0.06 resolve=0.60 explici=0.03
+  ci-t-pt-080 loop_declared: gold loop/created=none -> resolve:resolves  commitm=goal@0.79 family=identity@0.81 biograp=0.59 is_open=0.43 resolve=0.91 explici=0.39
+--- exit 0 ---

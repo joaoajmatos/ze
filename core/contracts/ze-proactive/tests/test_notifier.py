@@ -6,11 +6,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from ze_agents.interface.types import Action
-from ze_proactive.attention_budget import ATTENTION_PUSH_EVENT_KEY
 from ze_proactive.errors import BudgetUnavailableError, PushPolicyError
 from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.push_log_store import ClaimResult
 from ze_proactive.push_kinds import QUIET_HOURS_SUMMARY
-from ze_proactive.types import NotificationRow, PushKind, QuietHoursSetting
+from ze_proactive.types import NotificationRow, OncePer, PushKind, QuietHoursSetting
 
 REQ = PushKind("n_req", "requested", "high", "tests")
 ACC = PushKind("n_acc", "accountability", "normal", "tests")
@@ -46,7 +46,6 @@ def _row(**kw):
 
 def _store(held=None):
     store = AsyncMock()
-    store.exists_recent = AsyncMock(return_value=False)
     store.create = AsyncMock(side_effect=lambda **kw: _row(**kw))
     store.list_held = AsyncMock(return_value=held or [])
     return store
@@ -57,11 +56,15 @@ def _stamps(count):
     return [base + timedelta(minutes=i) for i in range(count)]
 
 
-def _push_log(count=0, claim=True):
+def _push_log(count=0, status="won"):
     pl = MagicMock()
     pl.window_sent_at = AsyncMock(return_value=_stamps(count))
-    pl.try_claim = AsyncMock(return_value=claim)
-    pl.release_claim = AsyncMock()
+    pl.claim = AsyncMock(
+        return_value=ClaimResult(status, 7 if status == "won" else None)
+    )
+    pl.release = AsyncMock()
+    pl.is_cooling = AsyncMock(return_value=False)
+    pl.recent_discretionary_payloads = AsyncMock(return_value=[])
     return pl
 
 
@@ -107,62 +110,80 @@ async def test_accountability_held_in_quiet_hours_sends_silent_frame():
     assert sent.delivery == "held" and sent.buzz is False
 
 
-async def test_discretionary_without_budget_key_raises():
+async def test_discretionary_without_once_per_raises():
     n, _, _ = _make()
     with pytest.raises(PushPolicyError):
         await n.notify(DIS, "t", "b")
 
 
+async def test_requested_with_once_per_raises():
+    n, _, _ = _make()
+    with pytest.raises(PushPolicyError):
+        await n.notify(REQ, "t", "b", once_per=OncePer("k"))
+
+
+async def test_requested_takes_no_claim():
+    pl = _push_log()
+    n, _, _ = _make(push_log=pl)
+    assert await n.notify(REQ, "t", "b") == "delivered"
+    pl.claim.assert_not_awaited()
+
+
 async def test_discretionary_claims_and_delivers():
     pl = _push_log()
     n, iface, _ = _make(push_log=pl)
-    assert await n.notify(DIS, "t", "b", budget_key="k1") == "delivered"
-    pl.try_claim.assert_awaited_once()
-    assert pl.try_claim.call_args.args[:2] == (ATTENTION_PUSH_EVENT_KEY, "k1") or (
-        pl.try_claim.call_args.kwargs.get("idempotency_key") == "k1"
-    )
-    pl.release_claim.assert_not_awaited()
+    assert await n.notify(DIS, "t", "b", once_per=OncePer("k1")) == "delivered"
+    pl.claim.assert_awaited_once()
+    kw = pl.claim.call_args.kwargs
+    assert kw["once_per"] == OncePer("k1")
+    assert kw["discretionary"] is True and kw["max_discretionary"] == 5
+    pl.release.assert_not_awaited()
+
+
+async def test_accountability_claim_does_not_count_against_budget():
+    pl = _push_log()
+    n, _, _ = _make(push_log=pl)
+    assert await n.notify(ACC, "t", "b", once_per=OncePer("k1")) == "delivered"
+    assert pl.claim.call_args.kwargs["discretionary"] is False
 
 
 async def test_discretionary_claim_payload_is_the_body():
     pl = _push_log()
     n, _, _ = _make(push_log=pl)
-    await n.notify(DIS, "A title", "The full body text", budget_key="k1")
-    assert pl.try_claim.call_args.kwargs["payload"] == "The full body text"
+    await n.notify(DIS, "A title", "The full body text", once_per=OncePer("k1"))
+    assert pl.claim.call_args.kwargs["payload"] == "The full body text"
 
 
-async def test_discretionary_budget_full_is_suppressed_with_silent_frame():
-    pl = _push_log(count=5)
+async def test_discretionary_over_budget_is_suppressed_with_silent_frame():
+    pl = _push_log(status="over_budget")
     n, iface, store = _make(push_log=pl)
-    assert await n.notify(DIS, "t", "b", budget_key="k1") == "suppressed_budget"
+    assert await n.notify(DIS, "t", "b", once_per=OncePer("k1")) == "suppressed_budget"
     assert store.create.call_args.kwargs["delivery"] == "suppressed"
     assert iface.push.call_args.args[0].delivery == "suppressed"
-    pl.try_claim.assert_not_awaited()
+    pl.release.assert_not_awaited()
 
 
-async def test_discretionary_duplicate_key_creates_nothing():
-    pl = _push_log(count=1, claim=False)
+async def test_cooling_key_is_deduped_and_creates_nothing():
+    pl = _push_log(status="cooling")
     n, iface, store = _make(push_log=pl)
-    assert await n.notify(DIS, "t", "b", budget_key="k1") == "duplicate"
+    assert await n.notify(DIS, "t", "b", once_per=OncePer("k1")) == "deduped"
     store.create.assert_not_awaited()
     iface.push.assert_not_awaited()
+
+
+async def test_cooling_accountability_key_is_deduped():
+    pl = _push_log(status="cooling")
+    n, iface, store = _make(push_log=pl)
+    assert await n.notify(ACC, "t", "b", once_per=OncePer("k1")) == "deduped"
+    store.create.assert_not_awaited()
 
 
 async def test_discretionary_held_in_quiet_keeps_claim():
     pl = _push_log()
     n, iface, store = _make(push_log=pl, setting=QUIET, now=NIGHT)
-    assert await n.notify(DIS, "t", "b", budget_key="k1") == "held"
-    pl.release_claim.assert_not_awaited()
+    assert await n.notify(DIS, "t", "b", once_per=OncePer("k1")) == "held"
+    pl.release.assert_not_awaited()
     assert store.create.call_args.kwargs["delivery"] == "held"
-
-
-async def test_dedup_hours_hit_returns_deduped():
-    store = _store()
-    store.exists_recent = AsyncMock(return_value=True)
-    n, iface, _ = _make(store=store)
-    assert await n.notify(ACC, "t", "b", dedup_hours=24) == "deduped"
-    store.create.assert_not_awaited()
-    iface.push.assert_not_awaited()
 
 
 async def test_no_store_returns_failed():
@@ -176,8 +197,8 @@ async def test_delivery_exception_releases_claim_and_marks_failed():
     pl = _push_log()
     n, iface, store = _make(push_log=pl)
     iface.push = AsyncMock(side_effect=RuntimeError("boom"))
-    assert await n.notify(DIS, "t", "b", budget_key="k1") == "failed"
-    pl.release_claim.assert_awaited_once()
+    assert await n.notify(DIS, "t", "b", once_per=OncePer("k1")) == "failed"
+    pl.release.assert_awaited_once_with(7)
     store.mark_failed.assert_awaited_once_with("n-1")
 
 
@@ -253,15 +274,16 @@ async def test_deliver_held_while_quiet_does_nothing():
 
 async def test_claim_error_fails_open_and_delivers():
     pl = _push_log()
-    pl.try_claim = AsyncMock(side_effect=RuntimeError("lock timeout"))
+    pl.claim = AsyncMock(side_effect=RuntimeError("lock timeout"))
     n, iface, _ = _make(push_log=pl)
-    assert await n.notify(DIS, "t", "b", budget_key="k1") == "delivered"
+    assert await n.notify(DIS, "t", "b", once_per=OncePer("k1")) == "delivered"
+    pl.release.assert_not_awaited()
 
 
 async def test_discretionary_budget_full_in_quiet_is_suppressed_not_held():
-    pl = _push_log(count=5)
+    pl = _push_log(status="over_budget")
     n, _, store = _make(push_log=pl, setting=QUIET, now=NIGHT)
-    assert await n.notify(DIS, "t", "b", budget_key="k1") == "suppressed_budget"
+    assert await n.notify(DIS, "t", "b", once_per=OncePer("k1")) == "suppressed_budget"
     assert store.create.call_args.kwargs["delivery"] == "suppressed"
 
 
@@ -336,19 +358,33 @@ async def test_held_notification_keeps_its_parent_through_quiet_hours_release():
     assert first.delivery == "released"
 
 
-async def test_dedup_key_ignores_the_parent():
-    n, _, store = _make()
-    await n.notify(
-        ACC,
-        "t",
-        "b",
-        target_type="workflow_execution",
-        target_id="ex-1",
-        target_parent_id="wf-1",
-        dedup_hours=1,
-    )
-    kwargs = store.exists_recent.call_args.kwargs
-    assert set(kwargs) == {"event_type", "target_type", "target_id", "hours"}
+async def test_on_cooldown_reads_the_store():
+    pl = _push_log()
+    pl.is_cooling = AsyncMock(return_value=True)
+    n, _, _ = _make(push_log=pl)
+    assert await n.on_cooldown(OncePer("k")) is True
+    pl.claim.assert_not_awaited()
+
+
+async def test_on_cooldown_is_false_without_a_store_or_on_error():
+    n, _, _ = _make(push_log=None)
+    assert await n.on_cooldown(OncePer("k")) is False
+    pl = _push_log()
+    pl.is_cooling = AsyncMock(side_effect=RuntimeError("db"))
+    n, _, _ = _make(push_log=pl)
+    assert await n.on_cooldown(OncePer("k")) is False
+
+
+async def test_recent_discretionary_bodies_reads_the_store_and_fails_empty():
+    pl = _push_log()
+    pl.recent_discretionary_payloads = AsyncMock(return_value=["b2", "b1"])
+    n, _, _ = _make(push_log=pl)
+    assert await n.recent_discretionary_bodies(72) == ["b2", "b1"]
+    pl.recent_discretionary_payloads.assert_awaited_once_with(72)
+    pl.recent_discretionary_payloads = AsyncMock(side_effect=RuntimeError("db"))
+    assert await n.recent_discretionary_bodies(72) == []
+    n, _, _ = _make(push_log=None)
+    assert await n.recent_discretionary_bodies(72) == []
 
 
 async def test_budget_status_raises_without_push_log():

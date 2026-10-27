@@ -14,7 +14,7 @@ _ABOVE_EVERY_BAR = dict(
 )
 _EXPECTED = {
     CommitmentChoice.REMINDER: ("hold", "reminder_not_created"),
-    CommitmentChoice.LOOP: ("create_loop_declared", "explicit"),
+    CommitmentChoice.LOOP: ("create_declared", "explicit"),
     CommitmentChoice.GOAL: ("hold", "goal_not_created"),
     CommitmentChoice.WAITING_ON: ("hold", "waiting_on"),
     CommitmentChoice.FACT: ("persist_fact", "persist"),

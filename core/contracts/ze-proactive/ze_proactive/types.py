@@ -4,12 +4,32 @@ from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 from typing import Literal
 
+from ze_proactive.errors import PushPolicyError
+
 PushClass = Literal["requested", "accountability", "discretionary"]
 Urgency = Literal["low", "normal", "high"]
 Delivery = Literal["delivered", "held", "released", "suppressed", "failed"]
-PushOutcome = Literal[
-    "delivered", "held", "suppressed_budget", "duplicate", "deduped", "failed"
-]
+PushOutcome = Literal["delivered", "held", "suppressed_budget", "deduped", "failed"]
+
+
+def is_sent(outcome: PushOutcome | None) -> bool:
+    """True when the push is with the user or waiting for quiet hours to end."""
+    return outcome in ("delivered", "held")
+
+
+@dataclass(frozen=True)
+class OncePer:
+    """The claim a push makes: the key may go out once per `within` (once ever
+    when `within` is None). Only a sent push (`is_sent`) keeps the claim."""
+
+    key: str
+    within: timedelta | None = None
+
+    def __post_init__(self) -> None:
+        if not self.key:
+            raise PushPolicyError("OncePer needs a non-empty key")
+        if self.within is not None and self.within <= timedelta(0):
+            raise PushPolicyError(f"OncePer {self.key!r} needs a positive window")
 
 
 @dataclass(frozen=True)

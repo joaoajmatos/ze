@@ -11,7 +11,6 @@ from ze_worldstate.loop_judge import (
     LoopGateSurfaceConfig,
     build_state,
     decide,
-    loop_gate_surface_config,
 )
 
 
@@ -20,14 +19,14 @@ def _settings(block):
 
 
 def test_missing_or_invalid_block_is_disabled():
-    assert loop_gate_surface_config({}) == LoopGateSurfaceConfig()
-    assert loop_gate_surface_config(None) == LoopGateSurfaceConfig()
-    assert loop_gate_surface_config(_settings("nope")) == LoopGateSurfaceConfig()
+    assert LoopGateSurfaceConfig.from_settings({}) == LoopGateSurfaceConfig()
+    assert LoopGateSurfaceConfig.from_settings(None) == LoopGateSurfaceConfig()
+    assert LoopGateSurfaceConfig.from_settings(_settings("nope")) == LoopGateSurfaceConfig()
     assert not LoopGateSurfaceConfig().enabled
 
 
 def test_enabled_with_null_bar_is_uncalibrated():
-    cfg = loop_gate_surface_config(
+    cfg = LoopGateSurfaceConfig.from_settings(
         _settings(
             {
                 "enabled": True,
@@ -40,7 +39,7 @@ def test_enabled_with_null_bar_is_uncalibrated():
 
 
 def test_all_bars_set_is_calibrated():
-    cfg = loop_gate_surface_config(
+    cfg = LoopGateSurfaceConfig.from_settings(
         _settings(
             {
                 "enabled": True,
@@ -55,7 +54,7 @@ def test_all_bars_set_is_calibrated():
 
 @pytest.mark.parametrize("bad", ["0.5", math.nan, 1.5, -0.1, True])
 def test_bad_bars_become_none(bad):
-    cfg = loop_gate_surface_config(
+    cfg = LoopGateSurfaceConfig.from_settings(
         _settings(
             {
                 "enabled": True,
@@ -176,3 +175,26 @@ def test_decide_out_of_range_noul_is_invalid():
         "email",
     )
     assert (d.kind, d.reason) == ("fallback", "invalid_answer")
+
+
+def test_decide_returns_commit_decision_and_never_declares():
+    from itertools import product
+    from typing import get_args
+
+    from ze_worldstate.decision import CommitDecision, GateKind
+
+    assert not hasattr(lj, "LoopGateDecision")
+    assert not hasattr(lj, "DecisionKind")
+    scores = (0.0, 0.1, 0.49, 0.5, 0.69, 0.7, 1.0)
+    results = [
+        _result(is_open_concern=c, resolves_existing=r)
+        for c, r in product(scores, scores)
+    ]
+    results.append(SystemOneResult(outcome="skip", skip_reason="timeout"))
+    results.append(_result(is_open_concern=0.9))
+    for result in results:
+        decision = decide(result, CFG, "email")
+        assert isinstance(decision, CommitDecision)
+        assert decision.kind in get_args(GateKind)
+        assert decision.kind != "create_declared"
+        assert decision.title is None and decision.window_days is None

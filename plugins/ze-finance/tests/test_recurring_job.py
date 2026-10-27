@@ -13,6 +13,7 @@ from ze_finance.recurring.types import (
     RecurringStatus,
     UpsertResult,
 )
+from ze_sdk.proactive import OncePer
 
 
 def _account(name="Barclays", source_id="csv:barclays"):
@@ -92,7 +93,7 @@ async def test_stale_csv_account_nudges_and_records_nudge():
     assert call.args[0] is FINANCE_STALE_NUDGE
     assert call.args[1] == "Bank statement needed"
     assert "Barclays" in call.args[2]
-    assert call.kwargs["budget_key"] == (
+    assert call.kwargs["once_per"] == OncePer(
         f"finance_stale:acc-1:{date.today().isoformat()}"
     )
     recurring.record_nudge.assert_awaited_once_with("acc-1")
@@ -121,7 +122,7 @@ async def test_new_candidates_notify_new_recurring():
     call = notifier.notify.call_args
     assert call.args[0] is FINANCE_RECURRING_NEW
     assert call.args[1] == "New recurring expenses"
-    assert call.kwargs["budget_key"] == (
+    assert call.kwargs["once_per"] == OncePer(
         f"finance_new:acc-1:{date.today().isoformat()}"
     )
 
@@ -140,4 +141,4 @@ async def test_price_change_notifies():
     assert call.args[0] is FINANCE_PRICE_CHANGE
     assert call.args[1] == "Price change"
     assert "Netflix" in call.args[2]
-    assert call.kwargs["budget_key"] == "finance_price:netflix:12.99"
+    assert call.kwargs["once_per"] == OncePer("finance_price:netflix:12.99")

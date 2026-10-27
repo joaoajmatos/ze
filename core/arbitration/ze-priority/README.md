@@ -11,9 +11,10 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 - `PriorityView.rank()` ranks drifting loops, stuck or near-gate goals, hypotheses, and stale relationships
 - User overrides (`PriorityOverride`) merge inside `PriorityView.rank()`, so `rank()` returns the user's order. Each item keeps `computed_rank` (Ze's own position) and `override`. They decay over 48 hours unless pinned. If the override store cannot be read, `rank()` logs a warning and returns Ze's own order; for that run, arbitration can no longer tell which items the user pushed down
 - `reprioritize_item` — a conversational tool that makes a named item more or less urgent
-- `AttentionArbitrationJob` — one scheduled job that sends ranked candidates, in the user's order and never one the user pushed down, through the interruption governor until one is delivered or held. It reads `worldstate.push.enabled` for loops and `correlation.push.enabled`/`dry_run` for hypotheses
+- `PushBar` (`push_bar.py`) — the one bar every discretionary push passes: confidence, relevance, a recent inline mention, novelty against recent pushes, and grounding in evidence. Sources describe their candidates; they never apply the bar themselves
+- `AttentionArbitrationJob` — one scheduled job. It screens every source's candidates through `PushBar`, ranks the survivors in the user's order (never one the user pushed down), and sends the first one. It stops at the first push that is sent or held, or that the budget suppresses. A candidate whose `OncePer` is still cooling is dropped before the bar runs. It reads `worldstate.push.enabled` for loops and `correlation.push.enabled`/`dry_run` for hypotheses
 - The snapshot response carries `{items, sources_failed}`, so the page can name the sources it could not read. `source_kind` accepts `loop`, `goal`, `hypothesis`, and `relationship`
-- `TurnSurfacing` — inline mentions and the resume recap use the same ranking, which already holds the user's order. It detects "what's open" questions with `OpenQueryDetector`, which compares the message to example questions by E5 similarity in English and Portuguese. The recap lists at most 5 items. An explicit "what's open" answer lists at most 10. At resume, it offers up to 3 suspected loops as a question. A loop it offered stays quiet for 7 days, tracked in `push_log`
+- `TurnSurfacing` — inline mentions and the resume recap use the same ranking, which already holds the user's order. It detects "what's open" questions with `OpenQueryDetector`, which compares the message to example questions by E5 similarity in English and Portuguese. The recap lists at most 5 items. An explicit "what's open" answer lists at most 10. At resume, it offers up to 3 suspected loops as a question. A loop it offered stays quiet for 7 days, tracked in `surfacing_memory`
 
 - `WorldComposer` (`compose/`) — builds three composed answers from stored records: what is slipping, what needs a decision, and what Ze knows about a topic. It reads the sources in parallel, drops a source that fails, and names it. Pure rules in `compose/rules.py` set every card's posture from the record. The model never does
 - `show_slipping`, `show_decisions`, and `show_topic` — companion READ tools that reach the same composer from a typed question
@@ -21,7 +22,7 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 
 ### Integration
 
-`ze-api` builds the `PriorityView` and the override store in `wiring/container.py`, and schedules the arbitration job in `wiring/jobs.py`. The job replaces the old per-source push sweeps in `ze-worldstate` and `ze-correlation`. Overrides enter the world-state as a pair of contributions through the seam. `ze-collision` logs a user-versus-Ze disagreement. The World place in the web app draws the snapshot as the Field.
+`ze-api` builds the `PriorityView`, the override store and the `PushBar` in `wiring/container.py`, and schedules the arbitration job in `wiring/jobs.py`. The job replaces the old per-source push sweeps in `ze-worldstate` and `ze-correlation`. `ze-worldstate` and `ze-correlation` describe their candidates; they do not send them. Overrides enter the world-state as a pair of contributions through the seam. `ze-collision` logs a user-versus-Ze disagreement. The World place in the web app draws the snapshot as the Field.
 
 ## Responsibilities
 
@@ -38,13 +39,15 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 | `matching.py` | Cosine matching, `MATCH_FLOOR`, `TOPIC_FLOOR`, shared-word check |
 | `turn.py` | `TurnSurfacing` — open-item mentions, resume loop offers, and recap for a turn |
 | `open_query.py` | `OpenQueryDetector` — E5 similarity check for "what's open" questions |
+| `push_bar.py` | `PushBar` — the one bar for every discretionary push |
 | `arbitration.py` | `AttentionArbitrationJob` |
+| `surfacing_memory.py` | `PostgresSurfacingMemory` — records inline mentions and offers (`surfacing_memory`) for the bar and for the offer cooldown |
 | `rest.py` | Snapshot helper for the REST routes |
-| `migrations/` | `zpri001` — creates `priority_overrides` |
+| `migrations/` | `zpri001` — creates `priority_overrides`; `zpri002` — creates `surfacing_memory` |
 
 ## Dependencies
 
-`ze-agents`, `ze-components`, `ze-worldstate`, `ze-automation`, `ze-correlation`, `ze-plugin`, `ze-collision`, `ze-logging`, `asyncpg`, `numpy`.
+`ze-agents`, `ze-components`, `ze-worldstate`, `ze-automation`, `ze-correlation`, `ze-plugin`, `ze-proactive`, `ze-collision`, `ze-logging`, `asyncpg`, `numpy`.
 
 ## Configuration
 

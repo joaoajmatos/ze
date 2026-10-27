@@ -7,7 +7,6 @@ from typing import Any, Literal
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
-from ze_agents.system_one import SystemOneResult
 
 
 class SpeechAct(StrEnum):
@@ -121,14 +120,10 @@ class Fact:
 
 @dataclass
 class FactAdmission:
-    """Outcome of post-turn fact admission, with the judgment that produced it."""
+    """Outcome of post-turn fact admission."""
 
     facts: list[Fact] = field(default_factory=list)
     path: Literal["system_one", "haiku", "none"] = "none"
-    judgment: SystemOneResult | None = None
-    question_ids: tuple[str, ...] = ()
-    consumed: frozenset[str] = frozenset()
-    skip_reason: str | None = None
 
 
 @dataclass

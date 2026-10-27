@@ -8,6 +8,8 @@ Checks (each failure is one line; exit 1 if any):
   4. no new files under specs/arch/ (no working notes there)
   5. a green gate receipt for the floor HEAD covers every gate the diff needs
   6. APPROVE review records chain from the merge base to HEAD
+On success it archives the floor's and its lanes' review records and receipts to Ground's
+journal/metrics/<branch>/ (metrics.py reads them), since landing deletes the floor.
 
 Usage: land_preflight.py [--floor PATH] [--into main] [--dry-run]
 """
@@ -117,6 +119,41 @@ def check_arch(floor: Path, base: str) -> list[str]:
     return [f"new file under specs/arch/: {f}" for f in added]
 
 
+def lane_checkouts(floor: Path, branch: str) -> list[Path]:
+    """Worktrees of the floor's lanes (branches '<phase>-lane-*'), whose review records die with them."""
+    phase = branch.split("-", 1)[0]
+    paths, current = [], None
+    for line in git(floor, "worktree", "list", "--porcelain").stdout.splitlines():
+        if line.startswith("worktree "):
+            current = Path(line[len("worktree ") :])
+        elif line.startswith("branch refs/heads/") and current:
+            if line[len("branch refs/heads/") :].startswith(f"{phase}-lane-"):
+                paths.append(current)
+    return paths
+
+
+def archive_records(floor: Path, ground: Path) -> Path:
+    """Copy review records, gate receipts and the agents' state files (those naming the branch) to Ground's
+    journal/metrics/<branch>/ before landing deletes the floor."""
+    branch = git(floor, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    dest = ground / "journal" / "metrics" / branch
+    for repo in [floor, *lane_checkouts(floor, branch)]:
+        for kind in ("reviews", "receipts"):
+            src = repo / ".process" / kind
+            if not src.is_dir():
+                continue
+            out = dest / kind
+            out.mkdir(parents=True, exist_ok=True)
+            for f in src.glob("*.json"):
+                (out / f.name).write_text(f.read_text())
+        for f in (repo / "journal" / "state").glob("*.md"):
+            text = f.read_text()
+            if branch in text:
+                (dest / "state").mkdir(parents=True, exist_ok=True)
+                (dest / "state" / f.name).write_text(text)
+    return dest
+
+
 def check_receipt(floor: Path, base: str, head: str) -> list[str]:
     path = floor / ".process" / "receipts" / f"{head}.json"
     if not path.exists():
@@ -147,33 +184,47 @@ def check_receipt(floor: Path, base: str, head: str) -> list[str]:
 
 
 def review_records(floor: Path) -> list[dict]:
+    """The floor's records plus its lanes' (a lane's reviews are recorded in the lane's own worktree)."""
+    branch = git(floor, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
     return [
         json.loads(p.read_text())
-        for p in sorted((floor / ".process" / "reviews").glob("*.json"))
+        for repo in [floor, *lane_checkouts(floor, branch)]
+        for p in sorted((repo / ".process" / "reviews").glob("*.json"))
     ]
 
 
-def check_reviews(floor: Path, base: str, head: str) -> list[str]:
-    approved = {}
+def check_reviews(floor: Path, base: str, head: str, into: str = "main") -> list[str]:
+    """An APPROVE chain must reach HEAD from the merge base or from any approved range start already on
+    `into` (merging main moves the merge base). Ranges whose end is not in HEAD (a lane rebased after
+    approval) do not count."""
+    approved: dict[str, list[str]] = {}
     for record in review_records(floor):
         if record.get("verdict") == "APPROVE":
             start, end = rev(floor, record["from"]), rev(floor, record["to"])
-            if start and end:
+            if start and end and is_ancestor(floor, end, head):
                 approved.setdefault(start, []).append(end)
-    cur = base
-    while cur != head:
-        nxt = [e for e in approved.get(cur, []) if e != cur]
-        if not nxt:
-            return [
-                f"no APPROVE review record continues from {cur[:8]} (review chain must reach {head[:8]})"
-            ]
-        cur = max(
-            nxt,
-            key=lambda e: (
-                git(floor, "rev-list", "--count", f"{cur}..{e}").stdout.strip().zfill(8)
-            ),
-        )
-    return []
+    starts = [base] + [s for s in approved if s != base and is_ancestor(floor, s, into)]
+    # Parallel lanes make the records a graph, not a line: search every path, not the longest step.
+    seen, todo = set(starts), list(starts)
+    while todo:
+        cur = todo.pop()
+        if cur == head:
+            return []
+        for nxt in approved.get(cur, []):
+            if nxt not in seen:
+                seen.add(nxt)
+                todo.append(nxt)
+    furthest = max(
+        seen,
+        key=lambda c: git(floor, "rev-list", "--count", c).stdout.strip().zfill(8),
+    )
+    return [
+        f"no APPROVE review record continues from {furthest[:8]} (review chain must reach {head[:8]})"
+    ]
+
+
+def is_ancestor(repo: Path, a: str, b: str) -> bool:
+    return git(repo, "merge-base", "--is-ancestor", a, b).returncode == 0
 
 
 def main() -> int:
@@ -200,10 +251,15 @@ def main() -> int:
         errs += (
             check_arch(floor, base)
             + check_receipt(floor, base, head)
-            + check_reviews(floor, base, head)
+            + check_reviews(floor, base, head, args.into)
         )
-    print("\n".join(errs) or "land preflight: ok")
-    return 1 if errs else 0
+    if errs:
+        print("\n".join(errs))
+        return 1
+    print(
+        f"land preflight: ok (records archived to {archive_records(floor, ground_of(floor))})"
+    )
+    return 0
 
 
 if __name__ == "__main__":

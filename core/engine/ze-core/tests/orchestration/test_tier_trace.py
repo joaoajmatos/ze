@@ -7,6 +7,7 @@ from dataclasses import asdict
 import pytest
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer  # type: ignore[import]
 
+from ze_core.orchestration.state import AgentState
 from ze_core.checkpoint_serde import build_checkpoint_serde
 from ze_core.conversation.messages.store import _parse_trace
 from ze_core.conversation.messages.types import MessageTrace, TierTrace
@@ -142,6 +143,7 @@ async def test_partial_trace_update_carries_the_tier(tier, decided_by):
     interface.send_trace_partial = AsyncMock()
     container = MagicMock()
     container.graph = graph
+    container.state_type = AgentState
     container.interface = interface
     container._build_config = MagicMock(return_value={"configurable": {}})
 
@@ -174,6 +176,7 @@ async def test_no_tier_frame_when_the_node_returns_nothing():
     interface.send_trace_partial = AsyncMock()
     container = MagicMock()
     container.graph = graph
+    container.state_type = AgentState
     container.interface = interface
     container._build_config = MagicMock(return_value={"configurable": {}})
 

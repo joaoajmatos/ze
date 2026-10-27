@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 import pytest
 
 from ze_agents.client import LLMClient
@@ -12,8 +10,6 @@ from ze_agents.system_one import (
     SystemOneClient,
     SystemOneQuestion,
     SystemOneResult,
-    parse_bar,
-    surface_block,
     valid_choice,
     valid_noul,
 )
@@ -76,47 +72,6 @@ def test_protocol_evaluate_accepts_keyword_only_max_attempts():
     param = inspect.signature(SystemOneClient.evaluate).parameters["max_attempts"]
     assert param.kind is inspect.Parameter.KEYWORD_ONLY
     assert param.default is None
-
-
-class TestParseBar:
-    def test_none_is_unset(self):
-        assert parse_bar(None, "x", event="bar_invalid") is None
-
-    def test_accepts_the_unit_interval(self):
-        assert parse_bar(0, "x", event="bar_invalid") == 0.0
-        assert parse_bar(1, "x", event="bar_invalid") == 1.0
-        assert parse_bar(0.25, "x", event="bar_invalid") == 0.25
-
-    @pytest.mark.parametrize("value", [True, "0.5", -0.1, 1.1, float("nan"), [0.5]])
-    def test_rejects_everything_else(self, value):
-        assert parse_bar(value, "x", event="bar_invalid") is None
-
-
-class TestSurfaceBlock:
-    def test_reads_a_plain_dict(self):
-        cfg = {"system_one": {"surfaces": {"skills": {"enabled": True}}}}
-        assert surface_block(cfg, "skills") == {"enabled": True}
-
-    def test_reads_a_settings_object_config(self):
-        cfg = {"system_one": {"surfaces": {"routing": {"enabled": True}}}}
-        assert surface_block(SimpleNamespace(config=cfg), "routing") == {
-            "enabled": True
-        }
-
-    @pytest.mark.parametrize(
-        "settings",
-        [
-            None,
-            object(),
-            {},
-            {"system_one": None},
-            {"system_one": {"surfaces": None}},
-            {"system_one": {"surfaces": {"skills": "on"}}},
-            {"system_one": {"surfaces": {"other": {}}}},
-        ],
-    )
-    def test_missing_or_malformed_is_none(self, settings):
-        assert surface_block(settings, "skills") is None
 
 
 def _noul(value):

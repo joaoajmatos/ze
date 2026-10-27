@@ -198,6 +198,34 @@ async def test_milestone_context_carries_the_configured_timezone(
     assert ctx.timezone == "Europe/Lisbon"
 
 
+async def test_milestone_prompt_shows_the_executors_local_time(
+    store, planner, push, agent_getter, agent_mock
+):
+    from ze_agents.base_agent import BaseAgent
+
+    executor = GoalExecutor(
+        goal_store=store,
+        goal_planner=planner,
+        notify=push,
+        agent_getter=agent_getter,
+        timezone="Asia/Tokyo",
+    )
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1])
+    store.get_pending_gate = AsyncMock(return_value=None)
+
+    with patch("ze_automation.goals.executor.asyncio.create_task"):
+        await executor.advance(goal.id)
+
+    ctx = agent_mock.run.await_args.args[0]
+    stub = type(
+        "_Stub", (BaseAgent,), {"name": "stub", "description": "d", "run": None}
+    )()
+    assert " JST" in stub._build_system_prompt("do it", ctx)
+
+
 async def test_advance_skips_milestone_on_execution_error(
     executor, store, push, agent_mock
 ):

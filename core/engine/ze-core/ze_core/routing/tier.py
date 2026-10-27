@@ -8,21 +8,21 @@ Every other outcome keeps the full model.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
+from ze_agents.judgment import DecisionUse, Judgment, SurfaceConfig, judge
 from ze_agents.model_resolution import resolve_model
 from ze_agents.registry import get_enabled_agents
 from ze_agents.system_one import (
+    SystemOneClient,
     SystemOneQuestion,
     SystemOneResult,
-    parse_bar,
-    surface_block,
+    valid_noul,
 )
 from ze_logging import get_logger
 
-from ze_core.routing.types import RoutingEnvelope, RoutingJudgment
+from ze_core.routing.types import RoutingEnvelope
 
 log = get_logger(__name__)
 
@@ -51,25 +51,11 @@ TIER_INSTRUCTIONS = (
 
 
 @dataclass(frozen=True)
-class ComplexitySurfaceConfig:
-    enabled: bool = False
+class ComplexitySurfaceConfig(SurfaceConfig):
     simple_max: float | None = None
 
-    @property
-    def calibrated(self) -> bool:
-        return self.enabled and self.simple_max is not None
-
-
-def complexity_surface_config(settings: Any) -> ComplexitySurfaceConfig:
-    block = surface_block(settings, "complexity")
-    if block is None:
-        return ComplexitySurfaceConfig()
-    return ComplexitySurfaceConfig(
-        enabled=block.get("enabled") is True,
-        simple_max=parse_bar(
-            block.get("simple_max"), "simple_max", event="complexity_bar_invalid"
-        ),
-    )
+    SURFACE: ClassVar[str] = "complexity"
+    BARS: ClassVar[dict[str, str]] = {"simple_max": Q_DEEP}
 
 
 def resolve_agent_model(agent_name: str, tier: Tier, app_config: dict) -> str:
@@ -98,7 +84,7 @@ class TierDecision:
 class TierOutcome:
     decision: TierDecision
     model: str
-    judgment: RoutingJudgment | None
+    judgment: Judgment | None
 
 
 def decide_tier(result: SystemOneResult, cfg: ComplexitySurfaceConfig) -> TierDecision:
@@ -107,16 +93,18 @@ def decide_tier(result: SystemOneResult, cfg: ComplexitySurfaceConfig) -> TierDe
         return TierDecision("full", "skip", False)
     bar = cfg.simple_max
     answer = result.answers.get(Q_DEEP)
-    noul = answer.noul if answer is not None and answer.type == "noul" else None
-    if (
-        bar is None
-        or isinstance(noul, bool)
-        or not isinstance(noul, (int, float))
-        or math.isnan(noul)
-        or not 0.0 <= noul <= 1.0
-    ):
+    if bar is None or not valid_noul(answer):
         return TierDecision("full", "invalid_answer", False)
-    return TierDecision("simple" if noul <= bar else "full", "system_one", True)
+    return TierDecision("simple" if answer.noul <= bar else "full", "system_one", True)
+
+
+def read_decision(decision: TierDecision) -> DecisionUse:
+    return DecisionUse(
+        consumed=frozenset({Q_DEEP}) if decision.consumed else frozenset(),
+        unused_reason=(
+            decision.decided_by if decision.decided_by == "invalid_answer" else None
+        ),
+    )
 
 
 class TierJudge:
@@ -128,7 +116,10 @@ class TierJudge:
         self._client = system_one_client
         self._surface = surface
         self._app_config = app_config
-        self._uncalibrated_warned = False
+
+    @property
+    def client(self) -> SystemOneClient | None:
+        return self._client
 
     @property
     def surface(self) -> ComplexitySurfaceConfig:
@@ -138,31 +129,20 @@ class TierJudge:
     def app_config(self) -> dict:
         return self._app_config
 
-    def warn_uncalibrated_once(self) -> None:
-        if not self._uncalibrated_warned:
-            self._uncalibrated_warned = True
-            log.warning("complexity_surface_uncalibrated")
-
     async def choose(
         self, envelope: RoutingEnvelope, tier_state: dict[str, str]
     ) -> TierOutcome:
         agent = envelope.subtasks[0].agent
         questions = build_tier_question()
-        try:
-            result = await self._client.evaluate(tier_state, questions, max_attempts=1)
-        except Exception as exc:
-            log.warning("tier_judgment_error", agent=agent, error=str(exc))
-            result = SystemOneResult(outcome="skip", skip_reason="error")
-
-        decision = decide_tier(result, self._surface)
-        judgment = RoutingJudgment(
-            result=result,
-            question_kinds={qid: q.type for qid, q in questions.items()},
-            consumed=frozenset({Q_DEEP}) if decision.consumed else frozenset(),
-            skip_reason=(
-                decision.decided_by if decision.decided_by == "invalid_answer" else None
-            ),
+        judgment, decision = await judge(
+            self._client,
+            self._surface,
+            tier_state,
+            questions,
+            decide=lambda result: decide_tier(result, self._surface),
+            read=read_decision,
         )
+        result = judgment.result
         model = resolve_agent_model(agent, decision.tier, self._app_config)
         answer = result.answers.get(Q_DEEP)
         log.info(

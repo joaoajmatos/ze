@@ -1,3 +1,4 @@
+from ze_agents.types import WriteGateState
 from unittest.mock import AsyncMock, MagicMock
 
 
@@ -80,13 +81,7 @@ def make_thread_channel_map():
 
 
 def make_ctx(prompt: str = "check my inbox") -> AgentContext:
-    return AgentContext(
-        session_id="s1",
-        prompt=prompt,
-        pre_approved_writes=frozenset(["archive_email", "send_email"]),
-        memory=MemoryContext(),
-        messages=[{"role": "user", "content": prompt}],
-    )
+    return AgentContext(session_id="s1", prompt=prompt, memory=MemoryContext(), messages=[{"role": "user", "content": prompt}], write_gate=WriteGateState(pre_approved=frozenset(["archive_email", "send_email"])))
 
 
 def make_agent(client=None, registry=None) -> MessengerAgent:
@@ -263,13 +258,7 @@ async def test_run_sends_email_when_llm_requests():
 
     registry = make_registry(make_gmail_channel(creds))
 
-    ctx = AgentContext(
-        session_id="s1",
-        prompt="send hi to alice",
-        pre_approved_writes=frozenset(["archive_email", "send_email"]),
-        memory=MemoryContext(),
-        messages=[{"role": "user", "content": "send hi to alice"}],
-    )
+    ctx = AgentContext(session_id="s1", prompt="send hi to alice", memory=MemoryContext(), messages=[{"role": "user", "content": "send hi to alice"}], write_gate=WriteGateState(pre_approved=frozenset(["archive_email", "send_email"])))
     result = await make_agent(client=client, registry=registry).run(ctx)
 
     assert "sent" in result.response.lower() or "alice" in result.response.lower()

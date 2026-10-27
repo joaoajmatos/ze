@@ -253,13 +253,13 @@ calibrate-routing:
 	uv run python eval/calibration/routing.py $(ARGS)
 
 calibrate-skills:
-	uv run python eval/calibration/skills.py
+	uv run python eval/calibration/skills.py $(ARGS)
 
 calibrate-loop-gate:
-	uv run python eval/calibration/loop_gate.py
+	uv run python eval/calibration/loop_gate.py $(ARGS)
 
 calibrate-corroboration:
-	uv run python eval/calibration/corroboration.py
+	uv run python eval/calibration/corroboration.py $(ARGS)
 
 calibrate-complexity:
 	uv run python eval/calibration/complexity.py $(ARGS)
@@ -473,7 +473,7 @@ codegen:
 	bun run scripts/codegen.ts
 
 # ── Code quality ──────────────────────────────────────────────────────────────
-.PHONY: check hooks process-install-hooks process-ready process-land-preflight process-gates process-review-request process-review-verdict lint lint-web typecheck-web format clean
+.PHONY: check hooks process-install-hooks process-ready process-land-preflight process-gates process-review-request process-review-verdict process-metrics lint lint-web typecheck-web format clean
 
 check: lint lint-web web-build
 	@echo "check: ok"
@@ -506,6 +506,10 @@ process-review-request:
 # make process-review-verdict RANGE=a..b VERDICT=APPROVE|CHANGES [FINDINGS=<file>]
 process-review-verdict:
 	@python3 scripts/process/review.py verdict "$(RANGE)" "$(VERDICT)" $(if $(FINDINGS),--findings "$(FINDINGS)")
+
+# Per-floor review rounds and advisor calls from journal/metrics/ (archived by the land preflight)
+process-metrics:
+	@python3 scripts/process/metrics.py
 
 lint:
 	uv run ruff check .

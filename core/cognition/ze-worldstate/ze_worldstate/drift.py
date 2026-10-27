@@ -1,21 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import UUID
 
 from ze_worldstate.types import LoopState, OpenLoop
-
-# Clarification-pinned default — used whenever the extraction gate doesn't
-# supply an implied window (research.md §1).
-DEFAULT_DRIFT_WINDOW_DAYS = 7
-
-
-def compute_drift_deadline(
-    confirmed_at: datetime, implied_window_days: int | None = None
-) -> datetime:
-    """One-time deadline computation at confirm-time (research.md §1)."""
-    window = implied_window_days or DEFAULT_DRIFT_WINDOW_DAYS
-    return confirmed_at + timedelta(days=window)
 
 
 def is_drift_eligible(loop: OpenLoop, now: datetime | None = None) -> bool:

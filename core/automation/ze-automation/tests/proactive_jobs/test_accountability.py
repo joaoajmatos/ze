@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
+from uuid import uuid4
 
 from ze_automation.accountability.summarizer import build_narrative
 from ze_automation.accountability.types import (
@@ -14,6 +14,8 @@ from ze_automation.accountability.types import (
 from ze_automation.jobs.accountability import AccountabilityJob
 from ze_automation.jobs.cost_anomaly import CostAnomalyJob
 from ze_automation.push_kinds import ACCOUNTABILITY_NARRATIVE, COST_ANOMALY
+from ze_automation.workflow.types import WorkflowFailure
+from ze_proactive.types import OncePer
 
 
 # ── ActivitySummary / build_narrative ─────────────────────────────────────────
@@ -105,15 +107,27 @@ def test_build_narrative_no_failures_message():
 # ── AccountabilityJob ─────────────────────────────────────────────────────────
 
 
+def _failure(name: str) -> WorkflowFailure:
+    return WorkflowFailure(
+        workflow_id=uuid4(),
+        workflow_name=name,
+        execution_id=uuid4(),
+        failed_at=datetime.now(timezone.utc),
+        error=None,
+    )
+
+
 def _make_accountability_job(
-    *, dedup_hit: bool = False, outcome: str = "delivered"
+    *,
+    dedup_hit: bool = False,
+    outcome: str = "delivered",
+    failures: list[WorkflowFailure] | None = None,
 ) -> AccountabilityJob:
     notifier = AsyncMock()
     notifier.notify = AsyncMock(return_value=outcome)
-    push_log = AsyncMock()
-    push_log.was_sent_within_hours = AsyncMock(return_value=dedup_hit)
-    push_log.log = AsyncMock()
-    push_log.list_workflow_failures_within_hours = AsyncMock(return_value=[])
+    notifier.on_cooldown = AsyncMock(return_value=dedup_hit)
+    workflow_store = AsyncMock()
+    workflow_store.list_failed_executions = AsyncMock(return_value=failures or [])
 
     acc_store = AsyncMock()
     acc_store.list_anomalies_since = AsyncMock(return_value=[])
@@ -132,7 +146,7 @@ def _make_accountability_job(
 
     job = object.__new__(AccountabilityJob)
     job._notifier = notifier
-    job._push_log = push_log
+    job._workflow_store = workflow_store
     job._acc_store = acc_store
     job._goal_store = goal_store
     job._pool = pool
@@ -140,9 +154,14 @@ def _make_accountability_job(
     return job
 
 
-async def test_accountability_job_skips_when_dedup_hit():
+async def test_accountability_job_skips_and_builds_nothing_while_cooling():
     job = _make_accountability_job(dedup_hit=True)
     await job.run()
+    job._notifier.on_cooldown.assert_awaited_once_with(
+        OncePer("weekly_accountability", within=timedelta(days=6))
+    )
+    job._pool.acquire.assert_not_called()
+    job._workflow_store.list_failed_executions.assert_not_called()
     job._notifier.notify.assert_not_called()
 
 
@@ -151,21 +170,19 @@ async def test_accountability_job_sends_narrative_when_no_dedup():
     await job.run()
     job._notifier.notify.assert_called_once()
     assert job._notifier.notify.call_args.args[0] is ACCOUNTABILITY_NARRATIVE
-    job._push_log.log.assert_called_once()
+    assert job._notifier.notify.call_args.kwargs["once_per"] == OncePer(
+        "weekly_accountability", within=timedelta(days=6)
+    )
 
 
-@pytest.mark.parametrize(
-    ("outcome", "logged"), [("failed", False), ("delivered", True), ("held", True)]
-)
-async def test_accountability_cooldown_starts_only_when_delivered_or_held(
-    outcome, logged
-):
-    job = _make_accountability_job(outcome=outcome)
+async def test_accountability_lists_every_failed_run_of_a_workflow():
+    job = _make_accountability_job(
+        failures=[_failure("Weekly invoices"), _failure("Weekly invoices")]
+    )
     await job.run()
-    if logged:
-        job._push_log.log.assert_awaited_once()
-    else:
-        job._push_log.log.assert_not_awaited()
+    body = job._notifier.notify.call_args.args[2]
+    assert body.count("Weekly invoices") == 2
+    job._workflow_store.list_failed_executions.assert_awaited_once_with(7 * 24)
 
 
 # ── CostAnomalyJob ────────────────────────────────────────────────────────────

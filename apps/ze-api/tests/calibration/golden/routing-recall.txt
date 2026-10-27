@@ -1,0 +1,16 @@
+
+== routing: E5 shortlist recall of the gold agent (68 rows with a gold agent)
+k     recall   missed
+2     0.235    52
+3     0.324    46
+4     0.412    40
+5     0.529    32
+6     0.618    26
+7     0.750    17
+8     0.824    12
+9     0.912    6
+10    1.000    0
+missed at k=2 by gold agent: {'calendar': 4, 'messenger': 4, 'research': 7, 'goals': 4, 'workflow': 4, 'loops': 13, 'prospecting': 2, 'companion': 10, 'ingestion': 1, 'reminders': 3}
+
+Smallest k with recall >= 0.95 on every set: 10
+--- exit 0 ---

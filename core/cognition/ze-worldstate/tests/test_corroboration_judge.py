@@ -10,7 +10,6 @@ from ze_worldstate.corroboration_judge import (
     Q_SAME,
     CorroborationSurfaceConfig,
     build_state,
-    corroboration_surface_config,
     decide,
 )
 
@@ -35,21 +34,21 @@ def test_question_is_one_noul_without_criteria():
 
 
 def test_missing_or_invalid_block_is_disabled():
-    assert corroboration_surface_config({}) == CorroborationSurfaceConfig()
-    assert corroboration_surface_config(None) == CorroborationSurfaceConfig()
-    assert corroboration_surface_config(_settings("nope")) == CorroborationSurfaceConfig()
+    assert CorroborationSurfaceConfig.from_settings({}) == CorroborationSurfaceConfig()
+    assert CorroborationSurfaceConfig.from_settings(None) == CorroborationSurfaceConfig()
+    assert CorroborationSurfaceConfig.from_settings(_settings("nope")) == CorroborationSurfaceConfig()
     assert not CorroborationSurfaceConfig().enabled
 
 
 def test_null_bar_is_uncalibrated():
-    cfg = corroboration_surface_config(
+    cfg = CorroborationSurfaceConfig.from_settings(
         _settings({"enabled": True, "corroborate_hold": None, "promote_hold": 0.9})
     )
     assert cfg.enabled and not cfg.calibrated
 
 
 def test_both_bars_set_is_calibrated():
-    cfg = corroboration_surface_config(
+    cfg = CorroborationSurfaceConfig.from_settings(
         _settings({"enabled": True, "corroborate_hold": 0.6, "promote_hold": 0.85})
     )
     assert cfg.calibrated
@@ -61,7 +60,7 @@ def test_equal_bars_are_calibrated():
 
 
 def test_corroborate_above_promote_is_uncalibrated():
-    cfg = corroboration_surface_config(
+    cfg = CorroborationSurfaceConfig.from_settings(
         _settings({"enabled": True, "corroborate_hold": 0.9, "promote_hold": 0.6})
     )
     assert not cfg.calibrated
@@ -69,7 +68,7 @@ def test_corroborate_above_promote_is_uncalibrated():
 
 @pytest.mark.parametrize("bad", ["0.5", math.nan, 1.5, -0.1, True])
 def test_bad_bars_become_none(bad):
-    cfg = corroboration_surface_config(
+    cfg = CorroborationSurfaceConfig.from_settings(
         _settings({"enabled": True, "corroborate_hold": bad, "promote_hold": 0.9})
     )
     assert cfg.corroborate_hold is None

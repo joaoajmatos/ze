@@ -76,7 +76,7 @@ async def test_delegate_over_the_remaining_budget_fails_with_the_wrap_up_error()
 
     assert not call.success
     assert BUDGET_EXHAUSTED_ERROR in call.error
-    assert ctx.conductor_ledger[-1] == {"agent": "research", "status": "stalled"}
+    assert ctx.conductor.ledger[-1] == {"agent": "research", "status": "stalled"}
 
 
 async def test_delegate_after_the_deadline_does_not_start_the_specialist():

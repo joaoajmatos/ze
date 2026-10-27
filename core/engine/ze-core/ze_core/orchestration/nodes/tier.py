@@ -5,14 +5,14 @@ from __future__ import annotations
 from dataclasses import replace
 
 from langchain_core.runnables import RunnableConfig
+from ze_agents.judgment import gate
 from ze_logging import get_logger
 
-from ze_core.conversation.messages.judgments import judgments_from_result
-from ze_core.orchestration.judgment_bars import bar_map
+from ze_core.conversation.messages.judgments import judgment_rows
 from ze_core.conversation.messages.types import TierTrace
 from ze_core.orchestration.judgment_state import build_tier_state
 from ze_core.orchestration.state import AgentState
-from ze_core.routing.tier import Q_DEEP, TierJudge, resolve_agent_model
+from ze_core.routing.tier import TierJudge, resolve_agent_model
 from ze_core.telemetry.context import get_cost_context, set_agent_context
 
 log = get_logger(__name__)
@@ -46,11 +46,13 @@ async def choose_tier(state: AgentState, config: RunnableConfig) -> dict:
         resolve_agent_model(subtask.agent, "full", judge.app_config)
     ):
         return _not_asked(envelope, "no_simple_model")
-    if not judge.surface.enabled:
+    not_asked = gate(judge.surface, judge.client)
+    if not_asked == "disabled":
         return _not_asked(envelope, "off")
-    if not judge.surface.calibrated:
-        judge.warn_uncalibrated_once()
+    if not_asked == "uncalibrated":
         return _not_asked(envelope, "uncalibrated")
+    if not_asked == "unavailable":
+        return _not_asked(envelope, "off")
 
     previous_agent = get_cost_context().agent
     set_agent_context("router")
@@ -72,15 +74,7 @@ async def choose_tier(state: AgentState, config: RunnableConfig) -> dict:
     update["tier"] = TierTrace(
         subtask.agent, outcome.decision.tier, outcome.decision.decided_by, model
     )
-    judgment = outcome.judgment
-    if judgment is not None:
-        rows = judgments_from_result(
-            judgment.result,
-            question_kinds=judgment.question_kinds,
-            consumed=judgment.consumed,
-            skip_reason=judgment.skip_reason,
-            surface="complexity",
-            bars=bar_map(judge.surface, {Q_DEEP: "simple_max"}),
-        )
+    if outcome.judgment is not None:
+        rows = judgment_rows(outcome.judgment)
         update["judgments"] = [*(state.get("judgments") or []), *rows]
     return update

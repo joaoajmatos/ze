@@ -1,12 +1,13 @@
-from typing import TypedDict, get_type_hints
+from typing import Annotated, TypedDict, get_type_hints
 from unittest.mock import MagicMock
 
+from ze_agents.lifetime import Run
 from ze_core.orchestration.state import AgentState, build_state_type
 
 
 class _PlainExtension(TypedDict, total=False):
-    workflow_id: str
-    visit_counts: dict[str, int]
+    workflow_id: Annotated[str, Run("a workflow run's id")]
+    visit_counts: Annotated[dict[str, int], Run("kept across a run")]
 
 
 def test_plain_typeddict_extension_keeps_agent_state_fields():

@@ -1,3 +1,4 @@
+from ze_agents.types import WriteGateState
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
@@ -26,15 +27,9 @@ def make_client(response: str = "Here are your goals.") -> AsyncMock:
 
 
 def make_ctx(prompt: str = "list my goals", intent: str = "read") -> AgentContext:
-    return AgentContext(
-        session_id="test",
-        prompt=prompt,
-        pre_approved_writes=frozenset(
+    return AgentContext(session_id="test", prompt=prompt, memory=MemoryContext(), messages=[{"role": "user", "content": prompt}], write_gate=WriteGateState(pre_approved=frozenset(
             ["abandon_goal", "pause_goal", "resume_goal", "steer_goal"]
-        ),
-        memory=MemoryContext(),
-        messages=[{"role": "user", "content": prompt}],
-    )
+        )))
 
 
 def make_store() -> MagicMock:

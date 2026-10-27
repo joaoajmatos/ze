@@ -67,3 +67,14 @@ async def conversation_admit(intake, configurable: dict, *, prompt: str):
         configurable, prompt=prompt, response="", agent="companion"
     )
     return admission.loop
+
+
+async def commit_loop(inflow, admission, evidence=()):
+    """Run the commit a conversation loop admission asks for, as `write_memory` does."""
+    return await inflow.commit(
+        admission.decision,
+        text=admission.text,
+        inflow=admission.inflow,
+        evidence=evidence,
+        source=admission.source,
+    )

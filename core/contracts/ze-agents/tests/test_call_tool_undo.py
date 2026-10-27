@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ze_agents.types import WriteGateState
 import pytest
 
 from ze_agents.base_agent import RETRY_WRITE_REFUSAL, BaseAgent
@@ -34,7 +35,7 @@ def _agent() -> BaseAgent:
 
 
 def _ctx(retry: bool = False) -> AgentContext:
-    return AgentContext(session_id="s1", prompt="hi", retry_mode=retry)
+    return AgentContext(session_id="s1", prompt="hi", write_gate=WriteGateState(retry_mode=retry))
 
 
 def _reversible(name: str, result):
@@ -234,7 +235,7 @@ async def test_retry_pauses_a_reversible_write_that_asks():
     )(plan)
     _undoer()
     ctx = _ctx(True)
-    ctx.loop_active = True
+    ctx.write_gate.loop_active = True
 
     tc = await _agent().call_tool("plan", ctx, _lm_args={"name": "x"}, name="x")
 

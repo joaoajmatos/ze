@@ -13,7 +13,6 @@ dependencies = [
     "ze-proactive",
     "ze-memory",
     "ze-data",
-    "ze-correlation",
     "ze-plugin",
     "ze-collision",
     "asyncpg==0.31.0",
@@ -37,7 +36,6 @@ ze-logging    = { workspace = true }
 ze-proactive  = { workspace = true }
 ze-memory     = { workspace = true }
 ze-data       = { workspace = true }
-ze-correlation = { workspace = true }
 ze-plugin = { workspace = true }
 ze-collision = { workspace = true }
 

@@ -10,7 +10,6 @@ import pytest
 
 from ze_agents.claims import ClaimKind
 from ze_correlation.jobs.hypothesis_decay import HypothesisDecayJob
-from ze_correlation.push import passes_confidence
 from ze_correlation.types import Hypothesis
 
 UTC = timezone.utc
@@ -69,5 +68,5 @@ async def test_decayed_confidence_fails_push_bar_once_crossed():
     await job.run()
 
     new_confidence = store.set_confidence.await_args.args[1]
-    assert passes_confidence(old.confidence, tau=0.6)
-    assert not passes_confidence(new_confidence, tau=0.6)
+    assert old.confidence >= 0.6
+    assert new_confidence < 0.6

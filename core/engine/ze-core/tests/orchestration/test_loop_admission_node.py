@@ -16,6 +16,7 @@ from ze_memory.types import MemoryContext
 from ze_plugin.contribution import EvidenceRef
 
 from tests.orchestration.test_nodes import base_state, make_config
+from tests.support.judgments import make_judgment
 
 
 def _trace(rows=None) -> MessageTrace:
@@ -30,12 +31,21 @@ def _trace(rows=None) -> MessageTrace:
     )
 
 
-def _loop_part(commit=None):
-    return SimpleNamespace(commit=commit)
+DECISION = SimpleNamespace(kind="create_suspected", reason="implied")
+SOURCE = SimpleNamespace(inflow="conversation", ref="t1")
+
+
+def _loop_part(kind="create_suspected"):
+    return SimpleNamespace(
+        decision=SimpleNamespace(kind=kind, reason="implied"),
+        text="I need to renew my passport",
+        inflow="conversation",
+        source=SOURCE,
+    )
 
 
 def _intake_result(
-    skip_reason=None, commit=None, outcome="ok", with_judgment=True, loop=True
+    outcome="ok", with_judgment=True, loop=True, kind="create_suspected"
 ):
     judgment = SystemOneResult(
         outcome=outcome,
@@ -43,16 +53,18 @@ def _intake_result(
         answers={"is_open_concern": SystemOneAnswer(type="noul", noul=0.9)},
         latency_ms=3,
     )
-    return SimpleNamespace(
-        fact=SimpleNamespace(
-            facts=[], path="none", judgment=None, question_ids=(), consumed=frozenset()
-        ),
-        loop=_loop_part(commit) if loop else None,
-        link=None,
-        judgment=judgment if with_judgment else None,
-        question_kinds={"is_open_concern": "noul"},
+    record = make_judgment(
+        "commitment_intake",
+        judgment,
+        {"is_open_concern": "noul"},
         consumed=frozenset({"is_open_concern"}),
-        skip_reason=skip_reason,
+        skip_reason=judgment.skip_reason,
+    )
+    return SimpleNamespace(
+        fact=SimpleNamespace(facts=[], path="none"),
+        loop=_loop_part(kind) if loop else None,
+        link=None,
+        judgment=record if with_judgment else None,
     )
 
 
@@ -78,12 +90,12 @@ def _setup(thread_id="t1", **extra):
 async def test_intake_rows_append_after_existing_rows_and_commit_fires():
     committed = asyncio.Event()
 
-    async def commit(evidence):
+    async def commit(decision, **kw):
         committed.set()
-        return []
+        return None
 
-    intake = AsyncMock(return_value=_intake_result(commit=commit))
-    state, cfg = _setup(commitment_intake=intake)
+    intake = AsyncMock(return_value=_intake_result())
+    state, cfg = _setup(commitment_intake=intake, loop_commit=commit)
     out = await memory.write_memory(state, cfg)
     ids = [r.question_id for r in out["message_trace"].judgments]
     assert ids == ["embed_route", "is_open_concern"]
@@ -99,9 +111,7 @@ async def test_intake_rows_append_after_existing_rows_and_commit_fires():
 
 async def test_skip_reason_rides_on_rows():
     state, cfg = _setup(
-        commitment_intake=AsyncMock(
-            return_value=_intake_result(skip_reason="uncalibrated", outcome="skip")
-        )
+        commitment_intake=AsyncMock(return_value=_intake_result(outcome="skip"))
     )
     out = await memory.write_memory(state, cfg)
     assert out["message_trace"].judgments[-1].skip_reason == "timeout"
@@ -133,16 +143,7 @@ async def test_intake_exception_does_not_fail_turn():
 
 
 async def test_no_intake_key_runs_the_fact_extractor_alone():
-    fact_extractor = AsyncMock(
-        return_value=SimpleNamespace(
-            facts=[],
-            path="haiku",
-            judgment=None,
-            question_ids=(),
-            consumed=frozenset(),
-            skip_reason=None,
-        )
-    )
+    fact_extractor = AsyncMock(return_value=SimpleNamespace(facts=[], path="haiku"))
     state, cfg = _setup(fact_extractor=fact_extractor)
     out = await memory.write_memory(state, cfg)
     assert "messages" in out
@@ -169,9 +170,9 @@ async def _drain():
 def _recording_commit():
     received: list = []
 
-    async def commit(evidence):
+    async def commit(decision, *, text, inflow, evidence=(), source=None):
         received.append(list(evidence))
-        return []
+        return None
 
     return commit, received
 
@@ -180,7 +181,7 @@ async def test_commit_receives_the_turn_episode_ref():
     commit, received = _recording_commit()
     episode_id = uuid4()
     state, cfg = _setup(
-        commitment_intake=AsyncMock(return_value=_intake_result(commit=commit))
+        commitment_intake=AsyncMock(return_value=_intake_result()), loop_commit=commit
     )
     cfg["configurable"]["memory_store"].write_episode = AsyncMock(
         return_value=episode_id
@@ -196,7 +197,7 @@ async def test_commit_receives_the_turn_episode_ref():
 async def test_commit_receives_no_refs_when_the_episode_write_fails(outcome):
     commit, received = _recording_commit()
     state, cfg = _setup(
-        commitment_intake=AsyncMock(return_value=_intake_result(commit=commit))
+        commitment_intake=AsyncMock(return_value=_intake_result()), loop_commit=commit
     )
     cfg["configurable"]["memory_store"].write_episode = AsyncMock(
         return_value=None if outcome == "none" else None,
@@ -218,7 +219,7 @@ async def test_node_returns_before_a_slow_episode_write_finishes():
         return uuid4()
 
     state, cfg = _setup(
-        commitment_intake=AsyncMock(return_value=_intake_result(commit=commit))
+        commitment_intake=AsyncMock(return_value=_intake_result()), loop_commit=commit
     )
     cfg["configurable"]["memory_store"].write_episode = slow_write_episode
 
@@ -229,3 +230,52 @@ async def test_node_returns_before_a_slow_episode_write_finishes():
     release.set()
     await _drain()
     assert len(received) == 1 and len(received[0]) == 1
+
+
+async def test_commit_receives_the_decision_text_inflow_and_source():
+    calls: list = []
+
+    async def commit(decision, **kw):
+        calls.append((decision, kw))
+
+    episode_id = uuid4()
+    state, cfg = _setup(
+        commitment_intake=AsyncMock(return_value=_intake_result()), loop_commit=commit
+    )
+    cfg["configurable"]["memory_store"].write_episode = AsyncMock(
+        return_value=episode_id
+    )
+
+    await memory.write_memory(state, cfg)
+    await _drain()
+
+    [(decision, kw)] = calls
+    assert decision.kind == "create_suspected"
+    assert kw == {
+        "text": "I need to renew my passport",
+        "inflow": "conversation",
+        "evidence": [EvidenceRef(kind="episode", id=episode_id)],
+        "source": SOURCE,
+    }
+
+
+async def test_a_hold_decision_commits_nothing():
+    commit, received = _recording_commit()
+    state, cfg = _setup(
+        commitment_intake=AsyncMock(return_value=_intake_result(kind="hold")),
+        loop_commit=commit,
+    )
+
+    await memory.write_memory(state, cfg)
+    await _drain()
+
+    assert received == []
+
+
+async def test_no_loop_commit_key_commits_nothing():
+    state, cfg = _setup(commitment_intake=AsyncMock(return_value=_intake_result()))
+
+    out = await memory.write_memory(state, cfg)
+    await _drain()
+
+    assert "messages" in out

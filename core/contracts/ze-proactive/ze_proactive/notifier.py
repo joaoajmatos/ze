@@ -6,19 +6,20 @@ from datetime import datetime, timezone
 from ze_agents.interface.base import AppInterface
 from ze_agents.interface.types import Action, Notification
 from ze_logging import get_logger
-from ze_proactive.attention_budget import (
-    budget_status,
-    release_shared,
-    try_claim_shared,
-    within_budget,
-)
+from ze_proactive.attention_budget import budget_status
 from ze_proactive.errors import BudgetUnavailableError, PushPolicyError
 from ze_proactive.governor import decide
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.push_kinds import QUIET_HOURS_SUMMARY, registered_push_kinds
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
-from ze_proactive.types import BudgetStatus, NotificationRow, PushKind, PushOutcome
+from ze_proactive.types import (
+    BudgetStatus,
+    NotificationRow,
+    OncePer,
+    PushKind,
+    PushOutcome,
+)
 
 log = get_logger(__name__)
 
@@ -81,10 +82,9 @@ class ProactiveNotifier:
         target_type: str | None = None,
         target_id: str | None = None,
         target_parent_id: str | None = None,
-        budget_key: str | None = None,
+        once_per: OncePer | None = None,
         actions: Sequence[Action] = (),
         format: str = "text",
-        dedup_hours: float | None = None,
     ) -> PushOutcome:
         return await self._notify(
             kind,
@@ -94,11 +94,31 @@ class ProactiveNotifier:
             target_type=target_type,
             target_id=target_id,
             target_parent_id=target_parent_id,
-            budget_key=budget_key,
+            once_per=once_per,
             actions=actions,
             format=format,
-            dedup_hours=dedup_hours,
         )
+
+    async def on_cooldown(self, once_per: OncePer) -> bool:
+        """Read-only: is `once_per` cooling? False when the store cannot say."""
+        if self._push_log is None:
+            return False
+        try:
+            return await self._push_log.is_cooling(once_per)
+        except Exception as exc:
+            log.warning("push_cooldown_check_failed", key=once_per.key, error=str(exc))
+            return False
+
+    async def recent_discretionary_bodies(self, hours: float) -> list[str]:
+        """Bodies of the discretionary pushes sent in the window, newest first.
+        Empty when the store cannot say."""
+        if self._push_log is None:
+            return []
+        try:
+            return await self._push_log.recent_discretionary_payloads(hours)
+        except Exception as exc:
+            log.warning("push_history_read_failed", error=str(exc))
+            return []
 
     async def _notify(
         self,
@@ -110,30 +130,23 @@ class ProactiveNotifier:
         target_type: str | None,
         target_id: str | None,
         target_parent_id: str | None = None,
-        budget_key: str | None,
+        once_per: OncePer | None,
         actions: Sequence[Action],
         format: str,
-        dedup_hours: float | None,
         ignore_quiet: bool = False,
     ) -> PushOutcome:
         discretionary = kind.push_class == "discretionary"
-        if discretionary and not budget_key:
+        if discretionary and once_per is None:
             raise PushPolicyError(
-                f"discretionary push {kind.event_type!r} needs a budget_key"
+                f"discretionary push {kind.event_type!r} needs a once_per"
+            )
+        if kind.push_class == "requested" and once_per is not None:
+            raise PushPolicyError(
+                f"requested push {kind.event_type!r} takes no once_per"
             )
         if self._store is None:
             log.warning("proactive_notify_no_store", event_type=kind.event_type)
             return "failed"
-
-        if dedup_hours is not None:
-            if await self._store.exists_recent(
-                event_type=kind.event_type,
-                target_type=target_type,
-                target_id=target_id,
-                hours=dedup_hours,
-            ):
-                log.debug("proactive_notify_deduped", event_type=kind.event_type)
-                return "deduped"
 
         quiet = (
             False
@@ -141,26 +154,27 @@ class ProactiveNotifier:
             else await self.quiet_now()
         )
 
-        budget_won: bool | None = None
-        claimed = False
-        if discretionary and self._push_log is not None:
-            assert budget_key is not None
+        budget_won: bool | None = True if discretionary else None
+        claim_id: int | None = None
+        if once_per is not None and self._push_log is not None:
             try:
-                claimed = await try_claim_shared(
-                    self._push_log, budget_key, self._max, payload=body
+                claim = await self._push_log.claim(
+                    event_type=kind.event_type,
+                    once_per=once_per,
+                    discretionary=discretionary,
+                    max_discretionary=self._max,
+                    payload=body,
                 )
-                if claimed:
-                    budget_won = True
-                elif await within_budget(self._push_log, self._max):
-                    log.debug("proactive_notify_duplicate", key=budget_key)
-                    return "duplicate"
-                else:
-                    budget_won = False
             except Exception as exc:
-                log.warning("attention_claim_failed", key=budget_key, error=str(exc))
-                budget_won = True
-        elif discretionary:
-            budget_won = True
+                log.warning("push_claim_failed", key=once_per.key, error=str(exc))
+            else:
+                if claim.status == "cooling":
+                    log.debug("proactive_notify_deduped", key=once_per.key)
+                    return "deduped"
+                if claim.status == "over_budget":
+                    budget_won = False
+                else:
+                    claim_id = claim.claim_id
 
         decision = decide(kind, quiet_now=quiet, budget_won=budget_won)
         delivery = {"deliver": "delivered", "hold": "held", "suppress": "suppressed"}[
@@ -186,7 +200,7 @@ class ProactiveNotifier:
             )
         except Exception as exc:
             log.warning("proactive_notify_persist_failed", error=str(exc))
-            await self._release(claimed, budget_key)
+            await self._release(claim_id)
             return "failed"
 
         if decision != "deliver":
@@ -197,7 +211,7 @@ class ProactiveNotifier:
             await self._deliver(row, body, format, list(actions), buzz=True)
         except Exception as exc:
             log.warning("proactive_push_failed", error=str(exc))
-            await self._release(claimed, budget_key)
+            await self._release(claim_id)
             try:
                 await self._store.mark_failed(row.id)
             except Exception as mark_exc:
@@ -244,20 +258,19 @@ class ProactiveNotifier:
             f"While quiet hours were on, I held {n} update{'s' if n != 1 else ''}.",
             target_type=None,
             target_id=None,
-            budget_key=None,
+            once_per=None,
             actions=(),
             format="text",
-            dedup_hours=None,
             ignore_quiet=True,
         )
         return n
 
-    async def _release(self, claimed: bool, budget_key: str | None) -> None:
-        if claimed and budget_key is not None and self._push_log is not None:
+    async def _release(self, claim_id: int | None) -> None:
+        if claim_id is not None and self._push_log is not None:
             try:
-                await release_shared(self._push_log, budget_key)
+                await self._push_log.release(claim_id)
             except Exception as exc:
-                log.warning("attention_release_failed", error=str(exc))
+                log.warning("push_claim_release_failed", error=str(exc))
 
     async def _push_silent(
         self, row: NotificationRow, body: str, delivery: str

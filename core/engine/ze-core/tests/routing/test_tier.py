@@ -14,7 +14,6 @@ from ze_core.routing.tier import (
     TierDecision,
     TierJudge,
     build_tier_question,
-    complexity_surface_config,
     decide_tier,
     resolve_agent_model,
 )
@@ -32,7 +31,7 @@ class _Settings:
 
 
 def _cfg(block) -> ComplexitySurfaceConfig:
-    return complexity_surface_config(_Settings(_settings(block)))
+    return ComplexitySurfaceConfig.from_settings(_Settings(_settings(block)))
 
 
 def _noul(value) -> SystemOneResult:
@@ -59,9 +58,12 @@ def _envelope(agent: str = "t182") -> RoutingEnvelope:
 
 class TestSurfaceConfig:
     def test_missing_block_is_off(self):
-        assert complexity_surface_config({}) == ComplexitySurfaceConfig()
-        assert complexity_surface_config(None) == ComplexitySurfaceConfig()
-        assert complexity_surface_config(_Settings({})) == ComplexitySurfaceConfig()
+        assert ComplexitySurfaceConfig.from_settings({}) == ComplexitySurfaceConfig()
+        assert ComplexitySurfaceConfig.from_settings(None) == ComplexitySurfaceConfig()
+        assert (
+            ComplexitySurfaceConfig.from_settings(_Settings({}))
+            == ComplexitySurfaceConfig()
+        )
         assert not ComplexitySurfaceConfig().calibrated
 
     def test_non_dict_block_is_off(self):
@@ -69,9 +71,9 @@ class TestSurfaceConfig:
 
     def test_dict_and_settings_agree(self):
         block = {"enabled": True, "simple_max": 0.15}
-        assert complexity_surface_config(_settings(block)) == complexity_surface_config(
-            _Settings(_settings(block))
-        )
+        assert ComplexitySurfaceConfig.from_settings(
+            _settings(block)
+        ) == ComplexitySurfaceConfig.from_settings(_Settings(_settings(block)))
 
     def test_enabled_must_be_true(self):
         assert not _cfg({"enabled": "true", "simple_max": 0.2}).enabled

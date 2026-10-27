@@ -11,7 +11,7 @@ Public SDK surface for Ze plugin development. Flat re-export layer — plugin pa
 - Single import for agent authoring: `@agent`, `@tool`, `BaseAgent`, `get_logger`
 - Write confirmation: `ToolReversibility`, `asks_first`, `no_ask_reason`, `ask_check`
 - Plugin framework re-exports: `ZePlugin`, `DataDomain`, channel types
-- Proactive job types and push kinds: `ProactiveScheduler`, `ProactiveJob`, `@proactive_job`, `PushKind`, `PushOutcome`
+- Proactive job types and push kinds: `ProactiveScheduler`, `ProactiveJob`, `@proactive_job`, `PushKind`, `PushOutcome`, `OncePer`, `is_sent`
 - Memory, signal, and onboarding types for plugin hook implementations (`Signal`, `SignalSource`)
 
 ### Integration
@@ -23,10 +23,10 @@ Every plugin's `pyproject.toml` lists `ze-sdk`. A plugin may also depend on othe
 | Module | What it provides |
 |---|---|
 | `__init__.py` | `ZePlugin`, `DataDomain`, `@agent`, `@tool`, `BaseAgent`, `Settings`, `DBPool`, `get_logger` |
-| `types.py` | Shared SDK types |
+| `types.py` | Shared SDK types, including the lifetime markers (`Turn`, `Input`, `Thread`, `Run`) that declare each `state_extensions()` field's lifetime |
 | `undo_payload` | In `__init__.py`. Builds the undo data that a `REVERSIBLE` tool returns under the `undo` key |
 | `errors.py` | Plugin-facing error re-exports |
-| `proactive.py` | `ProactiveJob`, `ProactiveScheduler`, `ProactiveNotifier`, `PushKind`, `PushOutcome`, `PushLogStore` |
+| `proactive.py` | `ProactiveJob`, `ProactiveScheduler`, `ProactiveNotifier`, `NotificationStore`, `PushKind`, `PushClass`, `Urgency`, `PushOutcome`, `OncePer`, `is_sent` |
 | `contribution.py` | Contribution seam types, including `FeedbackKind`, `FeedbackRecord`, `FeedbackStore`, and `submit_feedback_record` |
 | `memory.py` | Memory types, `PostgresMemoryStore`, `SignalSource` re-export, `FactRestoreConflictError` |
 | `channels.py` | Channel ABC and registry re-exports |

@@ -71,3 +71,52 @@ def test_workflow_types_round_trip_through_built_serde() -> None:
     restored_result = serde.loads_typed((type_, data))
     assert isinstance(restored_result, StepResult)
     assert restored_result.output == "done"
+
+
+def test_allowlist_covers_judgment_record_and_system_one_result() -> None:
+    allowlist = set(collect_checkpoint_allowlist(plugins=[]))
+    assert ("ze_agents.judgment", "Judgment") in allowlist
+    assert ("ze_agents.judgment", "SurfaceBar") in allowlist
+    assert ("ze_agents.system_one", "SystemOneResult") in allowlist
+
+
+def test_routing_envelope_with_judgment_round_trips() -> None:
+    from ze_agents.judgment import Judgment, SurfaceBar
+    from ze_agents.system_one import SystemOneAnswer, SystemOneResult
+    from ze_core.routing.types import RoutingEnvelope
+
+    judgment = Judgment(
+        surface="routing",
+        result=SystemOneResult(
+            outcome="ok",
+            model="m",
+            answers={
+                "agent": SystemOneAnswer(
+                    type="choice",
+                    choice="research",
+                    confidence=0.8,
+                    probabilities={"research": 0.9, "none": 0.1},
+                )
+            },
+        ),
+        question_kinds={"agent": "choice"},
+        consumed=frozenset({"agent"}),
+        skip_reason=None,
+        bars={"agent": SurfaceBar("choice_trust", 0.5)},
+    )
+    envelope = RoutingEnvelope(
+        primary_agent="research",
+        confidence=0.9,
+        score_gap=0.2,
+        routing_method="embedding",
+        is_compound=False,
+        subtasks=[],
+        requires_synthesis=False,
+    )
+    envelope.judgment = judgment
+
+    serde = build_checkpoint_serde(plugins=[])
+    restored = serde.loads_typed(serde.dumps_typed(envelope))
+
+    assert isinstance(restored, RoutingEnvelope)
+    assert restored.judgment == judgment

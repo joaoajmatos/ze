@@ -24,8 +24,9 @@ The `ze_core/screen/` package holds the screen resolver registry and `build_scre
 
 | Module | What it provides |
 |---|---|
-| `orchestration/` | `graph_builder`, `AgentState`, graph nodes and edges |
+| `orchestration/` | `graph_builder`, `AgentState`, graph nodes and edges, and `judgment_state.py` (the bounded System One states the nodes share) |
 | `routing/` | `EmbeddingRouter`, `judge.py` (System One routing choice), `tier.py` (model tier), `PostgresRoutingStore`, fallback |
+| `conversation/messages/judgments.py` | `judgment_rows()` turns a `Judgment` from `ze_agents.judgment` into the trace's `JudgmentTrace` rows |
 | `openrouter/` | `OpenRouterClient`, streaming, transcription. `audio.py` measures recordings with `ffprobe` and converts them with `ffmpeg` |
 | `voice.py` | `transcribe_audio`: measures, limits and transcribes one recording for the voice route |
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context var, `TurnTelemetry` (`turn.py`, the per-turn recorder), `SpendBudgetChecker` (`budget.py`) and the static price table (`pricing.py`) |

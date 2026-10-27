@@ -6,17 +6,17 @@ from typing import Any
 from ze_logging import get_logger
 from ze_proactive.job import proactive_job
 from ze_proactive.notifier import ProactiveNotifier
-from ze_proactive.push_log_store import PushLogStore
+from ze_proactive.types import OncePer
 from ze_automation.accountability.store import AccountabilityStore
 from ze_automation.accountability.summarizer import build_narrative
 from ze_automation.accountability.types import ActivitySummary, AgentCostSummary
 from ze_automation.goals.store import GoalStore
 from ze_automation.push_kinds import ACCOUNTABILITY_NARRATIVE
+from ze_automation.workflow.store import WorkflowStore
 
 log = get_logger(__name__)
 
-_DEDUP_KEY = "weekly_accountability"
-_DEDUP_HOURS = 6 * 24  # 6 days
+_ONCE_PER = OncePer("weekly_accountability", within=timedelta(days=6))
 
 
 @proactive_job
@@ -26,7 +26,7 @@ class AccountabilityJob:
     def __init__(
         self,
         notifier: ProactiveNotifier,
-        push_log_store: PushLogStore,
+        workflow_store: WorkflowStore,
         accountability_store: AccountabilityStore,
         goal_store: GoalStore,
         pool: Any,
@@ -34,15 +34,15 @@ class AccountabilityJob:
         stall_days: int = 3,
     ) -> None:
         self._notifier = notifier
-        self._push_log = push_log_store
+        self._workflow_store = workflow_store
         self._acc_store = accountability_store
         self._goal_store = goal_store
         self._pool = pool
         self._stall_days = stall_days
 
     async def run(self) -> None:
-        if await self._push_log.was_sent_within_hours(_DEDUP_KEY, _DEDUP_HOURS):
-            log.info("accountability_job_skipped_dedup")
+        if await self._notifier.on_cooldown(_ONCE_PER):
+            log.info("accountability_job_skipped_cooldown")
             return
 
         summary = await self._build_summary(period_days=7)
@@ -52,10 +52,13 @@ class AccountabilityJob:
             ACCOUNTABILITY_NARRATIVE,
             "Weekly accountability report",
             narrative,
+            once_per=_ONCE_PER,
         )
-        if outcome in ("delivered", "held"):
-            await self._push_log.log(_DEDUP_KEY)
-        log.info("accountability_job_sent", total_cost=summary.total_cost_usd)
+        log.info(
+            "accountability_job_finished",
+            outcome=outcome,
+            total_cost=summary.total_cost_usd,
+        )
 
     async def _build_summary(self, period_days: int) -> ActivitySummary:
         agent_costs: list[AgentCostSummary] = []
@@ -116,10 +119,10 @@ class AccountabilityJob:
 
         workflow_failures: list[str] = []
         try:
-            failures = await self._push_log.list_workflow_failures_within_hours(
+            failures = await self._workflow_store.list_failed_executions(
                 period_days * 24
             )
-            workflow_failures = [e.payload or "unknown" for e in failures]
+            workflow_failures = [f.workflow_name for f in failures]
         except Exception as exc:
             log.warning("accountability_workflow_query_failed", error=str(exc))
 

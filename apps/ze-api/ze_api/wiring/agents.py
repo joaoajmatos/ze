@@ -36,7 +36,6 @@ from ze_priority.store import PriorityOverrideStore
 from ze_priority.view import PriorityView
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
-from ze_proactive.push_log_store import PushLogStore
 from ze_personal.channels.thread_channel_map import ThreadChannelMap
 from ze_personal.channels.user_channel_store import UserChannelStore
 from ze_personal.channels.watermark_store import ChannelWatermarkStore
@@ -80,7 +79,6 @@ def build_dep_map(
             Settings: settings,
             CoreSettings: shared.core_settings,
             ProactiveNotifier: notifier,
-            PushLogStore: stores.push_log_store,
             NotificationStore: stores.notification_store,
             SentenceTransformer: shared.embedder,
             NLIClient: shared.nli_client,

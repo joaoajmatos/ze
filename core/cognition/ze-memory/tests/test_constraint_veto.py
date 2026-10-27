@@ -1,3 +1,4 @@
+from ze_agents.types import WriteGateState
 from datetime import datetime
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -253,7 +254,7 @@ async def test_confirm_level_conflict_parks_with_the_conflict_text():
     ran: list = []
     _note_contact_tool(ran)
     register_hook(_veto_hook())
-    ctx = AgentContext(session_id="s1", prompt="go", loop_active=True)
+    ctx = AgentContext(session_id="s1", prompt="go", write_gate=WriteGateState(loop_active=True))
     tc = await _agent().call_tool(
         "note_contact", ctx, _lm_args={"to": "Ada"}, _call_id="c1", to="Ada"
     )

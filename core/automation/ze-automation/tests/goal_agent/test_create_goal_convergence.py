@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from ze_automation.goals.proposal import _check_convergence
 from ze_automation.goals.types import Goal, GoalConvergence, GoalStatus
+from ze_proactive.types import OncePer
 
 
 def _goal(title="Find leads", objective="Build a list of contacts") -> Goal:
@@ -57,7 +58,7 @@ async def test_check_convergence_pushes_notification_when_overlap_found():
     assert "SaaS competitive landscape" in content
     assert "share outputs" in content
     assert args.kwargs["format"] == "html"
-    assert args.kwargs["budget_key"] == f"goal_overlap:{new_goal.id}"
+    assert args.kwargs["once_per"] == OncePer(f"goal_overlap:{new_goal.id}")
 
 
 async def test_check_convergence_does_not_push_when_no_overlap():

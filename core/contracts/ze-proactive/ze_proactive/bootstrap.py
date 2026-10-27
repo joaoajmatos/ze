@@ -2,11 +2,16 @@ from __future__ import annotations
 
 from typing import Any
 
+import asyncpg
+
+from ze_agents.interface.base import AppInterface
 from ze_logging import get_logger
 from ze_proactive.jobs.prune_notifications import PruneNotificationsJob
 from ze_proactive.jobs.release_held import QuietHoursReleaseJob
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.push_log_store import PushLogStore
+from ze_proactive.quiet_hours import InterruptionSettingsStore
 from ze_proactive.scheduler import ProactiveScheduler
 
 log = get_logger(__name__)
@@ -20,6 +25,24 @@ def shared_push_budget(settings: Any) -> int:
     cfg = (getattr(settings, "config", None) or {}).get("proactive", {})
     return int(
         cfg.get("budget", {}).get("max_pushes_per_day", _DEFAULT_MAX_PUSHES_PER_DAY)
+    )
+
+
+def build_notifier(
+    pool: asyncpg.Pool,
+    interface: AppInterface,
+    notification_store: NotificationStore,
+    settings_store: InterruptionSettingsStore,
+    settings: Any,
+) -> ProactiveNotifier:
+    """The one `ProactiveNotifier`. It builds the claim store itself, so no other
+    package holds a `PushLogStore`."""
+    return ProactiveNotifier(
+        interface=interface,
+        notification_store=notification_store,
+        push_log=PushLogStore(pool),
+        settings_store=settings_store,
+        max_discretionary_per_day=shared_push_budget(settings),
     )
 
 

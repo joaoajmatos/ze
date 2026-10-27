@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ze_api.api.datetimes import require_aware
-from ze_api.api.deps import get_loop_store, require_api_key
+from ze_api.api.deps import get_loop_lifecycle, get_loop_store, require_api_key
 from ze_api.api.v0.loops.schemas import (
     LoopListItem,
     LoopStateName,
@@ -12,6 +12,7 @@ from ze_api.api.v0.loops.schemas import (
 )
 from ze_worldstate import rest as loop_rest
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.store import LoopStore
 
 router = APIRouter(
@@ -50,10 +51,10 @@ async def list_loops(
 )
 async def confirm_loop(
     loop_id: UUID,
-    store: LoopStore = Depends(get_loop_store),
+    lifecycle: LoopLifecycle = Depends(get_loop_lifecycle),
 ) -> LoopTransitionResponse:
     try:
-        result = await loop_rest.confirm_loop(store, loop_id)
+        result = await loop_rest.confirm_loop(lifecycle, loop_id)
     except LoopNotFoundError:
         raise HTTPException(status_code=404, detail="Loop not found")
     except InvalidLoopTransitionError as exc:
@@ -70,10 +71,10 @@ async def confirm_loop(
 )
 async def close_loop(
     loop_id: UUID,
-    store: LoopStore = Depends(get_loop_store),
+    lifecycle: LoopLifecycle = Depends(get_loop_lifecycle),
 ) -> LoopTransitionResponse:
     try:
-        result = await loop_rest.close_loop(store, loop_id)
+        result = await loop_rest.close_loop(lifecycle, loop_id)
     except LoopNotFoundError:
         raise HTTPException(status_code=404, detail="Loop not found")
     except InvalidLoopTransitionError as exc:
@@ -92,10 +93,10 @@ async def close_loop(
 )
 async def drop_loop(
     loop_id: UUID,
-    store: LoopStore = Depends(get_loop_store),
+    lifecycle: LoopLifecycle = Depends(get_loop_lifecycle),
 ) -> LoopTransitionResponse:
     try:
-        result = await loop_rest.drop_loop(store, loop_id)
+        result = await loop_rest.drop_loop(lifecycle, loop_id)
     except LoopNotFoundError:
         raise HTTPException(status_code=404, detail="Loop not found")
     except InvalidLoopTransitionError as exc:

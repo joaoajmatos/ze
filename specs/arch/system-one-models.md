@@ -139,6 +139,7 @@ Later: O5 retrieval → O6 push → O7/O8 reflection verify → O9/O10 plugins.
 | Piece | Home | Rule |
 |---|---|---|
 | `SystemOneClient` Protocol | `ze_agents` | Sibling of `NLIClient`; not an extension of `LLMClient` |
+| Surface orchestration (202) | `ze_agents.judgment` | `SurfaceConfig`, `gate`, `judge` and the `Judgment` record: the one guarded call every surface uses |
 | Re-export | `ze_sdk` | Plugins import Protocol from `ze_sdk`, never `ze_core` |
 | HTTP implementation | `ze_core` | Same layer as `LocalNLIClient` / OpenRouter |
 | DI | `ze_api` / engine `dep_map` | Same map pattern as `NLIClient` |

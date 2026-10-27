@@ -1,17 +1,19 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 from ze_logging import get_logger
 from ze_priority.view import PriorityView
-from ze_sdk.proactive import PushLogStore
 from ze_agents.settings import Settings
 from ze_automation.workflow.store import WorkflowStore
 from ze_sdk.memory import PostgresMemoryStore
 from ze_sdk.proactive import proactive_job
-from ze_sdk.proactive import ProactiveNotifier
+from ze_sdk.proactive import OncePer, ProactiveNotifier, is_sent
 from ze_news.preferences import NewsPreferenceBuilder
 from ze_news.types import GoalTitleProvider, PersonalizationSettings
 from ze_personal.push_kinds import MORNING_BRIEF
 
+_ONCE_PER = OncePer("morning_brief", within=timedelta(hours=20))
 _BRIEFING_QUERY = "what's in the news?"
 _DREAM_SECTION_ENABLED_DEFAULT = True
 
@@ -28,7 +30,6 @@ class MorningBriefing:
     def __init__(
         self,
         notifier: ProactiveNotifier,
-        push_log_store: PushLogStore,
         memory_store: PostgresMemoryStore,
         workflow_store: WorkflowStore,
         settings: Settings,
@@ -38,7 +39,6 @@ class MorningBriefing:
         dream_store=None,
     ) -> None:
         self._notifier = notifier
-        self._push_log = push_log_store
         self._memory = memory_store
         self._workflows = workflow_store
         self._priority_view = priority_view
@@ -65,14 +65,13 @@ class MorningBriefing:
         )
 
     async def run(self) -> None:
-
-        if await self._push_log.was_sent_within_hours("morning_brief", 20):
-            self._log.info("briefing_skipped_dedup")
+        if await self._notifier.on_cooldown(_ONCE_PER):
+            self._log.info("briefing_skipped_cooldown")
             return
 
         unreviewed = await self._memory.count_unreviewed_facts()
         workflows = await self._workflows.list_enabled_scheduled()
-        failures = await self._push_log.list_workflow_failures_within_hours(24)
+        failures = await self._workflows.list_failed_executions(24)
         stale_contacts = await self._stale_relationship_nudges()
 
         threshold = int(
@@ -92,10 +91,9 @@ class MorningBriefing:
 
         if failures:
             lines.append("")
-            for entry in failures:
-                name = entry.payload or "unknown"
-                when = entry.sent_at.strftime("%H:%M UTC")
-                lines.append(f"⚠️  Recent failure: {name} at {when}")
+            for failure in failures:
+                when = failure.failed_at.strftime("%H:%M UTC")
+                lines.append(f"⚠️  Recent failure: {failure.workflow_name} at {when}")
 
         if unreviewed >= threshold:
             lines.append("")
@@ -120,10 +118,10 @@ class MorningBriefing:
             MORNING_BRIEF,
             "Morning Briefing",
             "\n".join(lines),
+            once_per=_ONCE_PER,
         )
-        if outcome in ("delivered", "held"):
+        if is_sent(outcome):
             self._log.info("briefing_sent", unreviewed=unreviewed)
-            await self._push_log.log("morning_brief")
         else:
             self._log.warning("briefing_not_sent", outcome=outcome)
 

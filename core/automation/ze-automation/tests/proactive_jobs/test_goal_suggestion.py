@@ -8,6 +8,7 @@ from uuid import uuid4
 from ze_automation.jobs.goal_suggestion import GoalSuggestionJob
 from ze_automation.goals.types import GoalSuggestion, SuggestionStatus
 from ze_automation.push_kinds import GOAL_SUGGESTION
+from ze_proactive.types import OncePer
 
 
 def _suggestion() -> GoalSuggestion:
@@ -159,6 +160,7 @@ async def test_run_saves_suggestion_and_pushes_notification():
     assert call.args[0] is GOAL_SUGGESTION
     assert "Learn Spanish" in call.args[2]
     assert len(call.kwargs["actions"]) == 3
+    assert call.kwargs["once_per"] == OncePer(f"goal_suggestion:{s.id}")
 
 
 async def test_first_suggestion_includes_intro_sentence():

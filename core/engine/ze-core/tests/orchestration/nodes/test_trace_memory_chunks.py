@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from ze_agents.types import AgentContext
+
 from ze_core.conversation.messages.types import CompactionTrace
 from ze_core.conversation.messages.memory_chunks import extract_memory_chunks
 from ze_core.orchestration.nodes.trace import record_trace
@@ -263,8 +265,10 @@ async def test_record_trace_reads_the_history_the_prompt_was_built_from():
         "agent_result": None,
         "memory_context": None,
         "messages": [_SUMMARY_0_7],
-        "agent_context": SimpleNamespace(
-            messages=[{"role": "user", "content": "hello again"}]
+        "agent_context": AgentContext(
+            session_id="s",
+            prompt="hello again",
+            messages=[{"role": "user", "content": "hello again"}],
         ),
     }
     result = await record_trace(state, config={})

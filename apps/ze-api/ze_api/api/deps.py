@@ -104,6 +104,10 @@ def get_loop_store(request: Request):
     return request.app.state.container.loop_store
 
 
+def get_loop_lifecycle(request: Request):
+    return request.app.state.container.loop_lifecycle
+
+
 def get_skill_store(request: Request):
     return request.app.state.container.skill_store
 

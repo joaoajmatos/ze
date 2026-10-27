@@ -66,6 +66,15 @@ class WorkflowExecution:
     created_at: datetime = field(default_factory=datetime.utcnow)
 
 
+@dataclass(frozen=True)
+class WorkflowFailure:
+    workflow_id: UUID | None
+    workflow_name: str
+    execution_id: UUID
+    failed_at: datetime
+    error: str | None
+
+
 class ActorSource(str, Enum):
     AGENT = "agent"
     API = "api"

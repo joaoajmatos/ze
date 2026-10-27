@@ -1,3 +1,4 @@
+from ze_agents.types import WriteGateState
 from unittest.mock import AsyncMock
 
 
@@ -17,15 +18,9 @@ def make_client(response: str = "Here are your workflows.") -> AsyncMock:
 
 
 def make_ctx(prompt: str = "list my workflows", intent: str = "read") -> AgentContext:
-    return AgentContext(
-        session_id="test",
-        prompt=prompt,
-        pre_approved_writes=frozenset(
+    return AgentContext(session_id="test", prompt=prompt, memory=MemoryContext(), messages=[{"role": "user", "content": prompt}], write_gate=WriteGateState(pre_approved=frozenset(
             ["delete_workflow", "edit_workflow_steps", "update_workflow"]
-        ),
-        memory=MemoryContext(),
-        messages=[{"role": "user", "content": prompt}],
-    )
+        )))
 
 
 def make_agent(client=None) -> WorkflowManagerAgent:

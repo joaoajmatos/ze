@@ -12,9 +12,8 @@ from ze_logging import get_logger
 from ze_agents.defaults import MODEL_SYNTHESIS
 from ze_agents.model_resolution import resolve_model
 from ze_agents.tasks import fire_and_forget
-from ze_core.conversation.messages.judgments import judgments_from_result
+from ze_core.conversation.messages.judgments import judgment_rows
 from ze_core.conversation.messages.types import JudgmentTrace
-from ze_core.orchestration.judgment_bars import intake_bars
 from ze_core.openrouter.context_windows import get_context_window
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.nodes.correlation import _format_text_section
@@ -22,7 +21,6 @@ from ze_core.orchestration.state import AgentState
 from ze_core.telemetry.context import set_agent_context
 from ze_agents.types import AgentResult
 from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
-from ze_memory.fact_judge import FACT_QUESTIONS
 from ze_memory.fact_identity import fact_identity, identities_from_remember_calls
 from ze_plugin.contribution import EvidenceRef, TargetFace
 
@@ -93,10 +91,10 @@ def _outcome_row(intake: Any) -> JudgmentTrace | None:
     return JudgmentTrace(
         question_id="intake_outcome",
         kind="choice",
-        latency_ms=judgment.latency_ms,
+        latency_ms=judgment.result.latency_ms,
         answer=answer,
         consumed=True,
-        skip_reason=intake.skip_reason,
+        skip_reason=judgment.skip_reason,
         surface="commitment_intake",
     )
 
@@ -133,10 +131,12 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
 
     reply = final_response or result.response
 
-    from ze_core.orchestration.procedure_activation import complete_procedure_invocation
+    from ze_core.orchestration.procedure_activation import (
+        complete_procedure_invocations,
+    )
 
     if not is_retry:
-        await complete_procedure_invocation(ctx, result, config)
+        await complete_procedure_invocations(state, config)
 
     proposals: list = []
     admission_path = "none"
@@ -164,14 +164,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             fact_result = intake.fact if intake is not None else None
             loop_result = intake.loop if intake is not None else None
             if intake is not None and intake.judgment is not None:
-                rows += judgments_from_result(
-                    intake.judgment,
-                    question_kinds=intake.question_kinds,
-                    consumed=intake.consumed,
-                    skip_reason=intake.skip_reason,
-                    surface="commitment_intake",
-                    bars=intake_bars(config["configurable"].get("settings")),
-                )
+                rows += judgment_rows(intake.judgment)
                 outcome_row = _outcome_row(intake)
                 if outcome_row is not None:
                     rows.append(outcome_row)
@@ -179,24 +172,17 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             fact_result = await _run_fact_extractor(
                 config["configurable"].get("fact_extractor"), config, result, ctx
             )
-            if fact_result is not None and fact_result.judgment is not None:
-                rows += judgments_from_result(
-                    fact_result.judgment,
-                    question_kinds={
-                        qid: FACT_QUESTIONS[qid].type
-                        for qid in fact_result.question_ids
-                    },
-                    consumed=fact_result.consumed,
-                    skip_reason=fact_result.skip_reason,
-                    surface="fact_judge",
-                    bars={},
-                )
         if fact_result is not None:
             proposals = fact_result.facts
             admission_path = fact_result.path
-        if loop_result is not None and loop_result.commit is not None:
+        loop_commit = config["configurable"].get("loop_commit")
+        if (
+            loop_result is not None
+            and loop_commit is not None
+            and loop_result.decision.kind != "hold"
+        ):
             fire_and_forget(
-                _commit_with_episode(loop_result.commit, episode_task),
+                _commit_with_episode(loop_commit, loop_result, episode_task),
                 label="loop_commit",
             )
         if rows and trace is not None:
@@ -289,7 +275,9 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     return {"messages": trimmed, **trace_update}
 
 
-async def _commit_with_episode(commit: Any, episode_task: asyncio.Task) -> Any:
+async def _commit_with_episode(
+    commit: Any, admission: Any, episode_task: asyncio.Task
+) -> Any:
     """Hand the loop commit the turn's episode as evidence once the write finishes."""
     episode_id = None
     try:
@@ -297,7 +285,13 @@ async def _commit_with_episode(commit: Any, episode_task: asyncio.Task) -> Any:
     except Exception:
         pass  # fire_and_forget already logged it
     refs = [EvidenceRef(kind="episode", id=episode_id)] if episode_id else []
-    return await commit(refs)
+    return await commit(
+        admission.decision,
+        text=admission.text,
+        inflow=admission.inflow,
+        evidence=refs,
+        source=admission.source,
+    )
 
 
 def _should_compact(updated: list[dict], ctx: Any, config: RunnableConfig) -> bool:

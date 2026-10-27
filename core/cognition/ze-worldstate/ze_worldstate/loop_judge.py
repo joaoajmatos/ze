@@ -9,18 +9,16 @@ Imports ze_agents types only; ze-worldstate never depends on ze-core.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
-from typing import Any, Literal
+from typing import ClassVar
 
+from ze_agents.judgment import DecisionUse, SurfaceConfig
 from ze_agents.system_one import (
     SystemOneQuestion,
     SystemOneResult,
-    parse_bar,
-    surface_block,
     valid_noul,
 )
 
-_bar = partial(parse_bar, event="loop_gate_bar_invalid")
+from ze_worldstate.decision import CommitDecision
 
 Q_CONCERN = "is_open_concern"
 Q_RESOLVES = "resolves_existing"
@@ -62,64 +60,45 @@ def build_state(text: str, provenance: str) -> dict[str, str]:
 
 
 @dataclass(frozen=True)
-class LoopGateSurfaceConfig:
-    enabled: bool = False
+class LoopGateSurfaceConfig(SurfaceConfig):
     loop_hold: float | None = None
     resolves_hold: float | None = None
 
-    @property
-    def calibrated(self) -> bool:
-        return (
-            self.enabled
-            and self.loop_hold is not None
-            and self.resolves_hold is not None
-        )
+    SURFACE: ClassVar[str] = "loop_gate"
+    BARS: ClassVar[dict[str, str]] = {
+        "loop_hold": Q_CONCERN,
+        "resolves_hold": Q_RESOLVES,
+    }
 
 
-def loop_gate_surface_config(settings: Any) -> LoopGateSurfaceConfig:
-    block = surface_block(settings, "loop_gate")
-    if block is None:
-        return LoopGateSurfaceConfig()
-    return LoopGateSurfaceConfig(
-        enabled=block.get("enabled") is True,
-        loop_hold=_bar(block.get("loop_hold"), "loop_hold"),
-        resolves_hold=_bar(block.get("resolves_hold"), "resolves_hold"),
+def read_decision(decision: CommitDecision) -> DecisionUse:
+    return DecisionUse(
+        decision.consumed,
+        decision.reason if decision.kind == "fallback" else None,
     )
-
-
-DecisionKind = Literal[
-    "resolve", "create_declared", "create_suspected", "hold", "fallback"
-]
-
-
-@dataclass(frozen=True)
-class LoopGateDecision:
-    kind: DecisionKind
-    reason: str
-    consumed: frozenset[str] = frozenset()
 
 
 def decide(
     result: SystemOneResult, cfg: LoopGateSurfaceConfig, provenance: str
-) -> LoopGateDecision:
-    """Pure decision over one result (contract rows 1 to 7). Never raises."""
+) -> CommitDecision:
+    """Pure decision over one result (contract rows 1 to 7). Never raises. Never declares."""
     if result.outcome == "skip":
-        return LoopGateDecision("fallback", result.skip_reason or "error")
+        return CommitDecision("fallback", result.skip_reason or "error")
     asked = tuple(LOOP_QUESTIONS)
     if not all(valid_noul(result.answers.get(qid)) for qid in asked):
-        return LoopGateDecision("fallback", "invalid_answer")
+        return CommitDecision("fallback", "invalid_answer")
     loop_bar, resolves_bar = cfg.loop_hold, cfg.resolves_hold
     if loop_bar is None or resolves_bar is None:
-        return LoopGateDecision("fallback", "uncalibrated")
+        return CommitDecision("fallback", "uncalibrated")
 
     def score(qid: str) -> float:
         return float(result.answers[qid].noul or 0.0)
 
     if score(Q_RESOLVES) >= resolves_bar:
-        return LoopGateDecision("resolve", "resolves", frozenset({Q_RESOLVES}))
+        return CommitDecision("resolve", "resolves", frozenset({Q_RESOLVES}))
     if score(Q_CONCERN) < loop_bar:
-        return LoopGateDecision(
+        return CommitDecision(
             "hold", "not_open_concern", frozenset({Q_CONCERN, Q_RESOLVES})
         )
     consumed = frozenset(asked)
-    return LoopGateDecision("create_suspected", "implied", consumed)
+    return CommitDecision("create_suspected", "implied", consumed)

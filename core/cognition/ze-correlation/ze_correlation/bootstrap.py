@@ -47,8 +47,6 @@ def build_correlation_push_candidate_source(
     stack: CorrelationStack,
     notifier: ProactiveNotifier,
     settings: Any,
-    embedder: Any = None,
-    nli_client: Any = None,
 ) -> CorrelationPushCandidateSource:
     """Constructed in `ze_api/container.py` for `AttentionArbitrationJob`
     (phase 123 User Story 2) — the push-eligibility/send half of what
@@ -57,8 +55,6 @@ def build_correlation_push_candidate_source(
         hypothesis_store=stack.hypothesis_store,
         notifier=notifier,
         settings=settings,
-        embedder=embedder,
-        nli_client=nli_client,
     )
 
 

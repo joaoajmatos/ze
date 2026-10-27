@@ -25,16 +25,13 @@ import argparse
 import asyncio
 import json
 import math
-import os
 import sys
 import time
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Sequence
-
-import yaml
+from typing import Sequence
 
 from ze_agents.system_one import SystemOneResult
 from ze_agents.types import AgentContext
@@ -47,13 +44,15 @@ from ze_core.routing.tier import (
     decide_tier,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import harness  # noqa: E402
+
+ROOT = harness.ROOT
 TUNED = Path(__file__).with_name("complexity.jsonl")
 HOLDOUT = Path(__file__).with_name("complexity_holdout.jsonl")
 VERDICT_MARKER = ROOT / "eval" / "results" / "complexity_holdout_verdict.json"
-CONFIG = ROOT / "apps" / "ze-api" / "config" / "config.yaml"
 
-LANGS = ("en", "pt")
+LANGS = harness.LANGS
 AGENTS = ("companion", "research", "goals")
 TIERS = ("simple", "full")
 KINDS = (
@@ -164,21 +163,7 @@ class Verdict:
 # --- loading and shape ---------------------------------------------------------------
 
 
-def load_rows(path: Path) -> list[Row]:
-    rows = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            raw = json.loads(line)
-            rows.append(
-                Row(**{k: raw[k] for k in Row.__dataclass_fields__ if k in raw})
-            )
-    if len({r.id for r in rows}) != len(rows):
-        raise SystemExit(f"duplicate ids in {path.name}")
-    return rows
-
-
-def _norm(text: str) -> str:
-    return " ".join(text.lower().split())
+load_rows = harness.row_loader(Row)
 
 
 def _row_problems(name: str, r: Row) -> list[str]:
@@ -265,15 +250,7 @@ def shape_problems(rows: list[Row], name: str, quota: Quota) -> list[str]:
 
 
 def cross_problems(tuned: list[Row], holdout: list[Row]) -> list[str]:
-    problems: list[str] = []
-    ids = [r.id for r in tuned + holdout]
-    if len(ids) != len(set(ids)):
-        problems.append("ids repeat across tuned and holdout")
-    held = {_norm(r.prompt) for r in holdout}
-    for r in tuned:
-        if _norm(r.prompt) in held:
-            problems.append(f"tuned/{r.id}: prompt equals a held-out prompt")
-    return problems
+    return harness.split_problems(tuned, holdout, field="prompt")
 
 
 # --- pure scoring --------------------------------------------------------------------
@@ -346,7 +323,7 @@ def verdict(outcomes: Sequence[Outcome], simple_max: float) -> Verdict:
 def outcome_for(row: Row, result: SystemOneResult) -> Outcome:
     """Validity is production's own: the Noul must parse the way ``decide_tier`` parses it."""
     decision = decide_tier(
-        result, ComplexitySurfaceConfig(enabled=True, simple_max=1.0)
+        result, harness.surface_config(ComplexitySurfaceConfig, simple_max=1.0)
     )
     answer = result.answers.get(Q_DEEP)
     if decision.decided_by == "skip":
@@ -410,22 +387,8 @@ def row_state(row: Row) -> dict[str, str]:
 STATE_FIELDS = ("conversation", "recap", "memory", "focus", "skill")
 
 
-async def run_system_one(
-    client: Any, rows: list[Row], concurrency: int, without: Sequence[str] = ()
-) -> dict[str, SystemOneResult]:
-    sem = asyncio.Semaphore(concurrency)
-    questions = build_tier_question()
-
-    async def one(row: Row) -> tuple[str, SystemOneResult]:
-        async with sem:
-            try:
-                state = {k: v for k, v in row_state(row).items() if k not in without}
-                result = await client.evaluate(state, questions, max_attempts=1)
-            except Exception:
-                result = SystemOneResult(outcome="skip", skip_reason="error")
-        return row.id, result
-
-    return dict(await asyncio.gather(*(one(r) for r in rows)))
+def kept_state(row: Row, without: Sequence[str]) -> dict[str, str]:
+    return {k: v for k, v in row_state(row).items() if k not in without}
 
 
 # --- reports -------------------------------------------------------------------------
@@ -516,12 +479,6 @@ def report_borderline(
         )
 
 
-def config_system_one() -> dict:
-    return (yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}).get(
-        "system_one"
-    ) or {}
-
-
 def _counts(rows: list[Row], lang: str) -> str:
     s = [r for r in rows if r.lang == lang]
     cells = [f"{len(s)} rows"]
@@ -593,13 +550,6 @@ async def main_async(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 2
-    api_key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not api_key:
-        print(
-            "OPENROUTER_API_KEY is required (this run is live and costs credits).",
-            file=sys.stderr,
-        )
-        return 2
     rows = load_rows(path)
     tuned = load_rows(TUNED) if TUNED.exists() else []
     problems = shape_problems(rows, args.set, HOLDOUT_QUOTA if holdout else TUNED_QUOTA)
@@ -609,24 +559,23 @@ async def main_async(args: argparse.Namespace) -> int:
         print("Dataset problems; run --check-sets.", file=sys.stderr)
         return 1
     if holdout:
-        print(
-            "WARNING: held-out verdict run. Changing wording or the bar after this run voids"
-            " the set; write a fresh held-out file before the next verdict (FR-019)."
-        )
-
-    from ze_core.openrouter.system_one import DEFAULT_MODEL, OpenRouterSystemOneClient
-
-    settings = config_system_one()
-    model = args.model or settings.get("model") or DEFAULT_MODEL
-    timeout_ms = args.timeout_ms or int(settings.get("timeout_ms", 2000))
-    client = OpenRouterSystemOneClient(
-        api_key=api_key, model=model, timeout_ms=timeout_ms
-    )
-    print(f"model={model} set={args.set} rows={len(rows)} timeout_ms={timeout_ms}")
+        harness.held_out_warning("FR-019", "the bar")
     started = time.monotonic()
-    results = await run_system_one(client, rows, args.concurrency, args.without)
+    results = await harness.collect(
+        args,
+        rows,
+        lambda row: kept_state(row, args.without),
+        lambda _, row: build_tier_question(),
+        lambda model: (
+            f"model={model} set={args.set} rows={len(rows)}"
+            f" timeout_ms={harness.client_settings(args)[1]}"
+        ),
+    )
+    if results is None:
+        return 2
     outcomes = [outcome_for(r, results[r.id]) for r in rows]
-    print(f"live run took {time.monotonic() - started:.1f}s")
+    if not args.load:
+        print(f"live run took {time.monotonic() - started:.1f}s")
 
     if not holdout:
         suggestion = suggest_simple_max(outcomes)
@@ -659,46 +608,37 @@ async def main_async(args: argparse.Namespace) -> int:
     for lang in LANGS:
         report_histogram(outcomes, lang)
         report_language(outcomes, v.per_lang[lang], bar)
-    print("\n== HELD-OUT VERDICT")
-    print(f"simple_max: {bar}")
-    for lang in LANGS:
-        lv = v.per_lang[lang]
-        print(
-            f"[{lang}] {'ENABLE' if lv.enabled else 'KEEP OFF'}"
-            f"  falseDowngrades={lv.false_downgrades} recall={lv.recall:.3f}"
-            f" ({lv.true_light}/{lv.simple_rows}) skipped={lv.skipped_share:.3f}"
-            f" precision={lv.precision:.3f}"
-            + (f"\n      failing: {'; '.join(lv.failing)}" if lv.failing else "")
-        )
-    print(f"OVERALL: {'ENABLE' if v.enabled else 'KEEP OFF'}")
-    VERDICT_MARKER.parent.mkdir(parents=True, exist_ok=True)
-    VERDICT_MARKER.write_text(
-        json.dumps({"simple_max": bar, "overall": v.enabled, "at": time.time()}),
-        encoding="utf-8",
+    harness.print_verdict(
+        {
+            lang: (
+                lv.enabled,
+                lv.failing,
+                f"falseDowngrades={lv.false_downgrades} recall={lv.recall:.3f}"
+                f" ({lv.true_light}/{lv.simple_rows}) skipped={lv.skipped_share:.3f}"
+                f" precision={lv.precision:.3f}",
+            )
+            for lang, lv in v.per_lang.items()
+        },
+        lead=[f"simple_max: {bar}"],
     )
+    if not args.load:
+        VERDICT_MARKER.parent.mkdir(parents=True, exist_ok=True)
+        VERDICT_MARKER.write_text(
+            json.dumps({"simple_max": bar, "overall": v.enabled, "at": time.time()}),
+            encoding="utf-8",
+        )
     return 0
 
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument(
-        "--check-sets", action="store_true", help="offline schema and quota check"
-    )
-    p.add_argument("--set", choices=("tuned", "holdout"), default="tuned")
+    harness.common_args(p, sets=("tuned", "holdout"), timeout_ms=None)
     p.add_argument(
         "--simple-max",
         type=float,
         default=None,
         help="the bar (required and frozen for --set holdout; overrides the suggestion on tuned)",
     )
-    p.add_argument("--model", default=None)
-    p.add_argument(
-        "--timeout-ms",
-        type=int,
-        default=None,
-        help="default: system_one.timeout_ms from config.yaml, so the skip rate matches production",
-    )
-    p.add_argument("--concurrency", type=int, default=4)
     p.add_argument(
         "--without",
         nargs="*",

@@ -17,6 +17,7 @@ from ze_automation.workflow.types import (
     StepResult,
     Workflow,
     WorkflowExecution,
+    WorkflowFailure,
     WorkflowRevision,
     WorkflowStep,
 )
@@ -472,6 +473,31 @@ class PostgresWorkflowStore:
         if row is None:
             return None
         return _row_to_execution(row)
+
+    async def list_failed_executions(self, since_hours: float) -> list[WorkflowFailure]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT e.workflow_id, COALESCE(w.name, 'unknown') AS workflow_name,
+                       e.id AS execution_id, e.completed_at AS failed_at, e.error
+                FROM workflow_executions e
+                LEFT JOIN workflows w ON w.id = e.workflow_id
+                WHERE e.status = 'failed'
+                  AND e.completed_at > now() - ($1 * interval '1 hour')
+                ORDER BY e.completed_at DESC
+                """,
+                since_hours,
+            )
+        return [
+            WorkflowFailure(
+                workflow_id=r["workflow_id"],
+                workflow_name=r["workflow_name"],
+                execution_id=r["execution_id"],
+                failed_at=r["failed_at"],
+                error=r["error"],
+            )
+            for r in rows
+        ]
 
     async def list_revisions(
         self, workflow_id: UUID, limit: int = 20, offset: int = 0

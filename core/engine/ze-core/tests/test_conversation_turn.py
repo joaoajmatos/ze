@@ -2,6 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from ze_core.orchestration.state import AgentState
 from ze_core.conversation import (
     TurnResult,
     invoke_raw_turn,
@@ -50,6 +51,7 @@ def container():
 
     c = MagicMock()
     c.graph = graph
+    c.state_type = AgentState
     c.interface = None
     c._build_config = MagicMock(return_value={"configurable": {"thread_id": "42"}})
     return c

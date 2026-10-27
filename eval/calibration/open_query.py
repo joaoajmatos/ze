@@ -22,13 +22,15 @@ file before the next verdict (research.md R5).
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-LANGS = ("en", "pt")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import harness  # noqa: E402
+
+LANGS = harness.LANGS
 MIN_TUNED_PER_LANG = 40
 MIN_HOLDOUT_PER_LANG = 20
 SWEEP_START = 0.80
@@ -52,17 +54,7 @@ class Row:
     label: bool
 
 
-def _norm(text: str) -> str:
-    return " ".join(text.lower().split())
-
-
-def load_rows(path: Path) -> list[Row]:
-    rows: list[Row] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            raw = json.loads(line)
-            rows.append(Row(raw["id"], raw["lang"], raw["text"], bool(raw["label"])))
-    return rows
+load_rows = harness.row_loader(Row)
 
 
 def shape_problems(
@@ -84,7 +76,7 @@ def shape_problems(
                     problems.append(f"{name}/{r.id}: empty text")
         if len({r.id for r in rows}) != len(rows):
             problems.append(f"{name}: duplicate ids")
-        if len({_norm(r.text) for r in rows}) != len(rows):
+        if len({harness.norm(r.text) for r in rows}) != len(rows):
             problems.append(f"{name}: duplicate text")
     seen_rows = tuned + holdout
     for name, rows in (extra or {}).items():
@@ -93,20 +85,13 @@ def shape_problems(
                 problems.append(f"{name}/{lang}: too few rows")
         if len({r.id for r in rows}) != len(rows):
             problems.append(f"{name}: duplicate ids")
-        seen = {_norm(r.text) for r in seen_rows}
-        for r in rows:
-            if _norm(r.text) in seen:
-                problems.append(f"{name}/{r.id}: text shared with another set")
+        problems += harness.overlap_problems(
+            name, rows, seen_rows, label="a text in another set"
+        )
         if {r.id for r in rows} & {r.id for r in seen_rows}:
             problems.append(f"ids repeat across {name} and other sets")
         seen_rows = seen_rows + rows
-    ids = [r.id for r in tuned + holdout]
-    if len(ids) != len(set(ids)):
-        problems.append("ids repeat across tuned and holdout")
-    held = {_norm(r.text) for r in holdout}
-    for r in tuned:
-        if _norm(r.text) in held:
-            problems.append(f"tuned/{r.id}: text equals a held-out text")
+    problems += harness.split_problems(tuned, holdout)
     for r in tuned + holdout:
         if r.lang not in LANGS:
             problems.append(f"{r.id}: bad lang {r.lang!r}")
@@ -132,10 +117,7 @@ def check_sets() -> int:
             pos = counts[(lang, True)]
             neg = counts[(lang, False)]
             print(f"  {lang}: {pos + neg} rows, {pos} positive, {neg} negative")
-    problems = shape_problems(tuned, holdout, extra)
-    for problem in problems:
-        print("PROBLEM:", problem, file=sys.stderr)
-    return 1 if problems else 0
+    return harness.shape_report(shape_problems(tuned, holdout, extra))
 
 
 def threshold_grid() -> list[float]:

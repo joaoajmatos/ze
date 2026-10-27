@@ -236,7 +236,7 @@ async def test_the_spent_sets_cannot_run_live(cal, capsys):
         args = argparse.Namespace(
             check_sets=False,
             set=name,
-            replay=None,
+            load=None,
             bars="0.5,0.5,0.5,0.5,0.5,0.5",
         )
         assert await cal.main_async(args) == 2
@@ -248,7 +248,7 @@ async def test_replaying_spent_holdout3_needs_the_frozen_bars(cal, capsys, tmp_p
     import argparse
 
     args = argparse.Namespace(
-        check_sets=False, set="holdout3", replay=tmp_path / "r.json", bars=None
+        check_sets=False, set="holdout3", load=tmp_path / "r.json", bars=None
     )
     assert await cal.main_async(args) == 2
     assert "--bars" in capsys.readouterr().err

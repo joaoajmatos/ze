@@ -17,11 +17,17 @@ import ze_worldstate.agents.tools  # noqa: F401  (registers the tools at import 
 
 
 class FakeTracker:
-    def __init__(self, result: TrackResult | None = None, error: Exception | None = None):
+    def __init__(
+        self, result: TrackResult | None = None, error: Exception | None = None
+    ):
         self.result = result
         self.error = error
+        self.calls: list[tuple] = []
 
-    async def track(self, title: str, window_days: int = 0) -> TrackResult:
+    async def track(
+        self, title: str, window_days: int = 0, session_id: str | None = None
+    ) -> TrackResult:
+        self.calls.append((title, window_days, session_id))
         if self.error is not None:
             raise self.error
         return self.result
@@ -59,6 +65,7 @@ def test_llm_schema_lists_only_primitive_args():
     assert params["properties"]["title"]["type"] == "string"
     assert params["properties"]["window_days"]["type"] == "integer"
     assert "loop_tracker" not in params["properties"]
+    assert "session_id" not in params["properties"]
 
 
 async def test_tool_returns_ok_payload():
@@ -89,3 +96,21 @@ async def test_tool_catches_ze_error():
 
     assert out["ok"] is False
     assert out["error"]
+
+
+async def test_session_id_reaches_the_tracker():
+    tracker = FakeTracker(_ok_result())
+
+    await get_tool("track_loop").func(
+        loop_tracker=tracker, title="Porto move", window_days=14, session_id="thread-1"
+    )
+
+    assert tracker.calls == [("Porto move", 14, "thread-1")]
+
+
+async def test_session_id_defaults_to_none():
+    tracker = FakeTracker(_ok_result())
+
+    await get_tool("track_loop").func(loop_tracker=tracker, title="Porto move")
+
+    assert tracker.calls == [("Porto move", 0, None)]

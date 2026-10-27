@@ -6,6 +6,7 @@ from dataclasses import asdict
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
+from ze_core.orchestration.state import AgentState
 from ze_core.conversation.messages.store import _parse_trace
 from ze_core.conversation.messages.types import (
     MessageTrace,
@@ -124,6 +125,7 @@ async def test_partial_trace_update_carries_the_screen():
     interface.send_trace_partial = AsyncMock()
     container = MagicMock()
     container.graph = graph
+    container.state_type = AgentState
     container.interface = interface
     container._build_config = MagicMock(return_value={"configurable": {}})
 

@@ -4,12 +4,10 @@ from uuid import UUID
 
 from ze_agents.errors import ZeError
 from ze_logging import get_logger
-from ze_agents.tool import ToolAccess, tool, undo_payload
+from ze_agents.tool import Injected, ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
-from ze_worldstate.review import close_loop as review_close
-from ze_worldstate.review import confirm_loop as review_confirm
-from ze_worldstate.review import drop_loop as review_drop
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.store import LoopStore
 from ze_worldstate.tracking import LoopTracker
 from ze_worldstate.types import LoopState, TrackOutcome
@@ -60,10 +58,13 @@ async def list_open_loops(loop_store: LoopStore) -> list:
     effect_phrase="started tracking an open loop",
 )
 async def track_loop(
-    loop_tracker: LoopTracker, title: str, window_days: int = 0
+    loop_tracker: LoopTracker,
+    title: str,
+    window_days: int = 0,
+    session_id: Injected[str | None] = None,
 ) -> dict:
     try:
-        result = await loop_tracker.track(title, window_days)
+        result = await loop_tracker.track(title, window_days, session_id)
     except ZeError as exc:
         return {"ok": False, "error": str(exc) or "could not track the loop"}
     if not result.ok or result.loop is None:
@@ -91,13 +92,13 @@ async def track_loop(
     undo_note="Dropping the loop removes it; it does not return it to suspected.",
     effect_phrase="confirmed an open loop",
 )
-async def confirm_loop(loop_store: LoopStore, loop_id: str) -> dict:
+async def confirm_loop(lifecycle: LoopLifecycle, loop_id: str) -> dict:
     try:
         uid = UUID(loop_id)
     except ValueError:
         return {"ok": False, "error": f"Invalid loop ID: {loop_id!r}"}
     try:
-        loop = await review_confirm(loop_store, uid)
+        loop = await lifecycle.confirm(uid)
     except LoopNotFoundError:
         return {"ok": False, "error": f"No loop found with ID {loop_id}."}
     except InvalidLoopTransitionError as exc:
@@ -122,13 +123,13 @@ async def confirm_loop(loop_store: LoopStore, loop_id: str) -> dict:
     asks_first=False,
     no_ask_reason="Bookkeeping the user asked for; `track_loop` re-opens the concern.",
 )
-async def close_loop(loop_store: LoopStore, loop_id: str) -> dict:
+async def close_loop(lifecycle: LoopLifecycle, loop_id: str) -> dict:
     try:
         uid = UUID(loop_id)
     except ValueError:
         return {"error": f"Invalid loop ID: {loop_id!r}"}
     try:
-        loop = await review_close(loop_store, uid)
+        loop = await lifecycle.close(uid)
     except LoopNotFoundError:
         return {"error": f"No loop found with ID {loop_id}."}
     except InvalidLoopTransitionError as exc:
@@ -148,13 +149,13 @@ async def close_loop(loop_store: LoopStore, loop_id: str) -> dict:
     asks_first=False,
     no_ask_reason="Bookkeeping the user asked for; `track_loop` re-opens the concern.",
 )
-async def drop_loop(loop_store: LoopStore, loop_id: str) -> dict:
+async def drop_loop(lifecycle: LoopLifecycle, loop_id: str) -> dict:
     try:
         uid = UUID(loop_id)
     except ValueError:
         return {"error": f"Invalid loop ID: {loop_id!r}"}
     try:
-        loop = await review_drop(loop_store, uid)
+        loop = await lifecycle.drop(uid)
     except LoopNotFoundError:
         return {"error": f"No loop found with ID {loop_id}."}
     except InvalidLoopTransitionError as exc:

@@ -126,7 +126,6 @@ async def build_status_summary(container: Any, *, period_days: int = 1) -> str:
     from ze_automation.accountability.store import AccountabilityStore
     from ze_automation.accountability.summarizer import build_narrative
     from ze_automation.accountability.types import ActivitySummary, AgentCostSummary
-    from ze_proactive.push_log_store import PushLogStore
 
     try:
         async with container.pool.acquire() as conn:
@@ -188,9 +187,10 @@ async def build_status_summary(container: Any, *, period_days: int = 1) -> str:
 
     workflow_failures: list[str] = []
     try:
-        push_log = PushLogStore(pool=container.pool)
-        failures = await push_log.list_workflow_failures_within_hours(period_days * 24)
-        workflow_failures = [e.payload or "unknown" for e in failures]
+        failures = await container.workflow_store.list_failed_executions(
+            period_days * 24
+        )
+        workflow_failures = [f.workflow_name for f in failures]
     except Exception:
         pass
 

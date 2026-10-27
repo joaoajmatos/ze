@@ -17,6 +17,7 @@ from uuid import UUID
 
 from pydantic import ValidationError
 
+from ze_agents.derive import for_action
 from ze_agents.effects import effect_imperative
 from ze_agents.errors import UiActionRefusedError
 from ze_agents.park import ApprovedCall, ConfirmItem
@@ -149,7 +150,7 @@ def _resolve(owner: str, tool: str) -> tuple[Any, Any]:
 
 
 def _context(thread_id: str) -> AgentContext:
-    return AgentContext(session_id=thread_id, prompt="")
+    return for_action(thread_id)
 
 
 async def handle_ui_action(

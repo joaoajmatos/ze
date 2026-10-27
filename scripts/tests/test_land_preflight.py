@@ -274,3 +274,112 @@ def test_land_post_rejects_an_empty_or_partial_receipt(world):
         for g in ("lint", "test-py", "test-web", "typecheck-web", "lint-web")
     ]
     assert "not green" not in run_post(full).stderr
+
+
+def test_ok_archives_floor_and_lane_records_to_ground(world, tmp_path):
+    ground, floor = world
+    (floor / ".gitignore").write_text(".process/\n")
+    git(floor, "add", ".gitignore")
+    git(floor, "commit", "-q", "-m", "ignore")
+    ready_floor(floor)
+    lane = tmp_path / "lane"
+    git(ground, "worktree", "add", "-q", "-b", "feat-lane-x", str(lane), "feat")
+    make_review(lane, "a" * 40, "b" * 40, verdict="CHANGES", name="lane-round")
+    p = run(floor)
+    assert p.returncode == 0, p.stdout
+    dest = ground / "journal" / "metrics" / "feat"
+    reviews = sorted(f.name for f in (dest / "reviews").glob("*.json"))
+    assert "lane-round.json" in reviews and len(reviews) == 2
+    assert len(list((dest / "receipts").glob("*.json"))) == 1
+
+
+def test_failed_preflight_archives_nothing(world):
+    ground, floor = world
+    p = run(floor)
+    assert p.returncode == 1
+    assert not (ground / "journal" / "metrics").exists()
+
+
+def test_chain_from_the_old_base_still_counts_after_merging_main(world):
+    """Merging main moves the merge base; the chain that started at the old base is still valid."""
+    ground, floor = world
+    (floor / ".gitignore").write_text(".process/\n")
+    git(floor, "add", ".gitignore")
+    git(floor, "commit", "-q", "-m", "ignore")
+    old_base = git(floor, "merge-base", "HEAD", "main")
+    first = git(floor, "rev-parse", "HEAD")
+    make_review(floor, old_base, first, name="r1")
+    (ground / "other.txt").write_text("main moved\n")
+    git(ground, "add", "other.txt")
+    git(ground, "commit", "-q", "-m", "main moves")
+    git(floor, "merge", "-q", "--no-edit", "main")
+    head = git(floor, "rev-parse", "HEAD")
+    make_review(floor, first, head, name="r2")
+    make_receipt(floor)
+    assert git(floor, "merge-base", "HEAD", "main") != old_base
+    p = run(floor)
+    assert p.returncode == 0, p.stdout
+
+
+def test_an_approval_ending_outside_the_branch_does_not_count(world):
+    """A lane rebased after approval: the old end commit is not in HEAD, so it cannot carry the chain."""
+    ground, floor = world
+    (floor / ".gitignore").write_text(".process/\n")
+    git(floor, "add", ".gitignore")
+    git(floor, "commit", "-q", "-m", "ignore")
+    base = git(floor, "merge-base", "HEAD", "main")
+    side = ground.parent / "side"
+    git(ground, "worktree", "add", "-q", "-b", "side", str(side), base)
+    (side / "y.py").write_text("y = 1\n")
+    git(side, "add", "y.py")
+    git(side, "commit", "-q", "-m", "elsewhere")
+    make_review(floor, base, git(side, "rev-parse", "HEAD"), name="stale")
+    make_receipt(floor)
+    p = run(floor)
+    assert p.returncode == 1
+    assert "no APPROVE review record continues" in p.stdout
+
+
+def test_parallel_lane_records_reach_head_through_any_path(world):
+    """203: contract -> callers (dead end) and contract -> inflow -> head. The search must find the inflow path."""
+    _, floor = world
+    (floor / ".gitignore").write_text(".process/\n")
+    git(floor, "add", ".gitignore")
+    git(floor, "commit", "-q", "-m", "ignore")
+    base = git(floor, "merge-base", "HEAD", "main")
+    contract = git(floor, "rev-parse", "HEAD")
+    git(floor, "checkout", "-q", "-b", "callers")
+    (floor / "c.py").write_text("c = 1\n")
+    git(floor, "add", "c.py")
+    git(floor, "commit", "-q", "-m", "callers")
+    callers = git(floor, "rev-parse", "HEAD")
+    git(floor, "checkout", "-q", "feat")
+    (floor / "i.py").write_text("i = 1\n")
+    git(floor, "add", "i.py")
+    git(floor, "commit", "-q", "-m", "inflow")
+    inflow = git(floor, "rev-parse", "HEAD")
+    git(floor, "merge", "-q", "--no-edit", "callers")
+    head = git(floor, "rev-parse", "HEAD")
+    make_review(floor, base, contract, name="contract")
+    make_review(floor, contract, callers, name="callers")
+    make_review(floor, contract, inflow, name="inflow")
+    make_review(floor, inflow, head, name="final")
+    make_receipt(floor)
+    p = run(floor)
+    assert p.returncode == 0, p.stdout
+
+
+def test_a_lane_worktree_record_completes_the_chain(world, tmp_path):
+    """A lane's review is recorded in the lane's own worktree; the preflight reads it there."""
+    ground, floor = world
+    (floor / ".gitignore").write_text(".process/\n")
+    git(floor, "add", ".gitignore")
+    git(floor, "commit", "-q", "-m", "ignore")
+    base = git(floor, "merge-base", "HEAD", "main")
+    head = git(floor, "rev-parse", "HEAD")
+    lane = tmp_path / "lane-wt"
+    git(ground, "worktree", "add", "-q", "-b", "feat-lane-y", str(lane), "feat")
+    make_review(lane, base, head, name="from-lane")
+    make_receipt(floor)
+    p = run(floor)
+    assert p.returncode == 0, p.stdout

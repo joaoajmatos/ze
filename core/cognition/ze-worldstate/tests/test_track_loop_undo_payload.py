@@ -25,7 +25,9 @@ class FakeTracker:
         self.result = result
         self.error = error
 
-    async def track(self, title: str, window_days: int = 0) -> TrackResult:
+    async def track(
+        self, title: str, window_days: int = 0, session_id: str | None = None
+    ) -> TrackResult:
         if self.error is not None:
             raise self.error
         return self.result
@@ -76,8 +78,15 @@ async def test_ze_error_has_no_payload():
 
 
 def test_tool_deps_has_the_keys_the_loop_used():
-    store, tracker = MagicMock(), MagicMock()
+    store, tracker, lifecycle = MagicMock(), MagicMock(), MagicMock()
     agent = LoopsAgent(
-        openrouter_client=AsyncMock(), loop_store=store, loop_tracker=tracker
+        openrouter_client=AsyncMock(),
+        loop_store=store,
+        loop_tracker=tracker,
+        lifecycle=lifecycle,
     )
-    assert agent.tool_deps() == {"loop_store": store, "loop_tracker": tracker}
+    assert agent.tool_deps() == {
+        "loop_store": store,
+        "loop_tracker": tracker,
+        "lifecycle": lifecycle,
+    }

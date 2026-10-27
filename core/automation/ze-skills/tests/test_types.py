@@ -94,15 +94,19 @@ def test_skill_match_below_floor_defaults_false():
 
 
 def test_skill_match_outcome_and_judgment_exist():
+    from ze_agents.judgment import Judgment
     from ze_agents.system_one import SystemOneResult
 
-    from ze_skills.types import SkillMatchOutcome, SkillsJudgment
+    from ze_skills.types import SkillMatchOutcome
 
-    j = SkillsJudgment(
+    j = Judgment(
+        surface="skills",
         result=SystemOneResult(outcome="skip", skip_reason="error"),
         question_kinds={"skill": "choice"},
+        consumed=frozenset(),
+        skip_reason="error",
+        bars={"skill": None},
     )
-    assert j.consumed == frozenset() and j.skip_reason is None
     out = SkillMatchOutcome(matches=[], judgment=j)
     assert out.judgment is j
     assert SkillMatchOutcome(matches=[]).judgment is None

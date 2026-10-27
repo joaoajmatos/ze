@@ -1,0 +1,7 @@
+tuned: 88 rows
+  en: 44 rows, 16 positive, 28 negative
+  pt: 44 rows, 16 positive, 28 negative
+holdout: 48 rows
+  en: 24 rows, 10 positive, 14 negative
+  pt: 24 rows, 10 positive, 14 negative
+--- exit 0 ---

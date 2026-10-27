@@ -9,7 +9,7 @@ pytestmark = pytest.mark.pg
 
 async def test_migrations_created_tables(pg_pool):
     async with pg_pool.acquire() as conn:
-        for table in ("open_loops", "goal_gates", "memory_episodes", "memory_relationships", "push_log"):
+        for table in ("open_loops", "goal_gates", "memory_episodes", "memory_relationships", "push_log", "surfacing_memory"):
             assert await conn.fetchval("SELECT to_regclass($1)", table) is not None, table
 
 

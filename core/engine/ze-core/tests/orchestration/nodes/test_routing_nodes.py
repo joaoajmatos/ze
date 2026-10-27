@@ -87,9 +87,11 @@ class TestDecomposeNode:
         assert env.routing_method == "haiku"
         assert result["conductor_hint"] is not None
         assert [h["agent"] for h in result["conductor_hint"]] == ["alpha", "beta"]
-        assert result["conductor_ledger"] == [
-            {"agent": "alpha", "status": "planned"},
-            {"agent": "beta", "status": "planned"},
+        assert result["conductor_ledgers"] == [
+            [
+                {"agent": "alpha", "status": "planned"},
+                {"agent": "beta", "status": "planned"},
+            ]
         ]
         client.complete.assert_awaited_once()
 
@@ -395,7 +397,7 @@ class TestEmbedRouteJudgment:
 
     def _judgment(self):
         from ze_agents.system_one import SystemOneAnswer, SystemOneResult
-        from ze_core.routing.types import RoutingJudgment
+        from tests.support.judgments import make_judgment
 
         result = SystemOneResult(
             outcome="ok",
@@ -410,12 +412,10 @@ class TestEmbedRouteJudgment:
                 "multi_specialist": SystemOneAnswer(type="noul", noul=0.1),
             },
         )
-        return RoutingJudgment(
-            result=result,
-            question_kinds={
-                "agent": "choice",
-                "multi_specialist": "noul",
-            },
+        return make_judgment(
+            "routing",
+            result,
+            {"agent": "choice", "multi_specialist": "noul"},
             consumed=frozenset({"agent", "multi_specialist"}),
         )
 

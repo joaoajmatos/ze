@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-import pytest
 
 from ze_automation.bootstrap import make_workflow_failure_handler
+from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.testing import InMemoryPushLog
+from ze_proactive.types import NotificationRow, OncePer
 from ze_automation.workflow.types import StepResult, WorkflowExecution, WorkflowStep
 
 
@@ -29,39 +31,23 @@ def _failed_execution(workflow_id):
     )
 
 
-class _PushLog:
-    def __init__(self, *, seeded=()):
-        self.keys = list(seeded)
-        self.log = AsyncMock(side_effect=self._log)
-        self.was_sent_within_hours = AsyncMock(side_effect=self._was_sent)
-
-    async def _log(self, event_type, detail=None):
-        self.keys.append(event_type)
-
-    async def _was_sent(self, event_type, hours):
-        return event_type in self.keys
-
-
-def _handler(executions, *, sent_recently=None, outcome="delivered"):
+def _handler(executions, *, outcome="delivered", settings=None):
     store = AsyncMock()
     store.list_executions = AsyncMock(return_value=executions)
     notifier = AsyncMock()
     notifier.notify = AsyncMock(return_value=outcome)
-    push_log = _PushLog(seeded=[sent_recently] if sent_recently else [])
-    settings = SimpleNamespace(proactive_config={})
     handler = make_workflow_failure_handler(
-        settings=settings,
+        settings=settings or SimpleNamespace(proactive_config={}),
         workflow_store=store,
         notifier=notifier,
-        push_log_store=push_log,
     )
-    return handler, notifier, push_log
+    return handler, notifier
 
 
 async def test_push_points_at_the_execution_inside_its_workflow():
     workflow = _workflow()
     execution = _failed_execution(workflow.id)
-    handler, notifier, push_log = _handler([execution])
+    handler, notifier = _handler([execution])
 
     await handler(workflow, RuntimeError("TimeoutError: boom"))
 
@@ -72,10 +58,9 @@ async def test_push_points_at_the_execution_inside_its_workflow():
     assert args.kwargs["target_type"] == "workflow_execution"
     assert args.kwargs["target_id"] == str(execution.id)
     assert args.kwargs["target_parent_id"] == str(workflow.id)
-    assert push_log.keys == [
-        f"workflow_failure:{workflow.id}",
-        f"workflow_failure_alert:{workflow.id}",
-    ]
+    assert args.kwargs["once_per"] == OncePer(
+        f"workflow_failure_alert:{workflow.id}", within=timedelta(hours=1)
+    )
 
 
 async def test_a_newer_run_in_flight_does_not_hide_the_failed_one():
@@ -89,7 +74,7 @@ async def test_a_newer_run_in_flight_does_not_hide_the_failed_one():
         steps_snapshot=[],
         created_at=datetime.now(timezone.utc),
     )
-    handler, notifier, _ = _handler([running, failed])
+    handler, notifier = _handler([running, failed])
 
     await handler(workflow, RuntimeError("boom"))
 
@@ -98,7 +83,7 @@ async def test_a_newer_run_in_flight_does_not_hide_the_failed_one():
 
 async def test_without_an_execution_the_body_says_it_never_started_and_nothing_is_targeted():
     workflow = _workflow()
-    handler, notifier, _ = _handler([])
+    handler, notifier = _handler([])
 
     await handler(workflow, RuntimeError("scheduler blew up"))
 
@@ -108,87 +93,86 @@ async def test_without_an_execution_the_body_says_it_never_started_and_nothing_i
     assert args.kwargs.get("target_id") is None
 
 
-async def test_cooldown_suppresses_the_push():
+async def test_the_cooldown_window_follows_the_configured_hours():
     workflow = _workflow()
-    handler, notifier, _ = _handler(
+    handler, notifier = _handler(
         [_failed_execution(workflow.id)],
-        sent_recently=f"workflow_failure_alert:{workflow.id}",
-    )
-    await handler(workflow, RuntimeError("x"))
-    notifier.notify.assert_not_awaited()
-
-
-@pytest.mark.parametrize("outcome", ["failed", "delivered", "held"])
-async def test_every_failure_is_recorded_whatever_the_outcome(outcome):
-    workflow = _workflow()
-    handler, _, push_log = _handler([_failed_execution(workflow.id)], outcome=outcome)
-
-    await handler(workflow, RuntimeError("x"))
-
-    assert f"workflow_failure:{workflow.id}" in push_log.keys
-
-
-async def test_a_failure_inside_the_cooldown_is_still_recorded():
-    workflow = _workflow()
-    handler, notifier, push_log = _handler(
-        [_failed_execution(workflow.id)],
-        sent_recently=f"workflow_failure_alert:{workflow.id}",
+        settings=SimpleNamespace(
+            proactive_config={"alerts": {"workflow_failure_cooldown_hours": 6}}
+        ),
     )
 
     await handler(workflow, RuntimeError("x"))
 
-    notifier.notify.assert_not_awaited()
-    assert push_log.keys.count(f"workflow_failure:{workflow.id}") == 1
+    assert notifier.notify.await_args.kwargs["once_per"].within == timedelta(hours=6)
 
 
-@pytest.mark.parametrize(
-    ("outcome", "starts_cooldown"),
-    [("failed", False), ("delivered", True), ("held", True)],
-)
-async def test_the_alert_cooldown_starts_only_when_delivered_or_held(
-    outcome, starts_cooldown
-):
-    workflow = _workflow()
-    handler, _, push_log = _handler([_failed_execution(workflow.id)], outcome=outcome)
-
-    await handler(workflow, RuntimeError("x"))
-
-    assert (f"workflow_failure_alert:{workflow.id}" in push_log.keys) is starts_cooldown
-
-
-async def test_an_alert_that_failed_is_sent_again_on_the_next_failure():
-    workflow = _workflow()
-    handler, notifier, push_log = _handler(
-        [_failed_execution(workflow.id)], outcome="failed"
+async def _real_handler(workflow, *, interface, clock):
+    store = AsyncMock()
+    store.list_executions = AsyncMock(return_value=[_failed_execution(workflow.id)])
+    notifier = ProactiveNotifier(
+        interface,
+        _notification_store(),
+        push_log=InMemoryPushLog(clock=clock),
+        clock=clock,
     )
+    handler = make_workflow_failure_handler(
+        settings=SimpleNamespace(proactive_config={}),
+        workflow_store=store,
+        notifier=notifier,
+    )
+    return handler
 
-    await handler(workflow, RuntimeError("x"))
-    await handler(workflow, RuntimeError("x"))
 
-    assert notifier.notify.await_count == 2
-    assert push_log.keys.count(f"workflow_failure:{workflow.id}") == 2
+def _notification_store():
+    store = AsyncMock()
+
+    async def _create(**kw):
+        return NotificationRow(
+            id=str(uuid4()),
+            event_type=kw["event_type"],
+            source=kw["source"],
+            title=kw["title"],
+            body=kw["body"],
+            target_type=kw.get("target_type"),
+            target_id=kw.get("target_id"),
+            target_parent_id=kw.get("target_parent_id"),
+            push_class=kw["push_class"],
+            urgency=kw["urgency"],
+            format=kw["format"],
+            actions=kw["actions"],
+            delivery=kw["delivery"],
+            created_at=datetime.now(timezone.utc),
+            read_at=None,
+        )
+
+    store.create = AsyncMock(side_effect=_create)
+    return store
 
 
-async def test_a_delivered_alert_suppresses_the_next_one_inside_the_cooldown():
+async def test_a_failed_alert_is_sent_again_and_a_delivered_one_cools():
     workflow = _workflow()
-    handler, notifier, _ = _handler([_failed_execution(workflow.id)])
+    now = [datetime(2026, 10, 26, 9, tzinfo=timezone.utc)]
+    interface = AsyncMock()
+    interface.push = AsyncMock(side_effect=[RuntimeError("down"), None, None])
+    handler = await _real_handler(workflow, interface=interface, clock=lambda: now[0])
 
-    await handler(workflow, RuntimeError("x"))
-    await handler(workflow, RuntimeError("x"))
+    await handler(workflow, RuntimeError("x"))  # push raises -> failed, no claim
+    await handler(workflow, RuntimeError("x"))  # delivered
+    await handler(workflow, RuntimeError("x"))  # inside the window -> deduped
 
-    assert notifier.notify.await_count == 1
+    assert interface.push.await_count == 2
 
 
 async def test_disabled_alerts_send_nothing():
     workflow = _workflow()
-    handler, notifier, _ = _handler([_failed_execution(workflow.id)])
+    handler, notifier = _handler([_failed_execution(workflow.id)])
     handler_disabled = make_workflow_failure_handler(
         settings=SimpleNamespace(
             proactive_config={"alerts": {"workflow_failure_enabled": False}}
         ),
         workflow_store=AsyncMock(),
         notifier=notifier,
-        push_log_store=AsyncMock(),
     )
     await handler_disabled(workflow, RuntimeError("x"))
     notifier.notify.assert_not_awaited()

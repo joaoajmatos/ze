@@ -248,44 +248,6 @@ async def test_mark_all_read_returns_count():
     assert result == 4
 
 
-# ── exists_recent (dedup, research R3) ─────────────────────────────────────
-
-
-async def test_exists_recent_true_when_row_found():
-    conn = make_conn()
-    conn.fetchrow = AsyncMock(return_value={"1": 1})
-    store, _ = make_store(conn)
-
-    result = await store.exists_recent(
-        event_type="stuck_goal", target_type="goal", target_id="goal-a", hours=24
-    )
-
-    assert result is True
-
-
-async def test_exists_recent_false_when_no_row():
-    store, _ = make_store(make_conn())
-
-    result = await store.exists_recent(
-        event_type="stuck_goal", target_type="goal", target_id="goal-a", hours=24
-    )
-
-    assert result is False
-
-
-async def test_exists_recent_scoped_by_target_not_just_event_type():
-    """Same event_type but different target must not dedup against each other."""
-    conn = make_conn()
-    store, _ = make_store(conn)
-
-    await store.exists_recent(
-        event_type="stuck_goal", target_type="goal", target_id="goal-a", hours=24
-    )
-
-    call_args = conn.fetchrow.call_args.args
-    assert "goal-a" in call_args
-
-
 # ── prune_read_older_than ──────────────────────────────────────────────────
 
 
@@ -464,7 +426,10 @@ async def test_list_page_returns_urgency_and_delivered_at():
 
 
 async def test_latest_by_event_returns_newest_first_rows():
-    rows = [_make_row(event_type="morning_brief"), _make_row(event_type="morning_brief")]
+    rows = [
+        _make_row(event_type="morning_brief"),
+        _make_row(event_type="morning_brief"),
+    ]
     conn = make_conn(rows=rows)
     store, conn = make_store(conn)
 

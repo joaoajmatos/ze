@@ -169,7 +169,7 @@ async def test_a_failed_lookup_does_not_block_later_workflows():
 
     def lookup(workflow_id, limit=20):
         if workflow_id == broken.id:
-            raise RuntimeError("push_log unavailable")
+            raise RuntimeError("execution lookup unavailable")
         return [_execution(healthy, last_started)]
 
     store = _store([broken, healthy], side_effect=lookup)

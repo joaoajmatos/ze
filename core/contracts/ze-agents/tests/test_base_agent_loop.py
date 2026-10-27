@@ -25,7 +25,13 @@ from ze_agents.hooks import (
 )
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import Injected, ToolAccess, clear_tool_registry, tool
-from ze_agents.types import AbortToken, AgentContext, AgentResult, ToolCall
+from ze_agents.types import (
+    AbortToken,
+    AgentContext,
+    AgentResult,
+    ProcedureInvocation,
+    ToolCall,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -1239,6 +1245,6 @@ class TestToolScriptVisibility:
         client = _script_client(("done", None))
         ctx = _ctx()
         ctx.script_runner = _ScriptRunner()
-        ctx.procedure_tool_names = ["get_rows"]
+        ctx.procedure_invocation = ProcedureInvocation("i1", "p1", "v1", ["get_rows"])
         await a.agentic_loop(ctx, client, [], system="s")
         assert _sent_tool_names(client) == ["get_rows", SCRIPT_TOOL_NAME]

@@ -14,6 +14,7 @@ from ze_automation.goals.types import (
     MilestoneStatus,
 )
 from ze_agents.interface.types import Notification
+from ze_proactive.types import OncePer
 
 
 def _n(call):
@@ -83,7 +84,7 @@ async def test_push_reuse_notice_sends_notification():
     assert notification.urgency == "low"
     assert notification.format == "html"
     assert push.await_count == 1  # awaited, not a dropped coroutine
-    assert push.call_args.kwargs["budget_key"] == f"goal_reuse:{milestone.id}"
+    assert push.call_args.kwargs["once_per"] == OncePer(f"goal_reuse:{milestone.id}")
 
 
 async def test_push_reuse_notice_includes_hint_content():

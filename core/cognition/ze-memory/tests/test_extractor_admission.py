@@ -92,8 +92,6 @@ async def test_gather_surface_disabled_runs_haiku_judge():
     )
     assert isinstance(admission, FactAdmission)
     assert admission.path == "haiku"
-    assert admission.judgment is None
-    assert admission.consumed == frozenset()
     assert [(f.predicate, f.value, f.agent) for f in admission.facts] == [
         ("preference", "aisle seats", "companion")
     ]

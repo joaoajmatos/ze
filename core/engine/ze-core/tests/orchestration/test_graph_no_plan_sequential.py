@@ -21,7 +21,7 @@ def test_agent_state_has_no_dynamic_plan_fields():
     assert "dynamic_plan_steps" not in keys
     assert "dynamic_plan_high_risk" not in keys
     assert "conductor_hint" in keys
-    assert "conductor_ledger" in keys
+    assert "conductor_ledgers" in keys
     assert "conductor_delegate_counts" in keys
     assert "conductor_delegate_total" in keys
 
@@ -31,7 +31,7 @@ def test_make_graph_input_has_conductor_not_dynamic_plan():
     assert "dynamic_plan_steps" not in graph_input
     assert "dynamic_plan_high_risk" not in graph_input
     assert graph_input["conductor_hint"] is None
-    assert graph_input["conductor_ledger"] == []
+    assert graph_input["conductor_ledgers"] == []
     assert graph_input["conductor_delegate_counts"] == {}
     assert graph_input["conductor_delegate_total"] == 0
 

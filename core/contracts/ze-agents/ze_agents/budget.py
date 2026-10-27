@@ -19,8 +19,6 @@ log = get_logger(__name__)
 DEFAULT_BUDGET_SECONDS = 110
 DEFAULT_RESERVE_SECONDS = 25
 
-_SOFT_DEADLINE_KEY = "_soft_deadline"
-
 WRAP_UP_NOTE = (
     "The time budget for this turn is used up. Do not call any more tools. "
     "Answer now from what you already have: say what you finished, what you "
@@ -50,16 +48,16 @@ def conductor_budget(config: dict[str, Any] | None) -> tuple[int, int]:
 
 
 def set_soft_deadline(ctx: AgentContext, seconds: float) -> None:
-    ctx.extensions[_SOFT_DEADLINE_KEY] = time.monotonic() + seconds
+    ctx.conductor.deadline = time.monotonic() + seconds
 
 
 def has_budget(ctx: AgentContext) -> bool:
-    return _SOFT_DEADLINE_KEY in ctx.extensions
+    return ctx.conductor.deadline is not None
 
 
 def remaining_seconds(ctx: AgentContext) -> float | None:
     """Seconds left before the soft deadline; None when the turn has no budget."""
-    deadline = ctx.extensions.get(_SOFT_DEADLINE_KEY)
+    deadline = ctx.conductor.deadline
     if deadline is None:
         return None
     return float(deadline) - time.monotonic()

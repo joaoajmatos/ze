@@ -280,38 +280,32 @@ async def test_workflow_noop_toggle_returns_no_payload(start_enabled: bool) -> N
     assert call.undo is None
 
 
-class _LoopStore:
+class _LoopLifecycle:
     def __init__(self) -> None:
         self.loops: dict[UUID, SimpleNamespace] = {}
 
-    async def list_evidence(self, lid):
-        return []
-
-    async def transition(self, lid, state, **kw):
+    async def drop(self, lid):
         from ze_worldstate.types import LoopState
 
-        self.loops[lid].state = LoopState(state)
+        self.loops[lid].state = LoopState.DROPPED
         return self.loops[lid]
-
-    async def set_dismissed_evidence_fingerprint(self, lid, fp):
-        return None
 
 
 async def test_loop_round_trip_drops_a_created_loop_only() -> None:
     from ze_worldstate.agents.agent import LoopsAgent
     from ze_worldstate.types import LoopState, TrackOutcome
 
-    store = _LoopStore()
+    lifecycle = _LoopLifecycle()
     loop = SimpleNamespace(id=uuid4(), title="tax return", state=LoopState.ACTIVE)
-    store.loops[loop.id] = loop
+    lifecycle.loops[loop.id] = loop
     tracker = MagicMock()
     outcomes = iter([TrackOutcome.CREATED, TrackOutcome.REINFORCED])
     tracker.track = AsyncMock(
-        side_effect=lambda t, w: SimpleNamespace(
+        side_effect=lambda t, w, s=None: SimpleNamespace(
             ok=True, outcome=next(outcomes), loop=loop, error=None
         )
     )
-    agent = LoopsAgent(MagicMock(), store, tracker)
+    agent = LoopsAgent(MagicMock(), MagicMock(), tracker, lifecycle)
     created = await _call(agent, "track_loop", title="tax return")
     await _undo(agent, created)
     assert loop.state is LoopState.DROPPED

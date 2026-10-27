@@ -11,6 +11,7 @@ from ze_automation.goals.types import Goal, GoalStatus, Milestone, VerificationG
 from ze_automation.push_kinds import GOAL_OVERLAP, GOAL_PLAN_PROPOSED
 from ze_logging import get_logger
 from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.types import OncePer
 
 log = get_logger(__name__)
 
@@ -163,5 +164,5 @@ async def _check_convergence(
         format="html",
         target_type="goal",
         target_id=str(new_goal.id),
-        budget_key=f"goal_overlap:{new_goal.id}",
+        once_per=OncePer(f"goal_overlap:{new_goal.id}"),
     )

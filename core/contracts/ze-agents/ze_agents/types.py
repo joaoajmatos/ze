@@ -99,6 +99,59 @@ class ToolCall:
 
 
 @dataclass
+class WriteGateState:
+    """The part of a context the write gates read (phases 165 and 181).
+
+    `loop_active` is set only by the agent's own loop; every derivation starts it False.
+    Runtime/turn-local: never checkpoint a context.
+    """
+
+    # The saved loop to re-enter after the user answered.
+    resume: ParkedLoop | None = None
+    decisions: dict[str, WriteDecision] = field(default_factory=dict)
+    pre_approved: frozenset[str] = frozenset()
+    round: int = 0
+    approval_request_id: str | None = None
+    loop_active: bool = False
+    # Phase 165: a retry run regenerates text only; WRITE tools are refused.
+    retry_mode: bool = False
+
+
+@dataclass
+class DelegateTally:
+    """Delegates made in one turn. One object is shared by every subtask of a pass."""
+
+    counts: dict[str, int] = field(default_factory=dict)
+    total: int = 0
+
+
+@dataclass
+class ConductorState:
+    """The conductor's state for one run (phase 153). Primitives only, except `tally`."""
+
+    hint: list[dict[str, str]] | None = None
+    ledger: list[dict[str, str]] = field(default_factory=list)
+    tally: DelegateTally = field(default_factory=DelegateTally)
+    # Run-local; never written to graph state. Kept off `extensions` so a delegate that
+    # inherits `extensions` does not inherit the companion's deadline.
+    deadline: float | None = None
+    stalls: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class ProcedureInvocation:
+    """A procedure `invoke_procedure` started in this run (phase 139)."""
+
+    invocation_id: str
+    procedure_id: str
+    version_id: str
+    # The narrowing: only ever intersects an agent's tools.
+    tool_names: list[str] = field(default_factory=list)
+    # Which subtask invoked it (0 outside a compound turn).
+    subtask: int = 0
+
+
+@dataclass
 class AgentContext:
     session_id: str
     prompt: str
@@ -156,32 +209,18 @@ class AgentContext:
     # `tools` (FR-008). Never checkpoint: skills are re-matched fresh on resume.
     active_skills: list[Any] = field(default_factory=list, repr=False)
     skill_tool_names: list[str] | None = field(default=None, repr=False)
-    # Procedure discovery/activation (Phase 139). Matches are advisory until
-    # invoke_procedure; procedure_tool_names only ever narrows. Never checkpoint.
+    # Procedure discovery (Phase 139). Matches are advisory until invoke_procedure sets
+    # `procedure_invocation`, whose tool_names only ever narrow. Never checkpoint.
     procedure_guidance: str | None = field(default=None, repr=False)
     # script_runner is runtime-only; set from the turn config so agentic_loop can offer
     # run_tool_script. Never checkpoint.
     script_runner: Any | None = field(default=None, repr=False)
     procedure_matches: list[Any] | None = field(default=None, repr=False)
-    procedure_tool_names: list[str] | None = field(default=None, repr=False)
-    procedure_invocation_id: str | None = field(default=None, repr=False)
-    procedure_invoked_id: str | None = field(default=None, repr=False)
-    procedure_invoked_version_id: str | None = field(default=None, repr=False)
-    # Turn-local conductor hint/ledger (Phase 153). Lists of primitives only.
-    conductor_hint: list[dict[str, str]] | None = None
-    conductor_ledger: list[dict[str, str]] = field(default_factory=list)
-    conductor_delegate_counts: dict[str, int] = field(default_factory=dict)
-    conductor_delegate_total: int = 0
-    # Phase 165: a retry run regenerates text only; WRITE tools are refused.
-    retry_mode: bool = False
-    # Phase 181 write confirmation. `resume` is the saved loop to re-enter after the
-    # user answered; the rest are runtime/turn-local. Never checkpoint a context.
-    resume: ParkedLoop | None = None
-    write_decisions: dict[str, WriteDecision] = field(default_factory=dict)
-    pre_approved_writes: frozenset[str] = frozenset()
-    write_round: int = 0
-    approval_request_id: str | None = None
-    loop_active: bool = False
+    procedure_invocation: ProcedureInvocation | None = field(default=None, repr=False)
+    # Turn-local conductor state (Phase 153): hint, this run's ledger, the shared tally.
+    conductor: ConductorState = field(default_factory=ConductorState)
+    # Everything the write gates read (phases 165, 181). Derived as one unit.
+    write_gate: WriteGateState = field(default_factory=WriteGateState)
     # extensions must hold only msgpack-serializable primitives so stored contexts
     # can be checkpointed. Use identity_builder for callable injection instead.
     extensions: dict[str, str | int | float | bool | None] = field(default_factory=dict)

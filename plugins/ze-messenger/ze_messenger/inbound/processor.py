@@ -16,6 +16,7 @@ from ze_sdk.memory import (
     submit_perception_facts,
 )
 from ze_sdk.contribution import EvidenceRef, TargetFace
+from ze_sdk.proactive import OncePer
 
 if TYPE_CHECKING:
     from ze_agents.client import LLMClient
@@ -150,7 +151,7 @@ class InboundMessageProcessor:
                     INBOUND_MESSAGE,
                     f"Message from {known.name or msg.sender}{subject_part}",
                     msg.body[:200],
-                    budget_key=f"inbound:{msg.channel_type}:{msg.message_id}",
+                    once_per=OncePer(f"inbound:{msg.channel_type}:{msg.message_id}"),
                 )
 
         if significant:

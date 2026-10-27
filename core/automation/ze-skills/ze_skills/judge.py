@@ -10,14 +10,12 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from functools import partial
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
+from ze_agents.judgment import DecisionUse, SurfaceConfig, parse_bar
 from ze_agents.system_one import (
     SystemOneQuestion,
     SystemOneResult,
-    parse_bar,
-    surface_block,
     valid_choice,
     valid_noul,
 )
@@ -48,26 +46,6 @@ _NEEDS_INSTRUCTIONS = (
 )
 
 
-@dataclass(frozen=True)
-class SkillsSurfaceConfig:
-    enabled: bool = False
-    choice_trust: float | None = None
-    needs_skill_hold: float | None = None
-    shortlist_k: int = DEFAULT_SHORTLIST_K
-    shortlist_floor: float = DEFAULT_SHORTLIST_FLOOR
-
-    @property
-    def calibrated(self) -> bool:
-        return (
-            self.enabled
-            and self.choice_trust is not None
-            and self.needs_skill_hold is not None
-        )
-
-
-_bar = partial(parse_bar, event="skills_bar_invalid")
-
-
 def _shortlist_k(value: Any) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         if value is not None:
@@ -77,21 +55,26 @@ def _shortlist_k(value: Any) -> int:
 
 
 def _shortlist_floor(value: Any) -> float:
-    parsed = _bar(value, "shortlist_floor")
+    parsed = parse_bar(value, "shortlist_floor", surface="skills")
     return DEFAULT_SHORTLIST_FLOOR if parsed is None else parsed
 
 
-def skills_surface_config(settings: Any) -> SkillsSurfaceConfig:
-    block = surface_block(settings, "skills")
-    if block is None:
-        return SkillsSurfaceConfig()
-    return SkillsSurfaceConfig(
-        enabled=block.get("enabled") is True,
-        choice_trust=_bar(block.get("choice_trust"), "choice_trust"),
-        needs_skill_hold=_bar(block.get("needs_skill_hold"), "needs_skill_hold"),
-        shortlist_k=_shortlist_k(block.get("shortlist_k", DEFAULT_SHORTLIST_K)),
-        shortlist_floor=_shortlist_floor(block.get("shortlist_floor")),
-    )
+@dataclass(frozen=True)
+class SkillsSurfaceConfig(SurfaceConfig):
+    choice_trust: float | None = None
+    needs_skill_hold: float | None = None
+    shortlist_k: int = DEFAULT_SHORTLIST_K
+    shortlist_floor: float = DEFAULT_SHORTLIST_FLOOR
+
+    SURFACE: ClassVar[str] = "skills"
+    BARS: ClassVar[dict[str, str]] = {
+        "choice_trust": Q_SKILL,
+        "needs_skill_hold": Q_NEEDS,
+    }
+    EXTRAS: ClassVar[dict[str, Any]] = {
+        "shortlist_k": _shortlist_k,
+        "shortlist_floor": _shortlist_floor,
+    }
 
 
 def shortlist(
@@ -189,4 +172,11 @@ def decide(
         skill_key=choice.choice,
         confidence=peakedness,
         consumed=consumed,
+    )
+
+
+def read_decision(decision: SkillsDecision) -> DecisionUse:
+    return DecisionUse(
+        consumed=decision.consumed,
+        unused_reason=decision.reason if decision.kind == "skip" else None,
     )

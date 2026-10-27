@@ -19,24 +19,52 @@ async def make_loop(
     confidence: float = 0.9,
     deadline: datetime | None = None,
     confirmed_at: datetime | None = None,
+    closed_at: datetime | None = None,
+    rationale: str | None = None,
+    fingerprint: str | None = None,
+    reminder_id: UUID | None = None,
+    goal_id: UUID | None = None,
+    confidence_prior: float | None = None,
+    created_at: datetime | None = None,
 ) -> OpenLoop:
-    """Create through the real store; the deadline is set through the real store method."""
-    store = PostgresLoopStore(pool)
+    """Seed a row with plain SQL: a seed is not a lifecycle event."""
     if confirmed_at is None and state in (LoopState.ACTIVE, LoopState.DRIFTING):
         confirmed_at = utcnow()
-    loop = await store.create(
-        OpenLoop(
-            title=title,
-            provenance=provenance,
-            confidence=confidence,
-            state=state,
-            confirmed_at=confirmed_at,
+    async with pool.acquire() as conn:
+        loop_id = await conn.fetchval(
+            """
+            INSERT INTO open_loops
+              (title, state, provenance, confidence, drift_deadline, confirmed_at,
+               closed_at, drift_rationale, dismissed_evidence_fingerprint,
+               reminder_id, goal_id, confidence_prior, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+                    COALESCE($13, now()))
+            RETURNING id
+            """,
+            title,
+            state.value,
+            provenance,
+            confidence,
+            deadline,
+            confirmed_at,
+            closed_at,
+            rationale,
+            fingerprint,
+            reminder_id,
+            goal_id,
+            confidence_prior,
+            created_at,
         )
-    )
-    if deadline is not None:
-        await store.set_drift_deadline(loop.id, deadline)
-        loop = await store.get(loop.id)
-    return loop
+    return await PostgresLoopStore(pool).get(loop_id)
+
+
+async def fail_writes_to(pool: asyncpg.Pool, table: str) -> None:
+    """Make every INSERT or UPDATE on `table` raise until the next reset (research R9)."""
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO ze_test_faults (table_name) VALUES ($1) ON CONFLICT DO NOTHING",
+            table,
+        )
 
 
 async def make_goal_with_gates(
@@ -91,4 +119,50 @@ async def make_episode(
             agent,
             prompt,
             response,
+        )
+
+
+async def link_evidence(
+    pool: asyncpg.Pool, loop_id: UUID, kind: str = "episode", evidence_id: UUID | None = None
+) -> UUID:
+    """Seed an evidence link with plain SQL; returns the evidence id."""
+    from uuid import uuid4
+
+    evidence_id = evidence_id or uuid4()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO memory_relationships
+              (source_id, source_type, predicate, target_id, target_type,
+               confidence, creation_method)
+            VALUES ($1, 'open_loop', 'derived_from', $2, $3, 1.0, 'extracted')
+            """,
+            loop_id,
+            evidence_id,
+            kind,
+        )
+    return evidence_id
+
+
+async def seed_source(
+    pool: asyncpg.Pool,
+    loop_id: UUID,
+    inflow: str = "email",
+    ref: str = "T1",
+    *,
+    role: str = "corroboration",
+    promoted: bool = False,
+) -> None:
+    """Seed an open_loop_sources row with plain SQL."""
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO open_loop_sources"
+            " (loop_id, role, inflow, source_ref, same_concern, promoted, model, latency_ms)"
+            " VALUES ($1, $2, $3, $4, $5, $6, 'm', 100)",
+            loop_id,
+            role,
+            inflow,
+            ref,
+            None if role == "origin" else 0.9,
+            promoted,
         )

@@ -7,10 +7,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol, runtime_checkable
 
-from ze_logging import get_logger
-
-log = get_logger(__name__)
-
 QuestionKind = Literal["noul", "choice", "score"]
 SkipReason = Literal[
     "disabled",
@@ -71,32 +67,6 @@ class SystemOneClient(Protocol):
         *,
         max_attempts: int | None = None,
     ) -> SystemOneResult: ...
-
-
-def surface_block(settings: Any, surface: str) -> dict | None:
-    """``system_one.surfaces.<surface>`` from a config dict or a settings object, else ``None``."""
-    config = (
-        settings if isinstance(settings, dict) else getattr(settings, "config", None)
-    )
-    if not isinstance(config, dict):
-        return None
-    system_one = config.get("system_one")
-    surfaces = system_one.get("surfaces") if isinstance(system_one, dict) else None
-    block = surfaces.get(surface) if isinstance(surfaces, dict) else None
-    return block if isinstance(block, dict) else None
-
-
-def parse_bar(value: Any, name: str, *, event: str) -> float | None:
-    """A bar in [0, 1], or ``None`` when unset or invalid (invalid logs ``event``)."""
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        log.warning(event, bar=name)
-        return None
-    if math.isnan(value) or not 0.0 <= value <= 1.0:
-        log.warning(event, bar=name)
-        return None
-    return float(value)
 
 
 def valid_noul(answer: SystemOneAnswer | None, *, unit_range: bool = True) -> bool:

@@ -153,18 +153,13 @@ from ze_agents.system_one import SystemOneAnswer, SystemOneResult  # noqa: E402
 
 from ze_core.conversation.messages.types import JudgmentTrace  # noqa: E402
 
-
-@dataclass
-class _Judgment:
-    result: Any
-    question_kinds: dict
-    consumed: frozenset = frozenset()
-    skip_reason: str | None = None
+from tests.support.judgments import make_judgment  # noqa: E402
 
 
-def _ok_judgment(consumed=frozenset({"skill", "needs_skill"})) -> _Judgment:
-    return _Judgment(
-        result=SystemOneResult(
+def _ok_judgment(consumed=frozenset({"skill", "needs_skill"})):
+    return make_judgment(
+        "skills",
+        SystemOneResult(
             outcome="ok",
             latency_ms=12,
             answers={
@@ -172,7 +167,7 @@ def _ok_judgment(consumed=frozenset({"skill", "needs_skill"})) -> _Judgment:
                 "needs_skill": SystemOneAnswer(type="noul", noul=0.8),
             },
         ),
-        question_kinds={"skill": "choice", "needs_skill": "noul"},
+        {"skill": "choice", "needs_skill": "noul"},
         consumed=consumed,
     )
 
@@ -215,9 +210,11 @@ async def test_judgments_returned_even_when_no_skill_applies():
 
 @pytest.mark.asyncio
 async def test_skip_judgment_rows_carry_reason_and_abstain_keeps_matches():
-    skip = _Judgment(
-        result=SystemOneResult(outcome="skip", skip_reason="timeout"),
-        question_kinds={"skill": "choice", "needs_skill": "noul"},
+    skip = make_judgment(
+        "skills",
+        SystemOneResult(outcome="skip", skip_reason="timeout"),
+        {"skill": "choice", "needs_skill": "noul"},
+        skip_reason="timeout",
     )
     a = _FakeMatch(_FakeSkill("A", allowed_tools=["x"]))
     b = _FakeMatch(_FakeSkill("B", allowed_tools=["x", "y"]))

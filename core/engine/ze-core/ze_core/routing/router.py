@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ze_agents.client import LLMClient
-from ze_agents.system_one import SystemOneResult
+from ze_agents.judgment import Judgment, gate, judge
 from ze_agents.errors import InvalidPromptError, RoutingError
 from ze_logging import get_logger
 from ze_agents.registry import get_enabled_agents
@@ -14,6 +14,7 @@ from ze_core.routing.judge import (
     build_questions,
     criterion_for,
     decide,
+    read_decision,
     shortlist,
 )
 from ze_core.routing.store import RoutingStore
@@ -21,7 +22,6 @@ from ze_core.routing.tier import resolve_agent_model
 from ze_core.routing.types import (
     RouterConfig,
     RoutingEnvelope,
-    RoutingJudgment,
     SubTask,
 )
 
@@ -158,13 +158,11 @@ class EmbeddingRouter:
 
     async def _judge(
         self, state: dict | None, ranked: list[str]
-    ) -> tuple[RoutingJudgment | None, RoutingDecision | None]:
+    ) -> tuple[Judgment | None, RoutingDecision | None]:
         surface = self._surface
-        if state is None or self._system_one is None or len(ranked) < 2:
+        if state is None or len(ranked) < 2:
             return None, None
-        if not surface.calibrated:
-            if surface.enabled:
-                log.warning("routing_surface_uncalibrated")
+        if gate(surface, self._system_one) is not None:
             return None, None
 
         enabled = get_enabled_agents()
@@ -172,24 +170,14 @@ class EmbeddingRouter:
         if len(names) < 2:
             return None, None
         questions = build_questions({n: criterion_for(enabled[n]) for n in names})
-        try:
-            result = await self._system_one.evaluate(state, questions, max_attempts=1)
-        except Exception as exc:
-            log.warning("routing_judgment_error", error=str(exc))
-            result = SystemOneResult(outcome="skip", skip_reason="error")
-
-        decision = decide(result, surface, names)
-        judgment = RoutingJudgment(
-            result=result,
-            question_kinds={qid: q.type for qid, q in questions.items()},
-            consumed=decision.consumed,
-            skip_reason=(
-                decision.reason
-                if decision.kind == "skip" and result.outcome == "ok"
-                else None
-            ),
+        return await judge(
+            self._system_one,
+            surface,
+            state,
+            questions,
+            decide=lambda result: decide(result, surface, names),
+            read=read_decision,
         )
-        return judgment, decision
 
     def _envelope(
         self,
@@ -200,7 +188,7 @@ class EmbeddingRouter:
         confidence: float,
         score_gap: float,
         raw_scores: dict[str, float],
-        judgment: RoutingJudgment | None,
+        judgment: Judgment | None,
     ) -> RoutingEnvelope:
         model = self._full_model(primary)
         return RoutingEnvelope(

@@ -1,7 +1,7 @@
 from ze_personal.contacts.store import PersonStore
 from ze_logging import get_logger
 from ze_sdk.proactive import proactive_job
-from ze_sdk.proactive import ProactiveNotifier
+from ze_sdk.proactive import OncePer, ProactiveNotifier
 from ze_agents.interface.types import Action
 from ze_personal.push_kinds import CONTACT_REVIEW
 
@@ -52,7 +52,7 @@ class ContactReviewNotifier:
                 ],
                 target_type="person",
                 target_id=pid,
-                budget_key=f"contact:{pid}",
+                once_per=OncePer(f"contact:{pid}"),
             )
 
         self._log.info("contact_review_pushed", count=len(pending))

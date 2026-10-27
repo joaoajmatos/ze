@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from ze_personal.jobs.insights import InsightEngine
 from ze_personal.push_kinds import INSIGHT
-from ze_sdk.proactive import ProactiveNotifier
+from ze_sdk.proactive import OncePer, ProactiveNotifier
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -112,11 +112,34 @@ async def test_insights_generates_and_pushes():
     notifier.notify.assert_awaited_once()
     call = notifier.notify.call_args
     assert call.args[0] is INSIGHT
-    assert call.kwargs["budget_key"] == f"insight:{inserted_id}"
+    assert call.kwargs["once_per"] == OncePer(f"insight:{inserted_id}")
     pushed_text = notifier.notify.call_args[0][2]
     assert "sleep" in pushed_text.lower()
     # UPDATE should mark pushed
     conn.execute.assert_awaited_once()
+
+
+async def test_insights_skips_pushed_update_when_notify_fails():
+    conn = make_conn()
+    conn.fetch = AsyncMock(
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=_profile_facets(),
+        )
+    )
+    conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
+
+    client = AsyncMock()
+    client.complete = AsyncMock(return_value=_insight_json())
+    notifier = make_notifier()
+    notifier.notify = AsyncMock(return_value="failed")
+
+    engine, _ = make_engine(conn=conn, notifier=notifier, client=client)
+    await engine.run()
+
+    notifier.notify.assert_awaited_once()
+    conn.execute.assert_not_awaited()
 
 
 async def test_insights_calls_complete_with_messages_not_prompt():

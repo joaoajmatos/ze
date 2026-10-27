@@ -3,6 +3,7 @@ admission skipped (Phase 165 US3/SC-004, Phase 180 one retry policy)."""
 
 from __future__ import annotations
 
+from ze_agents.types import WriteGateState
 import asyncio
 from unittest.mock import AsyncMock
 
@@ -41,7 +42,7 @@ def _agent() -> BaseAgent:
 
 
 def _ctx(retry: bool) -> AgentContext:
-    return AgentContext(session_id="s1", prompt="hi", retry_mode=retry)
+    return AgentContext(session_id="s1", prompt="hi", write_gate=WriteGateState(retry_mode=retry))
 
 
 async def test_write_tool_refused_in_retry_mode_and_body_never_runs():
@@ -104,7 +105,7 @@ async def test_delegate_subcontext_inherits_retry_mode():
         tools = []
 
         async def run(self, ctx):
-            seen.append(ctx.retry_mode)
+            seen.append(ctx.write_gate.retry_mode)
             return AgentResult(agent=self.name, response="done")
 
     register_instance("calendar", _Spec())

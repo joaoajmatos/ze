@@ -305,30 +305,6 @@ class NotificationStore:
             )
         return _rowcount(result)
 
-    async def exists_recent(
-        self,
-        *,
-        event_type: str,
-        target_type: str | None,
-        target_id: str | None,
-        hours: float,
-    ) -> bool:
-        async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                SELECT 1 FROM notifications
-                WHERE event_type = $1
-                AND target_type IS NOT DISTINCT FROM $2
-                AND target_id IS NOT DISTINCT FROM $3
-                AND created_at > NOW() - ($4 * INTERVAL '1 hour')
-                """,
-                event_type,
-                target_type,
-                target_id,
-                hours,
-            )
-        return row is not None
-
     async def prune_read_older_than(self, days: int = 90) -> int:
         async with self._pool.acquire() as conn:
             result = await conn.execute(

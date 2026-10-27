@@ -11,7 +11,6 @@ from ze_logging import get_logger
 from ze_sdk import ZePlugin
 from ze_agents.settings import Settings as CoreSettings
 from ze_proactive.notifier import ProactiveNotifier
-from ze_proactive.push_log_store import PushLogStore
 from ze_calendar.action_records import configure_action_recorder
 from ze_calendar.reminders.calendar_store import CalendarReminderStore
 from ze_calendar.reminders.store import ReminderStore, fire_reminder
@@ -31,7 +30,6 @@ class CalendarPlugin(ZePlugin):
         *,
         pool: asyncpg.Pool,
         notifier: ProactiveNotifier,
-        push_log_store: PushLogStore,
         openrouter_client: LLMClient,
         settings: CoreSettings,
         google_credentials: "GoogleCredentials | None" = None,
@@ -39,7 +37,6 @@ class CalendarPlugin(ZePlugin):
     ) -> None:
         self._pool = pool
         self._notifier = notifier
-        self._push_log_store = push_log_store
         self._openrouter_client = openrouter_client
         self._settings = settings
         self._google_credentials = google_credentials
@@ -147,7 +144,6 @@ class CalendarPlugin(ZePlugin):
         calendar_reminder_service = CalendarReminderService(
             notifier=self._notifier,
             store=self._calendar_reminder_store,
-            push_log_store=self._push_log_store,
             openrouter_client=self._openrouter_client,
             scheduler=container.workflow_scheduler,
             settings=self._settings,

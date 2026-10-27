@@ -75,6 +75,11 @@ push-bar-gated surfacing. Before Phase 170 the drift predicate never matched a r
 goals, and correlation hypotheses together, plus user-directed priority override.
 One shared attention budget (Phase 177) now covers every discretionary push, and a single interruption
 governor holds accountability and discretionary pushes during quiet hours.
+Phase 204 gave the pushes one bar. Each source (open loops, correlation hypotheses) describes its
+candidates and never sends them through its own check. `ze-priority`'s push bar screens every candidate
+for confidence, relevance, a recent inline mention, novelty, and grounding, and the attention arbitration
+job sends the top survivor. Each push's cooldown is an `OncePer` claim held by `ze-proactive`, which
+owns the claim store. `ze-worldstate` no longer depends on `ze-correlation`.
 
 A loop's claim kind comes from its state (Phase 199): `suspicion` while it is suspected, `priority` once it is active, drifting, or closed, and none once it is dropped. A loop records where it came from. The `open_loop_sources` table (Phase 172) holds the origin and every counted corroboration. The source key per inflow is:
 

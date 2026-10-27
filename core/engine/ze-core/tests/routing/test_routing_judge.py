@@ -16,7 +16,6 @@ from ze_core.routing.judge import (
     build_questions,
     criterion_for,
     build_state,
-    routing_surface_config,
     shortlist,
 )
 
@@ -31,23 +30,27 @@ class _Settings:
 
 
 def _cfg(block) -> RoutingSurfaceConfig:
-    return routing_surface_config(_Settings(_settings(block)["config"]))
+    return RoutingSurfaceConfig.from_settings(_Settings(_settings(block)["config"]))
 
 
 class TestSurfaceConfig:
     def test_missing_block_is_disabled(self):
-        assert not routing_surface_config({}).enabled
-        assert not routing_surface_config(None).enabled
-        assert not routing_surface_config(_Settings({})).calibrated
+        assert not RoutingSurfaceConfig.from_settings({}).enabled
+        assert not RoutingSurfaceConfig.from_settings(None).enabled
+        assert not RoutingSurfaceConfig.from_settings(_Settings({})).calibrated
 
     def test_invalid_block_is_disabled(self):
-        cfg = routing_surface_config({"system_one": {"surfaces": {"routing": "on"}}})
+        cfg = RoutingSurfaceConfig.from_settings(
+            {"system_one": {"surfaces": {"routing": "on"}}}
+        )
         assert cfg == RoutingSurfaceConfig()
 
     def test_dict_and_settings_are_both_accepted(self):
         block = {"enabled": True, "choice_trust": 0.8, "multi_specialist_hold": 0.6}
-        as_dict = routing_surface_config(_settings(block)["config"])
-        as_obj = routing_surface_config(_Settings(_settings(block)["config"]))
+        as_dict = RoutingSurfaceConfig.from_settings(_settings(block)["config"])
+        as_obj = RoutingSurfaceConfig.from_settings(
+            _Settings(_settings(block)["config"])
+        )
         assert as_dict == as_obj
         assert as_dict.calibrated
 
@@ -336,7 +339,7 @@ class TestShippedConfig:
 
         path = Path(__file__).resolve().parents[5] / "apps/ze-api/config/config.yaml"
         block = yaml.safe_load(path.read_text())["system_one"]["surfaces"]["routing"]
-        cfg = routing_surface_config(yaml.safe_load(path.read_text()))
+        cfg = RoutingSurfaceConfig.from_settings(yaml.safe_load(path.read_text()))
         if block["enabled"] is True:
             assert cfg.choice_trust is not None
             assert cfg.multi_specialist_hold is not None

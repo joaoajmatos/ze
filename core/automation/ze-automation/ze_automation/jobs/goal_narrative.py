@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from ze_logging import get_logger
 from ze_proactive.job import proactive_job
 from ze_proactive.notifier import ProactiveNotifier
-from ze_proactive.push_log_store import PushLogStore
+from ze_proactive.types import OncePer
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.types import GoalStatus, MilestoneStatus
@@ -13,7 +13,7 @@ from ze_automation.push_kinds import GOAL_NARRATIVE
 
 log = get_logger(__name__)
 
-_DEDUP_HOURS = 144  # 6 days — prevents double-send on scheduler jitter
+_ONCE_PER = OncePer("goal_narrative", within=timedelta(hours=144))
 
 
 @proactive_job
@@ -23,18 +23,16 @@ class GoalNarrativeJob:
     def __init__(
         self,
         notifier: ProactiveNotifier,
-        push_log_store: PushLogStore,
         goal_store: GoalStore,
         goal_planner: GoalPlanner,
     ) -> None:
         self._notifier = notifier
-        self._push_log = push_log_store
         self._store = goal_store
         self._planner = goal_planner
 
     async def run(self) -> None:
-        if await self._push_log.was_sent_within_hours("goal_narrative", _DEDUP_HOURS):
-            log.info("goal_narrative_skipped_dedup")
+        if await self._notifier.on_cooldown(_ONCE_PER):
+            log.info("goal_narrative_skipped_cooldown")
             return
 
         active_goals = await self._store.list_active()
@@ -88,8 +86,7 @@ class GoalNarrativeJob:
             GOAL_NARRATIVE,
             "Goal progress this week",
             body,
+            once_per=_ONCE_PER,
             format="html",
         )
-        if outcome in ("delivered", "held"):
-            await self._push_log.log("goal_narrative", "weekly")
-        log.info("goal_narrative_sent", goals=len(paragraphs))
+        log.info("goal_narrative_finished", outcome=outcome, goals=len(paragraphs))

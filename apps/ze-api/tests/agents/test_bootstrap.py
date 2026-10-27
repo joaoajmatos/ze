@@ -67,6 +67,7 @@ def test_bootstrap_registers_companion_and_research(settings):
     from ze_collision.store import CollisionLogStore
     from ze_agents.nli import NLIClient
     from ze_memory.retriever import PostgresMemoryStore
+    from ze_worldstate.lifecycle import LoopLifecycle
     from ze_worldstate.store import LoopStore
     from ze_worldstate.tracking import LoopTracker
 
@@ -110,6 +111,7 @@ def test_bootstrap_registers_companion_and_research(settings):
         NLIClient: MM(spec=NLIClient),
         PostgresMemoryStore: MM(spec=PostgresMemoryStore),
         LoopStore: MM(spec=LoopStore),
+        LoopLifecycle: MM(spec=LoopLifecycle),
         LoopTracker: loop_tracker,
         SentenceTransformer: MM(spec=SentenceTransformer),
         object: client,

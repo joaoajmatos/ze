@@ -10,6 +10,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any
 
+from ze_proactive.candidates import BarThresholds
+
 from ze_worldstate.bootstrap import LoopPushSettings, loop_push_settings
 
 
@@ -19,7 +21,7 @@ def _settings(config: Any) -> SimpleNamespace:
 
 def test_defaults_when_config_is_empty():
     assert loop_push_settings(_settings({})) == LoopPushSettings(
-        enabled=True, thresholds={}, inline_cooldown_hours=12.0
+        enabled=True, thresholds={}, inline_cooldown_hours=12.0, repush_after_days=7.0
     )
 
 
@@ -43,6 +45,7 @@ def test_reads_enabled_thresholds_and_cooldown():
                     "enabled": False,
                     "thresholds": {"tau_confidence": 0.7},
                     "inline_cooldown_hours": 6.0,
+                    "repush_after_days": 3,
                 }
             }
         }
@@ -51,6 +54,7 @@ def test_reads_enabled_thresholds_and_cooldown():
     assert parsed.enabled is False
     assert parsed.thresholds == {"tau_confidence": 0.7}
     assert parsed.inline_cooldown_hours == 6.0
+    assert parsed.repush_after_days == 3.0
 
 
 def test_ignores_unknown_keys():
@@ -77,3 +81,34 @@ def test_thresholds_is_never_shared_mutable_state():
     first = loop_push_settings(settings)
     second = loop_push_settings(settings)
     assert first.thresholds is not second.thresholds
+
+
+def test_bar_thresholds_fill_defaults_and_apply_overrides():
+    assert LoopPushSettings().bar_thresholds() == BarThresholds(
+        confidence=0.5,
+        relevance=0.5,
+        novelty_similarity_max=0.85,
+        grounding=0.3,
+        inline_cooldown_hours=12.0,
+    )
+    custom = LoopPushSettings(
+        thresholds={"tau_confidence": 0.7, "grounding_threshold": 0.4},
+        inline_cooldown_hours=6.0,
+    ).bar_thresholds()
+    assert custom.confidence == 0.7
+    assert custom.grounding == 0.4
+    assert custom.inline_cooldown_hours == 6.0
+
+
+def test_build_worldstate_stack_builds_and_injects_the_lifecycle():
+    from ze_worldstate.bootstrap import build_worldstate_stack
+    from ze_worldstate.lifecycle import LoopLifecycle
+
+    shared = SimpleNamespace(
+        pool=object(), memory_store=object(), nli_client=object()
+    )
+    stack = build_worldstate_stack(shared, _settings({}))
+
+    assert isinstance(stack.lifecycle, LoopLifecycle)
+    assert stack.deps[LoopLifecycle] is stack.lifecycle
+    assert stack.lifecycle.collision_store is None

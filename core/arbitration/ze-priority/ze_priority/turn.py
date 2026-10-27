@@ -16,6 +16,7 @@ from ze_logging import get_logger
 from ze_priority.compose.rules import mention_card
 from ze_priority.errors import ZePriorityError
 from ze_priority.open_query import OpenQueryDetector
+from ze_priority.surfacing_memory import SurfacingMemory
 from ze_priority.types import (
     LoopOffer,
     LoopSignal,
@@ -37,7 +38,6 @@ OFFER_LIMIT = 3
 OFFER_COOLDOWN_HOURS = 168
 RECAP_LIMIT = 5
 OPEN_QUERY_LIMIT = 10
-OFFER_EVENT_PREFIX = "worldstate_loop_offer:"
 
 _MIN_NAME_LEN = 3
 
@@ -51,17 +51,24 @@ class TurnSurfacing:
         graph_store: Any,
         loop_store: Any,
         embedder: Any,
-        push_log: Any | None = None,
+        memory: SurfacingMemory,
         open_query_detector: OpenQueryDetector | None = None,
     ) -> None:
         self._priority_view = priority_view
         self._graph_store = graph_store
         self._loop_store = loop_store
-        self._push_log = push_log
+        self._memory = memory
         self._open_query = open_query_detector or OpenQueryDetector(embedder)
 
     def is_global_open_query(self, embedding: Any) -> bool:
         return self._open_query.is_open_query(embedding)
+
+    async def mentioned_inline_within(
+        self, source_kind: str, source_id: UUID, hours: float
+    ) -> bool:
+        return await self._memory.recorded_within(
+            "inline", source_kind, source_id, hours
+        )
 
     async def recap_mentions(self, limit: int | None = None) -> list[OpenItemMention]:
         items = await self._snapshot()
@@ -103,12 +110,7 @@ class TurnSurfacing:
         return mentions
 
     async def resume_loop_offers(self, limit: int = OFFER_LIMIT) -> list[LoopOffer]:
-        """Suspected loops to ask about at session resume, recorded as offered.
-
-        Without a push log there is no cooldown record, so nothing is offered.
-        """
-        if self._push_log is None:
-            return []
+        """Suspected loops to ask about at session resume, recorded as offered."""
         try:
             loops = await self._loop_store.list(states=[LoopState.SUSPECTED.value])
         except Exception as exc:
@@ -126,19 +128,21 @@ class TurnSurfacing:
             if len(offers) == limit:
                 break
             try:
-                cooling = await self._push_log.was_sent_within_hours(
-                    f"{OFFER_EVENT_PREFIX}{loop.id}", OFFER_COOLDOWN_HOURS
+                cooling = await self._memory.recorded_within(
+                    "offer", "loop", loop.id, OFFER_COOLDOWN_HOURS
                 )
             except Exception as exc:
                 log.warning("turn_surfacing_offer_cooldown_failed", error=str(exc))
                 return []
             if not cooling:
                 offers.append(LoopOffer(loop.id, loop.title, loop.provenance))
-        for offer in offers:
+        if offers:
             try:
-                await self._push_log.log(f"{OFFER_EVENT_PREFIX}{offer.loop_id}")
+                await self._memory.record(
+                    "offer", "loop", [offer.loop_id for offer in offers]
+                )
             except Exception as exc:
-                log.warning("turn_surfacing_offer_log_failed", error=str(exc))
+                log.warning("turn_surfacing_offer_record_failed", error=str(exc))
         return offers
 
     async def inline_mentions(
@@ -162,7 +166,7 @@ class TurnSurfacing:
             selected.append(mention)
             if len(selected) >= INLINE_MENTION_LIMIT:
                 break
-        await self._log_loop_inlines(selected)
+        await self._record_loop_inlines(selected)
         return selected
 
     async def mention_cards(self, mentions: Sequence[OpenItemMention]) -> list[dict]:
@@ -205,16 +209,14 @@ class TurnSurfacing:
             return set()
         return {loop.id for loop in loops if loop.id is not None}
 
-    async def _log_loop_inlines(self, mentions: list[OpenItemMention]) -> None:
-        if self._push_log is None:
+    async def _record_loop_inlines(self, mentions: list[OpenItemMention]) -> None:
+        loop_ids = [m.source_id for m in mentions if m.source_kind == "loop"]
+        if not loop_ids:
             return
-        for mention in mentions:
-            if mention.source_kind != "loop":
-                continue
-            try:
-                await self._push_log.log(f"worldstate_loop_inline:{mention.source_id}")
-            except Exception as exc:
-                log.warning("turn_surfacing_inline_log_failed", error=str(exc))
+        try:
+            await self._memory.record("inline", "loop", loop_ids)
+        except Exception as exc:
+            log.warning("turn_surfacing_inline_record_failed", error=str(exc))
 
     def _format_mention(self, item: PriorityItem) -> OpenItemMention:
         detail: str | None = None

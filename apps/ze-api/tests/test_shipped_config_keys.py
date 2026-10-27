@@ -72,7 +72,13 @@ def test_worldstate_drift_has_no_window_days():
 
 def test_worldstate_push_keys_are_exact():
     push = _config()["worldstate"]["push"]
-    assert set(push) == {"enabled", "inline_cooldown_hours", "thresholds"}
+    assert set(push) == {
+        "enabled",
+        "inline_cooldown_hours",
+        "repush_after_days",
+        "thresholds",
+    }
+    assert push["repush_after_days"] == 7
     assert set(push["thresholds"]) == {
         "tau_confidence",
         "tau_relevance",

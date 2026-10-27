@@ -1,3 +1,4 @@
+from ze_agents.types import WriteGateState
 from unittest.mock import AsyncMock, MagicMock
 
 
@@ -40,13 +41,7 @@ def make_credentials(events: list | None = None) -> MagicMock:
 
 
 def make_ctx(prompt: str = "what do I have today?") -> AgentContext:
-    return AgentContext(
-        session_id="s1",
-        prompt=prompt,
-        pre_approved_writes=frozenset(["create_event", "delete_event", "update_event"]),
-        memory=MemoryContext(),
-        messages=[{"role": "user", "content": prompt}],
-    )
+    return AgentContext(session_id="s1", prompt=prompt, memory=MemoryContext(), messages=[{"role": "user", "content": prompt}], write_gate=WriteGateState(pre_approved=frozenset(["create_event", "delete_event", "update_event"])))
 
 
 def make_agent(client=None, creds=None) -> CalendarAgent:
@@ -143,13 +138,7 @@ async def test_run_creates_event_when_llm_requests():
     creds = MagicMock()
     creds.calendar.return_value = service
 
-    ctx = AgentContext(
-        session_id="s1",
-        prompt="schedule standup",
-        pre_approved_writes=frozenset(["create_event", "delete_event", "update_event"]),
-        memory=MemoryContext(),
-        messages=[{"role": "user", "content": "schedule standup"}],
-    )
+    ctx = AgentContext(session_id="s1", prompt="schedule standup", memory=MemoryContext(), messages=[{"role": "user", "content": "schedule standup"}], write_gate=WriteGateState(pre_approved=frozenset(["create_event", "delete_event", "update_event"])))
     result = await make_agent(client=client, creds=creds).run(ctx)
 
     assert "Created" in result.response

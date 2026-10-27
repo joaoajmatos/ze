@@ -81,9 +81,9 @@ export interface IntakeOutcome {
 
 const OUTCOME_WORDS: Record<string, (link: string | null) => string> = {
   persist_fact: () => "kept as a fact",
-  resolve_loop: () => "closed an open loop",
-  create_loop_declared: () => "started tracking what you asked it to",
-  create_loop_suspected: () => "noted a concern it suspects you have",
+  resolve: () => "closed an open loop",
+  create_declared: () => "started tracking what you asked it to",
+  create_suspected: () => "noted a concern it suspects you have",
   link: (link) => `linked to the ${link ?? "record"} it created this turn`,
   hold: () => "held, nothing written",
   fallback: () => "used the older extractor",
