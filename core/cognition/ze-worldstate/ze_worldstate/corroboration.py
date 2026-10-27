@@ -10,6 +10,7 @@ from collections.abc import Awaitable, Callable, Sequence
 from typing import Any
 from uuid import UUID
 
+from ze_agents.judgment import Judgment, gate, judge
 from ze_logging import get_logger
 from ze_plugin.contribution import EvidenceRef
 
@@ -62,20 +63,18 @@ async def _judge(
     inflow: str,
     system_one_client: Any,
     cfg: corroboration_judge.CorroborationSurfaceConfig,
-):
-    try:
-        result = await system_one_client.evaluate(
-            corroboration_judge.build_state(existing.title, text, inflow),
-            {corroboration_judge.Q_SAME: corroboration_judge.QUESTION},
-            max_attempts=1,
-        )
-    except Exception as exc:
-        log.warning("corroboration_system_one_call_failed", error=str(exc))
-        return None, corroboration_judge.CorroborationDecision("fallback", "error")
-    decision = corroboration_judge.decide(result, cfg)
+) -> tuple[Judgment, corroboration_judge.CorroborationDecision]:
+    judgment, decision = await judge(
+        system_one_client,
+        cfg,
+        corroboration_judge.build_state(existing.title, text, inflow),
+        {corroboration_judge.Q_SAME: corroboration_judge.QUESTION},
+        lambda result: corroboration_judge.decide(result, cfg),
+        corroboration_judge.read_decision,
+    )
     if decision.reason == "invalid_answer":
         log.warning("corroboration_invalid_answer")
-    return result, decision
+    return judgment, decision
 
 
 async def corroborate_match(
@@ -133,15 +132,8 @@ async def _corroborate(
     settings: Any,
     link: Callable[[], Awaitable[None]],
 ) -> None:
-    cfg = corroboration_judge.corroboration_surface_config(settings)
-    if not cfg.enabled:
-        await link()
-        return
-    if not cfg.calibrated:
-        log.warning("corroboration_uncalibrated")
-        await link()
-        return
-    if system_one_client is None:
+    cfg = corroboration_judge.CorroborationSurfaceConfig.from_settings(settings)
+    if gate(cfg, system_one_client) is not None:
         await link()
         return
 
@@ -161,7 +153,8 @@ async def _corroborate(
         await link()
         return
 
-    result, decision = await _judge(existing, text, inflow, system_one_client, cfg)
+    judgment, decision = await _judge(existing, text, inflow, system_one_client, cfg)
+    result = judgment.result
     outcome, reason = decision.kind, decision.reason
     if decision.kind in ("promote", "corroborate"):
         await link()
@@ -207,6 +200,6 @@ async def _corroborate(
         outcome=outcome,
         reason=reason,
         score=decision.score,
-        latency_ms=result.latency_ms if result else None,
-        skip_reason=decision.reason if decision.kind == "fallback" else None,
+        latency_ms=result.latency_ms,
+        skip_reason=judgment.skip_reason,
     )
