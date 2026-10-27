@@ -121,6 +121,8 @@ CONFIDENCE_STAMP: Final = (
 )
 
 SUSPECTED_CONFIDENCE: Final = 0.3
+# Phase 172: a promotion lifts a loop to at least this confidence.
+PROMOTED_CONFIDENCE: Final = 0.7
 
 
 class DeclaredStamp:
@@ -134,6 +136,7 @@ class DeclaredStamp:
         """SET fragment: confidence (with its prior), confirmed_at, deadline, no rationale.
 
         Promote passes `GREATEST(confidence, $c)` as its own confidence rule.
+        The caller sets `updated_at`; `LoopLifecycle._write` does for every event.
         """
         return (
             CONFIDENCE_STAMP.format(new=confidence_expr)

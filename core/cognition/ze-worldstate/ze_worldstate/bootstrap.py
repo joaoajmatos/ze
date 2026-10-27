@@ -155,13 +155,17 @@ def register_proactive_jobs(
     stale_cfg = worldstate_cfg.get("stale_suspicion", {})
     if stale_cfg.get("enabled", True):
         window_days = int(stale_cfg.get("window_days", DEFAULT_STALE_WINDOW_DAYS))
-        job = StaleSuspicionJob(loop_store=stack.loop_store, window_days=window_days)
+        job = StaleSuspicionJob(
+            loop_store=stack.loop_store,
+            lifecycle=stack.lifecycle,
+            window_days=window_days,
+        )
         scheduler.register(job, cron=stale_cfg.get("cron", "0 4 * * *"))
         log.info("stale_suspicion_job_scheduled", window_days=window_days)
 
     drift_cfg = worldstate_cfg.get("drift", {})
     if drift_cfg.get("enabled", True):
-        drift_job = DriftSweepJob(loop_store=stack.loop_store)
+        drift_job = DriftSweepJob(loop_store=stack.loop_store, lifecycle=stack.lifecycle)
         scheduler.register(drift_job, cron=drift_cfg.get("cron", "0 5 * * *"))
         log.info("drift_sweep_job_scheduled")
 
