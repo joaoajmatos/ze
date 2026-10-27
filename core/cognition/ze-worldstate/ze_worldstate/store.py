@@ -50,7 +50,7 @@ _CONFIDENCE_STAMP = (
 )
 
 
-def _loop_from_row(row) -> OpenLoop:
+def loop_from_row(row) -> OpenLoop:
     return OpenLoop(
         id=row["id"],
         title=row["title"],
@@ -71,7 +71,7 @@ def _loop_from_row(row) -> OpenLoop:
     )
 
 
-def _source_from_row(row) -> LoopSource:
+def source_from_row(row) -> LoopSource:
     kind, evidence_id = row["evidence_kind"], row["evidence_id"]
     return LoopSource(
         id=row["id"],
@@ -186,7 +186,7 @@ class PostgresLoopStore:
                 loop.dismissed_evidence_fingerprint,
                 loop.confirmed_at,
             )
-        result = _loop_from_row(row)
+        result = loop_from_row(row)
         log.info(
             "open_loop_created",
             loop_id=str(result.id),
@@ -198,7 +198,7 @@ class PostgresLoopStore:
     async def get(self, loop_id: UUID) -> OpenLoop | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM open_loops WHERE id = $1", loop_id)
-        return _loop_from_row(row) if row else None
+        return loop_from_row(row) if row else None
 
     async def list(
         self, states: list[str] | None = None, *, since: datetime | None = None
@@ -216,7 +216,7 @@ class PostgresLoopStore:
             rows = await conn.fetch(
                 f"SELECT * FROM open_loops{where} ORDER BY created_at DESC", *params
             )
-        return [_loop_from_row(r) for r in rows]
+        return [loop_from_row(r) for r in rows]
 
     async def transition(
         self, loop_id: UUID, new_state: str, *, user_asked: bool = False
@@ -260,7 +260,7 @@ class PostgresLoopStore:
             raise InvalidLoopTransitionError(
                 f"Loop {loop_id} changed state before it could move to {target.value}"
             )
-        result = _loop_from_row(row)
+        result = loop_from_row(row)
         log.info(
             "open_loop_transitioned",
             loop_id=str(loop_id),
@@ -309,7 +309,7 @@ class PostgresLoopStore:
                         ref.id,
                         ref.kind,
                     )
-        result = _loop_from_row(row)
+        result = loop_from_row(row)
         log.info(
             "open_loop_transitioned",
             loop_id=str(loop_id),
@@ -394,7 +394,7 @@ class PostgresLoopStore:
                 evidence_type,
                 evidence_id,
             )
-        return [_loop_from_row(r) for r in rows]
+        return [loop_from_row(r) for r in rows]
 
     async def count_evidence_links(self, loop_id: UUID) -> int:
         async with self._pool.acquire() as conn:
@@ -492,7 +492,7 @@ class PostgresLoopStore:
                 ORDER BY drift_deadline ASC
                 """
             )
-        return [_loop_from_row(r) for r in rows]
+        return [loop_from_row(r) for r in rows]
 
     async def record_corroboration(
         self, loop_id: UUID, *, window_days: int = DEFAULT_DRIFT_WINDOW_DAYS
@@ -534,7 +534,7 @@ class PostgresLoopStore:
                 source.model,
                 source.latency_ms,
             )
-        return _source_from_row(row) if row else None
+        return source_from_row(row) if row else None
 
     async def list_sources(self, loop_id: UUID) -> list[LoopSource]:
         async with self._pool.acquire() as conn:
@@ -543,7 +543,7 @@ class PostgresLoopStore:
                 " ORDER BY created_at",
                 loop_id,
             )
-        return [_source_from_row(r) for r in rows]
+        return [source_from_row(r) for r in rows]
 
     async def list_sources_for(
         self, loop_ids: list[UUID]
@@ -558,7 +558,7 @@ class PostgresLoopStore:
             )
         grouped: dict[UUID, list[LoopSource]] = {}
         for row in rows:
-            grouped.setdefault(row["loop_id"], []).append(_source_from_row(row))
+            grouped.setdefault(row["loop_id"], []).append(source_from_row(row))
         return grouped
 
     async def promote(
@@ -582,7 +582,7 @@ class PostgresLoopStore:
         if row is None:
             return None
         log.info("open_loop_promoted", loop_id=str(loop_id))
-        return _loop_from_row(row)
+        return loop_from_row(row)
 
     async def mark_source_promoted(self, source_id: UUID) -> None:
         async with self._pool.acquire() as conn:
