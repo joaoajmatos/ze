@@ -92,7 +92,7 @@ Each surface follows the same pattern. Code builds the shortlist or the candidat
 | **Complexity** (phase 182) | The `choose_tier` node, after `match_skills` (`ze_core/routing/tier.py`) | Noul: needs deep reasoning | light model, full model |
 | **Skills** (phase 166) | The `match_skills` node (`ze_skills/judge.py`) | Choice: skill (shortlist plus `none`). Noul: needs a skill | apply, drop, abstain, skip |
 | **Loop gate** (phase 168) | The email, calendar, and ingestion extractors (`ze_worldstate/loop_judge.py`) | Noul: open concern. Noul: resolves an existing loop | create suspected, resolve, hold, fallback |
-| **Corroboration** (phase 172) | Both suspected match paths in `ze_worldstate/extraction.py` (`ze_worldstate/corroboration_judge.py`) | Noul: same concern | corroborate, promote, not same, fallback |
+| **Corroboration** (phase 172) | The suspected-match path in `ze_worldstate/corroboration.py` (`Corroborator`, called from `ze_worldstate/admission.py`; the question is in `ze_worldstate/corroboration_judge.py`) | Noul: same concern | corroborate, promote, not same, fallback |
 
 ### Commitment intake
 

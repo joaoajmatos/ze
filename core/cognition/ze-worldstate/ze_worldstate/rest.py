@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from ze_worldstate import review
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.store import LoopStore
 from ze_worldstate.types import LoopSource, LoopSourceRole, OpenLoop
 
@@ -122,16 +122,13 @@ def _transition_response(loop: OpenLoop) -> dict:
     return {"id": loop.id, "state": loop.state.value, "confidence": loop.confidence}
 
 
-async def confirm_loop(loop_store: LoopStore, loop_id: UUID) -> dict:
-    loop = await review.confirm_loop(loop_store, loop_id)
-    return _transition_response(loop)
+async def confirm_loop(lifecycle: LoopLifecycle, loop_id: UUID) -> dict:
+    return _transition_response(await lifecycle.confirm(loop_id))
 
 
-async def close_loop(loop_store: LoopStore, loop_id: UUID) -> dict:
-    loop = await review.close_loop(loop_store, loop_id)
-    return _transition_response(loop)
+async def close_loop(lifecycle: LoopLifecycle, loop_id: UUID) -> dict:
+    return _transition_response(await lifecycle.close(loop_id))
 
 
-async def drop_loop(loop_store: LoopStore, loop_id: UUID) -> dict:
-    loop = await review.drop_loop(loop_store, loop_id)
-    return _transition_response(loop)
+async def drop_loop(lifecycle: LoopLifecycle, loop_id: UUID) -> dict:
+    return _transition_response(await lifecycle.drop(loop_id))

@@ -12,8 +12,8 @@ from ze_correlation.store import PostgresHypothesisStore
 from ze_priority.store import PostgresPriorityOverrideStore
 from ze_priority.view import PriorityView
 from ze_worldstate.bootstrap import LoopPushSettings
-from ze_worldstate.extraction import _create_declared_loop
 from ze_worldstate.jobs.drift_sweep import DriftSweepJob
+from ze_worldstate.lifecycle import LoopDraft, LoopLifecycle
 from ze_worldstate.store import PostgresLoopStore
 from ze_worldstate.surfacing import LoopSurfacer
 from ze_worldstate.types import LoopState
@@ -34,9 +34,8 @@ def _view(pool) -> PriorityView:
 async def test_declared_loop_drifts_and_is_a_push_candidate(pg_pool):
     """SC-001."""
     store = PostgresLoopStore(pg_pool)
-    created = await _create_declared_loop(
-        "Renew the passport", "user_declared", [], [], store, None, None, None,
-        implied_window_days=1,
+    created = await LoopLifecycle(pg_pool).create_declared(
+        LoopDraft("Renew the passport", "user_declared"), window_days=1
     )
     async with pg_pool.acquire() as conn:
         await conn.execute(
@@ -44,7 +43,7 @@ async def test_declared_loop_drifts_and_is_a_push_candidate(pg_pool):
             created.id,
         )
 
-    await DriftSweepJob(store).run()
+    await DriftSweepJob(store, LoopLifecycle(pg_pool)).run()
 
     drifted = await store.get(created.id)
     assert drifted.state is LoopState.DRIFTING

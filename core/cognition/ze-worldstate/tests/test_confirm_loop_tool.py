@@ -1,38 +1,36 @@
 from __future__ import annotations
 
-from ze_agents.tool import undo_payload
+from unittest.mock import AsyncMock
 from uuid import uuid4
+
+from ze_agents.tool import undo_payload
 
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, get_tool, validate_tool_declarations
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
-from ze_worldstate.types import DECLARED_CONFIDENCE, LoopState, OpenLoop
+from ze_worldstate.lifecycle import DeclaredStamp, LoopLifecycle
+from ze_worldstate.types import LoopState, OpenLoop
 
 import ze_worldstate.agents.tools  # noqa: F401  (registers the tools at import time)
 
 
-class FakeStore:
-    def __init__(self, error: Exception | None = None) -> None:
-        self.error = error
-        self.stamped: list[tuple] = []
-        self.loop = OpenLoop(
-            id=uuid4(),
-            title="Switch bank",
-            provenance="email",
-            confidence=0.35,
-            state=LoopState.ACTIVE,
-        )
+def _loop() -> OpenLoop:
+    return OpenLoop(
+        id=uuid4(),
+        title="Switch bank",
+        provenance="email",
+        confidence=DeclaredStamp.CONFIDENCE,
+        state=LoopState.ACTIVE,
+    )
 
-    async def transition(self, loop_id, state, **kwargs):
-        if self.error is not None:
-            raise self.error
-        return self.loop
 
-    async def resolve(self, loop_id, evidence):
-        return self.loop
-
-    async def stamp_declared(self, loop_id, *, confidence, deadline):
-        self.stamped.append((loop_id, confidence, deadline))
+def _lifecycle(error: Exception | None = None) -> AsyncMock:
+    lifecycle = AsyncMock(spec=LoopLifecycle)
+    if error is not None:
+        lifecycle.confirm.side_effect = error
+    else:
+        lifecycle.confirm.return_value = _loop()
+    return lifecycle
 
 
 def test_confirm_loop_declaration():
@@ -46,48 +44,91 @@ def test_confirm_loop_declaration():
     validate_tool_declarations()
 
 
-async def test_success_confirms_and_stamps():
-    store = FakeStore()
+async def test_success_confirms_through_the_lifecycle():
+    lifecycle = _lifecycle()
+    loop = lifecycle.confirm.return_value
+    loop_id = uuid4()
 
-    out = await get_tool("confirm_loop").func(loop_store=store, loop_id=str(uuid4()))
+    out = await get_tool("confirm_loop").func(lifecycle=lifecycle, loop_id=str(loop_id))
 
     assert out == {
         "ok": True,
-        "id": str(store.loop.id),
+        "id": str(loop.id),
         "title": "Switch bank",
         "state": "active",
-        "undo": undo_payload(loop_id=str(store.loop.id)),
+        "undo": undo_payload(loop_id=str(loop.id)),
     }
-    assert store.stamped[0][1] == DECLARED_CONFIDENCE
+    lifecycle.confirm.assert_awaited_once_with(loop_id)
+
+
+async def test_lifecycle_is_the_only_dependency():
+    params = get_tool("confirm_loop").llm_schema()["function"]["parameters"]
+
+    assert list(params["properties"]) == ["loop_id"]
 
 
 async def test_bad_uuid():
-    out = await get_tool("confirm_loop").func(loop_store=FakeStore(), loop_id="nope")
+    lifecycle = _lifecycle()
+
+    out = await get_tool("confirm_loop").func(lifecycle=lifecycle, loop_id="nope")
 
     assert out == {"ok": False, "error": "Invalid loop ID: 'nope'"}
+    lifecycle.confirm.assert_not_awaited()
 
 
 async def test_not_found():
     loop_id = str(uuid4())
-    store = FakeStore(error=LoopNotFoundError("x"))
 
-    out = await get_tool("confirm_loop").func(loop_store=store, loop_id=loop_id)
+    out = await get_tool("confirm_loop").func(
+        lifecycle=_lifecycle(LoopNotFoundError("x")), loop_id=loop_id
+    )
 
     assert out == {"ok": False, "error": f"No loop found with ID {loop_id}."}
 
 
 async def test_not_suspected():
-    store = FakeStore(error=InvalidLoopTransitionError("Loop is already active"))
-
-    out = await get_tool("confirm_loop").func(loop_store=store, loop_id=str(uuid4()))
+    out = await get_tool("confirm_loop").func(
+        lifecycle=_lifecycle(InvalidLoopTransitionError("Loop is already active")),
+        loop_id=str(uuid4()),
+    )
 
     assert out == {"ok": False, "error": "Loop is already active"}
-    assert store.stamped == []
 
 
 async def test_unexpected_error_is_generic():
-    store = FakeStore(error=RuntimeError("db exploded"))
-
-    out = await get_tool("confirm_loop").func(loop_store=store, loop_id=str(uuid4()))
+    out = await get_tool("confirm_loop").func(
+        lifecycle=_lifecycle(RuntimeError("db exploded")), loop_id=str(uuid4())
+    )
 
     assert out == {"ok": False, "error": "could not confirm the loop"}
+
+
+async def test_close_and_drop_go_through_the_lifecycle():
+    lifecycle = AsyncMock(spec=LoopLifecycle)
+    lifecycle.close.return_value = _loop()
+    lifecycle.drop.return_value = _loop()
+    loop_id = uuid4()
+
+    closed = await get_tool("close_loop").func(
+        lifecycle=lifecycle, loop_id=str(loop_id)
+    )
+    dropped = await get_tool("drop_loop").func(
+        lifecycle=lifecycle, loop_id=str(loop_id)
+    )
+
+    assert closed["title"] == dropped["title"] == "Switch bank"
+    lifecycle.close.assert_awaited_once_with(loop_id)
+    lifecycle.drop.assert_awaited_once_with(loop_id)
+
+
+async def test_close_and_drop_report_refusals():
+    lifecycle = AsyncMock(spec=LoopLifecycle)
+    lifecycle.close.side_effect = InvalidLoopTransitionError("nope")
+    lifecycle.drop.side_effect = LoopNotFoundError("x")
+    loop_id = str(uuid4())
+
+    closed = await get_tool("close_loop").func(lifecycle=lifecycle, loop_id=loop_id)
+    dropped = await get_tool("drop_loop").func(lifecycle=lifecycle, loop_id=loop_id)
+
+    assert closed == {"error": "nope"}
+    assert dropped == {"error": f"No loop found with ID {loop_id}."}

@@ -42,9 +42,7 @@ def wire_automation(
 
 def install_contradiction_hook(shared: EngineStack, worldstate: WorldstateStack) -> None:
     async def _worldstate_contradiction_hook(fact_id) -> None:
-        from ze_worldstate.decay import cascade_from_evidence
-
-        await cascade_from_evidence("fact", fact_id, worldstate.loop_store)
+        await worldstate.lifecycle.decay_from_evidence("fact", fact_id)
 
     shared.memory_consolidator.contradiction_hook = _worldstate_contradiction_hook
 
@@ -58,12 +56,12 @@ def wire_ingestion_loop_extractor(
     from ze_worldstate.inflow import make_loop_extractor_from_parts
 
     ingestion.memory_sink.loop_extractor = make_loop_extractor_from_parts(
+        lifecycle=worldstate.lifecycle,
         loop_store=worldstate.loop_store,
         loop_graph_store=worldstate.graph_store,
         loop_entity_resolver=worldstate.entity_resolver,
         openrouter_client=shared.openrouter_client,
         embedder=shared.embedder,
-        loop_memory_store=shared.memory_store,
         system_one_client=shared.system_one_client,
         settings=settings,
     )
@@ -89,7 +87,6 @@ def build_budget_checker(
 def build_commitment_intake(
     shared: EngineStack,
     worldstate: WorldstateStack,
-    stores: CoreStores,
     settings: Settings,
 ) -> Any:
     from ze_worldstate.inflow import make_loop_inflow_from_parts
@@ -97,17 +94,16 @@ def build_commitment_intake(
 
     return CommitmentIntake(
         loop_inflow=make_loop_inflow_from_parts(
+            lifecycle=worldstate.lifecycle,
             loop_store=worldstate.loop_store,
             loop_graph_store=worldstate.graph_store,
             loop_entity_resolver=worldstate.entity_resolver,
             openrouter_client=shared.openrouter_client,
             embedder=shared.embedder,
-            loop_memory_store=shared.memory_store,
-            collision_store=stores.collision_store,
-            nli_client=shared.nli_client,
             system_one_client=shared.system_one_client,
             settings=settings,
         ),
+        lifecycle=worldstate.lifecycle,
         loop_store=worldstate.loop_store,
         graph_store=worldstate.graph_store,
         entity_resolver=worldstate.entity_resolver,
@@ -118,9 +114,13 @@ def build_commitment_intake(
 
 
 def wire_collision_detection(
-    shared: EngineStack, correlation: CorrelationStack, stores: CoreStores
+    shared: EngineStack,
+    correlation: CorrelationStack,
+    stores: CoreStores,
+    worldstate: WorldstateStack,
 ) -> None:
     shared.memory_store._collision_store = stores.collision_store
+    worldstate.lifecycle.collision_store = stores.collision_store
     correlation.correlation_engine._collision_store = stores.collision_store
     correlation.correlation_engine._nli_client = shared.nli_client
 

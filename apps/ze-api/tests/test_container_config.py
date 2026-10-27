@@ -29,3 +29,15 @@ def test_build_config_has_every_key_the_base_container_sets():
     app_keys = set(container._build_config("t1")["configurable"])
     missing = sorted(base_keys - app_keys)
     assert not missing, f"ZeContainer._build_config is missing {missing}"
+
+
+def test_loop_commit_is_set_exactly_when_the_commitment_intake_is():
+    container = _container()
+    configurable = container._build_config("t1")["configurable"]
+    assert configurable["loop_commit"] is container.commitment_intake.loop_inflow.commit
+    assert configurable["commitment_intake"] == container.commitment_intake.admit
+
+    container.commitment_intake = None
+    configurable = container._build_config("t1")["configurable"]
+    assert "loop_commit" not in configurable
+    assert "commitment_intake" not in configurable

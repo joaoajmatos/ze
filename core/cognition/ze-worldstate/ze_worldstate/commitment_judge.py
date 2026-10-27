@@ -174,13 +174,14 @@ class CommitmentIntakeSurfaceConfig(SurfaceConfig):
 
 OutcomeKind = Literal[
     "persist_fact",
-    "resolve_loop",
-    "create_loop_declared",
-    "create_loop_suspected",
+    "resolve",
+    "create_declared",
+    "create_suspected",
     "link",
     "hold",
     "fallback",
 ]
+LOOP_COMMIT_KINDS = ("resolve", "create_declared", "create_suspected")
 LinkKind = Literal["reminder", "goal", "reminder+goal"]
 
 
@@ -256,7 +257,7 @@ def _decide(
         choice is not CommitmentChoice.WAITING_ON
         and float(result.answers[Q_RESOLVES].noul or 0.0) >= cfg.resolves_hold
     ):
-        return IntakeOutcome("resolve_loop", "resolves", frozenset({Q_RESOLVES}))
+        return IntakeOutcome("resolve", "resolves", frozenset({Q_RESOLVES}))
     if created.reminder_id or created.goal_id:
         kind: LinkKind = (
             "reminder+goal"
@@ -321,5 +322,5 @@ def _loop(
         return IntakeOutcome("hold", "tracked", _BASE | {Q_CONCERN})
     consumed = _BASE | {Q_CONCERN, Q_EXPLICIT}
     if float(result.answers[Q_EXPLICIT].noul or 0.0) >= cfg.explicit_hold:
-        return IntakeOutcome("create_loop_declared", "explicit", consumed)
-    return IntakeOutcome("create_loop_suspected", "implied", consumed)
+        return IntakeOutcome("create_declared", "explicit", consumed)
+    return IntakeOutcome("create_suspected", "implied", consumed)

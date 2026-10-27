@@ -14,7 +14,8 @@ from ze_agents.system_one import SystemOneResult
 from ze_agents.types import ToolCall
 from ze_plugin.contribution import EvidenceRef
 
-from tests.commitment_fixtures import _BARS, make
+from tests.commitment_fixtures import _BARS, commit_loop, make
+from ze_worldstate import admission as admission_mod
 from ze_worldstate import intake as intake_mod
 from ze_worldstate.admission import LoopInflow
 from ze_worldstate.commitment_judge import (
@@ -23,22 +24,13 @@ from ze_worldstate.commitment_judge import (
     build_state,
 )
 from ze_worldstate.intake import CommitmentIntake
-from ze_worldstate.types import LoopProvenance, LoopState
+from ze_worldstate.lifecycle import LoopLifecycle
+from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop, SourceKey
 
 SETTINGS = {
     "system_one": {"surfaces": {"commitment_intake": {"enabled": True, **_BARS}}}
 }
 PROMPT = "I need to renew my passport before the trip"
-
-
-@pytest.fixture(autouse=True)
-def _bypass_evidence_check(monkeypatch):
-    from ze_worldstate import extraction
-
-    async def submit(contribution, write, **kw):
-        return await write()
-
-    monkeypatch.setattr(extraction, "submit_and_detect_collisions", submit)
 
 
 class FakeSystemOne:
@@ -84,22 +76,46 @@ class FakeLLM:
         return json.dumps({"title": self.title})
 
 
-def _with_id(loop):
-    loop.id = uuid4()
-    return loop
+def _stored(draft, state, confidence):
+    return OpenLoop(
+        title=draft.title,
+        provenance=draft.provenance,
+        confidence=confidence,
+        state=state,
+        id=uuid4(),
+    )
+
+
+def _lifecycle():
+    lifecycle = AsyncMock(spec=LoopLifecycle)
+    lifecycle.create_suspected.side_effect = lambda draft: _stored(
+        draft, LoopState.SUSPECTED, 0.3
+    )
+    lifecycle.create_declared.side_effect = lambda draft, window_days=None: _stored(
+        draft, LoopState.ACTIVE, 0.9
+    )
+    lifecycle.resolve.side_effect = lambda loop_id, evidence: OpenLoop(
+        title="x",
+        provenance="conversation",
+        confidence=0.3,
+        state=LoopState.CLOSED,
+        id=loop_id,
+    )
+    lifecycle.link.return_value = True
+    return lifecycle
 
 
 def _build(system_one=None, llm=None, settings=SETTINGS):
     llm = llm or FakeLLM()
     loop_store = AsyncMock()
-    loop_store.create = AsyncMock(side_effect=_with_id)
     loop_store.list = AsyncMock(return_value=[])
-    loop_store.link = AsyncMock(return_value=True)
+    lifecycle = _lifecycle()
     graph_store = AsyncMock()
     graph_store.list_relationships = AsyncMock(return_value=[])
     resolver = AsyncMock(return_value=[])
     embedder = AsyncMock()
     inflow = LoopInflow(
+        lifecycle=lifecycle,
         loop_store=loop_store,
         graph_store=graph_store,
         entity_resolver=resolver,
@@ -110,6 +126,7 @@ def _build(system_one=None, llm=None, settings=SETTINGS):
     )
     intake = CommitmentIntake(
         loop_inflow=inflow,
+        lifecycle=lifecycle,
         loop_store=loop_store,
         graph_store=graph_store,
         entity_resolver=resolver,
@@ -117,7 +134,12 @@ def _build(system_one=None, llm=None, settings=SETTINGS):
         system_one_client=system_one,
         settings=settings,
     )
-    return intake, loop_store, llm
+    return intake, lifecycle, llm
+
+
+def _no_creates(lifecycle):
+    lifecycle.create_suspected.assert_not_called()
+    lifecycle.create_declared.assert_not_called()
 
 
 def _configurable(llm, settings=SETTINGS, thread_id="t1"):
@@ -170,7 +192,7 @@ async def test_trivial_turn_makes_no_request(prompt):
     adm = await _admit(intake, llm, prompt=prompt)
     assert client.calls == []
     assert adm.outcome.reason == "trivial"
-    assert adm.loop is not None and adm.loop.commit is None
+    assert adm.loop is not None and adm.loop.decision.kind == "hold"
     assert adm.fact is None
     assert llm.calls == []
 
@@ -222,13 +244,14 @@ _FALLBACKS = [
 )
 async def test_fallback_runs_haiku_fact_and_109_loop_gate(name, settings, client):
     llm = FakeLLM(gate={"is_loop": True, "title": "Renew passport"})
-    intake, loop_store, _ = _build(client, llm, settings)
+    intake, lifecycle, _ = _build(client, llm, settings)
     adm = await _admit(intake, llm, settings=settings)
     assert adm.outcome.kind == "fallback"
     assert adm.fact is not None and adm.fact.path == "haiku"
     assert [f.value for f in adm.fact.facts] == ["haiku aisle"]
     assert adm.loop is not None and adm.loop.decision.kind == "fallback"
-    created = await adm.loop.commit()
+    result = await commit_loop(intake.loop_inflow, adm.loop)
+    created = result.loops
     assert [loop.title for loop in created] == ["Renew passport"]
     assert created[0].state == LoopState.SUSPECTED
     assert any("relevance gate" in s for s in llm.calls)
@@ -311,11 +334,11 @@ async def test_fallback_skips_loop_gate_when_track_loop_succeeded():
 
 @pytest.mark.parametrize("calls", [_REMINDER, _GOAL], ids=["reminder", "goal"])
 async def test_fallback_skips_loop_gate_when_turn_created_reminder_or_goal(calls):
-    intake, loop_store, llm = _build(FakeSystemOne(exc=RuntimeError("down")))
+    intake, lifecycle, llm = _build(FakeSystemOne(exc=RuntimeError("down")))
     adm = await _admit(intake, llm, tool_calls=calls)
     assert adm.loop is None
     assert adm.fact is not None
-    loop_store.create.assert_not_called()
+    _no_creates(lifecycle)
     assert not any("relevance gate" in s for s in llm.calls)
 
 
@@ -333,78 +356,79 @@ async def test_fact_fallback_error_never_raises(monkeypatch):
 
 async def test_declared_creates_active_loop_with_writer_only():
     llm = FakeLLM(title="Renew passport")
-    intake, loop_store, _ = _build(FakeSystemOne(make("loop", explicit=0.95)), llm)
+    intake, lifecycle, _ = _build(FakeSystemOne(make("loop", explicit=0.95)), llm)
     adm = await _admit(intake, llm)
-    assert adm.outcome.kind == "create_loop_declared"
+    assert adm.outcome.kind == "create_declared"
     assert adm.fact is None and not adm.links
-    (created,) = await adm.loop.commit()
+    assert adm.loop.source == SourceKey("conversation", "t1")
+    result = await commit_loop(intake.loop_inflow, adm.loop)
+    (created,) = result.loops
     assert created.state == LoopState.ACTIVE and created.confidence == 0.9
     assert created.provenance == LoopProvenance.USER_DECLARED
     assert all("relevance gate" not in s for s in llm.calls)
-    assert adm.loop.source is not None and adm.loop.source.ref == "t1"
+    draft = lifecycle.create_declared.await_args.args[0]
+    assert draft.source == SourceKey("conversation", "t1")
 
 
 async def test_suspected_creates_suspected_loop():
     llm = FakeLLM()
     intake, _, _ = _build(FakeSystemOne(make("loop", explicit=0.1)), llm)
     adm = await _admit(intake, llm)
-    assert adm.outcome.kind == "create_loop_suspected"
-    (created,) = await adm.loop.commit()
+    assert adm.outcome.kind == "create_suspected"
+    result = await commit_loop(intake.loop_inflow, adm.loop)
+    (created,) = result.loops
     assert created.state == LoopState.SUSPECTED and created.confidence == 0.3
 
 
 async def test_resolve_closes_matching_loop(monkeypatch):
-    from ze_worldstate import extraction
-    from ze_worldstate.types import OpenLoop
-
     existing = OpenLoop(
         title="x",
         provenance="conversation",
         confidence=0.3,
-        state=LoopState.CLOSED,
+        state=LoopState.ACTIVE,
         id=uuid4(),
     )
     monkeypatch.setattr(
-        extraction, "find_matching_loop", AsyncMock(return_value=existing)
+        admission_mod, "find_matching_loop", AsyncMock(return_value=existing)
     )
     llm = FakeLLM()
-    intake, loop_store, _ = _build(FakeSystemOne(make("none", resolves=0.95)), llm)
-    loop_store.resolve = AsyncMock(return_value=existing)
+    intake, lifecycle, _ = _build(FakeSystemOne(make("none", resolves=0.95)), llm)
     adm = await _admit(intake, llm, prompt="I renewed my passport, it is done")
-    assert adm.outcome.kind == "resolve_loop"
+    assert adm.outcome.kind == "resolve"
+    assert adm.loop.decision.kind == "resolve"
     assert adm.judgment.consumed == frozenset({"resolves_existing"})
     evidence = [EvidenceRef(kind="episode", id=uuid4())]
-    assert await adm.loop.commit(evidence)
-    loop_store.resolve.assert_awaited_once_with(existing.id, evidence)
-    loop_store.transition.assert_not_called()
-    loop_store.create.assert_not_called()
+    result = await commit_loop(intake.loop_inflow, adm.loop, evidence)
+    assert result.outcome == "resolved"
+    lifecycle.resolve.assert_awaited_once_with(existing.id, evidence=tuple(evidence))
+    _no_creates(lifecycle)
 
 
 async def test_tracked_turn_creates_no_loop_but_still_decides_facts():
     client = FakeSystemOne(make("loop"))
-    intake, loop_store, llm = _build(client)
+    intake, lifecycle, llm = _build(client)
     adm = await _admit(intake, llm, tool_calls=[_tc("track_loop", {"ok": True})])
     assert (adm.outcome.kind, adm.outcome.reason) == ("hold", "tracked")
     assert adm.loop is None
-    loop_store.create.assert_not_called()
+    _no_creates(lifecycle)
 
 
 async def test_hold_has_no_commit_and_no_writes():
-    intake, loop_store, llm = _build(FakeSystemOne(make("loop", concern=0.1)))
+    intake, lifecycle, llm = _build(FakeSystemOne(make("loop", concern=0.1)))
     adm = await _admit(intake, llm)
     assert adm.outcome.kind == "hold"
     assert adm.loop is None and adm.fact is None and not adm.links
-    loop_store.create.assert_not_called()
+    _no_creates(lifecycle)
     assert llm.calls == []
 
 
 async def test_waiting_on_creates_nothing():
-    intake, loop_store, llm = _build(FakeSystemOne(make("waiting_on")))
+    intake, lifecycle, llm = _build(FakeSystemOne(make("waiting_on")))
     adm = await _admit(intake, llm, prompt="My landlord said he would get back to me")
     assert (adm.outcome.kind, adm.outcome.reason) == ("hold", "waiting_on")
     assert adm.loop is None and adm.fact is None and not adm.links
-    loop_store.create.assert_not_called()
-    loop_store.link.assert_not_called()
+    _no_creates(lifecycle)
+    lifecycle.link.assert_not_called()
     assert llm.calls == []
 
 
@@ -436,7 +460,7 @@ async def test_value_writer_failure_persists_nothing_without_fallback():
 @pytest.mark.parametrize("choice", ["forget", "ingest", "clarify", "none"])
 async def test_non_fact_choices_write_nothing(choice):
     llm = FakeLLM()
-    intake, loop_store, _ = _build(FakeSystemOne(make(choice)), llm)
+    intake, lifecycle, _ = _build(FakeSystemOne(make(choice)), llm)
     adm = await _admit(intake, llm)
     assert adm.outcome.reason == choice
     assert adm.fact is None and adm.loop is None
@@ -450,23 +474,23 @@ async def test_non_fact_choices_write_nothing(choice):
 @pytest.mark.parametrize("calls", [_REMINDER, _GOAL], ids=["reminder", "goal"])
 async def test_turn_created_makes_no_loop_no_fact_and_no_haiku(choice, calls):
     llm = FakeLLM()
-    intake, loop_store, _ = _build(FakeSystemOne(make(choice, explicit=0.96)), llm)
+    intake, lifecycle, _ = _build(FakeSystemOne(make(choice, explicit=0.96)), llm)
     adm = await _admit(intake, llm, tool_calls=calls)
     assert adm.outcome.kind == "link"
     assert adm.loop is None and adm.fact is None
-    loop_store.create.assert_not_called()
+    _no_creates(lifecycle)
     assert llm.calls == []
 
 
 @pytest.mark.parametrize("choice", ["reminder", "goal"])
 async def test_choice_without_creation_holds_and_creates_no_loop(choice):
-    intake, loop_store, llm = _build(
+    intake, lifecycle, llm = _build(
         FakeSystemOne(make(choice, concern=0.95, explicit=0.96))
     )
     adm = await _admit(intake, llm)
     assert adm.outcome.reason == f"{choice}_not_created"
     assert adm.loop is None
-    loop_store.create.assert_not_called()
+    _no_creates(lifecycle)
 
 
 async def test_parked_or_failed_creation_does_not_count():
@@ -489,10 +513,10 @@ async def test_link_sets_reminder_pointer_once(monkeypatch):
     loop = _live()
     finder = AsyncMock(return_value=loop)
     monkeypatch.setattr(intake_mod, "find_matching_loop", finder)
-    intake, loop_store, llm = _build(FakeSystemOne(make("reminder")))
+    intake, lifecycle, llm = _build(FakeSystemOne(make("reminder")))
     rid = uuid4()
     adm = await _admit(intake, llm, tool_calls=[_tc("set_reminder", {"id": str(rid)})])
-    loop_store.link.assert_awaited_once_with(loop.id, reminder_id=rid)
+    lifecycle.link.assert_awaited_once_with(loop.id, reminder_id=rid)
     assert (adm.links[0].kind, adm.links[0].linked, adm.links[0].loop_id) == (
         "reminder",
         True,
@@ -501,16 +525,16 @@ async def test_link_sets_reminder_pointer_once(monkeypatch):
     assert finder.await_args.kwargs["states"] == ["suspected", "active", "drifting"]
     assert finder.await_args.kwargs["verify_similarity"] is True
     assert finder.await_args.args[1] == PROMPT[:200]
-    loop_store.create.assert_not_called()
+    _no_creates(lifecycle)
 
 
 async def test_link_sets_goal_pointer(monkeypatch):
     loop = _live()
     monkeypatch.setattr(intake_mod, "find_matching_loop", AsyncMock(return_value=loop))
-    intake, loop_store, llm = _build(FakeSystemOne(make("goal")))
+    intake, lifecycle, llm = _build(FakeSystemOne(make("goal")))
     gid = uuid4()
     adm = await _admit(intake, llm, tool_calls=[_tc("create_goal", {"id": str(gid)})])
-    loop_store.link.assert_awaited_once_with(loop.id, goal_id=gid)
+    lifecycle.link.assert_awaited_once_with(loop.id, goal_id=gid)
     assert adm.links[0].kind == "goal" and adm.links[0].linked
 
 
@@ -518,7 +542,7 @@ async def test_turn_creating_reminder_and_goal_links_both(monkeypatch):
     loop = _live()
     finder = AsyncMock(return_value=loop)
     monkeypatch.setattr(intake_mod, "find_matching_loop", finder)
-    intake, loop_store, llm = _build(FakeSystemOne(make("reminder")))
+    intake, lifecycle, llm = _build(FakeSystemOne(make("reminder")))
     rid, gid = uuid4(), uuid4()
     adm = await _admit(
         intake,
@@ -532,11 +556,11 @@ async def test_turn_creating_reminder_and_goal_links_both(monkeypatch):
         ("reminder", True),
         ("goal", True),
     ]
-    assert [c.kwargs for c in loop_store.link.await_args_list] == [
+    assert [c.kwargs for c in lifecycle.link.await_args_list] == [
         {"reminder_id": rid},
         {"goal_id": gid},
     ]
-    loop_store.create.assert_not_called()
+    _no_creates(lifecycle)
 
 
 @pytest.mark.parametrize(
@@ -551,20 +575,20 @@ async def test_turn_creating_reminder_and_goal_links_both(monkeypatch):
 )
 async def test_link_never_overwrites_and_skips_without_match(monkeypatch, loop, reason):
     monkeypatch.setattr(intake_mod, "find_matching_loop", AsyncMock(return_value=loop))
-    intake, loop_store, llm = _build(FakeSystemOne(make("reminder")))
+    intake, lifecycle, llm = _build(FakeSystemOne(make("reminder")))
     adm = await _admit(
         intake, llm, tool_calls=[_tc("set_reminder", {"id": str(uuid4())})]
     )
     assert (adm.links[0].linked, adm.links[0].reason) == (False, reason)
-    loop_store.link.assert_not_called()
+    lifecycle.link.assert_not_called()
 
 
 async def test_link_terminal_loop_is_refused_by_store(monkeypatch):
     monkeypatch.setattr(
         intake_mod, "find_matching_loop", AsyncMock(return_value=_live())
     )
-    intake, loop_store, llm = _build(FakeSystemOne(make("reminder")))
-    loop_store.link.return_value = False
+    intake, lifecycle, llm = _build(FakeSystemOne(make("reminder")))
+    lifecycle.link.return_value = False
     adm = await _admit(
         intake, llm, tool_calls=[_tc("set_reminder", {"id": str(uuid4())})]
     )
@@ -574,22 +598,64 @@ async def test_link_terminal_loop_is_refused_by_store(monkeypatch):
 async def test_link_non_uuid_id_is_skipped(monkeypatch):
     finder = AsyncMock()
     monkeypatch.setattr(intake_mod, "find_matching_loop", finder)
-    intake, loop_store, llm = _build(FakeSystemOne(make("reminder")))
+    intake, lifecycle, llm = _build(FakeSystemOne(make("reminder")))
     adm = await _admit(
         intake, llm, tool_calls=[_tc("set_reminder", {"id": "not-a-uuid"})]
     )
     assert adm.links[0].reason == "no_id"
     finder.assert_not_called()
-    loop_store.link.assert_not_called()
+    lifecycle.link.assert_not_called()
 
 
 async def test_link_store_error_never_raises(monkeypatch):
     monkeypatch.setattr(
         intake_mod, "find_matching_loop", AsyncMock(return_value=_live())
     )
-    intake, loop_store, llm = _build(FakeSystemOne(make("reminder")))
-    loop_store.link.side_effect = RuntimeError("db")
+    intake, lifecycle, llm = _build(FakeSystemOne(make("reminder")))
+    lifecycle.link.side_effect = RuntimeError("db")
     adm = await _admit(
         intake, llm, tool_calls=[_tc("set_reminder", {"id": str(uuid4())})]
     )
     assert (adm.links[0].linked, adm.links[0].reason) == (False, "error")
+
+
+# ── the commit contract (phase 203) ──────────────────────────────────────────
+
+
+async def test_loop_inflow_is_exposed_read_only():
+    intake, _, _ = _build(FakeSystemOne(make("none")))
+    assert isinstance(intake.loop_inflow, LoopInflow)
+    with pytest.raises(AttributeError):
+        intake.loop_inflow = None
+
+
+@pytest.mark.parametrize(
+    ("choice", "kwargs", "kind"),
+    [
+        ("loop", {"explicit": 0.95}, "create_declared"),
+        ("loop", {"explicit": 0.1}, "create_suspected"),
+        ("none", {"resolves": 0.95}, "resolve"),
+    ],
+)
+async def test_the_loop_admission_is_a_full_commit_decision(choice, kwargs, kind):
+    llm = FakeLLM()
+    intake, _, _ = _build(FakeSystemOne(make(choice, **kwargs)), llm)
+    adm = await _admit(intake, llm)
+    loop = adm.loop
+    assert (loop.decision.kind, loop.decision.reason) == (kind, adm.outcome.reason)
+    assert loop.decision.consumed == adm.outcome.consumed
+    assert (loop.text, loop.inflow) == (PROMPT, "conversation")
+    assert loop.source == SourceKey("conversation", "t1")
+    assert not hasattr(loop, "commit")
+
+
+async def test_the_source_is_set_at_construction_and_absent_without_a_thread():
+    llm = FakeLLM()
+    intake, _, _ = _build(FakeSystemOne(make("loop", explicit=0.1)), llm)
+    adm = await intake.admit(
+        {"openrouter_client": llm, "settings": SETTINGS},
+        prompt=PROMPT,
+        response="",
+        agent="companion",
+    )
+    assert adm.loop.source is None

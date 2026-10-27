@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from unittest.mock import AsyncMock
 from uuid import UUID, uuid4
 
 import pytest
 
-from ze_agents.claims import ClaimKind
 from ze_memory.graph.types import Relationship
 from ze_worldstate import tracking
 from ze_worldstate.errors import InvalidLoopTransitionError
+from ze_worldstate.lifecycle import DeclaredStamp, LoopDraft, LoopLifecycle, Tracked
 from ze_worldstate.tracking import LoopTracker
 from ze_worldstate.types import (
     LoopProvenance,
     LoopState,
     OpenLoop,
+    SourceKey,
     TrackOutcome,
 )
 
@@ -43,23 +44,10 @@ def _rel(target_id: UUID) -> Relationship:
 
 
 class FakeLoopStore:
+    """Reads only: a tracker writes through the lifecycle, never the store."""
+
     def __init__(self, loops: list[OpenLoop] | None = None) -> None:
         self.loops: dict[UUID, OpenLoop] = {loop.id: loop for loop in loops or []}
-        self.created: list[OpenLoop] = []
-        self.transitions: list[tuple[UUID, str, bool]] = []
-        self.stamp_calls: list[tuple[UUID, float]] = []
-        self.confidence_calls: list[tuple[UUID, float]] = []
-        self.linked_entity_ids: list[UUID] = []
-        self.create_error: Exception | None = None
-        self.transition_error: Exception | None = None
-
-    async def create(self, loop: OpenLoop) -> OpenLoop:
-        if self.create_error is not None:
-            raise self.create_error
-        loop.id = loop.id or uuid4()
-        self.loops[loop.id] = loop
-        self.created.append(loop)
-        return loop
 
     async def get(self, loop_id: UUID) -> OpenLoop | None:
         return self.loops.get(loop_id)
@@ -69,33 +57,6 @@ class FakeLoopStore:
         if states is not None:
             loops = [loop for loop in loops if loop.state.value in states]
         return loops
-
-    async def transition(
-        self, loop_id: UUID, new_state: str, *, user_asked: bool = False
-    ) -> OpenLoop:
-        if self.transition_error is not None:
-            raise self.transition_error
-        loop = self.loops[loop_id]
-        loop.state = LoopState(new_state)
-        self.transitions.append((loop_id, new_state, user_asked))
-        return loop
-
-    async def resolve(self, loop_id: UUID, evidence) -> OpenLoop:
-        loop = self.loops[loop_id]
-        loop.state = LoopState.CLOSED
-        return loop
-
-    async def stamp_declared(
-        self, loop_id: UUID, *, confidence: float, deadline
-    ) -> None:
-        self.stamp_calls.append((loop_id, confidence))
-
-    async def set_confidence(self, loop_id: UUID, confidence: float) -> None:
-        self.confidence_calls.append((loop_id, confidence))
-        self.loops[loop_id].confidence = confidence
-
-    async def link_entity(self, loop_id: UUID, entity_id: UUID) -> None:
-        self.linked_entity_ids.append(entity_id)
 
 
 class FakeGraphStore:
@@ -109,61 +70,84 @@ class FakeGraphStore:
 class FakeEmbedder:
     def encode_passage(self, text: str) -> list[float]:
         return [1.0, 0.0] if "porto" in text.lower() else [0.0, 1.0]
+
     encode_query = encode_passage
 
 
-class SeamRecorder:
-    def __init__(self) -> None:
-        self.calls: list[dict] = []
+def _lifecycle() -> AsyncMock:
+    lifecycle = AsyncMock(spec=LoopLifecycle)
 
-    async def __call__(self, contribution, write, *, result_id, producer_kind, **kwargs):
-        self.calls.append(
-            {"contribution": contribution, "producer_kind": producer_kind}
+    async def _create_declared(draft: LoopDraft, *, window_days=None) -> OpenLoop:
+        return OpenLoop(
+            id=uuid4(),
+            title=draft.title,
+            provenance=draft.provenance,
+            confidence=DeclaredStamp.CONFIDENCE,
+            state=LoopState.ACTIVE,
         )
-        return await write()
+
+    lifecycle.create_declared.side_effect = _create_declared
+    return lifecycle
 
 
-@pytest.fixture
-def seam(monkeypatch) -> SeamRecorder:
-    recorder = SeamRecorder()
-    monkeypatch.setattr(tracking, "submit_and_detect_collisions", recorder)
-    return recorder
+def _tracked(outcome: str, loop: OpenLoop) -> Tracked:
+    return Tracked(outcome=outcome, loop=loop)
 
 
 def _build(
     store: FakeLoopStore,
     graph: FakeGraphStore,
     entity_resolver,
+    lifecycle: AsyncMock,
 ) -> LoopTracker:
     return LoopTracker(
         loop_store=store,
+        lifecycle=lifecycle,
         graph_store=graph,
         entity_resolver=entity_resolver,
         embedder=FakeEmbedder(),
     )
 
 
-async def test_no_match_creates_user_declared_active_loop(seam):
+async def test_no_match_creates_a_declared_loop_with_a_conversation_origin():
     entity_id = uuid4()
-    store = FakeLoopStore()
-    tracker = _build(store, FakeGraphStore(), _resolver(entity_id))
+    lifecycle = _lifecycle()
+    tracker = _build(FakeLoopStore(), FakeGraphStore(), _resolver(entity_id), lifecycle)
 
-    result = await tracker.track("Decide about the Porto move")
+    result = await tracker.track("Decide about the Porto move", session_id="thread-1")
 
     assert result.ok is True
     assert result.outcome == TrackOutcome.CREATED
-    loop = result.loop
-    assert loop.state == LoopState.ACTIVE
-    assert loop.provenance == LoopProvenance.USER_DECLARED
-    assert loop.claim_kind == ClaimKind.PRIORITY
-    assert loop.confidence == 0.9
-    assert loop.confirmed_at is not None
-    assert loop.drift_deadline - loop.confirmed_at == timedelta(days=_DEFAULT_WINDOW)
-    assert len(store.created) == 1
-    assert store.stamp_calls and store.stamp_calls[0][1] == 0.9
-    assert len(seam.calls) == 1
-    assert seam.calls[0]["producer_kind"] == "open_loop"
-    assert store.linked_entity_ids == [entity_id]
+    assert result.loop.state == LoopState.ACTIVE
+    lifecycle.create_declared.assert_awaited_once_with(
+        LoopDraft(
+            title="Decide about the Porto move",
+            provenance=LoopProvenance.USER_DECLARED,
+            entity_ids=(entity_id,),
+            source=SourceKey(LoopProvenance.CONVERSATION, "thread-1"),
+        ),
+        window_days=_DEFAULT_WINDOW,
+    )
+    lifecycle.track.assert_not_awaited()
+
+
+async def test_create_carries_no_evidence():
+    lifecycle = _lifecycle()
+    tracker = _build(FakeLoopStore(), FakeGraphStore(), _resolver(uuid4()), lifecycle)
+
+    await tracker.track("Porto move", session_id="thread-1")
+
+    draft = lifecycle.create_declared.await_args.args[0]
+    assert draft.evidence == ()
+
+
+async def test_create_without_a_session_has_no_origin_source():
+    lifecycle = _lifecycle()
+    tracker = _build(FakeLoopStore(), FakeGraphStore(), _resolver(uuid4()), lifecycle)
+
+    await tracker.track("Porto move")
+
+    assert lifecycle.create_declared.await_args.args[0].source is None
 
 
 @pytest.mark.parametrize(
@@ -177,132 +161,109 @@ async def test_no_match_creates_user_declared_active_loop(seam):
         (400, 365),
     ],
 )
-async def test_window_days_is_clamped(seam, window_days, expected_days):
-    store = FakeLoopStore()
-    tracker = _build(store, FakeGraphStore(), _resolver(uuid4()))
+async def test_window_days_is_clamped(window_days, expected_days):
+    lifecycle = _lifecycle()
+    tracker = _build(FakeLoopStore(), FakeGraphStore(), _resolver(uuid4()), lifecycle)
 
-    result = await tracker.track("Porto move", window_days)
+    await tracker.track("Porto move", window_days)
 
-    assert result.loop.drift_deadline - result.loop.confirmed_at == timedelta(
-        days=expected_days
-    )
+    assert lifecycle.create_declared.await_args.kwargs["window_days"] == expected_days
 
 
-async def test_empty_title_writes_nothing(seam):
-    store = FakeLoopStore()
-    tracker = _build(store, FakeGraphStore(), _resolver(uuid4()))
+async def test_default_window_is_the_declared_stamp_window():
+    assert tracking.DEFAULT_WINDOW_DAYS == DeclaredStamp.DEFAULT_WINDOW_DAYS
+
+
+async def test_empty_title_writes_nothing():
+    lifecycle = _lifecycle()
+    tracker = _build(FakeLoopStore(), FakeGraphStore(), _resolver(uuid4()), lifecycle)
 
     result = await tracker.track("   ")
 
     assert result.ok is False
     assert result.error
-    assert store.created == []
-    assert seam.calls == []
+    assert lifecycle.method_calls == []
 
 
-async def test_title_is_normalized_and_capped(seam):
-    store = FakeLoopStore()
-    tracker = _build(store, FakeGraphStore(), _resolver(uuid4()))
+async def test_title_is_normalized_and_capped():
+    lifecycle = _lifecycle()
+    tracker = _build(FakeLoopStore(), FakeGraphStore(), _resolver(uuid4()), lifecycle)
 
     spaced = await tracker.track("  Porto   move  ")
     assert spaced.loop.title == "Porto move"
 
-    long_title = " ".join(["Porto"] * 100)
-    fresh = _build(FakeLoopStore(), FakeGraphStore(), _resolver(uuid4()))
-    capped = await fresh.track(long_title)
+    capped = await tracker.track(" ".join(["Porto"] * 100))
     assert len(capped.loop.title) <= 120
     assert capped.loop.title.endswith("Porto")
     assert not capped.loop.title.endswith(" ")
 
 
-async def test_matching_suspected_loop_is_confirmed(seam):
-    existing = _loop(state=LoopState.SUSPECTED)
-    store = FakeLoopStore([existing])
-    tracker = _build(store, FakeGraphStore([existing.id]), _resolver(uuid4()))
-
-    result = await tracker.track("Porto move")
-
-    assert result.outcome == TrackOutcome.CONFIRMED
-    assert store.created == []
-    assert store.transitions == [(existing.id, "active", False)]
-    assert store.stamp_calls == [(existing.id, 0.9)]
-    assert result.loop.state == LoopState.ACTIVE
-    assert result.loop.confidence == 0.9
-
-
-async def test_matching_active_loop_is_reinforced(seam):
-    existing = _loop(state=LoopState.ACTIVE, confidence=0.8)
-    store = FakeLoopStore([existing])
+@pytest.mark.parametrize(
+    ("state", "outcome"),
+    [
+        (LoopState.SUSPECTED, TrackOutcome.CONFIRMED),
+        (LoopState.ACTIVE, TrackOutcome.REINFORCED),
+        (LoopState.DRIFTING, TrackOutcome.REVIVED),
+    ],
+)
+async def test_a_match_is_tracked_through_the_lifecycle(state, outcome):
+    existing = _loop(state=state)
     entity_id = uuid4()
-    tracker = _build(store, FakeGraphStore([existing.id]), _resolver(entity_id))
+    lifecycle = _lifecycle()
+    lifecycle.track.return_value = _tracked(outcome, existing)
+    tracker = _build(
+        FakeLoopStore([existing]),
+        FakeGraphStore([existing.id]),
+        _resolver(entity_id),
+        lifecycle,
+    )
 
-    result = await tracker.track("Porto move")
+    result = await tracker.track("Porto move", 14, session_id="thread-1")
 
-    assert result.outcome == TrackOutcome.REINFORCED
-    assert store.created == []
-    assert store.transitions == []
-    assert store.confidence_calls == [(existing.id, 0.9)]
-    assert result.loop.confidence == 0.9
-    assert store.linked_entity_ids == [entity_id]
-
-
-async def test_reinforce_never_lowers_confidence(seam):
-    existing = _loop(state=LoopState.ACTIVE, confidence=0.95)
-    store = FakeLoopStore([existing])
-    tracker = _build(store, FakeGraphStore([existing.id]), _resolver(uuid4()))
-
-    result = await tracker.track("Porto move")
-
-    assert result.outcome == TrackOutcome.REINFORCED
-    assert store.confidence_calls == [(existing.id, 0.95)]
-    assert result.loop.confidence == 0.95
+    assert result.ok is True
+    assert result.outcome == outcome
+    assert result.loop is existing
+    lifecycle.track.assert_awaited_once_with(
+        existing.id, window_days=14, entity_ids=[entity_id]
+    )
+    lifecycle.create_declared.assert_not_awaited()
 
 
-async def test_matching_drifting_loop_is_revived(seam):
-    existing = _loop(state=LoopState.DRIFTING, confidence=0.4)
-    store = FakeLoopStore([existing])
-    tracker = _build(store, FakeGraphStore([existing.id]), _resolver(uuid4()))
-
-    result = await tracker.track("Porto move")
-
-    assert result.outcome == TrackOutcome.REVIVED
-    assert store.created == []
-    assert store.transitions == [(existing.id, "active", True)]
-    assert store.stamp_calls == [(existing.id, 0.9)]
-    assert result.loop.state == LoopState.ACTIVE
-    assert result.loop.drift_rationale is None
-
-
-async def test_dropped_match_does_not_block_creation(seam):
+async def test_dropped_match_does_not_block_creation():
     dropped = _loop(state=LoopState.DROPPED)
-    store = FakeLoopStore([dropped])
-    tracker = _build(store, FakeGraphStore([dropped.id]), _resolver(uuid4()))
+    lifecycle = _lifecycle()
+    tracker = _build(
+        FakeLoopStore([dropped]),
+        FakeGraphStore([dropped.id]),
+        _resolver(uuid4()),
+        lifecycle,
+    )
 
     result = await tracker.track("Porto move")
 
     assert result.outcome == TrackOutcome.CREATED
-    assert len(store.created) == 1
-    assert store.loops[dropped.id].state == LoopState.DROPPED
+    lifecycle.create_declared.assert_awaited_once()
+    lifecycle.track.assert_not_awaited()
 
 
-async def test_resolver_error_fails_open(seam):
+async def test_resolver_error_fails_open():
     async def broken_resolver(text):
         raise RuntimeError("boom")
 
-    store = FakeLoopStore()
-    tracker = _build(store, FakeGraphStore(), broken_resolver)
+    lifecycle = _lifecycle()
+    tracker = _build(FakeLoopStore(), FakeGraphStore(), broken_resolver, lifecycle)
 
     result = await tracker.track("Porto move")
 
     assert result.ok is True
     assert result.outcome == TrackOutcome.CREATED
-    assert store.linked_entity_ids == []
+    assert lifecycle.create_declared.await_args.args[0].entity_ids == ()
 
 
-async def test_store_create_error_is_returned_not_raised(seam):
-    store = FakeLoopStore()
-    store.create_error = RuntimeError("db down")
-    tracker = _build(store, FakeGraphStore(), _resolver(uuid4()))
+async def test_create_error_is_returned_not_raised():
+    lifecycle = _lifecycle()
+    lifecycle.create_declared.side_effect = RuntimeError("db down")
+    tracker = _build(FakeLoopStore(), FakeGraphStore(), _resolver(uuid4()), lifecycle)
 
     result = await tracker.track("Porto move")
 
@@ -310,11 +271,16 @@ async def test_store_create_error_is_returned_not_raised(seam):
     assert result.error
 
 
-async def test_revive_transition_error_is_returned_not_raised(seam):
+async def test_track_refusal_is_returned_not_raised():
     existing = _loop(state=LoopState.DRIFTING)
-    store = FakeLoopStore([existing])
-    store.transition_error = InvalidLoopTransitionError("lost race")
-    tracker = _build(store, FakeGraphStore([existing.id]), _resolver(uuid4()))
+    lifecycle = _lifecycle()
+    lifecycle.track.side_effect = InvalidLoopTransitionError("lost race")
+    tracker = _build(
+        FakeLoopStore([existing]),
+        FakeGraphStore([existing.id]),
+        _resolver(uuid4()),
+        lifecycle,
+    )
 
     result = await tracker.track("Porto move")
 

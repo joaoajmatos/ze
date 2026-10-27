@@ -17,6 +17,7 @@ from ze_worldstate.jobs.stale_suspicion import (
     DEFAULT_STALE_WINDOW_DAYS,
     StaleSuspicionJob,
 )
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.store import LoopStore, PostgresLoopStore
 from ze_worldstate.surfacing import LoopSurfacer
 
@@ -49,6 +50,7 @@ def import_agent_modules() -> None:
 @dataclass
 class WorldstateStack:
     loop_store: PostgresLoopStore
+    lifecycle: LoopLifecycle
     graph_store: GraphStore
     entity_resolver: Any
     pool: Any
@@ -65,13 +67,21 @@ def build_worldstate_stack(shared: Any, settings: Any) -> WorldstateStack:
         matches = await match_entities_in_query(text, pool)
         return [m.entity.id for m in matches if m.entity.id is not None]
 
+    lifecycle = LoopLifecycle(
+        pool,
+        memory_store=shared.memory_store,
+        nli_client=shared.nli_client,
+    )
+
     deps: dict[type, Any] = {
         LoopStore: loop_store,
         PostgresLoopStore: loop_store,
+        LoopLifecycle: lifecycle,
     }
 
     return WorldstateStack(
         loop_store=loop_store,
+        lifecycle=lifecycle,
         graph_store=graph_store,
         entity_resolver=entity_resolver,
         pool=pool,
@@ -145,13 +155,17 @@ def register_proactive_jobs(
     stale_cfg = worldstate_cfg.get("stale_suspicion", {})
     if stale_cfg.get("enabled", True):
         window_days = int(stale_cfg.get("window_days", DEFAULT_STALE_WINDOW_DAYS))
-        job = StaleSuspicionJob(loop_store=stack.loop_store, window_days=window_days)
+        job = StaleSuspicionJob(
+            loop_store=stack.loop_store,
+            lifecycle=stack.lifecycle,
+            window_days=window_days,
+        )
         scheduler.register(job, cron=stale_cfg.get("cron", "0 4 * * *"))
         log.info("stale_suspicion_job_scheduled", window_days=window_days)
 
     drift_cfg = worldstate_cfg.get("drift", {})
     if drift_cfg.get("enabled", True):
-        drift_job = DriftSweepJob(loop_store=stack.loop_store)
+        drift_job = DriftSweepJob(loop_store=stack.loop_store, lifecycle=stack.lifecycle)
         scheduler.register(drift_job, cron=drift_cfg.get("cron", "0 5 * * *"))
         log.info("drift_sweep_job_scheduled")
 

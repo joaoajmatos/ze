@@ -25,6 +25,7 @@ from ze_worldstate.bootstrap import (
     loop_push_settings,
     worldstate_data_domains,
 )
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.store import LoopStore
 from ze_worldstate.tracking import LoopTracker
 from ze_skills.bootstrap import (
@@ -294,6 +295,7 @@ class ZeContainer(CoreContainer):
     webhook_dispatcher: Any | None
     ui_manifest: Any
     loop_store: LoopStore
+    loop_lifecycle: LoopLifecycle
     job_run_store: JobRunStore
     hypothesis_store: PostgresHypothesisStore
     loop_graph_store: Any
@@ -369,6 +371,7 @@ class ZeContainer(CoreContainer):
         configurable["memory_hooks"] = [*plugin_services.get("memory_hooks", [])]
         if self.commitment_intake is not None:
             configurable["commitment_intake"] = self.commitment_intake.admit
+            configurable["loop_commit"] = self.commitment_intake.loop_inflow.commit
         configurable.update(configurable_extra)
         return {"configurable": configurable}
 
@@ -494,11 +497,10 @@ async def build_container(settings: Settings) -> ZeContainer:
     push_sender = _NotifierPushSender()
     loop_tracker = LoopTracker(
         loop_store=worldstate.loop_store,
+        lifecycle=worldstate.lifecycle,
         graph_store=worldstate.graph_store,
         entity_resolver=worldstate.entity_resolver,
         embedder=shared.embedder,
-        collision_store=stores.collision_store,
-        nli_client=shared.nli_client,
     )
     workspace = build_workspace_stack(
         shared,
@@ -648,7 +650,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     dev_data_seeder = DevDataSeeder(collect_seed_domains(plugins))
     log.info("dev_data_seeder_ready", domains=len(dev_data_seeder._domains))
 
-    wire_collision_detection(shared, correlation, stores)
+    wire_collision_detection(shared, correlation, stores, worldstate)
 
     screen_resolvers = build_screen_registry(
         goal_store=automation.goal_store,
@@ -721,6 +723,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         webhook_dispatcher=webhook_dispatcher,
         ui_manifest=ui_manifest,
         loop_store=worldstate.loop_store,
+        loop_lifecycle=worldstate.lifecycle,
         loop_graph_store=worldstate.graph_store,
         loop_entity_resolver=worldstate.entity_resolver,
         turn_surfacer=turn_surfacer,
@@ -732,7 +735,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         collision_store=stores.collision_store,
         nli_client=shared.nli_client,
         system_one_client=shared.system_one_client,
-        commitment_intake=build_commitment_intake(shared, worldstate, stores, settings),
+        commitment_intake=build_commitment_intake(shared, worldstate, settings),
         procedure_admission=stores.procedure_admission,
         procedure_discovery=stores.procedure_discovery,
         procedure_activator=stores.procedure_activator,
