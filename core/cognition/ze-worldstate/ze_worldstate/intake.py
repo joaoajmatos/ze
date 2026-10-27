@@ -29,24 +29,20 @@ from ze_memory.types import FactAdmission
 from ze_worldstate.admission import LoopInflow
 from ze_worldstate.commitment_judge import (
     COMMITMENT_QUESTIONS,
+    LOOP_COMMIT_KINDS,
     IntakeOutcome,
     build_state,
     commitment_intake_surface_config,
     decide,
 )
+from ze_worldstate.decision import CommitDecision
 from ze_worldstate.extraction import resolve_entities
-from ze_worldstate.loop_judge import LoopGateDecision
 from ze_worldstate.matching import find_matching_loop
 from ze_worldstate.types import LoopAdmission, LoopProvenance, SourceKey
 
 log = get_logger(__name__)
 
 _LIVE_STATES = ["suspected", "active", "drifting"]
-_LOOP_KIND = {
-    "resolve_loop": "resolve",
-    "create_loop_declared": "create_declared",
-    "create_loop_suspected": "create_suspected",
-}
 
 
 @dataclass
@@ -80,6 +76,7 @@ class CommitmentIntake:
         self,
         *,
         loop_inflow: LoopInflow,
+        lifecycle: Any,
         loop_store: Any,
         graph_store: Any,
         entity_resolver: Any,
@@ -88,12 +85,17 @@ class CommitmentIntake:
         settings: Any = None,
     ) -> None:
         self._inflow = loop_inflow
+        self._lifecycle = lifecycle
         self._loop_store = loop_store
         self._graph_store = graph_store
         self._entity_resolver = entity_resolver
         self._embedder = embedder
         self._system_one = system_one_client
         self._settings = settings
+
+    @property
+    def loop_inflow(self) -> LoopInflow:
+        return self._inflow
 
     async def admit(
         self,
@@ -114,7 +116,7 @@ class CommitmentIntake:
             return IntakeAdmission(
                 IntakeOutcome("hold", "trivial"),
                 loop=self._loop_admission(
-                    prompt, LoopGateDecision("hold", "trivial"), source
+                    prompt, CommitDecision("hold", "trivial"), source
                 ),
             )
 
@@ -187,16 +189,18 @@ class CommitmentIntake:
     def _loop_admission(
         self,
         prompt: str,
-        decision: LoopGateDecision,
+        decision: CommitDecision,
         source: SourceKey | None,
         *,
         skip_reason: str | None = None,
     ) -> LoopAdmission:
-        admission = self._inflow.finish(
-            prompt, LoopProvenance.CONVERSATION, decision, skip_reason=skip_reason
+        return self._inflow.finish(
+            prompt,
+            LoopProvenance.CONVERSATION,
+            decision,
+            skip_reason=skip_reason,
+            source=source,
         )
-        admission.source = source
-        return admission
 
     async def _fallback(
         self,
@@ -218,7 +222,7 @@ class CommitmentIntake:
         if not suppress_loop:
             loop = self._loop_admission(
                 prompt,
-                LoopGateDecision("fallback", reason),
+                CommitDecision("fallback", reason),
                 source,
                 skip_reason=reason,
             )
@@ -267,10 +271,10 @@ class CommitmentIntake:
             admission.fact = await self._write_facts(
                 configurable, outcome, result, prompt, response, agent
             )
-        elif outcome.kind in _LOOP_KIND:
+        elif outcome.kind in LOOP_COMMIT_KINDS:
             admission.loop = self._loop_admission(
                 prompt,
-                LoopGateDecision(_LOOP_KIND[outcome.kind], outcome.reason),
+                CommitDecision(outcome.kind, outcome.reason, outcome.consumed),
                 source,
             )
         elif outcome.kind == "link":
@@ -357,7 +361,7 @@ class CommitmentIntake:
             )
             return LinkOutcome(kind, False, "already_linked", loop.id)
         try:
-            changed = await self._loop_store.link(loop.id, **{f"{kind}_id": target})
+            changed = await self._lifecycle.link(loop.id, **{f"{kind}_id": target})
         except Exception as exc:
             log.warning("commitment_link_failed", kind=kind, error=str(exc))
             return LinkOutcome(kind, False, "error")

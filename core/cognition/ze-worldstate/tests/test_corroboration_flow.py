@@ -1,12 +1,13 @@
 """Phase 172 integration: gate admission → match → corroborate/promote, through `LoopInflow`.
 
-A stateful in-memory loop store stands in for Postgres so the match, the source rows and the
-confidence arithmetic run together. The seam is bypassed as in `test_admission.py`.
+A stateful in-memory loop store and a lifecycle double (`AsyncMock(spec=LoopLifecycle)` whose
+events write that store) stand in for Postgres so the match, the source rows and the confidence
+arithmetic run together. Atomicity belongs to the pg tests of the lifecycle.
 """
 
 from __future__ import annotations
 
-from tests.commitment_fixtures import _BARS, conversation_admit, make
+from tests.commitment_fixtures import _BARS, commit_loop, conversation_admit, make
 
 import json
 from dataclasses import replace
@@ -19,10 +20,10 @@ from ze_agents.system_one import SystemOneAnswer, SystemOneResult
 from ze_memory.graph.types import Relationship
 from ze_plugin.contribution import EvidenceRef
 
-from ze_worldstate import review
 from ze_worldstate.admission import LoopInflow
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.intake import CommitmentIntake
+from ze_worldstate.lifecycle import LoopLifecycle, SourceWrite
 from ze_worldstate.types import (
     LoopSource,
     LoopSourceRole,
@@ -50,16 +51,6 @@ def _settings(corroboration=CORR_BARS):
     return {"system_one": {"surfaces": surfaces}}
 
 
-@pytest.fixture(autouse=True)
-def _bypass_seam(monkeypatch):
-    from ze_worldstate import extraction
-
-    async def submit(contribution, write, **kw):
-        return await write()
-
-    monkeypatch.setattr(extraction, "submit_and_detect_collisions", submit)
-
-
 class FakeLoopStore:
     def __init__(self):
         self.loops: dict[UUID, OpenLoop] = {}
@@ -67,7 +58,6 @@ class FakeLoopStore:
         self.evidence: dict[UUID, list[EvidenceRef]] = {}
         self.sources: dict[UUID, list[LoopSource]] = {}
         self.corroboration_recorded: list[UUID] = []
-        self.deleted_sources = 0
         self.calls: list[str] = []
         self.promote_returns_none = False
 
@@ -98,27 +88,6 @@ class FakeLoopStore:
     async def list_evidence(self, loop_id):
         return list(self.evidence.get(loop_id, []))
 
-    async def set_confidence(self, loop_id, confidence):
-        self.calls.append("set_confidence")
-        self.loops[loop_id].confidence = confidence
-
-    async def set_drift_deadline(self, loop_id, deadline):
-        self.loops[loop_id].drift_deadline = deadline
-
-    async def set_dismissed_evidence_fingerprint(self, loop_id, fingerprint):
-        self.loops[loop_id].dismissed_evidence_fingerprint = fingerprint
-
-    async def record_corroboration(self, loop_id, **kw):
-        self.corroboration_recorded.append(loop_id)
-
-    async def transition(self, loop_id, new_state, **kw):
-        self.loops[loop_id].state = LoopState(new_state)
-        return self.loops[loop_id]
-
-    async def resolve(self, loop_id, evidence):
-        self.loops[loop_id].state = LoopState.CLOSED
-        return self.loops[loop_id]
-
     async def add_source(self, source):
         rows = self.sources.setdefault(source.loop_id, [])
         if any(r.key == source.key for r in rows):
@@ -130,26 +99,110 @@ class FakeLoopStore:
     async def list_sources(self, loop_id):
         return list(self.sources.get(loop_id, []))
 
-    async def promote(self, loop_id, *, confidence, window_days):
-        self.calls.append("promote")
-        if self.promote_returns_none:
-            return None
-        loop = self.loops[loop_id]
-        if loop.state is not LoopState.SUSPECTED:
-            return None
-        loop.state = LoopState.ACTIVE
-        loop.confidence = max(loop.confidence, confidence)
-        loop.drift_deadline = datetime.now(timezone.utc) + timedelta(days=window_days)
-        return loop
-
     async def mark_source_promoted(self, source_id):
         for rows in self.sources.values():
             for i, row in enumerate(rows):
                 if row.id == source_id:
                     rows[i] = replace(row, promoted=True)
 
-    async def delete_source(self, *a, **kw):  # never expected to be called
-        self.deleted_sources += 1
+
+def fake_lifecycle(store: FakeLoopStore) -> AsyncMock:
+    """A `LoopLifecycle` double whose events write `store` the way the real ones do."""
+    lifecycle = AsyncMock(spec=LoopLifecycle)
+
+    async def link(loop_id, draft_evidence, entity_ids):
+        for ref in draft_evidence:
+            await store.link_evidence(loop_id, ref.kind, ref.id)
+        for entity_id in entity_ids:
+            await store.link_entity(loop_id, entity_id)
+
+    async def create(draft, state, confidence):
+        loop = await store.create(
+            OpenLoop(
+                title=draft.title,
+                provenance=draft.provenance,
+                confidence=confidence,
+                state=state,
+            )
+        )
+        await link(loop.id, draft.evidence, draft.entity_ids)
+        if draft.source is not None and draft.source.ref:
+            await store.add_source(
+                LoopSource(
+                    loop_id=loop.id,
+                    role=LoopSourceRole.ORIGIN,
+                    key=draft.source,
+                    evidence=draft.evidence[0] if draft.evidence else None,
+                )
+            )
+        return loop
+
+    async def create_suspected(draft):
+        return await create(draft, LoopState.SUSPECTED, 0.3)
+
+    async def create_declared(draft, window_days=None):
+        return await create(draft, LoopState.ACTIVE, 0.9)
+
+    async def note_evidence(loop_id, evidence, entity_ids):
+        await link(loop_id, evidence, entity_ids)
+        loop = store.loops[loop_id]
+        if evidence and loop.state is LoopState.ACTIVE:
+            store.corroboration_recorded.append(loop_id)
+        return loop
+
+    async def corroborate(loop_id, corroboration):
+        store.calls.append("corroborate")
+        await link(loop_id, corroboration.evidence, corroboration.entity_ids)
+        row = await store.add_source(
+            LoopSource(
+                loop_id=loop_id,
+                role=LoopSourceRole.CORROBORATION,
+                key=corroboration.key,
+                same_concern=corroboration.same_concern,
+            )
+        )
+        loop = store.loops[loop_id]
+        if row is None:
+            return SourceWrite("duplicate_source", loop)
+        loop.confidence = corroboration.confidence
+        return SourceWrite("corroborate", loop)
+
+    async def promote(loop_id, corroboration):
+        store.calls.append("promote")
+        await link(loop_id, corroboration.evidence, corroboration.entity_ids)
+        row = await store.add_source(
+            LoopSource(
+                loop_id=loop_id,
+                role=LoopSourceRole.CORROBORATION,
+                key=corroboration.key,
+                same_concern=corroboration.same_concern,
+            )
+        )
+        loop = store.loops[loop_id]
+        if row is None:
+            return SourceWrite("duplicate_source", loop)
+        if store.promote_returns_none or loop.state is not LoopState.SUSPECTED:
+            return SourceWrite("lost_race", loop)
+        loop.state = LoopState.ACTIVE
+        loop.confidence = max(loop.confidence, 0.7)
+        loop.drift_deadline = datetime.now(timezone.utc) + timedelta(days=7)
+        await store.mark_source_promoted(row.id)
+        return SourceWrite("promote", loop)
+
+    async def resolve(loop_id, evidence):
+        loop = store.loops[loop_id]
+        if loop.state in (LoopState.CLOSED, LoopState.DROPPED):
+            return None
+        loop.state = LoopState.CLOSED
+        return loop
+
+    lifecycle.create_suspected.side_effect = create_suspected
+    lifecycle.create_declared.side_effect = create_declared
+    lifecycle.note_evidence.side_effect = note_evidence
+    lifecycle.corroborate.side_effect = corroborate
+    lifecycle.promote.side_effect = promote
+    lifecycle.resolve.side_effect = resolve
+    return lifecycle
 
 
 class FakeGraph:
@@ -225,8 +278,13 @@ class Harness:
             system_one_client=self.client,
             settings=settings,
         )
-        self.inflow = LoopInflow(llm_client=WriterLLM(title), **deps)
-        self.intake = CommitmentIntake(loop_inflow=self.inflow, **deps)
+        self.lifecycle = fake_lifecycle(self.store)
+        self.inflow = LoopInflow(
+            lifecycle=self.lifecycle, llm_client=WriterLLM(title), **deps
+        )
+        self.intake = CommitmentIntake(
+            loop_inflow=self.inflow, lifecycle=self.lifecycle, **deps
+        )
 
     @property
     def loop(self) -> OpenLoop:
@@ -240,7 +298,7 @@ class Harness:
     async def chat(self, thread="th1", text="I need to reply to Ana about the budget"):
         ev = EvidenceRef(kind="episode", id=uuid4())
         adm = await conversation_admit(self.intake, {"thread_id": thread}, prompt=text)
-        await adm.commit([ev])
+        await commit_loop(self.inflow, adm, [ev])
         return ev
 
     async def inbound(
@@ -292,7 +350,7 @@ async def test_independent_email_promotes_a_suspected_loop():
     assert h.client.same_calls[0]["loop"] == TITLE
 
 
-async def test_promote_decision_writes_confidence_once_through_promote():
+async def test_promote_decision_is_one_lifecycle_call():
     h = Harness(same=0.93)
     await h.chat()
     h.store.calls.clear()
@@ -301,24 +359,26 @@ async def test_promote_decision_writes_confidence_once_through_promote():
     assert h.store.calls == ["promote"]
 
 
-async def test_promote_that_finds_the_loop_gone_falls_back_to_set_confidence():
+async def test_promote_that_loses_the_race_writes_no_confidence():
     h = Harness(same=0.93)
     await h.chat()
     h.store.calls.clear()
     h.store.promote_returns_none = True
     await h.inbound("email", "G1")
 
-    assert h.store.calls == ["promote", "set_confidence"]
+    assert h.store.calls == ["promote"]
     assert h.loop.state is LoopState.SUSPECTED
+    assert h.loop.confidence == pytest.approx(0.3)
+    assert h.keys()[-1] == ("corroboration", "email", False)
 
 
-async def test_corroborate_decision_only_sets_confidence():
+async def test_corroborate_decision_is_one_lifecycle_call():
     h = Harness(same=0.7)
     await h.chat()
     h.store.calls.clear()
     await h.inbound("email", "G1")
 
-    assert h.store.calls == ["set_confidence"]
+    assert h.store.calls == ["corroborate"]
 
 
 async def test_corroborate_band_raises_confidence_and_stays_suspected():
@@ -378,8 +438,14 @@ async def test_declared_path_match_corroborates_a_suspected_loop():
     adm = await conversation_admit(
         h.intake, {"thread_id": "th9"}, prompt="remind me to reply to Ana"
     )
-    adm.decision = replace(adm.decision, kind="create_declared", reason="explicit")
-    await adm.commit([EvidenceRef(kind="episode", id=uuid4())])
+    decision = replace(adm.decision, kind="create_declared", reason="explicit")
+    await h.inflow.commit(
+        decision,
+        text=adm.text,
+        inflow=adm.inflow,
+        evidence=[EvidenceRef(kind="episode", id=uuid4())],
+        source=adm.source,
+    )
 
     assert h.loop.state is LoopState.ACTIVE
     assert h.loop.confidence == pytest.approx(0.7)
@@ -526,19 +592,6 @@ async def test_closed_and_dropped_loops_are_never_judged():
     h.loop.state = LoopState.CLOSED
     await h.inbound("email", "G1")
     assert h.client.same_calls == []
-
-
-async def test_dropping_a_promoted_loop_keeps_its_sources():
-    h = Harness(same=0.93)
-    await h.chat()
-    await h.inbound("email", "G1")
-    loop = h.loop
-    assert loop.state is LoopState.ACTIVE
-
-    await review.drop_loop(h.store, loop.id)
-
-    assert h.store.deleted_sources == 0
-    assert len(h.store.sources[loop.id]) == 2
 
 
 # ---- US5 ------------------------------------------------------------------

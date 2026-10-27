@@ -8,12 +8,12 @@ from ze_plugin.contribution import EvidenceRef
 from ze_worldstate.corroboration import (
     CORROBORATED_CAP,
     CORROBORATION_WEIGHT,
-    PROMOTED_CONFIDENCE,
     PROMOTED_WINDOW_DAYS,
     corroborated_confidence,
     is_independent,
 )
-from ze_worldstate.drift import DEFAULT_DRIFT_WINDOW_DAYS
+from ze_worldstate.lifecycle import DeclaredStamp
+from ze_worldstate.lifecycle.rules import PROMOTED_CONFIDENCE
 from ze_worldstate.types import LoopSource, LoopSourceRole, SourceKey
 
 
@@ -58,7 +58,9 @@ def test_same_evidence():
     ref = EvidenceRef(kind="episode", id=uuid4())
     other = EvidenceRef(kind="episode", id=uuid4())
     key = SourceKey("email", "T9")
-    assert is_independent(key, [other, ref], [_src("conversation", "c1")], [ref], []) == (
+    assert is_independent(
+        key, [other, ref], [_src("conversation", "c1")], [ref], []
+    ) == (
         False,
         "same_evidence",
     )
@@ -106,7 +108,7 @@ def test_constants():
         0.6,
         0.7,
     )
-    assert PROMOTED_WINDOW_DAYS == DEFAULT_DRIFT_WINDOW_DAYS == 7
+    assert PROMOTED_WINDOW_DAYS == DeclaredStamp.DEFAULT_WINDOW_DAYS == 7
 
 
 def test_corroborated_confidence_noisy_or():
@@ -134,7 +136,8 @@ from unittest.mock import AsyncMock  # noqa: E402
 from structlog.testing import capture_logs  # noqa: E402
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult  # noqa: E402
 
-from ze_worldstate.corroboration import corroborate_match  # noqa: E402
+from ze_worldstate.corroboration import Corroborator, MatchInput  # noqa: E402
+from ze_worldstate.lifecycle import Corroboration, LoopLifecycle, SourceWrite  # noqa: E402
 from ze_worldstate.types import LoopState, OpenLoop  # noqa: E402
 
 BARS = {"enabled": True, "corroborate_hold": 0.6, "promote_hold": 0.85}
@@ -175,7 +178,7 @@ def _loop(confidence=0.3, state=LoopState.SUSPECTED) -> OpenLoop:
     )
 
 
-def _store(sources=None, evidence=None, dropped_sources=None, added=True):
+def _store(sources=None, evidence=None, dropped_sources=None):
     store = AsyncMock()
     store.owner = {}
     store.list_sources = AsyncMock(
@@ -186,60 +189,79 @@ def _store(sources=None, evidence=None, dropped_sources=None, added=True):
         )
     )
     store.list_evidence = AsyncMock(return_value=evidence or [])
-    row = LoopSource(
-        id=uuid4(), loop_id=uuid4(), role=LoopSourceRole.CORROBORATION, key=KEY
-    )
-    store.add_source = AsyncMock(return_value=row if added else None)
-    store.promote = AsyncMock(return_value=_loop(0.7, LoopState.ACTIVE))
-    store.set_confidence = AsyncMock()
-    store.mark_source_promoted = AsyncMock()
-    return store, row
+    return store
 
 
-async def _run(existing, store, client, *, settings=None, dropped=None, evidence=None):
-    link = AsyncMock()
+def _lifecycle(outcome="corroborate"):
+    lifecycle = AsyncMock(spec=LoopLifecycle)
+
+    async def write(loop_id, corroboration):
+        return SourceWrite(outcome, _loop())
+
+    lifecycle.corroborate.side_effect = write
+    lifecycle.promote.side_effect = write
+    lifecycle.note_evidence.side_effect = lambda loop_id, evidence, entity_ids: _loop()
+    return lifecycle
+
+
+async def _run(
+    existing,
+    client,
+    *,
+    store=None,
+    lifecycle=None,
+    settings=None,
+    dropped=None,
+    evidence=None,
+    text="Reminder: the budget reply to Ana is still pending.",
+):
+    store = store or _store()
+    lifecycle = lifecycle or _lifecycle()
     store.owner["id"] = existing.id
-    await corroborate_match(
-        existing=existing,
-        text="Reminder: the budget reply to Ana is still pending.",
-        inflow="email",
-        key=KEY,
-        evidence_refs=evidence or [EvidenceRef(kind="episode", id=uuid4())],
-        entity_ids=[],
-        dropped=dropped,
+    refs = tuple(evidence or [EvidenceRef(kind="episode", id=uuid4())])
+    corroborator = Corroborator(
+        lifecycle=lifecycle,
         loop_store=store,
         system_one_client=client,
         settings=_settings() if settings is None else settings,
-        link=link,
     )
-    return link
+    result = await corroborator.on_suspected_match(
+        existing, dropped, MatchInput(text, "email", KEY, refs, ())
+    )
+    return result, lifecycle, refs
 
 
 def _events(logs, name):
     return [e for e in logs if e["event"] == name]
 
 
-async def test_corroborate_band_raises_confidence_and_writes_a_source_row():
+def _no_effect_but_note(lifecycle):
+    lifecycle.corroborate.assert_not_awaited()
+    lifecycle.promote.assert_not_awaited()
+    lifecycle.note_evidence.assert_awaited_once()
+
+
+async def test_corroborate_band_raises_confidence_through_one_lifecycle_call():
     existing = _loop(0.3)
-    store, _ = _store()
     client = FakeSystemOne(_ok(0.8))
     with capture_logs() as logs:
-        link = await _run(existing, store, client)
+        result, lifecycle, refs = await _run(existing, client)
 
-    link.assert_awaited_once()
-    store.set_confidence.assert_awaited_once()
-    assert store.set_confidence.await_args.args[0] == existing.id
-    assert store.set_confidence.await_args.args[1] == pytest.approx(0.58)
-    source = store.add_source.await_args.args[0]
-    assert source.role is LoopSourceRole.CORROBORATION
-    assert source.promoted is False
-    assert (source.same_concern, source.model, source.latency_ms) == (
-        0.8,
-        "test-model",
-        42,
-    )
-    assert source.key == KEY
-    store.promote.assert_not_awaited()
+    assert isinstance(result, SourceWrite) and result.outcome == "corroborate"
+    lifecycle.corroborate.assert_awaited_once()
+    loop_id, corroboration = lifecycle.corroborate.await_args.args
+    assert loop_id == existing.id
+    assert isinstance(corroboration, Corroboration)
+    assert corroboration.confidence == pytest.approx(0.58)
+    assert (
+        corroboration.same_concern,
+        corroboration.model,
+        corroboration.latency_ms,
+        corroboration.key,
+        corroboration.evidence,
+    ) == (0.8, "test-model", 42, KEY, refs)
+    lifecycle.promote.assert_not_awaited()
+    lifecycle.note_evidence.assert_not_awaited()
     assert len(client.calls) == 1 and client.calls[0][2] == 1
     [judgment] = _events(logs, "corroboration_judgment")
     assert judgment["outcome"] == "corroborate"
@@ -249,101 +271,119 @@ async def test_corroborate_band_raises_confidence_and_writes_a_source_row():
 
 
 async def test_second_corroboration_is_capped():
-    existing = _loop(0.58)
-    store, _ = _store()
-    await _run(existing, store, FakeSystemOne(_ok(0.8)))
-    assert store.set_confidence.await_args.args[1] == pytest.approx(0.6)
+    _, lifecycle, _ = await _run(_loop(0.58), FakeSystemOne(_ok(0.8)))
+    corroboration = lifecycle.corroborate.await_args.args[1]
+    assert corroboration.confidence == pytest.approx(0.6)
 
 
-async def test_promote_calls_the_guarded_update_then_marks_the_source():
+async def test_promote_is_one_lifecycle_call():
     existing = _loop(0.3)
-    store, row = _store()
     with capture_logs() as logs:
-        await _run(existing, store, FakeSystemOne(_ok(0.93)))
+        result, lifecycle, _ = await _run(
+            existing, FakeSystemOne(_ok(0.93)), lifecycle=_lifecycle("promote")
+        )
 
-    store.promote.assert_awaited_once_with(existing.id, confidence=0.7, window_days=7)
-    store.mark_source_promoted.assert_awaited_once_with(row.id)
+    assert result.outcome == "promote"
+    lifecycle.promote.assert_awaited_once()
+    assert lifecycle.promote.await_args.args[0] == existing.id
+    lifecycle.corroborate.assert_not_awaited()
+    lifecycle.note_evidence.assert_not_awaited()
     assert _events(logs, "corroboration_judgment")[0]["outcome"] == "promote"
 
 
-async def test_promote_lost_race_leaves_promoted_false():
-    existing = _loop(0.3)
-    store, _ = _store()
-    store.promote = AsyncMock(return_value=None)
+@pytest.mark.parametrize("outcome", ["lost_race", "duplicate_source"])
+async def test_the_lifecycles_outcome_is_returned_and_logged(outcome):
     with capture_logs() as logs:
-        await _run(existing, store, FakeSystemOne(_ok(0.93)))
+        result, lifecycle, _ = await _run(
+            _loop(0.3), FakeSystemOne(_ok(0.93)), lifecycle=_lifecycle(outcome)
+        )
 
-    store.mark_source_promoted.assert_not_awaited()
-    assert _events(logs, "corroboration_judgment")[0]["outcome"] == "corroborate"
+    assert result.outcome == outcome
+    lifecycle.note_evidence.assert_not_awaited()
+    assert _events(logs, "corroboration_judgment")[0]["outcome"] == outcome
 
 
-async def test_duplicate_source_stops_before_confidence_or_promote():
-    existing = _loop(0.3)
-    store, _ = _store(added=False)
+async def test_a_lifecycle_failure_falls_back_to_note_evidence_and_logs():
+    lifecycle = _lifecycle()
+    lifecycle.promote.side_effect = RuntimeError("db down")
     with capture_logs() as logs:
-        await _run(existing, store, FakeSystemOne(_ok(0.93)))
+        result, _, _ = await _run(
+            _loop(0.3), FakeSystemOne(_ok(0.93)), lifecycle=lifecycle
+        )
 
-    store.set_confidence.assert_not_awaited()
-    store.promote.assert_not_awaited()
-    assert _events(logs, "corroboration_judgment")[0]["reason"] == "duplicate_source"
-
-
-async def test_exception_gives_the_170_behavior_and_logs_failure():
-    existing = _loop(0.3)
-    store, _ = _store()
-    store.add_source = AsyncMock(side_effect=RuntimeError("db down"))
-    with capture_logs() as logs:
-        link = await _run(existing, store, FakeSystemOne(_ok(0.93)))
-
-    assert link.await_count >= 1
-    store.promote.assert_not_awaited()
+    assert isinstance(result, OpenLoop)
+    lifecycle.note_evidence.assert_awaited_once()
     assert _events(logs, "corroboration_failed")
 
 
-async def test_not_same_links_and_changes_nothing_else():
+async def test_not_same_notes_the_evidence_and_changes_nothing_else():
     existing = _loop(0.3)
-    store, _ = _store()
     with capture_logs() as logs:
-        link = await _run(existing, store, FakeSystemOne(_ok(0.08)))
+        result, lifecycle, refs = await _run(existing, FakeSystemOne(_ok(0.08)))
 
-    link.assert_awaited_once()
-    store.add_source.assert_not_awaited()
-    store.set_confidence.assert_not_awaited()
+    assert isinstance(result, OpenLoop)
+    _no_effect_but_note(lifecycle)
+    lifecycle.note_evidence.assert_awaited_once_with(
+        existing.id, evidence=refs, entity_ids=()
+    )
     assert _events(logs, "corroboration_judgment")[0]["outcome"] == "not_same"
 
 
 async def test_non_independent_makes_no_request():
     existing = _loop(0.3)
-    store, _ = _store(sources=[_src("email", "T-new")])
     client = FakeSystemOne(_ok(0.99))
     with capture_logs() as logs:
-        link = await _run(existing, store, client)
+        _, lifecycle, _ = await _run(
+            existing, client, store=_store(sources=[_src("email", "T-new")])
+        )
 
     assert client.calls == []
-    link.assert_awaited_once()
-    store.add_source.assert_not_awaited()
+    _no_effect_but_note(lifecycle)
     [skipped] = _events(logs, "corroboration_skipped")
     assert skipped["reason"] == "same_source"
 
 
 async def test_dropped_source_makes_no_request():
     existing, dropped = _loop(0.3), _loop(0.3, LoopState.DROPPED)
-    store, _ = _store(dropped_sources=[_src("email", "T-new")])
     client = FakeSystemOne(_ok(0.99))
     with capture_logs() as logs:
-        await _run(existing, store, client, dropped=dropped)
+        _, lifecycle, _ = await _run(
+            existing,
+            client,
+            store=_store(dropped_sources=[_src("email", "T-new")]),
+            dropped=dropped,
+        )
 
     assert client.calls == []
+    _no_effect_but_note(lifecycle)
     assert _events(logs, "corroboration_skipped")[0]["reason"] == "dropped_source"
 
 
 async def test_same_evidence_makes_no_request():
-    existing = _loop(0.3)
     ref = EvidenceRef(kind="episode", id=uuid4())
-    store, _ = _store(evidence=[ref])
     client = FakeSystemOne(_ok(0.99))
-    await _run(existing, store, client, evidence=[ref])
+    _, lifecycle, _ = await _run(
+        _loop(0.3), client, store=_store(evidence=[ref]), evidence=[ref]
+    )
     assert client.calls == []
+    _no_effect_but_note(lifecycle)
+
+
+async def test_a_match_without_a_key_makes_no_request():
+    existing = _loop(0.3)
+    client = FakeSystemOne(_ok(0.99))
+    store, lifecycle = _store(), _lifecycle()
+    corroborator = Corroborator(
+        lifecycle=lifecycle,
+        loop_store=store,
+        system_one_client=client,
+        settings=_settings(),
+    )
+    await corroborator.on_suspected_match(
+        existing, None, MatchInput("text", "email", None, (), ())
+    )
+    assert client.calls == []
+    _no_effect_but_note(lifecycle)
 
 
 # ---- off, unsure and failing paths ----------------------------------------
@@ -359,36 +399,29 @@ async def test_same_evidence_makes_no_request():
     ],
 )
 async def test_off_or_uncalibrated_makes_no_request(block):
-    existing = _loop(0.3)
-    store, _ = _store()
     client = FakeSystemOne(_ok(0.99))
     settings = {} if block is None else _settings(block)
-    link = await _run(existing, store, client, settings=settings)
+    _, lifecycle, _ = await _run(_loop(0.3), client, settings=settings)
 
     assert client.calls == []
-    link.assert_awaited_once()
-    store.add_source.assert_not_awaited()
-    store.set_confidence.assert_not_awaited()
-    store.promote.assert_not_awaited()
+    _no_effect_but_note(lifecycle)
 
 
 async def test_enabled_uncalibrated_warns():
     with capture_logs() as logs:
         await _run(
             _loop(),
-            _store()[0],
             FakeSystemOne(_ok(0.99)),
-            settings=_settings({"enabled": True, "corroborate_hold": 0.9, "promote_hold": 0.6}),
+            settings=_settings(
+                {"enabled": True, "corroborate_hold": 0.9, "promote_hold": 0.6}
+            ),
         )
     assert any(e["log_level"] == "warning" for e in logs)
 
 
-async def test_missing_client_is_the_170_behavior():
-    existing = _loop()
-    store, _ = _store()
-    link = await _run(existing, store, None)
-    link.assert_awaited_once()
-    store.add_source.assert_not_awaited()
+async def test_missing_client_notes_the_evidence():
+    _, lifecycle, _ = await _run(_loop(), None)
+    _no_effect_but_note(lifecycle)
 
 
 @pytest.mark.parametrize(
@@ -399,15 +432,18 @@ async def test_missing_client_is_the_170_behavior():
         FakeSystemOne(SystemOneResult(outcome="ok", answers={})),
     ],
 )
-async def test_skip_exception_and_invalid_answer_are_the_170_behavior(client):
-    existing = _loop()
-    store, _ = _store()
+async def test_skip_exception_and_invalid_answer_note_the_evidence(client):
     with capture_logs() as logs:
-        link = await _run(existing, store, client)
+        _, lifecycle, _ = await _run(_loop(), client)
 
-    link.assert_awaited_once()
-    store.add_source.assert_not_awaited()
-    store.set_confidence.assert_not_awaited()
+    _no_effect_but_note(lifecycle)
     [judgment] = _events(logs, "corroboration_judgment")
     assert judgment["outcome"] == "fallback"
     assert judgment["skip_reason"] or judgment["reason"]
+
+
+async def test_a_failing_note_evidence_is_not_swallowed():
+    lifecycle = _lifecycle()
+    lifecycle.note_evidence.side_effect = RuntimeError("db down")
+    with pytest.raises(RuntimeError):
+        await _run(_loop(), None, lifecycle=lifecycle)

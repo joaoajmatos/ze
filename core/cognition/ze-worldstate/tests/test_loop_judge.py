@@ -176,3 +176,26 @@ def test_decide_out_of_range_noul_is_invalid():
         "email",
     )
     assert (d.kind, d.reason) == ("fallback", "invalid_answer")
+
+
+def test_decide_returns_commit_decision_and_never_declares():
+    from itertools import product
+    from typing import get_args
+
+    from ze_worldstate.decision import CommitDecision, GateKind
+
+    assert not hasattr(lj, "LoopGateDecision")
+    assert not hasattr(lj, "DecisionKind")
+    scores = (0.0, 0.1, 0.49, 0.5, 0.69, 0.7, 1.0)
+    results = [
+        _result(is_open_concern=c, resolves_existing=r)
+        for c, r in product(scores, scores)
+    ]
+    results.append(SystemOneResult(outcome="skip", skip_reason="timeout"))
+    results.append(_result(is_open_concern=0.9))
+    for result in results:
+        decision = decide(result, CFG, "email")
+        assert isinstance(decision, CommitDecision)
+        assert decision.kind in get_args(GateKind)
+        assert decision.kind != "create_declared"
+        assert decision.title is None and decision.window_days is None

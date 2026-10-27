@@ -1,12 +1,14 @@
-"""Corroboration — the independence rule and the confidence arithmetic.
+"""Corroboration — the independence rule, the confidence arithmetic and the match flow.
 
-Pure policy for phase 172. A text corroborates a suspected loop only when it comes from a source
-the loop has not already counted (specs/phases/172-corroboration-promotion/contracts/).
+A text corroborates a suspected loop only when it comes from a source the loop has not already
+counted (specs/phases/172-corroboration-promotion/contracts/). `Corroborator` judges a match and
+hands the effect to the lifecycle: one call per path.
 """
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
@@ -14,20 +16,14 @@ from ze_logging import get_logger
 from ze_plugin.contribution import EvidenceRef
 
 from ze_worldstate import corroboration_judge
-from ze_worldstate.drift import DEFAULT_DRIFT_WINDOW_DAYS
-from ze_worldstate.types import (
-    LoopSource,
-    LoopSourceRole,
-    OpenLoop,
-    SourceKey,
-)
+from ze_worldstate.lifecycle import Corroboration, DeclaredStamp, SourceWrite
+from ze_worldstate.types import LoopSource, OpenLoop, SourceKey
 
 log = get_logger(__name__)
 
 CORROBORATION_WEIGHT = 0.5
 CORROBORATED_CAP = 0.6
-PROMOTED_CONFIDENCE = 0.7
-PROMOTED_WINDOW_DAYS = DEFAULT_DRIFT_WINDOW_DAYS
+PROMOTED_WINDOW_DAYS = DeclaredStamp.DEFAULT_WINDOW_DAYS
 
 
 def is_independent(
@@ -78,135 +74,113 @@ async def _judge(
     return result, decision
 
 
-async def corroborate_match(
-    *,
-    existing: OpenLoop,
-    text: str,
-    inflow: str,
-    key: SourceKey | None,
-    evidence_refs: Sequence[EvidenceRef],
-    entity_ids: Sequence[UUID],
-    dropped: OpenLoop | None,
-    loop_store: Any,
-    system_one_client: Any,
-    settings: Any,
-    link: Callable[[], Awaitable[None]],
-) -> None:
-    """A gate-admitted text matched a suspected loop. Never raises.
+@dataclass(frozen=True)
+class MatchInput:
+    text: str
+    inflow: str
+    key: SourceKey | None
+    evidence: tuple[EvidenceRef, ...]
+    entity_ids: tuple[UUID, ...]
 
-    `link` is the 170 evidence-and-entity link; it runs on every path, after independence is
-    checked (linking first would make every text look like the same evidence).
-    """
-    try:
-        await _corroborate(
-            existing=existing,
-            text=text,
-            inflow=inflow,
-            key=key,
-            evidence_refs=evidence_refs,
-            dropped=dropped,
-            loop_store=loop_store,
-            system_one_client=system_one_client,
-            settings=settings,
-            link=link,
-        )
-    except Exception as exc:
-        log.warning(
-            "corroboration_failed", loop_id=str(existing.id), inflow=inflow, error=str(exc)
-        )
+
+class Corroborator:
+    def __init__(
+        self,
+        *,
+        lifecycle: Any,
+        loop_store: Any,
+        system_one_client: Any = None,
+        settings: Any = None,
+    ) -> None:
+        self._lifecycle = lifecycle
+        self._loop_store = loop_store
+        self._system_one = system_one_client
+        self._settings = settings
+
+    async def on_suspected_match(
+        self, existing: OpenLoop, dropped: OpenLoop | None, match: MatchInput
+    ) -> SourceWrite | OpenLoop:
+        """A gate-admitted text matched a suspected loop.
+
+        Judging never raises: any failure there falls back to `note_evidence`, which runs on
+        every path that does not corroborate, after independence is checked (linking first would
+        make every text look like the same evidence).
+        """
         try:
-            await link()
-        except Exception as link_exc:
-            log.warning("corroboration_link_failed", error=str(link_exc))
-
-
-async def _corroborate(
-    *,
-    existing: OpenLoop,
-    text: str,
-    inflow: str,
-    key: SourceKey | None,
-    evidence_refs: Sequence[EvidenceRef],
-    dropped: OpenLoop | None,
-    loop_store: Any,
-    system_one_client: Any,
-    settings: Any,
-    link: Callable[[], Awaitable[None]],
-) -> None:
-    cfg = corroboration_judge.corroboration_surface_config(settings)
-    if not cfg.enabled:
-        await link()
-        return
-    if not cfg.calibrated:
-        log.warning("corroboration_uncalibrated")
-        await link()
-        return
-    if system_one_client is None:
-        await link()
-        return
-
-    loop_sources = await loop_store.list_sources(existing.id)
-    loop_evidence = await loop_store.list_evidence(existing.id)
-    dropped_sources = await loop_store.list_sources(dropped.id) if dropped else []
-    independent, reason = is_independent(
-        key, evidence_refs, loop_sources, loop_evidence, dropped_sources
-    )
-    if not independent:
-        log.debug(
-            "corroboration_skipped",
-            loop_id=str(existing.id),
-            inflow=inflow,
-            reason=reason,
+            written = await self._corroborate(existing, dropped, match)
+        except Exception as exc:
+            log.warning(
+                "corroboration_failed",
+                loop_id=str(existing.id),
+                inflow=match.inflow,
+                error=str(exc),
+            )
+            written = None
+        if written is not None:
+            return written
+        return await self._lifecycle.note_evidence(
+            existing.id, evidence=match.evidence, entity_ids=match.entity_ids
         )
-        await link()
-        return
 
-    result, decision = await _judge(existing, text, inflow, system_one_client, cfg)
-    outcome, reason = decision.kind, decision.reason
-    if decision.kind in ("promote", "corroborate"):
-        await link()
-        row = await loop_store.add_source(
-            LoopSource(
-                loop_id=existing.id,
-                role=LoopSourceRole.CORROBORATION,
-                key=key,
-                evidence=evidence_refs[0] if evidence_refs else None,
-                same_concern=decision.score,
+    async def _corroborate(
+        self, existing: OpenLoop, dropped: OpenLoop | None, match: MatchInput
+    ) -> SourceWrite | None:
+        cfg = corroboration_judge.corroboration_surface_config(self._settings)
+        if not cfg.enabled:
+            return None
+        if not cfg.calibrated:
+            log.warning("corroboration_uncalibrated")
+            return None
+        if self._system_one is None:
+            return None
+
+        loop_sources = await self._loop_store.list_sources(existing.id)
+        loop_evidence = await self._loop_store.list_evidence(existing.id)
+        dropped_sources = (
+            await self._loop_store.list_sources(dropped.id) if dropped else []
+        )
+        independent, reason = is_independent(
+            match.key, match.evidence, loop_sources, loop_evidence, dropped_sources
+        )
+        if not independent or match.key is None:
+            log.debug(
+                "corroboration_skipped",
+                loop_id=str(existing.id),
+                inflow=match.inflow,
+                reason=reason,
+            )
+            return None
+
+        result, decision = await _judge(
+            existing, match.text, match.inflow, self._system_one, cfg
+        )
+        written: SourceWrite | None = None
+        outcome = decision.kind
+        if decision.kind in ("promote", "corroborate") and result is not None:
+            score = decision.score or 0.0
+            corroboration = Corroboration(
+                evidence=match.evidence,
+                entity_ids=match.entity_ids,
+                key=match.key,
+                same_concern=score,
+                confidence=corroborated_confidence(existing.confidence, score),
                 model=result.model,
                 latency_ms=result.latency_ms,
             )
-        )
-        if row is None:
-            outcome, reason = "corroborate", "duplicate_source"
-        else:
-            corroborated = corroborated_confidence(
-                existing.confidence, decision.score
-            )
-            outcome = "corroborate"
-            promoted = None
             if decision.kind == "promote":
-                # Promote writes confidence itself (0.7 is above the corroboration
-                # cap), so the stamped prior is the value before this one write.
-                promoted = await loop_store.promote(
-                    existing.id,
-                    confidence=PROMOTED_CONFIDENCE,
-                    window_days=PROMOTED_WINDOW_DAYS,
-                )
-            if promoted is not None:
-                await loop_store.mark_source_promoted(row.id)
-                outcome = "promote"
+                written = await self._lifecycle.promote(existing.id, corroboration)
             else:
-                await loop_store.set_confidence(existing.id, corroborated)
-    else:
-        await link()
+                written = await self._lifecycle.corroborate(existing.id, corroboration)
+            outcome = written.outcome
 
-    log.info(
-        "corroboration_judgment",
-        loop_id=str(existing.id),
-        inflow=inflow,
-        outcome=outcome,
-        reason=reason,
-        score=decision.score,
-        latency_ms=result.latency_ms if result else None,
-        skip_reason=decision.reason if decision.kind == "fallback" else None,
-    )
+        log.info(
+            "corroboration_judgment",
+            loop_id=str(existing.id),
+            inflow=match.inflow,
+            outcome=outcome,
+            reason=decision.reason,
+            score=decision.score,
+            latency_ms=result.latency_ms if result else None,
+            skip_reason=decision.reason if decision.kind == "fallback" else None,
+        )
+        return written
