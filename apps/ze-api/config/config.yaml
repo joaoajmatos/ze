@@ -270,6 +270,7 @@ worldstate:
   push:
     enabled: true
     inline_cooldown_hours: 12
+    repush_after_days: 7   # a drifting loop is pushed at most once per window
     thresholds:
       tau_confidence: 0.5
       tau_relevance: 0.5

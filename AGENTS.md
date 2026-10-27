@@ -26,6 +26,8 @@ ze/                           # monorepo root
 │   │   │       ├── client.py    # LLMClient Protocol
 │   │   │       ├── db.py        # DBPool Protocol
 │   │   │       ├── delegate.py  # delegate_to_agent — conductor fan-out to specialists
+│   │   │       ├── derive.py    # for_subtask/for_delegate/for_unattended/for_action — the one owner of child AgentContext derivation (DERIVATION table)
+│   │   │       ├── lifetime.py  # Turn/Input/Thread/Run markers — the per-turn reset is generated from them
 │   │   │       ├── errors.py    # Full ZeError hierarchy
 │   │   │       ├── rollback.py  # RollbackScope ContextVar, is_error_result — undo plumbing for Retry
 │   │   │       ├── hooks.py     # HarnessHook ABC (agentic loop — not a plugin concern)
@@ -53,13 +55,13 @@ ze/                           # monorepo root
 │   │   │       ├── registry.py  # plugin registry (_registry, get_plugin_registry)
 │   │   │       └── signals.py   # SignalSource protocol
 │   │   └── ze-proactive/        # Job scheduling + interruption governor (classes, quiet hours, catch-up)
-│   │       └── ze_proactive/    # ProactiveJob, ProactiveScheduler, ProactiveNotifier (notify/governor), PushKind, PushLogStore
+│   │       └── ze_proactive/    # ProactiveJob, ProactiveScheduler, ProactiveNotifier (notify/governor), PushKind, OncePer; candidates.py (PushCandidate, BarThresholds), push_log_store.py (private claim store), testing.py (InMemoryPushLog)
 │   ├── engine/                 # The orchestration engine itself
 │   │   └── ze-core/             # Engine — routing, orchestration, telemetry, DI container
 │   │       └── ze_core/
 │   │           ├── conversation/# invoke_raw_turn (turn.py) — streamed graph turn entry point; retry.py (Retry eligibility), rewind.py, rollback.py (run_rollback — undo a reply's actions before a retry)
 │   │           ├── openrouter/  # OpenRouterClient, System One client (engine internal — plugins use the Protocols)
-│   │           ├── orchestration/# graph_builder, graph nodes, AgentState, edges, judgment_state (shared System One state), timing.py (timed() wraps every node)
+│   │           ├── orchestration/# graph_builder, graph nodes, AgentState, edges, judgment_state (shared System One state), timing.py (timed() wraps every node), child_runs.py (child-run inputs and the one merge of their outcomes into state)
 │   │           ├── screen/      # Screen resolver registry + build_screen_note (the 1,200-character screen note built before routing)
 │   │           ├── routing/     # EmbeddingRouter, tier.py (System One model tier), fallback, store
 │   │           ├── telemetry/   # CostTracker, CostReconciler, PostgresCostStore, ContextVar, turn.py (TurnTelemetry per-turn recorder)
@@ -121,6 +123,7 @@ ze/                           # monorepo root
 │   │           └── migrations/  # zsk001 (skills), zsk002 (skill_scripts + executable approval)
 │   ├── arbitration/             # Consumes cognition + automation to rank/order attention
 │   │   └── ze-priority/          # PriorityView + shared push budget + user-directed priority override
+│   │       ├── push_bar.py      # PushBar — the one bar every discretionary push passes; arbitration.py (AttentionArbitrationJob); surfacing_memory.py (surfacing_memory, zpri002)
 │   │       └── ze_priority/compose/ # WorldComposer — composed answers (slipping, decisions, topic) + show_* companion tools
 │   └── ops/                     # Environment, onboarding, ingestion, seed data, eval
 │       ├── ze-workspace/         # Isolated computer — files, shell, skill scripts
@@ -218,10 +221,10 @@ ze-core         → ze-agents, ze-communication, ze-components, ze-data, ze-logg
 ze-collision    → ze-agents, ze-logging, ze-plugin  core/seam/  ← contribution collision detection; wired by ze-api directly
 ze-memory       → ze-agents, ze-collision, ze-data, ze-logging, ze-plugin, ze-proactive  core/cognition/  ← ze-plugin: Contribution seam (Signal write path)
 ze-correlation  → ze-agents, ze-collision, ze-logging, ze-memory, ze-plugin, ze-proactive  core/cognition/  ← cross-domain hypothesis formation; ze-plugin: Contribution seam
-ze-worldstate   → ze-agents, ze-collision, ze-correlation, ze-data, ze-logging, ze-memory, ze-plugin, ze-proactive  core/cognition/  ← open loops; wired by ze-api directly; ze-plugin: Contribution seam (loop write path)
+ze-worldstate   → ze-agents, ze-collision, ze-data, ze-logging, ze-memory, ze-plugin, ze-proactive  core/cognition/  ← open loops; wired by ze-api directly; ze-plugin: Contribution seam (loop write path)
 ze-automation   → ze-agents, ze-components, ze-data, ze-logging, ze-memory, ze-plugin, ze-proactive  core/automation/  ← goals + workflows; wired by ze-api directly
 ze-skills       → ze-agents, ze-logging, ze-memory, ze-plugin, ze-proactive  core/automation/  ← agent skills; wired by ze-api directly
-ze-priority     → ze-agents, ze-automation, ze-collision, ze-components, ze-correlation, ze-logging, ze-plugin, ze-worldstate  core/arbitration/  ← attention arbitration (PriorityView + shared push budget) + user-directed priority override; wired by ze-api directly; ze-plugin: Contribution seam (reprioritization write path)
+ze-priority     → ze-agents, ze-automation, ze-collision, ze-components, ze-correlation, ze-logging, ze-plugin, ze-proactive, ze-worldstate  core/arbitration/  ← attention arbitration (PriorityView + shared push budget) + user-directed priority override; wired by ze-api directly; ze-plugin: Contribution seam (reprioritization write path)
 ze-workspace    → ze-agents, ze-logging, ze-memory, ze-plugin, ze-proactive  core/ops/  ← isolated computer; wired by ze-api; ze-core/ze-agents must not import it
 ze-onboarding   → ze-agents, ze-memory, ze-plugin  core/ops/
 ze-ingestion    → ze-agents, ze-browser, ze-logging, ze-memory, ze-plugin  core/ops/  ← imports ze_yt optionally (try/except ImportError)
@@ -469,7 +472,7 @@ and runs them against a single `alembic_version` table.
 | ze-onboarding | `zo` | onboarding_sessions, onboarding_steps, onboarding_seeds |
 | ze-correlation | `zcor` | correlation_hypothesis |
 | ze-worldstate | `zw` | open_loops, open_loop_sources (`zw003`), open_loops.reminder_id (`zw004`), open_loops.confidence_prior / confidence_changed_at (`zw005`), open_loops.claim_kind dropped (`zw006`) |
-| ze-proactive | `zpro` | push_log, notifications, notifications.target_parent_id (`zpro005`), interruption_settings, proactive_job_runs |
+| ze-proactive | `zpro` | push_log (the `OncePer` claims and budget; claim columns `claim_key`, `discretionary` in `zpro006`), notifications, notifications.target_parent_id (`zpro005`), interruption_settings, proactive_job_runs |
 | ze-ingestion | `zi` | ingested_content |
 | ze-calendar | `zcal` | calendar_reminders, user_reminders |
 | ze-prospecting | `zpros` | prospect_campaigns, prospect_outreach |
@@ -479,7 +482,7 @@ and runs them against a single `alembic_version` table.
 | ze-skills | `zsk` | skills, skill_reference_files, skill_reviews, skill_scripts (`zsk002`) |
 | ze-workspace | `zws` | workspace_state, workspace_runs |
 | ze-collision | `zcol` | contribution_collisions |
-| ze-priority | `zpri` | priority_overrides |
+| ze-priority | `zpri` | priority_overrides, surfacing_memory (`zpri002`) |
 
 **Naming conventions:**
 - One prefix per package (`zc`, `zm`, `zcal`, …). Exception: ze-core, ze-automation, and ze-personal share one `zc` chain.
@@ -676,7 +679,9 @@ preflight → blocked (disabled agent) → END
 | 197 | Programmatic Tool Use — `run_tool_script` gives every agent with a data read tool one short Python script that calls those reads in one model turn; the script runs in the workspace sidecar as the `zescript` user with no network, resource limits and scratch only, and the sidecar fails closed (scripts are `unavailable` unless it runs as root with `zescript` and reports `scripts_isolated`; `ZE_SCRIPTS_ALLOW_UNISOLATED=1` is test-only); each inner call runs through `call_tool`, so every gate applies; writes are proposed in `finish(...)` and run after the script under the confirmation rules; `produces_ui` and `egress` keep screen and URL-reaching tools out of the stub; `workspace.scripts` limits; `max_llm_calls` eval cap; three successes with one tool signature propose a `tool_script` procedure for review in Mind › Procedures; no migration | Implemented |
 | 198 | Audit Bug Fixes — eleven small behaviour fixes from the 2026-10 architecture review, each from a failing test, no migration and no REST or WS shape change: B1 `ZeApiSettings.timezone` (YAML, then `TIMEZONE`, then UTC) reaches subtask, compound, delegate and goal-milestone contexts; B2 `ZeContainer._build_config` carries `turn_extractor`, and a test diffs its keys against the base container's; B4 `LoopSurfacer` takes the NLI client in its constructor and its novelty rule reads the governor's `attention_push` bodies; B5 `PriorityView` owns the override store and `rank()` returns the user's order (items keep `computed_rank`), and arbitration follows that order and never pushes an item the user pushed down; B6 the compaction readout comes from the summary message the prompt opens with, and later trims keep that summary (`AgentState.compaction_span` is cut); B9 a follow-up turn that asks first sends its confirmation request; B10 a paused turn on a background thread sets the rail attention dot in the reducer, and `ConfirmationFrameHandler` no longer writes WS flags; B11 four jobs and the calendar reminder start a cooldown only after `delivered` or `held`, the workflow-failure alert has its own cooldown key, and a failed calendar reminder is marked unsent; B13 `automation.goals` and `automation.workflows` data domains removed (goals and workflows export once); B14 `goals/lifecycle.py` holds one pause, abandon and resume rule set for the tools and the WS screen actions; B15 `invoke_raw_turn` and `resume_turn` register an `AbortToken` per turn, so Cancel stops a running or resumed turn | Implemented |
 | 199 | Claim Honesty Fixes — four wrong claim labels fixed. Perception (conversation, ingestion, inbound-message) facts are stored `prompt_supplied`, and dream decay and expiry also require `dream_run_id IS NOT NULL`, so only dream insights decay; the promoter no longer inserts a column `memory_facts` lacks; nightly dedup merges only two non-dream facts that share provenance and claim kind and the merge keeps them; `zm026` re-stamps existing perception facts. `open_loops.claim_kind` is dropped (`zw006`) and a loop's claim kind is derived from its state (`loop_claim_kind`: suspicion while suspected, priority once active, drifting or closed, none when dropped; the loops REST field is nullable). Executive is licensed for priority and suspicion only. `LoopStore.resolve` closes a suspected, active or drifting loop and links the resolving evidence in one transaction (the generic transition table is unchanged). A contact source's provenance follows its source type (`research` is `live_search`, the rest `prompt_supplied`), a new contact takes its first source's provenance, and `zc041` re-stamps existing rows | Implemented |
+| 200 | Agent Context Derivation — one owner builds every child `AgentContext` (`ze_agents/derive.py`: `for_subtask`, `for_delegate`, `for_unattended`, `for_action`; a `DERIVATION` row per field and child-run kind); lifetime markers (`ze_agents/lifetime.py`: `Turn`, `Input`, `Thread`, `Run`) generate the per-turn and per-step reset, and a field with no marker fails graph build; conductor, write-gate and procedure state each travel as one value; `ze_core/orchestration/child_runs.py` merges child outcomes once per pass; no migration | Implemented |
 | 202 | Judgment Surface — one `Judgment` record (`ze_agents/judgment.py`: `SurfaceConfig`, `gate`, `judge`) replaces the per-surface carrier types and the per-node bar maps; every surface makes one guarded call; the six per-surface uncalibrated warnings become one `system_one_surface_uncalibrated` event with a `surface` field; the dead fact-judge trace path is deleted; the calibration runners share `eval/calibration/harness.py` (`--save`/`--load`) and a golden test; SC-004 is structural only | Implemented |
+| 204 | Push Bar and Cooldowns — one push bar in `ze-priority` (`push_bar.py`) screens every source's candidates for confidence, relevance, inline mention, novelty and grounding; sources describe `PushCandidate`s and never send them; `ze-proactive` owns the `OncePer` cooldowns (`notify(once_per=…)`, claims in `push_log`, private to `ze-proactive`, `zpro006`); `AttentionArbitrationJob` sends one push per run; resume-offer memory moves to `surfacing_memory` (`zpri002`); `worldstate.push.repush_after_days` (default 7); `ze-worldstate` drops `ze-correlation`; `budget_key`, `PushLogStore` in `ze_sdk`, the `duplicate` outcome and the failure ledger are removed | Implemented |
 
 ## graphify
 

@@ -28,6 +28,7 @@ from ze_core.conversation.messages.types import (
     ToolCallTrace,
     WorkspaceUsageTrace,
 )
+from ze_core.orchestration.child_runs import turn_ledger
 from ze_core.orchestration.loop_offer import with_loop_offer_line
 from ze_core.orchestration.promote import ledger_with_promote_offer
 from ze_core.orchestration.state import AgentState
@@ -102,9 +103,9 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         loop_offer_ids=list(state.get("loop_offer_ids") or []),
         skills_used=_extract_skills_used(state.get("skill_matches"), agent_result),
         workspace=await _extract_workspace(agent_result, config),
-        procedure=_extract_procedure(state.get("agent_context")),
+        procedure=_extract_procedure(state),
         conductor_hint=state.get("conductor_hint"),
-        conductor_ledger=ledger_with_promote_offer(_conductor_ledger(state)),
+        conductor_ledger=ledger_with_promote_offer(turn_ledger(state)),
         judgments=list(state.get("judgments") or []),
         sources=_extract_sources(
             agent_result, list(state.get("subtask_results") or [])
@@ -333,14 +334,6 @@ async def _extract_workspace(
     )
 
 
-def _conductor_ledger(state: AgentState) -> list[dict[str, str]]:
-    ctx = state.get("agent_context")
-    from_ctx = getattr(ctx, "conductor_ledger", None) if ctx is not None else None
-    if from_ctx:
-        return list(from_ctx)
-    return list(state.get("conductor_ledger") or [])
-
-
 def _routing_scores(envelope: Any) -> list[RoutingScore]:
     raw = getattr(envelope, "raw_scores", None) or {}
     if len(raw) <= 1:
@@ -456,10 +449,10 @@ def _script_trace(raw: Any) -> ScriptTrace | None:
     )
 
 
-def _extract_procedure(agent_context: Any) -> ProcedureUsageTrace | None:
+def _extract_procedure(state: AgentState) -> ProcedureUsageTrace | None:
     from ze_core.orchestration.procedure_activation import procedure_usage_trace
 
-    payload = procedure_usage_trace(agent_context)
+    payload = procedure_usage_trace(state)
     if payload is None:
         return None
     return ProcedureUsageTrace(**payload)

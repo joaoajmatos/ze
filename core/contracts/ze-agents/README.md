@@ -13,6 +13,8 @@ Developer API for Ze — agent execution primitives, shared types, and harness h
 - Harness hooks — step-level interception and tool-call caps
 - `delegate_to_agent` — the conductor's way to hand a brief to a specialist
 - Shared claim vocabulary (`ClaimKind`, `Provenance`, `Confidence`, `decay()`), reply honesty guards, and the `run_tool_script` contract
+- One owner for child `AgentContext` derivation (`derive.py`): every subtask, delegate, goal milestone and undo or screen action builds its context through it
+- Lifetime markers (`Turn`, `Input`, `Thread`, `Run`) that declare how long each graph-state field lives
 - Shared protocols (`LLMClient`, `DBPool`) and the typed `ZeError` hierarchy
 - `AppInterface` ABC — the outbound delivery contract implemented by `ze-api`
 
@@ -50,7 +52,9 @@ Imported by nearly every other Ze package, including `ze-plugin`, `ze-core`, and
 | `screen.py` | `ScreenContext` and `ScreenRef` wire types, `ScreenResolver` Protocol, `sanitize_text` |
 | `scripts.py`, `script_stub.py`, `script_step.py` | `run_tool_script` contract, stub builder, and step runner |
 | `nli.py` | `NLIClient` Protocol |
-| `types.py` | Shared domain types |
+| `types.py` | Shared domain types, including `AgentContext`, `WriteGateState`, `ConductorState`, `DelegateTally` and `ProcedureInvocation` |
+| `derive.py` | `for_subtask`, `for_delegate`, `for_unattended` and `for_action` — the only builders of a child `AgentContext`. `DERIVATION` gives each field one rule per child-run kind, and `outcome_of` reads a child's `ChildRunOutcome` |
+| `lifetime.py` | `Turn`, `Input`, `Thread` and `Run` lifetime markers for graph-state fields, `field_lifetimes()`, and `turn_reset()`, which builds the per-turn reset |
 | `park.py` | Park types for irreversible writes that wait for the user: `ParkedWrite`, `ParkedLoop`, `ParkedSubtask`, `WriteDecision`, `WriteConfirmation` |
 | `effects.py` | `effect_imperative` (the imperative form of an effect phrase) and `ensure_declined_lines` (the "Okay, I didn't …" line for denied writes) |
 

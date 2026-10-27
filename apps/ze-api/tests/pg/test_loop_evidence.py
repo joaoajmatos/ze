@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from ze_memory.retriever import PostgresMemoryStore
 from ze_plugin.contribution import EvidenceRef
+from ze_priority.push_bar import PushBar
 from ze_worldstate import review
+from ze_worldstate.bootstrap import LoopPushSettings
 from ze_worldstate.extraction import propose_loop_candidates
 from ze_worldstate.rest import _fetch_evidence_summaries
 from ze_worldstate.store import PostgresLoopStore
@@ -136,14 +138,27 @@ class _Nli:
         return max(scores)
 
 
-def _surfacer(pool, store, nli_client=None):
-    push_log = AsyncMock()
-    push_log.list_recent_payloads = AsyncMock(return_value=[])
-    push_log.was_sent_within_hours = AsyncMock(return_value=False)
+def _surfacer(pool, store):
     relevance = MagicMock()
     relevance.build = AsyncMock(return_value=object())
     relevance.score = MagicMock(return_value=SimpleNamespace(value=1.0, contributions=[]))
-    return LoopSurfacer(store, MagicMock(), push_log, pool=pool, relevance_model=relevance, embedder=None, nli_client=nli_client)
+    return LoopSurfacer(
+        loop_store=store,
+        graph_store=MagicMock(),
+        pool=pool,
+        relevance_model=relevance,
+        notifier=MagicMock(),
+        settings=LoopPushSettings(),
+    )
+
+
+def _bar(nli):
+    return PushBar(
+        embedder=None,
+        nli=nli,
+        history=SimpleNamespace(recent_discretionary_bodies=AsyncMock(return_value=[])),
+        mentions=SimpleNamespace(mentioned_inline_within=AsyncMock(return_value=False)),
+    )
 
 
 async def test_push_bar_grounds_the_title_against_real_evidence(pg_pool):
@@ -151,9 +166,17 @@ async def test_push_bar_grounds_the_title_against_real_evidence(pg_pool):
     loop = await make_loop(pg_pool, state=LoopState.DRIFTING, confidence=0.9)
     episode_id = await make_episode(pg_pool)
     await store.link_evidence(loop.id, "episode", episode_id)
-    rationale = "No corroborating evidence before the implied window elapsed."
-    grounded = _surfacer(pg_pool, store, _Nli(loop.title))
-    ungrounded = _surfacer(pg_pool, store, _Nli("something else entirely"))
+    await store.set_drift_rationale(
+        loop.id, "No corroborating evidence before the implied window elapsed."
+    )
+    surfacer = _surfacer(pg_pool, store)
+    [candidate] = [c for c in await surfacer.candidates() if c.source_id == loop.id]
+    thresholds = surfacer.thresholds
 
-    assert await grounded.passes_push_bar(loop, rationale) is True
-    assert await ungrounded.passes_push_bar(loop, rationale) is False
+    [grounded] = await _bar(_Nli(loop.title)).screen([candidate], thresholds)
+    [ungrounded] = await _bar(_Nli("something else entirely")).screen(
+        [candidate], thresholds
+    )
+
+    assert grounded.passed is True
+    assert (ungrounded.passed, ungrounded.reason) == (False, "ungrounded")

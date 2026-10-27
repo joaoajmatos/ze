@@ -243,7 +243,7 @@ explicit "what's open" answer lists at most 10: ranked items first, then
 suspected loops, each marked unconfirmed. Suspected loops never join the ranking
 or the push budget. After a session gap, Ze also
 asks about up to 3 suspected loops. A loop it offered stays quiet for 7 days,
-tracked in `push_log`. The detector ships under an amended bar: Portuguese
+tracked in `surfacing_memory` (`ze-priority`). The detector ships under an amended bar: Portuguese
 recall is lower than English, and no false positives were measured. See
 `specs/phases/171-loop-confirmation/research.md`.
 

@@ -11,7 +11,7 @@ from ze_agents.errors import LoopParked
 from ze_agents.registry import clear_registry
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool, undo_payload
-from ze_agents.types import AgentContext, AgentResult
+from ze_agents.types import AgentContext, AgentResult, WriteGateState
 
 calls: list[tuple[str, dict]] = []
 
@@ -125,7 +125,7 @@ async def test_read_runs_write_parks() -> None:
     roles = [m["role"] for m in loop.messages]
     assert roles == ["user", "assistant", "tool"]
     assert loop.messages[-1]["tool_call_id"] == "c1"
-    assert ctx.loop_active is False
+    assert ctx.write_gate.loop_active is False
 
 
 async def test_two_parked_calls_keep_model_order() -> None:
@@ -146,14 +146,14 @@ async def test_loop_active_inside_the_loop() -> None:
     seen: list[bool] = []
 
     async def _complete(**kw):
-        seen.append(ctx.loop_active)
+        seen.append(ctx.write_gate.loop_active)
         return ("done", None)
 
     client = MagicMock()
     client.complete_with_tools = AsyncMock(side_effect=_complete)
     await _Agent().agentic_loop(ctx, client, [], system="s")
     assert seen == [True]
-    assert ctx.loop_active is False
+    assert ctx.write_gate.loop_active is False
 
 
 async def test_iteration_recorded_after_earlier_iterations() -> None:
@@ -196,7 +196,13 @@ class _Runner:
 
 
 def _script_ctx(writes, **kw) -> AgentContext:
-    ctx = AgentContext(session_id="s", prompt="p", **kw)
+    names = {"write_decisions": "decisions", "write_round": "round"}
+    gate = {
+        names.get(k, k): kw.pop(k)
+        for k in list(kw)
+        if k in ("resume", "retry_mode", "write_decisions", "write_round")
+    }
+    ctx = AgentContext(session_id="s", prompt="p", write_gate=WriteGateState(**gate), **kw)
     ctx.script_runner = _Runner(writes)
     return ctx
 

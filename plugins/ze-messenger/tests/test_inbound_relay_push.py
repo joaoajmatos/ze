@@ -15,6 +15,7 @@ from ze_communication.types import ChannelType, InboundMessage
 from ze_messenger.inbound.processor import InboundMessageProcessor
 from ze_messenger.push_kinds import INBOUND_MESSAGE
 from ze_messenger.signals import MessagingSignalSource
+from ze_sdk.proactive import OncePer
 
 
 def _msg(
@@ -76,7 +77,7 @@ async def test_known_contact_relay_goes_through_notify():
     call = notifier.notify.call_args
     assert call.args[0] is INBOUND_MESSAGE
     assert "Alice" in call.args[1]
-    assert call.kwargs["budget_key"] == "inbound:email:msg1"
+    assert call.kwargs["once_per"] == OncePer("inbound:email:msg1")
 
 
 async def test_unknown_sender_relay_sends_nothing():

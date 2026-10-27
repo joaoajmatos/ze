@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from datetime import timedelta
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
 
@@ -32,8 +33,7 @@ from ze_data.domain import DataDomain
 from ze_data.portability.assembler import bulk_insert
 from ze_automation.push_kinds import WORKFLOW_FAILURE
 from ze_proactive.notifier import ProactiveNotifier
-from ze_proactive.types import PushOutcome
-from ze_proactive.push_log_store import PushLogStore
+from ze_proactive.types import OncePer, PushOutcome
 from ze_proactive.scheduler import ProactiveScheduler
 
 log = get_logger(__name__)
@@ -213,18 +213,12 @@ def make_workflow_failure_handler(
     settings: Any,
     workflow_store: WorkflowStore,
     notifier: ProactiveNotifier,
-    push_log_store: PushLogStore,
 ) -> Callable[[Any, Exception], Awaitable[None]]:
     async def _handle(workflow: Any, exc: Exception) -> None:
-        await push_log_store.log(f"workflow_failure:{workflow.id}", workflow.name)
         alerts_cfg = settings.proactive_config.get("alerts", {})
         if not alerts_cfg.get("workflow_failure_enabled", True):
             return
         cooldown = int(alerts_cfg.get("workflow_failure_cooldown_hours", 1))
-        alert_key = f"workflow_failure_alert:{workflow.id}"
-        if await push_log_store.was_sent_within_hours(alert_key, cooldown):
-            log.info("failure_alert_suppressed_cooldown", workflow=workflow.name)
-            return
         executions = await workflow_store.list_executions(workflow.id, limit=5)
         execution = next((e for e in executions if e.status == "failed"), None)
         if execution is None:
@@ -241,10 +235,12 @@ def make_workflow_failure_handler(
             WORKFLOW_FAILURE,
             f'Workflow failed: "{workflow.name}"',
             body,
+            once_per=OncePer(
+                f"workflow_failure_alert:{workflow.id}",
+                within=timedelta(hours=cooldown),
+            ),
             **targets,
         )
-        if outcome in ("delivered", "held"):
-            await push_log_store.log(alert_key, workflow.name)
         log.info("failure_alert_sent", workflow=workflow.name, outcome=outcome)
 
     return _handle
@@ -257,7 +253,6 @@ async def configure_workflow_executor(
     *,
     settings: Any,
     notifier: ProactiveNotifier,
-    push_log_store: PushLogStore,
     checkpointer: Any,
     router: Any,
     persona_store: Any,
@@ -312,7 +307,6 @@ async def configure_workflow_executor(
             settings=settings,
             workflow_store=stack.workflow_store,
             notifier=notifier,
-            push_log_store=push_log_store,
         ),
     )
 
@@ -350,7 +344,6 @@ def register_proactive_jobs(
     stack: AutomationStack,
     *,
     notifier: ProactiveNotifier,
-    push_log_store: PushLogStore,
 ) -> None:
     core_settings = settings.to_core_settings()
     wire_goal_executor_push(stack, notifier)
@@ -359,7 +352,6 @@ def register_proactive_jobs(
 
     _goal_narrative = GoalNarrativeJob(
         notifier=notifier,
-        push_log_store=push_log_store,
         goal_store=stack.goal_store,
         goal_planner=stack.goal_planner,
     )
@@ -376,7 +368,7 @@ def register_proactive_jobs(
     )
     _accountability = AccountabilityJob(
         notifier=notifier,
-        push_log_store=push_log_store,
+        workflow_store=stack.workflow_store,
         accountability_store=stack.accountability_store,
         goal_store=stack.goal_store,
         pool=stack.accountability_store._pool,

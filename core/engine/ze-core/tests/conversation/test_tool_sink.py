@@ -13,6 +13,7 @@ from typing_extensions import TypedDict
 
 from ze_agents.interface.types import RawInput
 from ze_agents.types import ToolCall
+from ze_core.orchestration.state import AgentState
 from ze_core.conversation.turn import invoke_raw_turn, resume_turn
 from ze_core.orchestration.timing import add_timed_node
 from ze_core.routing.types import RoutingEnvelope, SubTask
@@ -78,6 +79,7 @@ def _container(graph):
     interface.send_trace_partial = AsyncMock()
     c = SimpleNamespace(
         graph=graph,
+        state_type=AgentState,
         interface=interface,
         turn_telemetry=TurnTelemetryRegistry(),
         _build_config=lambda thread_id, **kw: {
@@ -346,6 +348,7 @@ async def test_the_on_tool_end_branch_is_gone(clock):
     graph.aget_state = AsyncMock(return_value=MagicMock(next=()))
     container = SimpleNamespace(
         graph=graph,
+        state_type=AgentState,
         interface=interface,
         turn_telemetry=TurnTelemetryRegistry(),
         _build_config=lambda thread_id, **kw: {

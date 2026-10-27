@@ -10,6 +10,7 @@ from ze_data.portability.assembler import bulk_insert
 from ze_logging import get_logger
 from ze_memory.entity_anchor import match_entities_in_query
 from ze_memory.graph.store import GraphStore, PostgresGraphStore
+from ze_proactive.candidates import BarThresholds
 
 from ze_worldstate.jobs.drift_sweep import DriftSweepJob
 from ze_worldstate.jobs.stale_suspicion import (
@@ -20,6 +21,13 @@ from ze_worldstate.store import LoopStore, PostgresLoopStore
 from ze_worldstate.surfacing import LoopSurfacer
 
 log = get_logger(__name__)
+
+_DEFAULT_BAR_THRESHOLDS = {
+    "tau_confidence": 0.5,
+    "tau_relevance": 0.5,
+    "novelty_similarity_max": 0.85,
+    "grounding_threshold": 0.3,
+}
 
 _AGENT_MODULE_PATHS = [
     "ze_worldstate.agents.tools",
@@ -71,29 +79,6 @@ def build_worldstate_stack(shared: Any, settings: Any) -> WorldstateStack:
     )
 
 
-def build_loop_surfacer(
-    stack: WorldstateStack,
-    push_log: Any,
-    relevance_model: Any = None,
-    embedder: Any = None,
-    notifier: Any = None,
-    nli_client: Any = None,
-) -> LoopSurfacer:
-    """Constructed in `ze_api/container.py` once `push_log_store` (and, for the
-    push path, the correlation stack's `RelevanceModel`) exist — both are built
-    after `build_worldstate_stack` runs."""
-    return LoopSurfacer(
-        loop_store=stack.loop_store,
-        graph_store=stack.graph_store,
-        push_log=push_log,
-        pool=stack.pool,
-        relevance_model=relevance_model,
-        embedder=embedder,
-        notifier=notifier,
-        nli_client=nli_client,
-    )
-
-
 @dataclass(frozen=True)
 class LoopPushSettings:
     """Loop push switch read from `worldstate.push` (Phase 170 FR-018)."""
@@ -101,6 +86,36 @@ class LoopPushSettings:
     enabled: bool = True
     thresholds: dict = field(default_factory=dict)
     inline_cooldown_hours: float = 12.0
+    repush_after_days: float = 7.0
+
+    def bar_thresholds(self) -> BarThresholds:
+        cfg = {**_DEFAULT_BAR_THRESHOLDS, **self.thresholds}
+        return BarThresholds(
+            confidence=cfg["tau_confidence"],
+            relevance=cfg["tau_relevance"],
+            novelty_similarity_max=cfg["novelty_similarity_max"],
+            grounding=cfg["grounding_threshold"],
+            inline_cooldown_hours=self.inline_cooldown_hours,
+        )
+
+
+def build_loop_surfacer(
+    stack: WorldstateStack,
+    relevance_model: Any,
+    notifier: Any,
+    settings: LoopPushSettings,
+) -> LoopSurfacer:
+    """Constructed in `ze_api/container.py` once the correlation stack's
+    `RelevanceModel` and the notifier exist — both are built after
+    `build_worldstate_stack` runs."""
+    return LoopSurfacer(
+        loop_store=stack.loop_store,
+        graph_store=stack.graph_store,
+        pool=stack.pool,
+        relevance_model=relevance_model,
+        notifier=notifier,
+        settings=settings,
+    )
 
 
 def loop_push_settings(settings: Any) -> LoopPushSettings:
@@ -116,6 +131,7 @@ def loop_push_settings(settings: Any) -> LoopPushSettings:
         enabled=bool(push_cfg.get("enabled", True)),
         thresholds=dict(thresholds) if isinstance(thresholds, dict) else {},
         inline_cooldown_hours=float(push_cfg.get("inline_cooldown_hours", 12.0)),
+        repush_after_days=float(push_cfg.get("repush_after_days", 7.0)),
     )
 
 

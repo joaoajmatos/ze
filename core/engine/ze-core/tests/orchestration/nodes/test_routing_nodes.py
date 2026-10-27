@@ -87,9 +87,11 @@ class TestDecomposeNode:
         assert env.routing_method == "haiku"
         assert result["conductor_hint"] is not None
         assert [h["agent"] for h in result["conductor_hint"]] == ["alpha", "beta"]
-        assert result["conductor_ledger"] == [
-            {"agent": "alpha", "status": "planned"},
-            {"agent": "beta", "status": "planned"},
+        assert result["conductor_ledgers"] == [
+            [
+                {"agent": "alpha", "status": "planned"},
+                {"agent": "beta", "status": "planned"},
+            ]
         ]
         client.complete.assert_awaited_once()
 

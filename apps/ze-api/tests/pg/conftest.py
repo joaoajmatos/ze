@@ -19,6 +19,9 @@ RESET_TABLES = (
     "correlation_hypothesis",
     "priority_overrides",
     "notifications",
+    "surfacing_memory",
+    "workflow_executions",
+    "workflows",
 )
 
 

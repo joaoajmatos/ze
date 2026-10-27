@@ -8,6 +8,8 @@ Checks (each failure is one line; exit 1 if any):
   4. no new files under specs/arch/ (no working notes there)
   5. a green gate receipt for the floor HEAD covers every gate the diff needs
   6. APPROVE review records chain from the merge base to HEAD
+On success it archives the floor's and its lanes' review records and receipts to Ground's
+journal/metrics/<branch>/ (metrics.py reads them), since landing deletes the floor.
 
 Usage: land_preflight.py [--floor PATH] [--into main] [--dry-run]
 """
@@ -117,6 +119,41 @@ def check_arch(floor: Path, base: str) -> list[str]:
     return [f"new file under specs/arch/: {f}" for f in added]
 
 
+def lane_checkouts(floor: Path, branch: str) -> list[Path]:
+    """Worktrees of the floor's lanes (branches '<phase>-lane-*'), whose review records die with them."""
+    phase = branch.split("-", 1)[0]
+    paths, current = [], None
+    for line in git(floor, "worktree", "list", "--porcelain").stdout.splitlines():
+        if line.startswith("worktree "):
+            current = Path(line[len("worktree ") :])
+        elif line.startswith("branch refs/heads/") and current:
+            if line[len("branch refs/heads/") :].startswith(f"{phase}-lane-"):
+                paths.append(current)
+    return paths
+
+
+def archive_records(floor: Path, ground: Path) -> Path:
+    """Copy review records, gate receipts and the agents' state files (those naming the branch) to Ground's
+    journal/metrics/<branch>/ before landing deletes the floor."""
+    branch = git(floor, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    dest = ground / "journal" / "metrics" / branch
+    for repo in [floor, *lane_checkouts(floor, branch)]:
+        for kind in ("reviews", "receipts"):
+            src = repo / ".process" / kind
+            if not src.is_dir():
+                continue
+            out = dest / kind
+            out.mkdir(parents=True, exist_ok=True)
+            for f in src.glob("*.json"):
+                (out / f.name).write_text(f.read_text())
+        for f in (repo / "journal" / "state").glob("*.md"):
+            text = f.read_text()
+            if branch in text:
+                (dest / "state").mkdir(parents=True, exist_ok=True)
+                (dest / "state" / f.name).write_text(text)
+    return dest
+
+
 def check_receipt(floor: Path, base: str, head: str) -> list[str]:
     path = floor / ".process" / "receipts" / f"{head}.json"
     if not path.exists():
@@ -202,8 +239,13 @@ def main() -> int:
             + check_receipt(floor, base, head)
             + check_reviews(floor, base, head)
         )
-    print("\n".join(errs) or "land preflight: ok")
-    return 1 if errs else 0
+    if errs:
+        print("\n".join(errs))
+        return 1
+    print(
+        f"land preflight: ok (records archived to {archive_records(floor, ground_of(floor))})"
+    )
+    return 0
 
 
 if __name__ == "__main__":

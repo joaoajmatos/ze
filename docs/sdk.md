@@ -14,7 +14,7 @@ Plugin packages never import `ze-core` directly.
 from ze_sdk import ZePlugin, agent, tool, ToolAccess, ToolReversibility, BaseAgent, get_logger, Settings, DBPool, NLIClient
 from ze_sdk import DataDomain
 from ze_sdk.types import AgentContext, AgentResult, ToolCall, AbortToken, AskDecision, Action, Notification
-from ze_sdk.proactive import ProactiveJob, proactive_job, ProactiveScheduler, ProactiveNotifier, PushKind, PushOutcome, PushLogStore, PushLogEntry
+from ze_sdk.proactive import ProactiveJob, proactive_job, ProactiveScheduler, ProactiveNotifier, PushKind, PushOutcome, OncePer, is_sent
 from ze_sdk.channels import Channel, InboundChannel, ChannelType, ChannelHandle, Message, SentMessage, Thread, ThreadMessage, ChannelSendError
 from ze_sdk.memory import MemoryContext, Fact, Episode, Procedure, Entity, TaskState, RetrievalRequest, MemoryStore, PostgresMemoryStore, PostgresDreamStore, DreamArtifact, DreamJournalEntry, DreamRun, ArtifactType, ArtifactStatus
 from ze_sdk.contribution import Contribution, EvidenceRef, SourceFunction, TargetFace, validate_and_submit, submit_and_detect_collisions
@@ -24,7 +24,7 @@ from ze_sdk.screen import ScreenResolver, ScreenLine, ScreenRef
 from ze_sdk.ui import UiContribution, ModuleSubject, ModuleResult
 from ze_sdk.api import require_api_key
 from ze_sdk.onboarding import OnboardingProvider, OnboardingStep, OnboardingField, OnboardingSeed, OnboardingResult
-from ze_sdk.errors import ZeCoreError, AgentError, AgentAbortedError, AgentConfigError, ChannelSendError
+from ze_sdk.errors import ZeError, AgentError, AgentAbortedError, AgentConfigError, ChannelSendError
 ```
 
 ---
@@ -105,6 +105,9 @@ Passed to every `BaseAgent.run()` call. Contains everything the agent needs for 
 | `extensions` | `dict[str, ...]` | Arbitrary msgpack-serializable data (e.g. `goal_id`). |
 | `timezone` | `str` | IANA timezone name for the current-time line in the prompt. Defaults to `UTC`; the graph sets it from the configured timezone (`timezone` in `config.yaml`, then `TIMEZONE`). |
 | `sources` | `list[Source]` | Web citations collected while the agent runs. |
+| `write_gate` | `WriteGateState` | Write-confirmation and Retry state that the write gates read: the saved loop to resume, the decisions, the pre-approved calls and the round. Run-local. |
+| `conductor` | `ConductorState` | The conductor's state for this run: the hint, this run's ledger, the shared delegate tally and the deadline. Run-local. |
+| `procedure_invocation` | `ProcedureInvocation \| None` | The procedure this run invoked. Its `tool_names` only narrow the agent's tools. |
 
 The context also carries runtime-only fields: `identity_builder`, `abort_token`, `memory_store`, `embed_fn`, `token_sink`, `tool_sink`, `script_runner`, and the screen, recap, skill, procedure and write-confirmation notes the graph sets. Never checkpoint a context where they are set.
 
@@ -412,13 +415,38 @@ Override only the hooks your plugin needs. All methods have no-op defaults. Set 
 
 | Method | Signature | Purpose |
 |--------|-----------|---------|
-| `state_extensions()` | `-> type \| None` | A plain `TypedDict` (`total=False`) whose fields are merged into `AgentState`. Do not subclass `AgentState`; the engine adds it. |
+| `state_extensions()` | `-> type \| None` | A plain `TypedDict` (`total=False`) whose fields are merged into `AgentState`. Every field needs a lifetime marker from `ze_sdk.types` (`Turn`, `Input`, `Thread` or `Run`). A field with no marker raises `UndeclaredLifetimeError`, and graph build fails at startup. Do not subclass `AgentState`; the engine adds it. See [Lifetime markers](#lifetime-markers). |
 | `checkpoint_serde_modules()` | `-> tuple[str, ...]` | `types.py` module paths scanned for checkpoint-serializable dataclasses/enums. |
 | `memory_policies()` | `-> dict[str, Any]` | Agent name → retrieval policy for this plugin's agents. |
 | `pre_route_node()` | `-> Callable \| None` | An async graph node inserted between preprocess and embed_route. |
 | `graph_nodes()` | `-> dict[str, Callable]` | Additional LangGraph nodes keyed by node name. Write them async: the turn timer calls a sync node inline on the event loop. |
 | `graph_edges(builder)` | `-> None` | Wire plugin nodes into the graph at build time. |
 | `configurable_services()` | `-> dict[str, Any]` | Services injected into `config["configurable"]` every turn. |
+
+### Lifetime markers
+
+Import the markers from `ze_sdk.types`. Annotate each `state_extensions()` field with one of them:
+
+| Marker | Meaning |
+|--------|---------|
+| `Turn(reset=...)` or `Turn(factory=list)` | Reset at every turn and every workflow step. Pass an immutable `reset`, or a `factory` for a list or dict. |
+| `Input()` | Supplied by whoever starts the turn. The reset leaves it alone. |
+| `Thread("reason")` | Kept across turns. The reason is required. |
+| `Run("reason")` | Kept across the steps of one workflow run. The reason is required. |
+
+```python
+from typing import Annotated, TypedDict
+
+from ze_sdk.types import Run, Turn
+
+
+class MyState(TypedDict, total=False):
+    pending_note: Annotated[str | None, Turn()]
+    step_notes: Annotated[list[str], Turn(factory=list)]
+    review_count: Annotated[int, Run("counts reviews across the steps of one run")]
+```
+
+`ze_sdk.types` also exports `ConductorState`, `DelegateTally`, `ProcedureInvocation` and `WriteGateState`. These are the typed values that `AgentContext` carries as one field each.
 
 ### Lifecycle hooks
 
@@ -464,11 +492,11 @@ durable seeds before applying them through deployment adapters. See
 | `ProactiveJob` | Protocol. Set `job_id: str` and implement `async run() -> None`. |
 | `proactive_job` | Class decorator that checks the class defines a `job_id`. It does not register the job. |
 | `ProactiveScheduler` | APScheduler wrapper. Call `register(job, cron)` inside `register_proactive_jobs`, or `add_cron_job(fn, cron, job_id)` for a bare coroutine function. |
-| `ProactiveNotifier` | The one proactive send path. Call `notify(kind, title, body, ...)`; the interruption governor decides delivery. |
+| `ProactiveNotifier` | The one proactive send path. Call `notify(kind, title, body, once_per=..., ...)`; the interruption governor decides delivery. |
 | `PushKind` | A declared kind of push: event type, class (`requested`/`accountability`/`discretionary`), urgency (`low`/`normal`/`high`), source. |
-| `PushOutcome` | What the governor did with a push: `delivered`, `held`, `suppressed_budget`, `duplicate`, `deduped`, `failed`. |
-| `PushLogStore` | Delivery audit log. Persists which notifications have been sent. |
-| `PushLogEntry` | Dataclass for a single log entry. |
+| `OncePer` | The cooldown a push claims: `OncePer(key, within=timedelta(...))` sends the key once per window; `within=None` sends it once ever. A `discretionary` push must pass one; a `requested` push must not. |
+| `is_sent` | `is_sent(outcome)` is true for `delivered` and `held`. Only a sent push keeps its `OncePer` claim. |
+| `PushOutcome` | What the governor did with a push: `delivered`, `held`, `suppressed_budget`, `deduped`, `failed`. |
 | `PushClass`, `Urgency` | The `Literal` types behind `PushKind.push_class` and `PushKind.urgency`. |
 | `NotificationStore` | Store for the notification center rows. |
 
@@ -571,15 +599,16 @@ Re-exports the goal and workflow types, stores and contracts: `Goal`, `Milestone
 
 ## `ze_sdk.errors` — error hierarchy
 
-Always raise a typed `ZeCoreError` subclass. Never raise bare `Exception` or `ValueError`.
+Always raise a typed `ZeError` subclass. Never raise bare `Exception` or `ValueError`.
 
 | Error class | When to raise |
 |-------------|--------------|
-| `ZeCoreError` | Base class (`ze_agents.errors` also names it `ZeError`). Do not raise directly. |
+| `ZeError` | Base class. Do not raise directly. |
 | `AgentError` | Unrecoverable agent-level failure (unexpected LLM response, missing result). |
 | `AgentAbortedError` | Agent loop was cancelled via `AbortToken`. |
 | `AgentConfigError` | Misconfiguration detected at startup (missing type hints, unregistered tool). |
 | `ChannelSendError` | Channel `send()` failed. |
+| `UndeclaredLifetimeError` | A graph-state field has no lifetime marker. Graph build fails at startup. |
 
 The module also exports the rest of the hierarchy, such as `AgentTimeoutError`, `UnknownToolError`, `GoalError`, `WorkflowError`, `LLMJsonParseError` and `UiActionRefusedError`.
 

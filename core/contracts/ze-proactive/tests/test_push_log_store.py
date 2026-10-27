@@ -1,69 +1,111 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock
 
-import asyncpg
+from ze_proactive.push_log_store import ClaimResult, PushLogStore
+from ze_proactive.types import OncePer
 
-from ze_proactive.push_log_store import PushLogStore
-
-
-def _make_conn(execute_side_effect=None):
-    conn = AsyncMock()
-    conn.execute = AsyncMock(side_effect=execute_side_effect)
-    return conn
+KEY = OncePer("loop:1", within=timedelta(days=7))
 
 
-def _make_pool(conn):
+def _cm(value=None):
     cm = MagicMock()
-    cm.__aenter__ = AsyncMock(return_value=conn)
+    cm.__aenter__ = AsyncMock(return_value=value)
     cm.__aexit__ = AsyncMock(return_value=None)
+    return cm
+
+
+def _store(fetchval=None, fetch=None):
+    conn = MagicMock()
+    conn.execute = AsyncMock()
+    conn.fetchval = AsyncMock(side_effect=fetchval)
+    conn.fetch = AsyncMock(return_value=fetch or [])
+    conn.transaction = MagicMock(return_value=_cm())
     pool = MagicMock()
-    pool.acquire = MagicMock(return_value=cm)
-    return pool
+    pool.acquire = MagicMock(return_value=_cm(conn))
+    return PushLogStore(pool), conn
 
 
-async def test_try_claim_first_call_returns_true_and_inserts():
-    conn = _make_conn()
-    store = PushLogStore(pool=_make_pool(conn))
-
-    result = await store.try_claim("worldstate_loop_push", "loop-1", payload="drifting")
-
-    assert result is True
-    conn.execute.assert_awaited_once()
-    sql = conn.execute.call_args[0][0]
-    assert "INSERT INTO push_log" in sql
-    assert "idempotency_key" in sql
+def _claim(store, discretionary=True, once_per=KEY, cap=5):
+    return store.claim(
+        event_type="e",
+        once_per=once_per,
+        discretionary=discretionary,
+        max_discretionary=cap,
+        payload="body",
+    )
 
 
-async def test_try_claim_second_call_same_key_returns_false_no_raise():
-    conn = _make_conn(execute_side_effect=asyncpg.UniqueViolationError("duplicate key"))
-    store = PushLogStore(pool=_make_pool(conn))
+async def test_a_discretionary_claim_locks_the_key_then_the_budget_and_inserts():
+    store, conn = _store(fetchval=[None, 2, 41])
 
-    result = await store.try_claim("worldstate_loop_push", "loop-1", payload="drifting")
+    result = await _claim(store)
 
-    assert result is False
-
-
-async def test_try_claim_unaffected_by_plain_log_calls():
-    """log() (idempotency_key=None-equivalent) is a distinct code path, untouched."""
-    conn = _make_conn()
-    store = PushLogStore(pool=_make_pool(conn))
-
-    await store.log("workflow_failure:wf-1", payload="failed")
-
-    conn.execute.assert_awaited_once()
-    sql = conn.execute.call_args[0][0]
-    assert "idempotency_key" not in sql
+    assert result == ClaimResult("won", 41)
+    locks = [c.args[0] for c in conn.execute.await_args_list]
+    assert "push_log:key:" in locks[0]
+    assert "push_log:budget" in locks[1]
+    insert = conn.fetchval.await_args_list[-1].args
+    assert "INSERT INTO push_log" in insert[0]
+    assert insert[1:] == ("e", "loop:1", True, "body")
 
 
-async def test_release_claim_deletes_row_allowing_reclaim():
-    conn = _make_conn()
-    store = PushLogStore(pool=_make_pool(conn))
+async def test_a_claim_inside_the_window_is_cooling_and_inserts_nothing():
+    store, conn = _store(fetchval=[1])
 
-    await store.release_claim("worldstate_loop_push", "loop-1")
+    assert await _claim(store) == ClaimResult("cooling")
+    assert conn.fetchval.await_count == 1
+    cooling_args = conn.fetchval.await_args_list[0].args
+    assert cooling_args[1:] == ("loop:1", timedelta(days=7))
 
-    conn.execute.assert_awaited_once()
-    sql, event_type, key = conn.execute.call_args[0]
-    assert "DELETE FROM push_log" in sql
-    assert event_type == "worldstate_loop_push"
-    assert key == "loop-1"
+
+async def test_a_claim_with_no_window_passes_none_so_it_cools_forever():
+    store, conn = _store(fetchval=[1])
+
+    await _claim(store, once_per=OncePer("insight:1"))
+
+    assert conn.fetchval.await_args_list[0].args[2] is None
+
+
+async def test_a_discretionary_claim_at_the_cap_is_over_budget_and_inserts_nothing():
+    store, conn = _store(fetchval=[None, 5])
+
+    assert await _claim(store, cap=5) == ClaimResult("over_budget")
+    assert conn.fetchval.await_count == 2
+
+
+async def test_an_accountability_claim_takes_no_budget_lock_and_skips_the_count():
+    store, conn = _store(fetchval=[None, 9])
+
+    result = await _claim(store, discretionary=False, cap=0)
+
+    assert result == ClaimResult("won", 9)
+    assert len(conn.execute.await_args_list) == 1
+    assert conn.fetchval.await_count == 2
+
+
+async def test_release_deletes_the_claim_by_id():
+    store, conn = _store()
+
+    await store.release(7)
+
+    sql, claim_id = conn.execute.await_args.args
+    assert "DELETE FROM push_log WHERE id" in sql
+    assert claim_id == 7
+
+
+async def test_is_cooling_reflects_the_cooldown_query():
+    store, _ = _store(fetchval=[1])
+    assert await store.is_cooling(KEY) is True
+    store, _ = _store(fetchval=[None])
+    assert await store.is_cooling(KEY) is False
+
+
+async def test_window_sent_at_and_payloads_read_discretionary_rows_only():
+    store, conn = _store(fetch=[{"sent_at": 1, "payload": "p"}])
+
+    assert await store.window_sent_at(24.0) == [1]
+    assert await store.recent_discretionary_payloads(48.0) == ["p"]
+    for call in conn.fetch.await_args_list:
+        assert "WHERE discretionary" in call.args[0]

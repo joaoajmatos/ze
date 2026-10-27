@@ -101,17 +101,6 @@ class PostgresHypothesisStore:
                 hypothesis_id,
             )
 
-    async def list_recently_surfaced_summaries(self, hours: float) -> list[str]:
-        """Return summaries of hypotheses pushed in the last *hours* hours."""
-        async with self._pool.acquire() as conn:  # type: ignore[union-attr]
-            rows = await conn.fetch(
-                "SELECT summary FROM correlation_hypothesis"
-                " WHERE surfaced = true"
-                " AND created_at > NOW() - ($1 * INTERVAL '1 hour')",
-                hours,
-            )
-        return [r["summary"] for r in rows]
-
     async def list_decay_candidates(self, window_days: int) -> list[Hypothesis]:
         """Hypotheses created more than `window_days` ago (TIME_LINEAR decay window)."""
         async with self._pool.acquire() as conn:  # type: ignore[union-attr]

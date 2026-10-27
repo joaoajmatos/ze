@@ -83,7 +83,10 @@ For a workflow with N steps, the graph runs through the following loop for each 
 
 <sub>[Interactive version](diagrams/docs/workflow-graph.html)</sub>
 
-`load_workflow_step` resets per-step state and sets `prompt` to the step's task.
+Each step starts from the engine's generated reset. The step loader runs under `with_turn_reset`,
+which applies the same `Turn` reset that a conversation turn gets. The `Run` fields, such as the
+step results and visit counts, carry across the steps. `load_workflow_step` then sets `prompt` to
+the step's task.
 The graph then routes normally — `embed_route` picks the right agent, memory is
 injected, and irreversible writes still ask first — exactly as if the user had typed the task.
 
@@ -130,7 +133,7 @@ After the last step, `workflow_synthesize` calls the verify-class model to merge
 
 ### Failure handling
 
-When a run ends as failed, `workflow_failed` records the error and, if any steps succeeded, writes a partial summary of their output. The scheduler's failure handler then sends a `workflow_failure` notification (an `accountability` push) through `ProactiveNotifier` (WebSocket or ntfy). The alert honors `proactive.alerts.workflow_failure_enabled` and `workflow_failure_cooldown_hours`.
+When a run ends as failed, `workflow_failed` records the error and, if any steps succeeded, writes a partial summary of their output. The scheduler's failure handler then sends a `workflow_failure` notification (an `accountability` push) through `ProactiveNotifier` (WebSocket or ntfy). The alert honors `proactive.alerts.workflow_failure_enabled` and `workflow_failure_cooldown_hours`. The cooldown is an `OncePer` claim per workflow, held by `ze-proactive`. A failed alert releases it.
 
 Every failed run has a `failure_summary`: one plain line that names the step, the task, and the reason, such as “Step 2 of 3, “Ping the health endpoint”, failed: it ran out of time after 2 attempts.” Ze derives it from the stored run each time (`ze_automation/workflow/failure.py`). It never contains the raw error text, which stays in `error`. The run list, the workflow agent, and the failure push all use it. The push links to the workflow page for that execution.
 

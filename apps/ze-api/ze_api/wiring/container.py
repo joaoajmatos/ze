@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from functools import partial
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -19,7 +20,9 @@ from ze_automation.bootstrap import (
     configure_workflow_executor,
 )
 from ze_worldstate.bootstrap import (
+    build_loop_surfacer,
     build_worldstate_stack,
+    loop_push_settings,
     worldstate_data_domains,
 )
 from ze_worldstate.store import LoopStore
@@ -68,7 +71,10 @@ from ze_core.conversation.rewind import history_rewindable
 from ze_core.conversation.turn import turn_has_reply
 from ze_core.conversation.sessions import PostgresSessionStore
 from ze_core.orchestration.graph import build_graph
+from ze_core.orchestration.state import build_state_type
 from ze_priority.view import PriorityView
+from ze_priority.push_bar import PushBar
+from ze_priority.surfacing_memory import PostgresSurfacingMemory
 from ze_priority.turn import TurnSurfacing
 from ze_data.portability.service import DataPortabilityService
 from ze_seed.service import DevDataSeeder, collect_seed_domains
@@ -83,9 +89,8 @@ from ze_communication.registry import ChannelRegistry
 from ze_proactive.job_run_store import JobRunStore
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
-from ze_proactive.push_log_store import PushLogStore
-from ze_proactive.bootstrap import shared_push_budget
-from ze_proactive.data_domain import interruption_data_domains
+from ze_proactive.bootstrap import build_notifier
+from ze_proactive.data_domain import proactive_data_domains
 from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_api.api.ws.connection import ConnectionManager
@@ -129,7 +134,6 @@ from ze_correlation.bootstrap import (
     build_correlation_push_candidate_source,
     build_correlation_stack,
 )
-from ze_worldstate.bootstrap import build_loop_surfacer
 import ze_components.tools  # noqa: F401 — registers all render tools at import time
 
 log = get_logger(__name__)
@@ -279,7 +283,6 @@ class ZeContainer(CoreContainer):
     user_channel_store: UserChannelStore
     watermark_store: ChannelWatermarkStore
     _checkpointer: Any
-    _push_log_store: PushLogStore
     interruption_settings_store: InterruptionSettingsStore
     notifier: ProactiveNotifier
     notification_store: NotificationStore
@@ -295,7 +298,6 @@ class ZeContainer(CoreContainer):
     hypothesis_store: PostgresHypothesisStore
     loop_graph_store: Any
     loop_entity_resolver: Any
-    loop_surfacer: Any
     turn_surfacer: Any
     world_composer: WorldComposer
     priority_view: PriorityView
@@ -347,7 +349,6 @@ class ZeContainer(CoreContainer):
             "loop_store": self.loop_store,
             "loop_graph_store": self.loop_graph_store,
             "loop_entity_resolver": self.loop_entity_resolver,
-            "loop_surfacer": self.loop_surfacer,
             "turn_surfacer": self.turn_surfacer,
             "world_composer": self.world_composer,
             "collision_store": self.collision_store,
@@ -533,29 +534,28 @@ async def build_container(settings: Settings) -> ZeContainer:
     )
     validate_interface(interface)
 
-    notifier = ProactiveNotifier(
-        interface=interface,
-        notification_store=stores.notification_store,
-        push_log=stores.push_log_store,
-        settings_store=stores.interruption_settings_store,
-        max_discretionary_per_day=shared_push_budget(settings),
+    notifier = build_notifier(
+        pool,
+        interface,
+        stores.notification_store,
+        stores.interruption_settings_store,
+        settings,
     )
     push_sender.bind(notifier)
 
+    loop_push = loop_push_settings(settings)
     loop_surfacer = build_loop_surfacer(
         worldstate,
-        stores.push_log_store,
         getattr(correlation, "relevance_model", None),
-        shared.embedder,
         notifier,
-        nli_client=shared.nli_client,
+        loop_push,
     )
     turn_surfacer = TurnSurfacing(
         priority_view=priority_view,
         graph_store=worldstate.graph_store,
         loop_store=worldstate.loop_store,
         embedder=shared.embedder,
-        push_log=stores.push_log_store,
+        memory=PostgresSurfacingMemory(pool),
     )
     world_composer = WorldComposer(
         priority_view=priority_view,
@@ -565,9 +565,17 @@ async def build_container(settings: Settings) -> ZeContainer:
         held_write_store=automation.held_write_store,
         embedder=shared.embedder,
     )
-    correlation_push_source = build_correlation_push_candidate_source(
-        correlation, notifier, settings, shared.embedder, shared.nli_client
+    push_bar = PushBar(
+        embedder=shared.embedder,
+        nli=shared.nli_client,
+        history=notifier,
+        mentions=turn_surfacer,
     )
+    push_sources = [
+        build_correlation_push_candidate_source(correlation, notifier, settings)
+    ]
+    if loop_push.enabled:
+        push_sources.insert(0, loop_surfacer)
 
     dep_map = build_dep_map(
         shared,
@@ -624,13 +632,14 @@ async def build_container(settings: Settings) -> ZeContainer:
     )
     component_hook = register_harness_hooks(settings, memory_store=shared.memory_store)
     graph = build_graph(checkpointer=checkpointer, plugins=plugins)
+    state_type = build_state_type(plugins)
 
     all_domains = (
         engine_data_domains(pool)
         + automation_data_domains(pool)
         + worldstate_data_domains(pool)
         + feedback_data_domains(pool)
-        + interruption_data_domains(pool)
+        + proactive_data_domains(pool)
         + [d for plugin in plugins for d in plugin.data_domains()]
     )
     data_portability_service = DataPortabilityService(pool=pool, domains=all_domains)
@@ -668,6 +677,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         memory_store=shared.memory_store,
         memory_consolidator=shared.memory_consolidator,
         graph=graph,
+        state_type=state_type,
         interface=interface,
         translations=translations,
         signal_sources=signal_sources,
@@ -700,7 +710,6 @@ async def build_container(settings: Settings) -> ZeContainer:
         watermark_store=stores.watermark_store,
         plugins=plugins,
         _checkpointer=checkpointer,
-        _push_log_store=stores.push_log_store,
         interruption_settings_store=stores.interruption_settings_store,
         notifier=notifier,
         notification_store=stores.notification_store,
@@ -714,7 +723,6 @@ async def build_container(settings: Settings) -> ZeContainer:
         loop_store=worldstate.loop_store,
         loop_graph_store=worldstate.graph_store,
         loop_entity_resolver=worldstate.entity_resolver,
-        loop_surfacer=loop_surfacer,
         turn_surfacer=turn_surfacer,
         world_composer=world_composer,
         priority_view=priority_view,
@@ -724,9 +732,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         collision_store=stores.collision_store,
         nli_client=shared.nli_client,
         system_one_client=shared.system_one_client,
-        commitment_intake=build_commitment_intake(
-            shared, worldstate, stores, settings
-        ),
+        commitment_intake=build_commitment_intake(shared, worldstate, stores, settings),
         procedure_admission=stores.procedure_admission,
         procedure_discovery=stores.procedure_discovery,
         procedure_activator=stores.procedure_activator,
@@ -758,12 +764,11 @@ async def build_container(settings: Settings) -> ZeContainer:
         plugins,
         settings=settings,
         notifier=notifier,
-        push_log_store=stores.push_log_store,
         checkpointer=checkpointer,
         router=router,
         persona_store=stores.persona_store,
         workflow_graph_builder=build_workflow_graph,
-        begin_workflow_turn=begin_workflow_turn,
+        begin_workflow_turn=partial(begin_workflow_turn, state_type=state_type),
         workspace_gate=workspace.gate,
     )
 
@@ -774,14 +779,13 @@ async def build_container(settings: Settings) -> ZeContainer:
         automation=automation,
         correlation=correlation,
         worldstate=worldstate,
-        loop_surfacer=loop_surfacer,
         priority_view=priority_view,
-        correlation_push_source=correlation_push_source,
+        push_bar=push_bar,
+        push_sources=push_sources,
         skills_stack=skills_stack,
         shared=shared,
         plugins=plugins,
         notifier=notifier,
-        push_log_store=stores.push_log_store,
         notification_store=stores.notification_store,
         dream_job=build_dream_job(pool, shared, stores, settings),
         pool=pool,

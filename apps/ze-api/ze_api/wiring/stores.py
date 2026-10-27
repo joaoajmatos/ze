@@ -22,7 +22,6 @@ from ze_personal.persona.postgres import PostgresPersonaStore
 from ze_priority.store import PostgresPriorityOverrideStore
 from ze_proactive.job_run_store import JobRunStore
 from ze_proactive.notification_store import NotificationStore
-from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.quiet_hours import InterruptionSettingsStore
 from ze_api.settings import Settings
 
@@ -44,7 +43,6 @@ class CoreStores:
     feedback_store: PostgresFeedbackStore
     interruption_settings_store: InterruptionSettingsStore
     notification_store: NotificationStore
-    push_log_store: PushLogStore
     job_run_store: JobRunStore
     persona_store: PostgresPersonaStore
     dream_store: PostgresDreamStore
@@ -84,7 +82,6 @@ def build_stores(pool: Any, shared: EngineStack, settings: Settings) -> CoreStor
         feedback_store=PostgresFeedbackStore(pool),
         interruption_settings_store=InterruptionSettingsStore(pool),
         notification_store=NotificationStore(pool=pool),
-        push_log_store=PushLogStore(pool=pool),
         job_run_store=JobRunStore(pool),
         persona_store=PostgresPersonaStore(
             pool=pool,

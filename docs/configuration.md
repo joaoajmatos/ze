@@ -286,6 +286,7 @@ worldstate:
   push:
     enabled: true              # false → no open-loop push candidates
     inline_cooldown_hours: 12  # Min hours after an inline mention before a push
+    repush_after_days: 7       # A drifting loop is pushed at most once per window (default 7)
     thresholds:
       tau_confidence: 0.5
       tau_relevance: 0.5
@@ -301,6 +302,10 @@ worldstate:
 The drift window — how long an `active` loop waits before it drifts — is a code
 constant (7 days), not config. New evidence on an active loop moves the deadline to at
 least 7 days from now. See [scheduled-jobs.md](scheduled-jobs.md#open-loop-upkeep-4-am-and-5-am-utc).
+
+`worldstate.push.repush_after_days` (default `7`) sets the cooldown for each drifting
+loop: the loop is pushed at most once per window. The cooldown holds only after a push
+is delivered or held.
 
 ### `correlation:`
 

@@ -404,3 +404,30 @@ def test_script_step_round_trips_through_a_parked_loop(serde: JsonPlusSerializer
 def test_agent_context_with_a_script_runner_is_never_the_stored_shape() -> None:
     ctx = AgentContext(session_id="s", prompt="p")
     assert ctx.script_runner is None
+
+
+def test_context_parts_round_trip(serde: JsonPlusSerializer) -> None:
+    from ze_agents.types import (
+        ConductorState,
+        DelegateTally,
+        ProcedureInvocation,
+        WriteGateState,
+    )
+
+    ctx = AgentContext(
+        session_id="s",
+        prompt="p",
+        conductor=ConductorState(
+            hint=[{"agent": "calendar", "prompt": "x"}],
+            ledger=[{"agent": "calendar", "status": "done"}],
+            tally=DelegateTally(counts={"calendar": 1}, total=1),
+        ),
+        procedure_invocation=ProcedureInvocation(
+            invocation_id="i", procedure_id="p", version_id="v", tool_names=["a"], subtask=2
+        ),
+        write_gate=WriteGateState(
+            pre_approved=frozenset({"send_email"}), round=1, retry_mode=True
+        ),
+    )
+    restored = round_trip(serde, ctx)
+    assert restored == ctx

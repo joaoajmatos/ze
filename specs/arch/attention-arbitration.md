@@ -82,6 +82,12 @@ call the same "do I still have interruption budget today" check instead of maint
 counters. `PriorityView`'s ranking is what arbitrates *which* mechanism gets to spend that
 shared budget when both have something drift-worthy on the same day.
 
+**Since phase 204.** The push bar lives in `ze-priority` (`push_bar.py`), not in the sources.
+`ze-worldstate` and `ze-correlation` describe `PushCandidate`s; `AttentionArbitrationJob` screens
+them through the bar and sends one push per run. The cooldowns are `OncePer` claims held by
+`ze-proactive`, whose claim store (`push_log`) is private. The budget check stays in the notifier.
+Item 3 above now holds: both sources share one claim path.
+
 ---
 
 ## What this explicitly does not do

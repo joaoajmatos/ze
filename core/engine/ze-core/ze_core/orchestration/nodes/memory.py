@@ -131,10 +131,12 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
 
     reply = final_response or result.response
 
-    from ze_core.orchestration.procedure_activation import complete_procedure_invocation
+    from ze_core.orchestration.procedure_activation import (
+        complete_procedure_invocations,
+    )
 
     if not is_retry:
-        await complete_procedure_invocation(ctx, result, config)
+        await complete_procedure_invocations(state, config)
 
     proposals: list = []
     admission_path = "none"

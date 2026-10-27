@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
+from ze_agents.types import WriteGateState
 from ze_agents.base_agent import BaseAgent
 from ze_agents.hooks import clear_hooks, register_hook
 from ze_agents.tool import get_tool
@@ -109,7 +110,9 @@ async def test_delete_event_with_calendar_constraint_confirms_or_blocks():
         )
         tc = await _agent().call_tool(
             "delete_event",
-            _ctx().__class__(session_id="s1", prompt="p", loop_active=True),
+            _ctx().__class__(
+                session_id="s1", prompt="p", write_gate=WriteGateState(loop_active=True)
+            ),
             event_id="evt-1",
         )
         assert ran == []
@@ -174,7 +177,9 @@ async def test_cancel_reminder_with_reminder_constraint_does_not_complete_silent
         )
         tc = await _agent().call_tool(
             "cancel_reminder",
-            _ctx().__class__(session_id="s1", prompt="p", loop_active=True),
+            _ctx().__class__(
+                session_id="s1", prompt="p", write_gate=WriteGateState(loop_active=True)
+            ),
             reminder_id="11111111-1111-1111-1111-111111111111",
         )
         assert ran == []
