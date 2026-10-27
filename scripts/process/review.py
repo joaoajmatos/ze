@@ -91,7 +91,7 @@ def approved_end(repo: Path, base: str, into: str = "main") -> str:
         if r.get("verdict") == "APPROVE" and is_ancestor(repo, r["to"], "HEAD"):
             edges.setdefault(r["from"], []).append(r["to"])
     starts = {base} | {s for s in edges if is_ancestor(repo, s, into)}
-    best = base
+    ends = []
     for start in starts:
         cur = start
         while edges.get(cur):
@@ -99,10 +99,15 @@ def approved_end(repo: Path, base: str, into: str = "main") -> str:
                 edges[cur],
                 key=lambda e: int(git(repo, "rev-list", "--count", f"{cur}..{e}") or 0),
             )
-        if int(git(repo, "rev-list", "--count", cur) or 0) > int(
-            git(repo, "rev-list", "--count", best) or 0
-        ):
-            best = cur
+        ends.append(cur)
+    # Ancestry, not commit counts: after merging main the base has more ancestors than an approved end
+    # that predates the merge, yet only that end carries floor work. Ends already on `into` carry none.
+    best = base
+    for end in ends:
+        if is_ancestor(repo, end, into):
+            continue
+        if best == base or is_ancestor(repo, best, end):
+            best = end
     return best
 
 

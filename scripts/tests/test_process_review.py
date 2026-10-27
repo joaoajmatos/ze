@@ -585,3 +585,29 @@ def test_roles_that_do_not_commit_are_never_nagged_about_the_state_file(tmp_path
         )
         == ""
     )
+
+
+def test_after_merging_main_the_next_request_starts_at_the_last_approve(
+    review_cli, tmp_path
+):
+    """202: main gained more commits than the floor had, then the floor merged main. The new merge base has
+    more ancestors than the approved end, yet the next delta still starts at that approved end."""
+    base, c1, c2, c3 = _repo(tmp_path)
+    assert request(tmp_path, f"{base}..{c3}").returncode == 0
+    assert verdict(tmp_path, f"{base}..{c3}", "APPROVE").returncode == 0
+
+    def run(*args):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+
+    run("checkout", "-q", "main")
+    for i in range(6):
+        (tmp_path / f"m{i}").write_text("main")
+        run("add", ".")
+        run("commit", "-q", "-m", f"main {i}")
+    run("checkout", "-q", "feat")
+    run("merge", "-q", "--no-edit", "main")
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=tmp_path, capture_output=True, text=True
+    ).stdout.strip()
+    r = request(tmp_path, f"{c3}..{head}")
+    assert r.returncode == 0, r.stderr
