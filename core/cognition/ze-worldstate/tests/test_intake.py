@@ -157,6 +157,7 @@ async def test_exactly_one_request_with_single_attempt_and_all_questions():
     state, questions, attempts = client.calls[0]
     assert attempts == 1
     assert questions == COMMITMENT_QUESTIONS
+    assert list(questions) == list(COMMITMENT_QUESTIONS)
     assert state == build_state(PROMPT, "Noted.")
     assert adm.judgment is not None
     assert tuple(adm.judgment.question_kinds) == tuple(COMMITMENT_QUESTIONS)
