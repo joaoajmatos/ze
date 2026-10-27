@@ -175,5 +175,5 @@ async def test_invoke_procedure_on_a_script_records_and_points_to_run_tool_scrip
         "This is a script procedure: run it with "
         f'run_tool_script(procedure_id="{match.procedure_id}").'
     )
-    assert ctx.procedure_invocation_id
+    assert ctx.procedure_invocation.invocation_id
     assert len(store.invocations) == 1

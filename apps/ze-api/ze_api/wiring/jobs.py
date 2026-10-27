@@ -18,10 +18,8 @@ from ze_priority.arbitration import AttentionArbitrationJob
 from ze_proactive.bootstrap import register_notification_jobs
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
-from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_skills.bootstrap import register_proactive_jobs as register_skills_jobs
-from ze_worldstate.bootstrap import loop_push_settings
 from ze_worldstate.bootstrap import register_proactive_jobs as register_worldstate_jobs
 from ze_logging import get_logger
 from ze_workspace.action_handoff import retry_pending_workspace_action_records
@@ -53,14 +51,13 @@ def register_all_proactive_jobs(
     automation: Any,
     correlation: Any,
     worldstate: Any = None,
-    loop_surfacer: Any = None,
     priority_view: Any = None,
-    correlation_push_source: Any = None,
+    push_bar: Any = None,
+    push_sources: Any = None,
     skills_stack: Any = None,
     shared: Any,
     plugins: list,
     notifier: ProactiveNotifier,
-    push_log_store: PushLogStore,
     notification_store: NotificationStore | None = None,
     dream_job: Any = None,
     pool: Any = None,
@@ -70,7 +67,6 @@ def register_all_proactive_jobs(
         settings,
         automation,
         notifier=notifier,
-        push_log_store=push_log_store,
     )
     if notification_store is not None:
         register_notification_jobs(scheduler, settings, notification_store, notifier)
@@ -84,11 +80,7 @@ def register_all_proactive_jobs(
     )
     if worldstate is not None:
         register_worldstate_jobs(scheduler, settings, worldstate)
-    if (
-        loop_surfacer is not None
-        and priority_view is not None
-        and correlation_push_source is not None
-    ):
+    if priority_view is not None and push_bar is not None and push_sources:
         arbitration_cfg = (
             (getattr(settings, "config", None) or {})
             .get("proactive", {})
@@ -97,10 +89,9 @@ def register_all_proactive_jobs(
         if arbitration_cfg.get("enabled", True):
             arbitration_job = AttentionArbitrationJob(
                 priority_view=priority_view,
-                loop_surfacer=loop_surfacer,
-                correlation_push_source=correlation_push_source,
+                sources=push_sources,
+                bar=push_bar,
                 notifier=notifier,
-                loop_push=loop_push_settings(settings),
             )
             scheduler.add_cron_job(
                 fn=arbitration_job.run,

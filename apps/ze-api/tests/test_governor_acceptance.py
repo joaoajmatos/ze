@@ -5,13 +5,19 @@ Quiet hours 23:00-08:00 Europe/Lisbon, discretionary budget 5 per 24 h.
 
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, time, timezone
 from itertools import count
 from zoneinfo import ZoneInfo
 
 from ze_agents.interface.types import Notification
 from ze_proactive.notifier import ProactiveNotifier
-from ze_proactive.types import NotificationRow, PushKind, QuietHoursSetting
+from ze_proactive.testing import InMemoryPushLog
+from ze_proactive.types import (
+    NotificationRow,
+    OncePer,
+    PushKind,
+    QuietHoursSetting,
+)
 
 LISBON = ZoneInfo("Europe/Lisbon")
 REQ = PushKind("acc_req", "requested", "high", "tests")
@@ -35,36 +41,11 @@ class FakeSettings:
         return QuietHoursSetting(True, time(23), time(8), "Europe/Lisbon", None)
 
 
-class FakePushLog:
-    def __init__(self, clock: Clock) -> None:
-        self._clock = clock
-        self.claims: dict[tuple[str, str], datetime] = {}
-
-    async def window_sent_at(self, event_type: str, hours: float) -> list[datetime]:
-        since = self._clock() - timedelta(hours=hours)
-        return sorted(
-            t for (et, _), t in self.claims.items() if et == event_type and t > since
-        )
-
-    async def try_claim(self, event_type, idempotency_key, payload=None) -> bool:
-        key = (event_type, idempotency_key)
-        if key in self.claims:
-            return False
-        self.claims[key] = self._clock()
-        return True
-
-    async def release_claim(self, event_type, idempotency_key) -> None:
-        self.claims.pop((event_type, idempotency_key), None)
-
-
 class FakeStore:
     def __init__(self, clock: Clock) -> None:
         self._clock = clock
         self.rows: dict[str, NotificationRow] = {}
         self._ids = count(1)
-
-    async def exists_recent(self, **_kw) -> bool:
-        return False
 
     async def create(self, **kw) -> NotificationRow:
         row = NotificationRow(
@@ -115,7 +96,7 @@ async def test_one_scripted_day():
     notifier = ProactiveNotifier(
         interface,  # type: ignore[arg-type]
         store,  # type: ignore[arg-type]
-        push_log=FakePushLog(clock),  # type: ignore[arg-type]
+        push_log=InMemoryPushLog(clock),  # type: ignore[arg-type]
         settings_store=FakeSettings(),  # type: ignore[arg-type]
         max_discretionary_per_day=5,
         clock=clock,
@@ -167,7 +148,7 @@ async def test_one_scripted_day():
                 kind,
                 "t",
                 "b",
-                budget_key=f"{when.isoformat()}" if kind is DIS else None,
+                once_per=OncePer(f"{when.isoformat()}") if kind is DIS else None,
             )
         )
 

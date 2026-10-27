@@ -7,6 +7,7 @@ from ze_agents.interface.types import Action
 from ze_logging import get_logger
 from ze_proactive.job import proactive_job
 from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.types import OncePer, is_sent
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.types import STUCK_IDLE_DAYS, StuckGoal
 from ze_automation.push_kinds import STUCK_GOAL
@@ -44,10 +45,10 @@ class StuckGoalJob:
             content,
             format="html",
             actions=actions,
-            budget_key=f"stuck_goals:{date.today().isoformat()}",
+            once_per=OncePer(f"stuck_goals:{date.today().isoformat()}"),
         )
 
-        if outcome in ("delivered", "held"):
+        if is_sent(outcome):
             for sg in stuck:
                 await self._goal_store.mark_stuck_alerted(sg.goal.id)
 

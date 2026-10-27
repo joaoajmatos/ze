@@ -1,5 +1,5 @@
 from ze_agents.errors import (
-    ZeCoreError,
+    ZeError,
     RoutingError,
     InvalidPromptError,
     AgentError,
@@ -30,10 +30,11 @@ from ze_agents.errors import (
     LLMJsonParseError,
     InvalidComponentError,
     UiActionRefusedError,
+    UndeclaredLifetimeError,
 )
 
 __all__ = [
-    "ZeCoreError",
+    "ZeError",
     "RoutingError",
     "InvalidPromptError",
     "AgentError",
@@ -64,4 +65,5 @@ __all__ = [
     "LLMJsonParseError",
     "InvalidComponentError",
     "UiActionRefusedError",
+    "UndeclaredLifetimeError",
 ]

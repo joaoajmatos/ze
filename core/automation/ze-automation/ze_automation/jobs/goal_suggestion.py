@@ -7,6 +7,7 @@ from ze_logging import get_logger
 from ze_memory.store import MemoryStore
 from ze_proactive.job import proactive_job
 from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.types import OncePer
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.suggestion_store import GoalSuggestionStore
@@ -123,5 +124,5 @@ class GoalSuggestionJob:
             ],
             target_type="goal_suggestion",
             target_id=str(suggestion.id),
-            budget_key=f"goal_suggestion:{suggestion.id}",
+            once_per=OncePer(f"goal_suggestion:{suggestion.id}"),
         )

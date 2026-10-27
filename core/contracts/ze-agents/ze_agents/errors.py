@@ -6,18 +6,14 @@ if TYPE_CHECKING:
     from ze_agents.park import ParkedLoop
 
 
-class ZeCoreError(Exception):
+class ZeError(Exception):
     """Base exception for all Ze errors."""
-
-
-# Alias so ze-agents consumers can use the canonical name.
-ZeError = ZeCoreError
 
 
 # ── Routing ───────────────────────────────────────────────────────────────────
 
 
-class RoutingError(ZeCoreError):
+class RoutingError(ZeError):
     """Routing failed after all attempts."""
 
 
@@ -28,7 +24,7 @@ class InvalidPromptError(RoutingError):
 # ── Agents ────────────────────────────────────────────────────────────────────
 
 
-class AgentError(ZeCoreError):
+class AgentError(ZeError):
     """An agent failed during execution."""
 
 
@@ -44,10 +40,21 @@ class AgentConfigError(AgentError):
     """Agent or tool misconfiguration detected at startup."""
 
 
+# ── Derivation and lifetimes ──────────────────────────────────────────────────
+
+
+class UndeclaredDerivationError(AgentConfigError):
+    """An AgentContext field has no row in the derivation table."""
+
+
+class UndeclaredLifetimeError(AgentConfigError):
+    """A graph-state field declares no lifetime (Turn, Input, Thread or Run)."""
+
+
 # ── Interface ─────────────────────────────────────────────────────────────────
 
 
-class InterfaceError(ZeCoreError):
+class InterfaceError(ZeError):
     """Base class for interface errors."""
 
 
@@ -58,14 +65,14 @@ class InterfaceConfigError(InterfaceError):
 # ── Capability ────────────────────────────────────────────────────────────────
 
 
-class CapabilityError(ZeCoreError):
+class CapabilityError(ZeError):
     """Capability gate error."""
 
 
 # ── Memory ────────────────────────────────────────────────────────────────────
 
 
-class MemoryError(ZeCoreError):
+class MemoryError(ZeError):
     """Memory store operation failed."""
 
 
@@ -76,7 +83,7 @@ class UnknownToolError(AgentError):
     """No tool registered for the requested name."""
 
 
-class LoopParked(ZeCoreError):
+class LoopParked(ZeError):
     """An agent loop stopped because asks-first tool calls await the user's decision.
 
     Raised only by `agentic_loop`. Caught by `run_delegate`, the graph's tool
@@ -91,7 +98,7 @@ class LoopParked(ZeCoreError):
 # ── UI ────────────────────────────────────────────────────────────────────────
 
 
-class InvalidComponentError(ZeCoreError):
+class InvalidComponentError(ZeError):
     """A UI component descriptor or action was built with invalid fields."""
 
 
@@ -102,7 +109,7 @@ class UiActionRefusedError(AgentError):
 # ── Workflow ──────────────────────────────────────────────────────────────────
 
 
-class RetryError(ZeCoreError):
+class RetryError(ZeError):
     """Base class for reply-retry failures (Phase 165)."""
 
 
@@ -114,7 +121,7 @@ class RetryRewindError(RetryError):
     """The thread's checkpointed history cannot be rewound to before the reply."""
 
 
-class VoiceInputError(ZeCoreError):
+class VoiceInputError(ZeError):
     """Base class for voice-recording failures."""
 
 
@@ -134,7 +141,7 @@ class TranscriptionFailedError(VoiceInputError):
     """The speech model did not return a transcript."""
 
 
-class WorkflowError(ZeCoreError):
+class WorkflowError(ZeError):
     """Base class for workflow errors."""
 
 
@@ -149,7 +156,7 @@ class WorkflowExecutionError(WorkflowError):
 # ── Goals ─────────────────────────────────────────────────────────────────────
 
 
-class GoalError(ZeCoreError):
+class GoalError(ZeError):
     """Base class for goal errors."""
 
 
@@ -176,7 +183,7 @@ class GoalLearningPromotionError(GoalLearningError):
 # ── Persona ───────────────────────────────────────────────────────────────────
 
 
-class PersonaError(ZeCoreError):
+class PersonaError(ZeError):
     """Base class for persona errors."""
 
 
@@ -191,7 +198,7 @@ class UnknownDialError(PersonaError):
 # ── OpenRouter ────────────────────────────────────────────────────────────────
 
 
-class OpenRouterError(ZeCoreError):
+class OpenRouterError(ZeError):
     """OpenRouter API call failed."""
 
     def __init__(self, message: str, status_code: int | None = None) -> None:
@@ -210,7 +217,7 @@ class GenerationUnavailableError(OpenRouterError):
 # ── LLM output ────────────────────────────────────────────────────────────────
 
 
-class LLMJsonParseError(ZeCoreError):
+class LLMJsonParseError(ZeError):
     """An LLM reply did not contain the JSON value the caller asked for."""
 
     def __init__(self, message: str, raw: str | None = None) -> None:
@@ -247,14 +254,14 @@ class HookAbort(AgentError):
 # ── Onboarding ────────────────────────────────────────────────────────────────
 
 
-class OnboardingError(ZeCoreError):
+class OnboardingError(ZeError):
     """Onboarding flow failed or received an invalid submission."""
 
 
 # ── Channels ──────────────────────────────────────────────────────────────────
 
 
-class ChannelError(ZeCoreError):
+class ChannelError(ZeError):
     """Base class for channel errors."""
 
 
@@ -269,7 +276,7 @@ class ChannelSendError(ChannelError):
 # ── Claims ────────────────────────────────────────────────────────────────────
 
 
-class ClaimError(ZeCoreError):
+class ClaimError(ZeError):
     """Base class for claim-topology errors."""
 
 
@@ -280,7 +287,7 @@ class MissingDecayParameterError(ClaimError):
 # ── Contribution seam ─────────────────────────────────────────────────────────
 
 
-class ContributionError(ZeCoreError):
+class ContributionError(ZeError):
     """Base class for contribution-seam write-path errors."""
 
 

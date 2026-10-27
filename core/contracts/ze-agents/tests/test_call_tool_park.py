@@ -11,7 +11,7 @@ from ze_agents.park import OVER_CAP_RESULT
 from ze_agents.registry import clear_registry
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import AskDecision, ToolAccess, clear_tool_registry, tool
-from ze_agents.types import AgentContext, AgentResult
+from ze_agents.types import AgentContext, AgentResult, WriteGateState
 
 calls: list[tuple[str, dict]] = []
 
@@ -34,10 +34,25 @@ class _Agent(BaseAgent):
         return AgentResult(agent=self.name, response="ok")
 
 
+_GATE_KW = {
+    "resume": "resume",
+    "write_decisions": "decisions",
+    "pre_approved_writes": "pre_approved",
+    "write_round": "round",
+    "approval_request_id": "approval_request_id",
+    "loop_active": "loop_active",
+    "retry_mode": "retry_mode",
+}
+
+
+def _gate(kw: dict, **defaults) -> dict:
+    """Fold the write-gate keyword names a test passes into one `WriteGateState`."""
+    gate = {_GATE_KW[k]: kw.pop(k) for k in list(kw) if k in _GATE_KW}
+    return {"write_gate": WriteGateState(**{**defaults, **gate}), **kw}
+
+
 def _ctx(**kw) -> AgentContext:
-    base = dict(session_id="s", prompt="p", loop_active=True)
-    base.update(kw)
-    return AgentContext(**base)
+    return AgentContext(session_id="s", prompt="p", **_gate(kw, loop_active=True))
 
 
 def _irreversible(name: str, **kw):

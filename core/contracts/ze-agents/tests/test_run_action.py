@@ -11,7 +11,7 @@ from ze_agents.park import ApprovedCall
 from ze_agents.registry import clear_registry
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import AskDecision, Injected, ToolAccess, clear_tool_registry, tool
-from ze_agents.types import AgentContext, AgentResult
+from ze_agents.types import AgentContext, AgentResult, WriteGateState
 
 calls: list[tuple[str, dict]] = []
 
@@ -44,10 +44,25 @@ class _Agent(BaseAgent):
         return AgentResult(agent=self.name, response="ok")
 
 
+_GATE_KW = {
+    "resume": "resume",
+    "write_decisions": "decisions",
+    "pre_approved_writes": "pre_approved",
+    "write_round": "round",
+    "approval_request_id": "approval_request_id",
+    "loop_active": "loop_active",
+    "retry_mode": "retry_mode",
+}
+
+
+def _gate(kw: dict, **defaults) -> dict:
+    """Fold the write-gate keyword names a test passes into one `WriteGateState`."""
+    gate = {_GATE_KW[k]: kw.pop(k) for k in list(kw) if k in _GATE_KW}
+    return {"write_gate": WriteGateState(**{**defaults, **gate}), **kw}
+
+
 def _ctx(**kw) -> AgentContext:
-    base = dict(session_id="s", prompt="")
-    base.update(kw)
-    return AgentContext(**base)
+    return AgentContext(session_id="s", prompt="", **_gate(kw))
 
 
 def _irreversible(name: str = "archive_source", **kw):
@@ -125,11 +140,11 @@ async def test_reversible_write_runs_and_restores_loop_active() -> None:
     tc = await _Agent().run_action("mark_read", {"source_id": "s1"}, ctx)
     assert tc.success is True
     assert calls == [("mark_read", {"source_id": "s1"})]
-    assert ctx.loop_active is False
+    assert ctx.write_gate.loop_active is False
 
     ctx2 = _ctx(loop_active=True)
     await _Agent().run_action("mark_read", {"source_id": "s2"}, ctx2)
-    assert ctx2.loop_active is True
+    assert ctx2.write_gate.loop_active is True
 
 
 async def test_loop_active_restored_when_the_tool_raises() -> None:
@@ -147,7 +162,7 @@ async def test_loop_active_restored_when_the_tool_raises() -> None:
     ctx = _ctx()
     tc = await _Agent().run_action("boom", {"source_id": "s"}, ctx)
     assert tc.success is False
-    assert ctx.loop_active is False
+    assert ctx.write_gate.loop_active is False
 
 
 async def test_constraint_veto_still_applies() -> None:

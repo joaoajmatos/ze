@@ -14,7 +14,7 @@ from ze_agents.park import ApprovedCall, WriteDecision
 from ze_agents.registry import clear_registry
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool
-from ze_agents.types import AgentContext, AgentResult, ToolCall
+from ze_agents.types import AgentContext, AgentResult, ToolCall, WriteGateState
 
 
 @pytest.fixture(autouse=True)
@@ -55,9 +55,26 @@ class _Agent(BaseAgent):
         raise NotImplementedError
 
 
+_GATE_KW = {
+    "resume": "resume",
+    "write_decisions": "decisions",
+    "pre_approved_writes": "pre_approved",
+    "write_round": "round",
+    "approval_request_id": "approval_request_id",
+    "loop_active": "loop_active",
+    "retry_mode": "retry_mode",
+}
+
+
+def _gate(kw: dict, **defaults) -> dict:
+    """Fold the write-gate keyword names a test passes into one `WriteGateState`."""
+    gate = {_GATE_KW[k]: kw.pop(k) for k in list(kw) if k in _GATE_KW}
+    return {"write_gate": WriteGateState(**{**defaults, **gate}), **kw}
+
+
 def _ctx(sink, **kw) -> AgentContext:
     return AgentContext(
-        session_id="s", prompt="p", loop_active=True, tool_sink=sink, **kw
+        session_id="s", prompt="p", tool_sink=sink, **_gate(kw, loop_active=True)
     )
 
 

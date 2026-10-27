@@ -11,7 +11,7 @@ from ze_automation.goals.postgres import PostgresGoalStore
 from ze_correlation.store import PostgresHypothesisStore
 from ze_priority.store import PostgresPriorityOverrideStore
 from ze_priority.view import PriorityView
-from ze_proactive.push_log_store import PushLogStore
+from ze_worldstate.bootstrap import LoopPushSettings
 from ze_worldstate.extraction import _create_declared_loop
 from ze_worldstate.jobs.drift_sweep import DriftSweepJob
 from ze_worldstate.store import PostgresLoopStore
@@ -56,19 +56,18 @@ async def test_declared_loop_drifts_and_is_a_push_candidate(pg_pool):
     relevance = MagicMock()
     relevance.build = AsyncMock(return_value=object())
     relevance.score = MagicMock(return_value=SimpleNamespace(value=1.0, contributions=[]))
-    embedder = MagicMock()
-    embedder.encode_passage = embedder.encode_query = MagicMock(return_value=[1.0, 0.0])
-    nli = MagicMock()
-    nli.scores = AsyncMock(return_value=[0.95])
-    nli.grounding_score = MagicMock(return_value=0.95)
     surfacer = LoopSurfacer(
-        store, MagicMock(), PushLogStore(pg_pool), pool=pg_pool,
-        relevance_model=relevance, embedder=embedder, nli_client=nli,
+        loop_store=store,
+        graph_store=MagicMock(),
+        pool=pg_pool,
+        relevance_model=relevance,
+        notifier=MagicMock(),
+        settings=LoopPushSettings(),
     )
 
-    candidates = await surfacer.eligible_candidates()
+    candidates = await surfacer.candidates()
 
-    assert [c.id for c in candidates] == [created.id]
+    assert [c.source_id for c in candidates] == [created.id]
 
 
 async def test_multi_gate_goal_is_ranked_and_served_by_the_route(pg_pool):

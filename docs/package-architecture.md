@@ -100,7 +100,9 @@ Depends on `ze-agents`, `ze-data`, and `ze-logging`.
 | `quiet_hours.py` | `is_active` window check, `InterruptionSettingsStore` |
 | `catchup.py` | `missed_fire_time` — the most recent missed cron fire time |
 | `job_run_store.py` | `JobRunStore` — the last start and finish of each job |
-| `push_log_store.py` | `PushLogStore`, `PushLogEntry` — budget claim log; `window_sent_at` is the one window query behind `budget_status` |
+| `candidates.py` | `PushCandidate` and `BarThresholds` — what a source describes to the push bar in `ze-priority`; a candidate carries its `OncePer` |
+| `push_log_store.py` | `PushLogStore`, `ClaimResult` — the claim store behind `OncePer` cooldowns and the shared budget. Private to `ze-proactive`; `ze_sdk` does not export it. `window_sent_at` is the one window query behind `budget_status` |
+| `testing.py` | `InMemoryPushLog` — the claim store held in memory, for tests that want a real `ProactiveNotifier` |
 
 ---
 
@@ -112,12 +114,12 @@ Depends on `ze-agents`, `ze-data`, and `ze-logging`.
 |--------|-----------------|
 | `ze_sdk` | `ZePlugin`, `agent`, `tool`, `ToolAccess`, `BaseAgent`, `get_logger`, `Settings`, `DBPool` |
 | `ze_sdk.types` | `AgentContext`, `AgentResult`, `ToolCall`, `AbortToken`, `Source`, `AskDecision`, `Action`, `Notification` |
-| `ze_sdk.proactive` | `ProactiveJob`, `proactive_job`, `ProactiveScheduler`, `ProactiveNotifier`, `PushKind`, `PushOutcome`, `PushLogStore`, `PushLogEntry` |
+| `ze_sdk.proactive` | `ProactiveJob`, `proactive_job`, `ProactiveScheduler`, `ProactiveNotifier`, `NotificationStore`, `PushKind`, `PushOutcome`, `PushClass`, `Urgency`, `OncePer`, `is_sent` |
 | `ze_sdk.channels` | `Channel`, `ChannelType`, `ChannelHandle`, `Message`, `SentMessage`, `Thread`, `ThreadMessage`, `ChannelSendError` |
 | `ze_sdk.memory` | `MemoryContext`, `Fact`, `Episode`, `Procedure`, `Entity`, `TaskState`, `RetrievalRequest`, `MemoryStore`, `PostgresMemoryStore` |
 | `ze_sdk.onboarding` | `OnboardingProvider`, `OnboardingStep`, `OnboardingField`, `OnboardingSeed`, `OnboardingResult`, setup seed and submission types |
 | `ze_sdk.automation` | `Goal`, `GoalStatus`, `GoalStore`, `GoalSuggestionStore`, `Workflow`, `WorkflowStep`, `WorkflowStore`, `WorkflowScheduler`, `AutomationPlanner`, `AutomationStore` |
-| `ze_sdk.errors` | The error hierarchy, rooted at `ZeCoreError` |
+| `ze_sdk.errors` | The error hierarchy, rooted at `ZeError` |
 | `ze_sdk.contribution` | Contribution seam types and `validate_and_submit` |
 | `ze_sdk.correlation` | Signal and hypothesis types for correlation |
 | `ze_sdk.screen` | Screen-context contract: `ScreenResolver`, `ScreenRef`, `ScreenLine`, `sanitize_text` |
@@ -237,9 +239,28 @@ inputs. It depends on `ze-agents`, `ze-logging`, `ze-memory`, `ze-plugin`,
 | `engine.py` | `CorrelationEngine` |
 | `store.py` | `PostgresHypothesisStore` |
 | `job.py` | `CorrelationJob` |
-| `push.py` | `CorrelationPushConsumer` |
+| `push.py` | `CorrelationPushCandidateSource` — describes each hypothesis as a push candidate for the attention arbitration job; `CorrelationPushConsumer` — correlates recent signals and does not push |
 | `prompts.py` | Prompt templates for hypothesis generation |
 | `types.py` | Hypothesis and evidence types |
+
+---
+
+## ze-priority — Attention Arbitration
+
+`ze_priority` ranks open loops, goals, and hypotheses on one scale, and decides which
+discretionary push goes out. It depends on `ze-agents`, `ze-automation`, `ze-collision`,
+`ze-components`, `ze-correlation`, `ze-logging`, `ze-plugin`, `ze-proactive`, and
+`ze-worldstate`.
+
+| Module | What it provides |
+|--------|-----------------|
+| `push_bar.py` | `PushBar` — the one bar for every discretionary push: confidence, relevance, inline mention, novelty, grounding |
+| `arbitration.py` | `AttentionArbitrationJob` — screens every source's candidates through the bar, ranks the survivors with `PriorityView`, and sends the first one |
+| `surfacing_memory.py` | `PostgresSurfacingMemory` — the inline mentions and resume offers the conversation raised (`surfacing_memory`, `zpri002`); the push bar reads it |
+| `turn.py` | `TurnSurfacing` — inline mentions and the resume recap; records what it surfaced |
+| `view.py` | `PriorityView` — the ranking; user overrides merge in `rank()` |
+
+The job does not claim the budget or set cooldowns. `ze-proactive`'s notifier does both.
 
 ---
 
