@@ -218,7 +218,7 @@ def test_row3_any_null_bar_is_uncalibrated_fallback(bar):
 )
 def test_row4_resolves_whatever_the_choice_but_waiting_on(choice):
     out = _d(make(choice, resolves=0.9))
-    assert (out.kind, out.reason) == ("resolve_loop", "resolves")
+    assert (out.kind, out.reason) == ("resolve", "resolves")
     assert out.consumed == frozenset({"resolves_existing"})
 
 
@@ -240,13 +240,13 @@ def test_row4_waiting_on_with_a_created_id_still_links():
 
 
 def test_row4_boundary_at_bar_resolves_below_does_not():
-    assert _d(make("none", resolves=0.85)).kind == "resolve_loop"
+    assert _d(make("none", resolves=0.85)).kind == "resolve"
     assert _d(make("none", resolves=0.8499)).kind == "hold"
 
 
 def test_row4_resolve_outranks_turn_created():
     out = _d(make("reminder", resolves=0.9), created=TurnCreation(reminder_id="r1"))
-    assert out.kind == "resolve_loop"
+    assert out.kind == "resolve"
 
 
 # ── row 5: link ──────────────────────────────────────────────────────────────
@@ -308,13 +308,13 @@ def test_row7a_bar_edge_holds_at_bar_and_falls_through_below(choice):
     at = _d(make(choice, conf=0.6, concern=0.9, explicit=0.9))
     below = _d(make(choice, conf=0.5999, concern=0.9, explicit=0.9))
     assert at.reason == f"{choice}_not_created"
-    assert (below.kind, below.reason) == ("create_loop_declared", "explicit")
+    assert (below.kind, below.reason) == ("create_declared", "explicit")
 
 
 @pytest.mark.parametrize("choice", ["reminder", "goal"])
 def test_row7a_falls_through_to_declared(choice):
     out = _d(make(choice, conf=0.3, concern=0.9, explicit=0.9))
-    assert (out.kind, out.reason) == ("create_loop_declared", "explicit")
+    assert (out.kind, out.reason) == ("create_declared", "explicit")
     assert out.consumed == frozenset(
         {"commitment", "resolves_existing", "is_open_concern", "explicit_declaration"}
     )
@@ -323,7 +323,7 @@ def test_row7a_falls_through_to_declared(choice):
 @pytest.mark.parametrize("choice", ["reminder", "goal"])
 def test_row7a_falls_through_to_suspected(choice):
     out = _d(make(choice, conf=0.3, concern=0.9, explicit=0.1))
-    assert (out.kind, out.reason) == ("create_loop_suspected", "implied")
+    assert (out.kind, out.reason) == ("create_suspected", "implied")
 
 
 @pytest.mark.parametrize("choice", ["reminder", "goal"])
@@ -415,7 +415,7 @@ def test_row11_not_open_concern_holds():
 
 
 def test_row11_concern_boundary_creates():
-    assert _d(make("loop", concern=0.5, explicit=0.0)).kind == "create_loop_suspected"
+    assert _d(make("loop", concern=0.5, explicit=0.0)).kind == "create_suspected"
 
 
 def test_row12_tracked_loop_holds():
@@ -425,7 +425,7 @@ def test_row12_tracked_loop_holds():
 
 def test_row13_explicit_creates_declared():
     out = _d(make("loop", explicit=0.8))
-    assert (out.kind, out.reason) == ("create_loop_declared", "explicit")
+    assert (out.kind, out.reason) == ("create_declared", "explicit")
     assert out.consumed == frozenset(
         {"commitment", "resolves_existing", "is_open_concern", "explicit_declaration"}
     )
@@ -433,7 +433,7 @@ def test_row13_explicit_creates_declared():
 
 def test_row14_implied_creates_suspected():
     out = _d(make("loop", explicit=0.79))
-    assert (out.kind, out.reason) == ("create_loop_suspected", "implied")
+    assert (out.kind, out.reason) == ("create_suspected", "implied")
 
 
 def test_tracked_does_not_block_fact_or_link_side():

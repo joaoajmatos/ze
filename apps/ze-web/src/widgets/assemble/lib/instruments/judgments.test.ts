@@ -40,9 +40,9 @@ describe("describeJudgments", () => {
 describe("describeIntakeOutcome", () => {
   it.each([
     ["persist_fact:fact", "persist_fact", "kept as a fact"],
-    ["resolve_loop:resolved", "resolve_loop", "closed an open loop"],
-    ["create_loop_declared:explicit", "create_loop_declared", "started tracking what you asked it to"],
-    ["create_loop_suspected:open_concern", "create_loop_suspected", "noted a concern it suspects you have"],
+    ["resolve:resolved", "resolve", "closed an open loop"],
+    ["create_declared:explicit", "create_declared", "started tracking what you asked it to"],
+    ["create_suspected:open_concern", "create_suspected", "noted a concern it suspects you have"],
     ["link:turn_created:goal", "link", "linked to the goal it created this turn"],
     ["hold:waiting_on", "hold", "held, nothing written"],
     ["fallback:uncalibrated", "fallback", "used the older extractor"],

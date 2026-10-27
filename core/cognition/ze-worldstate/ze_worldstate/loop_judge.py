@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Literal
+from typing import Any
 
 from ze_agents.system_one import (
     SystemOneQuestion,
@@ -19,6 +19,8 @@ from ze_agents.system_one import (
     surface_block,
     valid_noul,
 )
+
+from ze_worldstate.decision import CommitDecision
 
 _bar = partial(parse_bar, event="loop_gate_bar_invalid")
 
@@ -87,39 +89,27 @@ def loop_gate_surface_config(settings: Any) -> LoopGateSurfaceConfig:
     )
 
 
-DecisionKind = Literal[
-    "resolve", "create_declared", "create_suspected", "hold", "fallback"
-]
-
-
-@dataclass(frozen=True)
-class LoopGateDecision:
-    kind: DecisionKind
-    reason: str
-    consumed: frozenset[str] = frozenset()
-
-
 def decide(
     result: SystemOneResult, cfg: LoopGateSurfaceConfig, provenance: str
-) -> LoopGateDecision:
-    """Pure decision over one result (contract rows 1 to 7). Never raises."""
+) -> CommitDecision:
+    """Pure decision over one result (contract rows 1 to 7). Never raises. Never declares."""
     if result.outcome == "skip":
-        return LoopGateDecision("fallback", result.skip_reason or "error")
+        return CommitDecision("fallback", result.skip_reason or "error")
     asked = tuple(LOOP_QUESTIONS)
     if not all(valid_noul(result.answers.get(qid)) for qid in asked):
-        return LoopGateDecision("fallback", "invalid_answer")
+        return CommitDecision("fallback", "invalid_answer")
     loop_bar, resolves_bar = cfg.loop_hold, cfg.resolves_hold
     if loop_bar is None or resolves_bar is None:
-        return LoopGateDecision("fallback", "uncalibrated")
+        return CommitDecision("fallback", "uncalibrated")
 
     def score(qid: str) -> float:
         return float(result.answers[qid].noul or 0.0)
 
     if score(Q_RESOLVES) >= resolves_bar:
-        return LoopGateDecision("resolve", "resolves", frozenset({Q_RESOLVES}))
+        return CommitDecision("resolve", "resolves", frozenset({Q_RESOLVES}))
     if score(Q_CONCERN) < loop_bar:
-        return LoopGateDecision(
+        return CommitDecision(
             "hold", "not_open_concern", frozenset({Q_CONCERN, Q_RESOLVES})
         )
     consumed = frozenset(asked)
-    return LoopGateDecision("create_suspected", "implied", consumed)
+    return CommitDecision("create_suspected", "implied", consumed)

@@ -102,8 +102,8 @@ GRID = [round(0.5 + 0.05 * i, 2) for i in range(10)]
 BINS = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0001]
 RECALL_SLACK = 0.05
 MIN_CHOICE_ACCURACY = 0.9
-CREATES = ("create_loop_declared", "create_loop_suspected")
-WRITES = ("persist_fact", "resolve_loop", "link", *CREATES)
+CREATES = ("create_declared", "create_suspected")
+WRITES = ("persist_fact", "resolve", "link", *CREATES)
 Q_FAMILY = "family"
 Q_BIOGRAPHY = "biography"
 Q_CONCERN = "is_open_concern"
@@ -332,8 +332,8 @@ def pred_from_outcome(outcome: IntakeOutcome) -> Pred:
     return Pred(
         fact=outcome.kind == "persist_fact",
         create=outcome.kind in CREATES,
-        declared=outcome.kind == "create_loop_declared",
-        resolve=outcome.kind == "resolve_loop",
+        declared=outcome.kind == "create_declared",
+        resolve=outcome.kind == "resolve",
         fallback=outcome.kind == "fallback",
         wrote=outcome.kind in WRITES,
         link_kind=outcome.link_kind if outcome.kind == "link" else None,
@@ -876,7 +876,7 @@ def report_errors(
             or (o.kind == "persist_fact") != r.gold_fact
         )
         bad = bad or (
-            (o.kind == "resolve_loop") != r.gold_resolves
+            (o.kind == "resolve") != r.gold_resolves
             or (r.gold_choice == "waiting_on" and o.kind in WRITES)
         )
         if not bad:

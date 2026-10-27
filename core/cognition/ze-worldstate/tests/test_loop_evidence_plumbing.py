@@ -1,8 +1,6 @@
-"""Phase 170: evidence reaches the loop commit; matches corroborate; the declared path dedups."""
+"""Phase 170/203: evidence reaches the lifecycle through the one commit; matches note it; the declared path dedups."""
 
 from __future__ import annotations
-
-from tests.commitment_fixtures import _BARS, conversation_admit, make
 
 import json
 from unittest.mock import AsyncMock
@@ -12,13 +10,17 @@ import pytest
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult
 from ze_plugin.contribution import EvidenceRef
 
-from ze_worldstate import extraction
+from tests.commitment_fixtures import _BARS, commit_loop, conversation_admit, make
+from ze_worldstate import admission
 from ze_worldstate.admission import LoopInflow
+from ze_worldstate.decision import CommitDecision
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.intake import CommitmentIntake
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.types import LoopProvenance, LoopState, OpenLoop
 
 BARS = {"enabled": True, "loop_hold": 0.5, "resolves_hold": 0.7}
+TEXT = "I need to renew my passport"
 
 
 def _loop(state=LoopState.ACTIVE, fingerprint=None) -> OpenLoop:
@@ -38,138 +40,117 @@ def _ref() -> EvidenceRef:
 
 class _Env:
     def __init__(self, monkeypatch, matches=None):
-        self.submit_kwargs: dict = {}
+        self.lifecycle = AsyncMock(spec=LoopLifecycle)
+        self.lifecycle.create_suspected.side_effect = lambda draft: _loop(
+            LoopState.SUSPECTED
+        )
+        self.lifecycle.create_declared.side_effect = lambda draft, window_days=None: (
+            _loop()
+        )
+        self.lifecycle.note_evidence.side_effect = (
+            lambda loop_id, evidence, entity_ids: _loop()
+        )
         self.loop_store = AsyncMock()
-        self.loop_store.create = AsyncMock(side_effect=self._create)
         self.loop_store.list = AsyncMock(return_value=[])
         self.graph_store = AsyncMock()
-        self.memory_store = AsyncMock()
         self.matches = matches or {}
-
-        async def submit(contribution, write, **kw):
-            self.submit_kwargs = kw
-            return await write()
 
         async def find(entity_ids, title, *, states, **kw):
             return self.matches.get(tuple(states))
 
-        monkeypatch.setattr(extraction, "submit_and_detect_collisions", submit)
-        monkeypatch.setattr(extraction, "find_matching_loop", find)
+        monkeypatch.setattr(admission, "find_matching_loop", find)
 
-    @staticmethod
-    async def _create(loop):
-        loop.id = uuid4()
-        return loop
-
-    async def propose(
-        self, provenance, evidence, *, title="Renew passport", explicit=None
-    ):
-        explicit = provenance == "user_declared" if explicit is None else explicit
-        llm = AsyncMock()
-        llm.complete = AsyncMock(
-            return_value=json.dumps(
-                {"is_loop": True, "title": title, "explicit_declaration": explicit}
-            )
-        )
-        return await extraction.propose_loop_candidates(
-            "I need to renew my passport",
-            provenance,
-            evidence,
-            llm,
-            AsyncMock(),
-            self.loop_store,
-            AsyncMock(return_value=[]),
+    def inflow(self, llm=None, system_one=None, settings=None) -> LoopInflow:
+        return LoopInflow(
+            lifecycle=self.lifecycle,
+            loop_store=self.loop_store,
             graph_store=self.graph_store,
-            memory_store=self.memory_store,
+            entity_resolver=AsyncMock(return_value=[]),
+            llm_client=llm or AsyncMock(),
+            embedder=AsyncMock(),
+            system_one_client=system_one,
+            settings=settings,
+        )
+
+    async def commit(self, kind, provenance, evidence, *, title="Renew passport"):
+        return await self.inflow().commit(
+            CommitDecision(kind, "test", title=title),
+            text=TEXT,
+            inflow=provenance,
+            evidence=evidence,
         )
 
 
 LIVE = ("suspected", "active", "drifting")
 
 
-async def test_declared_match_links_evidence_and_corroborates_active_loop(monkeypatch):
-    existing = _loop(LoopState.ACTIVE)
-    env = _Env(monkeypatch, {LIVE: existing})
+@pytest.mark.parametrize("state", [LoopState.ACTIVE, LoopState.DRIFTING])
+async def test_declared_match_notes_evidence_on_the_existing_loop(monkeypatch, state):
+    existing = _loop(state)
+    env = _Env(monkeypatch, {LIVE: existing, ("dropped",): None})
     ref = _ref()
 
-    result = await env.propose("user_declared", [ref])
+    result = await env.commit("create_declared", "conversation", [ref])
 
-    assert result == [existing]
-    env.loop_store.create.assert_not_awaited()
-    env.loop_store.link_evidence.assert_awaited_once_with(
-        existing.id, "episode", ref.id
+    assert result.outcome == "matched" and result.loops[0].id is not None
+    env.lifecycle.create_declared.assert_not_awaited()
+    env.lifecycle.note_evidence.assert_awaited_once_with(
+        existing.id, evidence=(ref,), entity_ids=()
     )
-    env.loop_store.record_corroboration.assert_awaited_once_with(existing.id)
-    assert existing.state is LoopState.ACTIVE and existing.confidence == 0.9
 
 
-@pytest.mark.parametrize("state", [LoopState.SUSPECTED, LoopState.DRIFTING])
-async def test_declared_match_does_not_corroborate_non_active_loops(monkeypatch, state):
-    env = _Env(monkeypatch, {LIVE: _loop(state)})
-    await env.propose("user_declared", [_ref()])
-    env.loop_store.record_corroboration.assert_not_awaited()
+async def test_a_match_with_no_evidence_still_goes_through_note_evidence(monkeypatch):
+    existing = _loop(LoopState.ACTIVE)
+    env = _Env(monkeypatch, {LIVE: existing})
+    await env.commit("create_declared", "conversation", [])
+    env.lifecycle.note_evidence.assert_awaited_once_with(
+        existing.id, evidence=(), entity_ids=()
+    )
 
 
-async def test_declared_match_without_evidence_does_not_corroborate(monkeypatch):
-    env = _Env(monkeypatch, {LIVE: _loop(LoopState.ACTIVE)})
-    await env.propose("user_declared", [])
-    env.loop_store.record_corroboration.assert_not_awaited()
-
-
-async def test_declared_without_match_creates_and_passes_existence_checkers(
+async def test_declared_without_match_creates_with_the_evidence_on_the_draft(
     monkeypatch,
 ):
     env = _Env(monkeypatch)
     ref = _ref()
 
-    result = await env.propose("user_declared", [ref])
+    result = await env.commit("create_declared", "conversation", [ref])
 
-    assert len(result) == 1
-    env.loop_store.create.assert_awaited_once()
-    assert callable(env.submit_kwargs["check_episode_exists"])
-    assert callable(env.submit_kwargs["check_fact_exists"])
-    env.memory_store.get_episodes_by_ids.return_value = [object()]
-    assert await env.submit_kwargs["check_episode_exists"](ref.id) is True
+    assert result.outcome == "created" and len(result.loops) == 1
+    draft = env.lifecycle.create_declared.await_args.args[0]
+    assert draft.evidence == (ref,)
+    env.lifecycle.note_evidence.assert_not_awaited()
 
 
 async def test_haiku_gate_declared_path_also_dedups(monkeypatch):
     existing = _loop(LoopState.ACTIVE)
     env = _Env(monkeypatch, {LIVE: existing})
-    result = await env.propose("conversation", [_ref()], explicit=True)
-    assert result == [existing]
-    env.loop_store.create.assert_not_awaited()
-
-
-async def test_suspected_match_corroborates_only_active_with_evidence(monkeypatch):
-    async def run(match_state, evidence):
-        env = _Env(monkeypatch, {LIVE: _loop(match_state)})
-        llm = AsyncMock()
-        llm.complete = AsyncMock(
-            return_value=json.dumps(
-                {
-                    "is_loop": True,
-                    "title": "Renew passport",
-                    "explicit_declaration": False,
-                }
-            )
+    llm = AsyncMock()
+    llm.complete = AsyncMock(
+        return_value=json.dumps(
+            {"is_loop": True, "title": "Renew passport", "explicit_declaration": True}
         )
-        await extraction.propose_loop_candidates(
-            "maybe renew passport",
-            "email",
-            evidence,
-            llm,
-            AsyncMock(),
-            env.loop_store,
-            AsyncMock(return_value=[]),
-            graph_store=env.graph_store,
-            memory_store=env.memory_store,
-        )
-        return env.loop_store.record_corroboration
+    )
+    result = await env.inflow(llm).commit(
+        CommitDecision("fallback", "disabled"),
+        text=TEXT,
+        inflow="conversation",
+        evidence=[_ref()],
+    )
+    assert result.outcome == "matched" and result.loops[0].id is not None
+    env.lifecycle.create_declared.assert_not_awaited()
 
-    assert (await run(LoopState.ACTIVE, [_ref()])).await_count == 1
-    assert (await run(LoopState.ACTIVE, [])).await_count == 0
-    assert (await run(LoopState.SUSPECTED, [_ref()])).await_count == 0
-    assert (await run(LoopState.DRIFTING, [_ref()])).await_count == 0
+
+async def test_a_suspected_create_that_matches_an_active_loop_notes_the_evidence(
+    monkeypatch,
+):
+    env = _Env(monkeypatch, {LIVE: _loop(LoopState.ACTIVE)})
+    ref = _ref()
+    result = await env.commit("create_suspected", "email", [ref])
+    assert result.outcome == "matched"
+    env.lifecycle.note_evidence.assert_awaited_once()
+    assert env.lifecycle.note_evidence.await_args.kwargs["evidence"] == (ref,)
+    env.lifecycle.create_suspected.assert_not_awaited()
 
 
 A, B = _ref(), _ref()
@@ -186,24 +167,9 @@ async def test_dismissal_fingerprint_semantics(
         LoopState.DROPPED, fingerprint=compute_evidence_fingerprint(dropped_evidence)
     )
     env = _Env(monkeypatch, {("dropped",): dropped})
-    llm = AsyncMock()
-    llm.complete = AsyncMock(
-        return_value=json.dumps(
-            {"is_loop": True, "title": "Renew passport", "explicit_declaration": False}
-        )
-    )
-    result = await extraction.propose_loop_candidates(
-        "maybe renew passport",
-        "email",
-        new_evidence,
-        llm,
-        AsyncMock(),
-        env.loop_store,
-        AsyncMock(return_value=[]),
-        graph_store=env.graph_store,
-        memory_store=env.memory_store,
-    )
-    assert (result == []) is suppressed
+    result = await env.commit("create_suspected", "email", new_evidence)
+    assert (result.outcome == "dismissed") is suppressed
+    assert (env.lifecycle.create_suspected.await_count == 0) is suppressed
 
 
 def _system_one_positive():
@@ -225,20 +191,15 @@ def _inflow(monkeypatch):
     env = _Env(monkeypatch)
     llm = AsyncMock()
     llm.complete = AsyncMock(return_value=json.dumps({"title": "Renew passport"}))
-    inflow = LoopInflow(
-        loop_store=env.loop_store,
-        graph_store=env.graph_store,
-        entity_resolver=AsyncMock(return_value=[]),
-        llm_client=llm,
-        embedder=AsyncMock(),
-        memory_store=env.memory_store,
-        system_one_client=_system_one_positive(),
-        settings={"system_one": {"surfaces": {"loop_gate": BARS}}},
+    inflow = env.inflow(
+        llm, _system_one_positive(), {"system_one": {"surfaces": {"loop_gate": BARS}}}
     )
     return inflow, env
 
 
-async def test_admission_commit_takes_evidence_and_links_it(monkeypatch):
+async def test_admission_commit_takes_evidence_and_passes_it_to_the_lifecycle(
+    monkeypatch,
+):
     inflow, env = _inflow(monkeypatch)
     ref = _ref()
 
@@ -248,6 +209,7 @@ async def test_admission_commit_takes_evidence_and_links_it(monkeypatch):
 
     intake = CommitmentIntake(
         loop_inflow=inflow,
+        lifecycle=env.lifecycle,
         loop_store=env.loop_store,
         graph_store=env.graph_store,
         entity_resolver=AsyncMock(return_value=[]),
@@ -259,16 +221,15 @@ async def test_admission_commit_takes_evidence_and_links_it(monkeypatch):
             }
         },
     )
-    admission = await conversation_admit(
+    adm = await conversation_admit(
         intake, {}, prompt="Daniel is still waiting on my answer to the passport form"
     )
 
-    created = await admission.commit([ref])
+    result = await commit_loop(inflow, adm, [ref])
 
-    assert len(created) == 1
-    env.loop_store.link_evidence.assert_awaited_once_with(
-        created[0].id, "episode", ref.id
-    )
+    assert len(result.loops) == 1
+    draft = env.lifecycle.create_suspected.await_args.args[0]
+    assert draft.evidence == (ref,)
 
 
 async def test_extract_forwards_evidence_through_the_commit(monkeypatch):
@@ -281,8 +242,8 @@ async def test_extract_forwards_evidence_through_the_commit(monkeypatch):
         evidence=[ref],
     )
 
-    env.loop_store.link_evidence.assert_awaited_once()
-    assert env.loop_store.link_evidence.await_args.args[1:] == ("episode", ref.id)
+    draft = env.lifecycle.create_suspected.await_args.args[0]
+    assert draft.evidence == (ref,)
 
 
 async def test_extract_without_evidence_still_works(monkeypatch):
@@ -290,4 +251,5 @@ async def test_extract_without_evidence_still_works(monkeypatch):
     await inflow.extract(
         "Daniel is still waiting on my answer to the passport form", "calendar"
     )
-    env.loop_store.link_evidence.assert_not_awaited()
+    draft = env.lifecycle.create_suspected.await_args.args[0]
+    assert draft.evidence == ()

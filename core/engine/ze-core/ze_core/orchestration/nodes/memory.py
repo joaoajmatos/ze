@@ -196,9 +196,14 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         if fact_result is not None:
             proposals = fact_result.facts
             admission_path = fact_result.path
-        if loop_result is not None and loop_result.commit is not None:
+        loop_commit = config["configurable"].get("loop_commit")
+        if (
+            loop_result is not None
+            and loop_commit is not None
+            and loop_result.decision.kind != "hold"
+        ):
             fire_and_forget(
-                _commit_with_episode(loop_result.commit, episode_task),
+                _commit_with_episode(loop_commit, loop_result, episode_task),
                 label="loop_commit",
             )
         if rows and trace is not None:
@@ -291,7 +296,9 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     return {"messages": trimmed, **trace_update}
 
 
-async def _commit_with_episode(commit: Any, episode_task: asyncio.Task) -> Any:
+async def _commit_with_episode(
+    commit: Any, admission: Any, episode_task: asyncio.Task
+) -> Any:
     """Hand the loop commit the turn's episode as evidence once the write finishes."""
     episode_id = None
     try:
@@ -299,7 +306,13 @@ async def _commit_with_episode(commit: Any, episode_task: asyncio.Task) -> Any:
     except Exception:
         pass  # fire_and_forget already logged it
     refs = [EvidenceRef(kind="episode", id=episode_id)] if episode_id else []
-    return await commit(refs)
+    return await commit(
+        admission.decision,
+        text=admission.text,
+        inflow=admission.inflow,
+        evidence=refs,
+        source=admission.source,
+    )
 
 
 def _should_compact(updated: list[dict], ctx: Any, config: RunnableConfig) -> bool:

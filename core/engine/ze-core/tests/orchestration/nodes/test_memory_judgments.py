@@ -289,13 +289,21 @@ async def test_intake_failure_never_fails_the_turn():
 
 
 async def test_loop_commit_runs_once_from_intake():
-    commit = AsyncMock()
     loop = MagicMock()
-    loop.commit = commit
+    loop.decision.kind = "create_suspected"
     adm = _intake_admission(loop=loop, fact=FactAdmission(facts=[], path="system_one"))
-    with patch("ze_core.orchestration.nodes.memory.fire_and_forget") as ff:
+    config = _config(AsyncMock())
+    config["configurable"]["commitment_intake"] = AsyncMock(return_value=adm)
+    config["configurable"]["loop_commit"] = AsyncMock()
+    with (
+        patch("ze_core.orchestration.nodes.memory.fire_and_forget") as ff,
+        patch(
+            "ze_core.orchestration.nodes.memory.submit_perception_facts",
+            new_callable=AsyncMock,
+        ),
+    ):
         ff.side_effect = lambda coro, label: coro.close() or MagicMock()
-        await _run_intake(AsyncMock(return_value=adm), _trace())
+        await write_memory(_state(_trace()), config)
     labels = [c.kwargs["label"] for c in ff.call_args_list]
     assert labels.count("loop_commit") == 1
 
