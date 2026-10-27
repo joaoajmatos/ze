@@ -50,7 +50,7 @@ class ReplayClient:
     """A ``SystemOneClient`` whose answers are a pure function of ``(state, question_id)``."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self._model = MODEL
+        self._model = kwargs.get("model", MODEL)
 
     async def evaluate(
         self,

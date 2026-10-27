@@ -1,4 +1,4 @@
-model=replay set=tuned rows=84
+model=typesafe/jev-1.13 set=tuned rows=84
 
 == Noul reliability: same_concern (n=84)
 bin          n   mean_noul   gold_same_rate

@@ -1,5 +1,5 @@
 WARNING: held-out verdict run. Changing wording or bars after this run voids the set; write a fresh held-out file before the next verdict (FR-016).
-model=replay haiku=anthropic/claude-haiku-4-5 set=holdout rows=36
+model=typesafe/jev-1.13 haiku=anthropic/claude-haiku-4-5 set=holdout rows=36
 
 production 109 gate as-is (json.loads, no fence handling): 0/36 replies unparseable; n=36 fb=0 P=0.316 R=0.429 (6/14) creates=19 falseC=13 falseRes=3 resAcc=0.861
 baseline below = the same prompt, fence-tolerant (what the 109 gate does when it parses)

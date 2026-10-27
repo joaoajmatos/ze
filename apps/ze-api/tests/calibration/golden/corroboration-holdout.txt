@@ -1,5 +1,5 @@
 WARNING: held-out verdict run. Changing wording or bars after this run voids the set; write a fresh held-out file before the next verdict (FR-020).
-model=replay set=holdout rows=47
+model=typesafe/jev-1.13 set=holdout rows=47
 
 == [en]
   system one: n=24 fb=0 P=0.625 R=0.714 (10/14) counted=16 falseC=6 promoted=5 falsePromo=1

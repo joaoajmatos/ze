@@ -1,4 +1,4 @@
-model=replay set=tuned rows=160 seed=173
+model=typesafe/jev-1.13 set=tuned rows=160 seed=173
 raw results saved to <TMP>/tuned.json
 
 == [en] Choice accuracy (turn created nothing, not a resolves row): 8/52 = 0.154 (skipped count as wrong)

@@ -1,4 +1,4 @@
-model=replay agents=10 k=9 seed=164
+model=typesafe/jev-1.13 agents=10 k=9 seed=164
 
 ######## routing (80 rows)
 

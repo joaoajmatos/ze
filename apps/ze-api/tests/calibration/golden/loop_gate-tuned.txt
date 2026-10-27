@@ -1,4 +1,4 @@
-model=replay haiku=anthropic/claude-haiku-4-5 set=tuned rows=56
+model=typesafe/jev-1.13 haiku=anthropic/claude-haiku-4-5 set=tuned rows=56
 
 production 109 gate as-is (json.loads, no fence handling): 0/56 replies unparseable; n=56 fb=0 P=0.357 R=0.500 (10/20) creates=28 falseC=18 falseRes=6 resAcc=0.768
 baseline below = the same prompt, fence-tolerant (what the 109 gate does when it parses)

@@ -1,4 +1,4 @@
-model=replay rows=84 skills=12 k=5 floor=0.35 seed=166
+model=typesafe/jev-1.13 rows=84 skills=12 k=5 floor=0.35 seed=166
 
 == gold recall by k (shortlist_floor=0.35)
 lang   k=3     k=4     k=5     k=6     k=7     k=8     
