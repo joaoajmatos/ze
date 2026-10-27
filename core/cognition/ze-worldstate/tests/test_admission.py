@@ -193,7 +193,7 @@ async def test_resolves_closes_matching_loop(monkeypatch):
     )
     adm = _admitted(inflow, "resolve", "I renewed my passport, it is done")
     assert adm.decision.kind == "resolve"
-    assert adm.consumed == frozenset({"resolves_existing"})
+    assert adm.decision.consumed == frozenset({"resolves_existing"})
     closed = await adm.commit()
     assert closed and closed[0].state == LoopState.CLOSED
     loop_store.resolve.assert_awaited_once()

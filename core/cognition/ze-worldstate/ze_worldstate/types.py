@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind
-from ze_agents.system_one import SystemOneResult
+from ze_agents.judgment import Judgment
 from ze_plugin.contribution import EvidenceRef
 
 from ze_worldstate.loop_judge import LoopGateDecision
@@ -129,10 +129,6 @@ class LoopAdmission:
     """One loop-gate judgment. The node reads it by attribute; it never imports this type."""
 
     decision: LoopGateDecision
-    judgment: SystemOneResult | None = None
-    question_ids: tuple[str, ...] = ()
-    question_kinds: dict[str, str] = field(default_factory=dict)
-    consumed: frozenset[str] = frozenset()
-    skip_reason: str | None = None
+    judgment: Judgment | None = None
     source: SourceKey | None = None
     commit: Callable[[Sequence[EvidenceRef]], Awaitable[list[OpenLoop]]] | None = None
