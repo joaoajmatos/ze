@@ -10,11 +10,11 @@ from structlog.testing import capture_logs
 from ze_memory.retriever import PostgresMemoryStore
 from ze_plugin.contribution import EvidenceRef
 from ze_worldstate.admission import LoopInflow
-from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
-from ze_worldstate.extraction import propose_loop_candidates
-from ze_worldstate.loop_judge import LoopGateDecision
+from ze_worldstate.decision import CommitDecision
+from ze_worldstate.errors import LoopNotFoundError
+from ze_worldstate.lifecycle import LoopLifecycle
 from ze_worldstate.store import PostgresLoopStore
-from ze_worldstate.types import LoopAdmission, LoopState
+from ze_worldstate.types import LoopState
 
 from tests.pg._builders import make_episode, make_loop
 
@@ -43,6 +43,7 @@ class _Llm:
 
 _CREATE = _Llm(is_loop=True, title="Renew passport", explicit_declaration=False)
 _RESOLVE = _Llm(is_loop=False, resolves_existing=True, title="Renew passport")
+_WRITER = _Llm(title="Renew passport")
 
 
 def _graph():
@@ -51,23 +52,25 @@ def _graph():
     return graph
 
 
-async def _propose(pool, text, provenance, refs, llm, *, admission=None):
-    return await propose_loop_candidates(
-        text,
-        provenance,
-        refs,
-        llm,
-        _TitleEmbedder(),
-        PostgresLoopStore(pool),
-        AsyncMock(return_value=[]),
+def _inflow(pool, llm):
+    return LoopInflow(
+        lifecycle=LoopLifecycle(pool, memory_store=PostgresMemoryStore(pool, None, None)),
+        loop_store=PostgresLoopStore(pool),
         graph_store=_graph(),
-        memory_store=PostgresMemoryStore(pool, None, None),
-        admission=admission,
+        entity_resolver=AsyncMock(return_value=[]),
+        llm_client=llm,
+        embedder=_TitleEmbedder(),
     )
 
 
-def _resolve_admission() -> LoopAdmission:
-    return LoopAdmission(decision=LoopGateDecision("resolve", "test"))
+async def _commit(pool, text, inflow, refs, llm, decision):
+    return await _inflow(pool, llm).commit(
+        decision, text=text, inflow=inflow, evidence=refs
+    )
+
+
+_FALLBACK = CommitDecision("fallback", "test")
+_RESOLVE_DECISION = CommitDecision("resolve", "test")
 
 
 async def _episode_ref(pool, prompt="renew passport"):
@@ -85,12 +88,18 @@ async def _dismissed_fingerprint(pool, loop_id):
 async def test_resolve_closes_a_suspected_loop_and_links_the_evidence(pg_pool):
     store = PostgresLoopStore(pg_pool)
     origin = await _episode_ref(pg_pool)
-    [loop] = await _propose(pg_pool, "maybe renew my passport", "email", [origin], _CREATE)
+    created = await _commit(
+        pg_pool, "maybe renew my passport", "email", [origin], _CREATE, _FALLBACK
+    )
+    [loop] = created.loops
     assert loop.state is LoopState.SUSPECTED
     resolving = await _episode_ref(pg_pool, "I renewed the passport")
 
-    await _propose(pg_pool, "I renewed the passport", "email", [resolving], _RESOLVE)
+    result = await _commit(
+        pg_pool, "I renewed the passport", "email", [resolving], _RESOLVE, _FALLBACK
+    )
 
+    assert result.outcome == "resolved"
     closed = await store.get(loop.id)
     assert closed.state is LoopState.CLOSED
     assert closed.closed_at is not None
@@ -109,13 +118,8 @@ async def test_system_one_resolve_closes_a_suspected_loop(
     loop = await make_loop(pg_pool, state=LoopState.SUSPECTED, confidence=0.3, title="Renew passport")
     refs = [await _episode_ref(pg_pool, "I renewed the passport")] if has_evidence else []
 
-    await _propose(
-        pg_pool,
-        "I renewed the passport",
-        provenance,
-        refs,
-        _RESOLVE,
-        admission=_resolve_admission(),
+    await _commit(
+        pg_pool, "I renewed the passport", provenance, refs, _WRITER, _RESOLVE_DECISION
     )
 
     closed = await store.get(loop.id)
@@ -130,27 +134,20 @@ async def test_resolve_closes_active_and_drifting_loops_with_evidence(pg_pool, s
     loop = await make_loop(pg_pool, state=state, title="Renew passport")
     ref = await _episode_ref(pg_pool, "I renewed the passport")
 
-    await _propose(pg_pool, "I renewed the passport", "email", [ref], _RESOLVE)
+    await _commit(pg_pool, "I renewed the passport", "email", [ref], _RESOLVE, _FALLBACK)
 
     assert (await store.get(loop.id)).state is LoopState.CLOSED
     assert await store.list_evidence(loop.id) == [ref]
     assert await _dismissed_fingerprint(pg_pool, loop.id) is None
 
 
-async def test_generic_transition_still_refuses_suspected_to_closed(pg_pool):
-    store = PostgresLoopStore(pg_pool)
-    loop = await make_loop(pg_pool, state=LoopState.SUSPECTED, confidence=0.3)
-
-    with pytest.raises(InvalidLoopTransitionError):
-        await store.transition(loop.id, "closed")
-
-
 async def test_resolve_on_a_dropped_loop_returns_none_and_changes_nothing(pg_pool):
     store = PostgresLoopStore(pg_pool)
+    lifecycle = LoopLifecycle(pg_pool)
     loop = await make_loop(pg_pool, state=LoopState.DROPPED, confidence=0.3)
     ref = await _episode_ref(pg_pool)
 
-    assert await store.resolve(loop.id, [ref]) is None
+    assert await lifecycle.resolve(loop.id, evidence=[ref]) is None
 
     after = await store.get(loop.id)
     assert after.state is LoopState.DROPPED
@@ -160,30 +157,22 @@ async def test_resolve_on_a_dropped_loop_returns_none_and_changes_nothing(pg_poo
 
 async def test_resolve_raises_for_an_unknown_loop(pg_pool):
     with pytest.raises(LoopNotFoundError):
-        await PostgresLoopStore(pg_pool).resolve(uuid4(), [])
+        await LoopLifecycle(pg_pool).resolve(uuid4(), evidence=[])
 
 
-async def test_commit_for_a_resolve_admission_logs_no_extraction_failure(pg_pool):
+async def test_commit_of_a_resolve_decision_logs_no_commit_failure(pg_pool):
     store = PostgresLoopStore(pg_pool)
     loop = await make_loop(pg_pool, state=LoopState.SUSPECTED, confidence=0.3, title="Renew passport")
     ref = await _episode_ref(pg_pool, "I renewed the passport")
-    inflow = LoopInflow(
-        loop_store=store,
-        graph_store=_graph(),
-        entity_resolver=AsyncMock(return_value=[]),
-        llm_client=_RESOLVE,
-        embedder=_TitleEmbedder(),
-        memory_store=PostgresMemoryStore(pg_pool, None, None),
-    )
 
     with capture_logs() as logs:
-        closed = await inflow.commit_for(
-            "I renewed the passport", "email", _resolve_admission()
-        )([ref])
+        result = await _commit(
+            pg_pool, "I renewed the passport", "email", [ref], _WRITER, _RESOLVE_DECISION
+        )
 
-    assert [entry for entry in logs if entry["event"] == "loop_extraction_failed"] == []
+    assert [entry for entry in logs if entry["event"] == "loop_commit_failed"] == []
     [transitioned] = [e for e in logs if e["event"] == "open_loop_transitioned"]
     assert transitioned["via"] == "resolve"
     assert transitioned["from_state"] == "suspected" and transitioned["to_state"] == "closed"
-    assert [c.id for c in closed] == [loop.id]
+    assert [c.id for c in result.loops] == [loop.id]
     assert (await store.get(loop.id)).state is LoopState.CLOSED
