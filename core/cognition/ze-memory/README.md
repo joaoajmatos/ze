@@ -52,7 +52,7 @@ Plugins emit candidate signals via `SignalSource` (defined in `ze-plugin`, type 
 | `graph/` | Memory graph store, traversal, predicates, projection |
 | `synthesizer.py` | `ProfileSynthesizer` — user profile from facts and episode summaries |
 | `vectors.py` | `to_vector_literal` — pgvector text literal for embedding binds |
-| `types.py` | Memory domain types (`Fact`, `Episode`, `Signal`, …) |
+| `types.py` | Memory domain types (`Fact`, `Episode`, `Signal`, …). `FactAdmission` lists the facts a turn admitted and the path that admitted them (`system_one`, `haiku` or `none`); it carries no `Judgment`. The intake's record sits on `IntakeAdmission` in `ze-worldstate` |
 
 `Entity` is the aggregate root every other type ultimately links back to — facts, episodes, signals, and events all reference one or more entities:
 
