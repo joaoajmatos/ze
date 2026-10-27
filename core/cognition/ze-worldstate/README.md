@@ -27,13 +27,11 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 | `drift` | `active` → `drifting` | the deadline passed; writes the absence rationale |
 | `decay_from_evidence` | confidence only, except `active` → `drifting` | a contradicted evidence item lowers confidence |
 | `note_evidence` | state kept | new evidence on a loop that is not `suspected` |
-| `link` | state kept | evidence, entity, or reminder links |
+| `link` | state kept | sets the reminder or goal pointer, once; never overwrites |
 
 An event with no legal move from a state either returns `None` or `False`, or raises `InvalidLoopTransitionError`, as the rule table says. `LoopLifecycle` never raises for a race that left nothing to do.
 
 `PostgresLoopStore` (`store.py`) holds reads only: `get`, `list`, `list_by_evidence`, `count_evidence_links`, `list_evidence`, `list_drift_candidates`, `list_sources`, and `list_sources_for`. It has no write method. `review.py` and `decay.py` were deleted. Their work now runs through the lifecycle events above.
-
-A loop's claim kind follows its state and is not stored: `suspicion` while `suspected`, `priority` once `active`, `drifting` or `closed`, and none for a `dropped` loop. `loop_claim_kind(state)` in `types.py` is the one table, and `OpenLoop.claim_kind` reads it. The loops REST `claim_kind` is null for dropped loops. Loops reuse `ze-memory`'s graph tables (`memory_relationships`, a dedicated `open_loop` bucket) for dedup and neighbourhood expansion rather than a parallel model — this package owns loop lifecycle and surfacing, not a second memory store.
 
 A loop's claim kind follows its state and is not stored: `suspicion` while `suspected`, `priority` once `active`, `drifting` or `closed`, and none for a `dropped` loop. `loop_claim_kind(state)` in `types.py` is the one table, and `OpenLoop.claim_kind` reads it. The loops REST `claim_kind` is null for dropped loops. Loops reuse `ze-memory`'s graph tables (`memory_relationships`, a dedicated `open_loop` bucket) for dedup and neighbourhood expansion rather than a parallel model — this package owns loop lifecycle and surfacing, not a second memory store.
 
@@ -48,7 +46,7 @@ A loop's claim kind follows its state and is not stored: `suspicion` while `susp
 - Corroboration (`corroboration.py`, `corroboration_judge.py`) — phase 172. A second, independent source that matches a `suspected` loop is judged by one System One Noul, `same_concern`. The `Corroborator` calls `LoopLifecycle.corroborate`, or `promote` on a promotion. Code raises the loop's confidence and can promote it to `active`. The origin and every counted corroboration are recorded in `open_loop_sources` (`zw003`). See [Corroboration](#corroboration)
 - Matching (`matching.py`) — entity-overlap + embedding-similarity dedup against existing loops
 - Decay — `LoopLifecycle.decay_from_evidence` lowers the confidence of every loop that cites contradicted evidence. It runs on the evidence-writing path. The `decay.py` module is gone
-- Drift (`drift.py`) — deadline computation and the contradiction/absence rationale text. The move itself is `LoopLifecycle.drift`, run by the sweep for `active` loops whose `drift_deadline` has passed. New evidence on an active loop goes through `note_evidence`, which moves the deadline to at least 7 days from now (the default window is a code constant)
+- Drift (`drift.py`) — `is_drift_eligible` and the contradiction/absence rationale composers. The deadline comes from `DeclaredStamp` (on create, track, confirm, and promote) and from `note_evidence`, which moves it text. The move itself is `LoopLifecycle.drift`, run by the sweep for `active` loops whose `drift_deadline` has passed. New evidence on an active loop goes through `note_evidence`, which moves the deadline to at least 7 days from now (the default window is a code constant)
 - `LoopSurfacer` (`surfacing.py`) — a push candidate source for `drifting` loops. It describes each loop as a hedged mention with a `OncePer` (`loop:<id>`, window `worldstate.push.repush_after_days`). It does not apply the bar and does not send on its own: `ze-priority`'s push bar screens the candidate (confidence, relevance, inline mention, novelty, grounding), and `AttentionArbitrationJob` sends it. `LoopSurfacer.send` re-checks that the loop is still drifting before it sends. The NLI client belongs to the push bar, not to the surfacer
 - Review actions — confirm, close, and drop are `LoopLifecycle.confirm`, `close`, and `drop`. The `review.py` module is gone
 - Jobs (`jobs/`) — `DriftSweepJob` and `StaleSuspicionJob`, scheduled via `ze-proactive`. `ze-priority`'s `AttentionArbitrationJob` replaced the old `PushSweepJob`
@@ -94,8 +92,8 @@ The constants are code, not config, and never model output:
 |---|---|---|
 | `CORROBORATION_WEIGHT` | 0.5 | The score's weight in the noisy-OR |
 | `CORROBORATED_CAP` | 0.6 | A corroborated loop stays below the promoted level until it is promoted |
-| `PROMOTED_CONFIDENCE` | 0.7 | The confidence a promoted loop is set to, below the 0.9 of a user-confirmed loop |
-| `PROMOTED_WINDOW_DAYS` | 7 (`drift.DEFAULT_DRIFT_WINDOW_DAYS`) | The drift deadline after promotion |
+| `PROMOTED_CONFIDENCE` | 0.7 (`lifecycle/rules.py`) | The confidence a promoted loop is set to, below the 0.9 of a user-confirmed loop |
+| `DeclaredStamp.DEFAULT_WINDOW_DAYS` | 7 (`lifecycle/rules.py`) | The drift deadline after promotion |
 
 `LoopLifecycle.corroborate` links evidence and entities, writes one `corroboration` source row with `promoted = false`, and sets the confidence to `min(0.6, 1 − (1 − c)(1 − 0.5·s))`, where `c` is the current confidence and `s` the score. `LoopLifecycle.promote` does the same in one transaction, then runs one update guarded by `state = 'suspected'`: it sets `state = 'active'`, `confidence = GREATEST(confidence, 0.7)`, `confirmed_at = now()`, and a 7-day drift deadline, and marks the source row `promoted = true` only when the update changed a row. If another inflow promoted first, the source row keeps `promoted = false` and nothing else changes. Promotion changes loop state only. It keeps the provenance and claim kind, writes no fact, and does not go through the contribution seam.
 
@@ -126,7 +124,7 @@ The surface ships off with null bars. Off, uncalibrated, skipped, invalid, or fa
 | `corroboration_judge.py` | System One same-concern Noul: state, surface config, pure `decide()` |
 | `tracking.py` | `LoopTracker`: normalize, match, and create or track a user-asked loop through the lifecycle |
 | `matching.py` | Entity-overlap + embedding dedup against existing loops |
-| `drift.py` | Drift deadline computation and rationale composition |
+| `drift.py` | `is_drift_eligible` and the rationale composers (contradiction, absence); the deadline is set by `DeclaredStamp` and `note_evidence` |
 | `surfacing.py` | `LoopSurfacer` — push candidate source for drifting loops, with a hedged mention |
 | `inflow.py` | Wiring helpers for the four inflows (conversation, email, calendar, ingestion) |
 | `jobs/` | `DriftSweepJob`, `StaleSuspicionJob` |
