@@ -99,7 +99,7 @@ class FakeLoopStore:
     async def list_sources(self, loop_id):
         return list(self.sources.get(loop_id, []))
 
-    async def mark_source_promoted(self, source_id):
+    async def _set_source_promoted(self, source_id):
         for rows in self.sources.values():
             for i, row in enumerate(rows):
                 if row.id == source_id:
@@ -186,7 +186,7 @@ def fake_lifecycle(store: FakeLoopStore) -> AsyncMock:
         loop.state = LoopState.ACTIVE
         loop.confidence = max(loop.confidence, 0.7)
         loop.drift_deadline = datetime.now(timezone.utc) + timedelta(days=7)
-        await store.mark_source_promoted(row.id)
+        await store._set_source_promoted(row.id)
         return SourceWrite("promote", loop)
 
     async def resolve(loop_id, evidence):

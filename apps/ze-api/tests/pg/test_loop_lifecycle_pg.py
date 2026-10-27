@@ -321,6 +321,30 @@ async def test_two_concurrent_decays_compose(pg_pool, lifecycle, store):
     )
 
 
+async def test_one_failing_loop_does_not_stop_the_rest_of_the_decay(
+    pg_pool, lifecycle, store, monkeypatch
+):
+    first = await make_loop(pg_pool, title="first", state=LoopState.SUSPECTED, confidence=0.8)
+    second = await make_loop(pg_pool, title="second", state=LoopState.SUSPECTED, confidence=0.8)
+    shared = await link_evidence(pg_pool, first.id, kind="fact")
+    await link_evidence(pg_pool, second.id, kind="fact", evidence_id=shared)
+
+    real = lifecycle._decay_one
+
+    async def flaky(conn, loop_id, evidence_type, evidence_id):
+        if loop_id == first.id:
+            raise RuntimeError("boom")
+        return await real(conn, loop_id, evidence_type, evidence_id)
+
+    monkeypatch.setattr(lifecycle, "_decay_one", flaky)
+
+    updated = await lifecycle.decay_from_evidence("fact", shared)
+
+    assert [loop.id for loop in updated] == [second.id]
+    assert (await store.get(first.id)).confidence == pytest.approx(0.8, abs=1e-6)
+    assert (await store.get(second.id)).confidence < 0.8
+
+
 async def test_decay_for_evidence_no_loop_cites_changes_nothing(lifecycle):
     assert await lifecycle.decay_from_evidence("fact", uuid4()) == []
 
@@ -800,6 +824,23 @@ async def test_promote_with_the_source_write_failing_keeps_the_loop_suspected(
     stored = await store.get(loop.id)
     assert stored.state is LoopState.SUSPECTED
     assert stored.confidence == pytest.approx(0.3, abs=1e-6)
+
+
+async def test_promote_with_an_already_counted_source_key_does_not_promote(
+    pg_pool, lifecycle, store
+):
+    loop = await make_loop(pg_pool, state=LoopState.SUSPECTED, confidence=0.3)
+    episode_id = await make_episode(pg_pool)
+    await lifecycle.corroborate(loop.id, _corroboration(episode_id, ref="same"))
+
+    written = await lifecycle.promote(
+        loop.id, _corroboration(await make_episode(pg_pool), ref="same")
+    )
+
+    assert written.outcome == "duplicate_source"
+    stored = await store.get(loop.id)
+    assert stored.state is LoopState.SUSPECTED
+    assert stored.confidence == pytest.approx(0.45, abs=1e-6)
 
 
 @pytest.mark.parametrize("state", [LoopState.CLOSED, LoopState.DROPPED])

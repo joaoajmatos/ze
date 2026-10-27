@@ -586,7 +586,8 @@ class LoopLifecycle:
 
         Per loop, under the row lock: read confidence and evidence count, write the new
         confidence, and for an active loop the move to drifting with the contradiction
-        rationale, in one statement. Other states take the confidence alone.
+        rationale, in one statement. Other states take the confidence alone. One loop
+        failing is logged and does not stop the rest.
         """
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
@@ -599,9 +600,19 @@ class LoopLifecycle:
             )
             updated: list[OpenLoop] = []
             for loop_id in {r["id"] for r in rows}:
-                async with conn.transaction():
-                    updated.append(
-                        await self._decay_one(conn, loop_id, evidence_type, evidence_id)
+                try:
+                    async with conn.transaction():
+                        updated.append(
+                            await self._decay_one(
+                                conn, loop_id, evidence_type, evidence_id
+                            )
+                        )
+                except Exception as exc:
+                    log.warning(
+                        "open_loop_decay_failed",
+                        loop_id=str(loop_id),
+                        evidence_type=evidence_type,
+                        error=str(exc),
                     )
             return updated
 
