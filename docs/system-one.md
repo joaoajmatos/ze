@@ -59,11 +59,31 @@ Each request carries a small state: named fields such as the user's words, a sho
 
 A skip is not an error. A skip happens when the master switch is off, the key is missing, the call times out, the service is overloaded, the call fails, the request is invalid, or the answer is malformed. On a skip, Ze does what it did before System One existed. No surface blocks a turn.
 
+When a surface is on but its bars are unset, it does not ask at all. Ze logs one `system_one_surface_uncalibrated` warning per surface per process, with a `surface` field.
+
 ---
+
+## The judgment layer
+
+`ze_agents/judgment.py` holds the steps that every surface repeats. A surface supplies its questions, a state builder, its config and a pure `decide()`. The module does the rest:
+
+1. `gate()` reads the surface config. It returns why the surface may not ask (`disabled`, `uncalibrated` or `unavailable`), or nothing when the surface may ask.
+2. `judge()` makes one request with `max_attempts=1`. If the call raises, it records a skip with reason `error`.
+3. The surface's `decide()` turns the answers into an action. `read_decision()` names the answers that code used.
+4. The result is one `Judgment` record. The trace rows come from that record.
+
+## Adding a judgment point
+
+1. Write the questions: a dictionary of `SystemOneQuestion` values, keyed by question id, each with a `type` (`choice`, `noul` or `score`) and its instructions.
+2. Write a state builder that returns the small state dictionary. Cap each field.
+3. Subclass `SurfaceConfig` as a frozen dataclass. Set `SURFACE` to the key under `system_one.surfaces`. Set `BARS` to a map from bar name to question id. Set `EXTRAS` to a map from any other key to its parser. Give each bar a default of `None`.
+4. Write a pure `decide()` that takes the result and the config and returns a decision. It never raises.
+5. Write `read_decision()`. It returns a `DecisionUse` with the question ids that code consumed and, when no action follows, the reason.
+6. Call `gate()`, then `judge()`, then map the decision to the action. Pass the `Judgment` to `judgment_rows()` so the trace carries its rows.
 
 ## The six surfaces
 
-Each surface follows the same pattern. Code builds the shortlist or the candidate. One request asks the questions. A pure function, `decide()`, turns the answers into an action using bars from `config.yaml`. If a bar is `null`, the surface counts as uncalibrated and skips.
+Each surface follows the same pattern. Code builds the shortlist or the candidate. `ze_agents.judgment` checks the config, makes one request and calls the surface's own `decide()`. The decision uses bars from `config.yaml`. If a bar is `null`, the surface counts as uncalibrated and skips.
 
 | Surface | Runs in | Questions | Possible actions |
 |---|---|---|---|
@@ -157,22 +177,24 @@ Ze stores each counted score on the loop's `open_loop_sources` row (score, model
 | Loop gate | On, with `loop_hold: 0.75` and `resolves_hold: 0.8` | Calibrated 2026-10-12 on 88 tuned and 48 held-out English and Portuguese rows, for all four inflows. On the held-out set, 10 of 10 loops found in each language, precision 1.00, zero false creates. A fence-tolerant Haiku baseline found 9 of 10 (English) and 10 of 10 (Portuguese) with one false create each. The counts are small, so the comparison is coarse. Phase 173 moved conversation to the commitment intake, so this gate now serves email, calendar, and ingestion only |
 | Corroboration | Off, with `corroborate_hold: null` and `promote_hold: null` | Calibrated 2026-10-15 (`make calibrate-corroboration`; 84 tuned + 47 held-out English and Portuguese rows). Candidate bars 0.6 and 0.8: English passed on the held-out set (precision 1.00, recall 14 of 14, zero false promotions); Portuguese failed one clause (recall 12 of 13, below the E5 baseline recall minus 0.05). The E5 title-cosine baseline matches every row at 0.75, so its recall is a ceiling, not a rival. The surface stays off until both languages pass; the held-out set is spent for these bars |
 
-Calibration scripts live in `eval/calibration/`. Each one runs the labeled set against the live service and costs credits:
+Calibration scripts live in `eval/calibration/`. Each one runs the labeled set against the live service and costs credits. Each `make` target passes `ARGS` to its script:
 
 ```bash
 make calibrate-commitment-intake   # tuned set by default; --set holdout3 gave the 2026-10-16 verdict and is spent; a verdict set is never reused
 make calibrate-routing
-make calibrate-skills       # add --recall for the offline shortlist check
-make calibrate-loop-gate    # tuned set by default; --set holdout gives the verdict
-make calibrate-corroboration   # tuned set by default; --set holdout --bars C,P gives the verdict
-make calibrate-complexity   # tuned set by default; --set holdout --simple-max X gives the verdict
+make calibrate-skills ARGS=--recall   # offline shortlist check; no live call
+make calibrate-loop-gate ARGS="--set holdout"   # tuned set by default; --set holdout gives the verdict
+make calibrate-corroboration ARGS="--set holdout --bars C,P"   # tuned set by default; this gives the verdict
+make calibrate-complexity ARGS="--set holdout --simple-max X"   # tuned set by default; this gives the verdict
 ```
+
+Every runner imports `eval/calibration/harness.py`. The harness loads each surface's config through the production parser, so a bar that production rejects is rejected in the runner too. `--save PATH` stores the raw results as JSON. `--load PATH` prints the report from that file and makes no System One call.
 
 ---
 
 ## Trace
 
-Judgments appear in the message trace as `JudgmentTrace` rows: the question id, the kind, the latency, the answer, the probabilities, the peakedness, the model, the token count, whether code used the answer (`consumed`), and the skip reason. `embed_route` and `match_skills` add their rows to `state["judgments"]`. The commitment-intake rows are added after the turn. The trace panel in `ze-web` shows them. Use them to see why Ze routed a turn, applied a skill, or kept a fact. A corroboration judgment does not reach the trace: the conversation loop commit is fire-and-forget, so Ze stores the score on the loop's source row and logs `corroboration_judgment` instead.
+Judgments appear in the message trace as `JudgmentTrace` rows: the question id, the kind, the latency, the answer, the probabilities, the peakedness, the model, the token count, whether code used the answer (`consumed`), and the skip reason. Each row also names its `surface` and the `bar` in force, or `null` when the bar is unset. When a call on a conversation-turn surface fails, the surface writes skip rows with reason `error`. The commitment intake is one of those surfaces. `embed_route` and `match_skills` add their rows to `state["judgments"]`. The commitment-intake rows are added after the turn. The trace panel in `ze-web` shows them. Use them to see why Ze routed a turn, applied a skill, or kept a fact. A corroboration judgment does not reach the trace: the conversation loop commit is fire-and-forget, so Ze stores the score on the loop's source row and logs `corroboration_judgment` instead.
 
 ---
 
