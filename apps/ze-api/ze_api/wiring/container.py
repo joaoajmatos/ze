@@ -371,6 +371,7 @@ class ZeContainer(CoreContainer):
         configurable["memory_hooks"] = [*plugin_services.get("memory_hooks", [])]
         if self.commitment_intake is not None:
             configurable["commitment_intake"] = self.commitment_intake.admit
+            configurable["loop_commit"] = self.commitment_intake.loop_inflow.commit
         configurable.update(configurable_extra)
         return {"configurable": configurable}
 
@@ -734,7 +735,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         collision_store=stores.collision_store,
         nli_client=shared.nli_client,
         system_one_client=shared.system_one_client,
-        commitment_intake=build_commitment_intake(shared, worldstate, stores, settings),
+        commitment_intake=build_commitment_intake(shared, worldstate, settings),
         procedure_admission=stores.procedure_admission,
         procedure_discovery=stores.procedure_discovery,
         procedure_activator=stores.procedure_activator,

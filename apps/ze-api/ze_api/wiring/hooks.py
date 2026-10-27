@@ -56,12 +56,12 @@ def wire_ingestion_loop_extractor(
     from ze_worldstate.inflow import make_loop_extractor_from_parts
 
     ingestion.memory_sink.loop_extractor = make_loop_extractor_from_parts(
+        lifecycle=worldstate.lifecycle,
         loop_store=worldstate.loop_store,
         loop_graph_store=worldstate.graph_store,
         loop_entity_resolver=worldstate.entity_resolver,
         openrouter_client=shared.openrouter_client,
         embedder=shared.embedder,
-        loop_memory_store=shared.memory_store,
         system_one_client=shared.system_one_client,
         settings=settings,
     )
@@ -87,7 +87,6 @@ def build_budget_checker(
 def build_commitment_intake(
     shared: EngineStack,
     worldstate: WorldstateStack,
-    stores: CoreStores,
     settings: Settings,
 ) -> Any:
     from ze_worldstate.inflow import make_loop_inflow_from_parts
@@ -95,17 +94,16 @@ def build_commitment_intake(
 
     return CommitmentIntake(
         loop_inflow=make_loop_inflow_from_parts(
+            lifecycle=worldstate.lifecycle,
             loop_store=worldstate.loop_store,
             loop_graph_store=worldstate.graph_store,
             loop_entity_resolver=worldstate.entity_resolver,
             openrouter_client=shared.openrouter_client,
             embedder=shared.embedder,
-            loop_memory_store=shared.memory_store,
-            collision_store=stores.collision_store,
-            nli_client=shared.nli_client,
             system_one_client=shared.system_one_client,
             settings=settings,
         ),
+        lifecycle=worldstate.lifecycle,
         loop_store=worldstate.loop_store,
         graph_store=worldstate.graph_store,
         entity_resolver=worldstate.entity_resolver,
