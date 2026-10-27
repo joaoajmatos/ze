@@ -1,0 +1,109 @@
+model=replay haiku=anthropic/claude-haiku-4-5 set=tuned rows=56
+
+production 109 gate as-is (json.loads, no fence handling): 0/56 replies unparseable; n=56 fb=0 P=0.357 R=0.500 (10/20) creates=28 falseC=18 falseRes=6 resAcc=0.768
+baseline below = the same prompt, fence-tolerant (what the 109 gate does when it parses)
+
+== Noul reliability: is_open_concern (n=56)
+bin          n   mean_noul   gold_pos_rate
+[0.0,0.2)    12      0.113      0.333
+[0.2,0.4)     8      0.319      0.125
+[0.4,0.5)     3      0.430      0.667
+[0.5,0.6)     6      0.537      0.333
+[0.6,0.8)    17      0.699      0.353
+[0.8,1.0)    10      0.891      0.500
+
+== Noul reliability: resolves_existing (n=56)
+bin          n   mean_noul   gold_pos_rate
+[0.0,0.2)     9      0.110      0.222
+[0.2,0.4)    14      0.305      0.000
+[0.4,0.5)     4      0.458      0.250
+[0.5,0.6)     9      0.538      0.333
+[0.6,0.8)     7      0.745      0.143
+[0.8,1.0)    13      0.904      0.077
+
+== bar grid: false creates / recall (loop_hold rows, resolves_hold cols)
+loop\res         0.50      0.55      0.60      0.65      0.70      0.75      0.80      0.85      0.90      0.95
+    0.50     10/0.45   11/0.55   13/0.60   13/0.60   13/0.60   13/0.60   15/0.60   15/0.65   15/0.65   18/0.65
+    0.55      9/0.40   10/0.50   11/0.55   11/0.55   11/0.55   11/0.55   13/0.55   13/0.60   13/0.60   15/0.60
+    0.60      9/0.40   10/0.45   11/0.50   11/0.50   11/0.50   11/0.50   13/0.50   13/0.55   13/0.55   14/0.55
+    0.65      7/0.40    8/0.40    9/0.45    9/0.45    9/0.45    9/0.45   10/0.45   10/0.50   10/0.50   11/0.50
+    0.70      6/0.30    7/0.30    7/0.35    7/0.35    7/0.35    7/0.35    8/0.35    8/0.40    8/0.40    9/0.40
+    0.75      5/0.25    6/0.25    6/0.30    6/0.30    6/0.30    6/0.30    7/0.30    7/0.30    7/0.30    8/0.30
+    0.80      2/0.20    3/0.20    3/0.25    3/0.25    3/0.25    3/0.25    4/0.25    4/0.25    4/0.25    5/0.25
+    0.85      1/0.15    2/0.15    2/0.20    2/0.20    2/0.20    2/0.20    3/0.20    3/0.20    3/0.20    3/0.20
+    0.90      1/0.10    2/0.10    2/0.10    2/0.10    2/0.10    2/0.10    3/0.10    3/0.10    3/0.10    3/0.10
+    0.95      0/0.05    1/0.05    1/0.05    1/0.05    1/0.05    1/0.05    1/0.05    1/0.05    1/0.05    1/0.05
+
+bars used: loop_hold=0.95 resolves_hold=0.5
+
+== [en]
+  system one: n=28 fb=0 P=1.000 R=0.000 (0/10) creates=0 falseC=0 falseRes=10 resAcc=0.607
+  haiku(tol): n=28 fb=0 P=0.357 R=0.500 (5/10) creates=14 falseC=9 falseRes=3 resAcc=0.750
+  email        s1: n=12 fb=0 P=1.000 R=0.000 (0/5) creates=0 falseC=0 falseRes=5 resAcc=0.583
+               hk: n=12 fb=0 P=0.400 R=0.400 (2/5) creates=5 falseC=3 falseRes=2 resAcc=0.667
+  calendar     s1: n=8 fb=0 P=1.000 R=0.000 (0/3) creates=0 falseC=0 falseRes=2 resAcc=0.750
+               hk: n=8 fb=0 P=0.250 R=0.333 (1/3) creates=4 falseC=3 falseRes=1 resAcc=0.750
+  ingestion    s1: n=8 fb=0 P=1.000 R=0.000 (0/2) creates=0 falseC=0 falseRes=3 resAcc=0.500
+               hk: n=8 fb=0 P=0.400 R=1.000 (2/2) creates=5 falseC=3 falseRes=0 resAcc=0.875
+
+== [pt]
+  system one: n=28 fb=0 P=1.000 R=0.100 (1/10) creates=1 falseC=0 falseRes=14 resAcc=0.429
+  haiku(tol): n=28 fb=0 P=0.357 R=0.500 (5/10) creates=14 falseC=9 falseRes=3 resAcc=0.786
+  email        s1: n=12 fb=0 P=1.000 R=0.200 (1/5) creates=1 falseC=0 falseRes=6 resAcc=0.417
+               hk: n=12 fb=0 P=0.571 R=0.800 (4/5) creates=7 falseC=3 falseRes=1 resAcc=0.833
+  calendar     s1: n=8 fb=0 P=1.000 R=0.000 (0/3) creates=0 falseC=0 falseRes=3 resAcc=0.625
+               hk: n=8 fb=0 P=0.000 R=0.000 (0/3) creates=2 falseC=2 falseRes=1 resAcc=0.750
+  ingestion    s1: n=8 fb=0 P=1.000 R=0.000 (0/2) creates=0 falseC=0 falseRes=5 resAcc=0.250
+               hk: n=8 fb=0 P=0.200 R=0.500 (1/2) creates=5 falseC=4 falseRes=1 resAcc=0.750
+
+== [all]
+  system one: n=56 fb=0 P=1.000 R=0.050 (1/20) creates=1 falseC=0 falseRes=24 resAcc=0.518
+  haiku(tol): n=56 fb=0 P=0.357 R=0.500 (10/20) creates=28 falseC=18 falseRes=6 resAcc=0.768
+  email        s1: n=24 fb=0 P=1.000 R=0.100 (1/10) creates=1 falseC=0 falseRes=11 resAcc=0.500
+               hk: n=24 fb=0 P=0.500 R=0.600 (6/10) creates=12 falseC=6 falseRes=3 resAcc=0.750
+  calendar     s1: n=16 fb=0 P=1.000 R=0.000 (0/6) creates=0 falseC=0 falseRes=5 resAcc=0.688
+               hk: n=16 fb=0 P=0.167 R=0.167 (1/6) creates=6 falseC=5 falseRes=2 resAcc=0.750
+  ingestion    s1: n=16 fb=0 P=1.000 R=0.000 (0/4) creates=0 falseC=0 falseRes=8 resAcc=0.375
+               hk: n=16 fb=0 P=0.300 R=0.750 (3/4) creates=10 falseC=7 falseRes=1 resAcc=0.812
+
+== tuned-set errors at the bars used (id, kind, gold -> decision, noul values)
+  t-en-017 implied: gold loop/- -> hold  is_open=0.75 resolve=0.33
+  t-en-018 implied: gold loop/- -> hold  is_open=0.51 resolve=0.44
+  t-en-019 implied: gold loop/- -> resolve  is_open=0.71 resolve=0.81
+  t-en-020 implied: gold loop/- -> resolve  is_open=0.45 resolve=0.76
+  t-en-021 implied: gold loop/- -> hold  is_open=0.68 resolve=0.45
+  t-en-025 negative_newsletter: gold none/- -> resolve  is_open=0.64 resolve=0.77
+  t-en-026 negative_notification: gold none/- -> resolve  is_open=0.12 resolve=0.75
+  t-en-027 negative_notification: gold none/- -> resolve  is_open=0.13 resolve=0.70
+  t-en-029 implied: gold loop/- -> hold  is_open=0.67 resolve=0.22
+  t-en-030 implied: gold loop/- -> resolve  is_open=0.37 resolve=0.88
+  t-en-031 implied: gold loop/- -> resolve  is_open=0.20 resolve=0.83
+  t-en-037 implied: gold loop/- -> hold  is_open=0.92 resolve=0.36
+  t-en-038 implied: gold loop/- -> hold  is_open=0.03 resolve=0.06
+  t-en-041 negative_reference: gold none/- -> resolve  is_open=0.50 resolve=0.56
+  t-en-042 hard_negative_marketing: gold none/- -> resolve  is_open=0.69 resolve=0.59
+  t-en-043 resolves: gold resolve/- -> hold  is_open=0.67 resolve=0.11
+  t-en-044 negative_reference: gold none/- -> resolve  is_open=0.72 resolve=0.96
+  t-pt-018 implied: gold loop/- -> resolve  is_open=0.44 resolve=0.78
+  t-pt-019 implied: gold loop/- -> resolve  is_open=0.15 resolve=0.93
+  t-pt-020 implied: gold loop/- -> hold  is_open=0.83 resolve=0.02
+  t-pt-021 implied: gold loop/- -> hold  is_open=0.13 resolve=0.19
+  t-pt-022 resolves: gold resolve/- -> hold  is_open=0.91 resolve=0.45
+  t-pt-024 hard_negative_marketing: gold none/- -> resolve  is_open=0.06 resolve=0.84
+  t-pt-025 negative_newsletter: gold none/- -> resolve  is_open=0.10 resolve=0.54
+  t-pt-026 negative_notification: gold none/- -> resolve  is_open=0.38 resolve=0.91
+  t-pt-028 hard_negative_marketing: gold none/- -> resolve  is_open=0.30 resolve=0.69
+  t-pt-029 implied: gold loop/- -> resolve  is_open=0.61 resolve=0.55
+  t-pt-030 implied: gold loop/- -> resolve  is_open=0.60 resolve=0.50
+  t-pt-031 implied: gold loop/- -> hold  is_open=0.79 resolve=0.37
+  t-pt-035 hard_negative_routine: gold none/- -> resolve  is_open=0.81 resolve=0.93
+  t-pt-037 implied: gold loop/- -> hold  is_open=0.87 resolve=0.24
+  t-pt-038 implied: gold loop/- -> resolve  is_open=0.86 resolve=0.60
+  t-pt-040 hard_negative_reference: gold none/- -> resolve  is_open=0.55 resolve=0.95
+  t-pt-041 negative_reference: gold none/- -> resolve  is_open=0.41 resolve=0.87
+  t-pt-042 hard_negative_marketing: gold none/- -> resolve  is_open=0.64 resolve=0.98
+  t-pt-043 resolves: gold resolve/- -> hold  is_open=0.17 resolve=0.16
+  t-pt-044 negative_reference: gold none/- -> resolve  is_open=0.09 resolve=0.94
+
+Suggested bars (tuned set only): loop_hold: 0.95  resolves_hold: 0.5
+--- exit 0 ---

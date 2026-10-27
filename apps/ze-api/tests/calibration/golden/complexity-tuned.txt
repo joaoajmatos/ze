@@ -1,0 +1,25 @@
+model=typesafe/jev-1.13 set=tuned rows=94 timeout_ms=2000
+live run took <T>s
+
+== Noul histogram by gold tier [en]
+bin           simple   full
+[0.00,0.05)       2      1
+[0.05,0.10)       0      1
+[0.10,0.20)       1      3
+[0.20,0.30)       5      1
+[0.30,0.50)       1      7
+[0.50,0.70)       6      5
+[0.70,1.00)       8      6
+
+== Noul histogram by gold tier [pt]
+bin           simple   full
+[0.00,0.05)       4      1
+[0.05,0.10)       3      0
+[0.10,0.20)       3      1
+[0.20,0.30)       1      5
+[0.30,0.50)       4      3
+[0.50,0.70)       2      7
+[0.70,1.00)       6      7
+
+No safe bar: the classes overlap, so no simple_max gives any light recall.
+--- exit 0 ---

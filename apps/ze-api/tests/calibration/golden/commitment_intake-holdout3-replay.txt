@@ -1,0 +1,26 @@
+REFERENCE: spent held-out set, replayed offline. Not a verdict.
+replaying <TMP>/holdout3.json (147 rows, no network)
+
+== [en]
+  intake:   n=73 fb=0 factP=1.000 factR=0.000 (0/22) loopP=0.250 loopR=0.045 (1/22) dup=0 falseC=3 falseRes=15 falseDecl=0 explAcc=0.864 resAcc=0.753 choiceAcc=0.063 linkAcc=0.857 (6/7)
+  baseline: n=73 fb=0 factP=1.000 factR=0.000 (0/22) loopP=0.278 loopR=0.227 (5/22) dup=0 falseC=13 falseRes=7 falseDecl=2 explAcc=0.864 resAcc=0.877
+  waiting_on rows written to a store (SC-005): 2/7
+
+== [pt]
+  intake:   n=74 fb=0 factP=0.000 factR=0.000 (0/22) loopP=1.000 loopR=0.045 (1/22) dup=0 falseC=0 falseRes=17 falseDecl=0 explAcc=0.864 resAcc=0.730 choiceAcc=0.141 linkAcc=1.000 (7/7)
+  baseline: n=74 fb=0 factP=1.000 factR=0.000 (0/22) loopP=0.304 loopR=0.318 (7/22) dup=2 falseC=14 falseRes=8 falseDecl=3 explAcc=0.727 resAcc=0.865
+  waiting_on rows written to a store (SC-005): 1/7
+
+== [all]
+  intake:   n=147 fb=0 factP=0.000 factR=0.000 (0/44) loopP=0.400 loopR=0.045 (2/44) dup=0 falseC=3 falseRes=32 falseDecl=0 explAcc=0.864 resAcc=0.741 choiceAcc=0.102 linkAcc=0.929 (13/14)
+  baseline: n=147 fb=0 factP=1.000 factR=0.000 (0/44) loopP=0.293 loopR=0.273 (12/44) dup=2 falseC=27 falseRes=15 falseDecl=5 explAcc=0.795 resAcc=0.871
+  waiting_on rows written to a store (SC-005): 3/14
+
+== HELD-OUT VERDICT
+bars: choice_hold=0.7 family_hold=0.7 biography_hold=0.55 loop_hold=0.6 explicit_hold=0.95 resolves_hold=0.8
+[en] KEEP OFF  intake: factP=1.000 factR=0.000 loopP=0.250 loopR=0.045 dup=0 falseC=3 falseRes=15 waitingWrites=2/7 choiceAcc=0.063 linkAcc=0.857 fallback=0 | baseline: factP=1.000 factR=0.000 loopP=0.278 loopR=0.227 dup=0 falseRes=7
+      failing: false loop creates 3 != 0; loop precision 0.250 < baseline 0.278; loop recall 0.045 < baseline 0.227 - 0.05; waiting_on rows written to a store 2 != 0; false resolves 15 > baseline 7; Choice accuracy 0.063 < 0.9
+[pt] KEEP OFF  intake: factP=0.000 factR=0.000 loopP=1.000 loopR=0.045 dup=0 falseC=0 falseRes=17 waitingWrites=1/7 choiceAcc=0.141 linkAcc=1.000 fallback=0 | baseline: factP=1.000 factR=0.000 loopP=0.304 loopR=0.318 dup=2 falseRes=8
+      failing: fact precision 0.000 < baseline 1.000; loop recall 0.045 < baseline 0.318 - 0.05; waiting_on rows written to a store 1 != 0; false resolves 17 > baseline 8; Choice accuracy 0.141 < 0.9
+OVERALL: KEEP OFF
+--- exit 0 ---

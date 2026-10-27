@@ -1,0 +1,135 @@
+model=replay agents=10 k=9 seed=164
+
+######## routing (80 rows)
+
+== [en] Choice accuracy vs gold agent: 2/36 = 0.056
+   miss single-calendar-en: gold=calendar pred=workflow
+   miss single-messenger-en: gold=messenger pred=loops
+   miss single-research-en: gold=research pred=workflow
+   miss single-goals-en: gold=goals pred=none
+   miss single-loops-en: gold=loops pred=messenger
+   miss single-prospecting-en: gold=prospecting pred=loops
+   miss single-companion-en: gold=companion pred=ingestion
+   miss single-ingestion-en: gold=ingestion pred=workflow
+   miss close-calendar-en: gold=calendar pred=loops
+   miss close-reminders-en: gold=reminders pred=goals
+   miss close-workflow-en: gold=workflow pred=messenger
+   miss close-goals-en: gold=goals pred=loops
+   miss close-loops-en: gold=loops pred=reminders
+   miss close-research-en: gold=research pred=workflow
+   miss close-messenger-en: gold=messenger pred=reminders
+   miss followup-messenger-en: gold=messenger pred=ingestion
+   miss none-1-en: gold=none pred=goals
+   miss none-2-en: gold=none pred=goals
+   miss none-3-en: gold=none pred=prospecting
+   miss none-4-en: gold=none pred=goals
+   miss none-5-en: gold=none pred=companion
+   miss train-loops-radar-en: gold=loops pred=ingestion
+   miss train-loops-hold-en: gold=loops pred=companion
+   miss train-companion-talk-en: gold=companion pred=calendar
+   miss train-loops-confirm-en-1: gold=loops pred=workflow
+   miss train-loops-confirm-en-2: gold=loops pred=ingestion
+   miss train-loops-list-en-1: gold=loops pred=ingestion
+   miss train-loops-track-en: gold=loops pred=companion
+   miss tuned-companion-briefing-en: gold=companion pred=reminders
+   miss tuned-companion-briefing-contents-en: gold=companion pred=research
+   miss tuned-companion-briefing-sent-en: gold=companion pred=ingestion
+   miss single-news-sources-en: gold=news pred=loops
+   miss train-companion-render-briefing-en: gold=companion pred=reminders
+   miss train-companion-render-reply-en: gold=companion pred=loops
+
+== [pt] Choice accuracy vs gold agent: 2/34 = 0.059
+   miss single-calendar-pt: gold=calendar pred=messenger
+   miss single-reminders-pt: gold=reminders pred=none
+   miss single-research-pt: gold=research pred=messenger
+   miss single-goals-pt: gold=goals pred=none
+   miss single-workflow-pt: gold=workflow pred=companion
+   miss single-loops-pt: gold=loops pred=reminders
+   miss single-prospecting-pt: gold=prospecting pred=messenger
+   miss single-companion-pt: gold=companion pred=goals
+   miss single-ingestion-pt: gold=ingestion pred=calendar
+   miss close-calendar-pt: gold=calendar pred=reminders
+   miss close-reminders-pt: gold=reminders pred=prospecting
+   miss close-workflow-pt: gold=workflow pred=companion
+   miss close-loops-pt: gold=loops pred=calendar
+   miss close-research-pt: gold=research pred=goals
+   miss close-messenger-pt: gold=messenger pred=prospecting
+   miss followup-messenger-pt: gold=messenger pred=loops
+   miss none-1-pt: gold=none pred=goals
+   miss none-2-pt: gold=none pred=research
+   miss none-3-pt: gold=none pred=research
+   miss none-4-pt: gold=none pred=ingestion
+   miss none-5-pt: gold=none pred=prospecting
+   miss train-loops-radar-pt: gold=loops pred=prospecting
+   miss train-loops-hold-pt: gold=loops pred=messenger
+   miss train-companion-talk-pt: gold=companion pred=prospecting
+   miss train-loops-confirm-pt-1: gold=loops pred=none
+   miss train-loops-confirm-pt-2: gold=loops pred=messenger
+   miss train-loops-list-pt-1: gold=loops pred=ingestion
+   miss train-loops-track-pt: gold=loops pred=messenger
+   miss tuned-companion-briefing-pt: gold=companion pred=ingestion
+   miss single-news-sources-pt: gold=news pred=workflow
+   miss train-companion-render-table-pt: gold=companion pred=loops
+   miss train-companion-render-briefing-pt: gold=companion pred=prospecting
+
+gold agent outside the shortlist (k too small?): 7
+   single-companion-en: gold=companion shortlist=['prospecting', 'workflow', 'goals', 'calendar', 'ingestion', 'loops', 'messenger', 'research', 'reminders']
+   close-workflow-en: gold=workflow shortlist=['goals', 'reminders', 'ingestion', 'companion', 'messenger', 'calendar', 'research', 'prospecting', 'loops']
+   close-reminders-pt: gold=reminders shortlist=['goals', 'companion', 'research', 'workflow', 'prospecting', 'messenger', 'loops', 'calendar', 'ingestion']
+   train-loops-list-pt-1: gold=loops shortlist=['research', 'messenger', 'ingestion', 'companion', 'prospecting', 'workflow', 'calendar', 'goals', 'reminders']
+   single-news-sources-en: gold=news shortlist=['ingestion', 'research', 'goals', 'loops', 'reminders', 'workflow', 'companion', 'messenger', 'prospecting']
+   single-news-sources-pt: gold=news shortlist=['messenger', 'companion', 'loops', 'research', 'calendar', 'goals', 'workflow', 'ingestion', 'reminders']
+   train-companion-render-briefing-en: gold=companion shortlist=['ingestion', 'goals', 'messenger', 'prospecting', 'research', 'loops', 'calendar', 'reminders', 'workflow']
+
+== Choice peakedness reliability
+bin          n   mean_conf   accuracy
+[0.5,0.6)    15      0.553      0.067
+[0.6,0.7)     9      0.637      0.111
+[0.7,0.8)    12      0.757      0.000
+[0.8,0.9)    11      0.845      0.000
+[0.9,1.0)    23      0.942      0.087
+ECE = 0.715
+
+== none: precision 0.00 recall 0.00 (tp=0 fp=4 fn=10)
+
+== multiple-specialist Noul
+gold mixed   n= 10 mean=0.44 min=0.02 max=0.94
+gold single  n= 70 mean=0.46 min=0.01 max=1.00
+
+== false compounds removed / harmful trusts (choice_trust rows, multi_specialist_hold cols)
+trust\hold       0.50      0.55      0.60      0.65      0.70      0.75      0.80      0.85      0.90      0.95
+     0.50       3/41      3/44      3/47      3/50      3/52      3/55      3/57      4/59      4/61      4/67 
+     0.55       3/38      3/40      3/43      3/44      3/46      3/49      3/51      4/52      4/54      4/60 
+     0.60       2/34      2/36      2/38      2/39      2/40      2/43      2/45      3/46      3/47      3/52 
+     0.65       2/30      2/31      2/33      2/34      2/35      2/38      2/40      3/41      3/42      3/47 
+     0.70       1/30      1/31      1/33      1/33      1/34      1/37      1/39      2/40      2/41      2/46 
+     0.75       1/28      1/29      1/31      1/31      1/32      1/34      1/36      2/36      2/37      2/42 
+     0.80       1/21      1/21      1/22      1/22      1/22      1/24      1/26      2/26      2/26      2/30 
+     0.85       1/16      1/16      1/17      1/17      1/17      1/19      1/21      2/21      2/21      2/24 
+     0.90       1/13      1/13      1/14      1/14      1/14      1/16      1/18      2/18      2/18      2/21 
+     0.95       0/5       0/5       0/5       0/5       0/5       0/5       0/7       0/7       0/7       0/9  
+
+No bar pair removes a false compound with zero harmful trusts on this set.
+
+== Acceptance verdict (per set)
+
+[routing] FAIL
+  FAIL  [en] accuracy 2/36 = 0.056 (>= 0.95)
+  FAIL  [pt] accuracy 2/34 = 0.059 (>= 0.95)
+  FAIL  ECE 0.715 (<= 0.1)
+  PASS  research->companion trusted misses == 0 (lowest choice_trust with zero trusted misses: 0.50; raw misses 0)
+        research->companion misses trusted at choice_trust 0.50: 0
+        research->companion misses trusted at choice_trust 0.55: 0
+        research->companion misses trusted at choice_trust 0.60: 0
+        research->companion misses trusted at choice_trust 0.65: 0
+        research->companion misses trusted at choice_trust 0.70: 0
+        research->companion misses trusted at choice_trust 0.75: 0
+        research->companion misses trusted at choice_trust 0.80: 0
+        research->companion misses trusted at choice_trust 0.85: 0
+        research->companion misses trusted at choice_trust 0.90: 0
+        research->companion misses trusted at choice_trust 0.95: 0
+
+OVERALL: FAIL
+
+No set passes; no bars are suggested.
+--- exit 0 ---

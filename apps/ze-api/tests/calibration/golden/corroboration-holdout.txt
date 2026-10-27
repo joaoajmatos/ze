@@ -1,0 +1,23 @@
+WARNING: held-out verdict run. Changing wording or bars after this run voids the set; write a fresh held-out file before the next verdict (FR-020).
+model=replay set=holdout rows=47
+
+== [en]
+  system one: n=24 fb=0 P=0.625 R=0.714 (10/14) counted=16 falseC=6 promoted=5 falsePromo=1
+  e5 baseline: n=24 fb=0 P=1.000 R=0.071 (1/14) counted=1 falseC=0 promoted=0 falsePromo=0
+
+== [pt]
+  system one: n=23 fb=0 P=0.857 R=0.462 (6/13) counted=7 falseC=1 promoted=1 falsePromo=0
+  e5 baseline: n=23 fb=0 P=1.000 R=0.000 (0/13) counted=0 falseC=0 promoted=0 falsePromo=0
+
+== [all]
+  system one: n=47 fb=0 P=0.696 R=0.593 (16/27) counted=23 falseC=7 promoted=6 falsePromo=1
+  e5 baseline: n=47 fb=0 P=1.000 R=0.037 (1/27) counted=1 falseC=0 promoted=0 falsePromo=0
+
+== HELD-OUT VERDICT
+bars: corroborate_hold=0.6 promote_hold=0.8
+[en] KEEP OFF  system one: P=0.625 R=0.714 (10/14) counted=16 falsePromotions=1 fallback=0 | e5: P=1.000 R=0.071 (1/14) counted=1
+      failing: false promotions 1 != 0; precision 0.625 < 0.9; precision 0.625 < E5 1.000
+[pt] KEEP OFF  system one: P=0.857 R=0.462 (6/13) counted=7 falsePromotions=0 fallback=0 | e5: P=1.000 R=0.000 (0/13) counted=0
+      failing: precision 0.857 < 0.9; precision 0.857 < E5 1.000
+OVERALL: KEEP OFF
+--- exit 0 ---
