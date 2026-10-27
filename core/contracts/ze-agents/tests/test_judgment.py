@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from types import SimpleNamespace
 from typing import Any, ClassVar
 from unittest.mock import MagicMock, patch
 
@@ -133,6 +134,27 @@ def _events(log: MagicMock, level: str) -> list[tuple[str, dict]]:
 # --- surface_block / parse_bar -------------------------------------------------
 
 
+def test_surface_block_reads_a_settings_object_config() -> None:
+    cfg = {"system_one": {"surfaces": {"routing": {"enabled": True}}}}
+    assert surface_block(SimpleNamespace(config=cfg), "routing") == {"enabled": True}
+
+
+@pytest.mark.parametrize(
+    "settings",
+    [
+        None,
+        object(),
+        {},
+        {"system_one": None},
+        {"system_one": {"surfaces": None}},
+        {"system_one": {"surfaces": {"skills": "on"}}},
+        {"system_one": {"surfaces": {"other": {}}}},
+    ],
+)
+def test_surface_block_missing_or_malformed_is_none(settings: Any) -> None:
+    assert surface_block(settings, "skills") is None
+
+
 def test_surface_block_reads_dict_and_settings_object() -> None:
     config = {"system_one": {"surfaces": {"demo": {"enabled": True}}}}
     assert surface_block(config, "demo") == {"enabled": True}
@@ -150,7 +172,7 @@ def test_parse_bar_accepts_unit_range_and_rejects_the_rest(log: MagicMock) -> No
     assert parse_bar(1, "x", surface="demo") == 1.0
     assert parse_bar(0.25, "x", surface="demo") == 0.25
     assert not _events(log, "warning")
-    for bad in (-0.1, 1.5, True, "0.5", float("nan")):
+    for bad in (-0.1, 1.5, 1.1, True, "0.5", float("nan"), [0.5]):
         assert parse_bar(bad, "x", surface="demo") is None
 
 

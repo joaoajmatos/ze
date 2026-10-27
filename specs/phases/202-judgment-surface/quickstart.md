@@ -54,7 +54,7 @@ The golden test compares every captured mode (see [contracts/calibration-harness
 ```bash
 rg -n "surface_block\(" --type py core apps eval     # only ze_agents/judgment.py
 rg -n "RoutingJudgment|SkillsJudgment|judgment_bars|bar_map|intake_bars|judgments_from_result|_surface_config\(" --type py core apps eval   # no hits
-rg -n "def (load_rows|_norm|report_reliability|report_grid|save_results|load_results|parse_bars|config_model|system_one_config|config_system_one)\b" eval/calibration   # no hits outside harness.py
+rg -n "def (load_rows|_norm|save_results|load_results|parse_bars|config_model|system_one_config|config_system_one|reliability_bins|print_reliability|bar_grid|print_grid|print_verdict)\b" eval/calibration   # no hits outside harness.py
 rg -n "SurfaceConfig\(" eval/calibration             # no direct construction
 ```
 
