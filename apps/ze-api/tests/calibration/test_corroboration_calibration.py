@@ -106,8 +106,8 @@ def test_set_sizes_and_hard_negative_coverage(calib):
 
 def test_no_holdout_text_in_tuned(calib):
     tuned, holdout = calib.load_rows(calib.TUNED), calib.load_rows(calib.HOLDOUT)
-    held = {calib._norm(r.text) for r in holdout}
-    assert not [r.id for r in tuned if calib._norm(r.text) in held]
+    held = {calib.harness.norm(r.text) for r in holdout}
+    assert not [r.id for r in tuned if calib.harness.norm(r.text) in held]
 
 
 def test_shape_problems_catch_violations(calib):
@@ -153,8 +153,10 @@ def test_question_and_live_path_are_offline(calib):
     # collection time, and the live path must stay function-local.
     assert "ze_core" not in _module_scope_import_roots(tree)
     assert not hasattr(calib, "OpenRouterSystemOneClient")
-    # The guard is not vacuous: the live client really is imported inside main_async.
-    assert "ze_core.openrouter.system_one" in _function_imports(tree, "main_async")
+    # The guard is not vacuous: the live client really is imported inside the harness's make_client.
+    harness_tree = ast.parse(Path(calib.harness.__file__).read_text(encoding="utf-8"))
+    assert "ze_core" not in _module_scope_import_roots(harness_tree)
+    assert "ze_core.openrouter.system_one" in _function_imports(harness_tree, "make_client")
 
 
 # --- pure scoring and the decision helpers ---------------------------------------------
@@ -228,12 +230,18 @@ def test_suggest_bars_keeps_corroborate_hold_at_or_below_promote_hold(calib):
     assert counts.false_promotions == 0 and counts.precision >= calib.PRECISION_FLOOR
 
 
+def _parse_bars(calib, text):
+    return calib.harness.bars_config(
+        calib.CorroborationSurfaceConfig, text, ("corroborate_hold", "promote_hold")
+    )
+
+
 @pytest.mark.parametrize("bars", ["0.6,1.5", "-0.5,0.5", "nan,0.5", "0.9,0.6", "0.6"])
 def test_parse_bars_rejects_invalid_bars(calib, bars):
     with pytest.raises(SystemExit):
-        calib.parse_bars(bars)
+        _parse_bars(calib, bars)
 
 
 def test_parse_bars_accepts_a_valid_pair(calib):
-    cfg = calib.parse_bars("0.6,0.85")
+    cfg = _parse_bars(calib, "0.6,0.85")
     assert (cfg.corroborate_hold, cfg.promote_hold) == (0.6, 0.85)
