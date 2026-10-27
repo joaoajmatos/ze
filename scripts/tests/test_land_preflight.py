@@ -298,3 +298,43 @@ def test_failed_preflight_archives_nothing(world):
     p = run(floor)
     assert p.returncode == 1
     assert not (ground / "journal" / "metrics").exists()
+
+
+def test_chain_from_the_old_base_still_counts_after_merging_main(world):
+    """Merging main moves the merge base; the chain that started at the old base is still valid."""
+    ground, floor = world
+    (floor / ".gitignore").write_text(".process/\n")
+    git(floor, "add", ".gitignore")
+    git(floor, "commit", "-q", "-m", "ignore")
+    old_base = git(floor, "merge-base", "HEAD", "main")
+    first = git(floor, "rev-parse", "HEAD")
+    make_review(floor, old_base, first, name="r1")
+    (ground / "other.txt").write_text("main moved\n")
+    git(ground, "add", "other.txt")
+    git(ground, "commit", "-q", "-m", "main moves")
+    git(floor, "merge", "-q", "--no-edit", "main")
+    head = git(floor, "rev-parse", "HEAD")
+    make_review(floor, first, head, name="r2")
+    make_receipt(floor)
+    assert git(floor, "merge-base", "HEAD", "main") != old_base
+    p = run(floor)
+    assert p.returncode == 0, p.stdout
+
+
+def test_an_approval_ending_outside_the_branch_does_not_count(world):
+    """A lane rebased after approval: the old end commit is not in HEAD, so it cannot carry the chain."""
+    ground, floor = world
+    (floor / ".gitignore").write_text(".process/\n")
+    git(floor, "add", ".gitignore")
+    git(floor, "commit", "-q", "-m", "ignore")
+    base = git(floor, "merge-base", "HEAD", "main")
+    side = ground.parent / "side"
+    git(ground, "worktree", "add", "-q", "-b", "side", str(side), base)
+    (side / "y.py").write_text("y = 1\n")
+    git(side, "add", "y.py")
+    git(side, "commit", "-q", "-m", "elsewhere")
+    make_review(floor, base, git(side, "rev-parse", "HEAD"), name="stale")
+    make_receipt(floor)
+    p = run(floor)
+    assert p.returncode == 1
+    assert "no APPROVE review record continues" in p.stdout

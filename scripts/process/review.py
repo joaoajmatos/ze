@@ -72,19 +72,38 @@ def parse_range(repo: Path, text: str) -> tuple[str, str]:
     return start, end
 
 
-def approved_end(repo: Path, base: str) -> str:
-    """Where the APPROVE records, chained from the merge base, end."""
+def is_ancestor(repo: Path, a: str, b: str) -> bool:
+    return (
+        subprocess.run(
+            ["git", "-C", str(repo), "merge-base", "--is-ancestor", a, b],
+            capture_output=True,
+        ).returncode
+        == 0
+    )
+
+
+def approved_end(repo: Path, base: str, into: str = "main") -> str:
+    """Where the APPROVE records end. A chain may start at the merge base or at any approved range start
+    already on `into` (merging main moves the merge base; main's commits are reviewed there). Only ranges
+    whose end is in HEAD count, so a lane rebased after approval does not shadow the commit in the branch."""
     edges: dict[str, list[str]] = {}
     for r in records(repo):
-        if r.get("verdict") == "APPROVE":
+        if r.get("verdict") == "APPROVE" and is_ancestor(repo, r["to"], "HEAD"):
             edges.setdefault(r["from"], []).append(r["to"])
-    cur = base
-    while edges.get(cur):
-        cur = max(
-            edges[cur],
-            key=lambda e: int(git(repo, "rev-list", "--count", f"{cur}..{e}") or 0),
-        )
-    return cur
+    starts = {base} | {s for s in edges if is_ancestor(repo, s, into)}
+    best = base
+    for start in starts:
+        cur = start
+        while edges.get(cur):
+            cur = max(
+                edges[cur],
+                key=lambda e: int(git(repo, "rev-list", "--count", f"{cur}..{e}") or 0),
+            )
+        if int(git(repo, "rev-list", "--count", cur) or 0) > int(
+            git(repo, "rev-list", "--count", best) or 0
+        ):
+            best = cur
+    return best
 
 
 def contiguity_problem(repo: Path, start: str) -> str:
@@ -237,9 +256,7 @@ def main(argv: list[str]) -> int:
     req.add_argument("range")
     req.add_argument("reviewer")
     # The verdict goes back to whoever asked: a recruited agent carries its own name in ZE_AGENT.
-    req.add_argument(
-        "--requester", default=os.environ.get("ZE_AGENT") or "Claude Code"
-    )
+    req.add_argument("--requester", default=os.environ.get("ZE_AGENT") or "Claude Code")
     req.add_argument("--wait", type=float, default=60)
     ver = sub.add_parser("verdict")
     ver.add_argument("range")
