@@ -40,8 +40,8 @@ def test_set_sizes_and_coverage(calib):
 
 def test_no_holdout_text_in_tuned(calib):
     tuned, holdout = calib.load_rows(calib.TUNED), calib.load_rows(calib.HOLDOUT)
-    held = {calib._norm(r.text) for r in holdout}
-    assert not [r.id for r in tuned if calib._norm(r.text) in held]
+    held = {calib.harness.norm(r.text) for r in holdout}
+    assert not [r.id for r in tuned if calib.harness.norm(r.text) in held]
 
 
 def test_shape_problems_catch_violations(calib):

@@ -57,6 +57,8 @@ A loop's claim kind follows its state and is not stored: `suspicion` while `susp
 
 `screen_resolvers.py` registers the `loop` screen resolver: label, state, confidence and age of the loop the user is looking at.
 
+Each System One surface here declares a `SurfaceConfig` subclass (`CommitmentIntakeSurfaceConfig`, `LoopGateSurfaceConfig`, `CorroborationSurfaceConfig`) and calls `gate()` and `judge()` from `ze_agents.judgment`. `LoopAdmission` and `IntakeAdmission` each carry one `Judgment` for the trace.
+
 ## Corroboration
 
 A `suspected` loop gains support when a second, independent source mentions the same matter. Phase 172 turns that second mention into a promotion. The path runs when a commit admits a text as a concern and `find_matching_loop` returns a `suspected` loop. `LoopInflow` routes that match to `Corroborator.on_suspected_match`, on both the suspected and the declared commit paths. A live match that is not suspected gets `note_evidence` instead.

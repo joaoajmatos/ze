@@ -1,0 +1,47 @@
+WARNING: held-out verdict run. Changing wording or the bar after this run voids the set; write a fresh held-out file before the next verdict (FR-019).
+model=typesafe/jev-1.13 set=holdout rows=54 timeout_ms=2000
+live run took <T>s
+
+== Noul histogram by gold tier [en]
+bin           simple   full
+[0.00,0.05)       2      3
+[0.05,0.10)       1      0
+[0.10,0.20)       2      3
+[0.20,0.30)       1      2
+[0.30,0.50)       3      3
+[0.50,0.70)       1      1
+[0.70,1.00)       4      1
+
+== [en] at simple_max=0.4
+  rows=27 simple=14 full=13 light=18 falseDowngrades=11 recall=0.500 (7/14) precision=0.389
+  skipped/invalid=0 (0.000) 
+  latency ms p50=465 p90=755
+  companion  rows= 11 simple=  5 full=  6 light=  7
+  research   rows=  9 simple=  5 full=  4 light=  6
+  goals      rows=  7 simple=  4 full=  3 light=  5
+
+== Noul histogram by gold tier [pt]
+bin           simple   full
+[0.00,0.05)       1      0
+[0.10,0.20)       0      1
+[0.20,0.30)       4      0
+[0.30,0.50)       1      6
+[0.50,0.70)       2      3
+[0.70,1.00)       6      3
+
+== [pt] at simple_max=0.4
+  rows=27 simple=14 full=13 light=11 falseDowngrades=5 recall=0.429 (6/14) precision=0.545
+  skipped/invalid=0 (0.000) 
+  latency ms p50=547 p90=865
+  companion  rows= 11 simple=  5 full=  6 light=  4
+  research   rows=  9 simple=  5 full=  4 light=  3
+  goals      rows=  7 simple=  4 full=  3 light=  4
+
+== HELD-OUT VERDICT
+simple_max: 0.4
+[en] KEEP OFF  falseDowngrades=11 recall=0.500 (7/14) skipped=0.000 precision=0.389
+      failing: false downgrades 11 != 0
+[pt] KEEP OFF  falseDowngrades=5 recall=0.429 (6/14) skipped=0.000 precision=0.545
+      failing: false downgrades 5 != 0; light recall 0.429 < 0.5
+OVERALL: KEEP OFF
+--- exit 0 ---

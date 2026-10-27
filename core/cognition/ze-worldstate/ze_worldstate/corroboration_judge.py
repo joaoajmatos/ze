@@ -9,20 +9,16 @@ Imports ze_agents types only; ze-worldstate never depends on ze-core.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
-from typing import Any, Literal
+from typing import ClassVar, Literal
 
+from ze_agents.judgment import DecisionUse, SurfaceConfig
 from ze_agents.system_one import (
     SystemOneQuestion,
     SystemOneResult,
-    parse_bar,
-    surface_block,
     valid_noul,
 )
 
 from ze_worldstate import loop_judge
-
-_bar = partial(parse_bar, event="corroboration_bar_invalid")
 
 Q_SAME = "same_concern"
 
@@ -42,30 +38,20 @@ def build_state(loop_title: str, text: str, inflow: str) -> dict[str, str]:
 
 
 @dataclass(frozen=True)
-class CorroborationSurfaceConfig:
-    enabled: bool = False
+class CorroborationSurfaceConfig(SurfaceConfig):
     corroborate_hold: float | None = None
     promote_hold: float | None = None
 
-    @property
-    def calibrated(self) -> bool:
-        return (
-            self.enabled
-            and self.corroborate_hold is not None
-            and self.promote_hold is not None
-            and self.corroborate_hold <= self.promote_hold
-        )
+    SURFACE: ClassVar[str] = "corroboration"
+    BARS: ClassVar[dict[str, str]] = {
+        "corroborate_hold": Q_SAME,
+        "promote_hold": Q_SAME,
+    }
 
-
-def corroboration_surface_config(settings: Any) -> CorroborationSurfaceConfig:
-    block = surface_block(settings, "corroboration")
-    if block is None:
-        return CorroborationSurfaceConfig()
-    return CorroborationSurfaceConfig(
-        enabled=block.get("enabled") is True,
-        corroborate_hold=_bar(block.get("corroborate_hold"), "corroborate_hold"),
-        promote_hold=_bar(block.get("promote_hold"), "promote_hold"),
-    )
+    def consistent(self) -> bool:
+        if self.corroborate_hold is None or self.promote_hold is None:
+            return True
+        return self.corroborate_hold <= self.promote_hold
 
 
 CorroborationKind = Literal["promote", "corroborate", "not_same", "fallback"]
@@ -76,6 +62,12 @@ class CorroborationDecision:
     kind: CorroborationKind
     reason: str
     score: float | None = None
+
+
+def read_decision(decision: CorroborationDecision) -> DecisionUse:
+    if decision.kind == "fallback":
+        return DecisionUse(frozenset(), decision.reason)
+    return DecisionUse(frozenset({Q_SAME}))
 
 
 def decide(

@@ -55,6 +55,21 @@ class _OracleClient:
         )
 
 
+async def _run_rows(calib, client, embedder, roster, rows, *, seed, concurrency, k):
+    prepared = calib.prepare(embedder, roster, roster, rows, seed=seed, k=k)
+    results = await calib.harness.run_live(
+        client,
+        rows,
+        lambda row: prepared[row.id][4],
+        lambda _, row: prepared[row.id][5],
+        concurrency,
+    )
+    return [
+        calib.Outcome(row, names, top, gap, results[row.id])
+        for row, names, top, gap, _, _ in prepared.values()
+    ]
+
+
 def _roster() -> dict[str, str]:
     clear_registry()
     names = ["calendar", "messenger", "research", "reminders", "companion"]
@@ -73,8 +88,8 @@ async def test_offline_run_reports_and_suggests(calib, capsys):
         {n: 0.80 - 0.001 * i for i, n in enumerate(sorted(roster))}
     )
 
-    outcomes = await calib.run_rows(
-        client, embedder, roster, roster, rows, seed=164, concurrency=4, k=3
+    outcomes = await _run_rows(
+        calib, client, embedder, roster, rows, seed=164, concurrency=4, k=3
     )
     suggestion = calib.report(outcomes)
     out = capsys.readouterr().out
@@ -95,9 +110,7 @@ async def test_option_order_is_shuffled_per_row(calib):
     embedder = cosine_embedder(
         {n: 0.8 - 0.01 * i for i, n in enumerate(sorted(roster))}
     )
-    await calib.run_rows(
-        client, embedder, roster, roster, rows, seed=1, concurrency=4, k=4
-    )
+    await _run_rows(calib, client, embedder, roster, rows, seed=1, concurrency=4, k=4)
     shortlist_orders = {tuple(o[:-1]) for o in client.orders}
     assert len(shortlist_orders) > 1
     assert all(o[-1] == "none" for o in client.orders)

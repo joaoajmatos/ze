@@ -41,7 +41,7 @@ def build_skill_matcher(
 ) -> Any:
     """Construct the `SkillMatcher` injected into the orchestration graph's
     `config["configurable"]["skill_matcher"]` (consumed by the `match_skills` node)."""
-    from ze_skills.judge import skills_surface_config
+    from ze_skills.judge import SkillsSurfaceConfig
     from ze_skills.matching import SkillMatcher
 
     skills_cfg = getattr(settings, "config", {}) or {}
@@ -56,7 +56,7 @@ def build_skill_matcher(
         embedder=embedder,
         match_threshold=match_threshold,
         system_one_client=system_one_client,
-        surface=skills_surface_config(settings),
+        surface=SkillsSurfaceConfig.from_settings(settings),
     )
 
 

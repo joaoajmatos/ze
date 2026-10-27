@@ -19,7 +19,6 @@ from ze_skills.judge import (
     decide,
     shortlist,
     skill_keys,
-    skills_surface_config,
 )
 from ze_skills.types import Skill, SkillSource, SkillStatus
 
@@ -44,7 +43,7 @@ def _settings(block) -> dict:
 
 
 def test_missing_block_is_disabled():
-    cfg = skills_surface_config({})
+    cfg = SkillsSurfaceConfig.from_settings({})
     assert cfg == SkillsSurfaceConfig()
     assert not cfg.enabled and not cfg.calibrated
     assert cfg.shortlist_k == DEFAULT_SHORTLIST_K
@@ -52,18 +51,18 @@ def test_missing_block_is_disabled():
 
 
 def test_non_dict_block_is_disabled():
-    assert skills_surface_config(_settings("nope")) == SkillsSurfaceConfig()
+    assert SkillsSurfaceConfig.from_settings(_settings("nope")) == SkillsSurfaceConfig()
 
 
 def test_enabled_with_null_bar_not_calibrated():
-    cfg = skills_surface_config(
+    cfg = SkillsSurfaceConfig.from_settings(
         _settings({"enabled": True, "choice_trust": 0.7, "needs_skill_hold": None})
     )
     assert cfg.enabled and not cfg.calibrated
 
 
 def test_enabled_with_both_bars_calibrated():
-    cfg = skills_surface_config(
+    cfg = SkillsSurfaceConfig.from_settings(
         _settings({"enabled": True, "choice_trust": 0.7, "needs_skill_hold": 0.5})
     )
     assert cfg.calibrated
@@ -75,12 +74,12 @@ def test_settings_object_with_config_attr():
             {"enabled": True, "choice_trust": 0.6, "needs_skill_hold": 0.4}
         )
 
-    assert skills_surface_config(S()).calibrated
+    assert SkillsSurfaceConfig.from_settings(S()).calibrated
 
 
 @pytest.mark.parametrize("bad", ["0.5", float("nan"), 1.5, -0.1, True])
 def test_bad_bars_become_none(bad):
-    cfg = skills_surface_config(
+    cfg = SkillsSurfaceConfig.from_settings(
         _settings({"enabled": True, "choice_trust": bad, "needs_skill_hold": bad})
     )
     assert cfg.choice_trust is None and cfg.needs_skill_hold is None
@@ -89,26 +88,33 @@ def test_bad_bars_become_none(bad):
 @pytest.mark.parametrize("bad", [0, -1, True, "5", 2.5, None])
 def test_bad_shortlist_k_falls_back(bad):
     assert (
-        skills_surface_config(_settings({"shortlist_k": bad})).shortlist_k
+        SkillsSurfaceConfig.from_settings(_settings({"shortlist_k": bad})).shortlist_k
         == DEFAULT_SHORTLIST_K
     )
 
 
 def test_valid_shortlist_k():
-    assert skills_surface_config(_settings({"shortlist_k": 7})).shortlist_k == 7
+    assert (
+        SkillsSurfaceConfig.from_settings(_settings({"shortlist_k": 7})).shortlist_k
+        == 7
+    )
 
 
 @pytest.mark.parametrize("bad", [-0.1, 1.2, "0.3", True, float("nan"), None])
 def test_bad_shortlist_floor_falls_back(bad):
     assert (
-        skills_surface_config(_settings({"shortlist_floor": bad})).shortlist_floor
+        SkillsSurfaceConfig.from_settings(
+            _settings({"shortlist_floor": bad})
+        ).shortlist_floor
         == DEFAULT_SHORTLIST_FLOOR
     )
 
 
 def test_valid_shortlist_floor():
     assert (
-        skills_surface_config(_settings({"shortlist_floor": 0.4})).shortlist_floor
+        SkillsSurfaceConfig.from_settings(
+            _settings({"shortlist_floor": 0.4})
+        ).shortlist_floor
         == 0.4
     )
 

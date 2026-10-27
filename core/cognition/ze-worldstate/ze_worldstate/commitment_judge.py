@@ -10,16 +10,14 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from functools import partial
-from typing import Any, Literal
+from typing import ClassVar, Literal
 
+from ze_agents.judgment import DecisionUse, SurfaceConfig
 from ze_agents.nested_tools import TurnCreation
 from ze_agents.system_one import (
     SystemOneAnswer,
     SystemOneQuestion,
     SystemOneResult,
-    parse_bar,
-    surface_block,
     valid_noul,
 )
 from ze_logging import get_logger
@@ -154,19 +152,8 @@ COMMITMENT_QUESTIONS: dict[str, SystemOneQuestion] = {
     Q_RESOLVES: SystemOneQuestion(type="noul", instructions=_RESOLVES_INSTRUCTIONS),
 }
 
-_BAR_NAMES = (
-    "choice_hold",
-    "family_hold",
-    "biography_hold",
-    "loop_hold",
-    "explicit_hold",
-    "resolves_hold",
-)
-
-
 @dataclass(frozen=True)
-class CommitmentIntakeSurfaceConfig:
-    enabled: bool = False
+class CommitmentIntakeSurfaceConfig(SurfaceConfig):
     choice_hold: float | None = None
     family_hold: float | None = None
     biography_hold: float | None = None
@@ -174,24 +161,15 @@ class CommitmentIntakeSurfaceConfig:
     explicit_hold: float | None = None
     resolves_hold: float | None = None
 
-    @property
-    def calibrated(self) -> bool:
-        return self.enabled and all(
-            getattr(self, name) is not None for name in _BAR_NAMES
-        )
-
-
-_bar = partial(parse_bar, event="commitment_intake_bar_invalid")
-
-
-def commitment_intake_surface_config(settings: Any) -> CommitmentIntakeSurfaceConfig:
-    block = surface_block(settings, "commitment_intake")
-    if block is None:
-        return CommitmentIntakeSurfaceConfig()
-    return CommitmentIntakeSurfaceConfig(
-        enabled=block.get("enabled") is True,
-        **{name: _bar(block.get(name), name) for name in _BAR_NAMES},
-    )
+    SURFACE: ClassVar[str] = "commitment_intake"
+    BARS: ClassVar[dict[str, str]] = {
+        "choice_hold": Q_COMMITMENT,
+        "family_hold": "family",
+        "biography_hold": "biography",
+        "loop_hold": Q_CONCERN,
+        "explicit_hold": Q_EXPLICIT,
+        "resolves_hold": Q_RESOLVES,
+    }
 
 
 OutcomeKind = Literal[
@@ -232,6 +210,13 @@ def _read_choice(
         return CommitmentChoice(str(answer.choice).strip().lower()), float(confidence)
     except ValueError:
         return None
+
+
+def read_decision(outcome: IntakeOutcome) -> DecisionUse:
+    return DecisionUse(
+        outcome.consumed,
+        outcome.reason if outcome.kind == "fallback" else None,
+    )
 
 
 _INVALID = IntakeOutcome("fallback", "invalid_answer")

@@ -16,6 +16,7 @@ from ze_memory.types import MemoryContext
 from ze_plugin.contribution import EvidenceRef
 
 from tests.orchestration.test_nodes import base_state, make_config
+from tests.support.judgments import make_judgment
 
 
 def _trace(rows=None) -> MessageTrace:
@@ -44,7 +45,7 @@ def _loop_part(kind="create_suspected"):
 
 
 def _intake_result(
-    skip_reason=None, outcome="ok", with_judgment=True, loop=True, kind="create_suspected"
+    outcome="ok", with_judgment=True, loop=True, kind="create_suspected"
 ):
     judgment = SystemOneResult(
         outcome=outcome,
@@ -52,16 +53,18 @@ def _intake_result(
         answers={"is_open_concern": SystemOneAnswer(type="noul", noul=0.9)},
         latency_ms=3,
     )
+    record = make_judgment(
+        "commitment_intake",
+        judgment,
+        {"is_open_concern": "noul"},
+        consumed=frozenset({"is_open_concern"}),
+        skip_reason=judgment.skip_reason,
+    )
     return SimpleNamespace(
-        fact=SimpleNamespace(
-            facts=[], path="none", judgment=None, question_ids=(), consumed=frozenset()
-        ),
+        fact=SimpleNamespace(facts=[], path="none"),
         loop=_loop_part(kind) if loop else None,
         link=None,
-        judgment=judgment if with_judgment else None,
-        question_kinds={"is_open_concern": "noul"},
-        consumed=frozenset({"is_open_concern"}),
-        skip_reason=skip_reason,
+        judgment=record if with_judgment else None,
     )
 
 
@@ -108,9 +111,7 @@ async def test_intake_rows_append_after_existing_rows_and_commit_fires():
 
 async def test_skip_reason_rides_on_rows():
     state, cfg = _setup(
-        commitment_intake=AsyncMock(
-            return_value=_intake_result(skip_reason="uncalibrated", outcome="skip")
-        )
+        commitment_intake=AsyncMock(return_value=_intake_result(outcome="skip"))
     )
     out = await memory.write_memory(state, cfg)
     assert out["message_trace"].judgments[-1].skip_reason == "timeout"
@@ -142,16 +143,7 @@ async def test_intake_exception_does_not_fail_turn():
 
 
 async def test_no_intake_key_runs_the_fact_extractor_alone():
-    fact_extractor = AsyncMock(
-        return_value=SimpleNamespace(
-            facts=[],
-            path="haiku",
-            judgment=None,
-            question_ids=(),
-            consumed=frozenset(),
-            skip_reason=None,
-        )
-    )
+    fact_extractor = AsyncMock(return_value=SimpleNamespace(facts=[], path="haiku"))
     state, cfg = _setup(fact_extractor=fact_extractor)
     out = await memory.write_memory(state, cfg)
     assert "messages" in out

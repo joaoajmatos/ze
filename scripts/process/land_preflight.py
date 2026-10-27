@@ -190,27 +190,43 @@ def review_records(floor: Path) -> list[dict]:
     ]
 
 
-def check_reviews(floor: Path, base: str, head: str) -> list[str]:
-    approved = {}
+def check_reviews(floor: Path, base: str, head: str, into: str = "main") -> list[str]:
+    """An APPROVE chain must reach HEAD from the merge base or from any approved range start already on
+    `into` (merging main moves the merge base). Ranges whose end is not in HEAD (a lane rebased after
+    approval) do not count."""
+    approved: dict[str, list[str]] = {}
     for record in review_records(floor):
         if record.get("verdict") == "APPROVE":
             start, end = rev(floor, record["from"]), rev(floor, record["to"])
-            if start and end:
+            if start and end and is_ancestor(floor, end, head):
                 approved.setdefault(start, []).append(end)
-    cur = base
-    while cur != head:
-        nxt = [e for e in approved.get(cur, []) if e != cur]
-        if not nxt:
-            return [
-                f"no APPROVE review record continues from {cur[:8]} (review chain must reach {head[:8]})"
-            ]
-        cur = max(
-            nxt,
-            key=lambda e: (
-                git(floor, "rev-list", "--count", f"{cur}..{e}").stdout.strip().zfill(8)
-            ),
-        )
-    return []
+    starts = [base] + [s for s in approved if s != base and is_ancestor(floor, s, into)]
+    stuck = base
+    for start in starts:
+        cur = start
+        while cur != head:
+            nxt = [e for e in approved.get(cur, []) if e != cur]
+            if not nxt:
+                break
+            cur = max(
+                nxt,
+                key=lambda e: (
+                    git(floor, "rev-list", "--count", f"{cur}..{e}")
+                    .stdout.strip()
+                    .zfill(8)
+                ),
+            )
+        if cur == head:
+            return []
+        if start == base:
+            stuck = cur
+    return [
+        f"no APPROVE review record continues from {stuck[:8]} (review chain must reach {head[:8]})"
+    ]
+
+
+def is_ancestor(repo: Path, a: str, b: str) -> bool:
+    return git(repo, "merge-base", "--is-ancestor", a, b).returncode == 0
 
 
 def main() -> int:
@@ -237,7 +253,7 @@ def main() -> int:
         errs += (
             check_arch(floor, base)
             + check_receipt(floor, base, head)
-            + check_reviews(floor, base, head)
+            + check_reviews(floor, base, head, args.into)
         )
     if errs:
         print("\n".join(errs))

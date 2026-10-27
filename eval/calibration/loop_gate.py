@@ -21,16 +21,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
-import os
 import statistics
 import sys
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
-import yaml
 
 from ze_agents.system_one import SystemOneResult
 from ze_worldstate.extraction import (
@@ -49,16 +45,16 @@ from ze_worldstate.loop_judge import (
     decide,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import harness  # noqa: E402
+
 TUNED = Path(__file__).with_name("loop_gate.jsonl")
 HOLDOUT = Path(__file__).with_name("loop_gate_holdout.jsonl")
-CONFIG = ROOT / "apps" / "ze-api" / "config" / "config.yaml"
-LANGS = ("en", "pt")
+LANGS = harness.LANGS
 PROVENANCES = ("conversation", "email", "calendar", "ingestion")
 # Conversation turns are judged by the commitment intake (173), not by this gate. Their rows stay
 # in the files and in the shape check, and live runs skip them.
-GRID = [round(0.5 + 0.05 * i, 2) for i in range(10)]
-BINS = [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0001]
+GRID = harness.GRID
 MIN_TUNED_PER_LANG = 40
 MIN_HOLDOUT_PER_LANG = 20
 RECALL_SLACK = 0.05
@@ -77,19 +73,7 @@ class Row:
     kind: str
 
 
-def load_rows(path: Path) -> list[Row]:
-    rows = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            raw = json.loads(line)
-            rows.append(Row(**{k: raw[k] for k in Row.__dataclass_fields__}))
-    if len({r.id for r in rows}) != len(rows):
-        raise SystemExit(f"duplicate ids in {path.name}")
-    return rows
-
-
-def _norm(text: str) -> str:
-    return " ".join(text.lower().split())
+load_rows = harness.row_loader(Row)
 
 
 def shape_problems(tuned: list[Row], holdout: list[Row]) -> list[str]:
@@ -98,12 +82,10 @@ def shape_problems(tuned: list[Row], holdout: list[Row]) -> list[str]:
         ("tuned", tuned, MIN_TUNED_PER_LANG),
         ("holdout", holdout, MIN_HOLDOUT_PER_LANG),
     ):
+        problems += harness.min_rows_problems(name, rows, minimum)
         for lang in LANGS:
-            scoped = [r for r in rows if r.lang == lang]
-            if len(scoped) < minimum:
-                problems.append(f"{name}/{lang}: {len(scoped)} rows, need >= {minimum}")
             for prov in PROVENANCES:
-                sub = [r for r in scoped if r.provenance == prov]
+                sub = [r for r in rows if r.lang == lang and r.provenance == prov]
                 if not any(r.gold_loop for r in sub):
                     problems.append(f"{name}/{lang}/{prov}: no positive row")
                 if not any(not r.gold_loop for r in sub):
@@ -117,17 +99,16 @@ def shape_problems(tuned: list[Row], holdout: list[Row]) -> list[str]:
                 )
             if r.gold_resolves and r.gold_loop:
                 problems.append(f"{name}/{r.id}: gold_resolves with gold_loop")
-    ids = [r.id for r in tuned + holdout]
-    if len(ids) != len(set(ids)):
-        problems.append("ids repeat across tuned and holdout")
-    held = {_norm(r.text) for r in holdout}
-    for r in tuned:
-        if _norm(r.text) in held:
-            problems.append(f"tuned/{r.id}: text equals a held-out text")
-    return problems
+    return problems + harness.split_problems(tuned, holdout)
 
 
 # --- decisions -----------------------------------------------------------------------
+
+
+def gate_config(loop_hold: float, resolves_hold: float) -> LoopGateSurfaceConfig:
+    return harness.surface_config(
+        LoopGateSurfaceConfig, loop_hold=loop_hold, resolves_hold=resolves_hold
+    )
 
 
 def system_one_kind(
@@ -240,7 +221,7 @@ def suggest_bars(
     plateau: list[tuple[float, float]] = []
     for loop_hold in GRID:
         for resolves_hold in GRID:
-            cfg = LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
+            cfg = gate_config(loop_hold, resolves_hold)
             c = score(rows, _kinds_for(rows, results, cfg))
             key = (c.false_creates, c.false_resolve, -c.recall)
             if best_key is None or key < best_key:
@@ -251,37 +232,19 @@ def suggest_bars(
         return None
     loop_hold = _median([p[0] for p in plateau])
     resolves_hold = _median([p[1] for p in plateau])
-    return LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
+    return gate_config(loop_hold, resolves_hold)
 
 
 # --- live runs -----------------------------------------------------------------------
 
 
-async def run_system_one(
-    client: Any, rows: list[Row], concurrency: int
-) -> dict[str, SystemOneResult]:
-    sem = asyncio.Semaphore(concurrency)
-
-    async def one(row: Row) -> tuple[str, SystemOneResult]:
-        async with sem:
-            result = await client.evaluate(
-                build_state(row.text, row.provenance), dict(LOOP_QUESTIONS)
-            )
-        return row.id, result
-
-    return dict(await asyncio.gather(*(one(r) for r in rows)))
-
-
 async def run_haiku(
     llm: Any, rows: list[Row], model: str, concurrency: int
 ) -> dict[str, _ExtractionGateResult | None]:
-    sem = asyncio.Semaphore(concurrency)
-
-    async def one(row: Row) -> tuple[str, _ExtractionGateResult | None]:
-        async with sem:
-            return row.id, await _run_extraction_gate(row.text, llm, model)
-
-    return dict(await asyncio.gather(*(one(r) for r in rows)))
+    gates = await harness.bounded(
+        rows, lambda _, r: _run_extraction_gate(r.text, llm, model), concurrency
+    )
+    return {r.id: gate for r, gate in zip(rows, gates)}
 
 
 async def run_haiku_tolerant(
@@ -292,24 +255,22 @@ async def run_haiku_tolerant(
     The production gate calls json.loads on the raw reply and so fails on every fenced answer.
     This is the working-gate baseline the verdict compares against.
     """
-    sem = asyncio.Semaphore(concurrency)
 
-    async def one(row: Row) -> tuple[str, _ExtractionGateResult | None]:
-        async with sem:
-            try:
-                raw = await llm.complete(
-                    [{"role": "user", "content": row.text}],
-                    model=model,
-                    system=_SYSTEM_PROMPT,
-                    temperature=0.0,
-                    max_tokens=200,
-                    response_format={"type": "json_object"},
-                )
-                parsed = _loads_json(raw)
-            except Exception:
-                return row.id, None
+    async def one(_: int, row: Row) -> _ExtractionGateResult | None:
+        try:
+            raw = await llm.complete(
+                [{"role": "user", "content": row.text}],
+                model=model,
+                system=_SYSTEM_PROMPT,
+                temperature=0.0,
+                max_tokens=200,
+                response_format={"type": "json_object"},
+            )
+            parsed = _loads_json(raw)
+        except Exception:
+            return None
         window = parsed.get("implied_window_days")
-        return row.id, _ExtractionGateResult(
+        return _ExtractionGateResult(
             is_loop=bool(parsed.get("is_loop")),
             title=str(parsed.get("title") or "").strip(),
             explicit_declaration=bool(parsed.get("explicit_declaration")),
@@ -319,7 +280,8 @@ async def run_haiku_tolerant(
             else None,
         )
 
-    return dict(await asyncio.gather(*(one(r) for r in rows)))
+    gates = await harness.bounded(rows, one, concurrency)
+    return {r.id: gate for r, gate in zip(rows, gates)}
 
 
 # --- reports -------------------------------------------------------------------------
@@ -358,41 +320,38 @@ def report_scores(
     return out
 
 
-def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
-    gold = {
-        Q_CONCERN: lambda r: r.gold_loop,
-        Q_RESOLVES: lambda r: r.gold_resolves,
-    }
+def show_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
+    gold = {Q_CONCERN: lambda r: r.gold_loop, Q_RESOLVES: lambda r: r.gold_resolves}
     for qid, truth in gold.items():
-        points = []
-        for r in rows:
-            res = results[r.id]
-            ans = res.answers.get(qid) if res.outcome == "ok" else None
-            if ans is None or ans.noul is None:
-                continue
-            points.append((ans.noul, truth(r)))
-        print(f"\n== Noul reliability: {qid} (n={len(points)})")
-        print("bin          n   mean_noul   gold_pos_rate")
-        for lo, hi in zip(BINS, BINS[1:]):
-            bucket = [(v, g) for v, g in points if lo <= v < hi]
-            if bucket:
-                print(
-                    f"[{lo:.1f},{min(hi, 1.0):.1f})".ljust(11)
-                    + f"{len(bucket):4d}   {sum(v for v, _ in bucket) / len(bucket):8.3f}"
-                    f"   {sum(g for _, g in bucket) / len(bucket):8.3f}"
-                )
+        points = [
+            (ans.noul, truth(r))
+            for r in rows
+            if results[r.id].outcome == "ok"
+            if (ans := results[r.id].answers.get(qid)) and ans.noul is not None
+        ]
+        harness.print_reliability(
+            f"Noul reliability: {qid} (n={len(points)})",
+            harness.reliability_bins(points, harness.NOUL_EDGES),
+            "mean_noul",
+            "gold_pos_rate",
+        )
 
 
-def report_grid(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
-    print("\n== bar grid: false creates / recall (loop_hold rows, resolves_hold cols)")
-    print("loop\\res   " + "".join(f"{b:>10.2f}" for b in GRID))
-    for loop_hold in GRID:
-        cells = ""
-        for resolves_hold in GRID:
-            cfg = LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
-            c = score(rows, _kinds_for(rows, results, cfg))
-            cells += f"{c.false_creates:>5d}/{c.recall:<4.2f}"
-        print(f"{loop_hold:>8.2f}  " + cells)
+def show_grid(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
+    def cell(bars: dict[str, float]) -> Counts:
+        cfg = gate_config(bars["loop"], bars["res"])
+        return score(rows, _kinds_for(rows, results, cfg))
+
+    harness.print_grid(
+        "bar grid: false creates / recall (loop_hold rows, resolves_hold cols)",
+        "loop\\res   ",
+        harness.bar_grid({"loop": GRID, "res": GRID}, cell),
+        "loop",
+        "res",
+        lambda c: f"{c.false_creates:>5d}/{c.recall:<4.2f}",
+        width=10,
+        label_width=8,
+    )
 
 
 def report_errors(
@@ -424,86 +383,60 @@ def report_errors(
 # --- main ----------------------------------------------------------------------------
 
 
-def parse_bars(text: str) -> LoopGateSurfaceConfig:
-    try:
-        loop_hold, resolves_hold = (float(x) for x in text.split(","))
-    except ValueError:
-        raise SystemExit("--bars needs LOOP,RESOLVES, e.g. 0.75,0.8")
-    return LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
-
-
-def config_model() -> str | None:
-    system_one = (yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}).get(
-        "system_one"
-    ) or {}
-    return system_one.get("model")
-
-
 def check_sets() -> int:
     tuned, holdout = load_rows(TUNED), load_rows(HOLDOUT)
     for name, rows in (("tuned", tuned), ("holdout", holdout)):
-        counts = Counter((r.lang, r.provenance, r.gold_loop) for r in rows)
         print(f"{name}: {len(rows)} rows")
         for lang in LANGS:
             pos = sum(r.gold_loop for r in rows if r.lang == lang)
             tot = sum(r.lang == lang for r in rows)
             print(f"  {lang}: {tot} rows, {pos} positive, {tot - pos} negative")
-        del counts
-    problems = shape_problems(tuned, holdout)
-    for p in problems:
-        print("PROBLEM:", p, file=sys.stderr)
-    return 1 if problems else 0
+    return harness.shape_report(shape_problems(tuned, holdout))
+
+
+def system_one_detail(c: Counts, h: Counts) -> str:
+    return (
+        f"system one: P={c.precision:.3f} R={c.recall:.3f} ({c.hit_positives}/{c.positives})"
+        f" creates={c.creates} falseCreates={c.false_creates} fallback={c.fallback}"
+        f" | haiku: P={h.precision:.3f} R={h.recall:.3f} ({h.hit_positives}/{h.positives})"
+        f" creates={h.creates} falseCreates={h.false_creates}"
+    )
 
 
 async def main_async(args: argparse.Namespace) -> int:
     if args.check_sets:
         return check_sets()
-    api_key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not api_key:
-        print(
-            "OPENROUTER_API_KEY is required (this run is live and costs credits).",
-            file=sys.stderr,
-        )
-        return 2
-    from ze_core.openrouter.client import OpenRouterClient
-    from ze_core.openrouter.system_one import (
-        DEFAULT_BASE_URL,
-        DEFAULT_MODEL,
-        OpenRouterSystemOneClient,
-    )
-
     holdout = args.set == "holdout"
     rows = [
         r
         for r in load_rows(HOLDOUT if holdout else TUNED)
         if r.provenance != "conversation"
     ]
-    problems = shape_problems(load_rows(TUNED), load_rows(HOLDOUT))
-    if problems:
+    if shape_problems(load_rows(TUNED), load_rows(HOLDOUT)):
         print("Dataset problems; run --check-sets.", file=sys.stderr)
         return 1
     if holdout and not args.bars:
         print("--set holdout needs frozen --bars LOOP,RESOLVES.", file=sys.stderr)
         return 2
     if holdout:
-        print(
-            "WARNING: held-out verdict run. Changing wording or bars after this run voids the set;"
-            " write a fresh held-out file before the next verdict (FR-016)."
-        )
-    system = OpenRouterSystemOneClient(
-        api_key=api_key,
-        model=args.model or config_model() or DEFAULT_MODEL,
-        timeout_ms=args.timeout_ms,
+        harness.held_out_warning("FR-016")
+    results = await harness.collect(
+        args,
+        rows,
+        lambda r: build_state(r.text, r.provenance),
+        lambda _, r: dict(LOOP_QUESTIONS),
+        lambda model: (
+            f"model={model} haiku={args.haiku_model} set={args.set} rows={len(rows)}"
+        ),
     )
-    llm = OpenRouterClient(api_key=api_key, base_url=DEFAULT_BASE_URL)
-    print(
-        f"model={system._model} haiku={args.haiku_model} set={args.set} rows={len(rows)}"
-    )
-    results = await run_system_one(system, rows, args.concurrency)
+    if results is None or (key := harness.api_key()) is None:
+        return 2
+    from ze_core.openrouter.client import OpenRouterClient
+    from ze_core.openrouter.system_one import DEFAULT_BASE_URL
+
+    llm = OpenRouterClient(api_key=key, base_url=DEFAULT_BASE_URL)
     prod_gates = await run_haiku(llm, rows, args.haiku_model, args.concurrency)
-    haiku_gates = await run_haiku_tolerant(
-        llm, rows, args.haiku_model, args.concurrency
-    )
+    haiku_gates = await run_haiku_tolerant(llm, rows, args.haiku_model, args.concurrency)
     await llm.aclose()
     skipped = Counter(r.skip_reason for r in results.values() if r.outcome == "skip")
     if skipped:
@@ -522,25 +455,14 @@ async def main_async(args: argparse.Namespace) -> int:
     )
 
     if not holdout:
-        report_reliability(rows, results)
-        report_grid(rows, results)
+        show_reliability(rows, results)
+        show_grid(rows, results)
         suggestion = suggest_bars(rows, results)
         cfg = args.bars_cfg or suggestion
         if cfg is None:
             print("\nNo bar pair reaches zero false creates on this set.")
-            report_scores(
-                rows,
-                {
-                    r.id: system_one_kind(
-                        results[r.id],
-                        LoopGateSurfaceConfig(True, 0.9, 0.9, 0.9),
-                        r.provenance,
-                    )
-                    for r in rows
-                },
-                haiku_kinds,
-                by_provenance=True,
-            )
+            cfg = gate_config(0.9, 0.9)
+            report_scores(rows, _kinds_for(rows, results, cfg), haiku_kinds, by_provenance=True)
             return 0
         kinds = _kinds_for(rows, results, cfg)
         print(
@@ -556,48 +478,33 @@ async def main_async(args: argparse.Namespace) -> int:
         return 0
 
     cfg = args.bars_cfg
-    kinds = _kinds_for(rows, results, cfg)
-    out = report_scores(rows, kinds, haiku_kinds, by_provenance=False)
-    print("\n== HELD-OUT VERDICT")
-    print(f"bars: loop_hold={cfg.loop_hold} resolves_hold={cfg.resolves_hold}")
-    overall = True
-    for lang in LANGS:
-        sys_c, hk_c = out[lang]
-        ok, failing = verdict(sys_c, hk_c)
-        overall &= ok
-        print(
-            f"[{lang}] {'ENABLE' if ok else 'KEEP OFF'}"
-            f"  system one: P={sys_c.precision:.3f} R={sys_c.recall:.3f} ({sys_c.hit_positives}/{sys_c.positives})"
-            f" creates={sys_c.creates} falseCreates={sys_c.false_creates} fallback={sys_c.fallback}"
-            f" | haiku: P={hk_c.precision:.3f} R={hk_c.recall:.3f} ({hk_c.hit_positives}/{hk_c.positives})"
-            f" creates={hk_c.creates} falseCreates={hk_c.false_creates}"
-            + (f"\n      failing: {'; '.join(failing)}" if failing else "")
-        )
-    print(f"OVERALL: {'ENABLE' if overall else 'KEEP OFF'}")
+    out = report_scores(rows, _kinds_for(rows, results, cfg), haiku_kinds, by_provenance=False)
+    harness.print_verdict(
+        {
+            lang: (*verdict(*out[lang]), system_one_detail(*out[lang]))
+            for lang in LANGS
+        },
+        lead=[f"bars: loop_hold={cfg.loop_hold} resolves_hold={cfg.resolves_hold}"],
+    )
     return 0
 
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument(
-        "--check-sets", action="store_true", help="offline dataset shape check"
+    harness.common_args(
+        p, sets=("tuned", "holdout"), bars="LOOP,RESOLVES (required for --set holdout)"
     )
-    p.add_argument("--set", choices=("tuned", "holdout"), default="tuned")
-    p.add_argument(
-        "--bars",
-        default=None,
-        help="LOOP,RESOLVES (required for --set holdout)",
-    )
-    p.add_argument("--model", default=None)
     p.add_argument("--haiku-model", default=DEFAULT_EXTRACTION_MODEL)
-    p.add_argument("--timeout-ms", type=int, default=10_000)
-    p.add_argument("--concurrency", type=int, default=4)
     return p
 
 
 def main() -> None:
     args = parser().parse_args()
-    args.bars_cfg = parse_bars(args.bars) if args.bars else None
+    args.bars_cfg = (
+        harness.bars_config(LoopGateSurfaceConfig, args.bars, ("loop_hold", "resolves_hold"))
+        if args.bars
+        else None
+    )
     raise SystemExit(asyncio.run(main_async(args)))
 
 

@@ -14,6 +14,7 @@ from typing import Any
 from uuid import UUID
 
 from ze_agents.client import LLMClient
+from ze_agents.judgment import Judgment, gate, judge
 from ze_logging import get_logger
 from ze_plugin.contribution import EvidenceRef
 
@@ -28,7 +29,7 @@ from ze_worldstate.extraction import (
 )
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.lifecycle import LoopDraft, SourceWrite
-from ze_worldstate.loop_judge import loop_gate_surface_config
+from ze_worldstate.loop_judge import LoopGateSurfaceConfig, read_decision
 from ze_worldstate.matching import find_matching_loop
 from ze_worldstate.types import (
     LoopAdmission,
@@ -113,20 +114,26 @@ class LoopInflow:
 
     def _log(self, admission: LoopAdmission, provenance: str) -> None:
         judgment = admission.judgment
+        decision = admission.decision
         answers = {
             qid: a.noul
-            for qid, a in (judgment.answers.items() if judgment else ())
+            for qid, a in (judgment.result.answers.items() if judgment else ())
             if a.type == "noul"
         }
+        if judgment is not None:
+            consumed, skip_reason = judgment.consumed, judgment.skip_reason
+        else:
+            consumed = decision.consumed
+            skip_reason = decision.reason if decision.kind == "fallback" else None
         log.info(
             "loop_gate_judgment",
             provenance=provenance,
-            outcome=admission.decision.kind,
-            reason=admission.decision.reason,
-            consumed=sorted(admission.consumed),
+            outcome=decision.kind,
+            reason=decision.reason,
+            consumed=sorted(consumed),
             answers=answers,
-            latency_ms=judgment.latency_ms if judgment else None,
-            skip_reason=admission.skip_reason,
+            latency_ms=judgment.result.latency_ms if judgment else None,
+            skip_reason=skip_reason,
         )
 
     async def commit(
@@ -252,7 +259,7 @@ class LoopInflow:
                 dropped,
                 MatchInput(
                     c.text,
-                    c.source.inflow if c.source else c.inflow,
+                    c.inflow,
                     c.source,
                     c.evidence,
                     c.entity_ids,
@@ -267,20 +274,12 @@ class LoopInflow:
         provenance: str,
         decision: CommitDecision,
         *,
-        judgment: Any = None,
-        question_ids: tuple[str, ...] = (),
-        skip_reason: str | None = None,
+        judgment: Judgment | None = None,
         source: SourceKey | None = None,
     ) -> LoopAdmission:
         return LoopAdmission(
             decision=decision,
             judgment=judgment,
-            question_ids=question_ids,
-            question_kinds={
-                qid: loop_judge.LOOP_QUESTIONS[qid].type for qid in question_ids
-            },
-            consumed=decision.consumed,
-            skip_reason=skip_reason,
             source=source,
             text=text,
             inflow=provenance,
@@ -290,43 +289,21 @@ class LoopInflow:
         if not text or not text.strip():
             return self.finish(text, provenance, CommitDecision("hold", "trivial"))
 
-        cfg = loop_gate_surface_config(self._settings)
-        if not cfg.enabled:
-            return self.finish(text, provenance, CommitDecision("fallback", "disabled"))
-        if not cfg.calibrated:
-            log.warning("loop_gate_uncalibrated")
-            return self.finish(
-                text,
-                provenance,
-                CommitDecision("fallback", "uncalibrated"),
-                skip_reason="uncalibrated",
-            )
-        if self._system_one is None or not loop_judge.supported_provenance(provenance):
-            return self.finish(
-                text, provenance, CommitDecision("fallback", "unavailable")
-            )
+        cfg = LoopGateSurfaceConfig.from_settings(self._settings)
+        reason = gate(cfg, self._system_one)
+        if reason is None and not loop_judge.supported_provenance(provenance):
+            reason = "unavailable"
+        if reason is not None:
+            return self.finish(text, provenance, CommitDecision("fallback", reason))
 
-        questions = dict(loop_judge.LOOP_QUESTIONS)
-        try:
-            result = await self._system_one.evaluate(
-                loop_judge.build_state(text, provenance), questions, max_attempts=1
-            )
-        except Exception as exc:
-            log.warning("loop_gate_system_one_call_failed", error=str(exc))
-            return self.finish(
-                text,
-                provenance,
-                CommitDecision("fallback", "error"),
-                skip_reason="error",
-            )
-        decision = loop_judge.decide(result, cfg, provenance)
+        judgment, decision = await judge(
+            self._system_one,
+            cfg,
+            loop_judge.build_state(text, provenance),
+            loop_judge.LOOP_QUESTIONS,
+            lambda result: loop_judge.decide(result, cfg, provenance),
+            read_decision,
+        )
         if decision.reason == "invalid_answer":
             log.warning("loop_gate_invalid_answer")
-        return self.finish(
-            text,
-            provenance,
-            decision,
-            judgment=result,
-            question_ids=tuple(questions),
-            skip_reason=decision.reason if decision.kind == "fallback" else None,
-        )
+        return self.finish(text, provenance, decision, judgment=judgment)

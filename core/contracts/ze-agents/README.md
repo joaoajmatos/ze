@@ -48,6 +48,7 @@ Imported by nearly every other Ze package, including `ze-plugin`, `ze-core`, and
 | `honesty.py` | Reply guards that hold tokens and check memory and action confirmations before a reply goes out |
 | `nested_tools.py` | Helpers that read nested tool calls (delegate and subtask results) to decide what a turn earned |
 | `system_one.py` | `SystemOneClient` Protocol — typed judgments (Noul, Choice, Score) |
+| `judgment.py` | `SurfaceConfig` (the base a surface's config subclasses), `gate()`, `judge()`, `DecisionUse`, and the `Judgment` record. One orchestration for every System One surface |
 | `screen.py` | `ScreenContext` and `ScreenRef` wire types, `ScreenResolver` Protocol, `sanitize_text` |
 | `scripts.py`, `script_stub.py`, `script_step.py` | `run_tool_script` contract, stub builder, and step runner |
 | `nli.py` | `NLIClient` Protocol |

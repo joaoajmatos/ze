@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
+from ze_agents.judgment import reset_surface_warnings
 from ze_agents.registry import clear_registry
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult
 from ze_agents.types import AgentContext
@@ -230,7 +231,8 @@ class TestNoRequest:
     async def test_null_bar_is_uncalibrated_and_warns_once_across_turns(self):
         client = FakeSystemOneClient(_noul(0.0))
         judge = TierJudge(client, ComplexitySurfaceConfig(enabled=True), {})
-        with patch("ze_core.routing.tier.log") as log:
+        reset_surface_warnings()
+        with patch("ze_agents.judgment.log") as log:
             first = await choose_tier(_state(), _config(judge=judge))
             second = await choose_tier(_state(), _config(judge=judge))
         assert first["tier"].decided_by == second["tier"].decided_by == "uncalibrated"

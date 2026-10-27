@@ -28,20 +28,17 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
-import os
 import random
 import statistics
 import sys
 from collections import Counter, defaultdict
-from dataclasses import asdict, dataclass, replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import harness  # noqa: E402
 from commitment_intake_baseline import (  # noqa: E402
     decide_baseline,
     questions_168,
@@ -50,11 +47,7 @@ from commitment_intake_baseline import (  # noqa: E402
     state_168,
 )
 from ze_agents.nested_tools import TurnCreation  # noqa: E402
-from ze_agents.system_one import (  # noqa: E402
-    SystemOneAnswer,
-    SystemOneQuestion,
-    SystemOneResult,
-)
+from ze_agents.system_one import SystemOneQuestion, SystemOneResult  # noqa: E402
 from ze_worldstate.commitment_judge import (  # noqa: E402
     COMMITMENT_QUESTIONS,
     Q_COMMITMENT,
@@ -64,13 +57,11 @@ from ze_worldstate.commitment_judge import (  # noqa: E402
     decide,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
 TUNED = Path(__file__).with_name("commitment_intake.jsonl")
 HOLDOUT = Path(__file__).with_name("commitment_intake_holdout.jsonl")
 HOLDOUT2 = Path(__file__).with_name("commitment_intake_holdout2.jsonl")
 HOLDOUT3 = Path(__file__).with_name("commitment_intake_holdout3.jsonl")
-CONFIG = ROOT / "apps" / "ze-api" / "config" / "config.yaml"
-LANGS = ("en", "pt")
+LANGS = harness.LANGS
 SPENT_SETS = ("holdout", "holdout2", "holdout3")
 CHOICES = (
     "reminder",
@@ -98,8 +89,15 @@ HARD_NEGATIVE_KINDS = (
     "loop_turn_goal",
 )
 MIXED_KIND = "mixed"
-GRID = [round(0.5 + 0.05 * i, 2) for i in range(10)]
-BINS = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0001]
+GRID = harness.GRID
+BAR_NAMES = (
+    "choice_hold",
+    "family_hold",
+    "biography_hold",
+    "loop_hold",
+    "explicit_hold",
+    "resolves_hold",
+)
 RECALL_SLACK = 0.05
 MIN_CHOICE_ACCURACY = 0.9
 CREATES = ("create_declared", "create_suspected")
@@ -147,21 +145,7 @@ class Row:
         )
 
 
-def load_rows(path: Path) -> list[Row]:
-    rows: list[Row] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            raw = json.loads(line)
-            rows.append(
-                Row(**{k: raw[k] for k in Row.__dataclass_fields__ if k in raw})
-            )
-    if len({r.id for r in rows}) != len(rows):
-        raise SystemExit(f"duplicate ids in {path.name}")
-    return rows
-
-
-def _norm(text: str) -> str:
-    return " ".join(text.lower().split())
+load_rows = harness.row_loader(Row)
 
 
 def row_problems(name: str, rows: list[Row]) -> list[str]:
@@ -197,11 +181,9 @@ def row_problems(name: str, rows: list[Row]) -> list[str]:
 def set_problems(
     name: str, rows: list[Row], minimum: int, *, require_kinds: bool = True
 ) -> list[str]:
-    problems = row_problems(name, rows)
+    problems = row_problems(name, rows) + harness.min_rows_problems(name, rows, minimum)
     for lang in LANGS:
         scoped = [r for r in rows if r.lang == lang]
-        if len(scoped) < minimum:
-            problems.append(f"{name}/{lang}: {len(scoped)} rows, need >= {minimum}")
         for choice in CHOICES:
             if not any(r.gold_choice == choice for r in scoped):
                 problems.append(f"{name}/{lang}: no row with choice {choice}")
@@ -251,13 +233,9 @@ def _blind_problems(name: str, rows: list[Row], others: list[Row]) -> list[str]:
     problems += holdout_depth_problems(rows, name)
     if len({r.id for r in [*others, *rows]}) != len(others) + len(rows):
         problems.append(f"ids repeat between {name} and the other sets")
-    seen = {_norm(r.text) for r in others}
-    for r in rows:
-        if _norm(r.text) in seen:
-            problems.append(
-                f"{name}/{r.id}: text equals a tuned or earlier held-out text"
-            )
-    return problems
+    return problems + harness.overlap_problems(
+        name, rows, others, label="a tuned or earlier held-out text"
+    )
 
 
 def shape_problems(
@@ -272,13 +250,7 @@ def shape_problems(
     problems += holdout_depth_problems(holdout)
     if tuned is not None:
         problems += set_problems("tuned", tuned, MIN_TUNED_PER_LANG)
-        ids = [r.id for r in tuned + holdout]
-        if len(ids) != len(set(ids)):
-            problems.append("ids repeat across tuned and holdout")
-        held = {_norm(r.text) for r in holdout}
-        for r in tuned:
-            if _norm(r.text) in held:
-                problems.append(f"tuned/{r.id}: text equals a held-out text")
+        problems += harness.split_problems(tuned, holdout)
     earlier = [*holdout, *(tuned or [])]
     if holdout2 is not None:
         problems += _blind_problems("holdout2", holdout2, earlier)
@@ -304,12 +276,10 @@ def check_sets() -> int:
     )
     print(f"tuned: {len(tuned)} rows" if tuned else "tuned: not written yet")
     problems = shape_problems(tuned, holdout, holdout2, holdout3)
-    for p in problems:
-        print(f"PROBLEM {p}")
     for name, rows in (("holdout2", holdout2), ("holdout3", holdout3)):
         for n in kind_notes(name, rows) if rows else []:
             print(f"NOTE {n}")
-    return 1 if problems else 0
+    return harness.shape_report(problems)
 
 
 # --- predictions and scoring ---------------------------------------------------------
@@ -533,64 +503,28 @@ def shuffled_questions(rng: random.Random) -> dict[str, SystemOneQuestion]:
 async def run_rows(
     client: Any, rows: list[Row], seed: int, concurrency: int
 ) -> dict[str, RowResults]:
-    sem = asyncio.Semaphore(concurrency)
-
-    async def one(index: int, row: Row) -> tuple[str, RowResults]:
+    async def one(index: int, row: Row) -> RowResults:
         rng = random.Random(seed * 100003 + index)
-        async with sem:
-            system = await client.evaluate(
-                build_state(row.text, row.assistant),
-                shuffled_questions(rng),
-                max_attempts=1,
-            )
-            r163 = await client.evaluate(
-                state_163(row.text, row.assistant), shuffled_163(rng), max_attempts=1
-            )
-            r168 = await client.evaluate(
-                state_168(row.text), questions_168(), max_attempts=1
-            )
-        return row.id, RowResults(system, r163, r168)
 
-    return dict(await asyncio.gather(*(one(i, r) for i, r in enumerate(rows))))
+        async def ask(state: dict, questions: dict) -> SystemOneResult:
+            return await client.evaluate(state, questions, max_attempts=1)
 
-
-def save_results(path: Path, results: dict[str, RowResults]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps({rid: asdict(rr) for rid, rr in results.items()}), encoding="utf-8"
-    )
-
-
-def _result_from_dict(raw: dict) -> SystemOneResult:
-    answers = {k: SystemOneAnswer(**v) for k, v in raw.get("answers", {}).items()}
-    return SystemOneResult(**{**raw, "answers": answers})
-
-
-def load_results(path: Path) -> dict[str, RowResults]:
-    raw = json.loads(path.read_text(encoding="utf-8"))
-    return {
-        rid: RowResults(
-            _result_from_dict(v["system"]),
-            _result_from_dict(v["r163"]),
-            _result_from_dict(v["r168"]),
+        return RowResults(
+            await ask(build_state(row.text, row.assistant), shuffled_questions(rng)),
+            await ask(state_163(row.text, row.assistant), shuffled_163(rng)),
+            await ask(state_168(row.text), questions_168()),
         )
-        for rid, v in raw.items()
-    }
+
+    done = await harness.bounded(rows, one, concurrency)
+    return {r.id: rr for r, rr in zip(rows, done)}
 
 
 # --- decisions at a given set of bars ------------------------------------------------
 
 
-def make_cfg(
-    choice: float,
-    family: float,
-    biography: float,
-    loop: float,
-    explicit: float,
-    resolves: float,
-) -> CommitmentIntakeSurfaceConfig:
-    return CommitmentIntakeSurfaceConfig(
-        True, choice, family, biography, loop, explicit, resolves
+def make_cfg(*bars: float) -> CommitmentIntakeSurfaceConfig:
+    return harness.surface_config(
+        CommitmentIntakeSurfaceConfig, **dict(zip(BAR_NAMES, bars))
     )
 
 
@@ -774,30 +708,7 @@ def report_choice(rows: list[Row], results: dict[str, RowResults]) -> None:
             )
 
 
-def _bucket_table(
-    title: str, points: list[tuple[float, bool]], gold_label: str
-) -> None:
-    print(f"\n== {title} (n={len(points)})")
-    print(f"bin          n   mean_value   {gold_label}")
-    ece = 0.0
-    total = 0
-    for lo, hi in zip(BINS, BINS[1:]):
-        bucket = [(v, g) for v, g in points if lo <= v < hi]
-        if not bucket:
-            continue
-        mean = sum(v for v, _ in bucket) / len(bucket)
-        rate = sum(g for _, g in bucket) / len(bucket)
-        ece += len(bucket) * abs(mean - rate)
-        total += len(bucket)
-        print(
-            f"[{lo:.1f},{min(hi, 1.0):.1f})".ljust(11)
-            + f"{len(bucket):4d}   {mean:9.3f}   {rate:8.3f}"
-        )
-    if total:
-        print(f"ECE = {ece / total:.3f}")
-
-
-def report_reliability(rows: list[Row], results: dict[str, RowResults]) -> None:
+def show_reliability(rows: list[Row], results: dict[str, RowResults]) -> None:
     ok = [
         (r, results[r.id].system) for r in rows if results[r.id].system.outcome == "ok"
     ]
@@ -810,10 +721,18 @@ def report_reliability(rows: list[Row], results: dict[str, RowResults]) -> None:
         f = res.answers.get(Q_FAMILY)
         if r.gold_fact and f is not None and f.confidence is not None:
             family.append((f.confidence, str(f.choice).lower() == r.gold_family))
-    _bucket_table("commitment Choice confidence vs accuracy", commitment, "accuracy")
-    _bucket_table(
-        "family Choice confidence vs accuracy (fact rows)", family, "accuracy"
-    )
+    def table(title: str, points: list[tuple[float, bool]], label: str) -> None:
+        harness.print_reliability(
+            f"{title} (n={len(points)})",
+            harness.reliability_bins(points),
+            "mean_value",
+            label,
+            mean_width=9,
+            show_ece=True,
+        )
+
+    table("commitment Choice confidence vs accuracy", commitment, "accuracy")
+    table("family Choice confidence vs accuracy (fact rows)", family, "accuracy")
     noul_gold = {
         Q_BIOGRAPHY: ("gold_fact_rate", lambda r: r.gold_fact, None),
         Q_CONCERN: ("gold_loop_rate", lambda r: r.gold_loop, None),
@@ -831,34 +750,40 @@ def report_reliability(rows: list[Row], results: dict[str, RowResults]) -> None:
             if a is None or a.noul is None or (only and not only(r)):
                 continue
             points.append((a.noul, bool(truth(r))))
-        _bucket_table(f"Noul reliability: {qid}", points, label)
+        table(f"Noul reliability: {qid}", points, label)
 
 
 def report_grids(rows: list[Row], results: dict[str, RowResults]) -> None:
-    print(
-        "\n== fact precision/recall (choice_hold=family_hold rows, biography_hold cols; "
-        "loop bars fixed 0.75/0.85/0.8)"
+    def scored(*bars: float) -> Counts:
+        return score(rows, preds_for(rows, results, make_cfg(*bars)))
+
+    harness.print_grid(
+        "fact precision/recall (choice_hold=family_hold rows, biography_hold cols; "
+        "loop bars fixed 0.75/0.85/0.8)",
+        "choice\\bio ".ljust(11),
+        harness.bar_grid(
+            {"choice": GRID, "bio": GRID},
+            lambda b: scored(b["choice"], b["choice"], b["bio"], 0.75, 0.85, 0.8),
+        ),
+        "choice",
+        "bio",
+        lambda c: f"{c.fact_precision:>7.2f}/{c.fact_recall:<4.2f}",
+        width=12,
     )
-    print("choice\\bio ".ljust(11) + "".join(f"{b:>12.2f}" for b in GRID))
-    for choice in GRID:
-        cells = ""
-        for bio in GRID:
-            cfg = make_cfg(choice, choice, bio, 0.75, 0.85, 0.8)
-            c = score(rows, preds_for(rows, results, cfg))
-            cells += f"{c.fact_precision:>7.2f}/{c.fact_recall:<4.2f}"
-        print(f"{choice:>9.2f}  " + cells)
-    print(
-        "\n== dup+falseCreate / loop recall (loop_hold rows, resolves_hold cols; "
-        "choice/family/biography 0.7, explicit 0.85)"
+    harness.print_grid(
+        "dup+falseCreate / loop recall (loop_hold rows, resolves_hold cols; "
+        "choice/family/biography 0.7, explicit 0.85)",
+        "loop\\res   ",
+        harness.bar_grid(
+            {"loop": GRID, "res": GRID},
+            lambda b: scored(0.7, 0.7, 0.7, b["loop"], 0.85, b["res"]),
+        ),
+        "loop",
+        "res",
+        lambda c: f"{c.duplicates + c.false_creates:>5d}/{c.loop_recall:<4.2f}",
+        width=10,
+        label_width=8,
     )
-    print("loop\\res   " + "".join(f"{b:>10.2f}" for b in GRID))
-    for loop_hold in GRID:
-        cells = ""
-        for resolves in GRID:
-            cfg = make_cfg(0.7, 0.7, 0.7, loop_hold, 0.85, resolves)
-            c = score(rows, preds_for(rows, results, cfg))
-            cells += f"{c.duplicates + c.false_creates:>5d}/{c.loop_recall:<4.2f}"
-        print(f"{loop_hold:>8.2f}  " + cells)
 
 
 def report_errors(
@@ -918,19 +843,6 @@ def report_scores(
     return out
 
 
-def parse_bars(text: str) -> CommitmentIntakeSurfaceConfig:
-    try:
-        values = [float(x) for x in text.split(",")]
-        if len(values) != 6:
-            raise ValueError
-    except ValueError:
-        raise SystemExit(
-            "--bars needs CHOICE,FAMILY,BIOGRAPHY,LOOP,EXPLICIT,RESOLVES, "
-            "e.g. 0.7,0.7,0.7,0.75,0.85,0.8"
-        )
-    return make_cfg(*values)
-
-
 def describe(cfg: CommitmentIntakeSurfaceConfig) -> str:
     return (
         f"choice_hold={cfg.choice_hold} family_hold={cfg.family_hold} "
@@ -939,20 +851,13 @@ def describe(cfg: CommitmentIntakeSurfaceConfig) -> str:
     )
 
 
-def config_model() -> str | None:
-    system_one = (yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}).get(
-        "system_one"
-    ) or {}
-    return system_one.get("model")
-
-
 def report_tuned(
     rows: list[Row],
     results: dict[str, RowResults],
     forced: CommitmentIntakeSurfaceConfig | None,
 ) -> None:
     report_choice(rows, results)
-    report_reliability(rows, results)
+    show_reliability(rows, results)
     report_grids(rows, results)
     suggestion = suggest_bars(rows, results)
     cfg = forced or suggestion
@@ -977,24 +882,21 @@ def report_verdict(
     rows: list[Row], results: dict[str, RowResults], cfg: CommitmentIntakeSurfaceConfig
 ) -> None:
     out = report_scores(rows, results, cfg)
-    print("\n== HELD-OUT VERDICT")
-    print(f"bars: {describe(cfg)}")
-    overall = True
-    for lang in LANGS:
-        s, b = out[lang]
-        ok, failing = verdict(s, b)
-        overall &= ok
-        print(
-            f"[{lang}] {'ENABLE' if ok else 'KEEP OFF'}"
-            f"  intake: factP={s.fact_precision:.3f} factR={s.fact_recall:.3f}"
+
+    def detail(s: Counts, b: Counts) -> str:
+        return (
+            f"intake: factP={s.fact_precision:.3f} factR={s.fact_recall:.3f}"
             f" loopP={s.loop_precision:.3f} loopR={s.loop_recall:.3f} dup={s.duplicates}"
             f" falseC={s.false_creates} falseRes={s.false_resolve} waitingWrites={s.waiting_written}/{s.waiting_total} choiceAcc={s.choice_acc:.3f}"
             f" linkAcc={s.link_acc:.3f} fallback={s.fallback}"
             f" | baseline: factP={b.fact_precision:.3f} factR={b.fact_recall:.3f}"
             f" loopP={b.loop_precision:.3f} loopR={b.loop_recall:.3f} dup={b.duplicates} falseRes={b.false_resolve}"
-            + (f"\n      failing: {'; '.join(failing)}" if failing else "")
         )
-    print(f"OVERALL: {'ENABLE' if overall else 'KEEP OFF'}")
+
+    harness.print_verdict(
+        {lang: (*verdict(*out[lang]), detail(*out[lang])) for lang in LANGS},
+        lead=[f"bars: {describe(cfg)}"],
+    )
 
 
 # --- main ----------------------------------------------------------------------------
@@ -1003,7 +905,7 @@ def report_verdict(
 async def main_async(args: argparse.Namespace) -> int:
     if args.check_sets:
         return check_sets()
-    if args.set in SPENT_SETS and not args.replay:
+    if args.set in SPENT_SETS and not args.load:
         print(
             f"The {args.set} set is spent (verdict 2026-10-16). It stays loadable "
             "for reference through --replay only; a new verdict needs a fresh "
@@ -1036,37 +938,25 @@ async def main_async(args: argparse.Namespace) -> int:
     if args.set in SPENT_SETS:
         print("REFERENCE: spent held-out set, replayed offline. Not a verdict.")
 
-    if args.replay:
-        results = load_results(args.replay)
+    if args.load:
+        results = {
+            rid: RowResults(**v) for rid, v in harness.load_results(args.load).items()
+        }
         missing = [r.id for r in rows if r.id not in results]
         if missing:
             print(
                 f"--replay file lacks {len(missing)} rows of the set.", file=sys.stderr
             )
             return 1
-        print(f"replaying {args.replay} ({len(rows)} rows, no network)")
+        print(f"replaying {args.load} ({len(rows)} rows, no network)")
     else:
-        api_key = os.environ.get("OPENROUTER_API_KEY", "")
-        if not api_key:
-            print(
-                "OPENROUTER_API_KEY is required (this run is live and costs credits).",
-                file=sys.stderr,
-            )
+        client = harness.make_client(args)
+        if client is None:
             return 2
-        from ze_core.openrouter.system_one import (
-            DEFAULT_MODEL,
-            OpenRouterSystemOneClient,
-        )
-
-        client = OpenRouterSystemOneClient(
-            api_key=api_key,
-            model=args.model or config_model() or DEFAULT_MODEL,
-            timeout_ms=args.timeout_ms,
-        )
         print(f"model={client._model} set={args.set} rows={len(rows)} seed={args.seed}")
         results = await run_rows(client, rows, args.seed, args.concurrency)
         if args.save:
-            save_results(args.save, results)
+            harness.save_results(args.save, results)
             print(f"raw results saved to {args.save}")
 
     skipped = Counter(
@@ -1090,34 +980,23 @@ async def main_async(args: argparse.Namespace) -> int:
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument(
-        "--check-sets", action="store_true", help="offline dataset shape check"
+    harness.common_args(
+        p,
+        sets=("tuned", "holdout", "holdout2", "holdout3"),
+        bars="CHOICE,FAMILY,BIOGRAPHY,LOOP,EXPLICIT,RESOLVES (required to replay --set holdout3)",
+        seed=173,
+        load_flags=("--load", "--replay"),
     )
-    p.add_argument(
-        "--set", choices=("tuned", "holdout", "holdout2", "holdout3"), default="tuned"
-    )
-    p.add_argument(
-        "--bars",
-        default=None,
-        help="CHOICE,FAMILY,BIOGRAPHY,LOOP,EXPLICIT,RESOLVES (required to replay --set holdout3)",
-    )
-    p.add_argument("--save", type=Path, default=None, help="store raw results as JSON")
-    p.add_argument(
-        "--replay",
-        type=Path,
-        default=None,
-        help="re-score saved results offline (tuned set, or the spent held-out set for reference)",
-    )
-    p.add_argument("--model", default=None)
-    p.add_argument("--timeout-ms", type=int, default=10_000)
-    p.add_argument("--concurrency", type=int, default=4)
-    p.add_argument("--seed", type=int, default=173)
     return p
 
 
 def main() -> None:
     args = parser().parse_args()
-    args.bars_cfg = parse_bars(args.bars) if args.bars else None
+    args.bars_cfg = (
+        harness.bars_config(CommitmentIntakeSurfaceConfig, args.bars, BAR_NAMES)
+        if args.bars
+        else None
+    )
     raise SystemExit(asyncio.run(main_async(args)))
 
 

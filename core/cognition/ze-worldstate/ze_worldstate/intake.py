@@ -9,13 +9,13 @@ and the 109 Haiku loop gate (specs/phases/173-commitment-intake/contracts/commit
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
 from ze_agents.client import LLMClient
+from ze_agents.judgment import Judgment, gate, judge
 from ze_agents.nested_tools import TurnCreation, tracking_earned, turn_creation
-from ze_agents.system_one import SystemOneResult
 from ze_agents.types import ToolCall
 from ze_logging import get_logger
 from ze_memory.extractor import (
@@ -30,10 +30,11 @@ from ze_worldstate.admission import LoopInflow
 from ze_worldstate.commitment_judge import (
     COMMITMENT_QUESTIONS,
     LOOP_COMMIT_KINDS,
+    CommitmentIntakeSurfaceConfig,
     IntakeOutcome,
     build_state,
-    commitment_intake_surface_config,
     decide,
+    read_decision,
 )
 from ze_worldstate.decision import CommitDecision
 from ze_worldstate.extraction import resolve_entities
@@ -61,14 +62,7 @@ class IntakeAdmission:
     fact: FactAdmission | None = None
     loop: LoopAdmission | None = None
     links: tuple[LinkOutcome, ...] = ()
-    judgment: SystemOneResult | None = None
-    question_kinds: dict[str, str] = field(default_factory=dict)
-    consumed: frozenset[str] = frozenset()
-    skip_reason: str | None = None
-
-    @property
-    def question_ids(self) -> tuple[str, ...]:
-        return tuple(self.question_kinds)
+    judgment: Judgment | None = None
 
 
 class CommitmentIntake:
@@ -120,16 +114,9 @@ class CommitmentIntake:
                 ),
             )
 
-        cfg = commitment_intake_surface_config(self._settings)
-        skip_reason: str | None = None
-        if not cfg.enabled:
-            skip_reason = "disabled"
-        elif not cfg.calibrated:
-            log.warning("commitment_intake_uncalibrated")
-            skip_reason = "uncalibrated"
-        elif self._system_one is None:
-            skip_reason = "unavailable"
-        if skip_reason is not None:
+        cfg = CommitmentIntakeSurfaceConfig.from_settings(self._settings)
+        reason = gate(cfg, self._system_one)
+        if reason is not None:
             return await self._fallback(
                 configurable,
                 prompt,
@@ -137,29 +124,19 @@ class CommitmentIntake:
                 agent,
                 source,
                 suppress_loop,
-                skip_reason,
+                reason,
                 None,
             )
 
-        try:
-            result = await self._system_one.evaluate(
-                build_state(prompt, response), COMMITMENT_QUESTIONS, max_attempts=1
-            )
-        except Exception as exc:
-            log.warning("commitment_intake_call_failed", error=str(exc))
-            return await self._fallback(
-                configurable,
-                prompt,
-                response,
-                agent,
-                source,
-                suppress_loop,
-                "error",
-                None,
-            )
-
-        outcome = decide(result, cfg, created, tracked)
-        self._log(outcome, result, created)
+        judgment, outcome = await judge(
+            self._system_one,
+            cfg,
+            build_state(prompt, response),
+            COMMITMENT_QUESTIONS,
+            lambda result: decide(result, cfg, created, tracked),
+            read_decision,
+        )
+        self._log(outcome, judgment, created)
         if outcome.kind == "fallback":
             if outcome.reason == "invalid_answer":
                 log.warning("commitment_intake_invalid_answer")
@@ -171,11 +148,11 @@ class CommitmentIntake:
                 source,
                 suppress_loop,
                 outcome.reason,
-                result,
+                judgment,
                 outcome=outcome,
             )
         return await self._apply(
-            configurable, outcome, result, prompt, response, agent, source, created
+            configurable, outcome, judgment, prompt, response, agent, source, created
         )
 
     def _source(self, configurable: dict) -> SourceKey | None:
@@ -191,15 +168,9 @@ class CommitmentIntake:
         prompt: str,
         decision: CommitDecision,
         source: SourceKey | None,
-        *,
-        skip_reason: str | None = None,
     ) -> LoopAdmission:
         return self._inflow.finish(
-            prompt,
-            LoopProvenance.CONVERSATION,
-            decision,
-            skip_reason=skip_reason,
-            source=source,
+            prompt, LoopProvenance.CONVERSATION, decision, source=source
         )
 
     async def _fallback(
@@ -211,32 +182,22 @@ class CommitmentIntake:
         source: SourceKey | None,
         suppress_loop: bool,
         reason: str,
-        result: SystemOneResult | None,
+        judgment: Judgment | None,
         *,
         outcome: IntakeOutcome | None = None,
     ) -> IntakeAdmission:
         """Today's Haiku paths: the fact extractor and the 109 loop gate."""
         fact = await self._haiku_facts(configurable, prompt, response, agent)
-        fact.skip_reason = reason
         loop = None
         if not suppress_loop:
             loop = self._loop_admission(
-                prompt,
-                CommitDecision("fallback", reason),
-                source,
-                skip_reason=reason,
+                prompt, CommitDecision("fallback", reason), source
             )
         return IntakeAdmission(
             outcome or IntakeOutcome("fallback", reason),
             fact=fact,
             loop=loop,
-            judgment=result,
-            question_kinds=(
-                {qid: q.type for qid, q in COMMITMENT_QUESTIONS.items()}
-                if result is not None
-                else {}
-            ),
-            skip_reason=reason,
+            judgment=judgment,
         )
 
     async def _haiku_facts(
@@ -254,22 +215,17 @@ class CommitmentIntake:
         self,
         configurable: dict,
         outcome: IntakeOutcome,
-        result: SystemOneResult,
+        judgment: Judgment,
         prompt: str,
         response: str,
         agent: str,
         source: SourceKey | None,
         created: TurnCreation,
     ) -> IntakeAdmission:
-        admission = IntakeAdmission(
-            outcome,
-            judgment=result,
-            question_kinds={qid: q.type for qid, q in COMMITMENT_QUESTIONS.items()},
-            consumed=outcome.consumed,
-        )
+        admission = IntakeAdmission(outcome, judgment=judgment)
         if outcome.kind == "persist_fact":
             admission.fact = await self._write_facts(
-                configurable, outcome, result, prompt, response, agent
+                configurable, outcome, prompt, response, agent
             )
         elif outcome.kind in LOOP_COMMIT_KINDS:
             admission.loop = self._loop_admission(
@@ -285,7 +241,6 @@ class CommitmentIntake:
         self,
         configurable: dict,
         outcome: IntakeOutcome,
-        result: SystemOneResult,
         prompt: str,
         response: str,
         agent: str,
@@ -304,13 +259,7 @@ class CommitmentIntake:
             )
         for fact in facts:
             fact.agent = agent
-        return FactAdmission(
-            facts=facts,
-            path="system_one",
-            judgment=result,
-            question_ids=tuple(COMMITMENT_QUESTIONS),
-            consumed=outcome.consumed,
-        )
+        return FactAdmission(facts=facts, path="system_one")
 
     async def _link(
         self, prompt: str, created: TurnCreation
@@ -371,8 +320,9 @@ class CommitmentIntake:
         )
 
     def _log(
-        self, outcome: IntakeOutcome, result: SystemOneResult, created: TurnCreation
+        self, outcome: IntakeOutcome, judgment: Judgment, created: TurnCreation
     ) -> None:
+        result = judgment.result
         commitment = result.answers.get("commitment")
         log.info(
             "commitment_intake_decision",

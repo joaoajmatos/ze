@@ -602,3 +602,33 @@ async def test_extract_commits_with_the_source_key():
     draft = lifecycle.create_suspected.await_args.args[0]
     assert draft.source == SourceKey("email", "m1")
     assert draft.evidence == (EPISODE,)
+
+
+# --- 202: the judgment log reads the record --------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("settings", "client", "skip_reason"),
+    [
+        ({}, FakeSystemOne(_ok()), "disabled"),
+        (_settings(), None, "unavailable"),
+        (_settings(), FakeSystemOne(exc=RuntimeError("down")), "error"),
+        (
+            _settings(),
+            FakeSystemOne(SystemOneResult(outcome="skip", skip_reason="timeout")),
+            "timeout",
+        ),
+    ],
+    ids=["disabled", "no_client", "raised", "skip"],
+)
+async def test_extract_logs_skip_reason_from_record_or_fallback(
+    settings, client, skip_reason
+):
+    from structlog.testing import capture_logs
+
+    inflow, _, _ = _inflow(client, settings=settings)
+    with capture_logs() as logs:
+        await inflow.extract("Daniel is still waiting on my answer", "email")
+    row = next(e for e in logs if e["event"] == "loop_gate_judgment")
+    assert row["outcome"] == "fallback"
+    assert row["skip_reason"] == skip_reason

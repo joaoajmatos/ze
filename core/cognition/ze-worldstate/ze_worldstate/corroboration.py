@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
+from ze_agents.judgment import Judgment, gate, judge
 from ze_logging import get_logger
 from ze_plugin.contribution import EvidenceRef
 
@@ -58,20 +59,18 @@ async def _judge(
     inflow: str,
     system_one_client: Any,
     cfg: corroboration_judge.CorroborationSurfaceConfig,
-):
-    try:
-        result = await system_one_client.evaluate(
-            corroboration_judge.build_state(existing.title, text, inflow),
-            {corroboration_judge.Q_SAME: corroboration_judge.QUESTION},
-            max_attempts=1,
-        )
-    except Exception as exc:
-        log.warning("corroboration_system_one_call_failed", error=str(exc))
-        return None, corroboration_judge.CorroborationDecision("fallback", "error")
-    decision = corroboration_judge.decide(result, cfg)
+) -> tuple[Judgment, corroboration_judge.CorroborationDecision]:
+    judgment, decision = await judge(
+        system_one_client,
+        cfg,
+        corroboration_judge.build_state(existing.title, text, inflow),
+        {corroboration_judge.Q_SAME: corroboration_judge.QUESTION},
+        lambda result: corroboration_judge.decide(result, cfg),
+        corroboration_judge.read_decision,
+    )
     if decision.reason == "invalid_answer":
         log.warning("corroboration_invalid_answer")
-    return result, decision
+    return judgment, decision
 
 
 @dataclass(frozen=True)
@@ -125,13 +124,10 @@ class Corroborator:
     async def _corroborate(
         self, existing: OpenLoop, dropped: OpenLoop | None, match: MatchInput
     ) -> SourceWrite | None:
-        cfg = corroboration_judge.corroboration_surface_config(self._settings)
-        if not cfg.enabled:
-            return None
-        if not cfg.calibrated:
-            log.warning("corroboration_uncalibrated")
-            return None
-        if self._system_one is None:
+        cfg = corroboration_judge.CorroborationSurfaceConfig.from_settings(
+            self._settings
+        )
+        if gate(cfg, self._system_one) is not None:
             return None
 
         loop_sources = await self._loop_store.list_sources(existing.id)
@@ -151,12 +147,13 @@ class Corroborator:
             )
             return None
 
-        result, decision = await _judge(
+        judgment, decision = await _judge(
             existing, match.text, match.inflow, self._system_one, cfg
         )
+        result = judgment.result
         written: SourceWrite | None = None
         outcome = decision.kind
-        if decision.kind in ("promote", "corroborate") and result is not None:
+        if decision.kind in ("promote", "corroborate"):
             score = decision.score or 0.0
             corroboration = Corroboration(
                 evidence=match.evidence,
@@ -180,7 +177,7 @@ class Corroborator:
             outcome=outcome,
             reason=decision.reason,
             score=decision.score,
-            latency_ms=result.latency_ms if result else None,
-            skip_reason=decision.reason if decision.kind == "fallback" else None,
+            latency_ms=result.latency_ms,
+            skip_reason=judgment.skip_reason,
         )
         return written
