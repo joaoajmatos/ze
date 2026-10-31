@@ -1,10 +1,10 @@
 # ze-worldstate
 
-Open-loop substrate for Ze — active concerns, honest provenance, evidence-linked confidence.
+Open-loop substrate for Ze: active concerns, honest provenance, evidence-linked confidence.
 
 ## Role in Ze
 
-Goals are the heavyweight, explicitly-declared end of Ze's executive function. Most real commitments never get declared as a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as **open loops** — the lightweight, ambient half of executive function, and the shipped first slice of what `specs/arch/ze-doctrine.md` calls **active concerns**, the fourth face of Ze's world-state.
+Goals are the heavyweight, explicitly declared end of Ze's executive function. Most real commitments never get declared as a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as **open loops** — the lightweight, ambient half of executive function, and the shipped first slice of what `specs/arch/ze-doctrine.md` calls **active concerns**, the fourth face of Ze's world-state.
 
 An open loop moves through `suspected → active → drifting → closed | dropped`. Confidence decays on its own; a contradiction pushes a loop's confidence down, and a missed deadline moves an `active` loop into `drifting`. Only an explicit user ask (`track_loop`) can move a `drifting` loop back to `active`. When the user says a loop is done, `LoopLifecycle.resolve` closes a `suspected`, `active` or `drifting` loop and links the resolving evidence in one transaction.
 
@@ -33,7 +33,7 @@ An event with no legal move from a state either returns `None` or `False`, or ra
 
 `PostgresLoopStore` (`store.py`) holds reads only: `get`, `list`, `list_by_evidence`, `count_evidence_links`, `list_evidence`, `list_drift_candidates`, `list_sources`, and `list_sources_for`. It has no write method. `review.py` and `decay.py` were deleted. Their work now runs through the lifecycle events above.
 
-A loop's claim kind follows its state and is not stored: `suspicion` while `suspected`, `priority` once `active`, `drifting` or `closed`, and none for a `dropped` loop. `loop_claim_kind(state)` in `types.py` is the one table, and `OpenLoop.claim_kind` reads it. The loops REST `claim_kind` is null for dropped loops. Loops reuse `ze-memory`'s graph tables (`memory_relationships`, a dedicated `open_loop` bucket) for dedup and neighbourhood expansion rather than a parallel model — this package owns loop lifecycle and surfacing, not a second memory store.
+A loop's claim kind follows its state and is not stored: `suspicion` while `suspected`, `priority` once `active`, `drifting` or `closed`, and none for a `dropped` loop. `loop_claim_kind(state)` in `types.py` is the one table, and `OpenLoop.claim_kind` reads it. The loops REST `claim_kind` is null for dropped loops. Loops reuse `ze-memory`'s graph tables (`memory_relationships`, a dedicated `open_loop` bucket) for dedup and neighborhood expansion rather than a parallel model. This package owns loop lifecycle and surfacing, not a second memory store.
 
 ### Key features
 

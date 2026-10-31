@@ -1,6 +1,6 @@
 # Ze — Browser Sidecar
 
-Ze uses a separate **browser sidecar** for headless page extraction. Chromium runs in
+Ze uses a separate browser sidecar for headless page extraction. Chromium runs in
 its own container/process; the main API talks to it over HTTP. This keeps the backend
 image small and cold starts fast.
 
@@ -33,8 +33,8 @@ make docker-up
 python scripts/check_browser_health.py --probe
 ```
 
-The compose healthcheck uses fast `GET /health` only (milliseconds). Use the probe
-after startup when you need to confirm Playwright can actually fetch a page.
+The compose healthcheck uses only the fast `GET /health` (milliseconds). Run the probe
+after startup to confirm that Playwright can fetch a page.
 
 ### Hybrid workflow (`make dev` on the host)
 
@@ -81,23 +81,23 @@ python scripts/check_browser_health.py --probe --probe-timeout 60
 | Default (`GET /health`) | FastAPI is up | After compose up, quick ping |
 | `--probe` (`POST /extract`) | Chromium + network + extraction work | Debugging prospecting failures, post-deploy smoke |
 
-Do **not** use `--probe` in Docker Compose healthchecks — it is slow and needs outbound
+Do not use `--probe` in Docker Compose healthchecks. It is slow and needs outbound
 network. Compose keeps the inline `/health` check so `backend` starts promptly.
 
 ---
 
 ## Production (Fly.io)
 
-The sidecar deploys as a **separate Fly app** (`sidecar/browser/fly.toml`), not inside
+The sidecar deploys as a separate Fly app (`sidecar/browser/fly.toml`), not inside
 the main `ze-api` image. Ze reaches it at `http://ze-browser.internal:8080` on Fly's
-private network. Deploy both apps to the **same region**.
+private network. Deploy both apps to the same region.
 
 ```bash
 cd sidecar/browser
 fly deploy
 ```
 
-The main backend deploy does not redeploy the sidecar — release them independently.
+The main backend deploy does not redeploy the sidecar, so release the two independently.
 Full Fly setup: [sidecar/browser/README.md](../sidecar/browser/README.md).
 
 From a Fly machine you can smoke-test with:

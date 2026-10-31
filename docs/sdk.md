@@ -34,7 +34,7 @@ from ze_sdk.errors import ZeError, AgentError, AgentAbortedError, AgentConfigErr
 | Symbol | What it is |
 |--------|-----------|
 | `ZePlugin` | Abstract base class for domain extensions. Override only the hooks you need.|
-| `agent` | Class decorator that registers a `BaseAgent` subclass in the global `AgentRegistry`. |
+| `agent` | Class decorator that registers a `BaseAgent` subclass in the global agent registry (`ze_agents.registry`). |
 | `tool` | Function decorator that registers an async function as a callable tool. |
 | `ToolAccess` | Enum — `READ` or `WRITE`. A `WRITE` tool that is irreversible asks first by default. |
 | `Injected` | Type marker for a tool parameter that Ze supplies and the model never sees: `session_id: Injected[str \| None] = None`. |
@@ -43,7 +43,7 @@ from ze_sdk.errors import ZeError, AgentError, AgentAbortedError, AgentConfigErr
 | `ToolReversibility` | Enum — `REVERSIBLE` or `IRREVERSIBLE`. Required on every `WRITE` tool; see [Tool reversibility](#tool-reversibility). |
 | `BaseAgent` | Abstract base class all agents inherit. Provides `agentic_loop`, `call_tool`, `emit`, and `_build_system_prompt`. |
 | `get_logger` | Structured logger factory. Always call as `get_logger(__name__)`. |
-| `Settings` | Settings dataclass bridge. Agents receive this via DI — never construct it yourself. |
+| `Settings` | Settings dataclass bridge. Agents receive this via DI. Never construct it yourself. |
 | `parse_llm_json` | Parses a model's JSON reply (fences, surrounding prose). Raises `LLMJsonParseError`. Never call `json.loads` on a model reply. |
 | `hold_token_sink`, `publish_honest_reply` | Hold an agent's streamed tokens, then publish the reply after the honesty gate checked its memory claims against the tool calls. |
 | `SystemOneClient` | `Protocol` for typed judgments (`noul`, `choice`, `score`). See [system-one.md](system-one.md). |
@@ -170,7 +170,7 @@ token.is_set                            # True after abort()
 
 ### `Action` and `Notification`
 
-Returned from `AppInterface` to the transport layer. Plugin authors rarely construct these directly — they come from `BaseAgent.run()` returning an `AgentResult`, which the graph nodes convert to frames.
+Returned from `AppInterface` to the transport layer. Plugin authors rarely construct these directly. They come from `BaseAgent.run()` returning an `AgentResult`, which the graph nodes convert to frames.
 
 ---
 
@@ -241,7 +241,7 @@ Sends a progress message to the client using a locale translation key. No-op whe
 
 #### `self._model(ctx) -> str`
 
-Returns the active model string — respects `ctx.model` overrides and falls back to `self.model`.
+Returns the active model string. It respects `ctx.model` overrides and falls back to `self.model`.
 
 ### Lifecycle hooks
 
@@ -264,7 +264,7 @@ from ze_sdk import agent
 class MyAgent(BaseAgent): ...
 ```
 
-Registers the class in the agent registry (`ze_agents/registry.py`) when the module is imported. `bootstrap_agents` (`ze_agents/bootstrap.py`) imports all modules listed in `ZePlugin.agent_module_paths()` to trigger registration. There is nothing else to call — the decorator is the entire registration.
+Registers the class in the agent registry (`ze_agents/registry.py`) when the module is imported. `bootstrap_agents` (`ze_agents/bootstrap.py`) imports all modules listed in `ZePlugin.agent_module_paths()` to trigger registration. Nothing else needs a call: the decorator is the entire registration.
 
 ---
 
@@ -300,7 +300,7 @@ opens a confirmation itself.
 ### Rules
 
 - Tools must be `async def`.
-- All parameters the LLM cannot infer must be typed — they are injected via `deps` in `agentic_loop` or passed explicitly via `call_tool(**kwargs)`.
+- A parameter the model must not set is typed `Injected[...]` or as a dependency type. Ze fills it from `deps` in `agentic_loop`, or the caller passes it to `call_tool(**kwargs)`. See [Tool parameters](adding-an-agent.md#tool-parameters).
 - `ToolAccess.READ` — no external side effects. Runs without asking.
 - `ToolAccess.WRITE` — creates, modifies, deletes, or sends. An irreversible write asks first unless it declares `asks_first=False` with a `no_ask_reason`. Must declare `reversibility`.
 
@@ -368,7 +368,7 @@ refused with `writes_must_be_proposed`.
 
 ### OpenRouter web search
 
-Declare `"openrouter:web_search"` in `tools` to let the model trigger a web search. No Python tool function is needed — OpenRouter executes it and the result appears in the conversation automatically.
+Declare `"openrouter:web_search"` in `tools` to let the model trigger a web search. No Python tool function is needed. OpenRouter runs it and the result appears in the conversation automatically.
 
 ```python
 tools = ["openrouter:web_search", "my_tool"]
@@ -523,7 +523,7 @@ durable seeds before applying them through deployment adapters. See
 
 ## `ze_sdk.memory` — memory types
 
-Plugin agents rarely read memory directly — `ctx.memory` is pre-populated. Use these types for type hints and for direct store access in proactive jobs.
+Plugin agents rarely read memory directly: `ctx.memory` is pre-populated. Use these types for type hints and for direct store access in proactive jobs.
 
 | Symbol | Description |
 |--------|-------------|

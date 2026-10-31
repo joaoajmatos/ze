@@ -109,6 +109,17 @@ never call Docker.
 To run against an existing Postgres instead of a container, set `ZE_TEST_PG_URL` to its
 `postgresql://` URL.
 
+### Dead-code report
+
+`make deadcode` runs vulture over the Python packages and prints two lists. It reports only; it is not a gate. The first run needs `uvx` and network access.
+
+- **Functions, methods, classes, properties.** Nothing references them. Tests count as callers.
+- **Constants, fields, enum members.** Check the stored values and the model JSON before you delete one. A database row or a model reply may still use the value.
+
+`make deadcode-tests-only` lists definitions that only tests reference. Wire each one in or delete it with its tests.
+
+A hit is a candidate, not a verdict. Confirm it with `git grep -w <name>` and the `ze_sdk` re-export list. Route functions and functions decorated with `@tool`, `@agent`, `@render_tool`, `@mcp.tool` or `@proactive_job` are already ignored. If a framework or entry point calls a name that vulture cannot see, add `_.name` with a comment to `scripts/vulture_whitelist.py`. Never whitelist a name because it looks dead.
+
 ### Direct pytest (fallback)
 
 When filtering to a single file or test name:

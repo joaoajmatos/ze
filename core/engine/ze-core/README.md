@@ -1,10 +1,10 @@
 # ze-core
 
-LangGraph orchestration engine for Ze. Pure infrastructure — routing, graph execution, write confirmation, OpenRouter client, telemetry, and DI container. Contains no personal-assistant domain logic.
+LangGraph orchestration engine for Ze. It is pure infrastructure: routing, graph execution, write confirmation, the OpenRouter client, telemetry, and the DI container. It contains no personal-assistant domain logic.
 
 ## Role in Ze
 
-Every user message flows through the LangGraph built by `ze-core`. The graph handles routing, context retrieval, preflight checks, agent execution, memory writes, and response synthesis. `ze-core` is the engine layer — it knows how to orchestrate agents but not what those agents do.
+Every user message flows through the LangGraph built by `ze-core`. The graph handles routing, context retrieval, preflight checks, agent execution, memory writes, and response synthesis. `ze-core` is the engine layer. It orchestrates agents but does not know what they do.
 
 ### Key features
 
@@ -38,7 +38,7 @@ The `ze_core/screen/` package holds the screen resolver registry and `build_scre
 | `bootstrap.py` | `build_engine_stack()` — builds the embedder, NLI client, OpenRouter client, cost tracker, memory store, consolidator, and session summariser |
 | `interface/cli.py` | `CLIInterface`, a terminal `AppInterface` implementation |
 | `migrations/` | The `zc` chain for engine tables (routing log, cost log, messages, sessions, confirmations, checkpoints) |
-| `checkpoint_serde.py` | LangGraph checkpoint serialisation for plugin types |
+| `checkpoint_serde.py` | LangGraph checkpoint serialization for plugin types |
 
 Agent execution (`BaseAgent`, `@agent`, `@tool`), plugin framework (`ZePlugin`, channels), and memory live in sibling packages — `ze-agents`, `ze-plugin`, and `ze-memory`.
 

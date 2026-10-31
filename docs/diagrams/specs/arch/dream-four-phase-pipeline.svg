@@ -55,7 +55,7 @@
   <text x="964" y="132" fill="#6b6b6b" font-size="11" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="middle">Waking integration</text>
   <line x1="860" y1="142" x2="1068" y2="142" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
   <text x="964" y="156" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">3 gates + 2-critic pipeline;</text>
-  <text x="964" y="168" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">promote, review, or forget</text>
+  <text x="964" y="168" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">promote or reject</text>
   <rect x="860" y="186" width="208" height="22" rx="4" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
   <text x="964" y="201" fill="#8052ff" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">LLM CALLS: SONNET + NLI</text>
 

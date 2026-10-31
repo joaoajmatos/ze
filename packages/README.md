@@ -19,7 +19,7 @@ Shared packages consumed across the monorepo. This directory holds:
 
 Plugin authors list `ze-sdk` as their only Ze dependency and import from `ze_sdk.*`.
 It re-exports the stable surface from `ze-agents`, `ze-plugin`, `ze-proactive`,
-`ze-memory`, `ze-communication`, and related core packages — never `ze-core` engine
+`ze-memory`, `ze-communication`, and related core packages, but never `ze-core` engine
 internals. See [ze-sdk/README.md](ze-sdk/README.md) and [docs/sdk.md](../docs/sdk.md).
 
 Tests: `make test-sdk`.

@@ -303,7 +303,7 @@ describe the pre-split monolithic `ze-core` and are kept only as historical refe
 | `ze-sdk` | [ze-sdk.md](core/ze-sdk.md) | Plugin entry point — flat re-export of everything plugin authors need |
 | `ze-proactive` | [ze-proactive.md](core/ze-proactive.md) | Job scheduling — `ProactiveJob`, `ProactiveScheduler`, push log |
 | `ze-memory` | [ze-memory.md](core/ze-memory.md) | Memory stack — facts, episodes, graph, consolidation, dream |
-| `ze-automation` | [ze-automation.md](core/ze-automation.md) | Automation — goals, workflows, accountability, GoalAgent, WorkflowAgent |
+| `ze-automation` | [ze-automation.md](core/ze-automation.md) | Automation — goals, workflows, accountability, GoalAgent, WorkflowManagerAgent |
 | `ze-communication` | [ze-communication.md](core/ze-communication.md) | Channel contract — `Channel` ABC, `InboundChannel`, `ChannelRegistry` |
 | Smaller packages | [ze-smaller-packages.md](core/ze-smaller-packages.md) | ze-logging, ze-notifications, ze-browser, ze-data, ze-components, ze-correlation, ze-eval, ze-onboarding, ze-ingestion, ze-seed |
 
@@ -339,7 +339,7 @@ should read them before changing anything structural.
 | [System One Models](arch/system-one-models.md) | **Living.** Typed judgments (Choice/Noul/Score) as an extra decision layer beside OpenRouter and local E5/NLI. First slices: [162](phases/162-system-one-client/spec.md)–[164](phases/164-routing-choice-after-e5/spec.md). Not a package spec. |
 | [LangGraph Orchestration](arch/langgraph-orchestration.md) | LangGraph + AsyncPostgresSaver — durable graph execution with confirmation-flow pause/resume |
 | [Local Embeddings](arch/local-embeddings.md) | `paraphrase-multilingual-MiniLM-L12-v2` in-process — zero cost, multilingual, hot-path safe |
-| [Dataclasses over Pydantic](arch/dataclasses-over-pydantic.md) | `@dataclass` in all domain code; Pydantic only in `ze_api/api/schemas.py` |
+| [Dataclasses over Pydantic](arch/dataclasses-over-pydantic.md) | `@dataclass` in all domain code; Pydantic only in the `schemas.py` files under `ze_api/api/` |
 | [Alembic Raw SQL](arch/alembic-raw-sql.md) | Hand-written SQL migrations; per-package chains; no ORM |
 | [asyncpg + psycopg2 split](arch/asyncpg-psycopg2-split.md) | asyncpg for runtime, psycopg2 for Alembic CLI — asyncpg has no sync mode |
 | [ntfy Push Notifications](arch/ntfy-push-notifications.md) | Self-hostable REST-based push; no vendor approval; deep-link support |

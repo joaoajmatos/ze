@@ -1,8 +1,8 @@
 # Ze — Scheduled Jobs & Memory Lifecycle
 
-Ze isn't only reactive. A set of background jobs run on a daily and weekly cadence
-to keep memory clean, synthesize a portrait of the user, surface insights, and push
-proactive messages — all without the user prompting anything.
+Ze does not only react. Background jobs run on a daily and weekly cadence. They keep
+memory clean, synthesize a portrait of the user, surface insights, and push proactive
+messages, all without a user prompt.
 
 This document explains what runs, when, and how each piece feeds into the next.
 
@@ -10,8 +10,7 @@ This document explains what runs, when, and how each piece feeds into the next.
 
 ## The memory lifecycle
 
-Every conversation leaves a record. Over time those records build into something
-richer:
+Every conversation leaves a record. Over time the records build up:
 
 ![Process diagram showing conversations producing facts and episodes, which feed a periodic session summary and nightly consolidation, then user profile synthesis, weekly insight generation, and the morning briefing](diagrams/docs/scheduled-jobs.svg)
 
@@ -40,7 +39,7 @@ an episode after every run. Episodes don't require user approval.
 minutes, Haiku generates a single narrative summary of the full session and writes it
 to `memory_session_summaries`. If the user returns and adds more turns before the
 session is archived, Ze regenerates the summary on the next tick. Raw episodes stay
-until nightly archival removes them — at that point Ze skips the LLM call because
+until nightly archival removes them. At that point Ze skips the LLM call because
 the eager summary already exists.
 
 **Memory injection**
@@ -186,7 +185,7 @@ episodes exist in the lookback window.
 **Module:** `ze_personal/jobs/briefing.py`  
 **Config:** `proactive.briefing.*` and `news.personalization.*` in `config/config.yaml`
 
-A daily digest, sent as the `accountability` push kind `morning_brief` via `ProactiveNotifier`. No LLM call — it's a templated summary of stats and headlines:
+A daily digest, sent as the `accountability` push kind `morning_brief` via `ProactiveNotifier`. It makes no LLM call. It is a templated summary of stats and headlines:
 
 - **Unreviewed facts** — facts Ze proposed that you haven't confirmed or rejected yet.
   If the count is at or above `unreviewed_nudge_threshold` (default: 5), the briefing
@@ -194,8 +193,7 @@ A daily digest, sent as the `accountability` push kind `morning_brief` via `Proa
 - **Scheduled workflows** — the names of the enabled scheduled workflows.
 - **Recent failures** — any workflow runs that failed in the past 24 hours.
 - **Follow-up nudges** — stale relationships that `PriorityView` ranks as `relationship` items.
-- **Dream summary** — when the latest dream journal entry promoted insights or left items for
-  review.
+- **Dream summary** — when the latest dream journal entry promoted insights.
 - **Personalized headlines** — when the `ze-news` plugin is enabled, the briefing appends
   a news section. With enough user preferences (≥ `news.personalization.min_preferences`, default 2),
   Ze ranks articles by cosine similarity against a snapshot of the user's interest
@@ -211,11 +209,11 @@ A daily digest, sent as the `accountability` push kind `morning_brief` via `Proa
   ```
 
   Ze ranks the discovery bucket (`explore_ratio`, default 20%) by recency, not by
-  interest score, so the user always sees genuinely fresh off-profile content. Below
+  interest score, so the user always sees fresh off-profile content. Below
   the fact threshold, or when personalization is disabled, the section falls back to
   a plain recency-ordered list under `📰 Headlines:`.
 
-The briefing is deduplicated — it will not fire if one was already sent within the past
+The briefing is deduplicated: it does not fire if one was already sent within the past
 20 hours. Only a briefing that was delivered or held (for example by quiet hours) counts.
 If the push fails, Ze tries again on the next run.
 
@@ -247,7 +245,7 @@ events with same-day reminders.
 **Module:** `ze_automation/bootstrap.py` (the failure handler) + `ze_proactive/notifier.py`
 
 When a scheduled workflow step fails, Ze sends an `accountability` push (kind
-`workflow_failure`) immediately — no waiting for the morning briefing. A
+`workflow_failure`) immediately, without waiting for the morning briefing. A
 `workflow_failure_cooldown_hours` (default: 1h) prevents alert spam for
 repeatedly-failing workflows. The cooldown is per workflow: the alert claims
 `OncePer("workflow_failure_alert:<workflow id>")` for that window. The claim holds only
@@ -258,8 +256,8 @@ again at once. The failure itself stays in the workflow's execution record.
 
 ## Goal advance sweep (every 15 minutes)
 
-**Module:** `ze_automation/goals/executor.py` · registered in `ze_automation/bootstrap.py`'s `register_goal_advance_sweep()`, called from `ze_api/wiring/jobs.py`  
-**Job id:** `goal_advance_sweep` · **Cron:** `*/15 * * * *` (configurable via `proactive.goal_advance_sweep.cron`)
+**Module:** `ze_automation/goals/executor.py` · registered by `register_goal_advance_sweep` in `ze_automation/bootstrap.py`, called from `ze_api/wiring/jobs.py`  
+**Job id:** `goal_advance_sweep` · **Config:** `proactive.goal_advance_sweep.enabled` and `.cron` (defaults `true` and `*/15 * * * *`)
 
 For each goal with status `ACTIVE`, the sweep calls `GoalExecutor.advance(goal_id)`.
 The advance loop either:
@@ -271,7 +269,9 @@ The advance loop either:
   `accountability`, e.g. *"✅ Draft target list done (2/8)"*).
 
 The sweep skips goals in `AWAITING_GATE`, `PAUSED`, `PLANNING`, `COMPLETED`, or
-`ABANDONED`. It is lightweight — it returns early when there is no actionable next step.
+`ABANDONED`. It is lightweight. An idle goal costs a few database reads and no model call,
+because `advance` returns before the model when a milestone is held or the goal is not
+`ACTIVE`.
 
 Ze handles gate responses conversationally, not on the cron tick: approving
 or redirecting calls `advance` again from the conversation handler.
@@ -310,7 +310,7 @@ For each active goal, Ze synthesizes a one-paragraph weekly update: what was com
 **Module:** `ze_automation/jobs/goal_suggestion.py`  
 **Cron:** `0 19 * * 0` (configurable via `proactive.goal_suggestion.cron`)
 
-Analyzes recent memory facts, episodes, and past goal retrospectives to propose one new multi-week goal. The titles of active goals go to the planner so that it does not duplicate them. Ze sends the suggestion as a `discretionary` push (kind `goal_suggestion`) with **Yes, create it** / **Dismiss** options. Accepted suggestions open a goal creation flow. The job skips a run when Ze saved a pending, accepted, or dismissed suggestion in the past 6 days. It also expires pending suggestions older than 30 days.
+Analyzes recent memory facts, episodes, and past goal retrospectives to propose one new multi-week goal. The titles of active goals go to the planner so that it does not duplicate them. Ze sends the suggestion as a `discretionary` push (kind `goal_suggestion`) with **Yes, create it**, **Dismiss**, and **Tell me more** options. **Yes, create it** plans the goal and sends the usual plan proposal (Start goal / Cancel). If Ze cannot plan or send it, the suggestion stays pending. **Dismiss** records the dismissal. **Tell me more** repeats the rationale with the same buttons. The job skips a run when Ze saved a pending, accepted, or dismissed suggestion in the past 6 days. It also expires pending suggestions older than 30 days.
 
 ---
 
@@ -335,7 +335,7 @@ Ze sends one `discretionary` push per run (kind `stuck_goal`) that lists every b
 **Module:** `ze_automation/jobs/accountability.py` (`AccountabilityJob`)  
 **Cron:** `0 9 * * 1` (configurable via `proactive.accountability.schedule`)
 
-A weekly plain-text summary of everything Ze did while you weren't watching:
+A weekly plain-text summary of what Ze did while you were away:
 
 ```
 Ze activity report (last 7 days)
@@ -364,7 +364,7 @@ Data sourced from:
 | Workflow runs | Workflow failures in the period (`list_failed_executions`) |
 | `accountability_anomalies` | Cost outliers flagged by `CostAnomalyJob` |
 
-Ze sends the narrative as an `accountability` push (kind `accountability_narrative`). The job is deduplicated with a 6-day window under key `weekly_accountability` — safe to retry without double-sending. No LLM call; the narrative is purely templated.
+Ze sends the narrative as an `accountability` push (kind `accountability_narrative`). The job is deduplicated with a 6-day window under key `weekly_accountability`, so a retry never sends twice. The job makes no LLM call; the narrative is a template.
 
 The same data is available on-demand via the `/status` WebSocket command (see [native-interface.md](native-interface.md)).
 
@@ -375,7 +375,7 @@ The same data is available on-demand via the `/status` WebSocket command (see [n
 **Module:** `ze_automation/jobs/cost_anomaly.py` (`CostAnomalyJob`)  
 **Cron:** `0 */6 * * *` (configurable via `proactive.accountability.cost_anomaly_schedule`)
 
-Silently scans recent LLM runs and alerts if any single run cost significantly more than that agent's historical baseline:
+Scans recent LLM runs without notice and alerts when a single run costs much more than that agent's historical baseline:
 
 - **Baseline**: median cost-per-run over the past 30 days. Uses median (not mean) to resist distortion from the very anomalies this check aims to detect.
 - **Minimum samples**: the job requires at least `anomaly_min_samples` (default: 5) historical runs before an agent can have a baseline. It silently skips new agents.
@@ -395,7 +395,7 @@ Date: 2026-06-09
 
 Ze writes anomaly records to the `accountability_anomalies` table and prunes them automatically after `anomaly_retention_days` (default: 30 days).
 
-The threshold is a conservative first guess — calibrate after 30 days of live data.
+The threshold is a first guess. Calibrate it after 30 days of live data.
 
 ---
 
@@ -405,14 +405,14 @@ The threshold is a conservative first guess — calibrate after 30 days of live 
 **Job id:** `checkpoint_pruning` · **Cron:** `0 * * * *`
 
 LangGraph's `AsyncPostgresSaver` writes a full checkpoint on every node transition and
-never prunes old ones on its own — resume/replay only ever reads the latest checkpoint
-per thread, so history beyond a small safety margin is pure storage growth. For each
-`(thread_id, checkpoint_ns)`, keeps the most recent `keep_per_thread` checkpoints
+never prunes old ones on its own. Resume and replay read only the latest checkpoint
+per thread, so history beyond a small safety margin only adds storage. For each
+`(thread_id, checkpoint_ns)`, the job keeps the most recent `keep_per_thread` checkpoints
 (default 3) and deletes older rows from `checkpoints` + their `checkpoint_writes`, plus
 any `checkpoint_blobs` no longer referenced by a kept checkpoint's `channel_versions`.
 
-This only reclaims *logical* rows — Postgres `VACUUM` (run automatically by autovacuum)
-adds the freed pages to the free-space map for reuse but doesn't shrink the file on
+This job reclaims only *logical* rows. Postgres `VACUUM` (which autovacuum runs)
+adds the freed pages to the free-space map for reuse, but it does not shrink the file on
 disk. The `pg_total_relation_size` figure shown on the Data Overview page (`graph.checkpoints`
 domain) will plateau rather than keep climbing once this job is running continuously,
 but a one-time backlog won't visibly shrink there without a manual `VACUUM FULL` /
@@ -425,8 +425,18 @@ but a one-time backlog won't visibly shrink there without a manual `VACUUM FULL`
 **Module:** `ze_core/telemetry/reconciler.py` (`CostReconciler`) · registered in `ze_core/bootstrap.py`'s `register_engine_jobs()`, called from `ze_api/wiring/jobs.py`  
 **Job id:** `cost_reconciliation` · **Cron:** `*/15 * * * *`
 
-Pulls actual billed costs from the OpenRouter API and reconciles them against
-estimated records in `llm_cost_log`. Runs frequently to keep cost data fresh.
+Every 15 minutes the reconciler prices up to 100 unpriced rows of `llm_cost_log`, newest
+first, between 2 minutes and 3 days old. It retries a 404, because OpenRouter may not have
+indexed the generation yet, and gives up on a generation after three misses in a row. It
+gives up at once on a 400 invalid id. A row older than 3 days keeps `cost_usd` NULL, which
+means unknown. Estimate it from `ze_core/telemetry/pricing.py`.
+
+Every LLM call logs a flow and an agent. A conversation turn logs flow `user_message`
+with the thread id as session. A cron job logs flow `proactive`, with the job id as agent
+and `job:<job id>` as session. Eval and workflow flows keep their own. Steps inside a turn
+log the agents `router`, `skills`, `memory_write`, `synthesis`, and `session_title`.
+`ze_core/telemetry/pricing.py` prices System One (`typesafe/jev-`) at $0.042 per million
+prompt tokens, with free completions, by slug prefix.
 
 ---
 
@@ -507,6 +517,20 @@ See [cognitive-architecture.md](cognitive-architecture.md).
 
 ---
 
+## Contacts consolidation (3 AM UTC)
+
+**Module:** `ze_personal/contacts/consolidator.py` · registered by `PersonalPlugin`
+**Job id:** `contacts_consolidation` · **Cron:** `0 3 * * *` (configurable via `contacts.consolidation.nightly_cron`)
+
+The job reads conversation episodes from `memory_episodes`, skipping workflow, eval, and
+consolidator episodes. It resumes after the last episode it processed, which it records in
+`contacts_episode_watermark`, and it reads at most `contacts.consolidation.max_episodes_per_run`
+(default 50) episodes per run, in batches of `episode_batch_size` (default 10). From each
+batch the model extracts people, projects, and `WORKS_ON` / `COLLABORATES_WITH` edges. Ze
+then dedups and merges the people into the contact records.
+
+---
+
 ## Other scheduled jobs
 
 | Job id | Default cron | What it does | Config |
@@ -550,6 +574,13 @@ The user sets quiet hours in the Attention module of Governance (`/governance`).
 
 Ze runs on a laptop, so a scheduled time can pass while the host is asleep. `ProactiveScheduler` records each run in `proactive_job_runs`. On startup, it runs a catch-up job once when the scheduled time passed since the last recorded run, within the job's `catch_up_max_age_hours`. The morning briefing sets this from `proactive.briefing.catch_up_max_age_hours` (default 6). A job with no recorded run does not run at startup. APScheduler `misfire_grace_time=None` with `coalesce=True` covers a process that was suspended over a fire time. The `quiet_hours_release` job does not catch up.
 
+Two config keys control catch-up. `proactive.catch_up: false` turns it off for every job.
+`proactive.catch_up_max_age_hours` maps a job id to the oldest missed run that still
+catches up. A max age set at registration (the briefing) wins over this map. The shipped
+config limits `news_fetch`, `session_summary`, `goal_advance_sweep`, `inbound_poll`, and
+`quiet_hours_release` to 1 hour, and `correlation_scan` and `attention_arbitration_sweep`
+to 4 hours.
+
 ---
 
 ## Skill source recheck (6 AM UTC)
@@ -586,7 +617,7 @@ tier instead of literal clock position.
 | 3:00 AM daily | Hypothesis confidence decay | `ze_correlation/jobs/hypothesis_decay.py` |
 | 4:00 AM daily | Stale open-loop suspicion expiry | `ze_worldstate/jobs/stale_suspicion.py` |
 | 5:00 AM daily | Open-loop drift sweep | `ze_worldstate/jobs/drift_sweep.py` |
-| 3:00 AM daily | Contacts consolidation (dedup + merge) | `ze_personal/contacts/consolidator.py` |
+| 3:00 AM daily | Contacts consolidation (extract + dedup + merge) | `ze_personal/contacts/consolidator.py` |
 | 6:00 AM daily | Imported skill source-content recheck | `ze_skills/jobs/recheck.py` |
 | Every 10 min | Session summary generation | `ze_memory/session_summary.py` |
 | 7:00 AM Sun | Weekly insight generation | `ze_personal/jobs/insights.py` |

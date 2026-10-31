@@ -4,7 +4,7 @@ Both held-out sets have been seen, so they are regression sets, not a clean verd
 Amended bar (set after the original PT bar failed): EN recall >= 0.9, PT recall >= 0.65,
 FPR <= 0.05 per language.
 
-Held-out 3 (CF-02, specs/arch/cleanup-cf02-embeddings.md) was written before the
+Held-out 3 (CF-02, see docs/eval.md, Detector calibration) was written before the
 constants were re-checked and scored lower (EN 0.667, PT 0.333 at zero FPR); it is
 pinned at those measured floors, not at the amended bar. Retrieval moved to
 `encode_query`; the detector deliberately stays passage-vs-passage.

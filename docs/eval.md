@@ -143,8 +143,8 @@ ze_confirm(choice="deny", session_id="eval")
 ze_confirm(choice="approve", session_id="eval", edits={"<item id>": "new body"})
 ```
 
-`choice` is `approve` or `deny`. Approving runs exactly the parked calls, so it really
-sends or deletes: use it only when Ze's Google account is a sandbox. `edits` maps a
+`choice` is `approve` or `deny`. Approving runs exactly the parked calls, so it
+sends or deletes for real. Use it only when Ze's Google account is a sandbox. `edits` maps a
 confirmation item id to replacement text for an editable item. The result has the same
 shape as `ze_chat`. The call fails with `409` when the session has no open confirmation.
 
@@ -212,7 +212,7 @@ The same server also answers `POST /eval/confirm` with `{"session_id": "...", "c
 
 Add `"force_agent": "research"` to the request body to skip routing and run a named agent. The trace shows `routing_method: "forced"`. Use it to measure what one agent does with a prompt the router would send elsewhere.
 
-The server accepts `force_agent` only when it runs with `EVAL_MODE=true`, which `make dev-eval` sets. Any other server answers `403` and runs nothing. An unknown agent name answers `400`. The WebSocket path has no way to set it.
+`/eval/chat`, `/eval/confirm` and `/api/v0/routing/log` exist only when the server runs with `EVAL_MODE=true`, which `make dev-eval` sets. Any other server answers `404` and leaves them out of its OpenAPI schema and `@myguyze/ze-client`. They take the same `Authorization: Bearer` key as the rest of the API. An unknown agent name in `force_agent` answers `400`. The WebSocket path has no way to set it.
 
 ### Sending a screen context
 
@@ -336,6 +336,10 @@ database connection (`DATABASE_URL`), because the API has no create route for mo
 records. Run these scenarios only against a throwaway database. `eval/scenarios/screen_context.yaml`
 covers deixis per place and one `chat_about` scenario per core kind.
 
+### Render scenarios
+
+`eval/scenarios/companion.yaml` has scenarios tagged `render`. Each asks for a table, metric, timeline or form and expects the agent that owns the render tool (research, finance or calendar). Two negative scenarios use `count: 0` entries to prove that no render tool ran on a plain-prose turn. Run them with `--tag render`.
+
 ### Sandbox-only scenarios
 
 A scenario that creates or deletes calendar events sets `requires_sandbox: true`. The
@@ -397,7 +401,7 @@ markdown fences and prose around the object. An unusable reply is recorded as
 `{"error": "unusable judge reply from <model> (...); starts with: '...'"}` on that
 scenario instead of a bare parse error.
 
-The judge sees more than the reply text. It also gets the tool calls from the trace, with a write that waits for confirmation marked as a draft, whether the turn waits for the user, and today's date. Server-side web search never appears in the tool list, and the prompt says so. Without this context the judge scored a pending goal as "no tool call" and a correct new Python release as a hallucination (2 of 5 each).
+The judge sees more than the reply text. It also gets the tool calls from the trace, with a write that waits for confirmation marked as a draft, whether the turn waits for the user, and today's date. For each rendered component it sees the kind and the data, without top-level styling keys, cut to 700 characters. Server-side web search never appears in the tool list, and the prompt says so. Without this context the judge scored a pending goal as "no tool call" and a correct new Python release as a hallucination (2 of 5 each).
 
 ### Multi-turn scenario
 
@@ -442,7 +446,7 @@ uv run python eval/run.py report --compare       # same as eval-diff
 
 Ze saves results to `eval/results/<timestamp>.json`. The judge uses
 `OPENROUTER_API_KEY` from your `.env` and scores each response on:
-- **quality** (1–5): Does Ze actually answer the question?
+- **quality** (1–5): Does Ze answer the question?
 - **tone** (1–5): Is the tone appropriate and in character?
 - **tool_use** (1–5 or null): Did Ze use tools correctly?
 - **pass** (bool): Would a real user be satisfied?
@@ -474,13 +478,15 @@ The golden test, `apps/ze-api/tests/calibration/test_calibration_golden.py`, run
 tuned set. One held-out run gives the verdict. `test_open_query_holdout.py` is
 a slow test, so it runs only with `SLOW=1`.
 
+The detector embeds the prompt and the example questions as passages (`encode_passage` on both sides). Retrieval embeds the same prompt as a query (`encode_query`), so `fetch_context` encodes the prompt twice. The calibration compared three pairings on four labeled sets. Passage against passage gave the best mean recall at zero false positives (0.79, against 0.69 for query against query). Pairing a query vector with passage examples collapsed English recall to 0.32. The shipped constants are threshold 0.88 and a Portuguese offset of 0.05. Held-out set 3 was written before the constants were rechecked. It gave recall of 0.667 in English and 0.333 in Portuguese at zero false positives. All four sets have now been seen, so none gives a clean verdict, and `test_open_query_holdout.py` pins these numbers as a regression guard.
+
 ### Complexity calibration
 
 `make calibrate-complexity` runs the model-tier judgment over `eval/calibration/complexity.jsonl`. It calls System One and costs credits. Use `ARGS="--check-sets"` to validate the tuned and held-out files offline. The default run prints the Noul histogram by gold tier and the bar that the tuned set suggests. One held-out run gives the verdict: `ARGS="--set holdout --simple-max X"`, with the frozen bar `X`. The runner refuses a second scoring of the held-out set unless you pass `--rerun`. If most rows are skipped for transport reasons (timeouts, rate limits, a missing key), the run exits with code 3, prints no verdict and keeps the held-out set unspent. Fix the cause and run it again. See [Configuration](configuration.md#surfacescomplexity) for the bar rule and the acceptance rule.
 
 ## Latency and token tracking
 
-Every scenario run captures two latency signals automatically — no extra config needed:
+Every scenario run captures two latency signals automatically, with no extra config:
 
 | Signal | Source | What it measures |
 |--------|--------|-----------------|
@@ -524,7 +530,7 @@ every 15 min, and the runner does not use it.
 | `memory.yaml` | 25 | Fact storage and recall, contradiction, admission, remember/forget, retrieval relevance, compaction |
 | `edge_cases.yaml` | 8 | Emoji-only, code paste, language switch, very long, topic switch |
 | `calendar.yaml` | 11 | Read, create, delete, free slots, credential errors, multi-turn |
-| `email.yaml` | 9 | Read, compose, reply, summarise, credential errors, multi-turn |
+| `email.yaml` | 9 | Read, compose, reply, summarize, credential errors, multi-turn |
 | `goals.yaml` | 12 | Create, list, progress check, milestone update, verification cadence, suggestions |
 | `workflow.yaml` | 6 | Create, list, pause, manual trigger, approval flow, error inquiry |
 | `contacts.yaml` | 6 | Lookup, list, add, update, company search, multi-turn |

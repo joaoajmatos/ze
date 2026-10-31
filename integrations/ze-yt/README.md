@@ -1,6 +1,6 @@
 # ze-yt
 
-`yt-dlp` audio fetcher — turns a video URL into audio that ingestion can transcribe.
+`yt-dlp` audio fetcher. It turns a video URL into audio that ingestion can transcribe.
 
 ## Role in Ze
 

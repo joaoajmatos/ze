@@ -3,7 +3,7 @@
 Domain plugin packages. Each plugin implements `ZePlugin` and contributes agents,
 stores, background jobs, and migrations to the Ze graph. Ze discovers plugins
 automatically via `[project.entry-points."ze.plugins"]` in each package's
-`pyproject.toml` — no manual registration in `ze-api`.
+`pyproject.toml`. `ze-api` needs no manual registration.
 
 **Rule:** plugins may import from `packages/ze-sdk` (and transitively `core/`) and
 `integrations/` but never from `apps/`.
@@ -50,8 +50,8 @@ ze-finance     ←  ze-sdk, ze-ingestion, ze-trading212
 5. Add the package to `apps/ze-api/pyproject.toml` dependencies.
 6. Override plugin hooks as needed: `agent_module_paths()`, `memory_policies()`,
    `checkpoint_serde_modules()`, `rest_stores()`, `register_proactive_jobs()`.
-7. If the plugin constructor needs a new shared service type, add it to `plugin_deps`
-   in `apps/ze-api/ze_api/wiring/container.py` (see [docs/extending-ze.md](../docs/extending-ze.md)).
+7. If the plugin constructor needs a new shared service type, add it to `build_dep_map()`
+   in `apps/ze-api/ze_api/wiring/agents.py` (see [docs/extending-ze.md](../docs/extending-ze.md)).
 8. See [docs/adding-an-agent.md](../docs/adding-an-agent.md) and
    [docs/package-architecture.md](../docs/package-architecture.md) for the full checklist.
 

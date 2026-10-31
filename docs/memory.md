@@ -1,9 +1,8 @@
 # Ze — Memory System
 
-Ze maintains persistent, multi-layered memory through the `ze-memory` package
-(`ze_memory`). Memory is backed by Postgres + pgvector and comprises five
-complementary layers. An optional graph layer adds typed relationships between
-memory objects for richer context retrieval.
+The `ze-memory` package (`ze_memory`) keeps Ze's persistent, layered memory. Postgres and
+pgvector back it, and it has five layers. An optional graph layer adds typed relationships
+between memory objects, which gives retrieval more context.
 
 **Package:** `core/cognition/ze-memory/ze_memory/`  
 **Main store:** `ze_memory.retriever.PostgresMemoryStore`
@@ -264,6 +263,11 @@ already written this turn by `remember_fact` (`ok` true, same predicate+value
 identity after normalize) are dropped. Kept rows are
 `PROMPT_SUPPLIED`, `reviewed=false`. Eval threads (`eval-*`) skip this path.
 
+The same step also calls `gather_turn_proposals` (`ze_memory/extractor.py`) for events and
+entities. It makes one model request that returns both, and it makes none for a trivial
+turn such as a greeting or an acknowledgement. The graph layer stores the events and
+upserts the entities.
+
 - Before insert, the store marks every active fact with the same predicate and subject
   `contradicted = true`. It then runs the NLI contradiction check
   (`nli_write_time_check`, default `true`) on the 10 nearest same-subject facts with
@@ -364,7 +368,12 @@ Before every agent execution, `fetch_context` runs:
    so the caller never receives both fragments and summary for the same session.
    Each policy then drops candidates below the relevance floor
    (`memory.relevance_floor`, default 0.35; `relevance_floor_overrides` sets a floor per
-   memory type, and `episode` ships at 0.30). It orders the rest by a composite score:
+   memory type, and `episode` ships at 0.30). The floor filters on raw E5 cosine, and that
+   cosine rarely falls below it: the lowest score measured for an unrelated pair is 0.73
+   (query against passage) and 0.79 (passage against passage). In practice the floor
+   removes almost nothing, so do not rely on it to drop unrelated memories. Setting a floor that
+   works needs a labeled retrieval set, which does not exist yet. Retrieval then
+   orders the candidates by a composite score:
    a weighted sum of similarity, recency (30-day half-life), and confidence, set by
    `memory.composite_weights` (0.6 / 0.25 / 0.15). With `memory.entity_anchor.enabled` (default `true`), entities
    named in the query add their one-hop graph neighbors as a second entry point
@@ -389,15 +398,15 @@ Before every agent execution, `fetch_context` runs:
 5. **Graph augmentation** — when `memory.graph.enabled: true` (default),
    `BoundedExpansionPolicy` expands entity and fact seed IDs from the retrieved
    context one hop. It appends neighbor entities, facts, episodes, and procedures
-   to the context. Failures are silently swallowed — the base context is
-   always returned.
+   to the context. Ze swallows failures and always returns the base
+   context.
 6. **Prompt assembly** — `build_identity_block()` from `ze_personal.persona` renders
    persona traits. `BaseAgent._build_system_prompt()` puts constitution and the agent
    job before the retrieved biography. `_format_memory` prints origin, confidence,
    and recency. Companion retrieval pins reviewed facts always-on (`CompanionPolicy`).
    Calendar, messenger, and news share that assembler (no second builder) and the
    same silent-use / no unsolicited “I remember that you…” job family. They do not
-   list `remember_fact` / `forget_fact`; they import companion `enforce_memory_confirmations`
+   list `remember_fact` / `forget_fact`; they use `enforce_memory_confirmations` from `ze_agents.honesty`
    so they cannot claim those tools succeeded. Constraint write veto is a separate
    gate (144). Recitation stripping as its own product is 145.
    `TurnSurfacing` still owns unsolicited open-item mentions.
@@ -434,7 +443,7 @@ The graph layer stores typed relationships between memory objects in the
 
 ### Predicates
 
-![Node and edge diagram of the memory graph layer's seven predicates: Entity DESCRIBES Fact, Fact SOURCED_FROM Episode, Episode MENTIONS Entity, Event PARTICIPATES_IN Entity, Event PROMOTES_TO Fact, TaskState BELONGS_TO_GOAL Goal or Workflow, and Procedure USES_PROCEDURE Goal or Workflow.](diagrams/docs/memory-graph-predicates.svg)
+![Node and edge diagram of the memory graph layer's nine predicates: Entity DESCRIBES Fact, Fact SOURCED_FROM Episode, Episode MENTIONS Entity, Event PARTICIPATES_IN Entity, Event PROMOTES_TO Fact, TaskState BELONGS_TO_GOAL Goal or Workflow, Procedure USES_PROCEDURE TaskState (defined, but no code writes it), Person WORKS_ON Project and Person COLLABORATES_WITH Person (both between Entities).](diagrams/docs/memory-graph-predicates.svg)
 
 <sub>[Interactive version](diagrams/docs/memory-graph-predicates.html)</sub>
 
@@ -518,7 +527,7 @@ Two steps run in order.
 1. **Session archival** (`session_grouping_enabled`, default `true`). The consolidator
    picks up to `max_sessions_per_run` (10) sessions that have at least
    `min_session_episodes` (3) old raw episodes. A session that already has an entry in
-   `memory_session_summaries` skips the LLM call — the consolidator deletes its raw rows
+   `memory_session_summaries` skips the LLM call, and the consolidator deletes its raw rows
    directly. For any other session, Haiku writes one summary, stored as an archive
    episode, and the consolidator deletes the raw rows.
 2. **Batch archival.** The remaining old raw episodes (up to `episode_archive_batch`,
@@ -654,8 +663,8 @@ Migrations: `core/cognition/ze-memory/ze_memory/migrations/versions/` (raw SQL, 
 - **Reviewed facts are never auto-merged or auto-expired.** Only the user can modify them.
 - **Embeddings are stored at write time only.** At query time they are dropped from context
   objects so `AgentState` stays JSON-serializable for the LangGraph checkpointer.
-- **Graph augmentation is best-effort.** Failures silently fall back to the base context
-  — the store always returns something useful.
+- **Graph augmentation is best-effort.** Failures silently fall back to the base context,
+  so the store always returns something useful.
 - **Memory is editorial, not automatic.** Extracted facts start unreviewed and expire
   if the user never reviews them (`unreviewed_ttl_days`). Facts the user asks Ze to
   remember start reviewed. Episodes are automatic because they archive away after

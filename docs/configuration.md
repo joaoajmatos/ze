@@ -8,6 +8,19 @@ Ze has three layers of configuration:
 
 All files live in `apps/ze-api/config/` (or the path set by `config_dir`).
 
+### Config profiles
+
+A profile is a YAML file in `config/profiles/` that overrides part of `config.yaml`. Set `ZE_PROFILE=<name>` to load it. Ze merges the profile over `config.yaml`: nested mappings merge, and lists and scalars replace. An unknown or malformed name stops startup with an error.
+
+`make dev`, `make dev-full`, and `make dev-eval` set `ZE_PROFILE=quiet`. The `quiet` profile turns off the work nobody watches while you develop:
+
+- It scores news with heuristics only (no model call per article) and fetches once a day.
+- It turns off the weekly insight, goal, and accountability jobs, the nightly dream and memory consolidation jobs, and session summaries. Contacts consolidation goes with memory consolidation.
+- It stops the correlation scan.
+- It stops a restart from running every job it missed.
+
+The profile leaves routing, skills, and commitment intake as shipped, so chat and evals behave the same. Dev and eval memory no longer consolidates or summarizes sessions. Run `make dev ZE_PROFILE=` to use the full shipped config. Production never sets `ZE_PROFILE`.
+
 ---
 
 ## `.env`
@@ -45,7 +58,7 @@ drops and recreates the database named in that URL, inside the Compose Postgres.
 
 ### Google (Calendar + Gmail)
 
-Owned by `integrations/ze-google` — env vars stay in `.env` but are read by that package,
+`integrations/ze-google` owns these variables. They stay in `.env`, but that package reads them,
 not `ZeApiSettings`.
 
 | Variable | Required | Description |
@@ -131,7 +144,7 @@ See [workspace.md](workspace.md) for access, runs, isolation, Docker Compose, an
 Structural settings only: model aliases, memory graph, contacts consolidation, proactive
 crons, news, and skills. Secrets and deployment values stay in `.env`. Persona profiles live in
 `config/persona.yaml`. Agent metadata lives as class attributes on `@agent`
-classes — there is no `agents:` block in YAML.
+classes. There is no `agents:` block in YAML.
 
 Optional `routing:` overrides (threshold, gap_threshold) use ze-core defaults when
 omitted — see `ze_core.routing.types.RouterConfig`. The router's LLM-decomposition
@@ -163,8 +176,7 @@ Every general chat-completion call site — every `@agent`, plus the non-agent s
 
 To trial a new model everywhere with zero code changes and no restart, edit
 `models.default` — config.yaml is re-read on every access, so the next request to any
-non-overridden agent picks it up immediately. To revert, change `models.default` back;
-that's a one-line edit.
+non-overridden agent picks it up immediately. To revert, change `models.default` back.
 
 To pin one agent or step to a specific model independent of the fleet-wide default, add
 it under `models.overrides`:
@@ -176,18 +188,15 @@ models:
     companion: anthropic/claude-sonnet-4-5
 ```
 
-**Fail-fast validation** — startup raises `AgentConfigError` if `models.default` is
+**Fail-fast validation**: startup raises `AgentConfigError` if `models.default` is
 missing/empty, or if any `models.overrides` key isn't a recognized agent name or step
 key (`router_fallback`, `synthesis`, `session_title`, `workflow_verify`, `insights`,
-`reminders`). Startup catches a typo'd override key immediately at boot, instead of
-ignoring it silently.
+`reminders`). A typo in an override key fails at startup instead of being ignored.
 
 **Known limitation**: the `RemindersAgent` (per-turn model) and the calendar reminder
-interval assessor (`ze_calendar/reminders/calendar.py::_assess_intervals`) share the
-`reminders` key — they're different call sites but use the same override key today, so
-pinning one pins both. Ze doesn't split them into distinct keys yet, since both
-reasonably want the same behavior; a future spec can split them if that assumption
-proves wrong.
+interval assessor (`ze_calendar/reminders/calendar.py::_assess_intervals`) are different call
+sites, but they share the `reminders` key. Pinning one pins both. Ze does not split them into
+distinct keys yet.
 
 `models.embedding`, `models.whisper`, and `models.vision_caption` are capability-specific
 pins, entirely outside the default/override resolution chain — changing `models.default`
@@ -212,7 +221,7 @@ Companion stops starting work at `budget_seconds - reserve_seconds`. It then ans
 what it finished, what it did not, and an offer to continue. A delegate that runs past that
 point is cut off. If the turn still hits `budget_seconds`, Ze answers from the list of
 specialists it called instead of failing in silence. Both keys are optional. Keep `budget_seconds` below the web app's delivery watchdog (120 s of silence); a test pins this.
-A specialist cut off at the deadline may have already done a write: the reply says it may have partly run, but the trace cannot show that one call because it never returned.
+A specialist cut off at the deadline may have already done a write. The reply says it may have partly run, but the trace cannot show that call because it never returned.
 
 ### `budget:`
 
@@ -299,7 +308,7 @@ worldstate:
     cron: "0 4 * * *"
 ```
 
-The drift window — how long an `active` loop waits before it drifts — is a code
+The drift window, which is how long an `active` loop waits before it drifts, is a code
 constant (7 days), not config. New evidence on an active loop moves the deadline to at
 least 7 days from now. See [scheduled-jobs.md](scheduled-jobs.md#open-loop-upkeep-4-am-and-5-am-utc).
 
@@ -346,6 +355,20 @@ Controls all proactive push behaviours.
 
 ```yaml
 proactive:
+  catch_up: true                    # false: a restart runs no missed job
+  catch_up_max_age_hours:           # per job id: the oldest missed run that still catches up
+    news_fetch: 1
+    session_summary: 1
+    goal_advance_sweep: 1
+    inbound_poll: 1
+    quiet_hours_release: 1
+    correlation_scan: 4
+    attention_arbitration_sweep: 4
+
+  goal_advance_sweep:
+    enabled: true
+    cron: "*/15 * * * *"            # Advances every active goal; an idle goal costs no model call
+
   briefing:
     enabled: true
     cron: "0 8 * * *"               # When to send the morning briefing (cron, UTC)
@@ -404,6 +427,8 @@ proactive:
 Disable any proactive feature by setting `enabled: false` or toggling the relevant flag.
 
 `proactive.budget.max_pushes_per_day` (default 5) is the one shared budget for every discretionary push, counted over a rolling 24 hours. Ze sends a discretionary nudge only while a slot remains. Once the budget is spent, further nudges enter the notification bell with delivery `suppressed`. Accountability and requested pushes never claim the budget.
+
+`proactive.catch_up: false` turns catch-up off for every job. `proactive.catch_up_max_age_hours` maps a job id to the oldest missed run that still catches up. A max age set at registration, like the briefing's, wins over this map.
 
 `proactive.briefing.catch_up_max_age_hours` (default 6) sets how late a missed briefing may be and still run at startup. After downtime, the scheduler runs each missed cron job once, within this age.
 
@@ -546,14 +571,13 @@ invocation ignores this floor.
 An optional System One gate can narrow automatic matches to one skill. It lives under
 [`system_one.surfaces.skills`](#surfacesskills). It is on in the shipped config.
 
-Set `recheck.enabled: false` to stop the daily job. Manual
-`POST /api/v0/skills/{id}/refresh` still works.
+Set `recheck.enabled: false` to stop the daily job. The job is the only refresh path.
 
 ---
 
 ### `system_one:`
 
-System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. In the shipped `config.yaml`, the master switch and the `commitment_intake`, `routing`, `skills` and `loop_gate` surfaces are on with calibrated bars. The `corroboration` surface is off; it ships off with null bars until a held-out `ENABLE`. The code defaults are off, and without a `system_one:` block everything is off.
+System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. In the shipped `config.yaml`, the master switch and the `commitment_intake`, `routing`, `skills` and `loop_gate` surfaces are on with calibrated bars. The `corroboration` surface is off, with null bars, until a held-out `ENABLE`. The code defaults are off, and without a `system_one:` block everything is off.
 
 ```yaml
 system_one:
@@ -787,7 +811,7 @@ conversationally) overrides the active profile at runtime and survives restarts.
 into the identity block only at the extremes (below `0.2` or above `0.8`). The neutral
 band `[0.2, 0.8)` adds no clause.
 
-![Four horizontal sliders — humor, directness, formality, and depth — each running 0.0 to 1.0, with a neutral band between 0.2 and 0.8 that adds no clause, and labeled effects at the low and high ends](diagrams/docs/persona-dials.svg)
+![Four horizontal sliders (humor, directness, formality, and depth), each running 0.0 to 1.0, with a neutral band between 0.2 and 0.8 that adds no clause, and labeled effects at the low and high ends](diagrams/docs/persona-dials.svg)
 
 <sub>[Interactive version](diagrams/docs/persona-dials.html)</sub>
 
@@ -804,7 +828,7 @@ band `[0.2, 0.8)` adds no clause.
 </details>
 
 **`custom_instructions`** is free-form text appended to every system prompt for that
-profile — useful for "Always respond in European Portuguese" or "Use my name João."
+profile. Examples: "Always respond in European Portuguese" or "Use my name João."
 
 Ze persists profile switches and dial overrides in the `persona_state` DB table, and
 they survive restarts. The YAML values serve as defaults when no DB override exists.
@@ -826,7 +850,7 @@ Both require Google OAuth2 credentials.
 5. Set `GOOGLE_REFRESH_TOKEN` in `.env` (locally) or as a Fly secret (production).
 
 Ze enables calendar and email agents automatically whenever `GOOGLE_REFRESH_TOKEN`
-is set — there are no `calendar.enabled` / `email.enabled` YAML flags.
+is set. There are no `calendar.enabled` / `email.enabled` YAML flags.
 
 ---
 

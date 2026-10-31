@@ -6,7 +6,7 @@ Architecture: [Feature-Sliced Design](https://feature-sliced.design/). See [docs
 
 ## Role in Ze
 
-`ze-web` is the user's window into Ze. All conversational interaction happens here over WebSocket; the other places read the REST API via `@myguyze/ze-client`. Server-driven UI components from agents render in the Ask canvas without requiring frontend deploys. Plugins add modules to places, never pages.
+`ze-web` is the user's interface to Ze. Conversation runs here over WebSocket, and the other places read the REST API through `@myguyze/ze-client`. Server-driven UI components from agents render in the Ask canvas without a frontend deploy. Plugins add modules to places, never pages.
 
 ## Source layout
 

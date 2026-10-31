@@ -1,6 +1,6 @@
 # ze-workspace
 
-Isolated durable workspace — files, shell, and scripting runtimes beside the mind.
+Isolated, durable workspace: files, shell, and scripting runtimes that run beside Ze.
 
 ## Role in Ze
 

@@ -22,7 +22,7 @@ The React web client (`apps/ze-web`) uses [Feature-Sliced Design](https://featur
 
 </details>
 
-**Import rule:** a slice imports only from layers below it, via public `index.ts` exports. Enforced by `make lint-web` (`@feature-sliced/eslint-config`).
+**Import rule:** a slice imports only from a strictly lower layer, via public `index.ts` exports. Two slices on the same layer never import each other. Compose same-layer pieces on the layer above, or pass one in through a slot prop (`AppShell` takes `overlay`). `make lint-web` enforces the layer rule with `@feature-sliced/eslint-config`; it does not check deep imports into a slice.
 
 ## The shell and the five places
 
@@ -157,7 +157,7 @@ Rules that apply across Doing:
 
 - **Gates and held writes.** Gate actions go through `features/answer-gate` (the same sender World uses). Held writes use `HeldWriteCard` (`features/respond-to-confirmation`).
 - **Coral is for unattended failures.** A run is coral only when an unattended run failed or timed out. A cancelled or refused run is never coral. A failed workflow execution is coral.
-- **Plain words.** Statuses, origins and summaries show as plain words. Command output appears verbatim in a monospace box.
+- **Plain words.** Statuses, origins and summaries show as plain words. Command output appears unchanged in a monospace box.
 - **Runs stay fresh.** While a run is in progress, the Runs list and the workspace status refresh every 5 seconds. A run without an id or a start time shows no Cancel button.
 - **Ask about it.** Each goal, workflow, run, skill, gate and held write offers "Chat about this".
 
@@ -196,7 +196,7 @@ Spend averages divide by the days since the first spend inside the 30-day window
 
 ## Adding a new screen
 
-Example (hypothetical — the app has no finance screen): a finance overview at `/finance`. Plugin screens normally arrive through the UI manifest. A core screen belongs to one of the five places.
+Example (hypothetical, since the app has no finance screen): a finance overview at `/finance`. Plugin screens normally arrive through the UI manifest. A core screen belongs to one of the five places.
 
 1. **`entities/transaction/`** — `TransactionRow`, `useTransactionsQuery` wrapping `@myguyze/ze-client`
 2. **`widgets/finance-overview/`** — composes the entity list
@@ -219,7 +219,7 @@ Example: goal detail view at `/doing/goals/:goalId`.
 3. Add `pages/doing-goal/` to compose the widgets
 4. Register the nested route in `app/router/routes.tsx` (no nav entry needed if reached from a list)
 
-Do not put route-specific logic in entities — entities are reusable across screens.
+Do not put route-specific logic in entities. Entities are reusable across screens.
 
 ## Primitive actions and the gallery
 
@@ -235,7 +235,7 @@ Example: confirm recurring expense.
 2. Use it from the widget that owns the UI (e.g. `widgets/finance-overview`)
 3. Export through `features/confirm-recurring/index.ts`
 
-Features import from `entities` and `shared` only — never from `widgets` or `pages`.
+Features import from `entities` and `shared` only, never from `widgets` or `pages`.
 
 ## Reply feedback and Retry
 

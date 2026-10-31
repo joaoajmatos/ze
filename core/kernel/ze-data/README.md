@@ -1,6 +1,6 @@
 # ze-data
 
-Pure-infrastructure data management layer — `DataDomain` descriptor and `DataPortabilityService`. Has no Ze package dependencies and no domain knowledge; it sits at the base of the dependency graph alongside `ze-agents`.
+Data management layer: the `DataDomain` descriptor and `DataPortabilityService`. It has no Ze package dependencies and no domain knowledge. It sits at the base of the dependency graph.
 
 ## Role in Ze
 
@@ -10,10 +10,10 @@ Plugin authors implement `ZePlugin.data_domains()` returning a list of `DataDoma
 
 ### Key features
 
-- `DataDomain` dataclass — the contract between a plugin and the portability service
-- `DataPortabilityService` — export to ZIP, import from ZIP, hard-delete with token-gated confirmation
-- `ExportAssembler` / `ImportAssembler` — ZIP archive construction and parsing
-- `SchemaMismatchError` / `InstanceNotEmptyError` — typed errors for portability failures
+- `DataDomain` dataclass: the contract between a plugin and the portability service
+- `DataPortabilityService`: export to ZIP, import from ZIP, hard-delete with token-gated confirmation
+- `ExportAssembler` / `ImportAssembler`: ZIP archive construction and parsing
+- `SchemaMismatchError` / `InstanceNotEmptyError`: typed errors for portability failures
 
 ### Integration
 

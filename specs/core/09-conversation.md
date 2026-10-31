@@ -59,10 +59,10 @@ but owns no tables.
 
 ## Consumers
 
-- `ze_api/container.py` — wires stores into DI
+- `ze_api/wiring/container.py` — wires stores into DI
 - `ze_api/interface/native.py` — persists outbound assistant messages
-- `ze_api/api/websocket/` — turn handling, reconnect replay, confirmation flow
-- `ze_api/api/routes/sessions.py`, `messages.py` — REST history endpoints
+- `ze_api/api/ws/` — turn handling, reconnect replay, confirmation flow
+- `ze_api/api/v0/sessions/router.py`, `ze_api/api/v0/messages/router.py` — REST history endpoints
 - Data portability engine domains: `messages.store`, `sessions`, `confirmations`
 
 ## Out of Scope

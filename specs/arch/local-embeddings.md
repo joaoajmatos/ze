@@ -41,8 +41,13 @@ local model.
 
 Zero per-call cost, no external dependency for the hot path, and native multilingual
 support. The model is loaded as a singleton at startup via `sentence-transformers`
-and kept in memory for the process lifetime. Callers must use `encode_query` for
-user text and `encode_passage` for agent descriptions and stored content.
+and kept in memory for the process lifetime. There is no unprefixed `encode`. Callers choose by situation:
+
+| Situation | Method |
+|---|---|
+| A user question or prompt matched against stored content (retrieval) | `encode_query` |
+| Stored content (facts, episodes, summaries, agent descriptions) | `encode_passage` |
+| A symmetric comparison of two texts of the same kind (dedup, title matching) | `encode_passage` on both sides |
 
 Routing confidence defaults (`ROUTING_THRESHOLD` 0.73, `ROUTING_GAP_THRESHOLD` 0.02)
 are calibrated to E5's compressed high band, not MiniLM's 0.55 / 0.10.

@@ -1,7 +1,7 @@
 # integrations/
 
 External service integration packages. Each package wraps a third-party API or
-protocol and exposes a clean interface for Ze packages to consume.
+protocol and exposes an interface for Ze packages to consume.
 
 **Rule:** an `integrations/` package has no Ze domain knowledge and no dependency
 on `plugins/` or `apps/`. Most depend only on third-party libraries. `ze-google`,
@@ -72,4 +72,4 @@ Rules:
 
 Plugins declare which integration types they need via `ZePlugin.integration_types()`.
 The bootstrapper deduplicates, calls `from_settings` once per type, and injects the
-result into the plugin DI map automatically — no changes to `container.py` needed.
+result into the plugin DI map automatically — no change to `ze_api/wiring/container.py` needed.

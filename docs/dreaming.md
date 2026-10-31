@@ -1,9 +1,9 @@
 # Ze — Dreaming
 
-Ze runs an offline **dream phase** when it is not in active use. The phase replays
+Ze runs an offline dream phase when it is not in active use. The phase replays
 recent experience, compresses it, tests abstractions, and promotes only validated
-changes into stable memory. The point is not random generation — it is a controlled
-learning loop that improves retention, abstraction, and robustness.
+changes into stable memory. It is a controlled learning loop, not random generation,
+and it improves retention, abstraction, and robustness.
 
 **Package:** `core/cognition/ze-memory/ze_memory/dream/`
 **Architecture:** [specs/arch/dream-memory.md](../specs/arch/dream-memory.md)
@@ -39,12 +39,15 @@ learning loop that improves retention, abstraction, and robustness.
    must pass.
 
 5. **Morning integration** — Well-supported artifacts auto-promote to `memory_facts` or
-   the procedure lifecycle (`procedure_candidates`) with full lineage. Borderline cases go to a review queue. Rejected
-   artifacts trigger forgetting on their source episodes. A dream journal entry surfaces
-   what changed.
+   the procedure lifecycle (`procedure_candidates`) with full lineage. The integration
+   decides every artifact: it promotes the artifact or rejects it. There is no review
+   queue. An artifact below the support bar is rejected, and its source episodes keep their
+   retrieval weight. An artifact that fails a critic is rejected, and Ze lowers the
+   retrieval weight of its source episodes. A dream journal entry
+   shows what changed.
 
 Nothing synthetic writes directly to live memory. Every promoted fact carries
-`provenance=synthesized`, `dream_run_id`, and `derived_from` lineage for rollback.
+`provenance=synthesized`, `dream_run_id`, and `derived_from` lineage, so each fact traces back to its run.
 
 ---
 
@@ -65,8 +68,8 @@ Nothing synthetic writes directly to live memory. Every promoted fact carries
 | **78a** | Done | Sleep pass, wake hook, migration, dream journal API, retrieval weight enforcement |
 | **78b** | Done | Dream synthesis, NLI gates, two-critic pipeline, auto-promotion, confidence decay, `valid_until` expiry |
 
-**NLI model (Phase 79, done):** `cross-encoder/nli-deberta-v3-small` loads as a shared
-singleton in `ze_core/nli.py` (the `NLIClient` protocol lives in `ze_agents/nli.py`) — used for
+NLI model (Phase 79, done): `cross-encoder/nli-deberta-v3-small` loads as a shared
+singleton in `ze_core/nli.py` (the `NLIClient` protocol lives in `ze_agents/nli.py`). It serves
 write-time contradiction, nightly dedup, session-cached retrieval re-rank, and correlation
 grounding. `DreamJob` passes the same client to `ScoringGates.gate1_nli` in `gates.py` (no second
 download). For non-Latin text, or when the NLI call fails, gate 1 falls back to an LLM groundedness
@@ -82,8 +85,7 @@ check.
 - Dream insight confidence decay: non-corroborated dream insights lose 0.03 confidence per run after 30 days; contradicted at < 0.25. A dream insight is a fact with a `dream_run_id`. Facts without one never decay.
 - `valid_until` hard expiry: dream insights past their 90-day window that have not been corroborated by a raw episode are contradicted on each morning integration.
 - Morning briefing: a "Ze dreamed" section with processed-episode count, insights
-  promoted, plan risks surfaced, and items pending review (skipped only when both
-  insights promoted and items pending review are zero).
+  promoted, and plan risks surfaced (skipped when no insight was promoted).
 
 ---
 
@@ -94,7 +96,7 @@ check.
 | `memory_episode_metadata` | Mutable dream fields for episodes (replay score, retrieval weight, source, sensitive flag) |
 | `memory_dream_runs` | One row per nightly job execution |
 | `memory_dream_artifacts` | Staging buffer for all synthetic outputs pre-promotion |
-| `memory_dream_journal` | Per-run summary for morning briefing and user review |
+| `memory_dream_journal` | Per-run summary for the morning briefing |
 | `memory_retrieval_cache` | Session-scoped NLI rerank order for facts/summaries (Phase 79; expired nightly by `DreamJob`) |
 
 Source episode content in `memory_episodes` stays immutable. All dream-phase mutable
@@ -104,7 +106,7 @@ fields live on the metadata side table.
 
 ## Artifact types
 
-![Routing diagram showing how each dream artifact type reaches its destination: schema and policy candidates stay in staging, synthesized insights and procedures pass through the gates-and-critic check before promoting to memory_facts or the procedure lifecycle, borderline cases fall back to review, and hindsight facts always require a user decision](diagrams/docs/dream-artifact-routing.svg)
+![Routing diagram showing how each dream artifact type reaches its destination: schema and policy candidates stay in staging, synthesized insights and procedures pass through the gates-and-critic check before promoting to memory_facts or the procedure lifecycle, and hindsight facts are always rejected](diagrams/docs/dream-artifact-routing.svg)
 
 <sub>[Interactive version](diagrams/docs/dream-artifact-routing.html)</sub>
 
@@ -117,13 +119,11 @@ fields live on the metadata side table.
 | `policy_candidate` | No (input to synthesis) | Staging only |
 | `synthesized_insight` | Yes, if gates + support pass | `memory_facts` |
 | `synthesized_procedure` | Yes, if gates + support pass | `procedure_candidates` (lifecycle admission decides) |
-| `hindsight_fact` | Never — always `needs_review` | User decision |
+| `hindsight_fact` | Never (always rejected) | None |
 | `plan_stress_test` | Yes, if gates + support pass | `procedure_candidates` (risk heuristic) |
 
 </details>
 
-Counterfactual and perturbation artifact types are reserved in the enum but not invoked
-until 78c.
 
 ---
 
@@ -156,7 +156,7 @@ dream:
   inactivity_check_interval_minutes: 30
 ```
 
-**Inactivity trigger** (`inactivity_trigger_enabled`) — when enabled, a watcher runs every `inactivity_check_interval_minutes` and fires the dream job if `MAX(sessions.last_active_at)` is older than `inactivity_threshold_hours` AND no successful dream run has completed since that last session. This means Ze dreams when you take a long break rather than waiting for the 3 AM cron. Disabled by default — the fixed cron is sufficient for v1.
+Inactivity trigger (`inactivity_trigger_enabled`): when enabled, a watcher runs every `inactivity_check_interval_minutes` and fires the dream job if `MAX(sessions.last_active_at)` is older than `inactivity_threshold_hours` AND no successful dream run has completed since that last session. So Ze dreams when you take a long break instead of waiting for the 3 AM cron. It is off by default because the fixed cron is enough for v1.
 
 See [configuration.md](configuration.md) for the full key reference.
 
@@ -164,10 +164,9 @@ See [configuration.md](configuration.md) for the full key reference.
 
 ## REST API
 
-No REST surface exists yet. `PostgresDreamStore` (`ze_memory/dream/store.py`) holds the
-journal, the artifact queue, and `update_artifact_status`, but no route in `ze-api`
-calls them. Review a `needs_review` artifact or the journal through the database
-directly until a review route and a `ze-web` page ship.
+No REST surface exists. `PostgresDreamStore` (`ze_memory/dream/store.py`) holds the
+journal and the artifact queue, but no route in `ze-api` reads them. The morning briefing
+reads the latest journal entry.
 
 ---
 
@@ -189,9 +188,9 @@ directly until a review route and a `ze-web` page ship.
   sessions from the dream source pool. Nothing clears the flag once set.
 - **Synthetic expiry** — the next morning integration run contradicts dream insights
   (facts with a `dream_run_id`) past `valid_until` (default 90 days) that no raw episode has corroborated.
-- **Rollback** — every promoted fact carries `dream_run_id` and `derived_from` lineage, so a
-  run's output is traceable, but no code yet bulk-contradicts a run or re-summarizes the
-  session summaries it contaminated (see REST API above).
+- **No rollback** — every promoted fact carries `dream_run_id` and `derived_from` lineage, so a
+  run's output is traceable. You cannot roll back a bad dream run from the app: no route
+  or code bulk-contradicts a run or re-summarizes the session summaries it contaminated.
 
 ---
 

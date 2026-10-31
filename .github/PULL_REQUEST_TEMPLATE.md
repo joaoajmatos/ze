@@ -10,5 +10,5 @@
 
 - [ ] `make test` passes
 - [ ] `make lint` passes
-- [ ] New behaviour is covered by tests
+- [ ] New behavior is covered by tests
 - [ ] No secrets or personal data in the diff

@@ -11,7 +11,7 @@ A clear description of the bug.
 1. ...
 2. ...
 
-**Expected behaviour**
+**Expected behavior**
 What you expected to happen.
 
 **Environment**

@@ -1,6 +1,6 @@
 # ze-trading212
 
-Trading212 REST API client — account, portfolio, orders, and history.
+Trading212 REST API client for account, portfolio, orders, and history.
 
 ## Role in Ze
 

@@ -84,7 +84,6 @@ The framework reads these at startup; no config file is involved.
 | `description` | `str` | — | Yes | Embedded at startup for cosine-similarity routing. Must be non-empty. |
 | `model` | `str` | `"anthropic/claude-sonnet-4-5"` | No | Primary LLM model for this agent. |
 | `model_simple` | `str \| None` | `None` | No | Cheaper model for simple requests. `None` means always use `model`. |
-| `vision_capable` | `bool` | `False` | No | If `True`, agent receives raw image bytes alongside the prompt. |
 | `timeout` | `int` | `30` | No | Seconds before the agent run is cancelled with `AgentTimeoutError`. |
 | `enabled` | `bool` | `True` | No | If `False`, excluded from routing and not instantiated. |
 | `intents` | `dict[str, Intent]` | `{}` | No | Maps intent names to `Intent(mode, description)`. Only declare intents the agent meaningfully uses. First entry is the primary intent. |
@@ -125,7 +124,6 @@ from ze_agents.types import Intent
 class CalendarAgent(BaseAgent):
     name = "calendar"
     model = "anthropic/claude-haiku-4-5"
-    vision_capable = True
     timeout = 30
     description = """
         Manages Google Calendar events. Use for creating, reading, updating,

@@ -50,7 +50,7 @@ never requiring a core-package change to add a new plugin's value.
 
 ### IV. Typed, Explicit Python
 Dataclasses for domain types (`types.py`, never `models.py`); Pydantic only in
-`ze_api/api/schemas.py`. Errors are typed `ZeError` subclasses — never bare
+the `schemas.py` files under `ze_api/api/`. Errors are typed `ZeError` subclasses — never bare
 `Exception` or `ValueError` in domain code. All I/O is async. Dependencies arrive by
 constructor injection; FastAPI `Depends()` only inside `ze_api/api/`. Logging via
 `get_logger(__name__)` only.

@@ -4,7 +4,7 @@ Calendar, reminders, and timezone domain for Ze. Provides the `CalendarAgent`, `
 
 ## Role in Ze
 
-Calendar is one of the most-used agent domains. Users ask about upcoming events, create reminders in natural language, and receive proactive nudges when reminders fire. Calendar events also feed contact extraction and correlation signal sources.
+Users ask about upcoming events, create reminders in natural language, and receive proactive nudges when reminders fire. Calendar events also feed contact extraction and correlation signal sources.
 
 ### Key features
 

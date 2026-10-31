@@ -1,10 +1,10 @@
 # ze-proactive
 
-Job scheduling and push governance for Ze — background jobs, the interruption governor, and APScheduler wiring.
+Job scheduling and push governance for Ze: background jobs, the interruption governor, and APScheduler wiring.
 
 ## Role in Ze
 
-Proactive Ze runs on a schedule — morning briefings, calendar reminders, news fetches, goal checks, and correlation runs. `ze-proactive` provides the scheduler, job registration, and one send path for every proactive push.
+Proactive Ze runs on a schedule: morning briefings, calendar reminders, news fetches, goal checks, and correlation runs. `ze-proactive` provides the scheduler, job registration, and one send path for every proactive push.
 
 ### Key features
 
@@ -85,7 +85,7 @@ from ze_sdk.proactive import ProactiveScheduler, ProactiveJob, proactive_job, Pu
 MORNING_BRIEF = PushKind("morning_brief", "accountability", "normal", "personal")
 ```
 
-Sites call `await notifier.notify(kind, title, body, once_per=OncePer(key, within=...))`. A `discretionary` push must pass `once_per`; a `requested` push must not. Plugins register jobs in `ZePlugin.register_proactive_jobs()`; `ze-api` starts the scheduler at startup.
+Sites call `await notifier.notify(kind, title, body, once_per=OncePer(key, within=...))`. A `discretionary` push must pass `once_per`; a `requested` push must not. Plugins register jobs in `ZePlugin.register_proactive_jobs()`, and `ze-api` starts the scheduler at startup.
 
 ## Attention budget
 

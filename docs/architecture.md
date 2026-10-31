@@ -231,7 +231,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `surface_loops` | `nodes/loop_surfacing.py` | Mention relevant open items inline. Skips when the turn asked what's open, because the answer already lists them (up to 10 items) |
 | `synthesize` | `nodes/memory.py` | Merge independent parallel subtask results into one response |
 | `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message, with effect metadata for each tool call. After a resume that offered loops, it appends one short keep-tracking question in the user's language when the reply does not already end with a question |
-| `write_memory` | `nodes/memory.py` | Episode write plus the commitment intake (Phase 173): one System One request per turn decides the fact admission and the loop outcome together; the loop commit is fire-and-forget and the System One rows join the trace; skips eval threads. A turn that already created a reminder or goal links a loop to it instead of creating one, and a turn where the `loops` agent's `track_loop` or `confirm_loop` tool succeeded creates no second loop, because the tool already wrote the user-asked loop. In a retry run it only extends session history. When the history passes 70% of the model's context window, it folds the older messages into one rolling summary that opens the history; later trims keep that summary, and the trace's compaction readout shows its span on every later turn |
+| `write_memory` | `nodes/memory.py` | Episode write, one `turn_extractor` request that returns the turn's events and entities (skipped on a trivial turn such as a greeting or an acknowledgement), plus the commitment intake (Phase 173): one System One request per turn decides the fact admission and the loop outcome together; the loop commit is fire-and-forget and the System One rows join the trace; skips eval threads. A turn that already created a reminder or goal links a loop to it instead of creating one, and a turn where the `loops` agent's `track_loop` or `confirm_loop` tool succeeded creates no second loop, because the tool already wrote the user-asked loop. In a retry run it only extends session history. When the history passes 70% of the model's context window, it folds the older messages into one rolling summary that opens the history; later trims keep that summary, and the trace's compaction readout shows its span on every later turn |
 
 </details>
 
@@ -647,10 +647,10 @@ Memory accumulates into progressively richer representations through a nightly p
 - **Sleep pass (NREM-like):** replays high-priority episodes, compresses sessions, decays stale traces, detects schema and policy clusters from structural analysis. No LLM calls.
 - **Dream pass (REM-like):** synthesizes clusters into insights, procedures, hindsight facts, and plan stress-tests using a haiku-class generator. All outputs land in a staging buffer (`memory_dream_artifacts`).
 - **Scoring pipeline:** every staged artifact passes NLI groundedness gate + embedding novelty gate + retrievability gate, then two adversarial LLM critic calls (sonnet-class, different framings). Both critics must pass.
-- **Morning integration:** artifacts with sufficient session diversity and temporal spread auto-promote to `memory_facts` or submit procedure candidates with `provenance=synthesized`, `valid_until`, and `dream_run_id` lineage for per-run rollback.
+- **Morning integration:** the run decides every staged artifact, promote or reject, with no review queue. An artifact with sufficient session diversity and temporal spread auto-promotes to `memory_facts` or submits a procedure candidate with `provenance=synthesized`, `valid_until`, and `dream_run_id` lineage. An artifact below the support bar is rejected, and a `hindsight_fact` is always rejected. Ze has no per-run rollback.
 - **Expiry:** dream insights (facts with a `dream_run_id`) that go uncorroborated by raw episodes for 90 days (`valid_until`) are automatically contradicted on the next integration run.
 
-See [docs/dreaming.md](dreaming.md) for a full walkthrough of the pipeline, configuration, REST API, and safety model. See [docs/memory.md](memory.md) for a deep-dive on types, tables, graph, retrieval
+See [docs/dreaming.md](dreaming.md) for a full walkthrough of the pipeline, configuration, and safety model. See [docs/memory.md](memory.md) for a deep-dive on types, tables, graph, retrieval
 policies, and how to inspect memory. See [docs/scheduled-jobs.md](scheduled-jobs.md) for
 the full lifecycle, schedule, and configuration of every background job.
 
@@ -711,7 +711,7 @@ Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompti
 | Calendar sync | 7:45 AM UTC daily | Pull upcoming events, schedule reminder jobs |
 | Morning briefing | 8 AM UTC daily | Digest: unreviewed facts, upcoming workflows, recent failures |
 | Nightly consolidation | 2 AM UTC | Dedup facts, expire stale, archive episodes, re-synthesize profile |
-| Contacts consolidation | 3 AM UTC | Dedup and merge contact records |
+| Contacts consolidation | 3 AM UTC | Dedup and merge contact records; extract people, projects, and `WORKS_ON` / `COLLABORATES_WITH` edges from new conversation episodes |
 | Contact review suggestions | 8:30 AM UTC daily | Push pending contact review nudges |
 | Goal narrative | 6 PM UTC Sunday | One-paragraph weekly progress update per active goal |
 | Goal suggestions | 7 PM UTC Sunday | Proactive new goal proposal based on memory + retrospectives |
@@ -935,9 +935,18 @@ Ze injects `CostTracker` into `OpenRouterClient`. On every completion call, it r
 - Attribution context propagates through the async call chain via a Python `ContextVar`
   — set once at the flow entry point, read automatically inside the tracker.
 
-`CostReconciler` runs every 15 minutes, pulling actual billed costs from the OpenRouter
-API and reconciling them against estimated records. All data lives in the `llm_cost_log`
-table.
+Every call logs a flow and an agent. A conversation turn logs flow `user_message` (session is the
+thread id). A cron job logs flow `proactive`, with the job id as agent and `job:<job id>` as session.
+Eval, workflow and voice transcription runs keep their own flows (`eval`, `workflow_execution`,
+`transcription`). Steps inside a turn log the agents `router`, `skills`, `memory_write`, `synthesis`
+and `session_title`. `ze_core/telemetry/pricing.py` holds a static price table, including System One
+(`typesafe/jev-`, $0.042 per million prompt tokens, completion free), matched by slug prefix.
+
+`CostReconciler` runs every 15 minutes. It prices up to 100 unpriced rows, newest first, between
+2 minutes and 3 days old, using the billed cost from the OpenRouter generation API. It retries a 404
+(OpenRouter may not have indexed the generation yet) and gives up on a generation after three misses
+in a row. It gives up at once on a 400 invalid id. A row older than 3 days keeps `cost_usd` NULL,
+which means unknown; estimate it from `pricing.py`. All data lives in the `llm_cost_log` table.
 
 **REST API** — `GET /api/v0/costs/summary` returns aggregated token usage and cost over a
 configurable lookback window, grouped by any single dimension:
@@ -1088,11 +1097,17 @@ import time, so codegen needs no running server.
 | `GET` | `/api/v0/ui/manifest` | `getUiManifest` |
 | `GET` | `/api/v0/ui/modules/{module_id}` | `getUiModule` |
 
-### Internal tooling
+### Dev and eval only
 
-| Method | Path | Description |
+These routes mount only when the server runs with `EVAL_MODE=true` (`make dev-eval`). In any other
+mode they return 404 and stay out of OpenAPI and `@myguyze/ze-client`. They use the same
+`Authorization: Bearer <ZE_API_KEY>` header as the rest of the API.
+
+| Method | Path | operationId |
 |---|---|---|
-| `POST` | `/eval/chat` | Internal evaluation chat entry point |
+| `POST` | `/eval/chat` | `evalChat` |
+| `POST` | `/eval/confirm` | `evalConfirm` |
+| `GET` | `/api/v0/routing/log` | `getRoutingLog` |
 
 ---
 
@@ -1163,7 +1178,7 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 ## Database schema
 
 Individual packages (`core/`, `plugins/`) own migrations. `ze-api` provides
-the Alembic runner harness (`migrations/env.py`) and meta-migrator (`migrate.py`) only —
+the Alembic runner harness (`migrations/env.py`) and meta-migrator (`cli/migrate.py`) only —
 it owns no tables and no revision files.
 
 | Table | Purpose |
@@ -1178,7 +1193,7 @@ it owns no tables and no revision files.
 | `memory_task_state` | Goal/workflow task progress checkpoints |
 | `memory_profile_facets` | Structured user portrait — key/value facets with stability and confidence |
 | `checkpoints` | LangGraph `AsyncPostgresSaver` graph state — pruned hourly, see [scheduled-jobs.md](scheduled-jobs.md#checkpoint-pruning-hourly) |
-| `workflow_plans` | Persisted multi-step workflow definitions |
+| `workflows` | Persisted multi-step workflow definitions |
 | `workflow_executions` | Per-run state for each workflow |
 | `push_log` | Claims for proactive pushes: the `OncePer` cooldowns and the shared daily budget (`zpro006`). Owned by `ze-proactive`. Outcomes are `notifications.delivery`. |
 | `surfacing_memory` | Inline mentions and resume offers the conversation has raised, read by the push bar (`zpri002`). Owned by `ze-priority`. |
@@ -1186,10 +1201,10 @@ it owns no tables and no revision files.
 | `llm_cost_log` | Per-call token usage and estimated cost |
 | `persona_state` | Single-row table: active profile name + dial overrides (JSONB) |
 | `contact_channels` | Per-contact channel handles (type, handle string, preferred flag) |
-| `goals` | Long-running objectives (status, type, time horizon, retrospective, learnings) |
+| `goals` | Long-running objectives (status, type, time horizon, retrospective) |
 | `goal_milestones` | Ordered milestones per goal with execution output and `reuse_hint` |
 | `goal_gates` | Verification gates between milestone sequences |
-| `goal_learnings` | Per-milestone insights appended during execution |
+| `goal_learning_claims` / `goal_learning_evidence` / `goal_learning_reviews` / `goal_learning_relationships` / `goal_learning_promotions` | Evidence-backed insights captured during execution (`zc030`) |
 | `goal_execution_traces` | Tool call trace per milestone (name, args, result, duration) |
 | `goal_suggestions` | Proactive goal proposals with accept/dismiss lifecycle |
 | `accountability_anomalies` | Cost outliers flagged by `CostAnomalyJob` |

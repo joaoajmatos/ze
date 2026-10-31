@@ -1,7 +1,7 @@
 # apps/
 
-Runnable deployment units. These packages wire everything together — they import from
-both `core/` and `plugins/` but are never imported by either.
+Runnable deployment units. These packages wire everything together. They import from
+both `core/` and `plugins/`, and neither imports them.
 
 Package READMEs follow [docs/package-readme-template.md](../docs/package-readme-template.md).
 Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md](../docs/testing.md).
@@ -17,8 +17,8 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 
 ## ze-api
 
-The only package that instantiates `ZeContainer` and registers all `ZePlugin`
-implementations. It owns:
+This package instantiates `ZeContainer` and registers all `ZePlugin`
+implementations. No other package does. It owns:
 
 - The WebSocket endpoint (`/ws`) and REST management routes
 - `NativeAppInterface` — WebSocket + ntfy push delivery
@@ -34,8 +34,7 @@ make test-api   # same as test
 
 ## ze-web
 
-React SPA. Connects to `ze-api` over WebSocket at `/ws`. Has no Python dependencies —
-built and run with the Bun JavaScript runtime.
+React SPA. Connects to `ze-api` over WebSocket at `/ws`. It has no Python dependencies and runs on the Bun JavaScript runtime.
 
 ```bash
 make web        # bun dev server on :5173

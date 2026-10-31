@@ -97,7 +97,7 @@ like" and how far each is from the seam today.
 | Function | Contributes | Today | Distance to seam |
 |---|---|---|---|
 | Perception | facts, feedback records (`FEEDBACK_RECORD`, Phase 165). Candidate loops are Executive's interpretation of what perception read (`executive-licence.md`) | **Signals** and **facts** on the seam; loops from its inflows are submitted as Executive (`ingest_signal`, `propose_loop_candidates`, `submit_perception_facts`) | Done for current producers (133–134). `SignalSource` stays the registration Protocol; polling rewire is deferred |
-| Memory | nothing new (custodian) | persist is private (`_persist_facts` / seam `write=`); no public `propose_facts` | Target, not a contributor. Door closed in step 6 / Phase 134 |
+| Memory | nothing new (custodian) | persist is private (seam `write=` → `_write_fact_with_contradiction_check`); no public `propose_facts` | Target, not a contributor. Door closed in step 6 / Phase 134 |
 | Executive | priorities, open-loop state | OpenLoop writes on the seam (Phases 109–110, 124); `PriorityView` ranks (123, 127, 132) | Write path done. Ranking consumer is Phase 132, not this brief |
 | Social cognition | identity/relationship claims | Contacts on the seam (125); co-occurrence hypotheses on the seam (130) | Done for current producers |
 | Reflection | inferences, suspicions | **On the seam** (Phase 124) — `dream_pass.py` and `ze_correlation/engine.py` route their writes through `Contribution`, which rejects `claim_kind=FACT` before the store is reached | Done — "no facts from reflection" is now type-enforced, not conventional |
@@ -198,7 +198,7 @@ the rollout has since moved past step 6. Remaining steps are a commitment, not a
    `memory_facts`. Persist is the seam `write=` callback, not ungated `propose_facts()`.
 6. ~~**Hard-cut `memory_facts` onto the shared vocabulary**.~~ **Done** — Phase 134.
    `Fact.provenance` is doctrine `Provenance`; `claim_kind` is on the dataclass; INSERT
-   persists both; public `propose_facts` is gone (`_persist_facts` is private).
+   persists both; public `propose_facts` is gone (fact writes go through the seam `write=` and the private `_write_fact_with_contradiction_check`).
 7. ~~**Action** (result records).~~ **Done** — Phases 135–136. `ACTION_RECORD` is a
    first-class contribution, not a FACT; `ze-memory` owns the append-only ledger;
    `ActionRecorder` is the injected producer API. Instrumented after source commit:

@@ -1,12 +1,12 @@
 # ze-workspace
 
-Isolated workspace sidecar for [Ze](../../README.md). A small FastAPI service that is Ze's durable computer: files under `/workspace`, a shell, and ordinary scripting runtimes. Ze's agents call it over the private network — not exposed to the public internet.
+Isolated workspace sidecar for [Ze](../../README.md). A small FastAPI service that is Ze's durable computer: files under `/workspace`, a shell, and ordinary scripting runtimes. Ze's agents call it over the private network. It is not exposed to the public internet.
 
-This is **not** a browsing session. Web pages stay in `sidecar/browser`. This service runs commands and holds files. Skill scripts are ordinary files Ze writes, then runs — the sidecar does not know about skills. See [docs/skills.md](../../docs/skills.md).
+This is **not** a browsing session. Web pages stay in `sidecar/browser`. This service runs commands and holds files. Skill scripts are ordinary files that Ze writes and then runs. The sidecar does not know about skills. See [docs/skills.md](../../docs/skills.md).
 
 ## Why a separate service
 
-Arbitrary commands must not share Ze's process, env, or filesystem. The sidecar is the always-on computer; Ze is the mind. Child processes run as an unprivileged `workspace` user with a stripped env and cannot reach Ze's private services or credentials.
+Arbitrary commands must not share Ze's process, env, or filesystem. The sidecar is the always-on computer. Ze runs in its own process. Child processes run as an unprivileged `workspace` user with a stripped env and cannot reach Ze's private services or credentials.
 
 | Concern | Main Ze app | ze-workspace |
 |---|---|---|

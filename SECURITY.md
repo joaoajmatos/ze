@@ -26,17 +26,17 @@ Include:
 
 ## Responsible disclosure
 
-Please give us reasonable time to address the issue before public disclosure. Once we release a fix, you're welcome to publish a write-up — please coordinate the timing with us.
+Please give us reasonable time to address the issue before public disclosure. Once we release a fix, you may publish a write-up. Please coordinate the timing with us.
 
 ## Security model
 
 Ze is **single-user by design**. There is no multi-tenant isolation. Before exposing your instance:
 
-1. Generate a strong `ZE_API_KEY` — this is the sole gate for both REST and WebSocket access.
+1. Generate a strong `ZE_API_KEY`. It is the only gate for both REST and WebSocket access.
 2. Keep `.env` out of version control; use `fly secrets` in production.
 3. Know the write-confirmation gate: an irreversible write tool asks you to confirm before it runs, unless the tool explicitly opts out with a stated reason.
 4. Use a non-guessable ntfy topic and set an access token.
 5. Import only skills you trust. A new skill waits for your review before it affects a conversation. A skill script runs in the workspace only after a second, separate approval.
-6. Keep the workspace sidecar off the public network. It runs shell commands. In chat, Ze asks you to confirm a command, and unattended runs (goals, workflows) can use the workspace without a prompt. "Forget this server" clears your browser's local connection settings only — it does not delete data on the server.
+6. Keep the workspace sidecar off the public network. It runs shell commands. In chat, Ze asks you to confirm a command, and unattended runs (goals, workflows) can use the workspace without a prompt. "Forget this server" clears your browser's local connection settings only. It does not delete data on the server.
 
 Do not deploy Ze as a shared service without substantial hardening.

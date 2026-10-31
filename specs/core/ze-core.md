@@ -113,7 +113,7 @@ core/engine/ze-core/ze_core/
 
 | Dependency | Purpose |
 |------------|---------|
-| `ze-agents` | `BaseAgent`, `AgentRegistry`, `AppInterface`, `LLMClient`, `SystemOneClient` |
+| `ze-agents` | `BaseAgent`, the agent registry, `AppInterface`, `LLMClient`, `SystemOneClient` |
 | `ze-communication` | `ChannelRegistry` |
 | `ze-plugin` | `ZePlugin`, plugin discovery |
 | `ze-logging` | `get_logger` |

@@ -1,15 +1,15 @@
 # ze-personal
 
-Personal-assistant domain layer for Ze. Implements the user-facing features that make Ze feel like an assistant: persona, contacts, social cognition, and the research and companion agents. Contributes to the Ze graph via `ZePlugin`.
+Personal-assistant domain layer for Ze. Implements the user-facing features: persona, contacts, social cognition, and the research and companion agents. Contributes to the Ze graph via `ZePlugin`.
 
 ## Role in Ze
 
-`ze-personal` is the heart of what makes Ze a personal assistant rather than a generic chatbot. It owns the user's persona and dials, contact tracking, the research and companion agents that handle most conversational turns, and the morning briefing and weekly insights jobs. Goals and workflows live in `ze-automation`. This plugin takes their stores and planners as constructor arguments, and it hosts the workflow execution graph nodes.
+`ze-personal` owns the user's persona and dials, contact tracking, the research and companion agents that handle most conversational turns, and the morning briefing and weekly insights jobs. Goals and workflows live in `ze-automation`. This plugin takes their stores and planners as constructor arguments, and it hosts the workflow execution graph nodes.
 
 ### Key features
 
 - **Workflow execution** — the LangGraph nodes that run a stored workflow step by step (`graph/workflow.py`). The workflow stores, planner, and scheduler live in `ze-automation`
-- **Persona** — named profiles with TARS-style numeric dials that shape agent tone and behaviour
+- **Persona** — named profiles with TARS-style numeric dials that shape agent tone and behavior
 - **Contacts** — person tracking with extraction from email, calendar, and conversation. A contact source's provenance follows its source type: `manual`, `conversation`, `email` and `calendar` are `prompt_supplied`, and `research` (prospecting) is `live_search`. A new contact takes the provenance of its first source. Migration `zc041` re-stamped existing contacts and sources. The web app shows them in Mind › People; the plugin has no nav entry of its own
 - **Social cognition** — co-occurrence of people and projects in memory becomes correlation hypotheses, which Ze promotes to `WORKS_ON` and `COLLABORATES_WITH` edges on corroboration or when you confirm. The `who_is_on_project` and `confirm_project_membership` tools expose them
 - **Proactive jobs** — morning briefing, weekly insights, contact review, nightly contacts consolidation, and the social co-occurrence job. The goal, workflow, and accountability jobs live in `ze-automation`

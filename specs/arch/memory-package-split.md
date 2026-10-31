@@ -382,7 +382,7 @@ Unknown modules fall back to `CompanionPolicy` with a warning log.
 | `Fact` | fact extractor after every turn; user-confirmed goal-learning FACT publication via `submit_perception_facts` (Phase 137) |
 | `Episode` | `write_memory` node after every turn |
 | `ProfileFacet` | `ProfileSynthesizer` on consolidation schedule |
-| `Event` | event extractor (`gather_event_proposals`) after every turn via `write_memory` node |
+| `Event` | turn extractor (`gather_turn_proposals`) after every turn via `write_memory` node |
 | `Entity` | `PersonStore.confirm()` → `upsert_entity()` when a contact is confirmed |
 | `Procedure` | `GoalExecutor._extract_and_store_procedure()` on goal completion |
 | `TaskState` | `GoalExecutor._sync_task_state()` at milestone start/complete/pause/block; `verify_step` / `workflow_synthesize` / `workflow_failed` graph nodes during workflow execution |

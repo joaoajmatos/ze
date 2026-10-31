@@ -2,7 +2,7 @@
 
 Ze's native interface connects the React web app (`ze-web`) to the backend (`ze-api`)
 over a persistent WebSocket. When the app is not connected, Ze falls back to
-**ntfy push notifications**.
+ntfy push notifications.
 
 **Module:** `ze_api/interface/native.py` · `ze_api/api/ws/` (`endpoint.py`, `connection.py`)  
 **WebSocket endpoint:** `GET /ws`
@@ -20,7 +20,7 @@ saves every outbound message to `MessageStore` (for unread replay on reconnect),
 it to the active WebSocket connection if one exists, and falls back to ntfy if the
 client is offline.
 
-**One connection at a time.** A new WebSocket connection displaces the previous one
+One connection at a time: a new WebSocket connection displaces the previous one
 with close code `4000`.
 
 ---
@@ -429,7 +429,8 @@ The web app shows the text as visible description text, not only as a tooltip.
 | `history_unavailable` | Ze cannot rewind the thread history, so it refuses before it undoes anything. Sent as a request-time refusal. |
 | `plan_changed` | The plan the client confirmed no longer matches. The frame carries the new `plan`. Nothing changed. Sent as a request-time refusal. |
 | `undo_not_confirmed` | The reply has a plan and the frame did not confirm it. Nothing changed. Sent as a request-time refusal. |
-| `disconnected` | Set by the web app when the socket is down. The server never returns it. |
+
+When the socket is down, the web app disables Retry with its own "Reconnecting" text. The server never returns a reason code for that.
 
 A denied or expired confirmation counts as no action. A failed write call still counts,
 because it may have run in part.
@@ -532,7 +533,7 @@ and Ze's proactive pushes) to Postgres. On WebSocket connect, the server replays
 messages with `read = false` in order before new messages flow. The client marks them
 read via `ack` frames.
 
-**REST fallback** — `GET /api/v0/messages` returns the same unread list for scenarios where the
+REST fallback: `GET /api/v0/messages` returns the same unread list for scenarios where the
 client needs to poll rather than hold a persistent connection.
 
 ---
@@ -724,5 +725,4 @@ stores it on `app.state.connection_manager`. It exposes:
 | `is_busy(thread_id) → bool` | Report whether that thread has a turn in flight |
 | `clear_busy(thread_id)` | Release the invocation slot of that thread |
 
-Never instantiate `ConnectionManager` outside the FastAPI lifespan — there must only
-be one instance.
+Never instantiate `ConnectionManager` outside the FastAPI lifespan. Only one instance may exist.

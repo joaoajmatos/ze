@@ -63,7 +63,7 @@ async def set_reminder(label: str, fire_at: str, store: ReminderStore) -> dict:
     ...
 ```
 
-### `ToolAccess` — choose correctly
+### `ToolAccess`: choose correctly
 
 | Access | Use when |
 |---|---|
@@ -118,7 +118,7 @@ Follow these rules:
 - If the payload is missing, Ze treats the call as not undoable and Retry is unavailable
   with the reason `not_undoable`.
 
-#### `tool_deps()` — dependencies shared with undo
+#### `tool_deps()`: dependencies shared with undo
 
 An undo tool runs outside the model loop, so Ze cannot take its non-model parameters
 from the loop. Override `tool_deps()` on your agent and return the stores and clients
@@ -132,7 +132,8 @@ def tool_deps(self) -> dict:
 await self.agentic_loop(ctx, deps=self.tool_deps())
 ```
 
-`BaseAgent.run_undo` merges `tool_deps()` with the undo payload by parameter name. Every
+`BaseAgent.run_undo` merges `tool_deps()` with the undo payload by parameter name. Payload
+keys that fill `Injected` parameters still reach the undo tool. Every
 parameter of an undo tool that the model does not set must be a key of `tool_deps()` or
 of the payload. `run_undo` supplies `ctx` itself, with a rollback context that has no
 prompt and sets `retry_mode` off, so an undo tool needs no `ctx` from the payload.
@@ -171,7 +172,7 @@ async def send_email(to: str, subject: str, body: str, client: GmailClient) -> d
 Call asks-first tools only from `agentic_loop` or `delegate_to_agent`. A direct
 `call_tool` on an asks-first tool raises `AgentConfigError`.
 
-**Parked calls** — when the model calls an asks-first tool, `BaseAgent.call_tool()`
+**Parked calls.** When the model calls an asks-first tool, `BaseAgent.call_tool()`
 does not run it. The loop stops at that call. The turn pauses once for the user (see
 [Write confirmation](architecture.md#write-confirmation)). A denied call returns a
 declined result to the model. `READ` and `REVERSIBLE` tools never park.
@@ -191,8 +192,24 @@ with a reason. The registry sweep fails otherwise. See [sdk.md](sdk.md#tool-scri
 ### Tool parameters
 
 The agent's `run()` method passes all dependencies (API clients, settings) as keyword
-arguments — tools are pure functions that receive everything they need via
+arguments. Tools are pure functions that receive everything they need through
 parameters. They do not import from global state or access `self`.
+
+The model sees a parameter unless it is `Injected[...]` (from `ze_sdk`) or a dependency
+type: a store, a client, another class, `Any`, or `object`. A parameter with no default is
+required. `str | None` and `list[str]` show in the schema as typed optional and array
+entries. Mark an injected scalar like this:
+
+```python
+from ze_sdk import Injected
+
+async def my_tool(query: str, session_id: Injected[str | None] = None) -> dict:
+    ...
+```
+
+Registration fails for a visible parameter typed `set`, `tuple`, `Literal`, an `Enum`, or
+`str | int`. Use `str` or a plain `list[str]` instead, or mark the parameter `Injected[...]`.
+Ze drops any value the model sends for a hidden parameter.
 
 ---
 
@@ -269,11 +286,11 @@ class MyAgent(BaseAgent):
 
 ### NLI (entailment / grounding)
 
-Phase 80+ exposes a local cross-encoder via `NLIClient` — already wired in the
-bootstrap dep map. Use it when an agent or plugin job needs to compare text pairs
+Since phase 80, `NLIClient` exposes a local cross-encoder, and the bootstrap dep map
+already provides it. Use it when an agent or plugin job needs to compare text pairs
 (entailment, contradiction) or score how well a claim is grounded in evidence.
 
-**In agents** — inject `NLIClient` in `__init__` and pass it to your tools through the
+**In agents:** inject `NLIClient` in `__init__` and pass it to your tools through the
 `agentic_loop` deps. Ze ships no shared NLI tools, so write the tool that uses the client:
 
 ```python
@@ -294,8 +311,8 @@ class MyAgent(BaseAgent):
 `my_tool` takes `nli_client: NLIClient` as an internal parameter and calls
 `await nli_client.scores(...)`.
 
-**In plugin jobs and services** — type-annotate `nli_client: NLIClient` on the
-plugin constructor; the bootstrapper resolves it automatically. For batch scoring
+**In plugin jobs and services:** type-annotate `nli_client: NLIClient` on the
+plugin constructor, and the bootstrapper resolves it. For batch scoring
 outside the agent loop, call `await nli_client.scores([(premise, hypothesis), ...])`
 or `nli_client.grounding_score(hypothesis, evidence_texts)`.
 
@@ -310,7 +327,7 @@ Call `self.emit(ctx, key)` at any point inside `run()` or inside a tool that has
 `reporter` in its deps. Each call sends a `typing` frame with the new text, so
 long-running operations should emit when their stage changes.
 
-**Key convention:** `<domain>.<state>` — e.g. `"news.fetching"`, `"calendar.reading"`.
+**Key convention:** `<domain>.<state>`, for example `"news.fetching"` or `"calendar.reading"`.
 
 **Locale files** live inside the plugin's own package at `locales/en.yaml` and
 `locales/pt.yaml`. Add entries for every key your agent emits:
@@ -325,11 +342,11 @@ my_agent:
     - "🔍 Searching..."
 ```
 
-Values can be a single string or a list — list entries are chosen randomly on each
+Values can be a single string or a list. Ze picks a list entry at random on each
 `emit()` call. Template variables use `{name}` Python-format syntax.
 
 The `ZePlugin` base class auto-loads `locales/{locale}.yaml` from within the plugin
-package at startup — no override needed as long as the file exists. The app-level
+package at startup. You need no override as long as the file exists. The app-level
 `config/locales/` files are an override layer for deployment-specific customization.
 
 **Emitting from tools:** pass `reporter` through the agent's deps dict so tools can
@@ -347,8 +364,8 @@ async def my_long_tool(my_store: MyStore, reporter: Any = None) -> dict:
     return result
 ```
 
-`reporter` has a non-JSON-primitive type so it is never included in the LLM tool
-schema — it is injected silently from deps.
+`reporter` is typed `Any`, a dependency type, so it never appears in the tool schema and
+Ze fills it from deps.
 
 ### Lifecycle hooks
 
@@ -385,10 +402,10 @@ def agent_module_paths(self) -> list[str]:
     ]
 ```
 
-Ze refuses to start if an agent declares a tool in `tools = [...]` that isn't
-registered — the discrepancy is caught before the app accepts traffic.
+Ze refuses to start if an agent declares a tool in `tools = [...]` that is not
+registered. It catches the mismatch before the app accepts traffic.
 
-**All `__init__` parameters must be type-annotated** — `ze_agents/bootstrap.py` uses
+**All `__init__` parameters must be type-annotated.** `ze_agents/bootstrap.py` uses
 `get_type_hints()` for dependency resolution. Parameters without annotations raise
 `AgentConfigError` at startup.
 

@@ -37,10 +37,10 @@ everywhere is the FastAPI default and requires no deliberate discipline to maint
 
 ## Decision Outcome
 
-**Chosen option: stdlib dataclasses in domain, Pydantic only in `ze_api/api/schemas.py`.**
+**Chosen option: stdlib dataclasses in domain, Pydantic only in the `schemas.py` files under `ze_api/api/`.**
 
 Domain types live in `<module>/types.py` as `@dataclass` classes. FastAPI request and
-response schemas live in `ze_api/api/schemas.py` as Pydantic `BaseModel` subclasses.
+response schemas live in `schemas.py` files under `ze_api/api/` as Pydantic `BaseModel` subclasses.
 The API layer translates between the two at the boundary.
 
 ### Positive Consequences
@@ -91,5 +91,5 @@ serialisation.
 
 ## Links
 
-- `ze_api/api/schemas.py` — Pydantic schemas (the only allowed location)
+- `ze_api/api/**/schemas.py` — Pydantic schemas (the only allowed location)
 - Any `<module>/types.py` — canonical domain type location

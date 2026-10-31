@@ -1,5 +1,7 @@
 > ⚠️ **Status: Stale** — Written pre-split (Phases 1–20). References `ze_core/...` paths that no longer exist. See the [package specs below](../README.md#ze-core-specs-core) for current documentation.
 
+> **Current extraction (cleanup, 2026-10):** `PersonCandidate` is deleted. The contacts consolidator reads `memory_episodes` past the `contacts_episode_watermark` row (`zc036`) and no longer uses `episodes.contacts_extracted`, so the flag text below is historical.
+
 ---
 
 # Ze Core — Contacts — Spec
